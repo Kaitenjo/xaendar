@@ -1,10 +1,14 @@
-export type ClassAccessorDecorator<Class extends Object, Field = unknown> = (
+export type AccessorDecorator<
+  Class extends Object, 
+  Field = unknown,
+  ReturnTypeField = Field
+> = (
   value: ClassAccessorDecoratorValue<Field>,
-  context: ClassAccessorDecoratorContext<Class, Field>
+  context: ClassAccessorDecoratorContext<Class, ReturnTypeField>
 ) => {
-  get?: () => Field;
-  set?: (value: Field) => void;
-  init?: (initialValue: Field) => Field;
+  get?: () => ReturnTypeField;
+  set?: (value: ReturnTypeField) => void;
+  init?: (initialValue: Field) => ReturnTypeField;
 } | void;
 
 export type ClassAccessorDecoratorValue<Field = unknown> = {
