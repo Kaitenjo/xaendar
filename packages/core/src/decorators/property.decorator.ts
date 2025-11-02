@@ -1,4 +1,4 @@
-import { ClassAccessorDecorator, ClassAccessorDecoratorValue } from "@xendar/common";
+import { AccessorDecorator, ClassAccessorDecoratorValue, Constructor } from "@xendar/common";
 import { INTERNAL_OBSERVED_ATTRIBUTES, INTERNAL_PREFIX } from "../costants";
 import { BaseWebComponent } from "../directives/base-web-component";
 import { PropertyDecoratorParams } from "../models/property-decorator-params.type";
@@ -6,8 +6,8 @@ import { PropertyDecoratorParams } from "../models/property-decorator-params.typ
 export function Property<
   Class extends BaseWebComponent,
   Field
-  >(params?: PropertyDecoratorParams) {
-  return function (_value: ClassAccessorDecoratorValue<Field>, context: ClassAccessorDecoratorContext<Class, Field>): ReturnType<ClassAccessorDecorator<Class, Field>> {
+  >(params?: PropertyDecoratorParams): AccessorDecorator<Class, Field> {
+  return function (_value: ClassAccessorDecoratorValue<Field>, context: ClassAccessorDecoratorContext<Class, Field>): ReturnType<AccessorDecorator<Class, Field>> {
     context.metadata![INTERNAL_OBSERVED_ATTRIBUTES] ??= new Array<string>;
     (context.metadata![INTERNAL_OBSERVED_ATTRIBUTES] as string[]).push(context.name as string);
   

@@ -1,6 +1,6 @@
 import { ClassDecorator, Constructor } from "@xendar/common";
-import { INTERNAL_OBSERVED_ATTRIBUTES } from "../costants";
-import { BaseWebComponent } from "../directives/base-web-component";
+import { INTERNAL_OBSERVED_ATTRIBUTES } from "../../costants";
+import { BaseWebComponent } from "../../directives/base-web-component";
 
 /**
  * Decorator to define a web component

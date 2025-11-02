@@ -1,4 +1,4 @@
-import { BaseWebComponent, Property, WebComponent } from '@xendar/core';
+import { BaseWebComponent, Event, Output, Property, WebComponent } from '@xendar/core';
 
 @WebComponent('xendar-text-input')
 export class XendarTextInput extends BaseWebComponent {
@@ -15,7 +15,11 @@ export class XendarTextInput extends BaseWebComponent {
   @Property()
   public accessor placeholder = 'Type here...';
 
-  public render(): string {
+  @Event()
+  public accessor onValueChange!: Output<string>;
+
+  public template(): string {
+    const a = this.value ? '<h1>Has value</h1>' : '';
     return `
       <label
         for="${this.id}"
@@ -23,13 +27,14 @@ export class XendarTextInput extends BaseWebComponent {
       >
         ${this.label}
       </label>
+      ${a}
       <input 
         id="${this.id}"
         type="text" 
         value="${this.value}" 
-        placeholder="${this.placeholder}" 
+        placeholder="${this.placeholder}"
       />
-      `
+    `
   }
 
   public css(): string {

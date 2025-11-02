@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import babel from "@rollup/plugin-babel";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 const external = [

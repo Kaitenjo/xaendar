@@ -1,5 +1,6 @@
-import { INTERNAL_SELECTORS } from "../costants";
-import { BaseWebComponentConstructor } from "../models/base-web-component-constructor.type";
+import { VirtualNode } from "../models/virtual-node.type";
+import { VirtualTree } from "../models/virtual-tree.type";
+import { Parser } from "../utils/parser";
 
 /**
  * Base class for all Web Components in the framework
@@ -9,6 +10,11 @@ import { BaseWebComponentConstructor } from "../models/base-web-component-constr
  * It won't appear by intellisense but it's there.
  */
 export abstract class BaseWebComponent extends HTMLElement {
+
+  public static rendererTimes = 0;
+
+  private _previousVirtualTree: VirtualTree | undefined;
+
   /**
    * Flag to track if the component has been initialized
    * When istance is created, the flag is false
@@ -22,22 +28,20 @@ export abstract class BaseWebComponent extends HTMLElement {
    * number of properties decorated with @Property and specified as attributes
    * on the CustomElement tag in the HTML
   */
- private _initialized = false;
- 
- private readonly _root: ShadowRoot;
- 
- public static rendererTimes = 0;
+  private _initialized = false;
 
- constructor() {
-   super();
-   this.addHostClass()
-   this._root = this.attachShadow({ mode: 'open' });
+  private readonly _root: ShadowRoot;
+
+
+  constructor() {
+    super();
+    this._root = this.attachShadow({ mode: 'open' });
   }
-  
-  public abstract render(): string;
- 
+
+  public abstract template(): string;
+
   public abstract css(): string;
-  
+
   /**
    * Method called by the @Property decorator to
    * update the rendering of the component
@@ -46,22 +50,10 @@ export abstract class BaseWebComponent extends HTMLElement {
   public internalRender(): void {
     if (this._initialized) {
       console.warn('Render times:', ++BaseWebComponent.rendererTimes);
-      this._root.innerHTML = `${this.render()} <style>${this.css()}</style>`;
+      const virtualTree = Parser.fromTemplateToVTree(this.template());
+      virtualTree.forEach((node, index) => BaseWebComponent.updateElement(this._root, this._previousVirtualTree?.[index], node, index));
+      this._previousVirtualTree = virtualTree;
     }
-  }
-
-  /**
-   * Retrieve the selectors defined on the class through the @WebComponent decorator
-   * and add them as class(es) on the host element
-   * 
-   * This allows to use the selector as CSS class root in the `css` method 
-   * and support BEM methodology
-   */
-  private addHostClass(): void {
-    const selectors = (this.constructor as BaseWebComponentConstructor)[INTERNAL_SELECTORS];
-    Array.isArray(selectors)
-      ? this.classList.add(...selectors)
-      : this.classList.add(selectors);
   }
 
   /**
@@ -80,7 +72,7 @@ export abstract class BaseWebComponent extends HTMLElement {
       Since the 'Property Decorator add the property key to the ObservedAttributes
       We are sure that the property with the given name exists on the instance of the subclass
     */
-    const context = this as BaseWebComponent & Record<string, unknown>; 
+    const context = this as BaseWebComponent & Record<string, unknown>;
     context[name] = newValue;
   }
 
@@ -107,5 +99,132 @@ export abstract class BaseWebComponent extends HTMLElement {
    */
   private disconnectedCallback(): void {
     this._initialized = false
+  }
+
+  /**
+   * Create a DOM Node from a VirtualNode.
+   * @param virtualNode VirtualNode to convert
+   * @returns A DOM Element representing the VirtualNode
+   */
+  private static createDOMNode(virtualNode: VirtualNode): HTMLElement {
+    const el = document.createElement(virtualNode.tag);
+    Object.entries(virtualNode.props).forEach(([key, value]) => el.setAttribute(key, value));
+    virtualNode.children.forEach(child => el.appendChild(typeof child === 'string' ? document.createTextNode(child) : BaseWebComponent.createDOMNode(child)));
+    return el;
+  }
+
+  private static updateElement(parent: ShadowRoot | HTMLElement, oldVirtualNode: VirtualNode | string | undefined, newVirtualNode: VirtualNode | string | undefined, index = 0) {
+    const existingNode = parent.childNodes[index];
+
+    // Element has been removed
+    if (!newVirtualNode) {
+      if (existingNode) {
+        parent.removeChild(existingNode)
+      };
+      return;
+    }
+
+    // Element is new (no old node)
+    if (!oldVirtualNode) {
+      const nodeToAppend = typeof newVirtualNode === 'string'
+        ? document.createTextNode(newVirtualNode)
+        : BaseWebComponent.createDOMNode(newVirtualNode);
+      parent.appendChild(nodeToAppend);
+      return;
+    }
+
+    // Both are text nodes
+    if (typeof oldVirtualNode === 'string' && typeof newVirtualNode === 'string') {
+      // If existing node is a text node, update its content; otherwise replace it
+      if (existingNode?.nodeType === Node.TEXT_NODE) {
+        if (existingNode.textContent !== newVirtualNode) {
+          existingNode.textContent = newVirtualNode;
+        }
+      } else {
+        // replace (or insert) with a text node
+        const textNode = document.createTextNode(newVirtualNode);
+        existingNode ? parent.replaceChild(textNode, existingNode) : parent.appendChild(textNode);
+      }
+      return;
+    }
+
+    // old is text, new is element -> replace text node with element
+    if (typeof oldVirtualNode === 'string' && typeof newVirtualNode !== 'string') {
+      const newEl = BaseWebComponent.createDOMNode(newVirtualNode);
+      existingNode ? parent.replaceChild(newEl, existingNode) : parent.appendChild(newEl);
+      return;
+    }
+
+    // old is element, new is text -> replace element with text node
+    if (typeof oldVirtualNode !== 'string' && typeof newVirtualNode === 'string') {
+      const textNode = document.createTextNode(newVirtualNode);
+      existingNode ? parent.replaceChild(textNode, existingNode) : parent.appendChild(textNode);
+      return;
+    }
+
+    // From here: both oldVirtualNode and newVirtualNode are VirtualNode (objects)
+    const previousVirtualNode = oldVirtualNode as VirtualNode;
+    const currentVirtualNode = newVirtualNode as VirtualNode;
+
+    // If existingNode doesn't exist (shouldn't happen often), create & append
+    if (!existingNode) {
+      parent.appendChild(BaseWebComponent.createDOMNode(currentVirtualNode));
+      return;
+    }
+
+    // If tag is different, replace the whole node
+    if (previousVirtualNode.tag !== currentVirtualNode.tag) {
+      parent.replaceChild(BaseWebComponent.createDOMNode(currentVirtualNode), existingNode);
+      return;
+    }
+
+    // Now safe to treat existingNode as Element
+    const element = existingNode as HTMLElement;
+
+    // Update attributes
+    for (const [key, value] of Object.entries(currentVirtualNode.props)) {
+      if (element.getAttribute(key) !== value) {
+        element.setAttribute(key, value);
+      }
+    }
+    // Remove attributes no longer present
+    for (const key in previousVirtualNode.props) {
+      if (!(key in currentVirtualNode.props)) {
+        element.removeAttribute(key);
+      }
+    }
+
+    // Update children
+    const oldChildren = previousVirtualNode.children;
+    const newChildren = currentVirtualNode.children;
+    const max = Math.max(oldChildren.length, newChildren.length);
+
+    for (let i = 0; i < max; i++) {
+      const oldChild = oldChildren[i];
+      const newChild = newChildren[i];
+
+      // Both strings (text nodes)
+      if (typeof oldChild === 'string' && typeof newChild === 'string') {
+        const childNode = element.childNodes[i];
+        if (childNode && childNode.nodeType === Node.TEXT_NODE) {
+          if (childNode.textContent !== newChild) {
+            childNode.textContent = newChild;
+          }
+        } else if (typeof newChild !== 'undefined') {
+          // replace non-text with text
+          const tn = document.createTextNode(newChild);
+          if (childNode) element.replaceChild(tn, childNode);
+          else element.appendChild(tn);
+        }
+      } else {
+        // Handle cases where either side may be undefined (add/remove) or types differ
+        BaseWebComponent.updateElement(
+          element,
+          oldChild as VirtualNode | string | undefined,
+          newChild as VirtualNode | string | undefined,
+          i
+        );
+      }
+    }
   }
 }

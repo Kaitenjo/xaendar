@@ -8,6 +8,10 @@
 </head>
 <body>
   <xendar-text-input id="input" label="name" placeholder="Inser your name..."></xendar-text-input>
-  <xendar-button></xendar-button>
 </body>
+  <script>
+    document.querySelector('xendar-text-input').addEventListener('onValueChange', event => {
+      console.log(event);
+    });
+  </script>
 </html>
