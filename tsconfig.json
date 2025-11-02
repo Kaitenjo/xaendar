@@ -24,10 +24,7 @@
       "@xendar/web-components": ["packages/web-components/src/public-api"]
     },
     "moduleResolution": "node",
-    "lib": [
-      "ES2024", 
-      "dom"
-    ]
+    "lib": ["ES2024", "dom"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts"]
 }

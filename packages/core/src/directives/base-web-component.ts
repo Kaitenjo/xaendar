@@ -53,6 +53,10 @@ export abstract class BaseWebComponent extends HTMLElement {
       const virtualTree = Parser.fromTemplateToVTree(this.template());
       virtualTree.forEach((node, index) => BaseWebComponent.updateElement(this._root, this._previousVirtualTree?.[index], node, index));
       this._previousVirtualTree = virtualTree;
+
+      const styleElement = document.createElement('style');
+      styleElement.textContent = this.css();
+      this._root.appendChild(styleElement);
     }
   }
 

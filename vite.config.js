@@ -10,7 +10,7 @@ const external = [
 export default defineConfig({
   root: './src',
   esbuild: {
-    target: 'es2022',
+    target: 'es2024',
   },
   build: {
     outDir: '../dist',

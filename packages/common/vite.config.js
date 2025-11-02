@@ -9,14 +9,14 @@ export default defineConfig({
       name: 'XendarComponents',
       fileName: format => `xendar-components.${format}.js`
     },
-    outDir: path.resolve(__dirname, '../../dist'), // Ensure the outDir is specific to this config
+    outDir: path.resolve(__dirname, '../../dist'),
     rollupOptions: {
       output: {
-        dir: path.resolve(__dirname, '../../dist') // Explicitly set the output directory
+        dir: path.resolve(__dirname, '../../dist')
       }
     }
   },
   esbuild: {
-    target: 'es2022'
+    target: 'es2024'
   }
 });
