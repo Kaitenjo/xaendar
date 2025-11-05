@@ -19,7 +19,6 @@ export class XendarTextInput extends BaseWebComponent {
   public accessor onValueChange!: Output<string>;
 
   public template(): string {
-    const a = this.value ? '<h1>Has value</h1>' : '';
     return `
       <label
         for="${this.id}"
@@ -27,7 +26,6 @@ export class XendarTextInput extends BaseWebComponent {
       >
         ${this.label}
       </label>
-      ${a}
       <input 
         id="${this.id}"
         type="text" 
