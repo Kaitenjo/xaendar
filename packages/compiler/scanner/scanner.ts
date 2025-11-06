@@ -1,4 +1,7 @@
+import { existsSync, readFile, rmSync, writeFile } from "fs";
 import { Token } from "../models/token.type";
+import { FORMERR } from "dns";
+import { CLOSE_INTERPOLATION, OPEN_INTERPOLATION } from "../token.costants";
 
 export function tokenize(input: string) {
   const tokens = new Array<Token>();
@@ -8,7 +11,7 @@ export function tokenize(input: string) {
   while (i < len) {
     let handled = false;
 
-    for (const scanner of [scanInterpolation, scanDirective, scanTag, scanText]) {
+    for (const scanner of [scanInterpolation]) {
       const result = scanner(input, i);
       if (result.handled) {
         tokens.push(...result.tokens);
@@ -27,40 +30,36 @@ export function tokenize(input: string) {
 }
 
 function scanInterpolation(input: string, i: number): { handled: boolean, tokens: Token[], nextIndex: number } {
-  if (input[i] !== '{') {
+  // If the current position does not start with '{{', this is not an interpolation.
+  if (input.slice(i, i + 1) !== OPEN_INTERPOLATION) {
     return { handled: false, tokens: [], nextIndex: i };
   }
 
-  let depth = 0;
   let j = i;
-  let done = false;
-  const len = input.length;
+  let foundClosing = false;
 
-  while (j < len && !done) {
-    switch (input[j]) {
-      case '{':
-        depth++;
-        break;
-      case '}':
-        depth--;
-        break;
+  while (j < input.length) {
+    if (input.slice(j, j + 1) === CLOSE_INTERPOLATION) {
+      foundClosing = true;
+      break;
     }
-    j++;
 
-    if (!depth) {
-      done = true;
-    }
+    j += 2;
+  }
+
+  if (!foundClosing) {
+    throw new Error(`Unclosed interpolation expression\n-->   ${input.slice(i, i + 10)} at location ${i}`);
   }
 
   return {
     handled: true,
-    tokens: [{ type: 'INTERPOLATION', value: input.slice(i + 1, j - 1).trim() }],
+    tokens: [{ type: 'INTERPOLATION', value: input.slice(i + 2, j - 3).trim() }],
     nextIndex: j
   };
 }
 
 function scanDirective(input: string, i: number): { handled: boolean, tokens: Token[], nextIndex: number } {
-  if (input[i] !== '$') {
+  if (input[i] !== '@') {
     return { handled: false, tokens: [], nextIndex: i };
   }
 
@@ -131,207 +130,13 @@ function scanText(input: string, i: number): { handled: boolean, tokens: Token[]
 }
 
 const code = `
-{label}
-
-$if (value) {
-  <h1>Has value</h1>
-}
-
-$if (!value) {
-  <h1>No value</h1>
-} $else {
-
-}
-
-$if (placeholder) {
-  <h2>Has placeholder</h2>
-} $else if (!placeholder) {
-  <h2>No placeholder</h2>
-}
-
-$switch (value) {
-  $case ("admin") {
-    <h3>Welcome Admin</h3>
-  }
-  $case ("user") {
-    <h3>Welcome User</h3>
-  }
-  $default {
-    <h3>Welcome Guest</h3>
-  }
-}
-
-$for (item in items; index) {
-  <p>{item}</p>
-}
-
-{function()}
-
-<element 
-  staticAttribute="staticAttribute" 
-  attribute="{dynamicAttribute}"
-  staticAttributeWithParentheses="'{methodCall}'" 
-  @event="handleEvent()"
->
-</element>
-
-<!-- ========================================================= -->
-<!-- 1. Condizioni annidate -->
-<!-- ========================================================= -->
-
-$if (user) {
-  <div class="user-card">
-    <h1>Hello, {user.name}</h1>
-
-    $if (user.isAdmin) {
-      <p>Role: <strong>Administrator</strong></p>
-    } $else if (user.isModerator) {
-      <p>Role: <strong>Moderator</strong></p>
-    } $else {
-      <p>Role: <strong>Regular User</strong></p>
-    }
-
-    $if (user.notifications.length > 0) {
-      <ul>
-        $for (notif in user.notifications; i) {
-          <li>#{i + 1}: {notif.message}</li>
-        }
-      </ul>
-    } $else {
-      <p>No notifications.</p>
-    }
-  </div>
-} $else {
-  <div class="login-prompt">
-    <h2>Please log in</h2>
-  </div>
-}
-
-<!-- ========================================================= -->
-<!-- 2. Switch multiplo -->
-<!-- ========================================================= -->
-
-$switch (status) {
-  $case ("loading") {
-    <div class="spinner">Loading...</div>
-  }
-  $case ("error") {
-    <div class="error">
-      <h3>Error loading data</h3>
-      <p>{errorMessage ?? 'Unknown error'}</p>
-    </div>
-  }
-  $case ("success") {
-    <div class="content">
-      <h2>Data loaded successfully</h2>
-      <p>Total items: {items.length}</p>
-    </div>
-  }
-  $default {
-    <div class="idle">Waiting for action...</div>
-  }
-}
-
-<!-- ========================================================= -->
-<!-- 3. Loop annidati -->
-<!-- ========================================================= -->
-
-<ul>
-  $for (category in catalog; i) {
-    <li>
-      <h3>{i + 1}. {category.name}</h3>
-      $if (category.products.length > 0) {
-        <ul>
-          $for (product in category.products; j) {
-            <li>
-              <span>{product.name}</span> - <em>{product.price}€</em>
-            </li>
-          }
-        </ul>
-      } $else {
-        <p>No products available in this category.</p>
-      }
-    </li>
-  }
-</ul>
-
-<!-- ========================================================= -->
-<!-- 4. Attributi dinamici ed eventi -->
-<!-- ========================================================= -->
-
-<card 
-  title="{user?.name ?? 'Guest'}" 
-  data-role="{user?.role ?? 'unknown'}"
-  class="card {user?.isActive ? 'active' : 'inactive'}"
-  @click="selectUser(user.id)"
->
-  $if (user.avatar) {
-    <img src="{user.avatar}" alt="{user.name}'s avatar" />
-  } $else {
-    <img src="/assets/default-avatar.png" alt="No avatar" />
-  }
-
-  <button 
-    disabled="{!user.canEdit}" 
-    @click="editUser(user)"
-  >
-    Edit
-  </button>
-</card>
-
-<!-- ========================================================= -->
-<!-- 5. Espressioni inline e funzioni -->
-<!-- ========================================================= -->
-
-<div>
-  <p>Age next year: {user.age + 1}</p>
-  <p>Joined: {formatDate(user.joinDate)}</p>
-  <p>Status: {getStatus(user)}</p>
-
-  <input 
-    type="text" 
-    value="{user.nickname || user.name}" 
-    placeholder="{placeholder ?? 'Enter name'}" 
-  />
-
-  $if (showExtra) {
-    {renderExtraInfo(user)}
-  }
-</div>
-
-<!-- ========================================================= -->
-<!-- 6. Costrutti combinati -->
-<!-- ========================================================= -->
-
-<section>
-  $for (item in items; idx) {
-    <div class="item {idx % 2 === 0 ? 'even' : 'odd'}">
-      <h4>{item.title}</h4>
-
-      $if (item.tags?.length) {
-        <ul>
-          $for (tag in item.tags) {
-            <li>#{tag}</li>
-          }
-        </ul>
-      } $else {
-        <small>No tags available</small>
-      }
-
-      $switch (item.type) {
-        $case ("premium") {
-          <span class="badge premium">Premium</span>
-        }
-        $case ("free") {
-          <span class="badge free">Free</span>
-        }
-        $default {
-          <span class="badge unknown">Unknown</span>
-        }
-      }
-    </div>
-  }
-</section>
+{{label
 `
 
-console.log(tokenize(code));
+const path = './temp.json'
+
+if (existsSync(path)) {
+  rmSync(path);
+}
+
+writeFile(path, JSON.stringify(tokenize(code)), () => { });
