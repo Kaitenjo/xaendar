@@ -22,4 +22,4 @@ EventBinding      ::= "@" Identifier "=" "\"" Expression "\""
 TagName           ::= /[a-zA-Z_][\w-]*/
 Identifier        ::= /[a-zA-Z_][\w-]*/
 StringLiteral     ::= '"' [^"]* '"' | "'" [^']* "'"
-JSExpression      ::= // qualsiasi espressione JS valida (semplificata)
+JSExpression      ::= // string concat
