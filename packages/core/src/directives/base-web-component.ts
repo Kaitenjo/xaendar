@@ -5,7 +5,7 @@
  * add programmaticaly by the @WebComponent decorator. 
  * It won't appear by intellisense but it's there.
  */
-export abstract class BaseWebComponent extends HTMLElement {
+export class BaseWebComponent extends HTMLElement {
 
   public static rendererTimes = 0;
 

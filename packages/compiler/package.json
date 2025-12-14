@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "buildl:debug": "node ./src/scripts/build.js",
-    "build:nfa": "cd ./src/codegen && antlr4 -Dlanguage=Cpp TemplateLexer.g4 TemplateParser.g4"
+    "build": "vite build --emptyOutDir && node ../../dist/xendar-compiler.es.js",
+    "watch-ts": "nodemon --watch src --ext ts --exec \"npm run build\""
   }
 }
