@@ -5,6 +5,7 @@ export * from './decorators/accessor-decorator.type';
 export * from './decorators/class-decorator.type';
 export * from './decorators/field-decorator.type';
 export * from './decorators/method-decorator.type';
+export * from './dictionary.type';
 export * from './function.type';
 export * from './mutable.type';
 export * from './require-one.type';

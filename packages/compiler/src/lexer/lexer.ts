@@ -1,10 +1,12 @@
-import { EOF, GREATER_THEN, LESS_THAN, MINUS, SLASH, SPACE } from './costants/chars.constants';
-import { CurrentChar } from './models/current-char.type';
-import { CursorPosition } from './models/current-position.type';
+import { Dictionary } from '@xendar/common';
+import { AT_SIGN, EOF, GREATER_THEN, LEFT_BRACE, SLASH, SPACE } from './costants/chars.constants';
+import { Cursor } from './models/cursor.model';
+import { LexerState } from './models/lexer-state.enum';
 import { TokenType } from './models/token-type.enum';
 import { Token } from './models/token.type';
-import { isLowerCase, isNewLine, isUpperCase } from './utils/chars.utils';
-import { isAllowedCharForTag, isNativeHTMLTag, isReservedTagName } from './utils/tags.utils';
+import { LexerTransitionFunctionReturnType } from './models/transition-function-return-type.type';
+import { LexerTransitionFunction } from './models/transition-function.type';
+
 
 /**
  * Utility class that emulates a cursor navigating through a template string.
@@ -14,146 +16,96 @@ import { isAllowedCharForTag, isNativeHTMLTag, isReservedTagName } from './utils
  * This is useful when parsing or analyzing template content character by character.
  */
 export class Lexer {
-  /**
-   * Unicode code point of the current character.
-   * A value of -1 indicates that the cursor is not positioned on a valid character.
-   */
-  private _currentChar: CurrentChar = { code: 0, index: -1, value: '' };
-  /**
-   * Zero-based index of the current column within the current row.
-   */
-  private readonly _cursorPosition = new CursorPosition;
+
+  private readonly _cursor;
 
   private readonly _tokens = new Array<Token>;
+
+  private _state = LexerState.NONE;
+
+  private _states: Dictionary<LexerState, LexerTransitionFunction> = {
+    [LexerState.NONE]: start,
+    [LexerState.TAG_NAME]: consumeElementName,
+    [LexerState.TAG_BODY]: consumeElementBody
+  }
 
   /**
    * Creates a new Cursor instance for the given template content.
    *
-   * @param templateContent The full template text that the cursor will navigate.
+   * @param input The full template text that the cursor will navigate.
    */
-  constructor(public templateContent: string) { }
-
-  public tokenize(): Token[] {
-    while (this.nextChar() !== EOF) {
-      switch (this._currentChar.code) {
-        case LESS_THAN:
-          this.startElement();
-          break;
-        
-        case SPACE:
-          break;
-      }
-    }
-
-    return this._tokens;
+  constructor(public input: string) {
+    this._cursor = new Cursor(this.input);
   }
 
-  /**
-   * Read next character in the template string
-   * Update internal state of CurrentChar and CursorPosition
-   * @returns 
-   */
-  private nextChar(): number {
-    // When attempt to get nextChar but it's already EOF, we only return EOF code
-    if (this._currentChar.index === this.templateContent.length) {
-      return this._currentChar.code;
+  public tokenize(): void {
+    const cursor = this._cursor;
+
+    while (cursor.peek() !== EOF) {
+      const transitionFunction = this._states[this._state];
+      const { state, tokens } = transitionFunction!(cursor);
+
+      if (tokens?.length) {
+        this._tokens.push(...tokens);
+      }
+
+      this._state = state;
     }
+  }
+}
 
-    let index = ++this._currentChar.index;
-    let code: number;
-    let value: string
+function start(_cursor: Cursor): LexerTransitionFunctionReturnType {
+  return { state: LexerState.TAG_NAME };
+}
 
-    if (this._currentChar.index === this.templateContent.length) {
-      code = EOF;
-      value = '';
+function consumeElementName(cursor: Cursor): LexerTransitionFunctionReturnType {
+  cursor.advance();
+
+  let tagName = '';
+  /*
+    Keep read input until:
+    - Space: <span 
+    - GT: <span>
+    - Slash (Self Closing tag) <span /
+    - EOF 
+  */
+  while (![SPACE, SLASH, GREATER_THEN, EOF].includes(cursor.peek())) {
+    cursor.advance();
+    tagName = `${tagName}${cursor.currentChar.value}`
+  }
+
+  return {
+    state: LexerState.TAG_BODY,
+    tokens: [
+      {
+        type: TokenType.TAG_OPEN_START,
+        parts: [tagName]
+      }
+    ]
+  }
+}
+
+function consumeElementBody(cursor: Cursor): LexerTransitionFunctionReturnType {
+  const tokens = new Array<Token>;
+
+  while (![GREATER_THEN, SLASH, EOF].includes(cursor.peek())) {
+    const nextChar = cursor.peek();
+    if (nextChar === AT_SIGN) {
+      tokens.push(consumeEvent(cursor));
     } else {
-      code = this.templateContent.charCodeAt(index);
-      value = this.templateContent.charAt(index);
+      tokens.push(consumeAttribute(cursor));
     }
-
-    this._currentChar = { code, index, value };
-
-    if (isNewLine(code)) {
-      this._cursorPosition.newLine();
-    }
-
-    return code;
   }
 
-  private previousChar(): number {
-    // When attempt to get previousChar but it's already SOF, we only return the code of the First Character
-    if (this._currentChar.index === 0) {
-      this._currentChar.code;
-    }
-
-    const index = --this._currentChar.index;
-    const code = this.templateContent.charCodeAt(index);
-    const value = this.templateContent.charAt(index);
-    this._currentChar = { code, index, value };
-
-    //TODO: Implement return to previous line
-    
-    return code;
+  return {
+    state: LexerState.TAG_CLOSE,
+    tokens
   }
+}
 
-  private startElement(): void {
-    let tagName = '';
-    let hasMinus = false
-
-    /*
-      CustomElements and Native HTML Elements
-      Can only start with Lowercase Letters
-    */
-    if (isLowerCase(this.nextChar())) {
-      tagName = this._currentChar.value;
-    } else {
-      throw new Error(`${this._currentChar.value} is not valid as first character in HTML Tag`)
-    }
-
-    /*
-      Keep read input until:
-      - Space: <span 
-      - GT: <span>
-      - Slash (Self Closing tag) <span /
-      - EOF 
-    */
-    while (![SPACE, GREATER_THEN, SLASH, EOF].includes(this.nextChar())) {
-      const { value, code } = this._currentChar;
-      if (!isAllowedCharForTag(value)) {
-        throw new Error(`${value} is not a valid character for HTML Tag`);
-      }
-
-      if (isUpperCase(this._currentChar.code)) {
-        throw new Error(`${value} is not a valid character for HTML Tag. No UpperCase Characters are allowed`);
-      }
-
-      if (!hasMinus && code === MINUS) {
-        hasMinus = true;
-      }
-
-      tagName = `${tagName}${value}`
-    }
-
-    /*
-      CustomElements's Names MUST includes a `-` characters
-      https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name
-    */
-    if (!hasMinus) {
-      if (!isNativeHTMLTag(tagName)) {
-        throw new Error(`${tagName} is not recognized as a native HTML Tag`);
-      }
-    } else if (isReservedTagName(tagName)) {
-      throw new Error(`${tagName} is a reserver name and cannot be used as CustomElement Name`)
-    }
-
-    
-    this._tokens.push({
-      type: TokenType.TAG_OPEN_START,
-      parts: [tagName]
-    });
-
-    this.previousChar();
-  }
+function consumeEvent(cursor: Cursor): Token[] {
+  
+  return []
 }
 
 console.log(new Lexer('<span').tokenize());

@@ -131,18 +131,6 @@ export const AT_SIGN = 64;
  */
 export const A = 65;
 /**
- * `E`
- */
-export const E = 69;
-/**
- * `F`
- */
-export const F = 70;
-/**
- * `X`
- */
-export const X = 88;
-/**
  * `Z`
  */
 export const Z = 90;
@@ -174,42 +162,6 @@ export const GRAVE_ACCENT = 96;
  * `a`
  */
 export const a = 97;
-/**
- * `b`
- */
-export const b = 98;
-/**
- * `e`
- */
-export const e = 101;
-/**
- * `f`
- */
-export const f = 102;
-/**
- * `n`
- */
-export const n = 110;
-/**
- * `r`
- */
-export const r = 114;
-/**
- * `t`
- */
-export const t = 116;
-/**
- * `u`
- */
-export const u = 117;
-/**
- * `v`
- */
-export const v = 118;
-/**
- * `x`
- */
-export const x = 120;
 /**
  * `z`
  */
