@@ -26,7 +26,7 @@ export class Cursor {
    * Update internal state of CurrentChar and CursorPosition
    * @returns 
    */
-  public advance(): void {
+  public advance(): number {
     if (this._currentChar.index >= this.input.length) {
       throw new Error(`Cursor out of Range.\nInput lenght: ${this.input.length}\nIndex: ${this._currentChar.index}`)
     }
@@ -48,6 +48,8 @@ export class Cursor {
       this._position.row++;
       this._position.column = 0;
     }
+
+    return code;
   }
 
   /**

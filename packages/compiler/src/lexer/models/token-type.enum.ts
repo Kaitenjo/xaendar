@@ -3,10 +3,8 @@ export const enum TokenType {
   TAG_OPEN_END,          // >
   TAG_SELF_CLOSE,        // />
   TAG_CLOSE,             // </tag>
-  ATTRIBUTE_NAME,        // name
-  ATTRIBUTE_VALUE,       // "value" o 'value'
-  EVENT_NAME,            // (click)
-  EVENT_BIND,            // = ...
+  ATTRIBUTE,        // name
+  EVENT,            // (click)
   INTERPOLATION,         // {{ ... }}
   TEXT,                  // testo normale
   EOF                    // fine input
