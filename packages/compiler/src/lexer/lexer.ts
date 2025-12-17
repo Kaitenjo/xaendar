@@ -27,6 +27,7 @@ export class Lexer {
     [LexerState.NONE]: this.start.bind(this),
     [LexerState.TAG_NAME]: this.consumeElementName.bind(this),
     [LexerState.TAG_BODY]: this.consumeElementBody.bind(this),
+    [LexerState.TAG_CLOSE]: this.consumeElementClosure.bind(this),
     [LexerState.TEXT]: this.consumeText.bind(this)
   }
 
@@ -71,7 +72,7 @@ export class Lexer {
         return { state: LexerState.NONE }
       default:
         return { state: LexerState.TEXT }
-      
+
     }
   }
 
@@ -117,11 +118,50 @@ export class Lexer {
       }
     }
 
-    tokens.push({ type: TokenType.TAG_OPEN_END, parts: [] })
-
     return {
       state: LexerState.TAG_CLOSE,
       tokens
+    }
+  }
+
+  private consumeElementClosure(): LexerTransitionFunctionReturnType {
+    while (this._cursor.peek() !== EOF) {
+      let nextChar = this._cursor.peek();
+      switch (nextChar) {
+        case GREATER_THEN:
+          this._cursor.advance()
+          return {
+            state: LexerState.NONE,
+            tokens: [{
+              type: TokenType.TAG_OPEN_END,
+              parts: []
+            }]
+          }
+        case SLASH: {
+          this._cursor.advance();
+          nextChar = this._cursor.peek();
+          if (nextChar === GREATER_THEN) {
+            this._cursor.advance();
+            return {
+              state: LexerState.NONE,
+              tokens: [{
+                type: TokenType.TAG_SELF_CLOSE,
+                parts: []
+              }]
+            }
+          } else {
+            return { state: LexerState.TAG_BODY }
+          }
+        }
+        default:
+          return {
+            state: LexerState.NONE,
+          }
+      }
+    }
+
+    return {
+      state: LexerState.NONE,
     }
   }
 
@@ -148,7 +188,7 @@ export class Lexer {
     }
 
     return [{
-      type: TokenType.EVENT, 
+      type: TokenType.EVENT,
       parts: [event]
     }]
   }
@@ -161,7 +201,7 @@ export class Lexer {
     }
 
     const state = this._cursor.peek() === LESS_THAN ? LexerState.TAG_NAME : LexerState.NONE;
-    
+
     return {
       state,
       tokens: [{
@@ -178,4 +218,26 @@ console.log(new Lexer(`
   <div dick>
     Text
   </div>
-`).tokenize());
+`).tokenize().map(e => {
+  switch (e.type) {
+    case TokenType.TEXT:
+      e.type = 'text' as any
+      break;
+    case TokenType.ATTRIBUTE:
+      e.type = 'attribute' as any
+      break;
+    case TokenType.TAG_OPEN_END:
+      e.type = 'open end' as any;
+      break;
+    case TokenType.EVENT:
+      e.type = 'event' as any;
+      break;
+    case TokenType.TAG_SELF_CLOSE:
+      e.type = 'self-close' as any;
+      break;
+    case TokenType.TAG_OPEN_START:
+      e.type = 'open-start' as any;
+      break;
+  }
+  return e;
+}));

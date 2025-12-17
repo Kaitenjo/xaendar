@@ -3,6 +3,7 @@ import { TokenType } from './token-type.enum';
 export type Token =
   | TagOpenStartToken
   | TagOpenEndToken
+  | TagSelfCloseToken
   | AttributeToken
   | EventToken
   | TextToken
@@ -34,5 +35,10 @@ export type TextToken = TokenBase & {
 
 export type TagOpenEndToken = TokenBase & {
   type: TokenType.TAG_OPEN_END,
+  parts: []
+}
+
+export type TagSelfCloseToken = TokenBase & {
+  type: TokenType.TAG_SELF_CLOSE,
   parts: []
 }
