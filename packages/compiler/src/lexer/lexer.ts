@@ -1,5 +1,5 @@
 import { Dictionary } from '@xendar/common';
-import { AT_SIGN, EOF, GREATER_THEN, LEFT_BRACE, LESS_THAN, SLASH, SPACE } from './costants/chars.constants';
+import { AT_SIGN, GREATER_THEN, LESS_THAN, SLASH, SPACE } from './costants/chars.constants';
 import { Cursor } from './models/cursor.model';
 import { LexerState } from './models/lexer-state.enum';
 import { TokenType } from './models/token-type.enum';
@@ -21,10 +21,10 @@ export class Lexer {
 
   private readonly _tokens = new Array<Token>;
 
-  private _state = LexerState.NONE;
+  private _state = LexerState.START;
 
-  private _states: Dictionary<LexerState, LexerTransitionFunction> = {
-    [LexerState.NONE]: this.start.bind(this),
+  private _states: Dictionary<LexerState, LexerTransitionFunction> & { [LexerState.EOF]?: undefined} = {
+    [LexerState.START]: this.start.bind(this),
     [LexerState.TAG_NAME]: this.consumeElementName.bind(this),
     [LexerState.TAG_BODY]: this.consumeElementBody.bind(this),
     [LexerState.TAG_CLOSE]: this.consumeElementClosure.bind(this),
@@ -41,18 +41,16 @@ export class Lexer {
   }
 
   public tokenize(): Token[] {
-    const cursor = this._cursor;
-
-    while (cursor.peek() !== EOF) {
+    do {
       const transitionFunction = this._states[this._state];
-      const { state, tokens } = transitionFunction?.() ?? { state: LexerState.TAG_NAME };
+      const { state, tokens } = transitionFunction!();
 
       if (tokens?.length) {
         this._tokens.push(...tokens);
       }
 
       this._state = state;
-    }
+    } while (this._state !== LexerState.EOF);
 
     return this._tokens;
   }
@@ -66,10 +64,7 @@ export class Lexer {
       case LESS_THAN:
         this._cursor.advance();
         return { state: LexerState.TAG_NAME }
-      // case LEFT_BRACE:
-      //   break;
-      case EOF:
-        return { state: LexerState.NONE }
+      // TODO Handle Interpolation
       default:
         return { state: LexerState.TEXT }
 
@@ -77,17 +72,14 @@ export class Lexer {
   }
 
   private consumeElementName(): LexerTransitionFunctionReturnType {
-    this._cursor.advance();
-
     let tagName = '';
     /*
       Keep read input until:
       - Space: <span 
       - GT: <span>
       - Slash (Self Closing tag) <span /
-      - EOF 
     */
-    while (![SPACE, SLASH, GREATER_THEN, EOF].includes(this._cursor.peek())) {
+    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
       this._cursor.advance();
       tagName = `${tagName}${this._cursor.currentChar.value}`
     }
@@ -104,7 +96,7 @@ export class Lexer {
   private consumeElementBody(): LexerTransitionFunctionReturnType {
     const tokens = new Array<Token>;
 
-    while (![GREATER_THEN, SLASH, EOF].includes(this._cursor.peek())) {
+    while (![GREATER_THEN, SLASH].includes(this._cursor.peek())) {
       const nextChar = this._cursor.peek();
       switch (nextChar) {
         case AT_SIGN:
@@ -125,13 +117,13 @@ export class Lexer {
   }
 
   private consumeElementClosure(): LexerTransitionFunctionReturnType {
-    while (this._cursor.peek() !== EOF) {
+    while (true) {
       let nextChar = this._cursor.peek();
       switch (nextChar) {
         case GREATER_THEN:
           this._cursor.advance()
           return {
-            state: LexerState.NONE,
+            state: LexerState.START,
             tokens: [{
               type: TokenType.TAG_OPEN_END,
               parts: []
@@ -143,7 +135,7 @@ export class Lexer {
           if (nextChar === GREATER_THEN) {
             this._cursor.advance();
             return {
-              state: LexerState.NONE,
+              state: LexerState.START,
               tokens: [{
                 type: TokenType.TAG_SELF_CLOSE,
                 parts: []
@@ -155,20 +147,16 @@ export class Lexer {
         }
         default:
           return {
-            state: LexerState.NONE,
+            state: LexerState.START,
           }
       }
-    }
-
-    return {
-      state: LexerState.NONE,
     }
   }
 
   private consumeAttribute(): Token[] {
     let attribute = '';
 
-    while (![SPACE, SLASH, GREATER_THEN, EOF].includes(this._cursor.peek())) {
+    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
       this._cursor.advance();
       attribute = `${attribute}${this._cursor.currentChar.value}`
     }
@@ -182,7 +170,7 @@ export class Lexer {
   private consumeEvent(): Token[] {
     let event = '';
 
-    while (![SPACE, SLASH, GREATER_THEN, EOF].includes(this._cursor.peek())) {
+    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
       this._cursor.advance();
       event = `${event}${this._cursor.currentChar.value}`
     }
@@ -195,12 +183,12 @@ export class Lexer {
 
   private consumeText(): LexerTransitionFunctionReturnType {
     let text = '';
-    while (![EOF, LESS_THAN].includes(this._cursor.peek())) {
+    while (![LESS_THAN].includes(this._cursor.peek())) {
       this._cursor.advance();
       text = `${text}${this._cursor.currentChar.value}`;
     }
 
-    const state = this._cursor.peek() === LESS_THAN ? LexerState.TAG_NAME : LexerState.NONE;
+    const state = this._cursor.peek() === LESS_THAN ? LexerState.TAG_NAME : LexerState.START;
 
     return {
       state,
@@ -213,31 +201,47 @@ export class Lexer {
 }
 
 
-console.log(new Lexer(`
+// console.log(new Lexer(`
+//   <span asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
+//   <div dick>
+//     Text
+//   </div>
+// `).tokenize().map(e => {
+//   switch (e.type) {
+//     case TokenType.TEXT:
+//       e.type = 'text' as any
+//       break;
+//     case TokenType.ATTRIBUTE:
+//       e.type = 'attribute' as any
+//       break;
+//     case TokenType.TAG_OPEN_END:
+//       e.type = 'open end' as any;
+//       break;
+//     case TokenType.EVENT:
+//       e.type = 'event' as any;
+//       break;
+//     case TokenType.TAG_SELF_CLOSE:
+//       e.type = 'self-close' as any;
+//       break;
+//     case TokenType.TAG_OPEN_START:
+//       e.type = 'open-start' as any;
+//       break;
+//   }
+//   return e;
+// }));
+const a = new Cursor(`
   <span asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
   <div dick>
     Text
   </div>
-`).tokenize().map(e => {
-  switch (e.type) {
-    case TokenType.TEXT:
-      e.type = 'text' as any
-      break;
-    case TokenType.ATTRIBUTE:
-      e.type = 'attribute' as any
-      break;
-    case TokenType.TAG_OPEN_END:
-      e.type = 'open end' as any;
-      break;
-    case TokenType.EVENT:
-      e.type = 'event' as any;
-      break;
-    case TokenType.TAG_SELF_CLOSE:
-      e.type = 'self-close' as any;
-      break;
-    case TokenType.TAG_OPEN_START:
-      e.type = 'open-start' as any;
-      break;
-  }
-  return e;
-}));
+`)
+
+a.peekMany(5)
+
+let time = performance.now();
+a.peekMany(5)
+console.log('Cache:', performance.now() - time)
+
+time = performance.now();
+a.peekMany2(5)
+console.log('No Cache:', performance.now() - time);

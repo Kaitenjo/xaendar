@@ -13,7 +13,9 @@ export class Cursor {
   public get currentChar(): Readonly<CurrentChar> {
     return this._currentChar;
   }
-  
+
+  private readonly _peekCache = new Map<number, number>;
+
   /**
    * Zero-based index of the current column within the current row.
    */
@@ -33,7 +35,7 @@ export class Cursor {
 
     let code: number;
     const index = ++this._currentChar.index;
-    
+
     if (index === this.input.length) {
       code = EOF;
       this._currentChar.value = '';
@@ -56,8 +58,45 @@ export class Cursor {
    * Read the next character without updating State
    * @returns 
    */
-  public peek(): number {
-    const index = this._currentChar.index + 1;
-    return index === this.input.length ? EOF : this.input.charCodeAt(index);
+  public peek(): number;
+  public peek(chars: number): number[];
+  public peek(chars?: number): number | number[] {
+    return chars === undefined ? this.peekOne() : this.peekMany(chars);
+  }
+
+  private peekOne(): number {
+    const nextCharIndex = this._currentChar.index + 1;
+    const cache = this._peekCache;
+    return cache.has(nextCharIndex) ? cache.get(nextCharIndex)! : this.input.charCodeAt(nextCharIndex);
+  }
+
+  peekMany(chars: number): number[] {
+    const peekedChars = new Array<number>;
+    const cache = this._peekCache;
+
+    const nextCharIndex = this._currentChar.index + 1;
+    for (let i = nextCharIndex + 0; i < nextCharIndex + chars; i++) {
+      if (cache.has(i)) {
+        peekedChars.push(cache.get(i)!);
+        continue;
+      }
+
+      const charCode = this.input.charCodeAt(i);
+      cache.set(i, charCode);
+      peekedChars.push(charCode);
+    }
+
+    return peekedChars;
+  }
+
+  peekMany2(chars: number): number[] {
+    const peekedChars = new Array<number>;
+
+    const nextCharIndex = this._currentChar.index + 1;
+    for (let i = nextCharIndex + 0; i < nextCharIndex + chars; i++) {
+      peekedChars.push(this.input.charCodeAt(i));
+    }
+
+    return peekedChars;
   }
 }
