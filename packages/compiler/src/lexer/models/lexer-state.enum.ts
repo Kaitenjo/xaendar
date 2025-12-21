@@ -6,6 +6,5 @@ export enum LexerState {
   TAG_CLOSE,             // sto leggendo '>' o '/>'
   INTERPOLATION_START,   // '{'
   INTERPOLATION_CONTNT, // contenuto dentro '{ ... }'
-  INTERPOLATION_END,     // '}'
-  EOF
+  INTERPOLATION_END     // '}'
 }

@@ -1,5 +1,4 @@
 import { EOF } from '../costants/chars.constants';
-import { isNewLine } from '../utils/chars.utils';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';
 
@@ -24,34 +23,26 @@ export class Cursor {
   constructor(public input: string) { }
 
   /**
-   * Read next character in the template string
    * Update internal state of CurrentChar and CursorPosition
    * @returns 
    */
-  public advance(): number {
-    if (this._currentChar.index >= this.input.length) {
-      throw new Error(`Cursor out of Range.\nInput lenght: ${this.input.length}\nIndex: ${this._currentChar.index}`)
+  public advance(chars = 1): void {
+    if (chars < 1) {
+      throw new Error(`${chars} is not a valid value. Please enter a number equal or greater than 1`)
     }
 
-    let code: number;
-    const index = ++this._currentChar.index;
+    const newIndex = this._currentChar.index + chars;
 
-    if (index === this.input.length) {
-      code = EOF;
+    if (newIndex >= this.input.length) {
+      this._currentChar.code = EOF;
+      this._currentChar.index = -1
       this._currentChar.value = '';
+      this.throwEOFError();
     } else {
-      code = this.input.charCodeAt(index);
-      this._currentChar.value = this.input.charAt(index);
+      this._currentChar.index = newIndex;
+      this._currentChar.value = this.input.charAt(newIndex);
+      this._currentChar.code = this.input.charCodeAt(newIndex);
     }
-
-    this._currentChar.code = code;
-
-    if (isNewLine(code)) {
-      this._position.row++;
-      this._position.column = 0;
-    }
-
-    return code;
   }
 
   /**
@@ -59,44 +50,40 @@ export class Cursor {
    * @returns 
    */
   public peek(): number;
+  public peek(chars: 1): number;
   public peek(chars: number): number[];
   public peek(chars?: number): number | number[] {
-    return chars === undefined ? this.peekOne() : this.peekMany(chars);
-  }
-
-  private peekOne(): number {
-    const nextCharIndex = this._currentChar.index + 1;
     const cache = this._peekCache;
-    return cache.has(nextCharIndex) ? cache.get(nextCharIndex)! : this.input.charCodeAt(nextCharIndex);
+    return chars === undefined || chars === 1 ? this.peekOneChar(this._currentChar.index + 1, cache) : this.peekMany(cache, chars);
   }
 
-  peekMany(chars: number): number[] {
+  private peekMany(cache: Map<number, number>, chars: number): number[] {
     const peekedChars = new Array<number>;
-    const cache = this._peekCache;
-
     const nextCharIndex = this._currentChar.index + 1;
-    for (let i = nextCharIndex + 0; i < nextCharIndex + chars; i++) {
-      if (cache.has(i)) {
-        peekedChars.push(cache.get(i)!);
-        continue;
-      }
 
-      const charCode = this.input.charCodeAt(i);
-      cache.set(i, charCode);
+    for (let i = nextCharIndex; i < nextCharIndex + chars; i++) {
+      const charCode = this.peekOneChar(i, cache)
       peekedChars.push(charCode);
     }
 
     return peekedChars;
   }
 
-  peekMany2(chars: number): number[] {
-    const peekedChars = new Array<number>;
-
-    const nextCharIndex = this._currentChar.index + 1;
-    for (let i = nextCharIndex + 0; i < nextCharIndex + chars; i++) {
-      peekedChars.push(this.input.charCodeAt(i));
+  private peekOneChar(index: number, cache: Map<number, number>): number {
+    if (cache.has(index)) {
+      return cache.get(index)!;
     }
 
-    return peekedChars;
+    if (index >= this.input.length) {
+      this.throwEOFError();
+    }
+
+    const charCode = this.input.charCodeAt(index);
+    cache.set(index, charCode);
+    return charCode
+  }
+
+  private throwEOFError(): Error {
+    throw new Error('', { cause: EOF })
   }
 }
