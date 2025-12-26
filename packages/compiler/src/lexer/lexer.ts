@@ -25,8 +25,8 @@ export class Lexer {
   private _state = LexerState.START;
 
   private _states: Dictionary<LexerState, LexerTransitionFunction> = {
-    [LexerState.START]: this.start.bind(this),
-    [LexerState.TAG_NAME]: this.consumeElementName.bind(this),
+    [LexerState.START]: this.consumeText.bind(this),
+    [LexerState.TAG_OPEN]: this.consumeElementName.bind(this),
     [LexerState.TAG_BODY]: this.consumeElementBody.bind(this),
     [LexerState.TAG_CLOSE]: this.consumeElementClosure.bind(this),
     [LexerState.TEXT]: this.consumeText.bind(this)
@@ -63,21 +63,6 @@ export class Lexer {
     }
 
     return this._tokens;
-  }
-
-  /**
-   * Start State of the Machine
-   * @returns 
-   */
-  private start(): LexerTransitionFunctionReturnType {
-    switch (this._cursor.peek()) {
-      case LESS_THAN:
-        return { state: LexerState.TAG_NAME }
-      // TODO Handle Interpolation
-      default:
-        return { state: LexerState.TEXT }
-
-    }
   }
 
   private consumeElementName(): LexerTransitionFunctionReturnType {
@@ -203,7 +188,7 @@ export class Lexer {
     }
 
     return {
-      state: LexerState.TAG_NAME,
+      state: LexerState.TAG_OPEN,
       tokens: [{
         type: TokenType.TEXT,
         parts: [text]

@@ -1,3 +1,4 @@
+import { TupleOfLength } from '@xendar/common';
 import { EOF } from '../costants/chars.constants';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';
@@ -51,7 +52,7 @@ export class Cursor {
    */
   public peek(): number;
   public peek(chars: 1): number;
-  public peek(chars: number): number[];
+  public peek<T extends number>(chars: T): TupleOfLength<T>;
   public peek(chars?: number): number | number[] {
     const cache = this._peekCache;
     return chars === undefined || chars === 1 ? this.peekOneChar(this._currentChar.index + 1, cache) : this.peekMany(cache, chars);
