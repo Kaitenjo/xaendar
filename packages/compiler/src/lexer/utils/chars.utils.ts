@@ -27,3 +27,29 @@ export function isUpperCase(char: number): boolean {
   return char >= A && char <= Z;
 }
 
+/**
+ * Check if the string contains at least one character different from
+ * ' '
+ * \n
+ * \r
+ * \t
+ * \f
+ * \v
+ * @param str String to check
+ * @returns True if string is not blank, false otherwise
+ */
+export function isNotBlank(str: string): boolean {
+  /* 
+    Differently from the approach of the other functions
+    here we are working with string and not numbers.
+
+    Number checks are usually faster when checking a character is
+    included in a specific range.
+    For this case we are checking if the string contains at least one char
+    different from a list of non adiacent characters in the ASCII code, resulting
+    in a very long condition with multiple OR
+
+    This has been proven slower than using a regex
+  */
+  return /\S/.test(str)
+}

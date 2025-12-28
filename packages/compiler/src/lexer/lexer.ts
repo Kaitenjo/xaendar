@@ -1,11 +1,12 @@
 import { Dictionary } from '@xendar/common';
-import { AT_SIGN, EOF, GREATER_THEN, LESS_THAN, SLASH, SPACE } from './costants/chars.constants';
+import { AT_SIGN, EOF, GREATER_THEN, LEFT_BRACE, LESS_THAN, SLASH, SPACE } from './costants/chars.constants';
 import { Cursor } from './models/cursor.model';
 import { LexerState } from './models/lexer-state.enum';
 import { TokenType } from './models/token-type.enum';
 import { Token } from './models/token.type';
 import { LexerTransitionFunctionReturnType } from './models/transition-function-return-type.type';
 import { LexerTransitionFunction } from './models/transition-function.type';
+import { isNotBlank } from './utils/chars.utils';
 
 /**
  * Utility class that emulates a cursor navigating through a template string.
@@ -56,7 +57,7 @@ export class Lexer {
         const error = err as Error;
         if (error.cause === EOF) {
           this.eof = true;
-        } else{
+        } else {
           throw err;
         }
       }
@@ -181,29 +182,60 @@ export class Lexer {
 
   private consumeText(): LexerTransitionFunctionReturnType {
     let text = '';
-
-    while (![LESS_THAN].includes(this._cursor.peek())) {
-      this._cursor.advance();
-      text = `${text}${this._cursor.currentChar.value}`;
+    let read = true;
+    let nextState!: LexerState;
+    
+    while (read) {
+      switch (this._cursor.peek()) {
+        case LESS_THAN:
+          nextState = LexerState.TAG_OPEN;
+          read = false;
+          break;
+        case LEFT_BRACE:
+          nextState = LexerState.INTERPOLATION_START;
+          read = false;
+          break;
+        default:
+          this._cursor.advance();
+          text = `${text}${this._cursor.currentChar.value}`;
+      }
     }
 
+    /*
+      If the first read character trigger a StateChange
+      The cumulative `text` variable will be empty
+
+      In this case we must NOT add any token
+
+      Ex:
+      Template starts with a tag:
+        `<div ...`
+      Or an interpolation:
+        `{ myVariable }`
+    */
+    const tokens: Token[] | undefined = isNotBlank(text)
+      ? [
+          { 
+            type: TokenType.TEXT, 
+            parts: [text] 
+          }
+        ] 
+      : undefined;
+
     return {
-      state: LexerState.TAG_OPEN,
-      tokens: [{
-        type: TokenType.TEXT,
-        parts: [text]
-      }]
+      state: nextState,
+      tokens
     }
   }
 }
 
 
-console.log(new Lexer(`
-  <span asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
-  <div dick>
-    Text
-  </div>
-`).tokenize().map(e => {
+console.log(new Lexer(
+`<span asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
+<div dick>
+  Text
+</div>`
+).tokenize().map(e => {
   switch (e.type) {
     case TokenType.TEXT:
       e.type = 'text' as any
@@ -226,3 +258,4 @@ console.log(new Lexer(`
   }
   return e;
 }));
+

@@ -41,7 +41,7 @@ export class Cursor {
       this.throwEOFError();
     } else {
       this._currentChar.index = newIndex;
-      this._currentChar.value = this.input.charAt(newIndex);
+      this._currentChar.value = this.input[newIndex]!;
       this._currentChar.code = this.input.charCodeAt(newIndex);
     }
   }
