@@ -71,11 +71,11 @@ export class Cursor {
    * @returns 
    */
   public peek(): number;
-  public peek<OffSet extends number>(options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : number;
+  public peek<OffSet extends number>(options?: { offset?: PositiveInteger<OffSet> }): number;
   public peek(chars: 1): number;
-  public peek<OffSet extends number>(chars: 1, options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : number; 
-  public peek<ReadChars extends number>(chars: ReadChars): TupleOfLength<ReadChars>; 
-  public peek<ReadChars extends number, OffSet extends number>(chars: ReadChars, options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : TupleOfLength<ReadChars>;
+  public peek<OffSet extends number>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): number; 
+  public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars>; 
+  public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): number | number[] {
     const cache = this._peekCache;
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
