@@ -5,6 +5,6 @@ export enum LexerState {
   TAG_OPEN_BODY = 'tag-open-body',
   TAG_CLOSE_NAME = 'tag-close-name',
   INTERPOLATION_START = 'interpolation-start',
-  INTERPOLATION_BODY = 'interpolation-bo dy', 
+  INTERPOLATION_BODY = 'interpolation-body', 
   INTERPOLATION_END = 'interpolation-end'
 }

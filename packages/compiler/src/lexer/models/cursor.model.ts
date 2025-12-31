@@ -1,5 +1,5 @@
 import { PositiveInteger, TupleOfLength } from '@xendar/common';
-import { CR, EOF, LF } from '../costants/chars.constants';
+import { CR, EOF, LF } from '../../costants/chars.constants';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';
 
