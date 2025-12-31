@@ -1,11 +1,17 @@
-export const enum TokenType {
+export enum TokenType {
   TEXT,
-  INTERPOLATION,
-  TAG_OPEN_START,
+
+  TAG_OPEN_NAME,      // <div
+  TAG_SELF_CLOSE,     // />
+
+  TAG_CLOSE_NAME,     // </div
+
   ATTRIBUTE,
   EVENT,
-  TAG_OPEN_END,
-  TAG_SELF_CLOSE,
-  TAG_CLOSE,
+
+  INTERPOLATION_START,
+  INTERPOLATION_CONTENT,
+  INTERPOLATION_END,
+
   EOF
 }

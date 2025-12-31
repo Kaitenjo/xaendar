@@ -1,9 +1,11 @@
 import { TokenType } from './token-type.enum';
 
 export type Token =
-  | TagOpenStartToken
+  | TagOpenNameToken
   | TagOpenEndToken
   | TagSelfCloseToken
+  | TagCloseNameToken
+  | TagCloseEndToken
   | AttributeToken
   | EventToken
   | TextToken
@@ -13,8 +15,8 @@ export type TokenBase = {
   parts: string[];
 }
 
-export type TagOpenStartToken = TokenBase & {
-  type: TokenType.TAG_OPEN_START;
+export type TagOpenNameToken = TokenBase & {
+  type: TokenType.TAG_OPEN_NAME;
   parts: [string];
 }
 
@@ -40,5 +42,15 @@ export type TagOpenEndToken = TokenBase & {
 
 export type TagSelfCloseToken = TokenBase & {
   type: TokenType.TAG_SELF_CLOSE,
+  parts: []
+}
+
+export type TagCloseNameToken = TokenBase & {
+  type: TokenType.TAG_CLOSE_NAME,
+  parts: [string]
+}
+
+export type TagCloseEndToken = TokenBase & {
+  type: TokenType.TAG_CLOSE_END,
   parts: []
 }

@@ -1,5 +1,5 @@
 import { Dictionary } from '@xendar/common';
-import { AT_SIGN, EOF, GREATER_THEN, LEFT_BRACE, LESS_THAN, SLASH, SPACE } from './costants/chars.constants';
+import { AT_SIGN, EOF, GREATER_THEN, LEFT_BRACE, LESS_THAN, LF, SLASH, SPACE } from './costants/chars.constants';
 import { Cursor } from './models/cursor.model';
 import { LexerState } from './models/lexer-state.enum';
 import { TokenType } from './models/token-type.enum';
@@ -25,12 +25,12 @@ export class Lexer {
 
   private _state = LexerState.START;
 
-  private _states: Dictionary<LexerState, LexerTransitionFunction> = {
+  private readonly _states: Dictionary<LexerState, LexerTransitionFunction> = {
     [LexerState.START]: this.consumeText.bind(this),
-    [LexerState.TAG_OPEN]: this.consumeElementName.bind(this),
-    [LexerState.TAG_BODY]: this.consumeElementBody.bind(this),
-    [LexerState.TAG_CLOSE]: this.consumeElementClosure.bind(this),
-    [LexerState.TEXT]: this.consumeText.bind(this)
+    [LexerState.TAG_OPEN_NAME]: this.consumeTagOpenName.bind(this),
+    [LexerState.TAG_OPEN_BODY]: this.consumeTagOpenBody.bind(this),
+    [LexerState.TEXT]: this.consumeText.bind(this),
+    [LexerState.TAG_CLOSE_NAME]: this.consumeTagCloseName.bind(this)
   }
 
   /**
@@ -66,140 +66,223 @@ export class Lexer {
     return this._tokens;
   }
 
-  private consumeElementName(): LexerTransitionFunctionReturnType {
+  private consumeTagOpenName(): LexerTransitionFunctionReturnType {
+    let read = true;
+    let tagName = '';
+
     // Consume '<' character
     this._cursor.advance();
 
-    let tagName = '';
+    /*
+      Skip all the spaces between '<' and the actual tag name
+      Ex: '<         div>
+    */
+    while (this._cursor.peek() === SPACE) {
+      this._cursor.advance();
+    }
 
     /*
       Keep read input until:
       - Space: <span 
       - GT: <span>
-      - Slash (Self Closing tag) <span /
+      - Slash (Self Closing tag) <span / or <span/
     */
-    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
-      this._cursor.advance();
-      tagName = `${tagName}${this._cursor.currentChar.value}`
+    while (read) {
+      switch (this._cursor.peek()) {
+        case SPACE:
+        case SLASH:
+        case GREATER_THEN:
+          read = false;
+          break;
+        default:
+          this._cursor.advance();
+          tagName = `${tagName}${this._cursor.currentChar.value}`
+      }
     }
 
     return {
-      state: LexerState.TAG_BODY,
+      state: LexerState.TAG_OPEN_BODY,
       tokens: [{
-        type: TokenType.TAG_OPEN_START,
+        type: TokenType.TAG_OPEN_NAME,
         parts: [tagName]
       }]
     }
   }
 
-  private consumeElementBody(): LexerTransitionFunctionReturnType {
+  private consumeTagOpenBody(): LexerTransitionFunctionReturnType {
+    let read = true;
+    let nextState!: LexerState
     const tokens = new Array<Token>;
 
-    while (![GREATER_THEN, SLASH].includes(this._cursor.peek())) {
+    while (read) {
       const nextChar = this._cursor.peek();
+
       switch (nextChar) {
         case AT_SIGN:
           tokens.push(...this.consumeEvent());
           break;
+
         case SPACE:
           this._cursor.advance();
           break;
+
+        case GREATER_THEN:
+        case SLASH:
+          tokens.push(...this.consumeTagOpenEnd());
+          nextState = LexerState.TEXT
+          read = false;
+          break;
+
         default:
           tokens.push(...this.consumeAttribute());
       }
     }
 
     return {
-      state: LexerState.TAG_CLOSE,
+      state: nextState,
       tokens
     }
   }
 
-  private consumeElementClosure(): LexerTransitionFunctionReturnType {
-    while (true) {
-      let nextChar = this._cursor.peek();
-      switch (nextChar) {
-        case GREATER_THEN:
-          this._cursor.advance()
-          return {
-            state: LexerState.START,
-            tokens: [{
-              type: TokenType.TAG_OPEN_END,
-              parts: []
-            }]
-          }
-        case SLASH: {
-          this._cursor.advance();
-          nextChar = this._cursor.peek();
-          if (nextChar === GREATER_THEN) {
-            this._cursor.advance();
-            return {
-              state: LexerState.START,
-              tokens: [{
-                type: TokenType.TAG_SELF_CLOSE,
-                parts: []
-              }]
-            }
-          } else {
-            return { state: LexerState.TAG_BODY }
-          }
-        }
-        default:
-          return {
-            state: LexerState.START,
-          }
-      }
-    }
-  }
-
   private consumeAttribute(): Token[] {
+    let read = true;
     let attribute = '';
 
-    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
-      this._cursor.advance();
-      attribute = `${attribute}${this._cursor.currentChar.value}`
+    while (read) {
+      switch (this._cursor.peek()) {
+        case SPACE:
+        case SLASH:
+        case GREATER_THEN:
+          read = false;
+          break;
+        default:
+          this._cursor.advance();
+          attribute = `${attribute}${this._cursor.currentChar.value}`
+      }
     }
 
     return [{
       type: TokenType.ATTRIBUTE,
       parts: [attribute]
-    }]
+    }];
   }
 
   private consumeEvent(): Token[] {
+    let read = true;
     let event = '';
 
-    while (![SPACE, SLASH, GREATER_THEN].includes(this._cursor.peek())) {
-      this._cursor.advance();
-      event = `${event}${this._cursor.currentChar.value}`
+    while (read) {
+      switch (this._cursor.peek()) {
+        case SPACE:
+        case SLASH:
+        case GREATER_THEN:
+          read = false;
+          break;
+        default:
+          this._cursor.advance();
+          event = `${event}${this._cursor.currentChar.value}`
+      }
     }
 
     return [{
       type: TokenType.EVENT,
       parts: [event]
-    }]
+    }];
+  }
+
+  private consumeTagOpenEnd(): Token[] {
+    const tokens = new Array<Token>;
+
+    // We arrive in this point by reading '>' or '/' at the end of a Open Tag 
+    if (this._cursor.peek() === GREATER_THEN) {
+      this._cursor.advance();
+    } else {
+      this._cursor.advance();
+      const nextChar = this._cursor.peek();
+
+      if (nextChar === GREATER_THEN) {
+        this._cursor.advance();
+        tokens.push({ type: TokenType.TAG_SELF_CLOSE, parts: [] });
+      } else {
+        throw new Error(`Unexpected character ${nextChar} for closing tag.\nExpected />\nRead of /${String.fromCharCode(nextChar)}\nAt line ${this._cursor.position.row + 1} col ${this._cursor.position.column + 1}`)
+      }
+    }
+
+    return tokens;
+  }
+
+  private consumeTagCloseName(): LexerTransitionFunctionReturnType {
+    let read = true;
+    let nextState!: LexerState;
+    let tagName = '';
+    const tokens = new Array<Token>;
+
+    // Skip '</'
+    this._cursor.advance(2);
+
+    /*
+      Skip all the spaces between '</' and the actual tag name
+      Ex: '</         div>
+    */
+    while (this._cursor.peek() === SPACE) {
+      this._cursor.advance();
+    }
+
+    while (read) {
+      switch (this._cursor.peek()) {
+        case GREATER_THEN:
+          tokens.push(
+            { type: TokenType.TAG_CLOSE_NAME, parts: [tagName] },
+          );
+          this._cursor.advance();
+          nextState = LexerState.TEXT;
+          read = false;
+          break;
+
+        case SPACE:
+          throw new Error('Tag Close Name cannot contains spaces');
+
+        default:
+          this._cursor.advance();
+          tagName = `${tagName}${this._cursor.currentChar.value}`;
+      }
+    }
+
+    return {
+      state: nextState,
+      tokens
+    }
   }
 
   private consumeText(): LexerTransitionFunctionReturnType {
-    let text = '';
     let read = true;
     let nextState!: LexerState;
-    
+    let text = '';
+
     while (read) {
       switch (this._cursor.peek()) {
         case LESS_THAN:
-          nextState = LexerState.TAG_OPEN;
+          // If after '<' we read a '/', we suppose we're approaching a ClosureTag, otherwise an OpenTag
+          nextState = this._cursor.peek(1, { offset: 1 }) === SLASH ? LexerState.TAG_CLOSE_NAME : LexerState.TAG_OPEN_NAME;
           read = false;
           break;
+
         case LEFT_BRACE:
           nextState = LexerState.INTERPOLATION_START;
           read = false;
           break;
+
+        case SPACE:
+        case LF:
+          this._cursor.advance();
+          break;
+
         default:
           this._cursor.advance();
           text = `${text}${this._cursor.currentChar.value}`;
       }
     }
+
 
     /*
       If the first read character trigger a StateChange
@@ -214,12 +297,7 @@ export class Lexer {
         `{ myVariable }`
     */
     const tokens: Token[] | undefined = isNotBlank(text)
-      ? [
-          { 
-            type: TokenType.TEXT, 
-            parts: [text] 
-          }
-        ] 
+      ? [{ type: TokenType.TEXT, parts: [text] }]
       : undefined;
 
     return {
@@ -230,12 +308,12 @@ export class Lexer {
 }
 
 
-console.log(new Lexer(
-`<span asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
+console.log(new Lexer(`
+<sp$a£n@ asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
 <div dick>
   Text
-</div>`
-).tokenize().map(e => {
+</ div>
+`).tokenize().map(e => {
   switch (e.type) {
     case TokenType.TEXT:
       e.type = 'text' as any
@@ -243,19 +321,18 @@ console.log(new Lexer(
     case TokenType.ATTRIBUTE:
       e.type = 'attribute' as any
       break;
-    case TokenType.TAG_OPEN_END:
-      e.type = 'open end' as any;
-      break;
     case TokenType.EVENT:
       e.type = 'event' as any;
       break;
     case TokenType.TAG_SELF_CLOSE:
       e.type = 'self-close' as any;
       break;
-    case TokenType.TAG_OPEN_START:
-      e.type = 'open-start' as any;
+    case TokenType.TAG_OPEN_NAME:
+      e.type = 'open-name' as any;
+      break;
+    case TokenType.TAG_CLOSE_NAME:
+      e.type = 'close-name' as any
       break;
   }
   return e;
 }));
-

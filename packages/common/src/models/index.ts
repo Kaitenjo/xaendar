@@ -9,5 +9,6 @@ export * from './decorators/method-decorator.type';
 export * from './dictionary.type';
 export * from './function.type';
 export * from './mutable.type';
+export * from './positive-integer.type';
 export * from './require-one.type';
 export * from './tuple-of-length.type';

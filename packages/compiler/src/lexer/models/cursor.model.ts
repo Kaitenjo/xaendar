@@ -1,5 +1,5 @@
-import { TupleOfLength } from '@xendar/common';
-import { EOF } from '../costants/chars.constants';
+import { PositiveInteger, TupleOfLength } from '@xendar/common';
+import { CR, EOF, LF } from '../costants/chars.constants';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';
 
@@ -19,7 +19,11 @@ export class Cursor {
   /**
    * Zero-based index of the current column within the current row.
    */
-  private readonly _position: CursorPosition = { row: -1, column: -1 };
+  private readonly _position: CursorPosition = { row: 0, column: 0 };
+
+  public get position(): Readonly<CursorPosition> {
+    return this._position;
+  }
 
   constructor(public input: string) { }
 
@@ -40,9 +44,25 @@ export class Cursor {
       this._currentChar.value = '';
       this.throwEOFError();
     } else {
+      /*
+        Before updating the state, we read the current character
+        If is a Carriage Return or a Line Feed, the next character
+        will be placed in a new line. 
+        We need to Reset Column and Increase Row
+        
+        Otherwise we simply Increase Column
+      */
+      if ([LF, CR].includes(this._currentChar.code)) {
+        this._position.row++;
+        this._position.column = 0;
+      } else {
+        this._position.column++;
+      }
+
       this._currentChar.index = newIndex;
       this._currentChar.value = this.input[newIndex]!;
       this._currentChar.code = this.input.charCodeAt(newIndex);
+
     }
   }
 
@@ -51,11 +71,16 @@ export class Cursor {
    * @returns 
    */
   public peek(): number;
+  public peek<OffSet extends number>(options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : number;
   public peek(chars: 1): number;
-  public peek<T extends number>(chars: T): TupleOfLength<T>;
-  public peek(chars?: number): number | number[] {
+  public peek<OffSet extends number>(chars: 1, options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : number; 
+  public peek<ReadChars extends number>(chars: ReadChars): TupleOfLength<ReadChars>; 
+  public peek<ReadChars extends number, OffSet extends number>(chars: ReadChars, options?: { offset?: OffSet }): PositiveInteger<OffSet> extends never ? never : TupleOfLength<ReadChars>;
+  public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): number | number[] {
     const cache = this._peekCache;
-    return chars === undefined || chars === 1 ? this.peekOneChar(this._currentChar.index + 1, cache) : this.peekMany(cache, chars);
+    const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
+    const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
+    return chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(cache, chars + offset);
   }
 
   private peekMany(cache: Map<number, number>, chars: number): number[] {

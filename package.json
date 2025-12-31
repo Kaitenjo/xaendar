@@ -6,20 +6,20 @@
     "build:all": "npm run build:components && npm run build:xendar",
     "build:components": "cd packages/web-components && npm run build",
     "build:xendar": "vite build --emptyOutDir",
-    "start": "npm run build:all && vite"
+    "start": "npm run build:all && vite",
+    "compile": "cd packages/compiler && npm run build:watch"
   },
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^24.10.0",
-    "antlr4-cli": "^4.5.3",
+    "@types/node": "^25.0.3",
     "nodemon": "^3.1.11",
     "typescript": "^5.9.3",
-    "vite": "^7.2.2",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite": "^7.3.0",
+    "vite-tsconfig-paths": "^6.0.3"
   },
   "dependencies": {
-    "glob": "^11.0.3"
+    "glob": "^13.0.0"
   }
 }
