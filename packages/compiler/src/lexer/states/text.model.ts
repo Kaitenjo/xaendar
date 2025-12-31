@@ -1,4 +1,4 @@
-import { LEFT_BRACE, LESS_THAN, LF, SLASH, SPACE } from "../../costants/chars.constants";
+import { CR, LEFT_BRACE, LESS_THAN, LF, SLASH, SPACE } from "../../costants/chars.constants";
 import { isNotBlank } from "../../utils/chars.utils";
 import { Cursor } from "../models/cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
@@ -15,17 +15,18 @@ export function consumeText(cursor: Cursor): LexerTransitionFunctionReturnType {
     switch (cursor.peek()) {
       case LESS_THAN:
         // If after '<' we read a '/', we suppose we're approaching a ClosureTag, otherwise an OpenTag
-        nextState = cursor.peek(1, { offset: 1 }) === SLASH ? LexerState.TAG_CLOSE_NAME : LexerState.TAG_OPEN_NAME;
+        nextState = cursor.peek(1, { offset: 1 }) === SLASH ? LexerState.TAG_CLOSE : LexerState.TAG_OPEN;
         read = false;
         break;
 
       case LEFT_BRACE:
-        nextState = LexerState.INTERPOLATION_START;
+        nextState = LexerState.INTERPOLATION;
         read = false;
         break;
 
       case SPACE:
       case LF:
+      case CR:
         cursor.advance();
         break;
 

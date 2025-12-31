@@ -1,15 +1,14 @@
 import { Dictionary } from '@xendar/common';
-import { AT_SIGN, EOF, GREATER_THEN, SLASH, SPACE } from '../costants/chars.constants';
+import { EOF } from '../costants/chars.constants';
 import { Cursor } from './models/cursor.model';
 import { LexerState } from './models/lexer-state.enum';
 import { TokenType } from './models/token-type.enum';
 import { Token } from './models/token.type';
-import { LexerTransitionFunctionReturnType } from './models/transition-function-return-type.type';
 import { LexerTransitionFunction } from './models/transition-function.type';
-import { consumeTagOpenName } from './states/tag-open-name.model';
+import { consumeInterpolation } from './states/interpolation.model';
+import { consumeTagClose } from './states/tag-close.model';
+import { consumeTagOpen } from './states/tag-open.model';
 import { consumeText } from './states/text.model';
-import { consumeTagOpenBody } from './states/tag-open-body.model';
-import { consumeTagCloseName } from './states/tag-close-name.model';
 
 /**
  * Utility class that emulates a cursor navigating through a template string.
@@ -30,10 +29,10 @@ export class Lexer {
 
   private readonly _states: Dictionary<LexerState, LexerTransitionFunction> = {
     [LexerState.START]: consumeText,
-    [LexerState.TAG_OPEN_NAME]: consumeTagOpenName,
-    [LexerState.TAG_OPEN_BODY]: consumeTagOpenBody,
+    [LexerState.TAG_OPEN]: consumeTagOpen,
     [LexerState.TEXT]: consumeText,
-    [LexerState.TAG_CLOSE_NAME]: consumeTagCloseName
+    [LexerState.TAG_CLOSE]: consumeTagClose,
+    [LexerState.INTERPOLATION]: consumeInterpolation
   }
 
   /**
