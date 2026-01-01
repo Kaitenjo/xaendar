@@ -68,33 +68,3 @@ export class Lexer {
     return this._tokens;
   }
 }
-
-
-console.log(new Lexer(`
-<sp$a£n@ asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
-<div dick>
-  Text
-</ div>
-`).tokenize().map(e => {
-  switch (e.type) {
-    case TokenType.TEXT:
-      e.type = 'text' as any
-      break;
-    case TokenType.ATTRIBUTE:
-      e.type = 'attribute' as any
-      break;
-    case TokenType.EVENT:
-      e.type = 'event' as any;
-      break;
-    case TokenType.TAG_SELF_CLOSE:
-      e.type = 'self-close' as any;
-      break;
-    case TokenType.TAG_OPEN_NAME:
-      e.type = 'open-name' as any;
-      break;
-    case TokenType.TAG_CLOSE_NAME:
-      e.type = 'close-name' as any
-      break;
-  }
-  return e;
-}));

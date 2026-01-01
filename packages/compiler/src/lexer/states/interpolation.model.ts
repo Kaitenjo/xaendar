@@ -6,7 +6,6 @@ import { LexerTransitionFunctionReturnType } from "../models/transition-function
 export function consumeInterpolation(cursor: Cursor): LexerTransitionFunctionReturnType {
   const tokens = new Array<Token>;
 
-
   return {
     state: LexerState.TEXT,
     tokens
