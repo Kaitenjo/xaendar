@@ -1,11 +1,11 @@
 import { GREATER_THEN } from "../../costants/chars.constants";
-import { Cursor } from "../models/cursor.model";
+import { LexerCursor } from "../models/lexer-cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
 import { TokenType } from "../models/token-type.enum";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeTagOpenEnd(cursor: Cursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function consumeTagOpenEnd(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let retVal!: LexerTransitionFunctionReturnType
 
   // We arrive in this point by reading '>' or '/' at the end of a Open Tag 
@@ -14,7 +14,7 @@ export function consumeTagOpenEnd(cursor: Cursor, _context: LexerTransitionFunct
     retVal = { 
       state: LexerState.TEXT,
       tokens: [{
-        type: TokenType.TAG_CLOSE,
+        type: TokenType.TAG_OPEN_END,
         parts: []
       }] 
     };

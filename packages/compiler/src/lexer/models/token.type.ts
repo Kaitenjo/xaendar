@@ -10,6 +10,7 @@ export type Token =
   | TextToken
   | InterpolationExpressionToken
   | InterpolationLiteralToken
+  | EOFToken
 
 export type TagOpenNameToken = {
   type: TokenType.TAG_OPEN_NAME;
@@ -52,6 +53,10 @@ export type TagCloseNameToken = {
 }
 
 export type TagCloseToken = {
-  type: TokenType.TAG_CLOSE,
+  type: TokenType.TAG_OPEN_END,
   parts: []
+}
+
+export type EOFToken = {
+  type: TokenType.EOF
 }

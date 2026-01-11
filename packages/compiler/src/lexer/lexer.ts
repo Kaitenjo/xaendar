@@ -1,6 +1,6 @@
 import { Dictionary, Stack } from '@xendar/common';
 import { EOF } from '../costants/chars.constants';
-import { Cursor } from './models/cursor.model';
+import { LexerCursor } from './models/lexer-cursor.model';
 import { LexerState } from './models/lexer-state.enum';
 import { Token } from './models/token.type';
 import { LexerTransitionFunction } from './models/transition-function/transition-function.type';
@@ -25,8 +25,6 @@ import { consumeText } from './states/text.state';
 export class Lexer {
 
   private readonly _cursor;
-
-  private _eof = false;
 
   private _state = LexerState.START;
 
@@ -54,11 +52,13 @@ export class Lexer {
    * @param input The full template text that the cursor will navigate.
    */
   constructor(public input: string) {
-    this._cursor = new Cursor(this.input);
+    this._cursor = new LexerCursor(this.input);
   }
 
   public tokenize(): Token[] {
-    while (!this._eof) {
+    let eof = false;
+
+    while (!eof) {
       try {
         const transitionFunction = this._states[this._state];
         const { state, tokens, popState, pushState } = transitionFunction!(this._cursor, { history: this._stack.values });
@@ -79,9 +79,8 @@ export class Lexer {
       } catch (err) {
         const error = err as Error;
         if (error.cause === EOF) {
-          this._eof = true;
+          eof = true;
         } else {
-          console.log(this._tokens);
           throw err;
         }
       }

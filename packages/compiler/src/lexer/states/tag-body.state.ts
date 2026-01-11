@@ -1,10 +1,10 @@
 import { AT_SIGN, GREATER_THEN, SLASH, SPACE } from "../../costants/chars.constants";
-import { Cursor } from "../models/cursor.model";
+import { LexerCursor } from "../models/lexer-cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeTagBody(cursor: Cursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function consumeTagBody(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let retVal!: LexerTransitionFunctionReturnType;
 

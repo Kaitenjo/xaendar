@@ -1,12 +1,12 @@
 import { CR, LEFT_BRACE, LESS_THAN, LF, SLASH, SPACE } from "../../costants/chars.constants";
 import { isNotBlank } from "../../utils/chars.utils";
-import { Cursor } from "../models/cursor.model";
+import { LexerCursor } from "../models/lexer-cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
 import { TokenType } from "../models/token-type.enum";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeText(cursor: Cursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function consumeText(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let text = '';
   let retVal!: LexerTransitionFunctionReturnType

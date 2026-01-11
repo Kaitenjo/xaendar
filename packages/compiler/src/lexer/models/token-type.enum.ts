@@ -3,7 +3,7 @@ export enum TokenType {
 
   TAG_OPEN_NAME,      // <div
   TAG_SELF_CLOSE,     // />
-  TAG_CLOSE,
+  TAG_OPEN_END,
 
   TAG_CLOSE_NAME,     // </div
 

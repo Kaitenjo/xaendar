@@ -1,11 +1,11 @@
 import { LEFT_BRACE, RIGHT_BRACE, SPACE } from "../../costants/chars.constants";
-import { Cursor } from "../models/cursor.model";
+import { LexerCursor } from "../models/lexer-cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
 import { TokenType } from "../models/token-type.enum";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeInterpolationExpression(cursor: Cursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function consumeInterpolationExpression(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let interpolation = '';
   let deep = 1
@@ -72,7 +72,7 @@ export function consumeInterpolationExpression(cursor: Cursor, context: LexerTra
   return retVal;
 }
 
-function addCharacter(cursor: Cursor, interpolation: string): string {
+function addCharacter(cursor: LexerCursor, interpolation: string): string {
   cursor.advance(1);
   return `${interpolation}${cursor.currentChar.value}`;
 }
