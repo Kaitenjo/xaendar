@@ -2,14 +2,13 @@ import { GREATER_THEN, SPACE } from "../../costants/chars.constants";
 import { Cursor } from "../models/cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
 import { TokenType } from "../models/token-type.enum";
-import { Token } from "../models/token.type";
-import { LexerTransitionFunctionReturnType } from "../models/transition-function-return-type.type";
+import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
+import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeTagClose(cursor: Cursor): LexerTransitionFunctionReturnType {
+export function consumeTagClose(cursor: Cursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
-  let nextState!: LexerState;
   let tagName = '';
-  const tokens = new Array<Token>;
+  let retVal!: LexerTransitionFunctionReturnType;
 
   // Skip '</'
   cursor.advance(2);
@@ -26,8 +25,13 @@ export function consumeTagClose(cursor: Cursor): LexerTransitionFunctionReturnTy
     switch (cursor.peek()) {
       case GREATER_THEN:
         cursor.advance();
-        nextState = LexerState.TEXT;
-        tokens.push({ type: TokenType.TAG_CLOSE_NAME, parts: [tagName] });
+        retVal = {
+          state: LexerState.TEXT,
+          tokens: [{
+            type: TokenType.TAG_CLOSE_NAME, 
+            parts: [tagName]
+          }]
+        };
         read = false;
         break;
 
@@ -40,8 +44,5 @@ export function consumeTagClose(cursor: Cursor): LexerTransitionFunctionReturnTy
     }
   }
 
-  return {
-    state: nextState,
-    tokens
-  }
+  return retVal;
 }

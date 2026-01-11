@@ -53,3 +53,18 @@ export function isNotBlank(str: string): boolean {
   */
   return /\S/.test(str)
 }
+
+/**
+ * Check if given ascii code is a valid First Character
+ * for Javasript Identifiers
+ * @param code The ascii code to valuate
+ * @returns True if is valid, false otherwise
+ */
+export function isJSIdentifierStart(code: number): boolean {
+  return (
+    (code >= 65 && code <= 90) ||    // A-Z
+    (code >= 97 && code <= 122) ||   // a-z
+    code === 36 ||                   // $
+    code === 95                      // _
+  );
+}

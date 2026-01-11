@@ -11,4 +11,5 @@ export * from './function.type';
 export * from './mutable.type';
 export * from './positive-integer.type';
 export * from './require-one.type';
+export * from './stack/stack.model';
 export * from './tuple-of-length.type';

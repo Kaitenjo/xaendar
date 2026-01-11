@@ -1,14 +1,19 @@
-import { Dictionary } from '@xendar/common';
+import { Dictionary, Stack } from '@xendar/common';
 import { EOF } from '../costants/chars.constants';
 import { Cursor } from './models/cursor.model';
 import { LexerState } from './models/lexer-state.enum';
-import { TokenType } from './models/token-type.enum';
 import { Token } from './models/token.type';
-import { LexerTransitionFunction } from './models/transition-function.type';
-import { consumeInterpolation } from './states/interpolation.model';
-import { consumeTagClose } from './states/tag-close.model';
-import { consumeTagOpen } from './states/tag-open.model';
-import { consumeText } from './states/text.model';
+import { LexerTransitionFunction } from './models/transition-function/transition-function.type';
+import { consumeAttribute } from './states/attribute.state';
+import { consumeEvent } from './states/event.state';
+import { consumeInterpolationExpression } from './states/interpolation-expression.state';
+import { consumeInterpolationliteral } from './states/interpolation-literal.state';
+import { consumeInterpolation } from './states/interpolation.state';
+import { consumeTagBody } from './states/tag-body.state';
+import { consumeTagClose } from './states/tag-close.state';
+import { consumeTagOpenEnd } from './states/tag-open-end.state';
+import { consumeTagOpenName } from './states/tag-open-name.state';
+import { consumeText } from './states/text.state';
 
 /**
  * Utility class that emulates a cursor navigating through a template string.
@@ -21,18 +26,26 @@ export class Lexer {
 
   private readonly _cursor;
 
-  private eof = false;
-
-  private readonly _tokens = new Array<Token>;
+  private _eof = false;
 
   private _state = LexerState.START;
 
+  private _stack = new Stack<LexerState>;
+
+  private readonly _tokens = new Array<Token>;
+
   private readonly _states: Dictionary<LexerState, LexerTransitionFunction> = {
     [LexerState.START]: consumeText,
-    [LexerState.TAG_OPEN]: consumeTagOpen,
     [LexerState.TEXT]: consumeText,
+    [LexerState.TAG_OPEN_NAME]: consumeTagOpenName,
+    [LexerState.TAG_BODY]: consumeTagBody,
+    [LexerState.TAG_OPEN_END]: consumeTagOpenEnd,
     [LexerState.TAG_CLOSE]: consumeTagClose,
-    [LexerState.INTERPOLATION]: consumeInterpolation
+    [LexerState.ATTRIBUTE]: consumeAttribute,
+    [LexerState.EVENT]: consumeEvent,
+    [LexerState.INTERPOLATION]: consumeInterpolation,
+    [LexerState.INTERPOLATION_EXPRESSION]: consumeInterpolationExpression,
+    [LexerState.INTERPOLATION_LITERAL]: consumeInterpolationliteral
   }
 
   /**
@@ -45,21 +58,30 @@ export class Lexer {
   }
 
   public tokenize(): Token[] {
-    while (!this.eof) {
+    while (!this._eof) {
       try {
         const transitionFunction = this._states[this._state];
-        const { state, tokens } = transitionFunction!(this._cursor);
-
+        const { state, tokens, popState, pushState } = transitionFunction!(this._cursor, { history: this._stack.values });
+        
         if (tokens?.length) {
           this._tokens.push(...tokens);
         }
-
+        
+        if (pushState) {
+          this._stack.push(this._state);
+        }
+        
+        if (popState) {
+          this._stack.pop();
+        } 
+        
         this._state = state;
       } catch (err) {
         const error = err as Error;
         if (error.cause === EOF) {
-          this.eof = true;
+          this._eof = true;
         } else {
+          console.log(this._tokens);
           throw err;
         }
       }

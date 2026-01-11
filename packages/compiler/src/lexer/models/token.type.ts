@@ -3,10 +3,13 @@ import { TokenType } from './token-type.enum';
 export type Token =
   | TagOpenNameToken
   | TagSelfCloseToken
+  | TagCloseToken
   | TagCloseNameToken
   | AttributeToken
   | EventToken
   | TextToken
+  | InterpolationExpressionToken
+  | InterpolationLiteralToken
 
 export type TagOpenNameToken = {
   type: TokenType.TAG_OPEN_NAME;
@@ -28,6 +31,16 @@ export type TextToken = {
   parts: [string]
 }
 
+export type InterpolationExpressionToken = {
+  type: TokenType.INTERPOLATION_EXPRESSION;
+  parts: [string];
+}
+
+export type InterpolationLiteralToken = {
+  type: TokenType.INTERPOLATION_LITERAL;
+  parts: [string];
+}
+
 export type TagSelfCloseToken = {
   type: TokenType.TAG_SELF_CLOSE,
   parts: []
@@ -36,4 +49,9 @@ export type TagSelfCloseToken = {
 export type TagCloseNameToken = {
   type: TokenType.TAG_CLOSE_NAME,
   parts: [string]
+}
+
+export type TagCloseToken = {
+  type: TokenType.TAG_CLOSE,
+  parts: []
 }

@@ -27,6 +27,15 @@ function compile(input: string): void {
       case TokenType.TAG_CLOSE_NAME:
         mappedToken.type = 'close-name' as any
         break;
+      case TokenType.INTERPOLATION_EXPRESSION:
+        mappedToken.type = 'interpolation-expression' as any
+        break;
+      case TokenType.INTERPOLATION_LITERAL:
+        mappedToken.type = 'interpolation-literal' as any
+        break;
+      case TokenType.TAG_CLOSE:
+        mappedToken.type = 'tag-close' as any
+        break;
     }
     return mappedToken;
   });
@@ -35,7 +44,10 @@ function compile(input: string): void {
 }
 
 const template = `
+<sp$a£n@ asd@ciao test="ciao" @click="onClick()" @suck="myDick()"  test={var1 + var2} test={var} int={\`ciao \${var} ciao2\`} />
 <sp$a£n@ asd@ciao test="ciao" @click="onClick()" @suck="myDick()" />
+{var}
+{\`ciao \${var} ciao2\`}
 <div dick>
   Text
 </ div>
