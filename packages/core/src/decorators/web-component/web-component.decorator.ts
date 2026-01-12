@@ -6,10 +6,10 @@ import { BaseWebComponent } from "../../directives/base-web-component";
  * Decorator to define a web component
  * @param selector Name or names of the custom element
  */
-export function WebComponent<T extends BaseWebComponent>(selector: string | string[]): ClassDecorator<T> {
+export function WebComponent<T extends BaseWebComponent>(options: { selector: string | string[], templateUrl: string }): ClassDecorator<T> {
   return function (klass: Constructor<T>, context: ClassDecoratorContext<Constructor<T>>): void {
     defineObservedAttributes(klass, context);
-    setSelectors(klass, selector);
+    setSelectors(klass, options.selector);
   };
 }
 

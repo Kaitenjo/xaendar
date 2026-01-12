@@ -1,6 +1,9 @@
 import { BaseWebComponent, Event, Output, Property, WebComponent } from '@xendar/core';
 
-@WebComponent('xendar-text-input')
+@WebComponent({
+  selector: 'xendar-text-input',
+  templateUrl: './text-input.html'
+})
 export class XendarTextInput extends BaseWebComponent {
 
   @Property({ required: true })
