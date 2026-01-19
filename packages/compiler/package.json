@@ -2,6 +2,9 @@
   "name": "@xendar/compiler",
   "version": "1.0.0",
   "type": "module",
+  "peerDependencies": {
+    "@xendar/common": "1.0.0"
+  },
   "scripts": {
     "build": "vite build --emptyOutDir && node ../../dist/xendar-compiler.es.js",
     "build:watch": "nodemon --watch src --ext ts --exec \"npm run build\""

@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "check-dependencies": "node dist/check-dependencies.js"
+  }
+}

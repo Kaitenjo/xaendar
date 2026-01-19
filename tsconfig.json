@@ -20,8 +20,7 @@
     "baseUrl": "./",
     "paths": {
       "@xendar/common": ["packages/common/src/public-api"],
-      "@xendar/core": ["packages/core/src/public-api"],
-      "@xendar/web-components": ["packages/web-components/src/public-api"]
+      "@xendar/core": ["packages/core/src/public-api"]
     },
     "moduleResolution": "node",
     "lib": ["ES2024", "dom"]

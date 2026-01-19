@@ -21,23 +21,6 @@ export class XendarTextInput extends BaseWebComponent {
   @Event()
   public accessor onValueChange!: Output<string>;
 
-  public template(): string {
-    return `
-      <label
-        for="${this.id}"
-        aria-label="${this.label}"
-      >
-        ${this.label}
-      </label>
-      <input 
-        id="${this.id}"
-        type="text" 
-        value="${this.value}" 
-        placeholder="${this.placeholder}"
-      />
-    `
-  }
-
   public css(): string {
     return `
       :host {

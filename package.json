@@ -1,22 +1,24 @@
 {
   "name": "xendar",
   "version": "1.0.0",
-  "main": "index.js",
   "scripts": {
-    "build:all": "npm run build:components && npm run build:xendar",
-    "build:components": "cd packages/web-components && npm run build",
-    "build:xendar": "vite build --emptyOutDir",
-    "start": "npm run build:all && vite",
-    "compile": "cd packages/compiler && npm run build:watch"
+    "build:schematics": "npm run build --prefix schematics",
+    "build:schematics:watch": "npm run build:watch --prefix schematics",
+    "check-dependencies": "npm run check-dependencies --prefix schematics"
   },
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^25.0.5",
+    "@types/node": "^25.0.9",
+    "depcheck": "^1.4.7",
     "nodemon": "^3.1.11",
+    "type-fest": "^5.4.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.0.4"
+  },
+  "dependencies": {
+    "commander": "^14.0.2"
   }
 }

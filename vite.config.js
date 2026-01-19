@@ -3,8 +3,8 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 const external = [
   '@xendar/common',
-  '@xendar/core',
-  '@xendar/components'
+  '@xendar/compiler ',
+  '@xendar/core'
 ]
 
 export default defineConfig({

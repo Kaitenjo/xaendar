@@ -6,5 +6,8 @@
     "build": "vite build --emptyOutDir"
   },
   "author": "Kaitenjo",
-  "license": "MIT"
+  "license": "MIT",
+  "peerDependencies": {
+    "@xendar/common": "1.0.0"
+  }
 }
