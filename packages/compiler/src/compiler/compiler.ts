@@ -7,3 +7,5 @@ export function compile(input: string): string {
   const ast = new Parser(tokens).parse();
   return generateRenderFunction(ast)
 }
+
+console.log(compile('<div> {{ message }} </div>'))
