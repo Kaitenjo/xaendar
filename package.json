@@ -4,18 +4,19 @@
   "scripts": {
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
+    "build:projects": "npm run build-projects --prefix schematics",
     "check-dependencies": "npm run check-dependencies --prefix schematics"
   },
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^25.4.0",
+    "@types/node": "^25.5.2",
     "depcheck": "^1.4.7",
     "nodemon": "^3.1.14",
-    "type-fest": "^5.4.4",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "type-fest": "^5.5.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.4",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "dependencies": {

@@ -33,18 +33,18 @@ async function execute(): Promise<void> {
   const projectPaths = getProjectPaths();
   const mainPackageFile = getPackageJson('');
   const mainDependencies = Object.assign({}, mainPackageFile.dependencies, mainPackageFile.devDependencies);
-  
+
   for (const projectPath of projectPaths) {
     const packageJson = getPackageJson(projectPath);
     const depCheckResult = await depcheck(projectPath, deepCheckOptions);
     const packagePeerDependenciesUsedNames = Object.keys(packageJson.peerDependencies ?? []);
-    
-    console.log(`----------------------${packageJson.name}----------------------\n`);
+
+    const errors = new Array<unknown[]>;
 
     const realAllInvalidFiles = Object.keys(depCheckResult.invalidFiles);
     if (realAllInvalidFiles.length) {
-      console.error('Package', packageJson.name, 'invalid files!');
-      console.error(depCheckResult.invalidFiles);
+      errors.push(['Package', packageJson.name, 'invalid files!']);
+      errors.push([depCheckResult.invalidFiles]);
       hasError = true;
     }
 
@@ -52,23 +52,23 @@ async function execute(): Promise<void> {
     const realAllDependenciesUsedNames = Object.keys(depCheckResult.using);
     const peerDependenciesUnused = packagePeerDependenciesUsedNames.filter(item => realAllDependenciesUsedNames.indexOf(item) < 0);
     if (peerDependenciesUnused.length) {
-      console.error('Package', packageJson.name, 'imports unused libraries!');
-      console.error('Please remove following peerDependencies');
-      console.error(peerDependenciesUnused.join('\r\n'));
+      errors.push(['Package', packageJson.name, 'imports unused libraries!']);
+      errors.push(['Please remove following peerDependencies']);
+      errors.push([peerDependenciesUnused.join('\r\n')]);
       hasError = true;
     }
 
     // Check all self ref dependencies on code
     const selfDepOnSourceCode = realAllDependenciesUsedNames.findIndex(d => d === packageJson.name);
     if (selfDepOnSourceCode > -1) {
-      console.error('package', packageJson.name, 'has a self dep, remove it');
+      errors.push(['package', packageJson.name, 'has a self dep, remove it']);
       hasError = true;
     }
 
     // Check all self ref dependencies on packages
     const selfDepOnPackage = Object.keys(packagePeerDependenciesUsedNames).findIndex(d => d === packageJson.name);
     if (selfDepOnPackage > -1) {
-      console.error('package', packageJson.name, 'has a self dep, remove it');
+      errors.push(['package', packageJson.name, 'has a self dep, remove it']);
       hasError = true;
     }
 
@@ -76,13 +76,17 @@ async function execute(): Promise<void> {
     const dependenciesMissing = Object.keys(depCheckResult.missing).filter(d => d !== packageJson.name).sort();
     if (dependenciesMissing.length) {
       const dependenciesToAdd = dependenciesMissing.map((dependencyMissing, i) => `${i !== 0 ? '\r\n' : ''}- "${dependencyMissing}": "${dependencyMissing.startsWith('@xendar') ? packageJson.version : mainDependencies[dependencyMissing]}"`);
-      console.error('Package', packageJson.name, 'miss libraries!');
-      console.error('Please add following peerDependencies');
-      console.error(dependenciesToAdd.join(''));
+      errors.push(['Package', packageJson.name, 'miss libraries!']);
+      errors.push(['Please add following peerDependencies']);
+      errors.push([dependenciesToAdd.join('')]);
       hasError = true;
     }
 
-    console.log();
+    if (errors.length) {
+      console.log(`----------------------${packageJson.name}----------------------\n`);
+      errors.forEach(error => console.error(...error));
+      console.log();
+    }
   }
 
   if (hasError) {
