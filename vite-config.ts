@@ -25,9 +25,6 @@ export default function getBaseViteConfig(name: string, dirName: string): UserCo
         },
         external
       },
-    },
-    esbuild: {
-      target: 'esnext'
     }
   }
 }

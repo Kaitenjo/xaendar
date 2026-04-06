@@ -1,1 +1,0 @@
-import '@xendar/web-components';

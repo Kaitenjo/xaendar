@@ -5,7 +5,8 @@
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
     "build:projects": "npm run build-projects --prefix schematics",
-    "check-dependencies": "npm run check-dependencies --prefix schematics"
+    "check-dependencies": "npm run check-dependencies --prefix schematics",
+    "install:clean": "rimraf package-lock.json node_modules && npm install"
   },
   "author": "Kaitenjo",
   "license": "ISC",
@@ -14,6 +15,7 @@
     "@types/node": "^25.5.2",
     "depcheck": "^1.4.7",
     "nodemon": "^3.1.14",
+    "rimraf": "^6.1.3",
     "type-fest": "^5.5.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.4",
