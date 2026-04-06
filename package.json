@@ -6,7 +6,8 @@
     "build:schematics:watch": "npm run build:watch --prefix schematics",
     "build:projects": "npm run build-projects --prefix schematics",
     "check-dependencies": "npm run check-dependencies --prefix schematics",
-    "install:clean": "rimraf package-lock.json node_modules && npm install"
+    "install:clean": "rimraf package-lock.json node_modules && npm install",
+    "start": "vite build && node dist/test.es.js"
   },
   "author": "Kaitenjo",
   "license": "ISC",
@@ -18,7 +19,7 @@
     "rimraf": "^6.1.3",
     "type-fest": "^5.5.0",
     "typescript": "^6.0.2",
-    "vite": "^8.0.4",
+    "vite": "^8.0.5",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "dependencies": {

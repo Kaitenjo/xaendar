@@ -3,7 +3,7 @@ import { UserConfig } from "vite";
 
 const external = [
   '@xendar/common',
-  '@xendar/compiler ',
+  '@xendar/compiler',
   '@xendar/core'
 ]
 
@@ -15,10 +15,9 @@ export default function getBaseViteConfig(name: string, dirName: string): UserCo
       lib: {
         entry: path.resolve(dirName, 'src/public-api.ts'),
         name,
-        fileName: (format: string) => `${fileName}.${format}.js`,
+        fileName: format => `${fileName}.${format}.js`,
         formats: ['es']
       },
-      outDir: path.resolve(dirName, `../../dist/${name}`),
       rollupOptions: {
         output: {
           dir: path.resolve(dirName, `../../dist/${name}`),

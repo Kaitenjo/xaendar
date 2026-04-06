@@ -15,7 +15,8 @@
     "noEmit": true,
     "paths": {
       "@xendar/common": ["./packages/common/src/public-api"],
-      "@xendar/core": ["./packages/core/src/public-api"]
+      "@xendar/core": ["./packages/core/src/public-api"],
+      "@xendar/compiler": ["./packages/compiler/src/public-api"]
     },
     "lib": ["ESNext", "dom"]
   }
