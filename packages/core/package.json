@@ -1,10 +1,15 @@
 {
   "name": "@xendar/core",
   "version": "1.0.0",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
   "description": "A library containing core utils such as webcomponent base classes and theming support",
   "scripts": {
     "build": "vite build --emptyOutDir"
   },
-  "author": "Kaitenjo",
-  "license": "MIT"
+  "peerDependencies": {
+    "@xendar/common": "1.0.0",
+    "vite": "^8.0.4"
+  }
 }

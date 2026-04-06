@@ -1,0 +1,11 @@
+import { Lexer } from "../lexer/lexer";
+import { Parser } from "../parser/parser";
+import { generateRenderFunction } from "../render-generator/render-generator.model";
+
+export function compile(input: string): string {
+  const tokens = new Lexer(input).tokenize();
+  const ast = new Parser(tokens).parse();
+  return generateRenderFunction(ast)
+}
+
+console.log(compile('<div> {{ message }} </div>'))

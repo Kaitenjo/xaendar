@@ -1,0 +1,10 @@
+{
+  "name": "@xendar/cli",
+  "version": "1.0.0",
+  "description": "Cli tool for Xendar framework",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "devDependencies": {
+    "commander": "^14.0.3"
+  }
+}
