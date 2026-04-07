@@ -1,5 +1,10 @@
 export enum ASTNodeType {
   Element,
   Text,
-  Interpolation
+  Interpolation,
+  If,
+  Else,
+  For,
+  Switch,
+  Case
 }

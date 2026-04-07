@@ -62,6 +62,7 @@ export class LexerCursor {
   public get position(): Readonly<CursorPosition> {
     return this._position;
   }
+
   /**
    * Creates a new cursor for the given input source.
    *
@@ -113,6 +114,39 @@ export class LexerCursor {
   }
 
   /**
+   * Checks whether the upcoming characters in the input match the given pattern,
+   * without advancing the cursor.
+   *
+   * - `string`: fast path using char code comparison (no allocation)
+   * - `RegExp`: slices the input and tests the pattern against it.
+   *   Requires `length` to know how many characters to peek.
+   *
+   * @param pattern String or RegExp to match against
+   * @param length  Number of characters to peek — required when `pattern` is a RegExp
+   * @returns `true` if the upcoming characters match, `false` otherwise
+   */
+  public peekMatch(pattern: string): boolean;
+  public peekMatch(pattern: RegExp, length: number): boolean;
+  public peekMatch(pattern: string | RegExp, length?: number): boolean {
+    if (typeof pattern === 'string') {
+      const peekedChars = this.peek(pattern.length);
+
+      for (let i = 0; i < pattern.length; i++) {
+        if (peekedChars[i] !== pattern.charCodeAt(i)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    // RegExp path — slice input and test
+    const start = this._currentChar.index + 1;
+    const slice = this.input.slice(start, start + length!);
+    return pattern.test(slice);
+  }
+
+  /**
    * Peeks ahead in the input stream without advancing the cursor.
    *
    * This method supports:
@@ -155,7 +189,7 @@ export class LexerCursor {
    * Peeks multiple characters ahead.
    */
   private peekMany(chars: number, cache: Map<number, number>): number[] {
-    const peekedChars: number[] = [];
+    const peekedChars = new Array<number>;
     const nextCharIndex = this._currentChar.index + 1;
 
     for (let i = nextCharIndex; i < nextCharIndex + chars; i++) {

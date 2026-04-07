@@ -6,6 +6,9 @@ import { Token } from './models/token.type';
 import { LexerTransitionFunction } from './models/transition-function/transition-function.type';
 import { consumeAttribute } from './states/attribute.state';
 import { consumeEvent } from './states/event.state';
+import { consumeFlowControl } from './states/flow-control';
+import { consumeFlowControlBlock } from './states/flow-control-block.state';
+import { consumeFlowControlCondition } from './states/flow-control-condition.state';
 import { consumeInterpolationExpression } from './states/interpolation-expression.state';
 import { consumeInterpolationliteral } from './states/interpolation-literal.state';
 import { consumeInterpolation } from './states/interpolation.state';
@@ -24,7 +27,7 @@ import { consumeText } from './states/text.state';
  */
 export class Lexer {
 
-  private readonly _cursor;
+  private readonly _cursor: LexerCursor;
 
   private _state = LexerState.START;
 
@@ -40,6 +43,9 @@ export class Lexer {
     [LexerState.TAG_OPEN_END]: consumeTagOpenEnd,
     [LexerState.TAG_CLOSE]: consumeTagClose,
     [LexerState.ATTRIBUTE]: consumeAttribute,
+    [LexerState.FLOW_CONTROL]: consumeFlowControl,
+    [LexerState.FLOW_CONTROL_CONDITION]: consumeFlowControlCondition,
+    [LexerState.FLOW_CONTROL_BLOCK]: consumeFlowControlBlock,
     [LexerState.EVENT]: consumeEvent,
     [LexerState.INTERPOLATION]: consumeInterpolation,
     [LexerState.INTERPOLATION_EXPRESSION]: consumeInterpolationExpression,

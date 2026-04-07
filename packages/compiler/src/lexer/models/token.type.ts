@@ -10,6 +10,15 @@ export type Token =
   | TextToken
   | InterpolationExpressionToken
   | InterpolationLiteralToken
+  | IfToken
+  | ForToken
+  | ElseToken
+  | SwitchToken
+  | CaseToken
+  | DefaultToken
+  | ConditionToken
+  | BlockOpenToken
+  | BlockCloseToken
   | EOFToken
 
 export type TagOpenNameToken = {
@@ -56,6 +65,21 @@ export type TagCloseToken = {
   type: TokenType.TAG_OPEN_END,
   parts: []
 }
+
+export type IfToken = { type: TokenType.IF }
+export type ForToken = { type: TokenType.FOR }
+export type ElseToken = { type: TokenType.ELSE }
+export type SwitchToken = { type: TokenType.SWITCH }
+export type CaseToken = { type: TokenType.CASE }
+export type DefaultToken = { type: TokenType.DEFAULT }
+
+export type ConditionToken = {
+  type: TokenType.CONDITION;
+  parts: [string];
+}
+
+export type BlockOpenToken = { type: TokenType.BLOCK_OPEN }
+export type BlockCloseToken = { type: TokenType.BLOCK_CLOSE }
 
 export type EOFToken = {
   type: TokenType.EOF

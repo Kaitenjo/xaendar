@@ -1,12 +1,13 @@
-import { CR, LEFT_BRACE, LESS_THAN, LF, SLASH, SPACE } from "../../costants/chars.constants";
+import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH, SPACE } from "../../costants/chars.constants";
 import { isNotBlank } from "../../utils/chars.utils";
 import { LexerCursor } from "../models/lexer-cursor.model";
 import { LexerState } from "../models/lexer-state.enum";
+import { Token } from "../models/token.type";
 import { TokenType } from "../models/token-type.enum";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
 
-export function consumeText(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function consumeText(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let text = '';
   let retVal!: LexerTransitionFunctionReturnType
@@ -27,8 +28,29 @@ export function consumeText(cursor: LexerCursor, _context: LexerTransitionFuncti
         };
         read = false;
         break;
+      
+      case AT_SIGN:
+        retVal = {
+          state: LexerState.FLOW_CONTROL,
+        }
+        read = false;
+        break;
 
-      case SPACE:
+      case RIGHT_BRACE:
+        if (context.history[context.history.length - 1] === LexerState.FLOW_CONTROL_BLOCK) {
+          cursor.advance();
+          retVal = { 
+            state: LexerState.TEXT,
+            tokens: [{ type: TokenType.BLOCK_CLOSE }],
+            popState: true 
+          };
+          read = false;
+        } else {
+          cursor.advance();
+          text = `${text}${cursor.currentChar.value}`;
+        }
+        break;
+
       case LF:
       case CR:
         cursor.advance();
@@ -53,9 +75,9 @@ export function consumeText(cursor: LexerCursor, _context: LexerTransitionFuncti
     Or an interpolation:
       `{ myVariable }`
   */
-  retVal.tokens = isNotBlank(text)
+  retVal.tokens ??= (isNotBlank(text)
     ? [{ type: TokenType.TEXT, parts: [text] }]
-    : undefined;
+    : undefined);
 
   return retVal
 }

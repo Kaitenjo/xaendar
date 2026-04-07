@@ -6,7 +6,10 @@ export enum LexerState {
   TAG_OPEN_END = 'tag-open-end',
   TAG_CLOSE = 'tag-close',
   ATTRIBUTE = 'attribute',
-  EVENT = 'event',   
+  EVENT = 'event',
+  FLOW_CONTROL = 'flow-control',
+  FLOW_CONTROL_CONDITION = 'flow-control-condition',
+  FLOW_CONTROL_BLOCK = 'flow-control-block',
   INTERPOLATION = 'interpolation',
   INTERPOLATION_EXPRESSION = 'interpolation-expression',
   INTERPOLATION_LITERAL = 'interpolation-literal'
