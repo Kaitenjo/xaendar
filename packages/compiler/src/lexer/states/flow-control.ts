@@ -9,20 +9,27 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
 
   // Consume '@' character
   cursor.advance();
-  
+
   if (cursor.peekMatch('for ')) {
 
   } else if (cursor.peekMatch('if ')) {
     cursor.advance(2);
     retVal = {
       state: LexerState.FLOW_CONTROL_CONDITION,
-      tokens: [{ 
+      tokens: [{
         type: TokenType.IF
       }],
       pushState: true
     }
   } else if (cursor.peekMatch('else ')) {
-
+    cursor.advance(5);
+    retVal = {
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{
+        type: TokenType.ELSE
+      }],
+      pushState: true
+    }
   } else if (cursor.peekMatch('switch ')) {
 
   } else if (cursor.peekMatch('case ')) {
