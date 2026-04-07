@@ -10,6 +10,9 @@ export function consumeEvent(cursor: LexerCursor, _context: LexerTransitionFunct
   let event = '';
   let retVal!: LexerTransitionFunctionReturnType;
 
+  // Consume '@' character
+  cursor.advance();
+
   while (read) {
     switch (cursor.peek()) {
       case SPACE:

@@ -53,16 +53,6 @@ export function consumeInterpolationExpression(cursor: LexerCursor, context: Lex
         }
 
         break;
-      
-      /*
-        To optimize memory, We skip spaces in String Sum.
-        These 2 expressions are equal:
-        - var1 + var 2
-        - var1+var2
-      */
-      case SPACE:
-        cursor.advance();
-        break;
 
       default:
         interpolation = addCharacter(cursor, interpolation);

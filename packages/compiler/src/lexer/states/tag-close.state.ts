@@ -17,9 +17,7 @@ export function consumeTagClose(cursor: LexerCursor, _context: LexerTransitionFu
     Skip all the spaces between '</' and the actual tag name
     Ex: '</         div>
   */
-  while (cursor.peek() === SPACE) {
-    cursor.advance();
-  }
+  cursor.skipSpaces();
 
   while (read) {
     switch (cursor.peek()) {

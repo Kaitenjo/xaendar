@@ -8,7 +8,7 @@
     "check-dependencies": "npm run check-dependencies --prefix schematics",
     "i": "npm i --omit-optional --ignore-scripts",
     "install:clean": "rimraf package-lock.json node_modules && npm run i",
-    "start": "vite build && node dist/test.es.js"
+    "start": "nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps dist/test.es.js\""
   },
   "author": "Kaitenjo",
   "license": "ISC",

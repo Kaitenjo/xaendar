@@ -1,5 +1,5 @@
 import { PositiveInteger, TupleOfLength } from '@xendar/common';
-import { CR, EOF, LF } from '../../costants/chars.constants';
+import { CR, EOF, LF, SPACE } from '../../costants/chars.constants';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';
 
@@ -17,7 +17,6 @@ import { CursorPosition } from './current-position.type';
  * Its sole responsibility is controlled navigation of the input stream.
  */
 export class LexerCursor {
-
   /**
    * Representation of the current character.
    *
@@ -33,14 +32,12 @@ export class LexerCursor {
     index: -1,
     value: ''
   };
-
   /**
    * Returns a read-only snapshot of the current character.
    */
   public get currentChar(): Readonly<CurrentChar> {
     return this._currentChar;
   }
-
   /**
    * Cache used by peek operations to avoid re-reading
    * the same character positions multiple times.
@@ -49,7 +46,6 @@ export class LexerCursor {
    * Value: Unicode code point
    */
   private readonly _peekCache = new Map<number, number>();
-
   /**
    * Logical position of the cursor in the input.
    *
@@ -60,14 +56,12 @@ export class LexerCursor {
     row: 0,
     column: 0
   };
-
   /**
    * Returns a read-only snapshot of the current cursor position.
    */
   public get position(): Readonly<CursorPosition> {
     return this._position;
   }
-
   /**
    * Creates a new cursor for the given input source.
    *
@@ -146,6 +140,15 @@ export class LexerCursor {
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
     return chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(chars + offset, cache);
+  }
+
+  /**
+   * Skips all consecutive space characters from the current position.
+   */
+  public skipSpaces(): void {
+    while (this.peek() === SPACE) {
+      this.advance();
+    }
   }
 
   /**

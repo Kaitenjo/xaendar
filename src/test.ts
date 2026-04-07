@@ -14,7 +14,7 @@ const template =`
 <label for={id} aria-label={label}>
   {label}
 </label>
-<input id={id} type="text" value={value} placeholder={placeholder} @change="onChange($event)" />
+<input id={id} type="text" value={ value + '' + 'asd' + ' ' + "test" } placeholder={placeholder} @change="onChange($event)" />
 `
 
 compile(template)

@@ -9,6 +9,7 @@ export default defineConfig({
       fileName: () => `test.es.js`,
       formats: ['es']
     },
+    sourcemap: true,
     outDir: path.resolve(__dirname, 'dist'),
   }
 })

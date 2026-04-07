@@ -17,9 +17,7 @@ export function consumeTagOpenName(cursor: LexerCursor, _context: LexerTransitio
     Skip all the spaces between '<' and the actual tag name
     Ex: '<         div>
   */
-  while (cursor.peek() === SPACE) {
-    cursor.advance();
-  }
+  cursor.skipSpaces();
 
   /*
     Keep read input until:
