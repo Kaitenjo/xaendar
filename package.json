@@ -6,7 +6,8 @@
     "build:schematics:watch": "npm run build:watch --prefix schematics",
     "build:projects": "npm run build-projects --prefix schematics",
     "check-dependencies": "npm run check-dependencies --prefix schematics",
-    "install:clean": "rimraf package-lock.json node_modules && npm install",
+    "i": "npm i --omit-optional --ignore-scripts",
+    "install:clean": "rimraf package-lock.json node_modules && npm run i",
     "start": "vite build && node dist/test.es.js"
   },
   "author": "Kaitenjo",

@@ -53,6 +53,9 @@ function processNode(node: ASTNode, varName: string, componentVar: string): stri
 
       // Eventi
       (elNode.events || []).forEach((event: EventNode) => {
+        if (event.name.startsWith("@")) {
+          event.name = event.name.slice(1);
+        }
         code.push(`${varName}.addEventListener(${JSON.stringify(event.name)}, ${componentVar}.${event.handler}.bind(${componentVar}));`);
       });
 

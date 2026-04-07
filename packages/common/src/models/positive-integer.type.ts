@@ -5,6 +5,4 @@ export type PositiveInteger<Value extends number> =
     ? never
     : ContainsChar<`${Value}`, '.'> extends true
       ? never
-      : `${Value}` extends 'Infinity' | 'NaN'
-        ? never
         : Value;
