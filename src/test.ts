@@ -19,6 +19,24 @@ const template =`
 } @else {
   <span>Id is missing</span>
 }
+
+@for (let item of items) {
+  <div>{item}</div>
+}
+
+@switch (status) {
+  @case ('loading') {
+    <div>Loading...</div>
+  }
+  
+  @case ('error') {
+    <div>Error!</div>
+  }
+  
+  @default {
+    <div>Content</div>
+  }
+}
 <input id={id} type="text" value={ value + '' + 'asd' + ' ' + "test" } placeholder={placeholder} @change="onChange($event)" />
 `
 
