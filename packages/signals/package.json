@@ -1,0 +1,14 @@
+{
+  "name": "@xendar/signals",
+  "version": "1.0.0",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library for managing signals in web applications",
+  "scripts": {
+    "build": "vite build --emptyOutDir"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.4"
+  }
+}

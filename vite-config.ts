@@ -4,7 +4,8 @@ import { UserConfig } from "vite";
 const external = [
   '@xendar/common',
   '@xendar/compiler',
-  '@xendar/core'
+  '@xendar/core',
+  '@xendar/signals'
 ]
 
 export default function getBaseViteConfig(name: string, dirName: string): UserConfig {
