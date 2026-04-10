@@ -1,1 +1,1 @@
-export * from './state/state';
+export * from './lib/state';
