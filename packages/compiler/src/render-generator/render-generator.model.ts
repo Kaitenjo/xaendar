@@ -1,13 +1,13 @@
-import { ASTNode, TextNode, InterpolationNode, ElementNode, AttributeNode, EventNode } from "../parser/models/ast.type";
-import { ASTNodeType } from "../parser/models/node.enum";
+import { ASTNode, TextNode, InterpolationNode, ElementNode, AttributeNode, EventNode } from '../parser/models/ast.type';
+import { ASTNodeType } from '../parser/models/node.enum';
 
 /**
  * Genera il codice TypeScript della funzione render
  * @param ast L'albero AST del template
- * @param componentVar Nome della variabile "this" del componente (di solito `this`)
+ * @param componentVar Nome della variabile 'this' del componente (di solito `this`)
  * @returns Stringa contenente il corpo della funzione render
  */
-export function generateRenderFunction(ast: ASTNode[], componentVar = "this"): string {
+export function generateRenderFunction(ast: ASTNode[], componentVar = 'this'): string {
   const lines: string[] = [];
 
   // Apertura funzione
@@ -18,7 +18,7 @@ export function generateRenderFunction(ast: ASTNode[], componentVar = "this"): s
     lines.push(`shadow.appendChild(node${i});`);
   });
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -42,7 +42,7 @@ function processNode(node: ASTNode, varName: string, componentVar: string): stri
 
       // Attributi
       (elNode.attributes || []).forEach((attr: AttributeNode) => {
-        if (typeof attr.value === "string") {
+        if (typeof attr.value === 'string') {
           code.push(`${varName}.setAttribute(${JSON.stringify(attr.name)}, ${JSON.stringify(attr.value)});`);
         } else {
           // Interpolazione come value
@@ -53,7 +53,7 @@ function processNode(node: ASTNode, varName: string, componentVar: string): stri
 
       // Eventi
       (elNode.events || []).forEach((event: EventNode) => {
-        if (event.name.startsWith("@")) {
+        if (event.name.startsWith('@')) {
           event.name = event.name.slice(1);
         }
         code.push(`${varName}.addEventListener(${JSON.stringify(event.name)}, ${componentVar}.${event.handler}.bind(${componentVar}));`);

@@ -1,4 +1,4 @@
-import { PositiveInteger } from "./positive-integer.type";
+import { PositiveInteger } from './positive-integer.type';
 
 export type TupleOfLength<
   Length extends number,

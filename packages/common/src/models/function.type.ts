@@ -21,7 +21,7 @@ export type AsyncFunction<
 
 /**
  * A function type that accepts no arguments and returns a value of the specified type.
- * Also known as a "thunk" in functional programming.
+ * Also known as a 'thunk' in functional programming.
  * @template ReturnType - The return type of the function (defaults to void)
  * @example
  * type GetUser = FunctionNoArgs<User>;
@@ -37,6 +37,16 @@ export type NoArgsFunction <ReturnType = void> = () => ReturnType;
  * const fetchUser: FetchUser = async () => await api.getUser();
  */
 export type NoArgsAsyncFunction <ReturnType = void> = () => Promise<ReturnType>;
+
+/**
+ * A function type that accepts arguments but always returns void.
+ */
+export type NoArgsVoidFunction = () => void;
+
+/**
+ * An async function type that accepts arguments but always resolves to void.
+ */
+export type NoArgsAsyncVoidFunction = () => Promise<void>;
 
 /**
  * A function type that accepts arguments but always returns void.

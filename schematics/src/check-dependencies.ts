@@ -75,7 +75,7 @@ async function execute(): Promise<void> {
     // Check all missing dependencies
     const dependenciesMissing = Object.keys(depCheckResult.missing).filter(d => d !== packageJson.name).sort();
     if (dependenciesMissing.length) {
-      const dependenciesToAdd = dependenciesMissing.map((dependencyMissing, i) => `${i !== 0 ? '\r\n' : ''}- "${dependencyMissing}": "${dependencyMissing.startsWith('@xendar') ? packageJson.version : mainDependencies[dependencyMissing]}"`);
+      const dependenciesToAdd = dependenciesMissing.map((dependencyMissing, i) => `${i !== 0 ? '\r\n' : ''}- '${dependencyMissing}': '${dependencyMissing.startsWith('@xendar') ? packageJson.version : mainDependencies[dependencyMissing]}'`);
       errors.push(['Package', packageJson.name, 'miss libraries!']);
       errors.push(['Please add following peerDependencies']);
       errors.push([dependenciesToAdd.join('')]);

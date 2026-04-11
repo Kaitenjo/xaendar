@@ -1,8 +1,8 @@
-import { VoidFunction } from '@xendar/common';
+import { NoArgsVoidFunction } from '@xendar/common';
 import { Computed } from './computed';
-import { getFrozen, setFrozen } from './globals';
-import { Signal } from './models/signal.interface';
+import { GLOBAL_STATE } from './globals';
 import { WatcherState } from './models/watcher-state.type';
+import { assertPrivateContext, PRIVATE } from './private-symbol';
 import { State } from './state';
 
 /**
@@ -13,7 +13,7 @@ import { State } from './state';
  * effects and scheduling. It does not hold a value and has no generic
  * type parameter.
  *
- * @see Signal algorithms — "The `Signal.subtle.Watcher` class"
+ * @see Signal algorithms — 'The `Signal.subtle.Watcher` class'
  */
 export class Watcher {
   /**
@@ -24,16 +24,18 @@ export class Watcher {
    * - `~watching~` — actively watching; no dependency has changed yet.
    * - `~pending~`  — a dependency has changed but `notify` has not yet run.
    *
-   * @see Signal algorithms — "Signal.subtle.Watcher State machine"
+   * @internalSlot
+   * @see Signal algorithms — 'Signal.subtle.Watcher State machine'
    */
   #state: WatcherState;
   /**
    * The ordered set of Signals this Watcher is currently watching.
    * May contain both `State` and `Computed` instances.
    *
-   * @see Signal algorithms — "Signal.subtle.Watcher internal slots"
+   * @internalSlot
+   * @see Signal algorithms — 'Signal.subtle.Watcher internal slots'
    */
-  #signals: Set<Signal<unknown>>;
+  #signals: Set<State<unknown> | Computed<unknown>>;
   /**
    * The callback invoked synchronously when a watched Signal (or one of its
    * recursive dependencies) changes for the first time since the last
@@ -42,9 +44,10 @@ export class Watcher {
    * Receives the Watcher itself as `this`. No Signals may be read or written
    * during its execution (`frozen` is `true` for its entire duration).
    *
-   * @see Signal algorithms — "Signal.subtle.Watcher internal slots"
+   * @internalSlot
+   * @see Signal algorithms — 'Signal.subtle.Watcher internal slots'
    */
-  #notifyCallback: VoidFunction<[Watcher]>;
+  #notifyCallback: NoArgsVoidFunction;
 
   /**
    * Creates a new Watcher.
@@ -55,9 +58,9 @@ export class Watcher {
    * first time a watched dependency changes after each `watch` call. No
    * Signals may be read or written inside this callback.
    *
-   * @see Signal algorithms — "Constructor: new Signal.subtle.Watcher(callback)"
+   * @see Signal algorithms — 'Constructor: new Signal.subtle.Watcher(callback)'
    */
-  constructor(notifyCallback: VoidFunction<[Watcher]>) {
+  constructor(notifyCallback: NoArgsVoidFunction) {
     this.#state = 'waiting';
     this.#signals = new Set;
     this.#notifyCallback = notifyCallback;
@@ -73,10 +76,17 @@ export class Watcher {
    *
    * @returns An array of `Computed` signals that are dirty or checked.
    *
-   * @see Signal algorithms — "Method: Signal.subtle.Watcher.prototype.getPending()"
+   * @see Signal algorithms — 'Method: Signal.subtle.Watcher.prototype.getPending()'
    */
   public getPending(): Computed<unknown>[] {
-    return [...this.#signals].filter((signal): signal is Computed<unknown> => signal instanceof Computed && (signal.state === 'checked' || signal.state === 'dirty'));
+    return [...this.#signals].filter((signal): signal is Computed<unknown> => {
+      if (!(signal instanceof Computed)) {
+        return false;
+      }
+
+      const state = signal.getState(PRIVATE);
+      return state === 'dirty' || state === 'checked';
+    });
   }
 
   /**
@@ -93,24 +103,20 @@ export class Watcher {
    * @param signals - One or more `State` signals to start watching.
    * @throws If `frozen` is `true` at the time of the call.
    *
-   * @see Signal algorithms — "Method: Signal.subtle.Watcher.prototype.watch(...signals)"
+   * @see Signal algorithms — 'Method: Signal.subtle.Watcher.prototype.watch(...signals)'
    */
-  public watch(...signals: State<unknown>[]) {
-    if (getFrozen()) {
+  public watch(...signals: (State | Computed)[]) {
+    if (GLOBAL_STATE.frozen) {
       throw new Error('Cannot watch signals while frozen');
     }
 
     signals.forEach(signal => {
-      this.#signals.add(signal)
-      signal._addSink(this);
-
-      setFrozen(true);
-
-      try {
-        signal.watched();
-      } finally {
-        setFrozen(false);
+      if (this.#signals.has(signal)) {
+        throw new Error('Cannot watch a signal that is already being watched');
       }
+
+      this.#signals.add(signal)
+      signal.addSink(this, PRIVATE);
     });
 
 
@@ -137,32 +143,76 @@ export class Watcher {
    * @throws If `frozen` is `true` at the time of the call.
    * @throws If any of the given Signals is not currently being watched.
    *
-   * @see Signal algorithms — "Method: Signal.subtle.Watcher.prototype.unwatch(...signals)"
+   * @see Signal algorithms — 'Method: Signal.subtle.Watcher.prototype.unwatch(...signals)'
    */
-  public unwatch(...signals: State<unknown>[]) {
-    if (getFrozen()) {
+  public unwatch(...signals: (State | Computed)[]) {
+    if (GLOBAL_STATE.frozen) {
       throw new Error('Cannot unwatch signals while frozen');
     }
 
     signals.forEach(signal => {
       if (this.#signals.has(signal)) {
-        this.#signals.delete(signal)
-        signal._removeSink(this);
-      } else {
         throw new Error('Cannot unwatch a signal that is not being watched');
       }
 
-      setFrozen(true);
-      
-      try {
-        signal.unwatched();
-      } finally {
-        setFrozen(false);
-      }
+      this.#signals.delete(signal)
+      signal.removeSink(this, PRIVATE);
     });
 
     if (!this.#signals.size && this.#state === 'watching') {
       this.#state = 'waiting';
     }
+  }
+
+  /**
+   * Get the current state of the Watcher.
+   * @param symbol - The private symbol for prevent external calls.
+   */
+  public getState(symbol: Symbol): WatcherState {
+    assertPrivateContext(symbol);
+    return this.#state;
+  }
+
+  /**
+   * Set the current state of the Watcher.
+   * @param newState - The new state to set.
+   * @param symbol - The private symbol for prevent external calls.
+   * @throws If the transition from `pending` to `watching` is attempted.
+   */
+  public setState(newState: WatcherState, symbol: Symbol) {
+    assertPrivateContext(symbol);
+
+    if (isValidTransition(this.#state, newState)) {
+      throw new Error(`Cannot transition from ${this.#state} to ${newState}`);
+    }
+
+    this.#state = newState;
+  }
+
+  /**
+   * Invoce the notify callback when a watched dependency changes
+   * @param symbol - The private symbol for prevent external calls.
+   */
+  public notify(symbol: Symbol) {
+    assertPrivateContext(symbol);
+
+    GLOBAL_STATE.frozen = true;
+    try {
+      this.#notifyCallback.call(this);
+    } finally {
+      GLOBAL_STATE.frozen = false;
+      this.#state = 'waiting';
+    }
+  }
+}
+
+function isValidTransition(from: WatcherState, to: WatcherState): boolean {
+  switch (from) {
+    case 'waiting':
+      return to === 'watching';
+    case 'watching':
+      return to === 'pending' || to === 'waiting';
+    case 'pending':
+      return to === 'waiting';
   }
 }

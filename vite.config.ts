@@ -1,5 +1,5 @@
-import path from "path";
-import { defineConfig } from "vite";
+import path from 'path';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   build: {
@@ -9,6 +9,7 @@ export default defineConfig({
       fileName: () => `test.es.js`,
       formats: ['es']
     },
+    minify: false,
     sourcemap: true,
     outDir: path.resolve(__dirname, 'dist'),
   }

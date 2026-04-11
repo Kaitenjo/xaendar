@@ -1,4 +1,4 @@
-import { Constructor } from "../constructors/constructor.type";
+import { Constructor } from '../constructors/constructor.type';
 
 export type ClassDecorator<
   T extends Object, 

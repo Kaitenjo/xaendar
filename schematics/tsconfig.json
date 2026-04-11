@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "baseUrl": "tsconfig",
     "lib": ["ES2024", "dom"],
     "module": "es2022",
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,

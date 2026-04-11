@@ -1,5 +1,5 @@
-import path from "path";
-import { UserConfig } from "vite";
+import path from 'path';
+import { UserConfig } from 'vite';
 
 const external = [
   '@xendar/common',

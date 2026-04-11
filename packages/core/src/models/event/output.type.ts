@@ -1,5 +1,5 @@
-import { FunctionType } from "@xendar/common";
-import { EventParams } from "./event-params.type";
+import { FunctionType } from '@xendar/common';
+import { EventParams } from './event-params.type';
 
 /**
  * Rapresent the output type returned by an @Event Decorator in a Web Component.

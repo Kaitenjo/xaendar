@@ -1,3 +1,4 @@
+import { SignalEqual } from './signal-equal.type';
 import { Signal } from './signal.interface';
 
 export type SignalOptions<T> = {
@@ -5,7 +6,7 @@ export type SignalOptions<T> = {
    * Custom comparison function between old and new value. Default: Object.is.
    * The signal is passed in as the this value for context.
    */
-  equals?: (this: Signal<T>, t: T, t2: T) => boolean;
+  equals?: SignalEqual<T>;
   /**
    * Callback called when isWatched becomes true, if it was previously false
    */

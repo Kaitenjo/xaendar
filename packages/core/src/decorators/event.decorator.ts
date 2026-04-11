@@ -1,7 +1,7 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue } from "@xendar/common";
-import { BaseWebComponent } from "../directives/base-web-component";
-import { EventParams } from "../models/event/event-params.type";
-import { Output } from "../models/event/output.type";
+import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xendar/common';
+import { BaseWebComponent } from '../directives/base-web-component';
+import { EventParams } from '../models/event/event-params.type';
+import { Output } from '../models/event/output.type';
 
 function isEventParams(value: EventParams | unknown): value is EventParams {
   return !!value && typeof value === 'object' && ('bubbles' in value || 'cancelable' in value || 'composed' in value);
