@@ -168,7 +168,7 @@ export class Watcher {
    * Get the current state of the Watcher.
    * @param symbol - The private symbol for prevent external calls.
    */
-  public getState(symbol: Symbol): WatcherState {
+  public getState(symbol: symbol): WatcherState {
     assertPrivateContext(symbol);
     return this.#state;
   }
@@ -179,7 +179,7 @@ export class Watcher {
    * @param symbol - The private symbol for prevent external calls.
    * @throws If the transition from `pending` to `watching` is attempted.
    */
-  public setState(newState: WatcherState, symbol: Symbol) {
+  public setState(newState: WatcherState, symbol: symbol) {
     assertPrivateContext(symbol);
 
     if (isValidTransition(this.#state, newState)) {
@@ -193,8 +193,10 @@ export class Watcher {
    * Invoce the notify callback when a watched dependency changes
    * @param symbol - The private symbol for prevent external calls.
    */
-  public notify(symbol: Symbol) {
+  public notify(symbol: symbol) {
     assertPrivateContext(symbol);
+
+    this.#state = 'pending';
 
     GLOBAL_STATE.frozen = true;
     try {

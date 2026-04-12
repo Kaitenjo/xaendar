@@ -1,4 +1,4 @@
-import { GLOBAL_STATE } from './globals';
+import { GLOBAL_STATE, popComputed, pushComputed } from './globals';
 import { ComputedState } from './models/computed-state.type';
 import { SignalEqual } from './models/signal-equal.type';
 import { SignalOptions } from './models/signal-options.type';
@@ -93,12 +93,41 @@ export class Computed<T = any> {
    */
   #callback: (this: Computed<T>) => T;
   /**
-   * Last seen global generation number, used to determine whether this Signal may
-   * be stale without having to re-traverse the entire dependency graph. 
-   * This is useful when the Computer has no watchers and is only read
-   * by explicit `get()` calls, since in that case the state machine cannot be used to track staleness.
+   * The current version of this Signal, incremented every time the callback
+   * is successfully executed and produces a new value.
+   *
+   * Used by dependent un-watched `Computed` nodes to determine whether this
+   * Signal has changed since they last evaluated, without relying on the
+   * push-based sink notification chain.
+   *
+   * Starts at `-1` to ensure the first read of any dependent `Computed` is
+   * always treated as stale.
    */
-  #lastSeenGeneration = -1;
+  #version = -1;
+  /**
+   * Exposes the current version of this Signal for staleness checks by
+   * dependent un-watched `Computed` nodes.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns The current version number.
+   * @internal
+   */
+  public getVersion(symbol: symbol): number {
+    assertPrivateContext(symbol);
+    return this.#version;
+  }
+  /**
+   * A map from each source Signal to the version last seen by this `Computed`
+   * at the time of the most recent `#computeValue` call.
+   *
+   * After each re-evaluation, the map is cleared and rebuilt to mirror
+   * `#sources` exactly — ensuring that sources from conditional branches no
+   * longer taken do not linger and cause stale references or memory leaks.
+   *
+   * Used exclusively by `#isStale` for un-watched `Computed` nodes.
+   */
+  #sourcesVersions = new Map<State<unknown> | Computed<unknown>, number>;
+
   /**
    * Creates a new `Computed` signal.
    *
@@ -149,28 +178,11 @@ export class Computed<T = any> {
 
     GLOBAL_STATE.computing?.addSource(this, PRIVATE);
 
-    // The global generation counter is used to invalidate Computed Value when no watchers are present and the state machine cannot be used to track staleness
-    if (this.#sinks.size === 0 && this.#lastSeenGeneration < GLOBAL_STATE.generation && this.#state === 'clean') {
+    if (this.#sinks.size === 0 && this.#state === 'clean' && this.#isStale()) {
       this.#state = 'dirty';
     }
-    
+
     if (this.#state === 'dirty' || this.#state === 'checked') {
-      /*
-        lastSeenGeneration MUST be updated even if there are any Watchers
-
-        Edge Case:
-        Watcher unwatch a Computed
-        Computed is read (get) → state is clean, there are no sinks but lastSeenGeneration hasn't changed -> Do Not Recalculate.
-
-        If we do not update lastGeneration even if it's watched, the first manual read will recalculate the value even if no changes 
-        have occurred in the dependency graph, which is not what we want.
-
-        This also cause always a double recalculation for the first two .get() calls when there is no watchers
-        Since the beginning state is dirty and this would have prevent the set of lastSeenGeneration to the current generation 
-        if the instruction would've be placed in the above if statement
-      */
-      this.#lastSeenGeneration = GLOBAL_STATE.generation;
-
       while (this.#state === 'dirty' || this.#state === 'checked') {
         const deepest = this.#findDeepestStale();
         deepest.#computeValue();
@@ -178,6 +190,38 @@ export class Computed<T = any> {
     }
 
     return this.#value;
+  }
+
+  /**
+   * Determines whether this Signal's cached value may be stale by comparing
+   * the last-seen version of each source against its current version.
+   *
+   * Used exclusively for un-watched `Computed` nodes (i.e. those with no
+   * sinks), since watched nodes rely on the push-based `~dirty~` / `~checked~`
+   * state machine instead.
+   *
+   * A source is considered changed if its current version differs from the
+   * version recorded in `#sourcesVersions` at the time of the last
+   * `#computeValue` call. If any source has changed, the Signal is stale and
+   * must be re-evaluated on the next `get()`.
+   *
+   * @returns `true` if at least one source has a newer version than last seen,
+   * `false` if all sources are unchanged.
+   */
+  #isStale(): boolean {
+    for (const source of this.#sources) {
+      // Se la source è un Computed non osservato, verifica ricorsivamente
+      if (source instanceof Computed && source.#isStale()) {
+        return true;
+      }
+
+      const lastSeen = this.#sourcesVersions.get(source) ?? -1;
+      if (source.getVersion(PRIVATE) !== lastSeen) {
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   /**
@@ -192,9 +236,13 @@ export class Computed<T = any> {
    * @param symbol - Private access symbol; rejects calls from outside the library.
    * @internal
    */
-  public addSource(source: State | Computed, symbol: Symbol) {
+  public addSource(source: State | Computed, symbol: symbol) {
     assertPrivateContext(symbol);
     this.#sources.add(source);
+
+    if (this.#sinks.size > 0) {
+      source.addSink(this, PRIVATE)
+    }
   }
 
   /**
@@ -204,7 +252,7 @@ export class Computed<T = any> {
    * @internal
    * @see Signal algorithms — "Signal.Computed State machine"
    */
-  public getState(symbol: Symbol): ComputedState {
+  public getState(symbol: symbol): ComputedState {
     assertPrivateContext(symbol);
     return this.#state;
   }
@@ -221,7 +269,7 @@ export class Computed<T = any> {
    * @internal
    * @see Signal algorithms — "Signal.Computed State machine"
    */
-  public setState(newState: ComputedState, symbol: Symbol) {
+  public setState(newState: ComputedState, symbol: symbol) {
     assertPrivateContext(symbol);
 
     if (isValidTransition(this.#state, newState)) {
@@ -243,7 +291,7 @@ export class Computed<T = any> {
    * @param symbol - Private access symbol; rejects calls from outside the library.
    * @internal
    */
-  public addSink(sink: Computed<unknown> | Watcher, symbol: Symbol) {
+  public addSink(sink: Computed<unknown> | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
     if (this.#sinks.size === 0) {
       this.#sources.forEach(source => source.addSink(this, PRIVATE));
@@ -262,25 +310,13 @@ export class Computed<T = any> {
    * @param symbol - Private access symbol; rejects calls from outside the library.
    * @internal
    */
-  public removeSink(sink: Computed | Watcher, symbol: Symbol) {
+  public removeSink(sink: Computed | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
     this.#sinks.delete(sink);
 
     if (this.#sinks.size === 0) {
       this.#sources.forEach(source => source.removeSink(this, PRIVATE));
     }
-  }
-
-  /**
-   * Checks whether this `Computed` is currently being watched (i.e. has at least one sink).
-   *
-   * Used by `State` nodes to determine whether to add this `Computed` to their
-   * @param symbol - Private access symbol; rejects calls from outside the library.
-   * @returns `true` if this Signal has at least one sink, `false` otherwise.
-   */
-  public watched(symbol: Symbol): boolean {
-    assertPrivateContext(symbol);
-    return this.#sinks.size > 0;
   }
 
   /**
@@ -320,27 +356,29 @@ export class Computed<T = any> {
     this.#sources.forEach(source => source.removeSink(this, PRIVATE));
     this.#sources.clear();
 
-    const previousComputing = GLOBAL_STATE.computing;
-    GLOBAL_STATE.computing = this;
+    pushComputed(this);
     this.#state = 'computing';
 
     let newValue: T | { isError: true; value: Error };
 
     try {
       newValue = this.#callback.call(this);
+      this.#version++;
     } catch (error) {
       newValue = { isError: true, value: error as Error };
     } finally {
-      GLOBAL_STATE.computing = previousComputing;
+      popComputed();
     }
 
     const outcome = this.#setValue(newValue);
-
-    this.#state = 'clean';
+    this.#sourcesVersions.clear();
+    this.#sources.forEach(source => this.#sourcesVersions.set(source, source.getVersion(PRIVATE)));
 
     outcome === 'dirty'
       ? this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE))
       : this.#propagateClean();
+
+    this.#state = 'clean';
   }
 
   /**

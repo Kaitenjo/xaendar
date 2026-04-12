@@ -66,6 +66,30 @@ export class State<T = any> {
    * @see Method — `Signal.State.prototype.get` (NOTE on sinks)
    */
   #sinks: Set<Computed<unknown> | Watcher>;
+  /**
+   * The current version of this Signal, incremented every time the callback
+   * is successfully executed and produces a new value.
+   *
+   * Used by dependent un-watched `Computed` nodes to determine whether this
+   * Signal has changed since they last evaluated, without relying on the
+   * push-based sink notification chain.
+   *
+   * Starts at `-1` to ensure the first read of any dependent `Computed` is
+   * always treated as stale.
+   */
+  #version = -1;
+  /**
+   * Exposes the current version of this Signal for staleness checks by
+   * dependent un-watched `Computed` nodes.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns The current version number.
+   * @internal
+   */
+  public getVersion(symbol: symbol): number {
+    assertPrivateContext(symbol);
+    return this.#version;
+  }
 
   /**
    * Creates a new `State` signal.
@@ -108,13 +132,7 @@ export class State<T = any> {
       THis is done every time a `State` is read to guarantee always up-to-date 
       tracking of dependencies, even if they change between computations
     */
-    const computing = GLOBAL_STATE.computing;
-    if (computing) {
-      computing.addSource(this, PRIVATE);
-      if (computing.watched(PRIVATE)) {
-        this.#sinks.add(computing);
-      }
-    }
+    GLOBAL_STATE.computing?.addSource(this, PRIVATE)
 
     return this.#value;
   }
@@ -143,8 +161,9 @@ export class State<T = any> {
 
     if (!this.#equals.call(this, this.#value, newValue)) {
       this.#value = newValue;
+      this.#version++;
       GLOBAL_STATE.generation++;
-      this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.setState('pending', PRIVATE));
+      this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE));
     }
   }
 
@@ -160,7 +179,7 @@ export class State<T = any> {
    * @param symbol - The private symbol for validation.
    * @internal
    */
-  public addSink(sink: Computed | Watcher, symbol: Symbol) {
+  public addSink(sink: Computed | Watcher, symbol: symbol): void {
     assertPrivateContext(symbol);
     const empty = this.#sinks.size === 0;
     this.#sinks.add(sink);
@@ -187,7 +206,7 @@ export class State<T = any> {
    * @param symbol - The private symbol for validation.
    * @internal
    */
-  public removeSink(sink: Computed | Watcher, symbol: Symbol) {
+  public removeSink(sink: Computed | Watcher, symbol: symbol): void {
     assertPrivateContext(symbol);
     this.#sinks.delete(sink);
     const empty = this.#sinks.size === 0;
