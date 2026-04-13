@@ -10,7 +10,7 @@ const external = [
   '@xendar/signals'
 ]
 
-export default function getViteConfig(name: string, dirName: string): UserConfig {
+export function getProdViteConfig(name: string, dirName: string): UserConfig {
   const fileName = name.split('/').join('-').slice(1);
   const outDir = path.resolve(dirName, `../../dist/${name}`);
 
@@ -27,9 +27,8 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
         output: {
           dir: outDir
         },
-        external
+        external: (id) => external.some(pkg => id === pkg || id.startsWith(`${pkg}/`)),
       },
-      sourcemap: true,
     },
     resolve: {
       preserveSymlinks: false

@@ -54,6 +54,17 @@ export class Computed<T = any> {
    */
   #sources: Set<State<unknown> | Computed<unknown>>;
   /**
+ * Returns a snapshot of the current sources set for introspection.
+ *
+ * @param symbol - Private access symbol; rejects calls from outside the library.
+ * @returns An array of `State` and `Computed` instances that this Signal depends on.
+ * @internal
+ */
+  public getSources(symbol: symbol): (State<unknown> | Computed<unknown>)[] {
+    assertPrivateContext(symbol);
+    return [...this.#sources];
+  }
+  /**
    * The set of Signals and Watchers that directly depend on this Signal.
    *
    * Populated only when this Signal is reachable from at least one active
@@ -65,6 +76,17 @@ export class Computed<T = any> {
    * @see Method — `Signal.Computed.prototype.get` (NOTE on sinks)
    */
   #sinks: Set<Computed<unknown> | Watcher>;
+  /**
+   * Returns a snapshot of the current sinks set for introspection.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns An array of `Computed` and `Watcher` instances that depend on this Signal.
+   * @internal
+   */
+  public getSinks(symbol: symbol): (Computed<unknown> | Watcher)[] {
+    assertPrivateContext(symbol);
+    return [...this.#sinks];
+  }
   /**
    * The equality function used to determine whether a newly computed value
    * is meaningfully different from the previously cached one.
@@ -171,10 +193,7 @@ export class Computed<T = any> {
   public addSource(source: State | Computed, symbol: symbol) {
     assertPrivateContext(symbol);
     this.#sources.add(source);
-
-    if (this.#sinks.size > 0) {
-      source.addSink(this, PRIVATE)
-    }
+    source.addSink(this, PRIVATE)
   }
 
   /**
@@ -204,15 +223,9 @@ export class Computed<T = any> {
   public setState(newState: ComputedState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (this.#state === newState) {
-      return;
+    if (this.#state !== newState && this.#isValidTransition(this.#state, newState)) {
+      this.#state = newState;
     }
-    
-    if (!isValidTransition(this.#state, newState)) {
-      throw new Error(`Cannot transition from ${this.#state} to ${newState}`);
-    }
-
-    this.#state = newState;
   }
 
   /**
@@ -392,33 +405,17 @@ export class Computed<T = any> {
   #isErrorValue(value: unknown): value is { isError: true; value: Error } {
     return typeof value === 'object' && !!value && 'isError' in value;
   }
-}
 
-/**
- * Determines whether a transition between two `ComputedState` values is
- * permitted by the Computed Signal state machine.
- *
- * Valid transitions:
- * - `~checked~`   → `~clean~` | `~dirty~`
- * - `~clean~`     → `~checked~` | `~dirty~`
- * - `~dirty~`     → `~computing~`
- * - `~computing~` → `~clean~`
- *
- * @param from - The current state.
- * @param to - The target state.
- * @returns `true` if the transition is allowed, `false` otherwise.
- *
- * @see Signal algorithms — "Signal.Computed State machine"
- */
-function isValidTransition(from: ComputedState, to: ComputedState): boolean {
-  switch (from) {
-    case 'checked':
-      return to === 'clean' || to === 'dirty';
-    case 'clean':
-      return to === 'checked' || to === 'dirty';
-    case 'dirty':
-      return to === 'computing';
-    case 'computing':
-      return to === 'clean';
+  #isValidTransition(from: ComputedState, to: ComputedState): boolean {
+    switch (from) {
+      case 'checked':
+        return to === 'clean' || to === 'dirty';
+      case 'clean':
+        return to === 'checked' || to === 'dirty';
+      case 'dirty':
+        return to === 'computing';
+      case 'computing':
+        return to === 'clean';
+    }
   }
 }

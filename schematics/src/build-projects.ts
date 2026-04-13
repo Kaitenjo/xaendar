@@ -8,7 +8,8 @@ async function buildAll() {
   const projects = [
     'common',
     'core',
-    'compiler'
+    'compiler',
+    'signals'
   ]
 
   for (const project of projects) {
@@ -27,7 +28,8 @@ async function buildAll() {
       });
       console.log(`✅ ${project} completato`);
     } catch (err) {
-      console.error(`❌ ${project} fallito:`, err.message);
+      const error = err as Error
+      console.error(`❌ ${project} fallito:`, error.message);
     }
   }
 }

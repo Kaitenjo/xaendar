@@ -37,6 +37,17 @@ export class Watcher {
    */
   #signals: Set<State<unknown> | Computed<unknown>>;
   /**
+   * Returns a snapshot of the current watched signals set for introspection.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns An array of `State` and `Computed` instances that this Watcher is watching.
+   * @internal
+   */
+  public getSources(symbol: symbol): (State<unknown> | Computed<unknown>)[] {
+    assertPrivateContext(symbol);
+    return [...this.#signals];
+  }
+  /**
    * The callback invoked synchronously when a watched Signal (or one of its
    * recursive dependencies) changes for the first time since the last
    * `watch` call.
@@ -182,15 +193,9 @@ export class Watcher {
   public setState(newState: WatcherState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (this.#state === newState) {
-      return;
+    if (this.#state !== newState && this.#isValidTransition(this.#state, newState)) {
+      this.#state = newState;
     }
-
-    if (!isValidTransition(this.#state, newState)) {
-      throw new Error(`Cannot transition from ${this.#state} to ${newState}`);
-    }
-
-    this.#state = newState;
   }
 
   /**
@@ -206,19 +211,19 @@ export class Watcher {
     try {
       this.#notifyCallback.call(this);
     } finally {
+      this.#state = 'waiting'; 
       GLOBAL_STATE.frozen = false;
-      this.#state = 'waiting';
     }
   }
-}
 
-function isValidTransition(from: WatcherState, to: WatcherState): boolean {
-  switch (from) {
-    case 'waiting':
-      return to === 'watching';
-    case 'watching':
-      return to === 'pending' || to === 'waiting';
-    case 'pending':
-      return to === 'waiting';
+  #isValidTransition(from: WatcherState, to: WatcherState): boolean {
+    switch (from) {
+      case 'waiting':
+        return to === 'watching';
+      case 'watching':
+        return to === 'pending' || to === 'waiting';
+      case 'pending':
+        return to === 'waiting';
+    }
   }
 }

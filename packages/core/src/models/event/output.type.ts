@@ -1,4 +1,4 @@
-import { FunctionType } from '@xendar/common';
+import { VoidFunction } from '@xendar/common';
 import { EventParams } from './event-params.type';
 
 /**
@@ -10,5 +10,5 @@ import { EventParams } from './event-params.type';
  * This object's properties override the default event parameters defined in the decorator.
  */
 export type Output<Value = void> = {
-  emit: FunctionType<Value extends void ? ([EventParams] | []) : ([Value, EventParams] | [Value]), void>;
+  emit: VoidFunction<Value extends void ? ([EventParams] | []) : ([Value, EventParams] | [Value])>;
 }

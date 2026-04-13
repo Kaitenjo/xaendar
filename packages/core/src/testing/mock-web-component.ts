@@ -4,7 +4,10 @@ import { WebComponent } from '../decorators/web-component/web-component.decorato
 import { BaseWebComponent } from '../directives/base-web-component';
 import { Output } from '../models/event/output.type';
 
-@WebComponent('mock-web-component')
+@WebComponent({
+  selector: 'mock-web-component',
+  templateUrl: './mock-web-component.html',
+})
 export class MockWebComponent extends BaseWebComponent {
   
   @Property()

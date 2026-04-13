@@ -66,6 +66,17 @@ export class State<T = any> {
    * @see Method — `Signal.State.prototype.get` (NOTE on sinks)
    */
   #sinks: Set<Computed<unknown> | Watcher>;
+  /**
+   * Returns a snapshot of the current sinks set for introspection.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns An array of `Computed` and `Watcher` instances that depend on this Signal.
+   * @internal
+   */
+  public getSinks(symbol: symbol): (Computed<unknown> | Watcher)[] {
+    assertPrivateContext(symbol);
+    return [...this.#sinks];
+  }
 
   /**
    * Creates a new `State` signal.

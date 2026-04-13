@@ -3,9 +3,9 @@
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
+    "rootDir": ".",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
     "resolveJsonModule": true,
@@ -19,6 +19,11 @@
       "@xendar/compiler": ["./packages/compiler/src/public-api"],
       "@xendar/signals": ["./packages/signals/src/public-api"]
     },
-    "lib": ["ESNext", "dom"]
-  }
+    "lib": ["ESNext", "dom"],
+  },
+  "exclude": [
+    "**/vite-config.ts",
+    "**/*.spec.ts",
+    "dist"
+  ]
 }
