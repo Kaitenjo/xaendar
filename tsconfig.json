@@ -14,15 +14,27 @@
     "moduleDetection": "force",
     "noEmit": true,
     "paths": {
-      "@xendar/common": ["./packages/common/src/public-api"],
-      "@xendar/core": ["./packages/core/src/public-api"],
-      "@xendar/compiler": ["./packages/compiler/src/public-api"],
-      "@xendar/signals": ["./packages/signals/src/public-api"]
+      "@xendar/common": [
+        "../../dist/@xendar/common/xendar-common.es.d.ts"
+      ],
+      "@xendar/core": [
+        "../../dist/@xendar/core/xendar-core.es.d.ts"
+      ],
+      "@xendar/compiler": [
+        "../../dist/@xendar/compiler/xendar-compiler.es.d.ts"
+      ],
+      "@xendar/signals": [
+        "../../dist/@xendar/signals/xendar-signals.es.d.ts"
+      ]
     },
-    "lib": ["ESNext", "dom"],
+    "lib": [
+      "ESNext",
+      "dom"
+    ]
   },
   "exclude": [
     "**/vite-config.ts",
+    "**/vite.config.ts",
     "**/*.spec.ts",
     "dist"
   ]

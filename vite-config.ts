@@ -38,11 +38,9 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
       {
         name: 'generate-package-json',
         writeBundle() {
-          // Leggiamo il package.json originale della libreria
           const pkgPath = path.resolve(dirName, 'package.json');
           const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
-          // Prepariamo la versione per la distribuzione
           const distPkg = {
             name: pkg.name,
             version: pkg.version,
@@ -50,14 +48,15 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
             type: "module",
             main: `./${fileName}.es.js`,
             module: `./${fileName}.es.js`,
+              types: `./${fileName}.es.d.ts`,
             exports: {
               ".": {
-                import: `./${fileName}.es.js`
+                import: `./${fileName}.es.js`,
+                types: `./${fileName}.es.d.ts`
               }
             },
             peerDependencies: pkg.peerDependencies || {},
-            dependencies: pkg.dependencies || {},
-            // Copia altri campi utili come repository, author, license
+            dependencies: pkg.dependencies || {}
           };
 
           writeFileSync(
@@ -68,8 +67,10 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
       },
       dts({
         insertTypesEntry: true,
+        rollupTypes: true,
         outDir,
         tsconfigPath: path.resolve(dirName, 'tsconfig.json'),
+        bundledPackages: []
       }),
     ],
   };

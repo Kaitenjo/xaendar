@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@xendar/common": ["../../dist/@xendar/common/xendar-common.es.d.ts"],
+      "@xendar/core": ["../../dist/@xendar/core/xendar-core.es.d.ts"],
+      "@xendar/compiler": ["../../dist/@xendar/compiler/xendar-compiler.es.d.ts"],
+      "@xendar/signals": ["../../dist/@xendar/signals/xendar-signals.es.d.ts"]
+    }
+  }
+}
