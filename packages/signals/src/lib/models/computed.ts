@@ -1,8 +1,9 @@
-import { GLOBAL_STATE, popComputed, pushComputed } from './globals';
-import { ComputedState } from './models/computed-state.type';
-import { SignalEqual } from './models/signal-equal.type';
-import { SignalOptions } from './models/signal-options.type';
-import { assertPrivateContext, PRIVATE } from './private-symbol';
+
+import { GLOBAL_STATE, pushComputed, popComputed } from '../globals';
+import { PRIVATE, assertPrivateContext } from '../private-symbol';
+import { ComputedState } from '../types/computed-state.type';
+import { SignalEqual } from '../types/signal-equal.type';
+import { SignalOptions } from '../types/signal-options.type';
 import { State } from './state';
 import { Watcher } from './watcher';
 
@@ -92,41 +93,6 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Signal.Computed internal slots"
    */
   #callback: (this: Computed<T>) => T;
-  /**
-   * The current version of this Signal, incremented every time the callback
-   * is successfully executed and produces a new value.
-   *
-   * Used by dependent un-watched `Computed` nodes to determine whether this
-   * Signal has changed since they last evaluated, without relying on the
-   * push-based sink notification chain.
-   *
-   * Starts at `-1` to ensure the first read of any dependent `Computed` is
-   * always treated as stale.
-   */
-  #version = -1;
-  /**
-   * Exposes the current version of this Signal for staleness checks by
-   * dependent un-watched `Computed` nodes.
-   *
-   * @param symbol - Private access symbol; rejects calls from outside the library.
-   * @returns The current version number.
-   * @internal
-   */
-  public getVersion(symbol: symbol): number {
-    assertPrivateContext(symbol);
-    return this.#version;
-  }
-  /**
-   * A map from each source Signal to the version last seen by this `Computed`
-   * at the time of the most recent `#computeValue` call.
-   *
-   * After each re-evaluation, the map is cleared and rebuilt to mirror
-   * `#sources` exactly — ensuring that sources from conditional branches no
-   * longer taken do not linger and cause stale references or memory leaks.
-   *
-   * Used exclusively by `#isStale` for un-watched `Computed` nodes.
-   */
-  #sourcesVersions = new Map<State<unknown> | Computed<unknown>, number>;
 
   /**
    * Creates a new `Computed` signal.
@@ -178,11 +144,9 @@ export class Computed<T = any> {
 
     GLOBAL_STATE.computing?.addSource(this, PRIVATE);
 
-    if (this.#sinks.size === 0 && this.#state === 'clean' && this.#isStale()) {
-      this.#state = 'dirty';
-    }
-
-    if (this.#state === 'dirty' || this.#state === 'checked') {
+    if (this.#sinks.size === 0) {
+      this.#computeValue();
+    } else if (this.#state === 'dirty' || this.#state === 'checked') {
       while (this.#state === 'dirty' || this.#state === 'checked') {
         const deepest = this.#findDeepestStale();
         deepest.#computeValue();
@@ -190,38 +154,6 @@ export class Computed<T = any> {
     }
 
     return this.#value;
-  }
-
-  /**
-   * Determines whether this Signal's cached value may be stale by comparing
-   * the last-seen version of each source against its current version.
-   *
-   * Used exclusively for un-watched `Computed` nodes (i.e. those with no
-   * sinks), since watched nodes rely on the push-based `~dirty~` / `~checked~`
-   * state machine instead.
-   *
-   * A source is considered changed if its current version differs from the
-   * version recorded in `#sourcesVersions` at the time of the last
-   * `#computeValue` call. If any source has changed, the Signal is stale and
-   * must be re-evaluated on the next `get()`.
-   *
-   * @returns `true` if at least one source has a newer version than last seen,
-   * `false` if all sources are unchanged.
-   */
-  #isStale(): boolean {
-    for (const source of this.#sources) {
-      // Se la source è un Computed non osservato, verifica ricorsivamente
-      if (source instanceof Computed && source.#isStale()) {
-        return true;
-      }
-
-      const lastSeen = this.#sourcesVersions.get(source) ?? -1;
-      if (source.getVersion(PRIVATE) !== lastSeen) {
-        return true;
-      }
-    }
-    
-    return false;
   }
 
   /**
@@ -269,10 +201,14 @@ export class Computed<T = any> {
    * @internal
    * @see Signal algorithms — "Signal.Computed State machine"
    */
-  public setState(newState: ComputedState, symbol: symbol) {
+  public setState(newState: ComputedState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (isValidTransition(this.#state, newState)) {
+    if (this.#state === newState) {
+      return;
+    }
+    
+    if (!isValidTransition(this.#state, newState)) {
       throw new Error(`Cannot transition from ${this.#state} to ${newState}`);
     }
 
@@ -363,7 +299,6 @@ export class Computed<T = any> {
 
     try {
       newValue = this.#callback.call(this);
-      this.#version++;
     } catch (error) {
       newValue = { isError: true, value: error as Error };
     } finally {
@@ -371,8 +306,6 @@ export class Computed<T = any> {
     }
 
     const outcome = this.#setValue(newValue);
-    this.#sourcesVersions.clear();
-    this.#sources.forEach(source => this.#sourcesVersions.set(source, source.getVersion(PRIVATE)));
 
     outcome === 'dirty'
       ? this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE))

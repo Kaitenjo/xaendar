@@ -1,8 +1,8 @@
 import { NoArgsVoidFunction } from '@xendar/common';
+import { GLOBAL_STATE } from '../globals';
+import { PRIVATE, assertPrivateContext } from '../private-symbol';
+import { WatcherState } from '../types/watcher-state.type';
 import { Computed } from './computed';
-import { GLOBAL_STATE } from './globals';
-import { WatcherState } from './models/watcher-state.type';
-import { assertPrivateContext, PRIVATE } from './private-symbol';
 import { State } from './state';
 
 /**
@@ -179,10 +179,14 @@ export class Watcher {
    * @param symbol - The private symbol for prevent external calls.
    * @throws If the transition from `pending` to `watching` is attempted.
    */
-  public setState(newState: WatcherState, symbol: symbol) {
+  public setState(newState: WatcherState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (isValidTransition(this.#state, newState)) {
+    if (this.#state === newState) {
+      return;
+    }
+
+    if (!isValidTransition(this.#state, newState)) {
       throw new Error(`Cannot transition from ${this.#state} to ${newState}`);
     }
 
@@ -193,7 +197,7 @@ export class Watcher {
    * Invoce the notify callback when a watched dependency changes
    * @param symbol - The private symbol for prevent external calls.
    */
-  public notify(symbol: symbol) {
+  public notify(symbol: symbol): void {
     assertPrivateContext(symbol);
 
     this.#state = 'pending';

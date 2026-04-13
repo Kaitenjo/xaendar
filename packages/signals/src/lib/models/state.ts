@@ -1,9 +1,9 @@
 import { NoArgsVoidFunction } from '@xendar/common';
+import { GLOBAL_STATE } from '../globals';
+import { PRIVATE, assertPrivateContext } from '../private-symbol';
+import { SignalEqual } from '../types/signal-equal.type';
+import { SignalOptions } from '../types/signal-options.type';
 import { Computed } from './computed';
-import { GLOBAL_STATE } from './globals';
-import { SignalEqual } from './models/signal-equal.type';
-import { SignalOptions } from './models/signal-options.type';
-import { assertPrivateContext, PRIVATE } from './private-symbol';
 import { Watcher } from './watcher';
 
 export class State<T = any> {
@@ -66,30 +66,6 @@ export class State<T = any> {
    * @see Method — `Signal.State.prototype.get` (NOTE on sinks)
    */
   #sinks: Set<Computed<unknown> | Watcher>;
-  /**
-   * The current version of this Signal, incremented every time the callback
-   * is successfully executed and produces a new value.
-   *
-   * Used by dependent un-watched `Computed` nodes to determine whether this
-   * Signal has changed since they last evaluated, without relying on the
-   * push-based sink notification chain.
-   *
-   * Starts at `-1` to ensure the first read of any dependent `Computed` is
-   * always treated as stale.
-   */
-  #version = -1;
-  /**
-   * Exposes the current version of this Signal for staleness checks by
-   * dependent un-watched `Computed` nodes.
-   *
-   * @param symbol - Private access symbol; rejects calls from outside the library.
-   * @returns The current version number.
-   * @internal
-   */
-  public getVersion(symbol: symbol): number {
-    assertPrivateContext(symbol);
-    return this.#version;
-  }
 
   /**
    * Creates a new `State` signal.
@@ -161,8 +137,6 @@ export class State<T = any> {
 
     if (!this.#equals.call(this, this.#value, newValue)) {
       this.#value = newValue;
-      this.#version++;
-      GLOBAL_STATE.generation++;
       this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE));
     }
   }

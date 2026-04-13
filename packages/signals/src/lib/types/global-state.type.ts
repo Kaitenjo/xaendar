@@ -1,4 +1,4 @@
-import { Computed } from '../computed';
+import { Computed } from '../models/computed';
 
 export type GlobalState = {
   /**
@@ -39,18 +39,4 @@ export type GlobalState = {
  * @see Method: `Signal.subtle.Watcher.prototype.unwatch`
  */
   frozen: boolean;
-  /**
- * A monotonically incrementing integer used to track how current a cached
- * value is, while avoiding circularities in the Signal graph.
- *
- * Incremented every time a `Signal.State` is set to a new value (i.e. when
- * the `equals` check returns `false`). Computed Signals compare their own
- * recorded generation number against this value to cheaply determine whether
- * they may be stale, without re-traversing the entire dependency graph.
- *
- * Starts at `0`.
- *
- * @see Signal algorithms — 'Hidden global state'
- */
-  generation: number;
 };

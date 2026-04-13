@@ -1,5 +1,6 @@
+import { Computed } from '../models/computed';
+import { State } from '../models/state';
 import { SignalEqual } from './signal-equal.type';
-import { Signal } from './signal.interface';
 
 export type SignalOptions<T> = {
   /**
@@ -10,9 +11,9 @@ export type SignalOptions<T> = {
   /**
    * Callback called when isWatched becomes true, if it was previously false
    */
-  watched?: (this: Signal<T>) => void;
+  watched?: (this: State<T> | Computed<T>) => void;
   /**
    * Callback called whenever isWatched becomes false, if it was previously true
    */
-  unwatched?: (this: Signal<T>) => void;
+  unwatched?: (this: State<T> | Computed<T>) => void;
 }

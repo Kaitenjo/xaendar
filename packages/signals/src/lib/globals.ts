@@ -1,6 +1,6 @@
 import { Stack } from '@xendar/common';
-import { Computed } from './computed';
-import { GlobalState } from './models/global-state.type';
+import { Computed } from './models/computed';
+import { GlobalState } from './types/global-state.type';
 
 /**
  * Global state for the signals runtime.
@@ -11,8 +11,7 @@ import { GlobalState } from './models/global-state.type';
  */
 export const GLOBAL_STATE: GlobalState = {
   computing: null,
-  frozen: false,
-  generation: 0
+  frozen: false
 };
 
 const computingStack = new Stack<Computed>;
