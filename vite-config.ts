@@ -31,9 +31,6 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
       },
       sourcemap: true,
     },
-    resolve: {
-      preserveSymlinks: false
-    },
     plugins: [
       {
         name: 'generate-package-json',
@@ -48,7 +45,7 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
             type: "module",
             main: `./${fileName}.es.js`,
             module: `./${fileName}.es.js`,
-              types: `./${fileName}.es.d.ts`,
+            types: `./${fileName}.es.d.ts`,
             exports: {
               ".": {
                 import: `./${fileName}.es.js`,
@@ -58,19 +55,13 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
             peerDependencies: pkg.peerDependencies || {},
             dependencies: pkg.dependencies || {}
           };
-
-          writeFileSync(
-            path.join(outDir, 'package.json'),
-            JSON.stringify(distPkg, null, 2)
-          );
+          writeFileSync(path.join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
         }
       },
       dts({
-        insertTypesEntry: true,
         rollupTypes: true,
         outDir,
-        tsconfigPath: path.resolve(dirName, 'tsconfig.json'),
-        bundledPackages: []
+        tsconfigPath: path.resolve(dirName, 'tsconfig.json')
       }),
     ],
   };

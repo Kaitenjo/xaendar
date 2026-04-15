@@ -15,16 +15,16 @@
     "noEmit": true,
     "paths": {
       "@xendar/common": [
-        "../../dist/@xendar/common/xendar-common.es.d.ts"
-      ],
-      "@xendar/core": [
-        "../../dist/@xendar/core/xendar-core.es.d.ts"
+        "./@xendar/common"
       ],
       "@xendar/compiler": [
-        "../../dist/@xendar/compiler/xendar-compiler.es.d.ts"
+        "./@xendar/compiler"
+      ],
+      "@xendar/core": [
+        "./@xendar/core"
       ],
       "@xendar/signals": [
-        "../../dist/@xendar/signals/xendar-signals.es.d.ts"
+        "./@xendar/signals"
       ]
     },
     "lib": [
