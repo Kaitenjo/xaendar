@@ -5,7 +5,6 @@
     "build-projects": "node dist/build-projects.js",
     "build:watch": "tsc -p tsconfig.json --watch",
     "check-dependencies": "node dist/check-dependencies.js",
-    "merge-tsconfig": "node dist/merge-tsconfig.js",
     "pack": "node dist/pack-projects.js"
   }
 }

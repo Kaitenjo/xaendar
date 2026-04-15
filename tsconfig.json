@@ -14,18 +14,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "paths": {
-      "@xendar/common": [
-        "./@xendar/common"
-      ],
-      "@xendar/compiler": [
-        "./@xendar/compiler"
-      ],
-      "@xendar/core": [
-        "./@xendar/core"
-      ],
-      "@xendar/signals": [
-        "./@xendar/signals"
-      ]
+      "@xendar/common": ["./packages/common/src/public-api"],
+      "@xendar/core": ["./packages/core/src/public-api"],
+      "@xendar/compiler": ["./packages/compiler/src/public-api"],
+      "@xendar/signals": ["./packages/signals/src/public-api"]
     },
     "lib": [
       "ESNext",

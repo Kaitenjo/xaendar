@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@xendar/common": [
+        "@xendar/common/xendar-core.es.d.ts"
+      ]
+    },
+  }
+}

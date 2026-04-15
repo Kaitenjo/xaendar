@@ -7,14 +7,13 @@
   "scripts": {
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
-    "build:projects": "npm run merge-tsconfig ./tsconfig.partial.prod.json && npm run build-projects --prefix schematics",
+    "build:projects": "npm run build-projects --prefix schematics",
     "check-dependencies": "npm run check-dependencies --prefix schematics",
     "deploy": "npm run build:schematics && npm run build:projects && npm run pack-projects",
     "i": "npm i --omit-optional --ignore-scripts",
     "install:clean": "rimraf package-lock.json node_modules && npm run i",
-    "merge-tsconfig": "npm run merge-tsconfig --prefix schematics",
     "pack-projects": "npm run pack --prefix schematics",
-    "start": "npm run merge-tsconfig ./tsconfig.partial.dev.json && nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps dist/test.es.js\"",
+    "start": "nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps dist/test.es.js\"",
     "start:debug": "nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps --inspect-brk dist/test.es.js\""
   },
   "devDependencies": {

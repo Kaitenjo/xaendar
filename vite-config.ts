@@ -1,7 +1,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { UserConfig } from "vite";
+import { PluginOption, UserConfig } from "vite";
 import dts from 'vite-plugin-dts';
+
+export type ViteConfigOptions = {
+  plugins?: PluginOption[]
+}
 
 const external = [
   '@xendar/common',
@@ -10,7 +14,7 @@ const external = [
   '@xendar/signals'
 ]
 
-export default function getViteConfig(name: string, dirName: string): UserConfig {
+export default function getViteConfig(name: string, dirName: string, options?: ViteConfigOptions): UserConfig {
   const fileName = name.split('/').join('-').slice(1);
   const outDir = path.resolve(dirName, `../../dist/${name}`);
 
@@ -61,8 +65,9 @@ export default function getViteConfig(name: string, dirName: string): UserConfig
       dts({
         rollupTypes: true,
         outDir,
-        tsconfigPath: path.resolve(dirName, 'tsconfig.json')
+        tsconfigPath: path.resolve(dirName, '../../tsconfig.dts.json')
       }),
+      ...(options?.plugins ?? [])
     ],
   };
 }
