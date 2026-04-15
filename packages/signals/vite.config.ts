@@ -1,7 +1,6 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import getViteConfig from '../../vite-config';
-import { copyFile, copyFileSync, readFile, readFileSync, writeFileSync } from 'node:fs';
-import { PackageJson } from 'type-fest';
 
 export default defineConfig(getViteConfig('@xendar/signals', __dirname, {
   plugins: [
