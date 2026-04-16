@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { resolve } from 'path';
 
-const projectsRoot = '../packages';
+const projectsRoot = '../dist/@xaendar';
 
 const projects = [
   'common',
