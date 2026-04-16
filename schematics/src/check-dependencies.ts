@@ -19,7 +19,9 @@ const deepCheckOptions = {
     '*.json',
     '*.spec.ts',
     '*.js',
-    '*.scss'
+    '*.scss',
+    '*.html',
+    'vite.config.ts',
   ],
   detectors: [
     // the target detectors
