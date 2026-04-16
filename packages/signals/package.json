@@ -1,12 +1,11 @@
 {
   "name": "@xaendar/signals",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library for managing signals in web applications",
-  "peerDependencies": {
-    "@xaendar/common": "^1.0.0",
-    "vite": "^8.0.4"
+  "dependencies": {
+    "@xaendar/common": "^0.1.0"
   }
 }

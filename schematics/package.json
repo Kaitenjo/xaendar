@@ -7,6 +7,6 @@
     "compile-projects": "node dist/compile-projects.js",
     "check-dependencies": "node dist/check-dependencies.js",
     "pack": "node dist/pack-projects.js",
-    "publish": "node dist/publish.js --bump=patch"
+    "publish": "node dist/publish.js --bump=minor"
   }
 }
