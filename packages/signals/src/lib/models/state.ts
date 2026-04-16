@@ -1,4 +1,4 @@
-import { NoArgsVoidFunction } from '@xendar/common';
+import { NoArgsVoidFunction } from '@xaendar/common';
 import { GLOBAL_STATE } from '../globals';
 import { PRIVATE, assertPrivateContext } from '../private-symbol';
 import { SignalEqual } from '../types/signal-equal.type';

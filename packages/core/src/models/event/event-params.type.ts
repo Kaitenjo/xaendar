@@ -1,4 +1,4 @@
-import { Beautify, RequireOne } from '@xendar/common';
+import { Beautify, RequireOne } from '@xaendar/common';
 
 /**
  * Rapresent the options to configure an @Event Decorator in a Web Component.

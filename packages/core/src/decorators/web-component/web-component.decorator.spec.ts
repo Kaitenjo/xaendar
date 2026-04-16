@@ -1,4 +1,4 @@
-import { BaseWebComponent } from '@xendar/core';
+import { BaseWebComponent } from '@xaendar/core';
 import { WebComponent } from './web-component.decorator';
 
 describe('WebComponent decorator', () => {

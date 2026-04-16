@@ -1,4 +1,4 @@
-import { Stack } from '@xendar/common';
+import { Stack } from '@xaendar/common';
 import { Computed } from './models/computed';
 import { GlobalState } from './types/global-state.type';
 

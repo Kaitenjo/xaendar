@@ -14,13 +14,13 @@ async function compileAll() {
 
   for (const project of projects) {
     const projectPath = resolve(projectsRoot, project);
-    console.log(`\n▶ Build: @xendar/${project}`);
+    console.log(`\n▶ Build: @xaendar/${project}`);
 
     try {
       execSync('tsc --noEmit', { stdio: 'inherit', cwd: projectPath })
-      console.log(`✅ @xendar/${project} completato`);
+      console.log(`✅ @xaendar/${project} completato`);
     } catch (err) {
-      console.error(`❌ Typescript Compilation failed for @xendar/${project}:`);
+      console.error(`❌ Typescript Compilation failed for @xaendar/${project}:`);
       throw err;
     }
   }

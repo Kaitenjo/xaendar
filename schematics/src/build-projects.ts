@@ -14,17 +14,17 @@ async function buildAll() {
 
   for (const project of projects) {
     const projectPath = resolve(projectsRoot, project);
-    console.log(`\n▶ Build: @xendar/${project}`);
+    console.log(`\n▶ Build: @xaendar/${project}`);
 
     try {
       await build({
         root: projectPath,
         configFile: resolve(projectPath, 'vite.config.ts')
       });
-      console.log(`✅ @xendar/${project} completato`);
+      console.log(`✅ @xaendar/${project} completato`);
     } catch (err) {
       const error = err as Error
-      console.error(`❌ @xendar/${project} fallito:`, error.message);
+      console.error(`❌ @xaendar/${project} fallito:`, error.message);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { loadSignals } from "@xendar/signals";
+import { loadSignals } from "@xaendar/signals";
 
 loadSignals();
 

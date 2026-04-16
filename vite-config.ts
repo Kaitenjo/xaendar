@@ -8,10 +8,10 @@ export type ViteConfigOptions = {
 }
 
 const external = [
-  '@xendar/common',
-  '@xendar/compiler',
-  '@xendar/core',
-  '@xendar/signals'
+  '@xaendar/common',
+  '@xaendar/compiler',
+  '@xaendar/core',
+  '@xaendar/signals'
 ]
 
 export default function getViteConfig(name: string, dirName: string, options?: ViteConfigOptions): UserConfig {
@@ -72,7 +72,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         afterBuild() {
           const typesPath = resolve(outDir, `${fileName}.es.d.ts`);
           const content = readFileSync(typesPath, 'utf-8')
-          const result = content.replace(/from ['"](?:\.\.\/)*schematics\/packages\/([^/]+)\/src\/public-api['"]/g, (_, pkg) => `from '@xendar/${pkg}'`);
+          const result = content.replace(/from ['"](?:\.\.\/)*schematics\/packages\/([^/]+)\/src\/public-api['"]/g, (_, pkg) => `from '@xaendar/${pkg}'`);
           writeFileSync(typesPath, result);
         }
       }),

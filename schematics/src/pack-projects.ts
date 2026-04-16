@@ -16,7 +16,7 @@ async function packAll() {
   }
 
   for (const project of projects) {
-    const projectPath = resolve('../dist/@xendar', project);
+    const projectPath = resolve('../dist/@xaendar', project);
 
     console.log(`\n▶ Pack: ${project}`);
 

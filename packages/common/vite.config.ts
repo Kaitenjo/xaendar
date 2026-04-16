@@ -1,4 +1,4 @@
 import { defineConfig } from 'vite';
 import getViteConfig from '../../vite-config';
 
-export default defineConfig(getViteConfig('@xendar/common', __dirname));
+export default defineConfig(getViteConfig('@xaendar/common', __dirname));

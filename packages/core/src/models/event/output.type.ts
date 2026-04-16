@@ -1,4 +1,4 @@
-import { VoidFunction } from '@xendar/common';
+import { VoidFunction } from '@xaendar/common';
 import { EventParams } from './event-params.type';
 
 /**
