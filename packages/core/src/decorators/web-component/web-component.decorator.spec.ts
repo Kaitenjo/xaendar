@@ -1,5 +1,5 @@
-import { BaseWebComponent } from "@xendar/core";
-import { WebComponent } from "./web-component.decorator";
+import { BaseWebComponent } from '@xaendar/core';
+import { WebComponent } from './web-component.decorator';
 
 describe('WebComponent decorator', () => {
   let defineSpy: jest.SpyInstance;
@@ -12,10 +12,10 @@ describe('WebComponent decorator', () => {
     @WebComponent('single-selector')
     class SingleSelectorComponent extends BaseWebComponent {
       public template(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
       public css(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
     }
 
@@ -27,10 +27,10 @@ describe('WebComponent decorator', () => {
     @WebComponent(['first-selector', 'second-selector'])
     class MultipleSelectorComponent extends BaseWebComponent {
       public template(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
       public css(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
     }
 
@@ -43,10 +43,10 @@ describe('WebComponent decorator', () => {
     @WebComponent('selector')
     class SingleSelectorComponent extends BaseWebComponent {
       public template(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
       public css(): string {
-        throw new Error("Method not implemented.");
+        throw new Error('Method not implemented.');
       }
     }
 

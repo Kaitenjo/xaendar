@@ -1,9 +1,9 @@
-import { EOF } from "../costants/chars.constants";
-import { TokenType } from "../lexer/models/token-type.enum";
-import { AttributeToken, EventToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type";
-import { ASTNode, AttributeNode, ElementNode, EventNode, InterpolationNode, TextNode } from "./models/ast.type";
-import { ASTNodeType } from "./models/node.enum";
-import { ParserCursor } from "./models/parser-cursor.model";
+import { EOF } from '../costants/chars.constants';
+import { TokenType } from '../lexer/models/token-type.enum';
+import { AttributeToken, EventToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from '../lexer/models/token.type';
+import { ASTNode, AttributeNode, ElementNode, EventNode, InterpolationNode, TextNode } from './models/ast.type';
+import { ASTNodeType } from './models/node.enum';
+import { ParserCursor } from './models/parser-cursor.model';
 
 /**
  * Parser class that transforms a stream of tokens (from the Lexer)
@@ -190,7 +190,7 @@ export class Parser {
 
     return {
       name: name!,
-      value: value!.replace(/^["']|["']$/g, '')
+      value: value!.replace(/^['']|['']$/g, '')
     };
   }
 
@@ -204,7 +204,7 @@ export class Parser {
 
     return {
       name: name!,
-      handler: value!.replace(/^["']|["']$/g, '')
+      handler: value!.replace(/^['']|['']$/g, '')
     };
   }
 

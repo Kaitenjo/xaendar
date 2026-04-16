@@ -1,4 +1,4 @@
-import { Dictionary, Stack } from '@xendar/common';
+import { Dictionary, Stack } from '@xaendar/common';
 import { EOF } from '../costants/chars.constants';
 import { LexerCursor } from './models/lexer-cursor.model';
 import { LexerState } from './models/lexer-state.enum';

@@ -1,4 +1,4 @@
-import { PositiveInteger, TupleOfLength } from '@xendar/common';
+import { PositiveInteger, TupleOfLength } from '@xaendar/common';
 import { CR, EOF, LF, SPACE } from '../../costants/chars.constants';
 import { CurrentChar } from './current-char.type';
 import { CursorPosition } from './current-position.type';

@@ -1,20 +1,27 @@
-import { generateRenderFunction, Lexer, Parser } from "@xendar/compiler";
+import { loadSignals } from "@xaendar/signals";
 
-export function compile(input: string): string {
-  const tokens = new Lexer(input).tokenize();
-  console.log(tokens)
-  const ast = new Parser(tokens).parse();
-  console.log(ast)
-  let a = generateRenderFunction(ast)
-  console.log(a)
-  return a;
-}
+loadSignals();
 
-const template =`
-<label for={id} aria-label={label}>
-  {label}
-</label>
-<input id={id} type="text" value={ value + '' + 'asd' + ' ' + "test" } placeholder={placeholder} @change="onChange($event)" />
-`
+const state = new Signal.State(0);
+let version = 0
+const computed = new Signal.Computed(() => {
+  console.log(version++);
+  return Signal.subtle.untrack(() => state.get()) * 2;  
+});
+const watcher = new Signal.subtle.Watcher(() => {
+  console.log('Watcher notified:');
+});
+watcher.watch(computed);
+computed.get();
 
-compile(template)
+state.set(1);
+computed.get();
+
+state.set(2);
+computed.get();
+
+state.set(2);
+computed.get();
+
+state.set(3);
+computed.get();

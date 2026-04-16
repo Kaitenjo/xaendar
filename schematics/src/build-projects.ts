@@ -8,26 +8,23 @@ async function buildAll() {
   const projects = [
     'common',
     'core',
-    'compiler'
+    'compiler',
+    'signals'
   ]
 
   for (const project of projects) {
     const projectPath = resolve(projectsRoot, project);
-    console.log(`\n▶ Build: ${project}`);
+    console.log(`\n▶ Build: @xaendar/${project}`);
 
     try {
       await build({
         root: projectPath,
-        configFile: resolve(projectPath, 'vite.config.ts'),
-        build: {
-          outDir: resolve(projectPath, 'dist'),
-          emptyOutDir: true,
-        },
-        logLevel: 'info',
+        configFile: resolve(projectPath, 'vite.config.ts')
       });
-      console.log(`✅ ${project} completato`);
+      console.log(`✅ @xaendar/${project} completato`);
     } catch (err) {
-      console.error(`❌ ${project} fallito:`, err.message);
+      const error = err as Error
+      console.error(`❌ @xaendar/${project} fallito:`, error.message);
     }
   }
 }

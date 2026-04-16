@@ -16,8 +16,8 @@ export const NOT_ALLOWED_CHARS_FOR_TAGS = [
   '/',
   '\\',
   '|',
-  '"',
   "'",
+  '"',
   '<',
   '>',
   '='
