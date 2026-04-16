@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import { join, resolve } from "node:path";
 import { PluginOption, UserConfig } from "vite";
 import dts from 'vite-plugin-dts';
 
@@ -16,17 +16,19 @@ const external = [
 
 export default function getViteConfig(name: string, dirName: string, options?: ViteConfigOptions): UserConfig {
   const fileName = name.split('/').join('-').slice(1);
-  const outDir = path.resolve(dirName, `../../dist/${name}`);
+  const outDir = resolve(dirName, `../../dist/${name}`);
 
   return {
     build: {
       target: 'esnext',
       lib: {
-        entry: path.resolve(dirName, 'src/public-api.ts'),
+        entry: resolve(dirName, 'src/public-api.ts'),
         name,
         fileName: format => `${fileName}.${format}.js`,
         formats: ['es']
       },
+      outDir: 'dist',
+      emptyOutDir: true,
       rollupOptions: {
         output: {
           dir: outDir
@@ -35,11 +37,12 @@ export default function getViteConfig(name: string, dirName: string, options?: V
       },
       sourcemap: true,
     },
+    logLevel: 'info',
     plugins: [
       {
         name: 'generate-package-json',
         writeBundle() {
-          const pkgPath = path.resolve(dirName, 'package.json');
+          const pkgPath = resolve(dirName, 'package.json');
           const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
           const distPkg = {
@@ -59,13 +62,19 @@ export default function getViteConfig(name: string, dirName: string, options?: V
             peerDependencies: pkg.peerDependencies || {},
             dependencies: pkg.dependencies || {}
           };
-          writeFileSync(path.join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
+          writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
         }
       },
       dts({
         rollupTypes: true,
         outDir,
-        tsconfigPath: path.resolve(dirName, '../../tsconfig.dts.json')
+        root: resolve(dirName, 'src/public-api.ts'),
+        afterBuild() {
+          const typesPath = resolve(outDir, `${fileName}.es.d.ts`);
+          const content = readFileSync(typesPath, 'utf-8')
+          const result = content.replace(/from ['"](?:\.\.\/)*schematics\/packages\/([^/]+)\/src\/public-api['"]/g, (_, pkg) => `from '@xendar/${pkg}'`);
+          writeFileSync(typesPath, result);
+        }
       }),
       ...(options?.plugins ?? [])
     ],

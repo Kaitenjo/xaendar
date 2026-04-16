@@ -7,7 +7,7 @@ export default defineConfig(getViteConfig('@xendar/signals', __dirname, {
     {
       name: 'types',
       writeBundle() {
-        const content = readFileSync('../packages/signals/src/global.d.ts', 'utf-8');
+        const content = readFileSync('../packages/signals/src/globals.d.ts', 'utf-8');
         const dtsContent = readFileSync('../dist/@xendar/signals/xendar-signals.es.d.ts', 'utf-8');
         writeFileSync('../dist/@xendar/signals/xendar-signals.es.d.ts', `${content}\n\n${dtsContent}`);
       }

@@ -1,9 +1,9 @@
+import { execSync } from 'child_process';
 import { resolve } from 'path';
-import { build } from 'vite';
 
 const projectsRoot = '../packages';
 
-async function buildAll() {
+async function compileAll() {
   // Todo: Order of build should be based on dependencies between projects and not hardcoded
   const projects = [
     'common',
@@ -17,16 +17,13 @@ async function buildAll() {
     console.log(`\n▶ Build: @xendar/${project}`);
 
     try {
-      await build({
-        root: projectPath,
-        configFile: resolve(projectPath, 'vite.config.ts')
-      });
+      execSync('tsc --noEmit', { stdio: 'inherit', cwd: projectPath })
       console.log(`✅ @xendar/${project} completato`);
     } catch (err) {
-      const error = err as Error
-      console.error(`❌ @xendar/${project} fallito:`, error.message);
+      console.error(`❌ Typescript Compilation failed for @xendar/${project}:`);
+      throw err;
     }
   }
 }
 
-buildAll();
+compileAll();
