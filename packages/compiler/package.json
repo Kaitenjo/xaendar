@@ -1,11 +1,11 @@
 {
   "name": "@xaendar/compiler",
-  "version": "0.0.4",
+  "version": "0.1.6",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing compiler engine",
   "dependencies": {
-    "@xaendar/common": "0.1.0"
+    "@xaendar/common": "0.1.6"
   }
 }
