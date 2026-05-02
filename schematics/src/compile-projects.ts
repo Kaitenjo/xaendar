@@ -1,20 +1,34 @@
 import { execSync } from 'child_process';
+import { readdirSync } from 'fs';
 import { resolve } from 'path';
 
 const projectsRoot = '../packages';
 
-async function compileAll() {
-  // Todo: Order of build should be based on dependencies between projects and not hardcoded
-  const projects = [
-    'common',
-    'core',
-    'compiler',
-    'signals'
-  ]
-
-  for (const project of projects) {
+/**
+ * Sequentially runs `tsc --noEmit` in every package found under `../packages`,
+ * performing a type-check without emitting any output files.
+ *
+ * Packages are processed in the order returned by the filesystem.
+ * If TypeScript compilation fails for any package, the error is re-thrown
+ * and the remaining packages are **not** processed.
+ *
+ * @throws {Error} If `tsc --noEmit` exits with a non-zero code for any package.
+ *
+ * @example
+ * // Typical output on success:
+ * // ▶ Build: @xaendar/core
+ * // ✅ @xaendar/core completato
+ * // ▶ Build: @xaendar/ui
+ * // ✅ @xaendar/ui completato
+ *
+ * // Typical output on failure:
+ * // ▶ Build: @xaendar/core
+ * // ❌ Typescript Compilation failed for @xaendar/core:
+ */
+async function compileAll(): Promise<void> {
+  for (const project of readdirSync(projectsRoot)) {
     const projectPath = resolve(projectsRoot, project);
-    console.log(`\n▶ Build: @xaendar/${project}`);
+    console.log(`\n▶ Compile: @xaendar/${project}`);
 
     try {
       execSync('tsc --noEmit', { stdio: 'inherit', cwd: projectPath })

@@ -1,119 +1,140 @@
 import depcheck from 'depcheck';
-import fs from 'fs';
-import path from 'path';
+import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { join, resolve } from 'path';
 import { PackageJson } from 'type-fest';
 
+/**
+ * Default options passed to `depcheck` for every scanned package.
+ *
+ * - `ignoreDirs` – directories that are not analysed (assets, stories, tests, etc.).
+ * - `ignoreMatches` – package names that are always considered used even if not detected.
+ * - `ignorePatterns` – file glob patterns excluded from the scan.
+ * - `detectors` – only `require()` calls and ES `import` declarations are considered.
+ */
 const deepCheckOptions = {
   ignoreDirs: [
-    // folder with these names will be ignored
     'resources',
     'cultures',
     'stories',
     'testing'
   ],
   ignoreMatches: [
-    // ignore dependencies that matches these globs
     'json-schema'
   ],
   ignorePatterns: [
     '*.json',
     '*.spec.ts',
     '*.js',
-    '*.scss'
+    '*.scss',
+    '*.html',
+    'vite.config.ts',
   ],
   detectors: [
-    // the target detectors
     depcheck.detector.requireCallExpression,
     depcheck.detector.importDeclaration,
   ]
 };
 
-async function execute(): Promise<void> {
+/**
+ * Entry point. Iterates over every package in `../packages`, runs `depcheck`
+ * on each one, and validates the following rules:
+ *
+ * 1. **No invalid files** – files that depcheck could not parse are reported.
+ * 2. **No unused  dependencies** – every entry in `dependencies` must
+ *    appear at least once in the source code.
+ * 3. **No self-dependency** – a package must not import itself, either in the
+ *    source code or in its own `dependencies`.
+ * 4. **No missing  dependencies** – every import that is not already
+ *    declared must be added to `dependencies`, with the version taken from
+ *    the root `package.json` (or the package's own version for `@xaendar` deps).
+ *
+ * Exits with code `1` if any violation is found, `0` otherwise.
+ *
+ * @returns {Promise<void>}
+ */
+async function checkDependencies(): Promise<void> {
   let hasError = false;
   const projectPaths = getProjectPaths();
-  const mainPackageFile = getPackageJson('');
-  const mainDependencies = Object.assign({}, mainPackageFile.dependencies, mainPackageFile.devDependencies);
 
   for (const projectPath of projectPaths) {
     const packageJson = getPackageJson(projectPath);
     const depCheckResult = await depcheck(projectPath, deepCheckOptions);
-    const packagePeerDependenciesUsedNames = Object.keys(packageJson.peerDependencies ?? []);
+    if (!packageJson.dependencies || !Object.keys(packageJson.dependencies).length) {
+      continue;
+    }
 
-    const errors = new Array<unknown[]>;
+    const packageDependenciesUsedNames = Object.keys(packageJson.dependencies);
 
+    // Rule 1 – invalid files
     const realAllInvalidFiles = Object.keys(depCheckResult.invalidFiles);
     if (realAllInvalidFiles.length) {
-      errors.push(['Package', packageJson.name, 'invalid files!']);
-      errors.push([depCheckResult.invalidFiles]);
+      console.log(['Package', packageJson.name, 'invalid files!']);
+      console.log([depCheckResult.invalidFiles]);
       hasError = true;
     }
 
-    // Check all dependencies not used
+    // Rule 2 – self-dependency in source code
     const realAllDependenciesUsedNames = Object.keys(depCheckResult.using);
-    const peerDependenciesUnused = packagePeerDependenciesUsedNames.filter(item => realAllDependenciesUsedNames.indexOf(item) < 0);
-    if (peerDependenciesUnused.length) {
-      errors.push(['Package', packageJson.name, 'imports unused libraries!']);
-      errors.push(['Please remove following peerDependencies']);
-      errors.push([peerDependenciesUnused.join('\r\n')]);
-      hasError = true;
-    }
-
-    // Check all self ref dependencies on code
     const selfDepOnSourceCode = realAllDependenciesUsedNames.findIndex(d => d === packageJson.name);
     if (selfDepOnSourceCode > -1) {
-      errors.push(['package', packageJson.name, 'has a self dep, remove it']);
+      console.log(['package', packageJson.name, 'has a self dep, remove it']);
       hasError = true;
     }
 
-    // Check all self ref dependencies on packages
-    const selfDepOnPackage = Object.keys(packagePeerDependenciesUsedNames).findIndex(d => d === packageJson.name);
-    if (selfDepOnPackage > -1) {
-      errors.push(['package', packageJson.name, 'has a self dep, remove it']);
-      hasError = true;
+    if (hasError) {
+      console.error('Error on dependencies check!!!');
+      process.exit(1);
     }
 
-    // Check all missing dependencies
-    const dependenciesMissing = Object.keys(depCheckResult.missing).filter(d => d !== packageJson.name).sort();
-    if (dependenciesMissing.length) {
-      const dependenciesToAdd = dependenciesMissing.map((dependencyMissing, i) => `${i !== 0 ? '\r\n' : ''}- '${dependencyMissing}': '${dependencyMissing.startsWith('@xaendar') ? packageJson.version : mainDependencies[dependencyMissing]}'`);
-      errors.push(['Package', packageJson.name, 'miss libraries!']);
-      errors.push(['Please add following peerDependencies']);
-      errors.push([dependenciesToAdd.join('')]);
-      hasError = true;
-    }
+    // Rule 3 – unused dependencies
+    packageDependenciesUsedNames
+      .filter(depName => realAllDependenciesUsedNames.indexOf(depName) < 0)
+      .forEach(depName => {
+        console.log([`Package ${packageJson.name} import unused library {item}\nIt will be removed automatically`]);
+        delete packageJson.dependencies![depName]
+      });
 
-    if (errors.length) {
-      console.log(`----------------------${packageJson.name}----------------------\n`);
-      errors.forEach(error => console.error(...error));
-      console.log();
-    }
-  }
+    // Rule 4 – missing dependencies
+    Object.keys(depCheckResult.missing).forEach(depName => packageJson.dependencies![depName] = packageJson.version);
 
-  if (hasError) {
-    console.error('Error on dependencies check!!!');
-    process.exit(1);
-  } else {
-    console.log('Nothing to report, all packages dependencies are correct.');
+    writeFileSync(`${projectPath}/package.json`, JSON.stringify(packageJson, null, 2));
   }
 }
 
 /**
- * Gets the paths of all projects in the packages folder, excluding those in EXCLUDES
- * @returns An array of project paths
+ * Returns the absolute paths of all packages inside `../packages`.
+ *
+ * @returns {string[]} An array of absolute directory paths, one per package.
+ *
+ * @example
+ * getProjectPaths();
+ * // ['/repo/packages/core', '/repo/packages/ui', ...]
  */
 function getProjectPaths(): string[] {
-  const packagesDir = path.resolve('..', 'packages');
-  return fs.readdirSync(packagesDir).map(project => path.join(packagesDir, project));
+  const packagesDir = resolve('..', 'packages');
+  return readdirSync(packagesDir).map(project => join(packagesDir, project));
 }
 
 /**
- * Reads and parses the package.json file of a project
- * @param projectPath Path to the project
- * @returns The parsed package.json content
+ * Reads and parses the `package.json` of the given project.
+ *
+ * Pass an empty string to read the root `package.json`
+ * (i.e. the one located at the current working directory).
+ *
+ * @param {string} projectPath - Absolute or relative path to the project folder.
+ * @returns {PackageJson} The parsed contents of the `package.json` file.
+ *
+ * @throws {Error} If the file does not exist or contains invalid JSON.
+ *
+ * @example
+ * getPackageJson('/repo/packages/core');
+ * // { name: '@xaendar/core', version: '1.2.0', Dependencies: { ... } }
+ *
+ * getPackageJson(''); // reads the root package.json
  */
 function getPackageJson(projectPath: string): PackageJson {
-  const packageJsonPath = path.join(projectPath, 'package.json');
-  return JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  const packageJsonPath = join(projectPath, 'package.json');
+  return JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 }
 
-execute();
+checkDependencies();

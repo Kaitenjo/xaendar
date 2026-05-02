@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { PluginOption, UserConfig } from "vite";
 import dts from 'vite-plugin-dts';
+import { PackageJson } from "type-fest";
 
 export type ViteConfigOptions = {
   plugins?: PluginOption[]
@@ -43,7 +44,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         name: 'generate-package-json',
         writeBundle() {
           const pkgPath = resolve(dirName, 'package.json');
-          const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+          const pkg: PackageJson = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
           const distPkg = {
             name: pkg.name,
@@ -55,12 +56,14 @@ export default function getViteConfig(name: string, dirName: string, options?: V
             types: `./${fileName}.es.d.ts`,
             exports: {
               ".": {
-                import: `./${fileName}.es.js`,
-                types: `./${fileName}.es.d.ts`
+                import: {
+                  types: `./${fileName}.es.d.ts`,
+                  default: `./${fileName}.es.js`
+                }
               }
             },
-            peerDependencies: pkg.peerDependencies || {},
-            dependencies: pkg.dependencies || {}
+            peerDependencies: pkg.peerDependencies ?? {},
+            dependencies: pkg.dependencies ?? {}
           };
           writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
         }
