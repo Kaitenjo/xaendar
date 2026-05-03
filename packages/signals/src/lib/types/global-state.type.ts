@@ -1,4 +1,4 @@
-import { Computed } from '../models/computed';
+import { Computed } from '../models/computed/computed';
 
 export type GlobalState = {
   /**

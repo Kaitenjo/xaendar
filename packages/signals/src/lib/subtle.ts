@@ -1,7 +1,7 @@
 import { GLOBAL_STATE } from './globals';
-import { Computed } from './models/computed';
-import { State } from './models/state';
-import { Watcher } from './models/watcher';
+import { Computed } from './models/computed/computed';
+import { State } from './models/state/state';
+import { Watcher } from './models/watcher/watcher';
 import { PRIVATE } from './private-symbol';
 
 /**
@@ -35,11 +35,11 @@ export function currentComputed(): Computed | null {
  * - For a `Computed`, these are the Signals read inside its callback.
  * - For a `Watcher`, these are the Signals it is currently watching.
  *
- * @param s - The `Computed` or `Watcher` to introspect.
+ * @param signal - The `Computed` or `Watcher` to introspect.
  * @returns An array of `State` and `Computed` instances.
  */
-export function introspectSources(s: Computed | Watcher): (State | Computed)[] {
-  return s.getSources(PRIVATE);
+export function introspectSources(signal: Computed | Watcher): (State | Computed)[] {
+  return signal.getSources(PRIVATE);
 }
 
 /**

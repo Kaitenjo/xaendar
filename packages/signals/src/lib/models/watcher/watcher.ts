@@ -1,9 +1,9 @@
 import { NoArgsVoidFunction } from '@xaendar/common';
-import { GLOBAL_STATE } from '../globals';
-import { PRIVATE, assertPrivateContext } from '../private-symbol';
-import { WatcherState } from '../types/watcher-state.type';
-import { Computed } from './computed';
-import { State } from './state';
+import { GLOBAL_STATE } from '../../globals';
+import { PRIVATE, assertPrivateContext } from '../../private-symbol';
+import { State } from '../state/state';
+import { WatcherState } from '../../types/watcher-state.type';
+import { Computed } from '../computed/computed';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback
@@ -131,9 +131,7 @@ export class Watcher {
     });
 
 
-    if (this.#state === 'waiting') {
-      this.#state = 'watching';
-    }
+    this.setState('watching', PRIVATE);
   }
 
   /**
@@ -162,7 +160,7 @@ export class Watcher {
     }
 
     signals.forEach(signal => {
-      if (this.#signals.has(signal)) {
+      if (!this.#signals.has(signal)) {
         throw new Error('Cannot unwatch a signal that is not being watched');
       }
 
@@ -170,8 +168,8 @@ export class Watcher {
       signal.removeSink(this, PRIVATE);
     });
 
-    if (!this.#signals.size && this.#state === 'watching') {
-      this.#state = 'waiting';
+    if (!this.#signals.size) {
+      this.setState('waiting', PRIVATE)
     }
   }
 
@@ -193,9 +191,15 @@ export class Watcher {
   public setState(newState: WatcherState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (this.#state !== newState && this.#isValidTransition(this.#state, newState)) {
-      this.#state = newState;
+    if (this.#state === newState) {
+      return;
     }
+
+    if (!this.#isValidTransition(this.#state, newState)) {
+      throw new Error(`Watcher cannot change from ${this.#state} to ${newState}`)
+    }
+
+    this.#state = newState
   }
 
   /**
@@ -205,13 +209,14 @@ export class Watcher {
   public notify(symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    this.#state = 'pending';
+    this.setState('pending', PRIVATE)
 
     GLOBAL_STATE.frozen = true;
     try {
+      this.setState('waiting', PRIVATE);
       this.#notifyCallback.call(this);
     } finally {
-      this.#state = 'waiting'; 
+      this.setState('watching', PRIVATE);
       GLOBAL_STATE.frozen = false;
     }
   }
