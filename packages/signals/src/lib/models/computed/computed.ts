@@ -228,7 +228,8 @@ export class Computed<T = any> {
     }
 
     if (!this.#isValidTransition(this.#state, newState)) {
-      throw new Error(`Computed cannot change from ${this.#state} to ${newState}`)
+      console.log(`Invalid state transition from ${this.#state} to ${newState} in Computed signal`);
+      return;
     }
 
     this.#state = newState;

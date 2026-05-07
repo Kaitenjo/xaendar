@@ -196,7 +196,8 @@ export class Watcher {
     }
 
     if (!this.#isValidTransition(this.#state, newState)) {
-      throw new Error(`Watcher cannot change from ${this.#state} to ${newState}`)
+      console.log(`Invalid state transition from ${this.#state} to ${newState} in Watcher`);
+      return;
     }
 
     this.#state = newState

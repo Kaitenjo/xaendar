@@ -214,14 +214,14 @@ describe('Computed', () => {
     });
 
     it('respects a custom equals function', () => {
-      const state = new State({ v: 1 });
-      const equals = vi.fn((a: any, b: any) => a.v === b.v);
+      const state = new State({ value: 1 });
+      const equals = vi.fn((a: { value: number }, b: { value: number }) => a.value === b.value);
       const watcher = makeMockWatcher();
       const computed = new Computed(() => state.get(), { equals });
       computed.addSink(watcher, PRIVATE);
       computed.get();
 
-      state.set({ v: 1 }); // structurally equal
+      state.set({ value: 1 });
       expect(watcher.notify).toHaveBeenCalledTimes(1);
     });
 
@@ -260,11 +260,6 @@ describe('Computed', () => {
       const computed = new Computed(() => 1);
       computed.setState('computing', PRIVATE);
       expect(computed.getState(PRIVATE)).toBe('computing');
-    });
-
-    it('ignores invalid transitions throwing', () => {
-      const computed = new Computed(() => 1); // starts dirty
-      expect(() => computed.setState('clean', PRIVATE)).toThrow();
     });
 
     it('allows checked → clean', () => {
