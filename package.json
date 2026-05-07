@@ -1,6 +1,6 @@
 {
   "name": "xendar",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
@@ -10,7 +10,7 @@
     "build:projects": "npm run build-projects --prefix schematics",
     "check:dependencies": "npm run check-dependencies --prefix schematics",
     "compile:projects": "npm run compile-projects --prefix schematics",
-    "deploy": "npm run build:schematics && npm run check:dependencies && npm run update-version && npm run compile:projects && npm run build:projects && npm run pack:projects && npm run publish:projects",
+    "deploy": "npm run build:schematics && npm run check:dependencies && npx vitest run && npm run update-version && npm run compile:projects && npm run build:projects && npm run pack:projects && npm run publish:projects",
     "i": "npm i --omit-optional --ignore-scripts",
     "install:clean": "rimraf package-lock.json node_modules && npm run i",
     "pack:projects": "npm run pack --prefix schematics",
