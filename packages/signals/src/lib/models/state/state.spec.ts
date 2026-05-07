@@ -7,7 +7,7 @@ import { Computed } from '../computed/computed';
 function makeMockWatcher() {
   return {
     notify: vi.fn(),
-  } as unknown as import('../watcher').Watcher;
+  } as unknown as import('../watcher/watcher').Watcher;
 }
 
 beforeEach(() => {
