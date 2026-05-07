@@ -1,5 +1,5 @@
 import { Stack } from '@xaendar/common';
-import { Computed } from './models/computed';
+import { Computed } from './models/computed/computed';
 import { GlobalState } from './types/global-state.type';
 
 /**

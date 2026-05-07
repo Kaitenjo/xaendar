@@ -1,5 +1,5 @@
-import { Computed } from '../models/computed';
-import { State } from '../models/state';
+import { Computed } from '../models/computed/computed';
+import { State } from '../models/state/state';
 import { SignalEqual } from './signal-equal.type';
 
 export type SignalOptions<T> = {

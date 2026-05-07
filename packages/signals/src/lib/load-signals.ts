@@ -1,6 +1,6 @@
-import { Computed } from './models/computed';
-import { State } from './models/state';
-import { Watcher } from './models/watcher';
+import { Computed } from './models/computed/computed';
+import { State } from './models/state/state';
+import { Watcher } from './models/watcher/watcher';
 import { currentComputed, hasSinks, hasSources, introspectSinks, introspectSources, untrack } from './subtle';
 
 /**

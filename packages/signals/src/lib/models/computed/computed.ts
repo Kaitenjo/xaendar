@@ -1,11 +1,11 @@
 
-import { GLOBAL_STATE, pushComputed, popComputed } from '../globals';
-import { PRIVATE, assertPrivateContext } from '../private-symbol';
-import { ComputedState } from '../types/computed-state.type';
-import { SignalEqual } from '../types/signal-equal.type';
-import { SignalOptions } from '../types/signal-options.type';
-import { State } from './state';
-import { Watcher } from './watcher';
+import { GLOBAL_STATE, popComputed, pushComputed } from '../../globals';
+import { PRIVATE, assertPrivateContext } from '../../private-symbol';
+import { ComputedState } from '../../types/computed-state.type';
+import { SignalEqual } from '../../types/signal-equal.type';
+import { SignalOptions } from '../../types/signal-options.type';
+import { State } from '../state/state';
+import { Watcher } from '../watcher/watcher';
 
 /**
  * A read-only Signal whose value is derived lazily from other Signals.
@@ -223,8 +223,21 @@ export class Computed<T = any> {
   public setState(newState: ComputedState, symbol: symbol): void {
     assertPrivateContext(symbol);
 
-    if (this.#state !== newState && this.#isValidTransition(this.#state, newState)) {
-      this.#state = newState;
+    if (this.#state === newState) {
+      return;
+    }
+
+    if (!this.#isValidTransition(this.#state, newState)) {
+      console.log(`Invalid state transition from ${this.#state} to ${newState} in Computed signal`);
+      return;
+    }
+
+    this.#state = newState;
+
+    if (this.#state === 'dirty' || this.#state === 'checked') {
+      this.#sinks.values()
+        .filter(sink => sink instanceof Computed)
+        .forEach(sink => sink.setState('checked', PRIVATE))
     }
   }
 
@@ -306,7 +319,7 @@ export class Computed<T = any> {
     this.#sources.clear();
 
     pushComputed(this);
-    this.#state = 'computing';
+    this.setState('computing', PRIVATE);
 
     let newValue: T | { isError: true; value: Error };
 
@@ -320,11 +333,11 @@ export class Computed<T = any> {
 
     const outcome = this.#setValue(newValue);
 
+    this.setState('clean', PRIVATE);
+
     outcome === 'dirty'
       ? this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE))
       : this.#propagateClean();
-
-    this.#state = 'clean';
   }
 
   /**
