@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GLOBAL_STATE } from '../../globals';
-import { PRIVATE } from '../../private-symbol';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { Computed } from '../computed/computed';
 import { State } from '../state/state';
 import { Watcher } from './watcher';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 
 beforeEach(() => {
   GLOBAL_STATE.frozen = false;
@@ -289,6 +290,22 @@ describe('Watcher', () => {
       const watcher = new Watcher(vi.fn()); // waiting
       watcher.setState('pending', PRIVATE); // waiting → pending is invalid
       expect(watcher.getState(PRIVATE)).toBe('waiting');
+    });
+
+    it('exit gratefully if state is equal to current state', () => {
+      const watcher = new Watcher(vi.fn());
+      expect(() => watcher.setState('waiting', PRIVATE)).not.toThrow();
+      expect(watcher.getState(PRIVATE)).toBe('waiting');
+    });
+
+    it('should log extra info is state transition is invalid', () => {
+      setDevMode(true);
+      const spy = vi.spyOn(console, 'warn');
+      const watcher = new Watcher(vi.fn());
+      watcher.setState('pending', PRIVATE)
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenNthCalledWith(1, 'Invalid state transition from waiting to pending in Watcher')
+      setDevMode(false);
     });
   });
 

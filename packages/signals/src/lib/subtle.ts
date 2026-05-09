@@ -1,8 +1,8 @@
-import { GLOBAL_STATE } from './globals';
+import { GLOBAL_STATE } from './utils/globals/globals';
 import { Computed } from './models/computed/computed';
 import { State } from './models/state/state';
 import { Watcher } from './models/watcher/watcher';
-import { PRIVATE } from './private-symbol';
+import { PRIVATE } from './utils/private-symbol/private-symbol';
 
 /**
  * Executes a function without tracking any dependencies.

@@ -1,6 +1,6 @@
 import { NoArgsVoidFunction } from '@xaendar/common';
-import { GLOBAL_STATE } from '../../globals';
-import { PRIVATE, assertPrivateContext } from '../../private-symbol';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
 import { Computed } from '../computed/computed';

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GLOBAL_STATE } from '../../globals';
-import { PRIVATE } from '../../private-symbol';
-import { State } from './state';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { Computed } from '../computed/computed';
+import { State } from './state';
 
 function makeMockWatcher() {
   return {

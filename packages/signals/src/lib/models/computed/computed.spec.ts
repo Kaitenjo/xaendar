@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Computed } from './computed';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
-import { PRIVATE } from '../../private-symbol';
-import { GLOBAL_STATE } from '../../globals';
+import { Computed } from './computed';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 
 beforeEach(() => {
   GLOBAL_STATE.frozen = false;
@@ -271,6 +272,16 @@ describe('Computed', () => {
       computed.setState('clean', PRIVATE);    // checked → clean
       expect(computed.getState(PRIVATE)).toBe('clean');
     });
+
+    it('should log extra info is state transition is invalid', () => {
+      setDevMode(true);
+      const spy = vi.spyOn(console, 'warn');
+      const computed = new Computed(() => 1);
+      computed.setState('clean', PRIVATE)
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenNthCalledWith(1, 'Invalid state transition from dirty to clean in Computed Signal')
+      setDevMode(false);
+    });
   });
 
   describe('addSink() / removeSink()', () => {
@@ -441,9 +452,9 @@ describe('Computed', () => {
     it('propagates clean correctly through a checked chain', () => {
       const state = new State(1);
       // b depends on state but always returns the same value
-      const b = new Computed(() => Math.sign(state.get())); // always 1
-      const computed = new Computed(() => {
-        const bValue = b.get();
+      const computed = new Computed(() => Math.sign(state.get())); // always 1
+      const computed2 = new Computed(() => {
+        const bValue = computed.get();
         if (typeof bValue === 'object') {
           throw new Error;
         }
@@ -451,16 +462,54 @@ describe('Computed', () => {
         return bValue + 10;
       });
       const watcher = makeMockWatcher();
-      computed.addSink(watcher, PRIVATE);
-      computed.get();
+      computed2.addSink(watcher, PRIVATE);
+      computed2.get();
 
       state.set(5); // b re-evaluates to 1 (same) → c should stay clean, w NOT notified
-      expect(computed.getState(PRIVATE)).toBe('checked'); // lazy: non ancora rivalutato
+      expect(computed2.getState(PRIVATE)).toBe('checked'); // lazy: non ancora rivalutato
 
-      computed.get();
-      expect(computed.getState(PRIVATE)).toBe('clean');
-      expect(computed.get()).toBe(11);
+      computed2.get();
+      expect(computed2.getState(PRIVATE)).toBe('clean');
+      expect(computed2.get()).toBe(11);
     });
+
+    it('does not propagate clean to a checked sink when not all its sources are clean', () => {
+      const stateA = new State(1);
+      const stateB = new State(2);
+
+      // left depends only on `stateA`, right depends only on `stateB`
+      const left = new Computed(() => Math.sign(stateA.get())); // always 1 for positive values
+      const right = new Computed(() => stateB.get());
+
+      // top depends on both left and right
+      const top = new Computed(() => {
+        const leftValue = left.get();
+        const rightValue = right.get();
+        if (typeof leftValue === 'object' || typeof rightValue === 'object') throw new Error();
+        return leftValue + rightValue;
+      });
+
+      const watcher = makeMockWatcher();
+      top.addSink(watcher, PRIVATE);
+      top.get(); // build the graph, all nodes clean
+
+      // Change both sources:
+      // - left will recompute to Math.sign(5) = 1 → same value → outcome "clean" → triggers propagateClean
+      // - right is still dirty because stateB changed but right has not been re-evaluated yet
+      // When propagateClean reaches top, left is clean but right is dirty → allSourcesClean = false
+      stateA.set(5); // left becomes dirty, then clean (unchanged value)
+      stateB.set(9); // right becomes dirty (changed value)
+
+      // Re-evaluate only left (without evaluating top):
+      // propagateClean fires but top still has right as dirty → stays checked
+      left.get();
+
+      expect(left.getState(PRIVATE)).toBe('clean');
+      expect(right.getState(PRIVATE)).toBe('dirty');
+      // top is checked but NOT promoted to clean because right is still dirty
+      expect(top.getState(PRIVATE)).toBe('checked');
+    });
+
 
     it('handles a Computed that wraps another Computed with a boxed error', () => {
       const inner = new Computed(() => { throw new Error('inner fail'); });

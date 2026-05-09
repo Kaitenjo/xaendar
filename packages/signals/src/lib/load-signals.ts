@@ -2,6 +2,7 @@ import { Computed } from './models/computed/computed';
 import { State } from './models/state/state';
 import { Watcher } from './models/watcher/watcher';
 import { currentComputed, hasSinks, hasSources, introspectSinks, introspectSources, untrack } from './subtle';
+import { setDevMode } from './utils/dev-mode/dev-mode';
 
 /**
  * Loads the Signals library by defining the `Signal` global object with the following properties:
@@ -19,7 +20,9 @@ import { currentComputed, hasSinks, hasSources, introspectSinks, introspectSourc
  * 
  * This function should be called once to initialize the Signals library and make its API available globally.
  */
-export function loadSignals(): void {
+export function loadSignals(options?: { devMode?: boolean }): void {
+  setDevMode(options?.devMode ?? false)
+
   globalThis.Signal ??= {
     State,
     Computed,

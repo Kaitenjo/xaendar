@@ -1,11 +1,12 @@
 
-import { GLOBAL_STATE, popComputed, pushComputed } from '../../globals';
-import { PRIVATE, assertPrivateContext } from '../../private-symbol';
+import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
+import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { ComputedState } from '../../types/computed-state.type';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
 import { State } from '../state/state';
 import { Watcher } from '../watcher/watcher';
+import { isDevMode } from '../../utils/dev-mode/dev-mode';
 
 /**
  * A read-only Signal whose value is derived lazily from other Signals.
@@ -228,7 +229,10 @@ export class Computed<T = any> {
     }
 
     if (!this.#isValidTransition(this.#state, newState)) {
-      console.log(`Invalid state transition from ${this.#state} to ${newState} in Computed signal`);
+      if (isDevMode()) {
+        console.warn(`Invalid state transition from ${this.#state} to ${newState} in Computed Signal`);
+        console.warn(new Error().stack)
+      }
       return;
     }
 

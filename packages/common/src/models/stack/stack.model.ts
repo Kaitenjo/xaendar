@@ -11,12 +11,12 @@ export class Stack<T = unknown> {
 
   [index: number]: T;
 
+  [prop: string | symbol]: unknown;
+
   constructor() {
     return new Proxy(this, {
       get(target, prop) {
-        if (typeof prop === 'string') {
-          return isNaN(Number(prop)) ? (target as unknown as { [prop]: unknown })[prop] : target._elements[Number(prop)];
-        }
+        return isNaN(Number(prop)) ? target[prop] : target._elements[Number(prop)];
       }
     });
   }

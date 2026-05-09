@@ -1,9 +1,10 @@
 import { NoArgsVoidFunction } from '@xaendar/common';
-import { GLOBAL_STATE } from '../../globals';
-import { PRIVATE, assertPrivateContext } from '../../private-symbol';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
 import { WatcherState } from '../../types/watcher-state.type';
 import { Computed } from '../computed/computed';
+import { isDevMode } from '../../utils/dev-mode/dev-mode';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback
@@ -196,7 +197,10 @@ export class Watcher {
     }
 
     if (!this.#isValidTransition(this.#state, newState)) {
-      console.log(`Invalid state transition from ${this.#state} to ${newState} in Watcher`);
+      if (isDevMode()) {
+        console.warn(`Invalid state transition from ${this.#state} to ${newState} in Watcher`);
+        console.warn(new Error().stack)
+      }
       return;
     }
 
