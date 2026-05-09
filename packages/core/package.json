@@ -1,11 +1,11 @@
 {
   "name": "@xaendar/core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing core utils such as webcomponent base classes and theming support",
   "dependencies": {
-    "@xaendar/common": "0.1.7"
+    "@xaendar/common": "0.1.8"
   }
 }
