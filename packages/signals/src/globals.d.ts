@@ -5,7 +5,7 @@ declare global {
      *
      * @template T The type of the value held by this Signal.
      */
-    class State <T = any> {
+    class State<T = any> {
       /**
        * Creates a new `State` signal.
        *
@@ -172,9 +172,22 @@ declare global {
          * @throws If any of the given Signals is not currently being watched.
          */
         unwatch(...signals: (State | Computed)[]): void;
+        /**
+         * Returns the subset of watched Signals that are `Computed` instances
+         * currently in a `~dirty~` or `~checked~` state, meaning they may have a
+         * stale value that has not yet been re-evaluated.
+         *
+         * Typically called inside the microtask scheduled by the `notify` callback
+         * to know which Signals need to be pulled.
+         *
+         * @returns An array of `Computed` signals that are dirty or checked.
+         *
+         * @see Signal algorithms — 'Method: Signal.subtle.Watcher.prototype.getPending()'
+         */
+        getPending(): Computed<unknown>[];
       }
     }
   }
 }
 
-export {};
+export { };
