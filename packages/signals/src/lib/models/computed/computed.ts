@@ -239,9 +239,7 @@ export class Computed<T = any> {
     this.#state = newState;
 
     if (this.#state === 'dirty' || this.#state === 'checked') {
-      this.#sinks.values()
-        .filter(sink => sink instanceof Computed)
-        .forEach(sink => sink.setState('checked', PRIVATE))
+      this.#sinks.forEach(sink => sink instanceof Computed ? sink.setState('checked', PRIVATE) : sink.notify(PRIVATE))
     }
   }
 

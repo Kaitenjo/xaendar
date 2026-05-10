@@ -168,7 +168,7 @@ describe('Watcher', () => {
       const watcher = new Watcher(vi.fn());
       watcher.watch(new State(1));
       watcher.notify(PRIVATE);
-      expect(watcher.getState(PRIVATE)).toBe('watching');
+      expect(watcher.getState(PRIVATE)).toBe('waiting');
     });
 
     it('is called when a watched State changes', () => {
@@ -206,7 +206,6 @@ describe('Watcher', () => {
 
       cb.mockClear();
       state.set(2);
-      computed.get(); // pull to resolve
       expect(cb).toHaveBeenCalledOnce();
     });
   });

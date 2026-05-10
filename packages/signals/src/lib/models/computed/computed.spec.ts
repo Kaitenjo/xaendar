@@ -219,8 +219,8 @@ describe('Computed', () => {
       const equals = vi.fn((a: { value: number }, b: { value: number }) => a.value === b.value);
       const watcher = makeMockWatcher();
       const computed = new Computed(() => state.get(), { equals });
-      computed.addSink(watcher, PRIVATE);
       computed.get();
+      computed.addSink(watcher, PRIVATE);
 
       state.set({ value: 1 });
       expect(watcher.notify).toHaveBeenCalledTimes(1);
@@ -403,8 +403,8 @@ describe('Computed', () => {
       const state = new State(1);
       const computed = new Computed(() => Math.sign(state.get())); // always 1 for positive
       const watcher = makeMockWatcher();
-      computed.addSink(watcher, PRIVATE);
       computed.get();
+      computed.addSink(watcher, PRIVATE);
 
       state.set(5); // sign still 1
       expect(watcher.notify).toHaveBeenCalledTimes(1);
@@ -655,8 +655,8 @@ describe('Computed', () => {
       });
       const watcher = makeMockWatcher();
 
-      top.addSink(watcher, PRIVATE);
       top.get();
+      top.addSink(watcher, PRIVATE);
 
       state.set(5); // middle still returns 1 → top should NOT be notified
       expect(top.getState(PRIVATE)).toBe('checked');

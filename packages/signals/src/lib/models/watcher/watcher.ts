@@ -213,15 +213,14 @@ export class Watcher {
    */
   public notify(symbol: symbol): void {
     assertPrivateContext(symbol);
-
-    this.setState('pending', PRIVATE)
-
+    
     GLOBAL_STATE.frozen = true;
+
     try {
-      this.setState('waiting', PRIVATE);
+      this.setState('pending', PRIVATE)
       this.#notifyCallback.call(this);
     } finally {
-      this.setState('watching', PRIVATE);
+      this.setState('waiting', PRIVATE);
       GLOBAL_STATE.frozen = false;
     }
   }
