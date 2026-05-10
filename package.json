@@ -17,6 +17,7 @@
     "publish:projects": "npm run publish --prefix schematics",
     "start": "nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps dist/test.es.js\"",
     "start:debug": "nodemon --watch src --watch packages -e ts --exec \"vite build && node --enable-source-maps --inspect-brk dist/test.es.js\"",
+    "start:browser": "vite",
     "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
     "update-version": "npm run update-version --prefix schematics"
   },
