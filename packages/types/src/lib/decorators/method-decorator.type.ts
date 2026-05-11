@@ -1,4 +1,4 @@
-import { Function } from '../functions.type';
+import { Function } from '../functions/function.type';
 
 export type MethodDecorator<
  T extends Object,
