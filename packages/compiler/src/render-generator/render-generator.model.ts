@@ -64,8 +64,9 @@ function processElement(node: ElementNode, varName: string, componentVar: string
   return [
     `const ${varName} = document.createElement("${node.tagName}");`,
     ...(node.attributes?.map(attr => `${varName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `${componentVar}.${attr.value.expression}`});`) || []),
-    ...(node.events?.map(event => `${varName}.addEventListener(${event.name}, ${componentVar}.${event.handler}.bind(${componentVar}));`) || []),
-    `${parentVar}.appendChild(${varName});`
+    ...(node.events?.map(event => `${varName}.addEventListener("${event.name}", ${componentVar}.${event.handler}.bind(${componentVar}));`) || []),
+    `${parentVar}.appendChild(${varName});`,
+    ...(node.children.map((child, i) => processNode(child, `${varName}_c${i}`, componentVar, varName)).flat())
   ];
 }
 
