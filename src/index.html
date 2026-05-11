@@ -7,7 +7,29 @@
     <link rel="stylesheet" href="main.css" />
   </head>
   <body>
-    <button>CLICCA</button>
+    <h1>Rectangle Method Tester</h1>
+    <pre id="output">Premi un pulsante per testare un metodo...</pre>
+
+    <h3>Trasformazione</h3>
+    <button id="btn-scale">scale(2)</button>
+    <button id="btn-translate">translate(10, 5)</button>
+    <button id="btn-rotate90">rotate90()</button>
+    <button id="btn-centerOn">centerOn({x:50, y:50})</button>
+
+    <h3>Geometria / Relazioni</h3>
+    <button id="btn-containsPoint">containsPoint({x:5, y:5})</button>
+    <button id="btn-intersects">intersects(other)</button>
+    <button id="btn-contains">contains(other)</button>
+    <button id="btn-intersection">intersection(other)</button>
+    <button id="btn-union">union(other)</button>
+    <button id="btn-distanceTo">distanceTo(other)</button>
+
+    <h3>Utilità</h3>
+    <button id="btn-clone">clone()</button>
+    <button id="btn-equals">equals(other)</button>
+    <button id="btn-toJSON">toJSON()</button>
+    <button id="btn-toString">toString()</button>
+
     <script type="module" src="./test.ts"></script>
   </body>
 </html>
