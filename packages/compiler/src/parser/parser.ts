@@ -1,7 +1,7 @@
 import { EOF } from "../costants/chars.constants";
 import { TokenType } from "../lexer/models/token-type.enum";
-import { AttributeToken, ConditionToken, EventToken, ForToken, InterpolationExpressionToken, InterpolationLiteralToken, IfToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type";
-import { ASTNode, AttributeNode, CaseNode, ElseNode, ElementNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "./models/ast.type";
+import { AttributeToken, ConditionToken, EventToken, ForToken, IfToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type";
+import { ASTNode, AttributeNode, CaseNode, ElementNode, ElseNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "./models/ast.type";
 import { ASTNodeType } from "./models/node.enum";
 import { ParserCursor } from "./models/parser-cursor.model";
 
@@ -321,7 +321,7 @@ export class Parser {
 
     return {
       name: name!,
-      value: value!.replace(/^["']|["']$/g, '')
+      value: value!.replace(/^['']|['']$/g, '')
     };
   }
 
@@ -335,7 +335,7 @@ export class Parser {
 
     return {
       name: name!,
-      handler: value!.replace(/^["']|["']$/g, '')
+      handler: value!.replace(/^['']|['']$/g, '')
     };
   }
 

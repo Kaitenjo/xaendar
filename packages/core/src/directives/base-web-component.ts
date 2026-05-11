@@ -26,12 +26,10 @@ export class BaseWebComponent extends HTMLElement {
 
   private readonly _root: ShadowRoot;
 
-
   constructor() {
     super();
     this._root = this.attachShadow({ mode: 'open' });
   }
-
 
   /**
    * Method called by the @Property decorator to

@@ -1,4 +1,4 @@
-import { ASTNode, AttributeNode, CaseNode, ElementNode, ElseNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "../parser/models/ast.type";
+import { ASTNode, ElementNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "../parser/models/ast.type";
 import { ASTNodeType } from "../parser/models/node.enum";
 
 /**

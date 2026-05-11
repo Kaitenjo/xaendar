@@ -1,14 +1,8 @@
 {
-  "name": "@xendar/common",
-  "version": "1.0.0",
+  "name": "@xaendar/common",
+  "version": "0.2.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "A library containing common utils and types",
-  "scripts": {
-    "build": "vite build --emptyOutDir"
-  },
-  "peerDependencies": {
-    "vite": "^8.0.4"
-  }
+  "description": "A library containing common utils and types"
 }

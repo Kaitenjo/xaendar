@@ -1,16 +1,12 @@
 {
-  "name": "@xendar/compiler",
-  "version": "1.0.0",
+  "name": "@xaendar/compiler",
+  "version": "0.2.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing compiler engine",
-  "scripts": {
-    "build": "vite build --emptyOutDir && node ../../dist/xendar-compiler.es.js",
-    "build:watch": "nodemon --watch src --ext ts --exec \"npm run build\""
-  },
-  "peerDependencies": {
-    "@xendar/common": "1.0.0",
-    "vite": "^8.0.4"
+  "dependencies": {
+    "@xaendar/common": "0.2.0",
+    "@xaendar/types": "0.2.0"
   }
 }
