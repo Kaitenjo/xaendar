@@ -10,10 +10,9 @@ import { ASTNodeType } from "../parser/models/node.enum";
  */
 export function generateRenderFunction(ast: ASTNode[], componentVar = "this"): string {
   return [`
-function template(ctx) { 
-  const shadow = ${componentVar}.shadowRoot!;
-}`,
-    ...ast.map((node, i) => processNode(node, `node${i}`, componentVar, 'shadow')).flat()
+const shadow = ${componentVar}.shadowRoot!;
+`,
+  ...ast.map((node, i) => processNode(node, `node${i}`, componentVar, 'shadow')).flat()
   ].join("\n");
 }
 
@@ -63,8 +62,8 @@ function processInterpolation(node: InterpolationNode, varName: string, componen
 
 function processElement(node: ElementNode, varName: string, componentVar: string, parentVar: string): string[] {
   return [
-    `const ${varName} = document.createElement(${node.tagName});`,
-    ...(node.attributes?.map(attr => `${varName}.setAttribute(${attr.name}, ${typeof attr.value === "string" ? attr.value : `${componentVar}.${attr.value.expression}`});`) || []),
+    `const ${varName} = document.createElement("${node.tagName}");`,
+    ...(node.attributes?.map(attr => `${varName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `${componentVar}.${attr.value.expression}`});`) || []),
     ...(node.events?.map(event => `${varName}.addEventListener(${event.name}, ${componentVar}.${event.handler}.bind(${componentVar}));`) || []),
     `${parentVar}.appendChild(${varName});`
   ];
@@ -73,15 +72,16 @@ function processElement(node: ElementNode, varName: string, componentVar: string
 function processIf(node: IfNode, varName: string, componentVar: string, parentVar: string): string[] {
   const code = [
     `if (${resolveExpression(node.condition, componentVar)}) {`,
-    ...node.consequent.map((child, idx) => indent(processNode(child, `${varName}_t${idx}`, componentVar, parentVar))).flat(),
+    ...node.consequent.map((child, idx) => indent(...processNode(child, `${varName}_t${idx}`, componentVar, parentVar))).flat(),
     '}'
   ];
 
   const alt = node.alternate;
   if (alt) {
+    // append 'else' to the closing brace of the 'if' block
+    code[code.length - 1] += ' else {';
     code.push(
-      `else {`,
-      ...alt.children.map((child, idx) => indent(processNode(child, `${varName}_e${idx}`, componentVar, parentVar))).flat(),
+      ...alt.children.map((child, idx) => indent(...processNode(child, `${varName}_e${idx}`, componentVar, parentVar))).flat(),
       '}'
     );
   }
@@ -90,10 +90,10 @@ function processIf(node: IfNode, varName: string, componentVar: string, parentVa
 }
 
 function processFor(node: ForNode, varName: string, componentVar: string, parentVar: string): string[] {
-  const iterExpr = resolveExpression(node.expression, componentVar);
+  const iterExpr = resolveForExpression(node.expression, componentVar);
   return [
-    `for (const ${iterExpr}) {`,
-    ...node.children.map((child, idx) => indent(processNode(child, `${varName}_f${idx}`, componentVar, parentVar))).flat(),
+    `for (${iterExpr}) {`,
+    ...node.children.map((child, idx) => indent(...processNode(child, `${varName}_f${idx}`, componentVar, parentVar))).flat(),
     '}'
   ];
 }
@@ -102,12 +102,27 @@ function processSwitch(node: SwitchNode, varName: string, componentVar: string, 
   return [
     `switch (${resolveExpression(node.expression, componentVar)}) {`,
     ...node.cases.map(caseNode => ([
-      !caseNode.condition ? 'default' : `case ${resolveExpression(caseNode.condition, componentVar)}`,
-      ...caseNode.children.map((child, i) => indent(processNode(child, `${varName}_s${i}_${i}`, componentVar, parentVar))).flat(),
-      `break;`
+      ...indent(
+        `${!caseNode.condition ? 'default' : `case ${caseNode.condition}`}: {`,
+        ...caseNode.children.map((child, i) => indent(...processNode(child, `${varName}_s${i}_${i}`, componentVar, parentVar))).flat(),
+        `${indent('break;')}`,
+        `}`
+      )
     ])).flat(),
     '}'
   ];
+}
+
+
+function resolveForExpression(expression: string, componentVar: string): string {
+  const match = expression.match(/^let\s+(\w+)\s+of\s+(\w+)$/);
+  
+  if (!match) {
+    throw new Error(`String "${expression}" does not match the structure "let X of Y"`);
+  }
+  
+  const [, X, Y] = match;
+  return `const ${X} of this.${Y}`;
 }
 
 /**
@@ -120,12 +135,12 @@ function processSwitch(node: SwitchNode, varName: string, componentVar: string, 
  *   "x > 0"          →  "this.x > 0"
  */
 function resolveExpression(expression: string, componentVar: string): string {
-  return expression.replace(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g, match => ['let', 'of'].includes(match) || match === componentVar ? match : `${componentVar}.${match}`);
+  return expression.replace(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g, match => match === componentVar ? match : `${componentVar}.${match}`);
 }
 
 /**
  * Indents each line of a code block by two spaces.
  */
-function indent(lines: string[]): string[] {
+function indent(...lines: string[]): string[] {
   return lines.map(line => `  ${line}`);
 }

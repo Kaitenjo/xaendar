@@ -1,4 +1,5 @@
-import { Lexer, Parser, generateRenderFunction } from '@xaendar/compiler';
+import { Lexer, Parser, generateRenderFunction, TokenType } from '@xaendar/compiler';
+import { writeFileSync } from 'fs';
 
 // loadSignals();
 
@@ -112,14 +113,18 @@ const template =`
 
 export function compile(input: string): string {
   const tokens = new Lexer(input).tokenize();
-  console.log(tokens)
+  console.log(
+    tokens.map(t => ({ type: TokenType[t.type], ...('parts' in t ? { parts: t.parts } : {}) }))
+  );
   const ast = new Parser(tokens).parse();
   console.log(ast)
   let a = generateRenderFunction(ast)
   console.log(a)
   return a;
 }
-compile(template);
+
+const filePath = 'test.js'
+writeFileSync(filePath, compile(template));
 
 // const state = new Signal.State(1);
 // const state2 = new Signal.State(2);

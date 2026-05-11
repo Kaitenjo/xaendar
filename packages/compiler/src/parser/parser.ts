@@ -242,8 +242,8 @@ export class Parser {
     this._cursor.advance();
     const tagName = token.parts[0];
 
-    const attributes: AttributeNode[] = [];
-    const events: EventNode[] = [];
+    const attributes = new Array<AttributeNode>;
+    const events = new Array<EventNode>;
 
     let read = true;
     while (read) {
@@ -334,8 +334,8 @@ export class Parser {
     const [name, value] = raw.split('=');
 
     return {
-      name: name!,
-      handler: value!.replace(/^['']|['']$/g, '')
+      name: name,
+      handler: value.replace(/^[""]|[""]$/g, '')
     };
   }
 
