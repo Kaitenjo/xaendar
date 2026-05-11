@@ -1,7 +1,7 @@
 import depcheck from 'depcheck';
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
-import { PackageJson } from 'type-fest';
+import { PackageJson } from "type-fest";
 
 /**
  * Default options passed to `depcheck` for every scanned package.

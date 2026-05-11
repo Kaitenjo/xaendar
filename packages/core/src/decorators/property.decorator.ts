@@ -1,4 +1,4 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue, Constructor } from '@xaendar/common';
+import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
 import { INTERNAL_OBSERVED_ATTRIBUTES, INTERNAL_PREFIX } from '../costants';
 import { BaseWebComponent } from '../directives/base-web-component';
 import { PropertyDecoratorParams } from '../models/property-decorator-params.type';

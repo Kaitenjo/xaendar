@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       '@xaendar/common': path.resolve(__dirname, 'packages/common/src/public-api.ts'),
       '@xaendar/signals': path.resolve(__dirname, 'packages/signals/src/public-api.ts'),
+      '@xaendar/types': path.resolve(__dirname, 'packages/types/src/public-api.ts'),
     }
   }
 });

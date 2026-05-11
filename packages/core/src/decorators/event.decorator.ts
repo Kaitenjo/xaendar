@@ -1,4 +1,4 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/common';
+import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
 import { BaseWebComponent } from '../directives/base-web-component';
 import { EventParams } from '../models/event/event-params.type';
 import { Output } from '../models/event/output.type';

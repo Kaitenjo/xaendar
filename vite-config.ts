@@ -12,7 +12,8 @@ const external = [
   '@xaendar/common',
   '@xaendar/compiler',
   '@xaendar/core',
-  '@xaendar/signals'
+  '@xaendar/signals',
+  '@xaendar/types'
 ]
 
 export default function getViteConfig(name: string, dirName: string, options?: ViteConfigOptions): UserConfig {

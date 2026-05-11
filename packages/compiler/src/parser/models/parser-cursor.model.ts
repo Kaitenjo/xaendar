@@ -1,4 +1,4 @@
-import { PositiveInteger, TupleOfLength } from '@xaendar/common';
+import { PositiveInteger, TupleOfLength } from '@xaendar/types';
 import { EOF } from '../../costants/chars.constants';
 import { TokenType } from '../../lexer/models/token-type.enum';
 import { Token } from '../../lexer/models/token.type';

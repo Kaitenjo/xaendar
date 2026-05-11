@@ -1,4 +1,4 @@
-import type { NoArgsVoidFunction } from '@xaendar/common';
+import type { NoArgsVoidFunction } from '@xaendar/types';
 import { loadSignals } from "@xaendar/signals";
 
 loadSignals();

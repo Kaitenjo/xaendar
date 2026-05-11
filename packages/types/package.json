@@ -1,0 +1,8 @@
+{
+  "name": "@xaendar/types",
+  "version": "0.1.8",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library containing common types shared across packages and consumers"
+}

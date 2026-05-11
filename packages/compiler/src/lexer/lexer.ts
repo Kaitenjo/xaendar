@@ -1,4 +1,5 @@
-import { Dictionary, Stack } from '@xaendar/common';
+import { Stack } from '@xaendar/common';
+import { Dictionary } from '../../../types/src/lib/dictionary.type';
 import { EOF } from '../costants/chars.constants';
 import { LexerCursor } from './models/lexer-cursor.model';
 import { LexerState } from './models/lexer-state.enum';
