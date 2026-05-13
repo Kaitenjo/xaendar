@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -18,12 +18,18 @@ import { join } from 'node:path';
  * @param path - The base path where the component folder will be created (default:
  *   current working directory).
  */
-export function generateComponent(name: string, path: string): void {
+export function generateComponent(name: string, path: string, force: boolean): void {
   const dir = join(path, name);
 
   if (existsSync(dir)) {
-    console.error(`✖  Directory "${name}" already exists.`);
-    process.exit(1);
+    if (force) {
+      console.log(`Deleting "${name}"...`);
+      rmSync(dir, { recursive: true, force: true });
+      console.log('✔  Component Deleted.')
+    } else {
+      console.error(`✖  Directory "${name}" already exists.`);
+      process.exit(1);
+    }
   }
 
   mkdirSync(dir, { recursive: true });
@@ -39,9 +45,10 @@ export function generateComponent(name: string, path: string): void {
     writeFileSync(join(dir, filename), content, 'utf8');
   }
 
+  console.log();
   console.log(`✔  Component "${name}" generated:`);
   for (const [filename] of files) {
-    console.log(`   ${name}/${filename}`);
+    console.log(`${name}/${filename}`);
   }
 }
 
@@ -58,7 +65,7 @@ function tsTemplate(name: string): string {
 
 @WebComponent({
   selector: '${toKebabCase(name)}',
-  // styleUrl: './${name}.xd.component.css',
+  styleUrl: './${name}.xd.component.css',
   templateUrl: './${name}.xd.component.html'
 })
 export class ${className}Component extends BaseWebComponent {
@@ -95,7 +102,9 @@ function cssTemplate(_name: string): string {
  */
 function specTemplate(name: string): string {
   const className = toPascalCase(name);
-  return `import { ${className}Component } from './${name}.xd.component';
+  return `
+import { describe, expect, it } from "vitest";
+import { ${className}Component } from './${name}.xd.component';
 
 describe('${className}Component', () => {
   it('should create', () => {
