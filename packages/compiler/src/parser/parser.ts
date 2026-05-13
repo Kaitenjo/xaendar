@@ -310,18 +310,21 @@ export class Parser {
     }
 
     const [name, value] = raw.split('=');
+    if (!name || !value) {
+      throw this.error(`Invalid attribute format: ${raw}`);
+    }
 
     const nextToken = this._cursor.peek();
     if (nextToken.type === TokenType.INTERPOLATION_EXPRESSION || nextToken.type === TokenType.INTERPOLATION_LITERAL) {
       return {
-        name: name!,
+        name,
         value: this.parseInterpolation(nextToken)
       };
     }
 
     return {
-      name: name!,
-      value: value!.replace(/^['']|['']$/g, '')
+      name,
+      value: value.replace(/^['']|['']$/g, '')
     };
   }
 
@@ -333,8 +336,12 @@ export class Parser {
     const raw = token.parts[0];
     const [name, value] = raw.split('=');
 
+    if (!name || !value) {
+      throw this.error(`Invalid event format: ${raw}`);
+    }
+
     return {
-      name: name,
+      name,
       handler: value.replace(/^[""]|[""]$/g, '')
     };
   }

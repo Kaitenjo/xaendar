@@ -4,7 +4,17 @@
   "description": "Cli tool for Xendar framework",
   "author": "Kaitenjo",
   "license": "MIT",
-  "devDependencies": {
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "xd": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@xaendar/compiler": "0.2.0",
     "commander": "^14.0.3"
   }
 }

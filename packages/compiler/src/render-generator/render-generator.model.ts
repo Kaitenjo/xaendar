@@ -24,10 +24,8 @@ const shadow = ${componentVar}.shadowRoot!;
 function processNode(node: ASTNode, varName: string, componentVar: string, parentVar: string): string[] {
   switch (node.type) {
     case ASTNodeType.Text:
-      return processText(node, varName, parentVar);
-
     case ASTNodeType.Interpolation:
-      return processInterpolation(node, varName, componentVar, parentVar);
+      return processTextAndInterpolation(node, varName, componentVar, parentVar);
 
     case ASTNodeType.Element:
       return processElement(node, varName, componentVar, parentVar);
@@ -46,16 +44,10 @@ function processNode(node: ASTNode, varName: string, componentVar: string, paren
   }
 }
 
-function processText(node: TextNode, varName: string, parentVar: string): string[] {
+function processTextAndInterpolation(node: TextNode | InterpolationNode, varName: string, componentVar: string, parentVar: string): string[] {
+  const textValue = node.type === ASTNodeType.Text ? JSON.stringify(node.value) : resolveExpression(node.expression, componentVar);
   return [
-    `const ${varName} = document.createTextNode(${JSON.stringify(node.value)});`,
-    `${parentVar}.appendChild(${varName});`
-  ];
-}
-
-function processInterpolation(node: InterpolationNode, varName: string, componentVar: string, parentVar: string): string[] {
-  return [
-    `const ${varName} = document.createTextNode(String(${componentVar}.${node.expression}));`,
+    `const ${varName} = document.createTextNode(${textValue});`,
     `${parentVar}.appendChild(${varName});`
   ];
 }
