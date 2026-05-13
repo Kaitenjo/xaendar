@@ -1,12 +1,13 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
 import { INTERNAL_OBSERVED_ATTRIBUTES } from '../../costants';
 import { BaseWebComponent } from '../../directives/base-web-component';
+import { WebComponentDecoratorParams } from '../../types/web-component-decorator-params.type';
 
 /**
  * Decorator to define a web component
  * @param selector Name or names of the custom element
  */
-export function WebComponent<T extends BaseWebComponent>(options: { selector: string | string[], templateUrl: string }): ClassDecorator<T> {
+export function WebComponent<T extends BaseWebComponent>(options: WebComponentDecoratorParams): ClassDecorator<T> {
   return function (klass: Constructor<T>, context: ClassDecoratorContext<Constructor<T>>): void {
     defineObservedAttributes(klass, context);
     setSelectors(klass, options.selector);
