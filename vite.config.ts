@@ -24,6 +24,7 @@ export default defineConfig({
       formats: ['es']
     },
     sourcemap: true,
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(__dirname, 'dist/src'),
+    emptyOutDir: true
   }
 });

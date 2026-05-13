@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "../../",
-    "outDir": "../../dist/cli",
+    "outDir": "../../dist/@xaendar/cli",
     "noEmit": false,
     "declaration": false,
     "lib": ["ESNext"],
