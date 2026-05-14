@@ -112,7 +112,7 @@ function buildProject(projectName: string): void {
 
   try {
     target === 'node'
-     ? buildNode(projectName, projectPath, pkg).then(onSuccess).catch(onError)
+     ? buildNode
      : buildBrowser(projectPath).then(onSuccess).catch(onError);
   } catch (err) {
     onError(err);
