@@ -1,4 +1,4 @@
-import { TokenType } from './token-type.enum';
+import { TokenType } from './token-type.enum.js';
 
 export type Token =
   | TagOpenNameToken

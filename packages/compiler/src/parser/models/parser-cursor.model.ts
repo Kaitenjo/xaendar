@@ -1,8 +1,8 @@
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
-import { EOF } from '../../costants/chars.constants';
-import { TokenType } from '../../lexer/models/token-type.enum';
-import { Token } from '../../lexer/models/token.type';
-import { CurrentToken } from './current-token.type';
+import { EOF } from '../../costants/chars.constants.js';
+import { TokenType } from '../../lexer/models/token-type.enum.js';
+import { Token } from '../../lexer/models/token.type.js';
+import { CurrentToken } from './current-token.type.js';
 
 /**
  * Cursor abstraction used by the Parser to navigate

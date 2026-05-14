@@ -1,4 +1,4 @@
-import { LexerState } from '../lexer-state.enum'
+import { LexerState } from '../lexer-state.enum.js'
 
 /**
  * Context object passed by the Lexer engine to each

@@ -20,7 +20,11 @@
     "start:browser": "vite",
     "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
     "update-version": "npm run update-version --prefix schematics",
-    "xd": "node --import tsx/esm packages/cli/src/index.ts"
+    "xd": "node --import tsx/esm packages/cli/src/index.ts",
+    "build:types": "npm run build --prefix packages/types",
+    "build:common": "npm run build --prefix packages/common",
+    "build:compiler": "npm run build --prefix packages/compiler",
+    "build:cli": "npm run build:types && npm run build:common && npm run build:compiler && npm run build --prefix packages/cli"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",

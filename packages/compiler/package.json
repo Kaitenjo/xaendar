@@ -5,8 +5,18 @@
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing compiler engine",
+  "main": "../../dist/@xaendar/compiler/public-api.js",
+  "exports": {
+    ".": "../../dist/@xaendar/compiler/public-api.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json"
+  },
   "dependencies": {
     "@xaendar/common": "0.2.0",
     "@xaendar/types": "0.2.0"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.8.17"
   }
 }

@@ -1,9 +1,9 @@
-import { EOF } from "../costants/chars.constants";
-import { TokenType } from "../lexer/models/token-type.enum";
-import { AttributeToken, ConditionToken, EventToken, ForToken, IfToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type";
-import { ASTNode, AttributeNode, CaseNode, ElementNode, ElseNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "./models/ast.type";
-import { ASTNodeType } from "./models/node.enum";
-import { ParserCursor } from "./models/parser-cursor.model";
+import { EOF } from "../costants/chars.constants.js";
+import { TokenType } from "../lexer/models/token-type.enum.js";
+import { AttributeToken, ConditionToken, EventToken, ForToken, IfToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type.js";
+import { ASTNode, AttributeNode, CaseNode, ElementNode, ElseNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "./models/ast.type.js";
+import { ASTNodeType } from "./models/node.enum.js";
+import { ParserCursor } from "./models/parser-cursor.model.js";
 
 /**
  * Parser class that transforms a stream of tokens (from the Lexer)

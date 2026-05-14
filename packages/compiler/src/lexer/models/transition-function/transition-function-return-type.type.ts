@@ -1,5 +1,5 @@
-import { LexerState } from '../lexer-state.enum'
-import { Token } from '../token.type'
+import { LexerState } from '../lexer-state.enum.js'
+import { Token } from '../token.type.js'
 
 /**
  * Result returned by a lexer state transition function.

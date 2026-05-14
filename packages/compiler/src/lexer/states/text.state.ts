@@ -1,10 +1,10 @@
-import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from "../../costants/chars.constants";
-import { isNotBlank } from "../../utils/chars.utils";
-import { LexerCursor } from "../models/lexer-cursor.model";
-import { LexerState } from "../models/lexer-state.enum";
-import { TokenType } from "../models/token-type.enum";
-import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
-import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
+import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from "../../costants/chars.constants.js";
+import { isNotBlank } from "../../utils/chars.utils.js";
+import { LexerCursor } from "../models/lexer-cursor.model.js";
+import { LexerState } from "../models/lexer-state.enum.js";
+import { TokenType } from "../models/token-type.enum.js";
+import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type.js";
+import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type.js";
 
 export function consumeText(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;

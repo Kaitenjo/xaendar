@@ -1,4 +1,4 @@
-import { ASTNodeType } from './node.enum';
+import { ASTNodeType } from './node.enum.js';
 
 export type ASTNode =
   | ElementNode

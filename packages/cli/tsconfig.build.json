@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.node.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "../../dist/@xaendar/cli",
+    "declaration": false,
+    "paths": {
+      "@xaendar/compiler": ["../../dist/@xaendar/compiler/public-api.d.ts"],
+      "@xaendar/common": ["../../dist/@xaendar/common/public-api.d.ts"],
+      "@xaendar/types": ["../../dist/@xaendar/types/public-api.d.ts"]
+    }
+  },
+  "include": ["src"]
+}

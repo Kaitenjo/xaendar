@@ -1,8 +1,8 @@
-import { LexerCursor } from "../models/lexer-cursor.model";
-import { LexerState } from "../models/lexer-state.enum";
-import { TokenType } from "../models/token-type.enum";
-import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
-import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
+import { LexerCursor } from "../models/lexer-cursor.model.js";
+import { LexerState } from "../models/lexer-state.enum.js";
+import { TokenType } from "../models/token-type.enum.js";
+import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type.js";
+import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type.js";
 
 export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let retVal!: LexerTransitionFunctionReturnType;

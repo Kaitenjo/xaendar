@@ -1,0 +1,8 @@
+{
+  "name": "@xaendar/build-tools",
+  "version": "0.2.0",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library containing build tools for Xaendar framework"
+}

@@ -1,5 +1,5 @@
-import { ASTNode, ElementNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "../parser/models/ast.type";
-import { ASTNodeType } from "../parser/models/node.enum";
+import { ASTNode, ElementNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "../parser/models/ast.type.js";
+import { ASTNodeType } from "../parser/models/node.enum.js";
 
 /**
  * Generates the TypeScript body of a render function from an AST.
