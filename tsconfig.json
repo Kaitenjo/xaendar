@@ -13,6 +13,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@xaendar/common": ["./packages/common/src/public-api"],
       "@xaendar/core": ["./packages/core/src/public-api"],

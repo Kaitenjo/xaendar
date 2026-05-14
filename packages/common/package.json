@@ -5,11 +5,7 @@
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing common utils and types",
-  "main": "../../dist/@xaendar/common/public-api.js",
-  "exports": {
-    ".": "../../dist/@xaendar/common/public-api.js"
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.build.json"
+  "xaendar": {
+    "target": "browser"
   }
 }

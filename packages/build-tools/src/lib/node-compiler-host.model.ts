@@ -1,46 +1,46 @@
 import { CompilerHost } from '@xaendar/compiler';
-import * as fs from 'fs';
-import * as path from 'path';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'fs';
+import { resolve } from 'path';
 
 export class NodeCompilerHost implements CompilerHost {
   
-  fileExists(filePath: string): boolean {
-    return fs.existsSync(filePath);
+  public fileExists(filePath: string): boolean {
+    return existsSync(filePath);
   }
 
-  getCurrentDirectory(): string {
+  public getCurrentDirectory(): string {
     return process.cwd();
   }
 
-  getDirectoryEntries(dirPath: string): string[] {
+  public getDirectoryEntries(dirPath: string): string[] {
     try {
-      return fs.readdirSync(dirPath);
+      return readdirSync(dirPath);
     } catch {
       return [];
     }
   }
 
-  getRealPath(filePath: string): string {
-    return fs.realpathSync(filePath);
+  public getRealPath(filePath: string): string {
+    return realpathSync(filePath);
   }
 
-  isDirectory(filePath: string): boolean {
+  public isDirectory(filePath: string): boolean {
     try {
-      return fs.statSync(filePath).isDirectory();
+      return statSync(filePath).isDirectory();
     } catch {
       return false;
     }
   }
 
-  readFile(filePath: string): string | undefined {
+  public readFile(filePath: string): string | undefined {
     try {
-      return fs.readFileSync(filePath, 'utf-8');
+      return readFileSync(filePath, 'utf-8');
     } catch {
       return undefined;
     }
   }
 
-  resolvePath(from: string, to: string): string {
-    return path.resolve(from, to);
+  public resolvePath(from: string, to: string): string {
+    return resolve(from, to);
   }
 }

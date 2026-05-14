@@ -4,5 +4,8 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "A library containing build tools for Xaendar framework"
+  "description": "A library containing build tools for Xaendar framework",
+  "xaendar": {
+    "target": "node"
+  }
 }

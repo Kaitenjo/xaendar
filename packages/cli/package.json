@@ -5,19 +5,13 @@
   "author": "Kaitenjo",
   "license": "MIT",
   "type": "module",
-  "main": "../../dist/@xaendar/cli/index.js",
-  "bin": {
-    "xd": "../../dist/@xaendar/cli/index.js"
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
-    "build:watch": "tsc -p tsconfig.json --watch"
+  "xaendar": {
+    "target": "node",
+    "entry": "src/index.ts",
+    "dts": false
   },
   "dependencies": {
     "@xaendar/compiler": "0.2.0",
     "commander": "^14.0.3"
-  },
-  "devDependencies": {
-    "tsc-alias": "^1.8.17"
   }
 }
