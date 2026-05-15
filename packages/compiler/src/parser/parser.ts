@@ -1,9 +1,9 @@
-import { EOF } from '../costants/chars.constants';
-import { TokenType } from '../lexer/models/token-type.enum';
-import { AttributeToken, EventToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from '../lexer/models/token.type';
-import { ASTNode, AttributeNode, ElementNode, EventNode, InterpolationNode, TextNode } from './models/ast.type';
-import { ASTNodeType } from './models/node.enum';
-import { ParserCursor } from './models/parser-cursor.model';
+import { EOF } from "../costants/chars.constants.js";
+import { TokenType } from "../lexer/models/token-type.enum.js";
+import { AttributeToken, ConditionToken, EventToken, ForToken, IfToken, InterpolationExpressionToken, InterpolationLiteralToken, TagOpenNameToken, TextToken, Token } from "../lexer/models/token.type.js";
+import { ASTNode, AttributeNode, CaseNode, ElementNode, ElseNode, EventNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "./models/ast.type.js";
+import { ASTNodeType } from "./models/node.enum.js";
+import { ParserCursor } from "./models/parser-cursor.model.js";
 
 /**
  * Parser class that transforms a stream of tokens (from the Lexer)
@@ -76,9 +76,140 @@ export class Parser {
       case TokenType.TAG_OPEN_NAME:
         return this.parseElement(token);
 
+      case TokenType.IF:
+        return this.parseIfControlFlow(token);
+
+      case TokenType.FOR:
+        return this.parseForControlFlow(token);
+
+      case TokenType.SWITCH:
+        return this.parseSwitchControlFlow(token);
+
       default:
         throw this.error(`Unexpected token ${TokenType[token.type]}`);
     }
+  }
+
+  /**
+   * Parses an @if block, including an optional @else branch.
+   *
+   * Expected token sequence:
+   *   IF → CONDITION → BLOCK_OPEN → ...children... → BLOCK_CLOSE
+   *   (optionally followed by: ELSE → BLOCK_OPEN → ...children... → BLOCK_CLOSE)
+   */
+  private parseIfControlFlow(_token: IfToken): IfNode {
+    this._cursor.advance();
+
+    const conditionToken = this._cursor.peek();
+    if (conditionToken.type !== TokenType.CONDITION) {
+      throw this.error(`Expected CONDITION after IF, got ${TokenType[conditionToken.type]}`);
+    }
+
+    const condition = conditionToken.parts[0];
+    this._cursor.advance();
+    this._cursor.advance();
+
+    const consequent = this.parseBlockChildren();
+
+    // Check for optional @else
+    let alternate: ElseNode | null = null;
+    const next = this._cursor.peek();
+
+    if (next.type === TokenType.ELSE) {
+      this._cursor.advance();
+      this._cursor.advance();
+      const elseChildren = this.parseBlockChildren();
+      alternate = { type: ASTNodeType.Else, children: elseChildren };
+    }
+
+    return { type: ASTNodeType.If, condition, consequent, alternate };
+  }
+
+  /**
+   * Parses a @for block.
+   *
+   * Expected token sequence:
+   *   FOR → CONDITION → BLOCK_OPEN → ...children... → BLOCK_CLOSE
+   */
+  private parseForControlFlow(_token: ForToken): ForNode {
+    this._cursor.advance(); // consume FOR
+
+    const conditionToken = this._cursor.peek();
+    if (conditionToken.type !== TokenType.CONDITION) {
+      throw this.error(`Expected CONDITION after FOR, got ${TokenType[conditionToken.type]}`);
+    }
+    const expression = (conditionToken as ConditionToken).parts[0];
+    this._cursor.advance(); // consume CONDITION
+
+    this._cursor.advance(); // consume BLOCK_OPEN
+
+    const children = this.parseBlockChildren();
+
+    return { type: ASTNodeType.For, expression, children };
+  }
+
+  /**
+   * Parses a @switch block containing @case and @default branches.
+   *
+   * Expected token sequence:
+   *   SWITCH → CONDITION → BLOCK_OPEN
+   *     (CASE → CONDITION → BLOCK_OPEN → ...children... → BLOCK_CLOSE)*
+   *     (DEFAULT → BLOCK_OPEN → ...children... → BLOCK_CLOSE)?
+   *   BLOCK_CLOSE
+   */
+  private parseSwitchControlFlow(_token: Token): SwitchNode {
+    this._cursor.advance(); // consume SWITCH
+
+    const conditionToken = this._cursor.peek();
+    if (conditionToken.type !== TokenType.CONDITION) {
+      throw this.error(`Expected CONDITION after SWITCH, got ${TokenType[conditionToken.type]}`);
+    }
+    const expression = (conditionToken as ConditionToken).parts[0];
+    this._cursor.advance(); // consume CONDITION
+    this._cursor.advance(); // consume BLOCK_OPEN
+
+    const cases: CaseNode[] = [];
+
+    while (this._cursor.peek().type !== TokenType.BLOCK_CLOSE) {
+      const t = this._cursor.peek();
+
+      if (t.type === TokenType.CASE) {
+        this._cursor.advance(); // consume CASE
+        const caseCondition = this._cursor.peek();
+        if (caseCondition.type !== TokenType.CONDITION) {
+          throw this.error(`Expected CONDITION after CASE`);
+        }
+        const caseExpr = (caseCondition as ConditionToken).parts[0];
+        this._cursor.advance(); // consume CONDITION
+        this._cursor.advance(); // consume BLOCK_OPEN
+        cases.push({ type: ASTNodeType.Case, condition: caseExpr, children: this.parseBlockChildren() });
+      } else if (t.type === TokenType.DEFAULT) {
+        this._cursor.advance(); // consume DEFAULT
+        this._cursor.advance(); // consume BLOCK_OPEN
+        cases.push({ type: ASTNodeType.Case, condition: null, children: this.parseBlockChildren() });
+      } else {
+        break;
+      }
+    }
+
+    this._cursor.advance(); // consume outer BLOCK_CLOSE
+
+    return { type: ASTNodeType.Switch, expression, cases };
+  }
+
+  /**
+   * Parses child nodes until a BLOCK_CLOSE token is encountered.
+   * Consumes the BLOCK_CLOSE before returning.
+   */
+  private parseBlockChildren(): ASTNode[] {
+    const children: ASTNode[] = [];
+
+    while (this._cursor.peek().type !== TokenType.BLOCK_CLOSE) {
+      children.push(this.parseNode());
+    }
+
+    this._cursor.advance(); // consume BLOCK_CLOSE
+    return children;
   }
 
   /**
@@ -111,8 +242,8 @@ export class Parser {
     this._cursor.advance();
     const tagName = token.parts[0];
 
-    const attributes: AttributeNode[] = [];
-    const events: EventNode[] = [];
+    const attributes = new Array<AttributeNode>;
+    const events = new Array<EventNode>;
 
     let read = true;
     while (read) {
@@ -179,18 +310,21 @@ export class Parser {
     }
 
     const [name, value] = raw.split('=');
+    if (!name || !value) {
+      throw this.error(`Invalid attribute format: ${raw}`);
+    }
 
     const nextToken = this._cursor.peek();
     if (nextToken.type === TokenType.INTERPOLATION_EXPRESSION || nextToken.type === TokenType.INTERPOLATION_LITERAL) {
       return {
-        name: name!,
+        name,
         value: this.parseInterpolation(nextToken)
       };
     }
 
     return {
-      name: name!,
-      value: value!.replace(/^['']|['']$/g, '')
+      name,
+      value: value.replace(/^['']|['']$/g, '')
     };
   }
 
@@ -202,9 +336,13 @@ export class Parser {
     const raw = token.parts[0];
     const [name, value] = raw.split('=');
 
+    if (!name || !value) {
+      throw this.error(`Invalid event format: ${raw}`);
+    }
+
     return {
-      name: name!,
-      handler: value!.replace(/^['']|['']$/g, '')
+      name,
+      handler: value.replace(/^[""]|[""]$/g, '')
     };
   }
 

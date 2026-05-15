@@ -2,7 +2,7 @@ import { Event } from '../decorators/event.decorator';
 import { Property } from '../decorators/property.decorator';
 import { WebComponent } from '../decorators/web-component/web-component.decorator';
 import { BaseWebComponent } from '../directives/base-web-component';
-import { Output } from '../models/event/output.type';
+import { Output } from '../types/event/output.type';
 
 @WebComponent({
   selector: 'mock-web-component',

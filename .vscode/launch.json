@@ -4,15 +4,38 @@
     {
       "type": "node",
       "request": "attach",
-      "name": "Attach to Node",
+      "name": "Attach to nodemon",
       "port": 9229,
       "restart": true,
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "resolveSourceMapLocations": [
         "${workspaceFolder}/**",
         "!**/node_modules/**"
-      ]
+      ],
+      "sourceMapPathOverrides": {
+        "tsx://*": "${workspaceFolder}/*",
+        "../*": "${workspaceFolder}/*"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch test.ts (tsx)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--inspect-brk", "--import", "tsx/esm"],
+      "program": "${workspaceFolder}/src/test.ts",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "sourceMapPathOverrides": {
+        "tsx://*": "${workspaceFolder}/*",
+        "../*": "${workspaceFolder}/*"
+      },
+      "env": {
+        "TSX_TSCONFIG_PATH": "${workspaceFolder}/tsconfig.json"
+      }
     }
   ]
 }

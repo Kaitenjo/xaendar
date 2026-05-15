@@ -1,8 +1,11 @@
 {
   "name": "@xaendar/types",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "A library containing common types shared across packages and consumers"
+  "description": "A library containing common types shared across packages and consumers",
+  "xaendar": {
+    "target": "browser"
+  }
 }

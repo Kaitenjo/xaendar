@@ -1,9 +1,13 @@
-import { ASTNodeType } from './node.enum';
+import { ASTNodeType } from './node.enum.js';
 
 export type ASTNode =
   | ElementNode
   | TextNode
-  | InterpolationNode;
+  | InterpolationNode
+  | IfNode
+  | ElseNode
+  | ForNode
+  | SwitchNode;
 
 export type ElementNode = {
   type: ASTNodeType.Element
@@ -31,4 +35,34 @@ export type TextNode = {
 export type InterpolationNode = {
   type: ASTNodeType.Interpolation
   expression: string;
+}
+
+export type IfNode = {
+  type: ASTNodeType.If;
+  condition: string;
+  consequent: ASTNode[];
+  alternate: ElseNode | null;
+}
+
+export type ElseNode = {
+  type: ASTNodeType.Else;
+  children: ASTNode[];
+}
+
+export type ForNode = {
+  type: ASTNodeType.For;
+  expression: string;
+  children: ASTNode[];
+}
+
+export type SwitchNode = {
+  type: ASTNodeType.Switch;
+  expression: string;
+  cases: CaseNode[];
+}
+
+export type CaseNode = {
+  type: ASTNodeType.Case;
+  condition: string | null; // null = @default
+  children: ASTNode[];
 }

@@ -1,4 +1,4 @@
-import { Token } from '../../lexer/models/token.type'
+import { Token } from '../../lexer/models/token.type.js'
 
 export type CurrentToken = {
   value: Token

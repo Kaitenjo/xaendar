@@ -74,9 +74,7 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
   console.log(`\nStarting version bump: [${bump.toUpperCase()}]\n`);
 
   const mainPackageJsonPath = '../package.json';
-  const mainPackageJson: PackageJson = JSON.parse(
-    readFileSync(mainPackageJsonPath, { encoding: 'utf-8' })
-  );
+  const mainPackageJson: PackageJson = JSON.parse(readFileSync(mainPackageJsonPath, { encoding: 'utf-8' }));
 
   const previousVersion = mainPackageJson.version!;
   const version = new Version(previousVersion);

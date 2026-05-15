@@ -1,7 +1,7 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
 import { BaseWebComponent } from '../directives/base-web-component';
-import { EventParams } from '../models/event/event-params.type';
-import { Output } from '../models/event/output.type';
+import { EventParams } from '../types/event/event-params.type';
+import { Output } from '../types/event/output.type';
 
 function isEventParams(value: EventParams | unknown): value is EventParams {
   return !!value && typeof value === 'object' && ('bubbles' in value || 'cancelable' in value || 'composed' in value);
@@ -19,7 +19,7 @@ export function Event<
 
     return {
       get(): Output<Data> {
-        output.emit = (valueOrOverrideParams?: Data | EventParams, overrideParams?: EventParams) => {
+        output.emit = function(this: Class, valueOrOverrideParams?: Data | EventParams, overrideParams?: EventParams) {
           let eventParams: CustomEventInit<Data> = {};
 
             eventParams = isEventParams(valueOrOverrideParams)
@@ -27,7 +27,7 @@ export function Event<
               : { ...params, ...overrideParams, detail: valueOrOverrideParams }
 
             const event = new CustomEvent(context.name as string, eventParams);
-            const classInstance = (this as Class);
+            const classInstance = this;
             classInstance.dispatchEvent(event);
           };
           return output;

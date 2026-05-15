@@ -1,56 +1,75 @@
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { PackageJson } from 'type-fest';
-import { build } from 'vite';
+import { build as viteBuild } from 'vite';
+import { build as tsupBuild } from 'tsup';
 
 const projectsPath = '../packages';
+
+type XaendarTarget = 'browser' | 'node';
+
+type XaendarPackageJson = PackageJson & {
+  /**
+   * Custom field used to configure the build process for each package. It specifies
+   */
+  xaendar?: {
+    /**
+     * The intended runtime environment for the package, which determines the build tool and output format. Defaults to `browser`.
+     */
+    target: XaendarTarget;
+    /** 
+     * Entry point relative to the package root. Defaults to `src/public-api.ts`. 
+     */
+    entry?: string;
+    /** 
+     * Whether to emit `.d.ts` declaration files. Defaults to `true`. 
+     */
+    dts?: boolean;
+    /**
+     * Whether to build this package. Set to `false` for internal packages
+     * that are bundled inline by their consumer (e.g. compiler bundled into CLI).
+     */
+    build?: boolean;
+    /**
+     * If `true`, all dependencies are bundled inline (not externalized).
+     * Used for CLI executables that should be self-contained.
+     */
+    noExternal?: boolean;
+  };
+};
+
+/**
+ * Reads and parses the `package.json` of a given package folder.
+ */
+function getPackageJson(projectName: string): XaendarPackageJson {
+  return JSON.parse(readFileSync(resolve(projectsPath, projectName, 'package.json'), { encoding: 'utf-8' }));
+}
 
 /**
  * Scans the `../packages` directory and builds a map associating each project
  * with its `@xaendar`-scoped dependencies.
  *
- * The `cli` folder is excluded from the scan.
- * If a project has no `@xaendar` dependencies, it is mapped to an empty object.
- *
  * @returns A map of `projectName → { "@xaendar/pkg": "version" }`.
- *
- * @example
- * // packages/ structure:
- * //   core/package.json  → dependencies: { "@xaendar/utils": "^1.0.0" }
- * //   ui/package.json    → dependencies: {}
- *
- * mapProjectsDependencies();
- * // Map {
- * //   "core" => { "@xaendar/utils": "^1.0.0" },
- * //   "ui"   => {}
- * // }
  */
 function mapProjectsDependencies(): Map<string, Record<string, string>> {
   return new Map(
     readdirSync(projectsPath)
-      .filter(folder => folder !== 'cli')
-      .reduce<[string, Record<string, string>][]>((acc, value) => {
+      .reduce<[string, Record<string, string>][]>((acc, folder) => {
         try {
-          const packageJson: PackageJson = JSON.parse(readFileSync(resolve(projectsPath, value, 'package.json'), { encoding: 'utf-8' }));
-          const dependencies = packageJson.dependencies;
-          if (!dependencies) {
-            acc.push([value, {}])
-            return acc;
-          }
+          const pkg = getPackageJson(folder);
+          const dependencies = pkg.dependencies ?? {};
 
           const xendarDependencies = Object.entries(dependencies)
-            .filter(([packageName, _version]) => packageName.includes('@xaendar'))
-            .reduce<Record<string, string>>((acc, [packageName, version]) => {
-              acc[packageName] = version!;
-              return acc;
+            .filter(([name]) => name.includes('@xaendar'))
+            .reduce<Record<string, string>>((deps, [name, version]) => {
+              deps[name] = version!;
+              return deps;
             }, {});
 
-          if (xendarDependencies) {
-            acc.push([value, xendarDependencies])
-          }
-          return acc
-        } catch (error) {
-          console.warn(`Error while reading package.json for project ${value}`);
+          acc.push([folder, xendarDependencies]);
+          return acc;
+        } catch {
+          console.warn(`Error while reading package.json for project ${folder}`);
           process.exit(1);
         }
       }, [])
@@ -58,72 +77,167 @@ function mapProjectsDependencies(): Map<string, Record<string, string>> {
 }
 
 /**
- * Initiates the build for all projects that have no `@xaendar` dependencies,
- * i.e. projects that do not depend on any other local package and can be built immediately.
- *
- * Projects with unresolved dependencies are skipped here and will be triggered
- * recursively by {@link buildProject} once their dependencies are built.
- *
- * @param projects - The dependency map produced by {@link mapProjectsDependencies}.
- *
- * @example
- * const projects = mapProjectsDependencies();
- * buildProjects(projects); // kicks off the dependency-ordered build chain
+ * Starts the build for all projects with no pending `@xaendar` dependencies.
  */
 function buildProjects(projects: Map<string, Record<string, string>>): void {
   Array.from(projects.entries())
-    .filter(([_projectName, dependencies]) => Object.keys(dependencies).length === 0)
-    .forEach(([projectName]) => buildProject(projectName));
+    .filter(([, deps]) => Object.keys(deps).length === 0)
+    .forEach(([name]) => buildProject(name));
 }
 
 /**
- * Builds a single `@xaendar` project using Vite, then recursively triggers
- * the build of any project that was waiting on it as a dependency.
+ * Builds a single package using Vite (browser) or tsup (node), based on the
+ * `xaendar.target` field in its `package.json`.
  *
- * After a successful build, the project is removed from the shared `projects` map.
- * Any other project that listed this one as a dependency has it removed from its
- * dependency record; if that record becomes empty, its build is started immediately.
+ * After a successful build, any dependent project that was waiting on this one
+ * has the dependency removed; if the dependent has no more pending deps, its
+ * build is triggered immediately.
  *
- * @param  projectName - The folder name of the project to build (e.g. `"core"`).
- *                               The full package name is assumed to be `@xaendar/{projectName}`.
- *
- * @remarks
- * - The build is asynchronous (Vite returns a Promise), but errors thrown synchronously
- *   are caught and logged without stopping the process.
- * - The success log (`✅`) is printed optimistically before the Promise resolves;
- *   only Promise-level errors would be unhandled.
- *
- * @example
- * buildProject('utils');
- * // ▶ Build: @xaendar/utils
- * // ✅ @xaendar/utils completed
+ * @param projectName - The folder name of the project (e.g. `"compiler"`).
  */
 function buildProject(projectName: string): void {
   const projectPath = resolve(projectsPath, projectName);
-  console.log(`\n▶ Build: @xaendar/${projectName}`);
+  const pkg = getPackageJson(projectName);
+
+  // Skip packages that are not meant to be built independently
+  if (pkg.xaendar?.build === false) {
+    console.log(`⏭️  Skip: @xaendar/${projectName} (bundled by consumer)`);
+    markComplete(projectName);
+    return;
+  }
+
+  const target = pkg.xaendar?.target ?? 'browser';
+
+  console.log(`\n▶ Build [${target}]: @xaendar/${projectName}`);
+
+  const onSuccess = () => {
+    console.log(`✅ @xaendar/${projectName} completato`);
+    markComplete(projectName);
+  };
+
+  const onError = (err: unknown) => {
+    console.error(`❌ @xaendar/${projectName} fallito:`, (err as Error).message);
+  };
 
   try {
-    build({
-      root: projectPath,
-      configFile: resolve(projectPath, 'vite.config.ts')
-    })
-    .then(() => {
-      console.log(`✅ @xaendar/${projectName} completato`);
-      projects.delete(projectName);
-      Array.from(projects.entries()).forEach(([dependentProjectName, projectDependencies]) => {
-        if (`@xaendar/${projectName}` in projectDependencies) {
-            delete projectDependencies[`@xaendar/${projectName}`];
-            if (Object.keys(projectDependencies).length === 0) {
-              buildProject(dependentProjectName);
-            }
-          }
-        })
-      }
-    );
+    const buildPromise = target === 'node'
+      ? buildNode(projectName, projectPath, pkg)
+      : buildBrowser(projectPath);
+
+    buildPromise.then(onSuccess).catch(onError);
   } catch (err) {
-    const error = err as Error
-    console.error(`❌ @xaendar/${projectName} fallito:`, error.message);
+    onError(err);
   }
+}
+
+/**
+ * Builds a browser package using Vite.
+ */
+function buildBrowser(projectPath: string): Promise<unknown> {
+  return viteBuild({
+    root: projectPath,
+    configFile: resolve(projectPath, 'vite.config.ts'),
+  });
+}
+
+/**
+ * Scans the `packages/` directory and builds an alias map for all `@xaendar/*` packages.
+ * 
+ * This allows esbuild to resolve monorepo packages by their source files rather than
+ * relying on `node_modules` symlinks, which is needed when the original `package.json`
+ * files don't have an `exports` field (exports are injected during the Vite build).
+ * 
+ * @returns A map from package name (e.g. `@xaendar/common`) to its entry file path.
+ */
+function buildXaendarAliasMap(): Record<string, string> {
+  const packagesDir = resolve(projectsPath);
+  const packageFolders = readdirSync(packagesDir);
+  const aliasMap: Record<string, string> = {};
+
+  for (const folder of packageFolders) {
+    try {
+      const pkgJsonPath = resolve(packagesDir, folder, 'package.json');
+      const pkg: XaendarPackageJson = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
+
+      // Only create aliases for @xaendar-scoped packages
+      if (!pkg.name?.startsWith('@xaendar/')) continue;
+
+      const entryFile = pkg.xaendar?.entry ?? 'src/public-api.ts';
+      const absolutePath = resolve(packagesDir, folder, entryFile).replace(/\\/g, '/');
+      
+      aliasMap[pkg.name] = absolutePath;
+    } catch {
+      // Not a valid package folder — skip silently
+    }
+  }
+
+  return aliasMap;
+}
+
+/**
+ * Builds a Node package using tsup.
+ *
+ * - Entry point: `xaendar.entry` from package.json, defaults to `src/public-api.ts`.
+ * - Output: `dist/@xaendar/{projectName}` in the workspace root.
+ * - If `noExternal` is set, all dependencies are bundled inline (self-contained executable).
+ * - Declaration files are emitted unless `xaendar.dts` is explicitly `false`.
+ */
+function buildNode(projectName: string, projectPath: string, pkg: XaendarPackageJson): Promise<unknown> {
+  const entry = pkg.xaendar?.entry ?? 'src/public-api.ts';
+  const dts = pkg.xaendar?.dts !== false;
+  const bundleAll = pkg.xaendar?.noExternal === true;
+  const outDir = resolve(projectPath, '../../dist/@xaendar', projectName);
+  const entryPath = resolve(projectPath, entry).replace(/\\/g, '/');
+
+  return tsupBuild({
+    entry: { index: entryPath },
+    outDir,
+    format: ['esm'],
+    dts,
+    sourcemap: true,
+    clean: true,
+    ...(bundleAll
+      ? { 
+          noExternal: [/.*/], 
+          esbuildOptions: opts => { opts.alias = buildXaendarAliasMap(); } 
+        }
+      : { external: Object.keys(pkg.dependencies ?? {}) }),
+  }).then(() => {
+    // For self-contained executables (CLI), create a minimal package.json in dist
+    if (bundleAll) {
+      const distPkg = {
+        name: pkg.name!,
+        version: pkg.version!,
+        description: pkg.description ?? '',
+        author: pkg.author ?? '',
+        license: pkg.license ?? 'MIT',
+        type: 'module',
+        bin: {
+          [projectName]: './index.js',
+        },
+        exports: {
+          '.': './index.js',
+        },
+      };
+      writeFileSync(resolve(outDir, 'package.json'), JSON.stringify(distPkg, null, 2), 'utf-8');
+    }
+  });
+}
+
+/**
+ * Marks a project as complete and triggers dependents whose deps are now satisfied.
+ */
+function markComplete(projectName: string): void {
+  projects.delete(projectName);
+
+  Array.from(projects.entries()).forEach(([dependentName, deps]) => {
+    if (`@xaendar/${projectName}` in deps) {
+      delete deps[`@xaendar/${projectName}`];
+      if (Object.keys(deps).length === 0) {
+        buildProject(dependentName);
+      }
+    }
+  });
 }
 
 const projects = mapProjectsDependencies();

@@ -1,73 +1,139 @@
-import { ASTNode, TextNode, InterpolationNode, ElementNode, AttributeNode, EventNode } from '../parser/models/ast.type';
-import { ASTNodeType } from '../parser/models/node.enum';
+import { ASTNode, ElementNode, ForNode, IfNode, InterpolationNode, SwitchNode, TextNode } from "../parser/models/ast.type.js";
+import { ASTNodeType } from "../parser/models/node.enum.js";
 
 /**
- * Genera il codice TypeScript della funzione render
- * @param ast L'albero AST del template
- * @param componentVar Nome della variabile 'this' del componente (di solito `this`)
- * @returns Stringa contenente il corpo della funzione render
+ * Generates the TypeScript body of a render function from an AST.
+ *
+ * @param ast       Top-level AST nodes produced by the Parser
+ * @param componentVar  Name of the component variable (default: `this`)
+ * @returns         String containing the render function body
  */
-export function generateRenderFunction(ast: ASTNode[], componentVar = 'this'): string {
-  const lines: string[] = [];
-
-  // Apertura funzione
-  lines.push(`const shadow = ${componentVar}.shadowRoot!;`);
-
-  ast.forEach((node, i) => {
-    lines.push(...processNode(node, `node${i}`, componentVar));
-    lines.push(`shadow.appendChild(node${i});`);
-  });
-
-  return lines.join('\n');
+export function generateRenderFunction(ast: ASTNode[], componentVar = "this"): string {
+  return [`
+const shadow = ${componentVar}.shadowRoot!;
+`,
+  ...ast.map((node, i) => processNode(node, `node${i}`, componentVar, 'shadow')).flat()
+  ].join("\n");
 }
 
 /**
- * Genera il codice per creare un singolo nodo
+ * Generates code that appends `varName` to `parentVar`.
+ * For flow control nodes no single var is produced; instead multiple children
+ * are appended directly inside the control flow block.
  */
-function processNode(node: ASTNode, varName: string, componentVar: string): string[] {
-  const code = new Array<string>;
-
+function processNode(node: ASTNode, varName: string, componentVar: string, parentVar: string): string[] {
   switch (node.type) {
     case ASTNodeType.Text:
-      code.push(`const ${varName} = document.createTextNode(${JSON.stringify((node as TextNode).value)});`);
-      break;
-
     case ASTNodeType.Interpolation:
-      code.push(`const ${varName} = document.createTextNode(${componentVar}.${(node as InterpolationNode).expression});`);
-      break;
+      return processTextAndInterpolation(node, varName, componentVar, parentVar);
 
     case ASTNodeType.Element:
-      const elNode = node as ElementNode;
-      code.push(`const ${varName} = document.createElement(${JSON.stringify(elNode.tagName)});`);
+      return processElement(node, varName, componentVar, parentVar);
 
-      // Attributi
-      (elNode.attributes || []).forEach((attr: AttributeNode) => {
-        if (typeof attr.value === 'string') {
-          code.push(`${varName}.setAttribute(${JSON.stringify(attr.name)}, ${JSON.stringify(attr.value)});`);
-        } else {
-          // Interpolazione come value
-          const interp = attr.value as InterpolationNode;
-          code.push(`${varName}.setAttribute(${JSON.stringify(attr.name)}, ${componentVar}.${interp.expression});`);
-        }
-      });
+    case ASTNodeType.If:
+      return processIf(node, varName, componentVar, parentVar);
 
-      // Eventi
-      (elNode.events || []).forEach((event: EventNode) => {
-        if (event.name.startsWith('@')) {
-          event.name = event.name.slice(1);
-        }
-        code.push(`${varName}.addEventListener(${JSON.stringify(event.name)}, ${componentVar}.${event.handler}.bind(${componentVar}));`);
-      });
+    case ASTNodeType.For:
+      return processFor(node, varName, componentVar, parentVar);
 
-      // Children
-      (elNode.children || []).forEach((child, idx) => {
-        const childVar = `${varName}_child${idx}`;
-        code.push(...processNode(child, childVar, componentVar));
-        code.push(`${varName}.appendChild(${childVar});`);
-      });
+    case ASTNodeType.Switch:
+      return processSwitch(node, varName, componentVar, parentVar);
 
-      break;
+    default:
+      return [];
+  }
+}
+
+function processTextAndInterpolation(node: TextNode | InterpolationNode, varName: string, componentVar: string, parentVar: string): string[] {
+  const textValue = node.type === ASTNodeType.Text ? JSON.stringify(node.value) : resolveExpression(node.expression, componentVar);
+  return [
+    `const ${varName} = document.createTextNode(${textValue});`,
+    `${parentVar}.appendChild(${varName});`
+  ];
+}
+
+function processElement(node: ElementNode, varName: string, componentVar: string, parentVar: string): string[] {
+  return [
+    `const ${varName} = document.createElement("${node.tagName}");`,
+    ...(node.attributes?.map(attr => `${varName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `${componentVar}.${attr.value.expression}`});`) || []),
+    ...(node.events?.map(event => `${varName}.addEventListener("${event.name}", ${componentVar}.${event.handler}.bind(${componentVar}));`) || []),
+    `${parentVar}.appendChild(${varName});`,
+    ...(node.children.map((child, i) => processNode(child, `${varName}_c${i}`, componentVar, varName)).flat())
+  ];
+}
+
+function processIf(node: IfNode, varName: string, componentVar: string, parentVar: string): string[] {
+  const code = [
+    `if (${resolveExpression(node.condition, componentVar)}) {`,
+    ...node.consequent.map((child, idx) => indent(...processNode(child, `${varName}_t${idx}`, componentVar, parentVar))).flat(),
+    '}'
+  ];
+
+  const alt = node.alternate;
+  if (alt) {
+    // append 'else' to the closing brace of the 'if' block
+    code[code.length - 1] += ' else {';
+    code.push(
+      ...alt.children.map((child, idx) => indent(...processNode(child, `${varName}_e${idx}`, componentVar, parentVar))).flat(),
+      '}'
+    );
   }
 
   return code;
+}
+
+function processFor(node: ForNode, varName: string, componentVar: string, parentVar: string): string[] {
+  const iterExpr = resolveForExpression(node.expression, componentVar);
+  return [
+    `for (${iterExpr}) {`,
+    ...node.children.map((child, idx) => indent(...processNode(child, `${varName}_f${idx}`, componentVar, parentVar))).flat(),
+    '}'
+  ];
+}
+
+function processSwitch(node: SwitchNode, varName: string, componentVar: string, parentVar: string): string[] {
+  return [
+    `switch (${resolveExpression(node.expression, componentVar)}) {`,
+    ...node.cases.map(caseNode => ([
+      ...indent(
+        `${!caseNode.condition ? 'default' : `case ${caseNode.condition}`}: {`,
+        ...caseNode.children.map((child, i) => indent(...processNode(child, `${varName}_s${i}_${i}`, componentVar, parentVar))).flat(),
+        `${indent('break;')}`,
+        `}`
+      )
+    ])).flat(),
+    '}'
+  ];
+}
+
+
+function resolveForExpression(expression: string, componentVar: string): string {
+  const match = expression.match(/^let\s+(\w+)\s+of\s+(\w+)$/);
+  
+  if (!match) {
+    throw new Error(`String "${expression}" does not match the structure "let X of Y"`);
+  }
+  
+  const [, X, Y] = match;
+  return `const ${X} of this.${Y}`;
+}
+
+/**
+ * Resolves references to component properties inside expressions.
+ * A bare identifier that is NOT a JS keyword is prefixed with `componentVar`.
+ *
+ * Examples (componentVar = "this"):
+ *   "items"          →  "this.items"
+ *   "item of items"  →  "item of this.items"
+ *   "x > 0"          →  "this.x > 0"
+ */
+function resolveExpression(expression: string, componentVar: string): string {
+  return expression.replace(/\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g, match => match === componentVar ? match : `${componentVar}.${match}`);
+}
+
+/**
+ * Indents each line of a code block by two spaces.
+ */
+function indent(...lines: string[]): string[] {
+  return lines.map(line => `  ${line}`);
 }

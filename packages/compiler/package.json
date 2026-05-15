@@ -1,12 +1,18 @@
 {
   "name": "@xaendar/compiler",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing compiler engine",
+  "exports": {
+    ".": "./src/public-api.ts"
+  },
+  "xaendar": {
+    "build": false
+  },
   "dependencies": {
-    "@xaendar/common": "0.2.0",
-    "@xaendar/types": "0.2.0"
+    "@xaendar/common": "0.2.1",
+    "@xaendar/types": "0.2.1"
   }
 }

@@ -15,5 +15,16 @@ export default defineConfig({
       '@xaendar/signals': path.resolve(__dirname, 'packages/signals/src/public-api.ts'),
       '@xaendar/types': path.resolve(__dirname, 'packages/types/src/public-api.ts'),
     }
+  },
+  build: {
+    target: 'esnext',
+    lib: {
+      entry: path.resolve(__dirname, 'src/test.ts'),
+      fileName: () => `test.es.js`,
+      formats: ['es']
+    },
+    sourcemap: true,
+    outDir: path.resolve(__dirname, 'dist/src'),
+    emptyOutDir: true
   }
 });

@@ -1,6 +1,6 @@
-import { HTML_TAGS } from '../costants/tags/base-tags.constants';
-import { NOT_ALLOWED_TAGS } from '../costants/tags/not-alllowed-tags.constants';
-import { NOT_ALLOWED_CHARS_FOR_TAGS } from '../costants/tags/not-allowed-chars.constants';
+import { HTML_TAGS } from '../costants/tags/base-tags.constants.js';
+import { NOT_ALLOWED_TAGS } from '../costants/tags/not-alllowed-tags.constants.js';
+import { NOT_ALLOWED_CHARS_FOR_TAGS } from '../costants/tags/not-allowed-chars.constants.js';
 
 /**
  * Checks if a character is allowed in a custom element tag name.

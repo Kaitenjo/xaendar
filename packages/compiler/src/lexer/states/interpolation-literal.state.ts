@@ -1,9 +1,9 @@
-import { GRAVE_ACCENT, RIGHT_BRACE } from '../../costants/chars.constants';
-import { LexerCursor } from '../models/lexer-cursor.model';
-import { LexerState } from '../models/lexer-state.enum';
-import { TokenType } from '../models/token-type.enum';
-import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type';
-import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type';
+import { GRAVE_ACCENT, RIGHT_BRACE } from '../../costants/chars.constants.js';
+import { LexerCursor } from '../models/lexer-cursor.model.js';
+import { LexerState } from '../models/lexer-state.enum.js';
+import { TokenType } from '../models/token-type.enum.js';
+import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
+import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
 
 export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
