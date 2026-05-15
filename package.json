@@ -1,6 +1,6 @@
 {
   "name": "xendar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
@@ -11,7 +11,7 @@
     "build:src": "vite build",
     "check:dependencies": "npm run check-dependencies --prefix schematics",
     "compile:projects": "npm run compile-projects --prefix schematics",
-    "deploy": "npm run build:schematics && npm run check:dependencies && npx vitest run && npm run compile:projects && npm run build:projects && npm run update-version &&npm run pack:projects && npm run publish:projects",
+    "deploy": "npm run build:schematics && npm run check:dependencies && npm run update-version && npx vitest run && npm run compile:projects && npm run build:projects && npm run pack:projects && npm run publish:projects",
     "i": "npm i --omit-optional --ignore-scripts",
     "install:clean": "rimraf package-lock.json node_modules && npm run i",
     "pack:projects": "npm run pack --prefix schematics",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",
-    "@types/node": "^25.7.0",
+    "@types/node": "^25.8.0",
     "@vitest/coverage-v8": "^4.1.6",
     "depcheck": "^1.4.7",
     "nodemon": "^3.1.14",

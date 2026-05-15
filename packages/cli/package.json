@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Cli tool for Xendar framework",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -8,10 +8,11 @@
   "xaendar": {
     "target": "node",
     "entry": "src/index.ts",
-    "dts": false
+    "dts": false,
+    "noExternal": true
   },
   "dependencies": {
-    "@xaendar/compiler": "0.2.0",
+    "@xaendar/compiler": "0.2.1",
     "commander": "^14.0.3"
   }
 }

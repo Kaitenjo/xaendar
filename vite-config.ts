@@ -51,6 +51,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
             name: pkg.name,
             version: pkg.version,
             description: pkg.description,
+            sideEffects: false,
             type: "module",
             main: `./${fileName}.es.js`,
             module: `./${fileName}.es.js`,
@@ -63,8 +64,8 @@ export default function getViteConfig(name: string, dirName: string, options?: V
                 }
               }
             },
-            peerDependencies: pkg.peerDependencies ?? {},
-            dependencies: pkg.dependencies ?? {}
+            ...(Object.keys(pkg.peerDependencies ?? {}).length ? { peerDependencies: pkg.peerDependencies } : {}),
+            ...(Object.keys(pkg.dependencies ?? {}).length ? { dependencies: pkg.dependencies } : {}),
           };
           writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
         }

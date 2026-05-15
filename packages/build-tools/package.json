@@ -1,11 +1,14 @@
 {
   "name": "@xaendar/build-tools",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
   "description": "A library containing build tools for Xaendar framework",
+  "exports": {
+    ".": "./src/public-api.ts"
+  },
   "xaendar": {
-    "target": "node"
+    "build": false
   }
 }
