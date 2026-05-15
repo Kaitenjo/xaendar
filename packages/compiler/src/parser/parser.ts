@@ -309,9 +309,13 @@ export class Parser {
       return { name: raw, value: 'true' };
     }
 
-    const [name, value] = raw.split('=');
-    if (!name || !value) {
+    if (!raw.includes('=')) {
       throw this.error(`Invalid attribute format: ${raw}`);
+    }
+    
+    const [name, value] = raw.split('=');
+    if (!name) {
+      throw this.error(`Attribute name missing in: ${raw}`);
     }
 
     const nextToken = this._cursor.peek();
@@ -322,6 +326,10 @@ export class Parser {
       };
     }
 
+    if (!value) {
+      throw this.error(`Attribute value missing for ${name} in: ${raw}`);
+    }
+    
     return {
       name,
       value: value.replace(/^['']|['']$/g, '')

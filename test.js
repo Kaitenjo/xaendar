@@ -5,7 +5,7 @@ const node0 = document.createElement("label");
 node0.setAttribute('for', this.id);
 node0.setAttribute('aria-label', this.label);
 shadow.appendChild(node0);
-const node0_c0 = document.createTextNode(String(this.label));
+const node0_c0 = document.createTextNode(this.label);
 node0.appendChild(node0_c0);
 if (this.id) {
   const node1_t0 = document.createElement("span");
@@ -21,7 +21,7 @@ if (this.id) {
 for (const item of this.items) {
   const node2_f0 = document.createElement("div");
   shadow.appendChild(node2_f0);
-  const node2_f0_c0 = document.createTextNode(String(this.item));
+  const node2_f0_c0 = document.createTextNode(this.item);
   node2_f0.appendChild(node2_f0_c0);
 }
 switch (this.status) {
