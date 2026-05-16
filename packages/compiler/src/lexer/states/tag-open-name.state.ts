@@ -5,6 +5,14 @@ import { TokenType } from '../models/token-type.enum.js';
 import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
 
+/**
+ * Consumes an opening tag name after `<`, reading until a space, `/`, or `>` is found.
+ * Emits a TAG_OPEN_NAME token with the tag name and transitions to TAG_BODY.
+ *
+ * @param cursor The lexer cursor positioned at the `<` character.
+ * @param _context Unused lexer context.
+ * @returns Transition result with the TAG_OPEN_NAME token and the TAG_BODY state.
+ */
 export function consumeTagOpenName(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let tagName = '';

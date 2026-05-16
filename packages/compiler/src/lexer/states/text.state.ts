@@ -6,6 +6,15 @@ import { TokenType } from "../models/token-type.enum.js";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type.js";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type.js";
 
+/**
+ * Consumes plain text content, accumulating characters until a structural boundary
+ * is reached: `<` (tag open/close), `{` (interpolation), `@` (flow-control or event),
+ * or `}` (block close). Emits a TEXT token if non-blank text was accumulated.
+ *
+ * @param cursor The lexer cursor positioned at the start of text content.
+ * @param context Lexer context used to detect flow-control block boundaries.
+ * @returns Transition result with an optional TEXT token and the next state.
+ */
 export function consumeText(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let text = '';

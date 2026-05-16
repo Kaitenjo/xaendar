@@ -1,0 +1,20 @@
+import { ASTNodeType } from '../node.enum.js';
+import { CaseNode } from './case-node.type.js';
+
+/**
+ * AST node representing an `@switch` directive with one or more case branches.
+ */
+export type SwitchNode = {
+  /**
+   * Discriminant identifying this node as a switch.
+   */
+  type: ASTNodeType.Switch;
+  /**
+   * The switch expression string.
+   */
+  expression: string;
+  /**
+   * The list of `@case` and `@default` branches.
+   */
+  cases: CaseNode[];
+}

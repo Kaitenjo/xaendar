@@ -5,13 +5,17 @@ const template = `
   <label for={id} aria-label={label}>
     {label}
   </label>
+  @const test = user.name;
+  
   @if (id) {
+    @const test2 = user.name;
     <span>Id is present</span>
   } @else {
     <span>Id is missing</span>
   }
 
   @for (let item of items) {
+    @const test3 = user.name;
     <div>{item}</div>
   }
 
@@ -33,13 +37,13 @@ const template = `
 
 export function compile(input: string): string {
   const tokens = new Lexer(input).tokenize();
-  console.log(
-    tokens.map(t => ({ type: TokenType[t.type], ...('parts' in t ? { parts: t.parts } : {}) }))
-  );
+  // console.log(
+  //   tokens.map(t => ({ type: TokenType[t.type], ...('parts' in t ? { parts: t.parts } : {}) }))
+  // );
   const ast = new Parser(tokens).parse();
-  console.log(ast)
+  // console.log(ast)
   let a = generateRenderFunction(ast)
-  console.log(a)
+  // console.log(a)
   return a;
 }
 
