@@ -11,7 +11,9 @@ import { Context } from '../models/render-context.model.js';
  * @param _context Unused render context.
  * @returns Array containing the generated const statement string.
  */
-export function processConstDeclaration(node: ConstDeclarationNode, _nodeName: string, _parentNode: string, _context: Context): string[] {
+export function processConstDeclaration(node: ConstDeclarationNode, _nodeName: string, _parentNode: string, context: Context): string[] {
+  context.addIdentifier(node.varName);
+  
   return [
     `const ${node.varName} = ${node.expression};`
   ];

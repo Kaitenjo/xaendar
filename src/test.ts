@@ -7,14 +7,29 @@ const template = `
   </label>
   @const test = user.name;
   
-  @if (id) {
+  @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
     @const test2 = user.name;
+    @const test3 = user.name;
+    <span>Id is present</span>
+  } @else {
+    <span>Id is missing</span>
+      @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
+    @const test2 = user.name;
+    @const test3 = user.name;
+    <span>Id is present</span>
+  } @else {
+    <span>Id is missing</span>
+      @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
+    @const test2 = user.name;
+    @const test3 = user.name;
     <span>Id is present</span>
   } @else {
     <span>Id is missing</span>
   }
-
-  @for (let item of items) {
+  }
+  }
+      
+  @for (item of items; track item.id; $index = i) {
     @const test3 = user.name;
     <div>{item}</div>
   }
@@ -37,9 +52,9 @@ const template = `
 
 export function compile(input: string): string {
   const tokens = new Lexer(input).tokenize();
-  // console.log(
-  //   tokens.map(t => ({ type: TokenType[t.type], ...('parts' in t ? { parts: t.parts } : {}) }))
-  // );
+  console.log(
+    tokens.map(t => ({ type: TokenType[t.type], ...('parts' in t ? { parts: t.parts } : {}) }))
+  );
   const ast = new Parser(tokens).parse();
   // console.log(ast)
   let a = generateRenderFunction(ast)

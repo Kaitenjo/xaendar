@@ -15,10 +15,12 @@ import { processTextAndInterpolation } from "./states/process-text-and-interpola
  * @returns         String containing the render function body
  */
 export function generateRenderFunction(ast: ASTNode[]): string {
+  const context = new Context;
+
   return [`
 const shadow = this.shadowRoot!;
 `,
-    ...ast.map((node, i) => processNode(node, `node${i}`, 'shadow', new Context)).flat()
+    ...ast.map((node, i) => processNode(node, `node${i}`, 'shadow', context)).flat()
   ].join("\n");
 }
 
@@ -27,23 +29,23 @@ const shadow = this.shadowRoot!;
  * For flow control nodes no single var is produced; instead multiple children
  * are appended directly inside the control flow block.
  */
-function processNode(node: ASTNode, nodeName: string, parentNode: string, context: Context): string[] {
+export function processNode(node: ASTNode, nodeName: string, parentNode: string, context: Context): string[] {
   switch (node.type) {
     case ASTNodeType.Text:
     case ASTNodeType.Interpolation:
       return processTextAndInterpolation(node, nodeName, parentNode, context);
 
     case ASTNodeType.Element:
-      return processElement(node, nodeName, parentNode, context, processNode);
+      return processElement(node, nodeName, parentNode, context);
 
     case ASTNodeType.If:
-      return processIf(node, nodeName, parentNode, context, processNode);
+      return processIf(node, nodeName, parentNode, context);
 
     case ASTNodeType.For:
-      return processFor(node, nodeName, parentNode, context, processNode);
+      return processFor(node, nodeName, parentNode, context);
 
     case ASTNodeType.Switch:
-      return processSwitch(node, nodeName, parentNode, context, processNode);
+      return processSwitch(node, nodeName, parentNode, context);
 
     case ASTNodeType.ConstDeclaration:
       return processConstDeclaration(node, nodeName, parentNode, context);

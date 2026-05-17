@@ -6,6 +6,7 @@ import { ParserCursor } from '../models/parser-cursor.model.js';
 import { ElseNode } from '../models/nodes/else-node.type.js';
 import { IfNode } from '../models/nodes/if-node.type.js';
 import { parseBlockChildren } from './parse-block-children.state.js';
+import { validateExpression } from '../utils/expression-validator.js';
 
 /**
  * Parses an `@if` directive, consuming the IF token, the CONDITION token,
@@ -25,6 +26,12 @@ export function parseIfControlFlow(cursor: ParserCursor, context: ParserContext,
   }
 
   const condition = conditionToken.parts[0];
+  const validationResult = validateExpression(condition);
+  if (!validationResult.node || validationResult.diagnostics.length) {
+    throw new Error(`[Parser] Invalid expression in IF condition: "${validationResult.diagnostics[0]?.message}"`);
+  }
+
+
   cursor.advance();
   cursor.advance();
 
@@ -40,5 +47,11 @@ export function parseIfControlFlow(cursor: ParserCursor, context: ParserContext,
     alternate = { type: ASTNodeType.Else, children: elseChildren };
   }
 
-  return { type: ASTNodeType.If, condition, consequent, alternate };
+  return { 
+    type: ASTNodeType.If, 
+    condition, 
+    conditionNode: validationResult.node,
+    consequent, 
+    alternate 
+  };
 }

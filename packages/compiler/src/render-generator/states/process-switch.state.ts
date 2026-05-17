@@ -1,12 +1,7 @@
-import { ASTNode } from '../../parser/models/ast.type.js';
 import { SwitchNode } from '../../parser/models/nodes/switch-node.type.js';
 import { Context } from '../models/render-context.model.js';
-import { resolveExpression, indent } from '../utils/render-generator.utils.js';
-
-/**
- * Function type for recursively processing an AST node into render code strings.
- */
-type ProcessNodeFn = (node: ASTNode, nodeName: string, parentNode: string, context: Context) => string[];
+import { processNode } from '../render-generator.js';
+import { indent, resolveExpression } from '../utils/render-generator.utils.js';
 
 /**
  * Generates code for a `@switch` node.
@@ -19,13 +14,13 @@ type ProcessNodeFn = (node: ASTNode, nodeName: string, parentNode: string, conte
  * @param processNode Recursive node processor function.
  * @returns Array of generated code lines.
  */
-export function processSwitch(node: SwitchNode, nodeName: string, parentNode: string, context: Context, processNode: ProcessNodeFn): string[] {
+export function processSwitch(node: SwitchNode, nodeName: string, parentNode: string, context: Context): string[] {
   return [
-    `switch (${resolveExpression(node.expression)}) {`,
+    `switch (${resolveExpression(node.expression, context)}) {`,
     ...node.cases.map(caseNode => ([
       ...indent(
         `${!caseNode.condition ? 'default' : `case ${caseNode.condition}`}: {`,
-        ...caseNode.children.map((child, i) => indent(...processNode(child, `${nodeName}_s${i}_${i}`, parentNode, context))).flat(),
+        ...caseNode.children.map((child, i) => indent(...processNode(child, `${nodeName}_s${i}_${i}`, parentNode, new Context([], context)))).flat(),
         `${indent('break;')}`,
         `}`
       )

@@ -53,7 +53,7 @@ export class Parser {
    */
   public parse(): ASTNode[] {
     let eof = false;
-    const nodes: ASTNode[] = [];
+    const nodes = new Array<ASTNode>;
 
     while (!eof) {
       try {

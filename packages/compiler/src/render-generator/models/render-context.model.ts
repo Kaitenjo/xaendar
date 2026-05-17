@@ -4,7 +4,6 @@
  * and can be chained to a parent context for outer-scope resolution.
  */
 export class Context {
-
   /**
    * Creates a new scope context.
    *
@@ -16,13 +15,21 @@ export class Context {
     private _parent?: Context
   ) { }
 
+  public addIdentifier(name: string): void {
+    if (this.getIdentifier(name)) {
+      throw new Error(`Identifier "${name}" is already declared in this scope.`);
+    }
+    
+    this._identifiers.push(name);
+  }
+
   /**
    * Returns the innermost identifier in the current scope chain, or
    * delegates to the parent context if none is found in this scope.
    *
    * @returns The most recently declared identifier name, or `undefined` if none exists.
    */
-  public getIdentifier(): string | undefined {
-    return this._identifiers[this._identifiers.length - 1] || this._parent?.getIdentifier();
+  public getIdentifier(name: string): string | undefined {
+    return this._identifiers.includes(name) ? name : this._parent?.getIdentifier(name);
   }
 }

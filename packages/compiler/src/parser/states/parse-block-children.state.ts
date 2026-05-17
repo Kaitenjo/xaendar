@@ -12,7 +12,7 @@ import { ParserCursor } from '../models/parser-cursor.model.js';
  * @returns Array of parsed child `ASTNode`s.
  */
 export function parseBlockChildren(cursor: ParserCursor, context: ParserContext): ASTNode[] {
-  const children: ASTNode[] = [];
+  const children = new Array<ASTNode>;
 
   while (cursor.peek().type !== TokenType.BLOCK_CLOSE) {
     children.push(context.parseNode());

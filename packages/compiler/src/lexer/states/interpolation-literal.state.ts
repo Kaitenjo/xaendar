@@ -82,6 +82,6 @@ export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerT
  * @returns The updated string with the new character appended.
  */
 function addCharacter(cursor: LexerCursor, interpolation: string): string {
-  cursor.advance(1);
+  cursor.advance();
   return `${interpolation}${cursor.currentChar.value}`;
 }
