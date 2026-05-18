@@ -1,4 +1,4 @@
-import ts from 'typescript';
+import ts, { Diagnostic } from 'typescript';
 import { ExpressionValidationResult } from '../types/expression-validation-result.type';
 import { ExpressionDiagnostic } from '../types/nodes/expression-diangnostic.type';
 
@@ -59,14 +59,18 @@ export function validateExpression(source: string): ExpressionValidationResult {
   const prefix = 'const x = ';
   const sourceFile = ts.createSourceFile('expression.ts', `${prefix}${source}`, ts.ScriptTarget.ESNext, true);
 
-  const diagnostics = new Array<ExpressionDiagnostic>;
   const statement = sourceFile.statements[0] as ts.VariableStatement;
   const expression = statement.declarationList.declarations[0]!.initializer!;
+
+  const diagnostics = new Array<ExpressionDiagnostic>;
   visitNode(expression, prefix.length, diagnostics);
 
+  if (diagnostics.length) {
+    throw new Error(diagnostics.reduce((acc, d) => `${acc}${d.message}\n`, ''));
+  }
+
   return {
-    node: diagnostics.length === 0 ? expression : undefined,
-    diagnostics,
+    node: expression,
   };
 }
 
@@ -83,14 +87,14 @@ export function validateExpression(source: string): ExpressionValidationResult {
  * @param diagnostics - Accumulator for diagnostics found during the walk.
  */
 function visitNode(node: ts.Node, offset: number, diagnostics: ExpressionDiagnostic[]): void {
-  if (isAllowedNode(node)) {
-    ts.forEachChild(node, child => visitNode(child, offset, diagnostics));
-  } else {
-    diagnostics.push({
-      message: buildDisallowedMessage(node),
-      start: Math.max(0, node.getStart() - offset),
-      length: node.getWidth(),
-    });
+  if (!isAllowedNode(node)) {
+    throw new Error(buildDisallowedMessage(node));
+  }
+
+  ts.forEachChild(node, child => visitNode(child, offset, diagnostics));
+
+  if (diagnostics.length) {
+    throw new Error(diagnostics[0]!.message);
   }
 }
 

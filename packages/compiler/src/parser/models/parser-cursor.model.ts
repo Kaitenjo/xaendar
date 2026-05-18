@@ -65,11 +65,14 @@ export class ParserCursor {
     if (newIndex >= this._tokens.length) {
       this._currentToken.value = { type: TokenType.EOF };
       this._currentToken.index = -1;
-      this.throwEOFError();
     } else {
       this._currentToken.index = newIndex;
       this._currentToken.value = this._tokens[newIndex]!;
     }
+  }
+
+  public isLastToken(): boolean {
+    return this._currentToken.index === this._tokens.length - 1;
   }
 
   /**
@@ -117,7 +120,7 @@ export class ParserCursor {
    */
   private peekOneToken(index: number): Token {
     if (index >= this._tokens.length) {
-      this.throwEOFError();
+      this._tokens[index];
     }
 
     return this._tokens[index]!;

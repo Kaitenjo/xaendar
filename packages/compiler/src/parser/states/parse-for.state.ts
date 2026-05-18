@@ -77,11 +77,7 @@ export function parseForExpression(source: string, baseOffset: number): ForExpre
   }
 
   // Validate the iterable as a JS expression.
-  const iterOffset = baseOffset + sections[0]!.indexOf(iterableSource);
   const iterValidation = validateExpression(iterableSource);
-  for (const d of iterValidation.diagnostics) {
-    throw new Error(`[Parser] Invalid expression in @for iterable: "${d.message}", at position ${iterOffset + d.start}.`);
-  }
 
   // ---- Section 2: "track item.id" ----
   const trackSection = sections[1]!.trim();
@@ -91,12 +87,7 @@ export function parseForExpression(source: string, baseOffset: number): ForExpre
   }
 
   const trackSource = trackSection.slice(6).trim();
-  const trackOffset = baseOffset + source.indexOf(sections[1]!) + trackSection.indexOf(trackSource);
-
   const trackValidation = validateExpression(trackSource);
-  for (const d of trackValidation.diagnostics) {
-    throw new Error(`[Parser] Invalid expression in @for track: "${d.message}", at position ${trackOffset + d.start}.`);
-  }
 
   // ---- Section 3 (optional): "$index = i, $last = l" ----
   const implicitAliases = new Map<ForImplicitVariables, string>;

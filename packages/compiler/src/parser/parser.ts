@@ -59,23 +59,7 @@ export class Parser {
    * @returns Array of top-level AST nodes
    */
   public parse(): ASTNode[] {
-    let eof = false;
-    const nodes = new Array<ASTNode>;
-
-    while (!eof) {
-      try {
-        nodes.push(this.parseNode());
-      } catch (err) {
-        const error = err as Error;
-        if (error.cause === EOF) {
-          eof = true;
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    return nodes;
+    return [this.parseNode()];
   }
 
   /**
@@ -88,7 +72,6 @@ export class Parser {
     const token = this._cursor.peek();
     const state = this._states[token.type];
 
-    
     if (!state) {
       throw new Error(`[Parser] No transition function for token type ${TokenType[token.type]}`);
     }

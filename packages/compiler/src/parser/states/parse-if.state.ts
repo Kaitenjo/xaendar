@@ -28,10 +28,6 @@ export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFuncti
 
   const condition = conditionToken.parts[0];
   const validationResult = validateExpression(condition);
-  if (!validationResult.node || validationResult.diagnostics.length) {
-    throw new Error(`[Parser] Invalid expression in IF condition: "${validationResult.diagnostics[0]?.message}"`);
-  }
-
 
   cursor.advance();
   cursor.advance();
@@ -49,10 +45,10 @@ export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFuncti
   }
 
   return { 
-    type: ASTNodeType.If, 
-    condition, 
+    type: ASTNodeType.If,
+    condition,
     conditionNode: validationResult.node,
-    consequent, 
-    alternate 
+    consequent,
+    alternate
   };
 }

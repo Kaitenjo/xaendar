@@ -2,7 +2,7 @@ import { Lexer, Parser, TokenType, generateRenderFunction } from "@xaendar/compi
 import { writeFileSync } from "fs";
 
 const template = `
-  <label for={id} aria-label={label}>
+ <label for={id} aria-label={label}>
     {label}
   </label>
   @const test = user.name;
@@ -13,20 +13,20 @@ const template = `
     <span>Id is present</span>
   } @else {
     <span>Id is missing</span>
+    @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
+      @const test2 = user.name;
+      @const test3 = user.name;
+      <span>Id is present</span>
+    } @else {
+      <span>Id is missing</span>
       @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
-    @const test2 = user.name;
-    @const test3 = user.name;
-    <span>Id is present</span>
-  } @else {
-    <span>Id is missing</span>
-      @if ((a || b) && c || id !== 'boolean' || pippo instanceof HTMLElement || id && id.length > 0) {
-    @const test2 = user.name;
-    @const test3 = user.name;
-    <span>Id is present</span>
-  } @else {
-    <span>Id is missing</span>
-  }
-  }
+        @const test2 = user.name;
+        @const test3 = user.name;
+        <span>Id is present</span>
+      } @else {
+        <span>Id is missing</span>
+      }
+    }
   }
       
   @for (item of items; track item.id; $index = i) {
@@ -48,7 +48,7 @@ const template = `
     }
   }
   <input id={id} type="text" value={ value + '' + 'asd' + ' ' + "test" } placeholder={placeholder} @change="onChange($event)" />
-  `
+`
 
 export function compile(input: string): string {
   const tokens = new Lexer(input).tokenize();

@@ -32,7 +32,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
 
   const cases = new Array<CaseNode>;
 
-  while (cursor.peek().type !== TokenType.BLOCK_CLOSE) {
+  while (!cursor.isLastToken() && cursor.peek().type !== TokenType.BLOCK_CLOSE) {
     const token = cursor.peek();
 
     if (token.type === TokenType.CASE) {
