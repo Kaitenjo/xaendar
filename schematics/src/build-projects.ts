@@ -59,14 +59,14 @@ function mapProjectsDependencies(): Map<string, Record<string, string>> {
           const pkg = getPackageJson(folder);
           const dependencies = pkg.dependencies ?? {};
 
-          const xendarDependencies = Object.entries(dependencies)
+          const xaendarDependencies = Object.entries(dependencies)
             .filter(([name]) => name.includes('@xaendar'))
             .reduce<Record<string, string>>((deps, [name, version]) => {
               deps[name] = version!;
               return deps;
             }, {});
 
-          acc.push([folder, xendarDependencies]);
+          acc.push([folder, xaendarDependencies]);
           return acc;
         } catch {
           console.warn(`Error while reading package.json for project ${folder}`);

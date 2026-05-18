@@ -1,7 +1,7 @@
 {
   "name": "@xaendar/cli",
   "version": "0.2.1",
-  "description": "Cli tool for Xendar framework",
+  "description": "Cli tool for Xaendar framework",
   "author": "Kaitenjo",
   "license": "MIT",
   "type": "module",

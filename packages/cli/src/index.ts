@@ -5,7 +5,7 @@ import { makeCompileCommand } from './commands/compile/compile.js';
 
 program
   .name('xd')
-  .description('Xendar CLI')
+  .description('Xaendar CLI')
   .version('0.2.0');
 
 program.addCommand(makeGenerateCommand());

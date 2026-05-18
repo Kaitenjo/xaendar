@@ -9,7 +9,7 @@ import { generateComponent } from './component/component.command.js';
  *   added to the root program.
  */
 export function makeGenerateCommand(): Command {
-  const generate = new Command('generate').alias('g').description('Generate Xendar building blocks');
+  const generate = new Command('generate').alias('g').description('Generate Xaendar building blocks');
 
   generate
     .command('component <name>')

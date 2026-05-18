@@ -1,5 +1,5 @@
 /**
- * List of all standard, valid HTML tags in Xendar Components's Template
+ * List of all standard, valid HTML tags in Xaendar Components's Template
  * 
  * These are native HTML elements and should not be used as custom element names.
  */

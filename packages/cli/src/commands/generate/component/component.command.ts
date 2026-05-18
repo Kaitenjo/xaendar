@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Scaffolds a new Xendar component inside a dedicated folder.
+ * Scaffolds a new Xaendar component inside a dedicated folder.
  *
  * Creates the directory `<cwd>/<name>/` and writes the following files:
  * - `<name>.xd.component.ts`      — class decorated with `@WebComponent`
