@@ -5,6 +5,15 @@ import { TokenType } from "../models/token-type.enum.js";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type.js";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type.js";
 
+/**
+ * Consumes the condition expression `(...)` of a flow-control directive,
+ * handling nested parentheses correctly. Emits a CONDITION token with the
+ * raw expression string and transitions to FLOW_CONTROL_BLOCK.
+ *
+ * @param cursor The lexer cursor positioned at the opening `(`.
+ * @param _context Unused lexer context.
+ * @returns Transition result with the CONDITION token and the FLOW_CONTROL_BLOCK state.
+ */
 export function consumeFlowControlCondition(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   cursor.skipSpaces();
 
@@ -24,7 +33,7 @@ export function consumeFlowControlCondition(cursor: LexerCursor, _context: Lexer
     switch (code) {
       case LPAREN:
         depth++;
-        cursor.advance();
+        expression = addCharacter(cursor, expression);
         break;
 
       case RPAREN:
@@ -34,12 +43,11 @@ export function consumeFlowControlCondition(cursor: LexerCursor, _context: Lexer
           break;
         }
 
-        cursor.advance();
+        expression = addCharacter(cursor, expression);
         break;
 
       default:
-        cursor.advance();
-        expression = `${expression}${cursor.currentChar.value}`;
+        expression = addCharacter(cursor, expression);
     }
   }
 
@@ -51,4 +59,16 @@ export function consumeFlowControlCondition(cursor: LexerCursor, _context: Lexer
     }],
     popState: true
   };
+}
+
+/**
+ * Advances the cursor by one character and appends it to the accumulator string.
+ *
+ * @param cursor The lexer cursor to advance.
+ * @param expression The current accumulated string.
+ * @returns The updated string with the new character appended.
+ */
+function addCharacter(cursor: LexerCursor, expression: string): string {
+  cursor.advance();
+  return `${expression}${cursor.currentChar.value}`;
 }

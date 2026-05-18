@@ -6,10 +6,11 @@ import { LexerState } from './models/lexer-state.enum.js';
 import { Token } from './models/token.type.js';
 import { LexerTransitionFunction } from './models/transition-function/transition-function.type.js';
 import { consumeAttribute } from './states/attribute.state.js';
+import { consumeConstDeclaration } from './states/const-declaration.js';
 import { consumeEvent } from './states/event.state.js';
-import { consumeFlowControl } from './states/flow-control.js';
 import { consumeFlowControlBlock } from './states/flow-control-block.state.js';
 import { consumeFlowControlCondition } from './states/flow-control-condition.state.js';
+import { consumeFlowControl } from './states/flow-control.js';
 import { consumeInterpolationExpression } from './states/interpolation-expression.state.js';
 import { consumeInterpolationliteral } from './states/interpolation-literal.state.js';
 import { consumeInterpolation } from './states/interpolation.state.js';
@@ -28,14 +29,29 @@ import { consumeText } from './states/text.state.js';
  */
 export class Lexer {
 
+  /**
+   * Cursor for navigating the input character stream.
+   */
   private readonly _cursor: LexerCursor;
 
+  /**
+   * Current lexer state.
+   */
   private _state = LexerState.START;
 
+  /**
+   * State stack used to support nested states (e.g. interpolations).
+   */
   private _stack = new Stack<LexerState>;
 
+  /**
+   * Accumulated list of tokens emitted during tokenization.
+   */
   private readonly _tokens = new Array<Token>;
 
+  /**
+   * Maps each lexer state to its corresponding transition function.
+   */
   private readonly _states: Dictionary<LexerState, LexerTransitionFunction> = {
     [LexerState.START]: consumeText,
     [LexerState.TEXT]: consumeText,
@@ -50,7 +66,8 @@ export class Lexer {
     [LexerState.EVENT]: consumeEvent,
     [LexerState.INTERPOLATION]: consumeInterpolation,
     [LexerState.INTERPOLATION_EXPRESSION]: consumeInterpolationExpression,
-    [LexerState.INTERPOLATION_LITERAL]: consumeInterpolationliteral
+    [LexerState.INTERPOLATION_LITERAL]: consumeInterpolationliteral,
+    [LexerState.CONST_DECLARATION]: consumeConstDeclaration
   }
 
   /**
@@ -62,6 +79,12 @@ export class Lexer {
     this._cursor = new LexerCursor(this.input);
   }
 
+  /**
+   * Runs the lexer over the input string and returns the full token array.
+   * Drives the state machine until EOF is reached.
+   *
+   * @returns Array of all tokens produced from the input.
+   */
   public tokenize(): Token[] {
     let eof = false;
 

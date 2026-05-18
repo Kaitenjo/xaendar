@@ -4,6 +4,15 @@ import { LexerState } from '../models/lexer-state.enum.js';
 import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
 
+/**
+ * Scans the body of an open tag to determine what comes next:
+ * an event binding (`@`), an attribute, the end of the tag (`>` or `/`), or whitespace.
+ * Transitions to the appropriate state without emitting any tokens.
+ *
+ * @param cursor The lexer cursor positioned inside a tag body.
+ * @param _context Unused lexer context.
+ * @returns Transition result with the next state and no tokens.
+ */
 export function consumeTagBody(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let retVal!: LexerTransitionFunctionReturnType;

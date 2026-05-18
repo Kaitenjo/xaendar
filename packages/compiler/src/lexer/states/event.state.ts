@@ -5,6 +5,14 @@ import { TokenType } from '../models/token-type.enum.js';
 import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
 
+/**
+ * Consumes a DOM event binding starting with `@` and reads until a delimiter
+ * (space, `/`, or `>`) is found. Emits an EVENT token containing the raw binding string.
+ *
+ * @param cursor The lexer cursor positioned on the `@` character.
+ * @param _context Unused lexer context.
+ * @returns Transition result with the EVENT token and the TAG_BODY state.
+ */
 export function consumeEvent(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let event = '';

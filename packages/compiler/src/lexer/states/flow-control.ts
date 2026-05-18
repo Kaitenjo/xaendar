@@ -4,6 +4,15 @@ import { TokenType } from "../models/token-type.enum.js";
 import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type.js";
 import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type.js";
 
+/**
+ * Dispatches on a `@keyword` to determine which flow-control directive begins here.
+ * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, and `@const`.
+ * Advances the cursor past the keyword and transitions to the appropriate next state.
+ *
+ * @param cursor The lexer cursor positioned on the `@` character.
+ * @param _context Unused lexer context.
+ * @returns Transition result with the matching flow-control token and next state.
+ */
 export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let retVal!: LexerTransitionFunctionReturnType;
 
@@ -63,6 +72,11 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
         type: TokenType.DEFAULT
       }],
       pushState: true
+    }
+  } else if (cursor.peekMatch('const ')) {
+    cursor.advance(6);
+    retVal = {
+      state: LexerState.CONST_DECLARATION
     }
   }
 

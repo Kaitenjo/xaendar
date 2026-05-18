@@ -1,5 +1,27 @@
-import { TokenType } from './token-type.enum.js';
+import { TagOpenNameToken } from './tokens/tag-open-name-token.type.js';
+import { TagSelfCloseToken } from './tokens/tag-self-close-token.type.js';
+import { TagCloseToken } from './tokens/tag-close-token.type.js';
+import { TagCloseNameToken } from './tokens/tag-close-name-token.type.js';
+import { AttributeToken } from './tokens/attribute-token.type.js';
+import { EventToken } from './tokens/event-token.type.js';
+import { TextToken } from './tokens/text-token.type.js';
+import { InterpolationExpressionToken } from './tokens/interpolation-expression-token.type.js';
+import { InterpolationLiteralToken } from './tokens/interpolation-literal-token.type.js';
+import { IfToken } from './tokens/if-token.type.js';
+import { ForToken } from './tokens/for-token.type.js';
+import { ElseToken } from './tokens/else-token.type.js';
+import { SwitchToken } from './tokens/switch-token.type.js';
+import { CaseToken } from './tokens/case-token.type.js';
+import { DefaultToken } from './tokens/default-token.type.js';
+import { ConditionToken } from './tokens/condition-token.type.js';
+import { BlockOpenToken } from './tokens/block-open-token.type.js';
+import { BlockCloseToken } from './tokens/block-close-token.type.js';
+import { ConstDeclarationToken } from './tokens/const-declaration-token.type.js';
+import { EOFToken } from './tokens/eof-token.type.js';
 
+/**
+ * Union of all token types that the lexer can emit during tokenization.
+ */
 export type Token =
   | TagOpenNameToken
   | TagSelfCloseToken
@@ -19,68 +41,5 @@ export type Token =
   | ConditionToken
   | BlockOpenToken
   | BlockCloseToken
+  | ConstDeclarationToken
   | EOFToken
-
-export type TagOpenNameToken = {
-  type: TokenType.TAG_OPEN_NAME;
-  parts: [string];
-}
-
-export type EventToken = {
-  type: TokenType.EVENT
-  parts: [string]
-}
-
-export type AttributeToken = {
-  type: TokenType.ATTRIBUTE
-  parts: [string]
-}
-
-export type TextToken = {
-  type: TokenType.TEXT,
-  parts: [string]
-}
-
-export type InterpolationExpressionToken = {
-  type: TokenType.INTERPOLATION_EXPRESSION;
-  parts: [string];
-}
-
-export type InterpolationLiteralToken = {
-  type: TokenType.INTERPOLATION_LITERAL;
-  parts: [string];
-}
-
-export type TagSelfCloseToken = {
-  type: TokenType.TAG_SELF_CLOSE,
-  parts: []
-}
-
-export type TagCloseNameToken = {
-  type: TokenType.TAG_CLOSE_NAME,
-  parts: [string]
-}
-
-export type TagCloseToken = {
-  type: TokenType.TAG_OPEN_END,
-  parts: []
-}
-
-export type IfToken = { type: TokenType.IF }
-export type ForToken = { type: TokenType.FOR }
-export type ElseToken = { type: TokenType.ELSE }
-export type SwitchToken = { type: TokenType.SWITCH }
-export type CaseToken = { type: TokenType.CASE }
-export type DefaultToken = { type: TokenType.DEFAULT }
-
-export type ConditionToken = {
-  type: TokenType.CONDITION;
-  parts: [string];
-}
-
-export type BlockOpenToken = { type: TokenType.BLOCK_OPEN }
-export type BlockCloseToken = { type: TokenType.BLOCK_CLOSE }
-
-export type EOFToken = {
-  type: TokenType.EOF
-}

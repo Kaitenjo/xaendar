@@ -1,0 +1,81 @@
+import { ForImplicitVariables } from '../../parser/models/nodes/for-implicit-variables.js';
+import { ForNode } from '../../parser/models/nodes/for-node.type.js';
+import { Context } from '../models/render-context.model.js';
+import { processNode } from '../render-generator.js';
+import { indent } from '../utils/render-generator.utils.js';
+ 
+/**
+ * Generates code for a `@for` iteration node.
+ *
+ * Emits a classic index-based `for` loop with all implicit variables
+ * declared at the top of the loop body:
+ *
+ * ```javascript
+ * for (let $i = 0; $i < ctx_items.length; $i++) {
+ *   const item = items[$i];
+ *   const $index = $i;
+ *   const $first = $i === 0;
+ *   const $last  = $i === items.length - 1;
+ *   const $even  = $i % 2 === 0;
+ *   const $odd   = $i % 2 !== 0;
+ *   // ... child nodes
+ * }
+ * ```
+ *
+ * The iterable identifier is resolved through the active {@link Context}:
+ * if found in scope it is used as-is, otherwise `this.` is prepended.
+ *
+ * The internal loop counter is always named `$i_<nodeName>` to avoid
+ * collisions when `@for` blocks are nested.
+ *
+ * @param node - The `ForNode` to process.
+ * @param nodeName - Base variable name prefix used for child nodes and
+ *   to produce a unique loop counter identifier.
+ * @param parentNode - Variable name of the parent DOM node.
+ * @param parentContext - The enclosing scope context.
+ * @returns Array of generated code lines.
+ */
+export function processFor(node: ForNode, nodeName: string, parentNode: string, parentContext: Context): string[] {
+  const iterableSource = node.iterableSource;
+  const iterableExpr = parentContext.getIdentifier(iterableSource) ?? `this.${iterableSource}`;
+
+  const itemsName = `${nodeName}_items`;
+  const counterName = `$i_${nodeName}`;
+  
+  const indexName = resolveImplicit(node, '$index');
+  const firstName = resolveImplicit(node, '$first');
+  const lastName = resolveImplicit(node, '$last');
+  const evenName = resolveImplicit(node, '$even');
+  const oddName = resolveImplicit(node, '$odd');
+  const forContext = new Context([node.itemAlias, indexName, firstName, lastName, evenName, oddName], parentContext);
+
+  return [
+    `const ${itemsName} = ${iterableExpr};`,
+    `for (let ${counterName} = 0; ${counterName} < ${itemsName}.length; ${counterName}++) {`,
+    ...indent(`const ${node.itemAlias} = ${itemsName}[${counterName}];`),
+    ...indent(`const ${indexName} = ${counterName};`),
+    ...indent(`const ${firstName} = ${counterName} === 0;`),
+    ...indent(`const ${lastName} = ${counterName} === ${itemsName}.length - 1;`),
+    ...indent(`const ${evenName} = ${counterName} % 2 === 0;`),
+    ...indent(`const ${oddName} = ${counterName} % 2 !== 0;`),
+    ...indent(''),
+    ... node.children.flatMap((child, idx) => indent(...processNode(child, `${nodeName}_f${idx}`, parentNode, forContext))),
+    '}',
+  ];
+}
+
+/**
+ * Resolves the name that should be used in generated code for a given
+ * implicit variable.
+ *
+ * If the template declared an explicit alias for the variable
+ * (e.g. `; $index = i`) that alias is returned. Otherwise the default
+ * implicit variable name (e.g. `$index`) is used.
+ *
+ * @param node - The `ForNode` whose implicit alias map is consulted.
+ * @param implicit - The implicit variable to look up (e.g. `'$index'`).
+ * @returns The alias string if one was declared, otherwise `implicit` itself.
+ */
+function resolveImplicit(node: ForNode, implicit: ForImplicitVariables): string {
+  return node.implicitAliases.get(implicit) ?? implicit;
+}

@@ -5,6 +5,15 @@ import { TokenType } from '../models/token-type.enum.js';
 import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
 
+/**
+ * Consumes a template-literal interpolation `` {`...`} ``, collecting characters
+ * until the closing backtick followed by `}`. Emits an INTERPOLATION_LITERAL token
+ * and pops the state stack to return to the previous state.
+ *
+ * @param cursor The lexer cursor positioned at the opening backtick.
+ * @param context Lexer context used to retrieve the previous state for restoration.
+ * @returns Transition result with the INTERPOLATION_LITERAL token and restored state.
+ */
 export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let interpolation = '';
@@ -65,7 +74,14 @@ export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerT
   return retVal;
 }
 
+/**
+ * Advances the cursor by one character and appends it to the accumulator string.
+ *
+ * @param cursor The lexer cursor to advance.
+ * @param interpolation The current accumulated string.
+ * @returns The updated string with the new character appended.
+ */
 function addCharacter(cursor: LexerCursor, interpolation: string): string {
-  cursor.advance(1);
+  cursor.advance();
   return `${interpolation}${cursor.currentChar.value}`;
 }
