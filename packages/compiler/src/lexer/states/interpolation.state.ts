@@ -1,9 +1,9 @@
 import { GRAVE_ACCENT } from '../../costants/chars.constants.js';
 import { isJSIdentifierStart } from '../../utils/chars.utils.js';
-import { LexerCursor } from '../models/lexer-cursor.model.js';
-import { LexerState } from '../models/lexer-state.enum.js';
-import { LexerTransitionFunctionContext } from '../models/transition-function/transition-function-context.type.js';
-import { LexerTransitionFunctionReturnType } from '../models/transition-function/transition-function-return-type.type.js';
+import { LexerCursor } from '../types/lexer-cursor.model.js';
+import { LexerState } from '../types/lexer-state.enum.js';
+import { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type.js';
+import { LexerTransitionFunctionReturnType } from '../types/transition-function/transition-function-return-type.type.js';
 
 /**
  * Dispatches between an expression and a literal interpolation after the opening `{`.

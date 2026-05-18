@@ -1,9 +1,9 @@
 import { TokenType } from "@xaendar/compiler";
 import { EQUAL_THEN, SEMICOLON, SPACE } from "../../costants/chars.constants";
-import { LexerCursor } from "../models/lexer-cursor.model";
-import { LexerState } from "../models/lexer-state.enum";
-import { LexerTransitionFunctionContext } from "../models/transition-function/transition-function-context.type";
-import { LexerTransitionFunctionReturnType } from "../models/transition-function/transition-function-return-type.type";
+import { LexerCursor } from "../types/lexer-cursor.model";
+import { LexerState } from "../types/lexer-state.enum";
+import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type";
+import { LexerTransitionFunctionReturnType } from "../types/transition-function/transition-function-return-type.type";
 
 /**
  * Consumes a `@const name = expression;` declaration from the current position.

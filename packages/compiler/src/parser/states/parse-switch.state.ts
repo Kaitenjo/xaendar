@@ -1,10 +1,11 @@
-import { TokenType } from '../../lexer/models/token-type.enum.js';
-import { Token } from '../../lexer/models/token.type.js';
-import { ASTNodeType } from '../models/node.enum.js';
-import { CaseNode } from '../models/nodes/case-node.type.js';
-import { SwitchNode } from '../models/nodes/switch-node.type.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { NoArgsFunction } from '@xaendar/types';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { Token } from '../../lexer/types/token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { CaseNode } from '../types/nodes/case-node.type.js';
+import { SwitchNode } from '../types/nodes/switch-node.type.js';
 import { parseBlockChildren } from './parse-block-children.state.js';
 
 /**
@@ -12,11 +13,11 @@ import { parseBlockChildren } from './parse-block-children.state.js';
  * the outer BLOCK_OPEN, all `@case` and `@default` branches, and the outer BLOCK_CLOSE.
  *
  * @param cursor Parser cursor positioned at the SWITCH token.
- * @param context Parser context for recursive child parsing.
+ * @param parseNode Parser function for recursive child parsing.
  * @param _token The SWITCH token (unused; consumed for position advancement).
  * @returns The parsed `SwitchNode`.
  */
-export function parseSwitchControlFlow(cursor: ParserCursor, context: ParserContext, _token: Token): SwitchNode {
+export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: Token): SwitchNode {
   // consume SWITCH
   cursor.advance();
 
@@ -43,11 +44,11 @@ export function parseSwitchControlFlow(cursor: ParserCursor, context: ParserCont
       const caseExpr = caseCondition.parts[0];
       // consume CONDITION and BLOCK_OPEN
       cursor.advance(2);
-      cases.push({ type: ASTNodeType.Case, condition: caseExpr, children: parseBlockChildren(cursor, context) });
+      cases.push({ type: ASTNodeType.Case, condition: caseExpr, children: parseBlockChildren(cursor, parseNode) });
     } else if (token.type === TokenType.DEFAULT) {
       // consume DEFAULT and BLOCK_OPEN
       cursor.advance(2);
-      cases.push({ type: ASTNodeType.Case, condition: null, children: parseBlockChildren(cursor, context) });
+      cases.push({ type: ASTNodeType.Case, condition: null, children: parseBlockChildren(cursor, parseNode) });
     } else {
       break;
     }

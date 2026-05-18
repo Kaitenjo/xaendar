@@ -11,7 +11,6 @@ import { Token } from '../token.type.js'
  * - optionally manipulates the lexer state stack
  */
 export type LexerTransitionFunctionReturnType = {
-
   /**
    * The next state the lexer should transition to.
    *

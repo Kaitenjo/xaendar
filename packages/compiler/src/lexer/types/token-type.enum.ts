@@ -6,7 +6,6 @@ export enum TokenType {
    * A plain text node between tags or at the top level.
    */
   TEXT,
-
   /**
    * The name portion of an opening tag, e.g. `div` in `<div`.
    */
@@ -19,12 +18,10 @@ export enum TokenType {
    * The closing `>` of an opening tag.
    */
   TAG_OPEN_END,
-
   /**
    * The name portion of a closing tag, e.g. `div` in `</div>`.
    */
   TAG_CLOSE_NAME,
-
   /**
    * An HTML attribute and its optional value.
    */
@@ -33,7 +30,6 @@ export enum TokenType {
    * A DOM event binding declared with `@eventName=handler`.
    */
   EVENT,
-
   /**
    * A template-literal interpolation string enclosed in `` {`...`} ``.
    */
@@ -42,12 +38,10 @@ export enum TokenType {
    * A JavaScript expression interpolation enclosed in `{ }`.
    */
   INTERPOLATION_EXPRESSION,
-
   /**
    * A `@const name = expression;` template-level constant declaration.
    */
   CONST_DECLARATION,
-
   /**
    * Opening keyword of an `@if` directive.
    */
@@ -84,7 +78,6 @@ export enum TokenType {
    * The closing `}` of a flow-control block body.
    */
   BLOCK_CLOSE,
-
   /**
    * Sentinel token emitted when the end of the input is reached.
    */

@@ -1,4 +1,4 @@
-import { ElementNode } from '../../parser/models/nodes/element-node.type.js';
+import { ElementNode } from '../../parser/types/nodes/element-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
 

@@ -1,6 +1,6 @@
-import { ASTNodeType } from '../../parser/models/node.enum.js';
-import { InterpolationNode } from '../../parser/models/nodes/interpolation-node.type.js';
-import { TextNode } from '../../parser/models/nodes/text-node.type.js';
+import { ASTNodeType } from '../../parser/types/node.enum.js';
+import { InterpolationNode } from '../../parser/types/nodes/interpolation-node.type.js';
+import { TextNode } from '../../parser/types/nodes/text-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { resolveExpression } from '../utils/render-generator.utils.js';
 

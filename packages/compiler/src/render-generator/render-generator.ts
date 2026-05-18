@@ -1,5 +1,5 @@
-import { ASTNode } from "../parser/models/ast.type.js";
-import { ASTNodeType } from "../parser/models/node.enum.js";
+import { ASTNode } from "../parser/types/ast.type.js";
+import { ASTNodeType } from "../parser/types/node.enum.js";
 import { Context } from "./models/render-context.model.js";
 import { processConstDeclaration } from "./states/process-const-declaration.state.js";
 import { processElement } from "./states/process-element.state.js";
@@ -11,8 +11,8 @@ import { processTextAndInterpolation } from "./states/process-text-and-interpola
 /**
  * Generates the TypeScript body of a render function from an AST.
  *
- * @param ast       Top-level AST nodes produced by the Parser
- * @returns         String containing the render function body
+ * @param ast Top-level AST nodes produced by the Parser
+ * @returns String containing the render function body
  */
 export function generateRenderFunction(ast: ASTNode[]): string {
   const context = new Context;

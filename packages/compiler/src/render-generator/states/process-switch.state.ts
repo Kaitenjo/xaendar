@@ -1,4 +1,4 @@
-import { SwitchNode } from '../../parser/models/nodes/switch-node.type.js';
+import { SwitchNode } from '../../parser/types/nodes/switch-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
 import { indent, resolveExpression } from '../utils/render-generator.utils.js';

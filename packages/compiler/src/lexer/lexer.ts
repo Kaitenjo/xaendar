@@ -1,10 +1,10 @@
 import { Stack } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import { EOF } from '../costants/chars.constants.js';
-import { LexerCursor } from './models/lexer-cursor.model.js';
-import { LexerState } from './models/lexer-state.enum.js';
-import { Token } from './models/token.type.js';
-import { LexerTransitionFunction } from './models/transition-function/transition-function.type.js';
+import { LexerCursor } from './types/lexer-cursor.model.js';
+import { LexerState } from './types/lexer-state.enum.js';
+import { Token } from './types/token.type.js';
+import { LexerTransitionFunction } from './types/transition-function/transition-function.type.js';
 import { consumeAttribute } from './states/attribute.state.js';
 import { consumeConstDeclaration } from './states/const-declaration.js';
 import { consumeEvent } from './states/event.state.js';
@@ -33,22 +33,18 @@ export class Lexer {
    * Cursor for navigating the input character stream.
    */
   private readonly _cursor: LexerCursor;
-
   /**
    * Current lexer state.
    */
   private _state = LexerState.START;
-
   /**
    * State stack used to support nested states (e.g. interpolations).
    */
   private _stack = new Stack<LexerState>;
-
   /**
    * Accumulated list of tokens emitted during tokenization.
    */
   private readonly _tokens = new Array<Token>;
-
   /**
    * Maps each lexer state to its corresponding transition function.
    */

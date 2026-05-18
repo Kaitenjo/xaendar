@@ -1,12 +1,13 @@
+import { NoArgsFunction } from '@xaendar/types';
 import ts from 'typescript';
-import { TokenType } from '../../lexer/models/token-type.enum.js';
-import { ForToken } from '../../lexer/models/tokens/for-token.type.js';
-import { ForExpression } from '../models/for-expression.type.js';
-import { ASTNodeType } from '../models/node.enum.js';
-import { ForImplicitVariables } from '../models/nodes/for-implicit-variables.js';
-import { ForNode } from '../models/nodes/for-node.type.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { ForToken } from '../../lexer/types/tokens/for-token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ForExpression } from '../types/for-expression.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { ForImplicitVariables } from '../types/nodes/for-implicit-variables.js';
+import { ForNode } from '../types/nodes/for-node.type.js';
 import { validateExpression } from '../utils/expression-validator.js';
 import { parseBlockChildren } from './parse-block-children.state.js';
 
@@ -19,7 +20,7 @@ import { parseBlockChildren } from './parse-block-children.state.js';
  * @param _token The FOR token (unused; consumed for position advancement).
  * @returns The parsed `ForNode`.
  */
-export function parseForControlFlow(cursor: ParserCursor, context: ParserContext, _token: ForToken): ForNode {
+export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: ForToken): ForNode {
   // consume FOR
   cursor.advance();
 
@@ -34,7 +35,7 @@ export function parseForControlFlow(cursor: ParserCursor, context: ParserContext
   // consume BLOCK_OPEN
   cursor.advance();
 
-  const children = parseBlockChildren(cursor, context);
+  const children = parseBlockChildren(cursor, parseNode);
 
   return { type: ASTNodeType.For, ...expression, children };
 }

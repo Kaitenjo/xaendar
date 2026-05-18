@@ -1,12 +1,12 @@
-import { TokenType } from '../../lexer/models/token-type.enum.js';
-import { TagOpenNameToken } from '../../lexer/models/tokens/tag-open-name-token.type.js';
-import { ASTNodeType } from '../models/node.enum.js';
-import { ASTNode } from '../models/ast.type.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { NoArgsFunction } from '@xaendar/types';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { TagOpenNameToken } from '../../lexer/types/tokens/tag-open-name-token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
-import { AttributeNode } from '../models/nodes/attribute-node.type.js';
-import { ElementNode } from '../models/nodes/element-node.type.js';
-import { EventNode } from '../models/nodes/event-node.type.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { AttributeNode } from '../types/nodes/attribute-node.type.js';
+import { ElementNode } from '../types/nodes/element-node.type.js';
+import { EventNode } from '../types/nodes/event-node.type.js';
 import { parseAttribute } from './parse-attribute.state.js';
 import { parseEvent } from './parse-event.state.js';
 
@@ -19,7 +19,7 @@ import { parseEvent } from './parse-event.state.js';
  * @param token The TAG_OPEN_NAME token containing the tag name.
  * @returns The parsed `ElementNode`.
  */
-export function parseElement(cursor: ParserCursor, context: ParserContext, token: TagOpenNameToken): ElementNode {
+export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: TagOpenNameToken): ElementNode {
   cursor.advance();
   const tagName = token.parts[0];
 
@@ -28,14 +28,14 @@ export function parseElement(cursor: ParserCursor, context: ParserContext, token
 
   let read = true;
   while (read) {
-    const t = cursor.peek();
-    switch (t.type) {
+    const token = cursor.peek();
+    switch (token.type) {
       case TokenType.ATTRIBUTE:
-        attributes.push(parseAttribute(cursor, context, t));
+        attributes.push(parseAttribute(cursor, parseNode, token));
         break;
 
       case TokenType.EVENT:
-        events.push(parseEvent(cursor, context, t));
+        events.push(parseEvent(cursor, parseNode, token));
         break;
 
       default:
@@ -63,7 +63,7 @@ export function parseElement(cursor: ParserCursor, context: ParserContext, token
   // Parse children recursively until closing tag
   const children: ASTNode[] = [];
   while (!isTagClose(cursor, tagName)) {
-    children.push(context.parseNode());
+    children.push(parseNode());
   }
 
   // Consume closing tag </div>

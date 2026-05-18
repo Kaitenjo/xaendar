@@ -1,4 +1,4 @@
-import { ConstDeclarationNode } from '../../parser/models/nodes/const-declaration-node.type.js';
+import { ConstDeclarationNode } from '../../parser/types/nodes/const-declaration-node.type.js';
 import { Context } from '../models/render-context.model.js';
 
 /**

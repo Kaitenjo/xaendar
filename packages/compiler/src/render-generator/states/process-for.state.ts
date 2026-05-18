@@ -1,5 +1,5 @@
-import { ForImplicitVariables } from '../../parser/models/nodes/for-implicit-variables.js';
-import { ForNode } from '../../parser/models/nodes/for-node.type.js';
+import { ForImplicitVariables } from '../../parser/types/nodes/for-implicit-variables.js';
+import { ForNode } from '../../parser/types/nodes/for-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
 import { indent } from '../utils/render-generator.utils.js';

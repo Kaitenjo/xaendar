@@ -1,18 +1,19 @@
-import { ConstDeclarationToken } from '../../lexer/models/tokens/const-declaration-token.type.js';
-import { ASTNodeType } from '../models/node.enum.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { NoArgsFunction } from '@xaendar/types';
+import { ConstDeclarationToken } from '../../lexer/types/tokens/const-declaration-token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
-import { ConstDeclarationNode } from '../models/nodes/const-declaration-node.type.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { ConstDeclarationNode } from '../types/nodes/const-declaration-node.type.js';
 
 /**
  * Parses a CONST_DECLARATION token into a `ConstDeclarationNode`.
  *
  * @param cursor Parser cursor; advanced past the CONST_DECLARATION token.
- * @param _context Unused parser context.
+ * @param _parseNode Unused parser function.
  * @param token The CONST_DECLARATION token containing variable name and expression.
  * @returns The parsed `ConstDeclarationNode`.
  */
-export function parseConstDeclaration(cursor: ParserCursor, _context: ParserContext, token: ConstDeclarationToken): ConstDeclarationNode {
+export function parseConstDeclaration(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode>, token: ConstDeclarationToken): ConstDeclarationNode {
   cursor.advance();
 
   return {

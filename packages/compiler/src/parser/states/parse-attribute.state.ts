@@ -1,8 +1,9 @@
-import { TokenType } from '../../lexer/models/token-type.enum.js';
-import { AttributeToken } from '../../lexer/models/tokens/attribute-token.type.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { NoArgsFunction } from '@xaendar/types';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { AttributeToken } from '../../lexer/types/tokens/attribute-token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
-import { AttributeNode } from '../models/nodes/attribute-node.type.js';
+import { ASTNode } from '../types/ast.type.js';
+import { AttributeNode } from '../types/nodes/attribute-node.type.js';
 import { parseInterpolation } from './parse-interpolation.state.js';
 
 /**
@@ -10,11 +11,11 @@ import { parseInterpolation } from './parse-interpolation.state.js';
  * Handles boolean attributes (no `=`), string values, and interpolation values.
  *
  * @param cursor Parser cursor; advanced past the ATTRIBUTE token.
- * @param context Parser context for recursive parsing.
+ * @param parseNode Parser node function for recursive parsing.
  * @param token The ATTRIBUTE token to parse.
  * @returns The parsed `AttributeNode`.
  */
-export function parseAttribute(cursor: ParserCursor, context: ParserContext, token: AttributeToken): AttributeNode {
+export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: AttributeToken): AttributeNode {
   cursor.advance();
   const raw = token.parts[0];
 
@@ -31,7 +32,7 @@ export function parseAttribute(cursor: ParserCursor, context: ParserContext, tok
   if (nextToken.type === TokenType.INTERPOLATION_EXPRESSION || nextToken.type === TokenType.INTERPOLATION_LITERAL) {
     return {
       name,
-      value: parseInterpolation(cursor, context, nextToken)
+      value: parseInterpolation(cursor, parseNode, nextToken)
     };
   }
 

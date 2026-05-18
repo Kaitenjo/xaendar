@@ -1,12 +1,13 @@
-import { TokenType } from '../../lexer/models/token-type.enum.js';
-import { IfToken } from '../../lexer/models/tokens/if-token.type.js';
-import { ASTNodeType } from '../models/node.enum.js';
-import { ParserContext } from '../models/parser-context.type.js';
+import { NoArgsFunction } from '@xaendar/types';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { IfToken } from '../../lexer/types/tokens/if-token.type.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
-import { ElseNode } from '../models/nodes/else-node.type.js';
-import { IfNode } from '../models/nodes/if-node.type.js';
-import { parseBlockChildren } from './parse-block-children.state.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { ElseNode } from '../types/nodes/else-node.type.js';
+import { IfNode } from '../types/nodes/if-node.type.js';
 import { validateExpression } from '../utils/expression-validator.js';
+import { parseBlockChildren } from './parse-block-children.state.js';
 
 /**
  * Parses an `@if` directive, consuming the IF token, the CONDITION token,
@@ -17,7 +18,7 @@ import { validateExpression } from '../utils/expression-validator.js';
  * @param _token The IF token (unused; consumed for position advancement).
  * @returns The parsed `IfNode`.
  */
-export function parseIfControlFlow(cursor: ParserCursor, context: ParserContext, _token: IfToken): IfNode {
+export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: IfToken): IfNode {
   cursor.advance();
 
   const conditionToken = cursor.peek();
@@ -35,7 +36,7 @@ export function parseIfControlFlow(cursor: ParserCursor, context: ParserContext,
   cursor.advance();
   cursor.advance();
 
-  const consequent = parseBlockChildren(cursor, context);
+  const consequent = parseBlockChildren(cursor, parseNode);
 
   let alternate: ElseNode | null = null;
   const next = cursor.peek();
@@ -43,7 +44,7 @@ export function parseIfControlFlow(cursor: ParserCursor, context: ParserContext,
   if (next.type === TokenType.ELSE) {
     cursor.advance();
     cursor.advance();
-    const elseChildren = parseBlockChildren(cursor, context);
+    const elseChildren = parseBlockChildren(cursor, parseNode);
     alternate = { type: ASTNodeType.Else, children: elseChildren };
   }
 

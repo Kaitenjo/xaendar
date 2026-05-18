@@ -1,4 +1,4 @@
-import { IfNode } from '../../parser/models/nodes/if-node.type.js';
+import { IfNode } from '../../parser/types/nodes/if-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
 import { indent, resolveExpression } from '../utils/render-generator.utils.js';

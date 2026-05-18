@@ -1,6 +1,6 @@
 import ts from 'typescript';
-import { ExpressionDiagnostic } from '../models/nodes/expression-diangnostic.type';
-import { ExpressionValidationResult } from '../models/expression-validation-result.type';
+import { ExpressionValidationResult } from '../types/expression-validation-result.type';
+import { ExpressionDiagnostic } from '../types/nodes/expression-diangnostic.type';
 
 /**
  * Validates that a string contains a single expression belonging to the
