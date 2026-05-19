@@ -45,8 +45,6 @@ export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFuncti
     alternate = { type: ASTNodeType.Else, children: elseChildren };
   }
 
-  console.log(validationResult.node, consequent, alternate);
-
   return { 
     type: ASTNodeType.If,
     condition,

@@ -59,7 +59,13 @@ export class Parser {
    * @returns Array of top-level AST nodes
    */
   public parse(): ASTNode[] {
-    return [this.parseNode()];
+    const nodes = new Array<ASTNode>;
+    
+    while (this._cursor.peek().type !== TokenType.EOF) {
+      nodes.push(this.parseNode());
+    }
+
+    return nodes;
   }
 
   /**

@@ -43,8 +43,7 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
       state: LexerState.FLOW_CONTROL_BLOCK,
       tokens: [{
         type: TokenType.ELSE
-      }],
-      pushState: true
+      }]
     }
   } else if (cursor.peekMatch('switch ')) {
     cursor.advance(7);
@@ -70,8 +69,7 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
       state: LexerState.FLOW_CONTROL_BLOCK,
       tokens: [{
         type: TokenType.DEFAULT
-      }],
-      pushState: true
+      }]
     }
   } else if (cursor.peekMatch('const ')) {
     cursor.advance(6);

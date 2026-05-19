@@ -101,7 +101,7 @@ export class ParserCursor {
    * Peeks multiple tokens ahead.
    */
   private peekMany(chars: number): Token[] {
-    const peekedTokens: Token[] = [];
+    const peekedTokens = new Array<Token>;
     const nextTokenIndex = this._currentToken.index + 1;
 
     for (let i = nextTokenIndex; i < nextTokenIndex + chars; i++) {
