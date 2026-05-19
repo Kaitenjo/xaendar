@@ -19,6 +19,7 @@ import { parseBlockChildren } from './parse-block-children.state.js';
  * @returns The parsed `IfNode`.
  */
 export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: IfToken): IfNode {
+  // consume IF
   cursor.advance();
 
   const conditionToken = cursor.peek();
@@ -29,8 +30,8 @@ export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFuncti
   const condition = conditionToken.parts[0];
   const validationResult = validateExpression(condition);
 
-  cursor.advance();
-  cursor.advance();
+  // consume CONDITION and BLOCK_OPEN
+  cursor.advance(2);
 
   const consequent = parseBlockChildren(cursor, parseNode);
 
@@ -38,11 +39,13 @@ export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFuncti
   const next = cursor.peek();
 
   if (next.type === TokenType.ELSE) {
-    cursor.advance();
-    cursor.advance();
+    // consume ELSE and BLOCK_OPEN
+    cursor.advance(2);
     const elseChildren = parseBlockChildren(cursor, parseNode);
     alternate = { type: ASTNodeType.Else, children: elseChildren };
   }
+
+  console.log(validationResult.node, consequent, alternate);
 
   return { 
     type: ASTNodeType.If,

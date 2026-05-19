@@ -1,9 +1,9 @@
 
 const shadow = this.shadowRoot!;
 
-const node0 = document.createElement("label");
-node0.setAttribute('for', this.id);
-node0.setAttribute('aria-label', this.label);
-shadow.appendChild(node0);
-const node0_c0 = document.createTextNode(this.label);
-node0.appendChild(node0_c0);
+if (true) {
+  const node0_t0 = document.createElement("span");
+  shadow.appendChild(node0_t0);
+  const node0_t0_c0 = document.createTextNode("Id 1 is present");
+  node0_t0.appendChild(node0_t0_c0);
+}

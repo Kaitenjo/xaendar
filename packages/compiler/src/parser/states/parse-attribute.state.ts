@@ -16,6 +16,7 @@ import { parseInterpolation } from './parse-interpolation.state.js';
  * @returns The parsed `AttributeNode`.
  */
 export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: AttributeToken): AttributeNode {
+  // consume ATTRIBUTE token
   cursor.advance();
   const raw = token.parts[0];
 

@@ -70,6 +70,10 @@ export class Parser {
    */
   private parseNode(): ASTNode {
     const token = this._cursor.peek();
+    if (token.type === TokenType.EOF) {
+      return;
+    }
+    
     const state = this._states[token.type];
 
     if (!state) {

@@ -15,10 +15,11 @@ import { parse } from 'node:path';
 export function parseBlockChildren(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>): ASTNode[] {
   const children = new Array<ASTNode>;
 
-  while (!cursor.isLastToken() && cursor.peek().type !== TokenType.BLOCK_CLOSE) {
+  while (cursor.peek().type !== TokenType.BLOCK_CLOSE) {
     children.push(parseNode());
   }
 
-  cursor.advance(); // consume BLOCK_CLOSE
+  // consume BLOCK_CLOSE
+  cursor.advance();
   return children;
 }

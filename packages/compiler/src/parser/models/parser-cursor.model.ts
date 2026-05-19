@@ -71,10 +71,6 @@ export class ParserCursor {
     }
   }
 
-  public isLastToken(): boolean {
-    return this._currentToken.index === this._tokens.length - 1;
-  }
-
   /**
    * Peeks ahead in the token stream without advancing the cursor.
    *
@@ -119,18 +115,6 @@ export class ParserCursor {
    * Peeks a single token at the given absolute index.
    */
   private peekOneToken(index: number): Token {
-    if (index >= this._tokens.length) {
-      this._tokens[index];
-    }
-
-    return this._tokens[index]!;
-  }
-
-  /**
-   * Throws a standardized EOF error used by the parser
-   * to terminate token consumption.
-   */
-  private throwEOFError(): never {
-    throw new Error('', { cause: EOF });
+    return index < this._tokens.length ? this._tokens[index]! : { type: TokenType.EOF };
   }
 }

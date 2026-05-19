@@ -30,10 +30,8 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
   }
   const expression = parseForExpression(conditionToken.parts[0], 0);
 
-  // consume CONDITION
-  cursor.advance();
-  // consume BLOCK_OPEN
-  cursor.advance();
+  // consume CONDITION and BLOCK_OPEN
+  cursor.advance(2);
 
   const children = parseBlockChildren(cursor, parseNode);
 
