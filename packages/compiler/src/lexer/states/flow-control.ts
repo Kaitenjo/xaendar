@@ -37,14 +37,22 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
       }],
       pushState: true
     }
+  } else if (cursor.peekMatch('else if ')) {
+    cursor.advance(8);
+    retVal = {
+      state: LexerState.FLOW_CONTROL_CONDITION,
+      tokens: [{
+        type: TokenType.ELSE_IF
+      }],
+      pushState: true
+    }
   } else if (cursor.peekMatch('else ')) {
     cursor.advance(5);
     retVal = {
       state: LexerState.FLOW_CONTROL_BLOCK,
       tokens: [{
         type: TokenType.ELSE
-      }],
-      pushState: true
+      }]
     }
   } else if (cursor.peekMatch('switch ')) {
     cursor.advance(7);
@@ -70,8 +78,7 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
       state: LexerState.FLOW_CONTROL_BLOCK,
       tokens: [{
         type: TokenType.DEFAULT
-      }],
-      pushState: true
+      }]
     }
   } else if (cursor.peekMatch('const ')) {
     cursor.advance(6);

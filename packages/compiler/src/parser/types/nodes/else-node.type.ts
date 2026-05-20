@@ -12,5 +12,5 @@ export type ElseNode = {
   /**
    * Child nodes rendered when the `@if` condition is false.
    */
-  children: ASTNode[];
+  consequent: ASTNode[];
 }

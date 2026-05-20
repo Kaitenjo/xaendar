@@ -1,7 +1,5 @@
-import { EOF } from "../costants/chars.constants.js";
 import { TokenType } from "../lexer/types/token-type.enum.js";
 import { Token } from "../lexer/types/token.type.js";
-import { ASTNode } from "./types/ast.type.js";
 import { ParserCursor } from "./models/parser-cursor.model.js";
 import { parseConstDeclaration } from "./states/parse-const-declaration.state.js";
 import { parseElement } from "./states/parse-element.state.js";
@@ -10,6 +8,7 @@ import { parseIfControlFlow } from "./states/parse-if.state.js";
 import { parseInterpolation } from "./states/parse-interpolation.state.js";
 import { parseSwitchControlFlow } from "./states/parse-switch.state.js";
 import { parseText } from "./states/parse-text.state.js";
+import { ASTNode } from "./types/ast.type.js";
 import { ParserStates } from "./types/parser-states.type.js";
 
 /**
@@ -59,19 +58,12 @@ export class Parser {
    * @returns Array of top-level AST nodes
    */
   public parse(): ASTNode[] {
-    let eof = false;
     const nodes = new Array<ASTNode>;
-
-    while (!eof) {
-      try {
-        nodes.push(this.parseNode());
-      } catch (err) {
-        const error = err as Error;
-        if (error.cause === EOF) {
-          eof = true;
-        } else {
-          throw err;
-        }
+    
+    while (this._cursor.peek().type !== TokenType.EOF) {
+      const parseNode = this.parseNode();
+      if (parseNode) {
+        nodes.push(parseNode);
       }
     }
 
@@ -84,11 +76,14 @@ export class Parser {
    * @returns Parsed AST node
    * @throws Error if an unexpected token is encountered
    */
-  private parseNode(): ASTNode {
+  private parseNode(): ASTNode | undefined {
     const token = this._cursor.peek();
+    if (token.type === TokenType.EOF) {
+      return;
+    }
+    
     const state = this._states[token.type];
 
-    
     if (!state) {
       throw new Error(`[Parser] No transition function for token type ${TokenType[token.type]}`);
     }

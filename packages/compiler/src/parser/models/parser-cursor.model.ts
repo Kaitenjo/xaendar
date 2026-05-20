@@ -65,7 +65,6 @@ export class ParserCursor {
     if (newIndex >= this._tokens.length) {
       this._currentToken.value = { type: TokenType.EOF };
       this._currentToken.index = -1;
-      this.throwEOFError();
     } else {
       this._currentToken.index = newIndex;
       this._currentToken.value = this._tokens[newIndex]!;
@@ -86,12 +85,12 @@ export class ParserCursor {
    *
    * @throws Error with cause `EOF` if the peek exceeds the token array
    */
-  public peek(): Token;
-  public peek<OffSet extends number>(options?: { offset?: PositiveInteger<OffSet> }): Token;
-  public peek(chars: 1): Token;
-  public peek<OffSet extends number>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): Token; 
-  public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars, Token>; 
-  public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars, Token>;
+  public peek<T extends Token = Token>(): T;
+  public peek<OffSet extends number, T extends Token = Token>(options?: { offset?: PositiveInteger<OffSet> }): T;
+  public peek<T extends Token = Token>(chars: 1): T;
+  public peek<OffSet extends number, T extends Token = Token>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): T; 
+  public peek<ReadChars extends number, T extends Token = Token>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars, T>; 
+  public peek<ReadChars extends number, OffSet extends number, T extends Token = Token>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars, T>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): Token | Token[] {
     const tokens = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
@@ -102,7 +101,7 @@ export class ParserCursor {
    * Peeks multiple tokens ahead.
    */
   private peekMany(chars: number): Token[] {
-    const peekedTokens: Token[] = [];
+    const peekedTokens = new Array<Token>;
     const nextTokenIndex = this._currentToken.index + 1;
 
     for (let i = nextTokenIndex; i < nextTokenIndex + chars; i++) {
@@ -116,18 +115,6 @@ export class ParserCursor {
    * Peeks a single token at the given absolute index.
    */
   private peekOneToken(index: number): Token {
-    if (index >= this._tokens.length) {
-      this.throwEOFError();
-    }
-
-    return this._tokens[index]!;
-  }
-
-  /**
-   * Throws a standardized EOF error used by the parser
-   * to terminate token consumption.
-   */
-  private throwEOFError(): never {
-    throw new Error('', { cause: EOF });
+    return index < this._tokens.length ? this._tokens[index]! : { type: TokenType.EOF };
   }
 }

@@ -61,7 +61,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   }
 
   // Parse children recursively until closing tag
-  const children: ASTNode[] = [];
+  const children = new Array<ASTNode>;
   while (!isTagClose(cursor, tagName)) {
     children.push(parseNode());
   }

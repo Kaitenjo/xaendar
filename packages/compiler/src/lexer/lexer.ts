@@ -28,7 +28,6 @@ import { consumeText } from './states/text.state.js';
  * This is useful when parsing or analyzing template content character by character.
  */
 export class Lexer {
-
   /**
    * Cursor for navigating the input character stream.
    */

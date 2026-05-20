@@ -1,10 +1,24 @@
 
 const shadow = this.shadowRoot!;
 
-const node0 = document.createElement("label");
-node0.setAttribute('for', this.id);
-node0.setAttribute('aria-label', this.label);
-shadow.appendChild(node0);
-const node0_c0 = document.createTextNode(this.label);
-node0.appendChild(node0_c0);
-const test = user.name;
+if (this.status === 1) {
+  const node0_t_c0 = document.createElement("div");
+  shadow.appendChild(node0_t_c0);
+  const node0_t_c0_c0 = document.createTextNode("One");
+  node0_t_c0.appendChild(node0_t_c0_c0);
+} else if (this.status === 2) {
+  const node0_e_c0 = document.createElement("div");
+  shadow.appendChild(node0_e_c0);
+  const node0_e_c0_c0 = document.createTextNode("Two");
+  node0_e_c0.appendChild(node0_e_c0_c0);
+} else if (this.status === 3) {
+  const node0_e_c0 = document.createElement("div");
+  shadow.appendChild(node0_e_c0);
+  const node0_e_c0_c0 = document.createTextNode("Three");
+  node0_e_c0.appendChild(node0_e_c0_c0);
+} else {
+  const node0_e_c0 = document.createElement("div");
+  shadow.appendChild(node0_e_c0);
+  const node0_e_c0_c0 = document.createTextNode("Other");
+  node0_e_c0.appendChild(node0_e_c0_c0);
+}

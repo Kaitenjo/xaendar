@@ -1,7 +1,8 @@
-import { ASTNodeType } from '../node.enum.js';
-import { ASTNode } from '../ast.type.js';
-import { ElseNode } from './else-node.type.js';
 import { Expression } from 'typescript';
+import { ASTNode } from '../ast.type.js';
+import { ASTNodeType } from '../node.enum.js';
+import { ElseIfNode } from './else-if-node.type.js';
+import { ElseNode } from './else-node.type.js';
 
 /**
  * AST node representing an `@if` conditional directive.
@@ -26,5 +27,5 @@ export type IfNode = {
   /**
    * Optional `@else` branch, or `null` if no else clause is present.
    */
-  alternate: ElseNode | null;
+  alternate: ElseIfNode | ElseNode | null;
 }

@@ -23,6 +23,10 @@ export enum ASTNodeType {
    */
   Else,
   /**
+   * An `@else if` branch node attached to an `@if`.
+   */
+  ElseIf,
+  /**
    * An `@for` iteration node.
    */
   For,

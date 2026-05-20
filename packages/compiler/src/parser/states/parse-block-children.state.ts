@@ -2,6 +2,7 @@ import { NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../lexer/types/token-type.enum.js';
 import { ParserCursor } from '../models/parser-cursor.model.js';
 import { ASTNode } from '../types/ast.type.js';
+import { parse } from 'node:path';
 
 /**
  * Parses child AST nodes inside a flow-control block until a BLOCK_CLOSE token is reached.
@@ -18,6 +19,7 @@ export function parseBlockChildren(cursor: ParserCursor, parseNode: NoArgsFuncti
     children.push(parseNode());
   }
 
-  cursor.advance(); // consume BLOCK_CLOSE
+  // consume BLOCK_CLOSE
+  cursor.advance();
   return children;
 }

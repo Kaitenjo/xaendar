@@ -55,6 +55,10 @@ export enum TokenType {
    */
   ELSE,
   /**
+   * Opening keyword of an `@else if` branch.
+   */
+  ELSE_IF,
+  /**
    * Opening keyword of a `@switch` directive.
    */
   SWITCH,
