@@ -85,12 +85,12 @@ export class ParserCursor {
    *
    * @throws Error with cause `EOF` if the peek exceeds the token array
    */
-  public peek(): Token;
-  public peek<OffSet extends number>(options?: { offset?: PositiveInteger<OffSet> }): Token;
-  public peek(chars: 1): Token;
-  public peek<OffSet extends number>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): Token; 
-  public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars, Token>; 
-  public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars, Token>;
+  public peek<T extends Token = Token>(): T;
+  public peek<OffSet extends number, T extends Token = Token>(options?: { offset?: PositiveInteger<OffSet> }): T;
+  public peek<T extends Token = Token>(chars: 1): T;
+  public peek<OffSet extends number, T extends Token = Token>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): T; 
+  public peek<ReadChars extends number, T extends Token = Token>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars, T>; 
+  public peek<ReadChars extends number, OffSet extends number, T extends Token = Token>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars, T>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): Token | Token[] {
     const tokens = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;

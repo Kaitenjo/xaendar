@@ -1,7 +1,5 @@
-import { EOF } from "../costants/chars.constants.js";
 import { TokenType } from "../lexer/types/token-type.enum.js";
 import { Token } from "../lexer/types/token.type.js";
-import { ASTNode } from "./types/ast.type.js";
 import { ParserCursor } from "./models/parser-cursor.model.js";
 import { parseConstDeclaration } from "./states/parse-const-declaration.state.js";
 import { parseElement } from "./states/parse-element.state.js";
@@ -10,6 +8,7 @@ import { parseIfControlFlow } from "./states/parse-if.state.js";
 import { parseInterpolation } from "./states/parse-interpolation.state.js";
 import { parseSwitchControlFlow } from "./states/parse-switch.state.js";
 import { parseText } from "./states/parse-text.state.js";
+import { ASTNode } from "./types/ast.type.js";
 import { ParserStates } from "./types/parser-states.type.js";
 
 /**
@@ -62,7 +61,10 @@ export class Parser {
     const nodes = new Array<ASTNode>;
     
     while (this._cursor.peek().type !== TokenType.EOF) {
-      nodes.push(this.parseNode());
+      const parseNode = this.parseNode();
+      if (parseNode) {
+        nodes.push(parseNode);
+      }
     }
 
     return nodes;
@@ -74,7 +76,7 @@ export class Parser {
    * @returns Parsed AST node
    * @throws Error if an unexpected token is encountered
    */
-  private parseNode(): ASTNode {
+  private parseNode(): ASTNode | undefined {
     const token = this._cursor.peek();
     if (token.type === TokenType.EOF) {
       return;

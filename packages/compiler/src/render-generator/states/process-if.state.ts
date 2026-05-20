@@ -1,3 +1,6 @@
+import { ASTNodeType } from '../../parser/types/node.enum.js';
+import { ElseIfNode } from '../../parser/types/nodes/else-if-node.type.js';
+import { ElseNode } from '../../parser/types/nodes/else-node.type.js';
 import { IfNode } from '../../parser/types/nodes/if-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
@@ -18,19 +21,34 @@ export function processIf(node: IfNode, nodeName: string, parentNode: string, co
 
   const code = [
     `if (${resolveExpression(node.conditionNode, context)}) {`,
-    ...node.consequent.map((child, idx) => indent(...processNode(child, `${nodeName}_t${idx}`, parentNode, ifContext))).flat(),
+    ...processConsequent(node, `${nodeName}_t`, parentNode, ifContext),
     '}'
   ];
 
-  const alt = node.alternate;
-  if (alt) {
-    code[code.length - 1] += ' else {';
-    const elseContext = new Context([], context);
+  let alt = node.alternate;
+  while (alt?.type === ASTNodeType.ElseIf) {
+    const elseIfContext = new Context([], context);
+
+    code[code.length - 1] += ` else if (${resolveExpression(alt.conditionNode, context)}) {`
     code.push(
-      ...alt.children.map((child, idx) => indent(...processNode(child, `${nodeName}_e${idx}`, parentNode, elseContext))).flat(),
+      ...processConsequent(alt, `${nodeName}_e`, parentNode, elseIfContext),
+      '}'
+    );
+    alt = alt.alternate;
+  }
+  
+  if (alt) {
+    const elseContext = new Context([], context);
+    code[code.length - 1] += ' else {';
+    code.push(
+      ...processConsequent(alt, `${nodeName}_e`, parentNode, elseContext),
       '}'
     );
   }
 
   return code;
+}
+
+function processConsequent(node: IfNode | ElseIfNode | ElseNode, nodeName: string, parentNode: string, context: Context): string[] {
+  return node.consequent.map((child, idx) => indent(...processNode(child, `${nodeName}_c${idx}`, parentNode, context))).flat();
 }

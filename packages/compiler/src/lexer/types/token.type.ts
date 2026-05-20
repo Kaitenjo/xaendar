@@ -18,6 +18,7 @@ import { BlockOpenToken } from './tokens/block-open-token.type.js';
 import { BlockCloseToken } from './tokens/block-close-token.type.js';
 import { ConstDeclarationToken } from './tokens/const-declaration-token.type.js';
 import { EOFToken } from './tokens/eof-token.type.js';
+import { ElseIfToken } from './tokens/else-if-token.type.js';
 
 /**
  * Union of all token types that the lexer can emit during tokenization.
@@ -33,8 +34,9 @@ export type Token =
   | InterpolationExpressionToken
   | InterpolationLiteralToken
   | IfToken
-  | ForToken
+  | ElseIfToken
   | ElseToken
+  | ForToken
   | SwitchToken
   | CaseToken
   | DefaultToken
