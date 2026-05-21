@@ -13,7 +13,7 @@ import { ConstDeclarationNode } from '../types/nodes/const-declaration-node.type
  * @param token The CONST_DECLARATION token containing variable name and expression.
  * @returns The parsed `ConstDeclarationNode`.
  */
-export function parseConstDeclaration(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode>, token: ConstDeclarationToken): ConstDeclarationNode {
+export function parseConstDeclaration(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: ConstDeclarationToken): ConstDeclarationNode {
   cursor.advance();
 
   return {

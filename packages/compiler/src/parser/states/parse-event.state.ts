@@ -13,7 +13,7 @@ import { EventNode } from '../types/nodes/event-node.type.js';
  * @param token The EVENT token to parse.
  * @returns The parsed `EventNode`.
  */
-export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode>, token: EventToken): EventNode {
+export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: EventToken): EventNode {
   cursor.advance();
   const raw = token.parts[0];
   const [name, value] = raw.split('=');

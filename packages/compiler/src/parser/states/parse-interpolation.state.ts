@@ -14,7 +14,7 @@ import { InterpolationNode } from '../types/nodes/interpolation-node.type.js';
  * @param token The INTERPOLATION_EXPRESSION or INTERPOLATION_LITERAL token.
  * @returns The parsed `InterpolationNode`.
  */
-export function parseInterpolation(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode>, token: InterpolationExpressionToken | InterpolationLiteralToken): InterpolationNode {
+export function parseInterpolation(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: InterpolationExpressionToken | InterpolationLiteralToken): InterpolationNode {
   cursor.advance();
   
   return {

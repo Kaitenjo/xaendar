@@ -20,7 +20,7 @@ import { parseBlockChildren } from './parse-block-children.state.js';
  * @param _token The FOR token (unused; consumed for position advancement).
  * @returns The parsed `ForNode`.
  */
-export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: ForToken): ForNode {
+export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, _token: ForToken): ForNode {
   // consume FOR
   cursor.advance();
 
