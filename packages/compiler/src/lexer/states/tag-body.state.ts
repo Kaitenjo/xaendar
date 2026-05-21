@@ -29,7 +29,7 @@ export function consumeTagBody(cursor: LexerCursor, _context: LexerTransitionFun
         break;
 
       case SPACE:
-        cursor.advance();
+        cursor.skipSpaces();
         break;
 
       case GREATER_THEN:

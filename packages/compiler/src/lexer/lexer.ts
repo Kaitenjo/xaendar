@@ -88,7 +88,10 @@ export class Lexer {
     while (!eof) {
       try {
         const transitionFunction = this._states[this._state];
-        const { state, tokens, popState, pushState } = transitionFunction!(this._cursor, { history: this._stack.values });
+        const { state, tokens, popState, pushState } = transitionFunction!(this._cursor, { 
+          history: this._stack.values,
+          tokens: [...this._tokens] 
+        });
         
         if (tokens?.length) {
           this._tokens.push(...tokens);

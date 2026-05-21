@@ -1,4 +1,5 @@
 import { LexerState } from '../lexer-state.enum.js'
+import { Token } from '../token.type.js'
 
 /**
  * Context object passed by the Lexer engine to each
@@ -23,5 +24,14 @@ export type LexerTransitionFunctionContext = {
    * The array is ordered from bottom (oldest state)
    * to top (most recent state).
    */
-  history: Array<LexerState>
+  history: LexerState[],
+  /**
+   * Read-only snapshot of all tokens emitted by the lexer up to this point.
+   *
+   * This allows transition functions to make decisions based on previously
+   * emitted tokens, enabling context-sensitive lexing behavior.
+   * 
+   * Note that this is a snapshot and should not be mutated by transition functions.
+   */
+  tokens: Token[]
 }

@@ -2,7 +2,7 @@ import { Lexer, Parser, TokenType, generateRenderFunction } from "@xaendar/compi
 import { writeFileSync } from "fs";
 
 const template = `
-  <label for={id} aria-label={label}>
+  <label for={id} aria-label={label} {placeholder} @input>
     {label}
   </label>
   @const test = user.name;

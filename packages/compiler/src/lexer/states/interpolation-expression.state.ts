@@ -41,6 +41,22 @@ export function consumeInterpolationExpression(cursor: LexerCursor, context: Lex
 
           switch (previousState) {
             case LexerState.ATTRIBUTE:
+              /*
+                This is a special case to handle syntax sugar for attribute interpolations:
+                If the attribute name and the variable binded have the same indentifier it can be written
+                from attribute={attribute} to {attribute}
+                
+                In this case the attribute token emitted by the previosu state will have an empty string
+                as part and we need to fill it with the actual interpolation content
+
+                This is tricky but it allows to avoid unnecessary complication in the parser and
+                render generator, by keeping this syntax sugar as a purely lexical feature and
+                by redirecting to the standard flow for attribute interpolations after the lexer
+              */
+              const lastToken = context.tokens[context.tokens.length - 1];
+              if (lastToken?.type === TokenType.ATTRIBUTE && !lastToken.parts[0]) {
+                lastToken.parts[0] = `${interpolation}=`;
+              }
               state = LexerState.TAG_BODY
               break;
 
