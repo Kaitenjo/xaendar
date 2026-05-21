@@ -180,7 +180,7 @@ export class LexerCursor {
    * Skips all consecutive space characters from the current position.
    */
   public skipSpaces(): void {
-    while (this.peek() === SPACE) {
+    while (this.peek() === SPACE || this.peek() === LF || this.peek() === CR) {
       this.advance();
     }
   }

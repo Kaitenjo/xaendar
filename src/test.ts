@@ -51,14 +51,15 @@ import { writeFileSync } from "fs";
 //   `
 
 const template = `
-  @if (status === 1) {
-    <div>One</div>
-  } @else if (status === 2) {
-    <div>Two</div>
-  } @else if (status === 3) {
-    <div>Three</div>
-  } @else {
-    <div>Other</div>
+  @switch (status) {
+    @case ('loading')
+    @case ('error') {
+      <div>Loading...</div>
+    }
+    
+    @default {
+      <div>Content</div>
+    }
   }
 `
 

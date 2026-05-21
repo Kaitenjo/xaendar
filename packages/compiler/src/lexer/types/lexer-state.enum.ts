@@ -35,13 +35,18 @@ export enum LexerState {
    */
   EVENT = 'event',
   /**
-   * Dispatching a flow-control keyword (`@if`, `@for`, `@switch`, etc.).
+   * Dispatching a flow-control keyword (@if, @for, @switch, etc.).
    */
   FLOW_CONTROL = 'flow-control',
   /**
    * Consuming the condition expression `(...)` of a flow-control directive.
    */
   FLOW_CONTROL_CONDITION = 'flow-control-condition',
+  /**
+   * Consuming the condition expression `(...)` of a @case directive.
+   * This is needed to correctly handle special consecutives @case 
+   */
+  CASE_FLOW_CONTROL_CONDITION = 'case-flow-control-condition',
   /**
    * Consuming the opening `{` of a flow-control block body.
    */

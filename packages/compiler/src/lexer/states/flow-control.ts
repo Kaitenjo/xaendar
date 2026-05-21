@@ -66,7 +66,7 @@ export function consumeFlowControl(cursor: LexerCursor, _context: LexerTransitio
   } else if (cursor.peekMatch('case ')) {
     cursor.advance(5);
     retVal = {
-      state: LexerState.FLOW_CONTROL_CONDITION,
+      state: LexerState.CASE_FLOW_CONTROL_CONDITION,
       tokens: [{
         type: TokenType.CASE
       }],
