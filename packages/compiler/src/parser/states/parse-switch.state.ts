@@ -17,7 +17,7 @@ import { parseBlockChildren } from './parse-block-children.state.js';
  * @param _token The SWITCH token (unused; consumed for position advancement).
  * @returns The parsed `SwitchNode`.
  */
-export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, _token: SwitchToken): SwitchNode {
+export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, _token: SwitchToken): SwitchNode {
   // consume SWITCH
   cursor.advance();
 
@@ -37,22 +37,49 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
 
     switch (token.type) {
       case TokenType.CASE:
-        cursor.advance();
-        const caseCondition = cursor.peek();
-        if (caseCondition.type !== TokenType.CONDITION) {
-          throw new Error(`[Parser] Expected CONDITION after CASE`);
-        }
+        const condition = new Array<string>;
+        
+        /*
+          We loop to support block case with multiple conditions, e.g.:
+          @switch (x) {
+            @case (1) 
+            @case (2) {
+              // ...
+            }
+          }
+        */
+        do {
+          // consume CASE
+          cursor.advance();
 
-        const caseExpr = caseCondition.parts[0];
-        // consume CONDITION and BLOCK_OPEN
-        cursor.advance(2);
-        cases.push({ type: ASTNodeType.Case, condition: caseExpr, children: parseBlockChildren(cursor, parseNode) });
+          const caseCondition = cursor.peek();
+          if (caseCondition.type !== TokenType.CONDITION) {
+            throw new Error(`[Parser] Expected CONDITION after CASE`);
+          }
+  
+          condition.push(caseCondition.parts[0]);
+          // consume CONDITION
+          cursor.advance();
+        } while (cursor.peek().type !== TokenType.BLOCK_OPEN);
+
+        // consume BLOCK_OPEN
+        cursor.advance();
+        
+        cases.push({
+          type: ASTNodeType.Case, 
+          condition, 
+          children: parseBlockChildren(cursor, parseNode) 
+        });
         break;
 
       case TokenType.DEFAULT:
         // consume DEFAULT and BLOCK_OPEN
         cursor.advance(2);
-        cases.push({ type: ASTNodeType.Case, condition: null, children: parseBlockChildren(cursor, parseNode) });
+        cases.push({
+          type: ASTNodeType.Case, 
+          condition: null, 
+          children: parseBlockChildren(cursor, parseNode) 
+        });
         break;
 
     }

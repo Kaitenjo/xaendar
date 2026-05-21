@@ -19,7 +19,7 @@ export function processSwitch(node: SwitchNode, nodeName: string, parentNode: st
     `switch (${resolveExpression(node.expression, context)}) {`,
     ...node.cases.map(caseNode => ([
       ...indent(
-        `${!caseNode.condition ? 'default' : `case ${caseNode.condition}`}: {`,
+        ...(!caseNode.condition ? ['default: {'] : caseNode.condition.map((cond, i, arr) => `case ${cond}:${i === arr.length - 1 ? ' {' : ''}`)),
         ...caseNode.children.map((child, i) => indent(...processNode(child, `${nodeName}_s${i}_${i}`, parentNode, new Context([], context)))).flat(),
         `${indent('break;')}`,
         `}`

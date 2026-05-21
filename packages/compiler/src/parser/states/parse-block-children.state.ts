@@ -12,11 +12,14 @@ import { parse } from 'node:path';
  * @param parseNode Parser function for recursive child parsing.
  * @returns Array of parsed child `ASTNode`s.
  */
-export function parseBlockChildren(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>): ASTNode[] {
+export function parseBlockChildren(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>): ASTNode[] {
   const children = new Array<ASTNode>;
 
   while (cursor.peek().type !== TokenType.BLOCK_CLOSE) {
-    children.push(parseNode());
+    const child = parseNode();
+    if (child) {
+      children.push(child);
+    }
   }
 
   // consume BLOCK_CLOSE

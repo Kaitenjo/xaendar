@@ -13,7 +13,7 @@ import { TextNode } from '../types/nodes/text-node.type.js';
  * @param token The TEXT token containing the raw text content.
  * @returns The parsed `TextNode`.
  */
-export function parseText(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode>, token: TextToken): TextNode {
+export function parseText(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: TextToken): TextNode {
   cursor.advance();
 
   return {

@@ -21,14 +21,14 @@ import { ElseToken } from '../../lexer/types/tokens/else-token.type.js';
  * @param token The IF token (unused; consumed for position advancement).
  * @returns The parsed `IfNode`.
  */
-export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: IfToken): IfNode {
+export function parseIfControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: IfToken): IfNode {
   return parseIfRecursively(cursor, parseNode, token);
 }
 
-function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: IfToken): IfNode;
-function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: ElseIfToken | ElseToken): ElseIfNode | ElseNode;
-function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: ElseToken): ElseNode;
-function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: IfToken | ElseIfToken | ElseToken): IfNode | ElseIfNode | ElseNode {
+function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: IfToken): IfNode;
+function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: ElseIfToken | ElseToken): ElseIfNode | ElseNode;
+function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: ElseToken): ElseNode;
+function parseIfRecursively(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: IfToken | ElseIfToken | ElseToken): IfNode | ElseIfNode | ElseNode {
   switch (token.type) {
     case TokenType.IF:
     case TokenType.ELSE_IF:

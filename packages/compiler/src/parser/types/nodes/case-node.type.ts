@@ -12,7 +12,7 @@ export type CaseNode = {
   /**
    * The case condition expression, or `null` for a `@default` branch.
    */
-  condition: string | null; // null = @default
+  condition: string[] | null; // null = @default
   /**
    * Child nodes rendered when this case matches.
    */

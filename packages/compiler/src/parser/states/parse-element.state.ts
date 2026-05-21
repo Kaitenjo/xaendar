@@ -19,7 +19,7 @@ import { parseEvent } from './parse-event.state.js';
  * @param token The TAG_OPEN_NAME token containing the tag name.
  * @returns The parsed `ElementNode`.
  */
-export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode>, token: TagOpenNameToken): ElementNode {
+export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: TagOpenNameToken): ElementNode {
   cursor.advance();
   const tagName = token.parts[0];
 
@@ -63,7 +63,10 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   // Parse children recursively until closing tag
   const children = new Array<ASTNode>;
   while (!isTagClose(cursor, tagName)) {
-    children.push(parseNode());
+    const child = parseNode();
+    if (child) {
+      children.push(child);
+    }
   }
 
   // Consume closing tag </div>
