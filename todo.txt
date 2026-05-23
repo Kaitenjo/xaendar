@@ -1,0 +1,8 @@
+Rivedere interpolazioni
+- Non funzionano se dopo la ` finale non segue subito la }
+`} funziona
+`  } non funziona <--- da fixare
+
+Il render generator non aggiunge correttamente il this. alle variabili interne all'interpolazione
+
+I decoratori non stanno venendo correttamente processati da esbuild <----------------- PRIORITA

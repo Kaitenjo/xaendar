@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 
 console.log(path.resolve(__dirname, 'packages/signals/src'));

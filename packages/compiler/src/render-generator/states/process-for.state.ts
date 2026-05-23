@@ -2,7 +2,7 @@ import { ForImplicitVariables } from '../../parser/types/nodes/for-implicit-vari
 import { ForNode } from '../../parser/types/nodes/for-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
-import { indent } from '../utils/render-generator.utils.js';
+import { getTextIdentifier, indent } from '../utils/render-generator.utils.js';
  
 /**
  * Generates code for a `@for` iteration node.
@@ -39,8 +39,8 @@ export function processFor(node: ForNode, nodeName: string, parentNode: string, 
   const iterableSource = node.iterableSource;
   const iterableExpr = parentContext.getIdentifier(iterableSource) ?? `this.${iterableSource}`;
 
-  const itemsName = `${nodeName}_items`;
-  const counterName = `$i_${nodeName}`;
+  const itemsName = getTextIdentifier(parentNode, nodeName, 'items');
+  const counterName = getTextIdentifier(parentNode, nodeName, 'i');
   
   const indexName = resolveImplicit(node, '$index');
   const firstName = resolveImplicit(node, '$first');
@@ -59,7 +59,7 @@ export function processFor(node: ForNode, nodeName: string, parentNode: string, 
     ...indent(`const ${evenName} = ${counterName} % 2 === 0;`),
     ...indent(`const ${oddName} = ${counterName} % 2 !== 0;`),
     ...indent(''),
-    ... node.children.flatMap((child, idx) => indent(...processNode(child, `${nodeName}_f${idx}`, parentNode, forContext))),
+    ... node.children.flatMap((child, i) => indent(...processNode(child, `${nodeName}_${i}`, parentNode, forContext))),
     '}',
   ];
 }

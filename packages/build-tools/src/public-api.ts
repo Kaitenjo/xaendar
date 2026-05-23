@@ -1,1 +1,1 @@
-export * from './lib/node-compiler-host.model.js';
+export * from './lib/plugin.js';

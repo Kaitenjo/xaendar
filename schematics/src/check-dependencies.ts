@@ -1,6 +1,6 @@
 import depcheck from 'depcheck';
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { PackageJson } from "type-fest";
 
 /**
@@ -59,11 +59,8 @@ async function checkDependencies(): Promise<void> {
   for (const projectPath of projectPaths) {
     const packageJson = getPackageJson(projectPath);
     const depCheckResult = await depcheck(projectPath, deepCheckOptions);
-    if (!packageJson.dependencies || !Object.keys(packageJson.dependencies).length) {
-      continue;
-    }
 
-    const packageDependenciesUsedNames = Object.keys(packageJson.dependencies);
+    const packageDependenciesUsedNames = Object.keys(packageJson.dependencies ?? {});
 
     // Rule 1 – invalid files
     const realAllInvalidFiles = Object.keys(depCheckResult.invalidFiles);
@@ -95,7 +92,10 @@ async function checkDependencies(): Promise<void> {
       });
 
     // Rule 4 – missing dependencies
-    Object.keys(depCheckResult.missing).forEach(depName => packageJson.dependencies![depName] = packageJson.version);
+    if (Object.keys(depCheckResult.missing).length) {
+      console.log(`Package ${packageJson.name} has missing dependencies!`, Object.keys(depCheckResult.missing).join(', '));
+      process.exit(1);
+    }
 
     writeFileSync(`${projectPath}/package.json`, JSON.stringify(packageJson, null, 2));
   }

@@ -16,7 +16,7 @@ import { LexerTransitionFunctionReturnType } from '../types/transition-function/
  */
 export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
-  let interpolation = '';
+  let interpolation = '`';
   let retVal!: LexerTransitionFunctionReturnType;
 
   // Consume '`' character
@@ -25,9 +25,10 @@ export function consumeInterpolationliteral(cursor: LexerCursor, context: LexerT
   while (read) {
     switch (cursor.peek()) {
       case GRAVE_ACCENT:
-        cursor.advance();
+        interpolation = addCharacter(cursor, interpolation);
 
         if (cursor.peek() === RIGHT_BRACE) {
+          // Consume '}'
           cursor.advance();
           /*
             After an interpolation we have to understanad where to transite

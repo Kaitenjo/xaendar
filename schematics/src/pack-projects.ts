@@ -1,6 +1,6 @@
 import { exec } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
 const buildPackagesPath = '../dist/@xaendar';
 

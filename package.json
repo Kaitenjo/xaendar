@@ -1,11 +1,11 @@
 {
   "name": "xaendar",
-  "version": "0.2.1",
+  "version": "0.3.17",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
   "scripts": {
-    "build:projects": "npm run build-prolsjects --prefix schematics",
+    "build:projects": "npm run build-projects --prefix schematics",
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
     "build:src": "vite build",
@@ -20,7 +20,7 @@
     "start:browser": "vite",
     "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
     "update-version": "npm run update-version --prefix schematics",
-    "xd": "node --import tsx/esm packages/cli/src/index.ts"
+    "xd": "node --import tsx/esm packages/cli/src/index.ts new backoffice --path src --style scss"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",
@@ -33,7 +33,7 @@
     "tsx": "^4.22.3",
     "type-fest": "^5.6.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.13",
+    "vite": "^8.0.14",
     "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.7"

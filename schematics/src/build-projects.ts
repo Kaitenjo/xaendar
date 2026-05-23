@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
 import { build as viteBuild } from 'vite';
 import { build as tsupBuild } from 'tsup';
@@ -164,7 +164,7 @@ function buildXaendarAliasMap(): Record<string, string> {
 
       const entryFile = pkg.xaendar?.entry ?? 'src/public-api.ts';
       const absolutePath = resolve(packagesDir, folder, entryFile).replace(/\\/g, '/');
-      
+
       aliasMap[pkg.name] = absolutePath;
     } catch {
       // Not a valid package folder — skip silently
@@ -197,30 +197,54 @@ function buildNode(projectName: string, projectPath: string, pkg: XaendarPackage
     sourcemap: true,
     clean: true,
     ...(bundleAll
-      ? { 
-          noExternal: [/.*/], 
-          esbuildOptions: opts => { opts.alias = buildXaendarAliasMap(); } 
-        }
+      ? {
+        noExternal: [/.*/],
+        esbuildOptions: (opts) => {
+          opts.alias = buildXaendarAliasMap();
+          opts.external = [
+            'node:*',
+            'events',
+            'fs',
+            'path',
+            'os',
+            'url',
+            'util',
+            'stream',
+            'buffer',
+            'crypto',
+            'child_process',
+            'process',
+            'module',
+          ];
+
+          opts.banner = {
+            js: `
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+`.trim(),
+          }
+        },
+      }
       : { external: Object.keys(pkg.dependencies ?? {}) }),
   }).then(() => {
-    // For self-contained executables (CLI), create a minimal package.json in dist
-    if (bundleAll) {
-      const distPkg = {
-        name: pkg.name!,
-        version: pkg.version!,
-        description: pkg.description ?? '',
-        author: pkg.author ?? '',
-        license: pkg.license ?? 'MIT',
-        type: 'module',
+    const distPkg = {
+      name: pkg.name!,
+      version: pkg.version!,
+      description: pkg.description ?? '',
+      author: pkg.author ?? '',
+      license: pkg.license ?? 'MIT',
+      type: 'module',
+      ...(bundleAll ? {
         bin: {
-          [projectName]: './index.js',
+          'xd': './index.js',
         },
-        exports: {
-          '.': './index.js',
-        },
-      };
-      writeFileSync(resolve(outDir, 'package.json'), JSON.stringify(distPkg, null, 2), 'utf-8');
-    }
+      } : {}),
+      exports: {
+        '.': './index.js',
+      },
+      dependencies: bundleAll ? undefined : pkg.dependencies
+    };
+    writeFileSync(resolve(outDir, 'package.json'), JSON.stringify(distPkg, null, 2), 'utf-8');
   });
 }
 

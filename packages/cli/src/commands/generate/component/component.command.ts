@@ -18,8 +18,10 @@ import { join } from 'node:path';
  * @param path - The base path where the component folder will be created (default:
  *   current working directory).
  */
-export function generateComponent(name: string, path: string, force: boolean): void {
+export function generateComponent(name: string, path: string, force?: boolean, style?: string): void {
   const dir = join(path, name);
+  // Fallback we should read form xaendar config file
+  style ??= 'css';
 
   if (existsSync(dir)) {
     if (force) {
@@ -35,9 +37,9 @@ export function generateComponent(name: string, path: string, force: boolean): v
   mkdirSync(dir, { recursive: true });
 
   const files: [string, string][] = [
-    [`${name}.xd.component.ts`, tsTemplate(name)],
+    [`${name}.xd.component.ts`, tsTemplate(name, style)],
     [`${name}.xd.component.html`, htmlTemplate(name)],
-    [`${name}.xd.component.css`, cssTemplate(name)],
+    [`${name}.xd.component.${style}`, cssTemplate(name)],
     [`${name}.xd.component.spec.ts`, specTemplate(name)],
   ];
 
@@ -59,13 +61,13 @@ export function generateComponent(name: string, path: string, force: boolean): v
  *   and asset paths.
  * @returns A string containing the full TypeScript source.
  */
-function tsTemplate(name: string): string {
+function tsTemplate(name: string, style: string): string {
   const className = toPascalCase(name);
   return `import { BaseWebComponent, WebComponent } from '@xaendar/core';
 
 @WebComponent({
   selector: '${toKebabCase(name)}',
-  styleUrl: './${name}.xd.component.css',
+  styleUrl: './${name}.xd.component.${style}',
   templateUrl: './${name}.xd.component.html'
 })
 export class ${className}Component extends BaseWebComponent {
@@ -102,8 +104,7 @@ function cssTemplate(_name: string): string {
  */
 function specTemplate(name: string): string {
   const className = toPascalCase(name);
-  return `
-import { describe, expect, it } from "vitest";
+  return `import { describe, expect, it } from "vitest";
 import { ${className}Component } from './${name}.xd.component';
 
 describe('${className}Component', () => {
@@ -127,7 +128,7 @@ describe('${className}Component', () => {
  * toPascalCase('my_button') // → 'MyButton'
  * toPascalCase('myButton')  // → 'MyButton'
  */
-function toPascalCase(str: string): string {
+export function toPascalCase(str: string): string {
   return str
     .replace(/[-_](.)/g, (_, c: string) => c.toUpperCase())
     .replace(/^(.)/, (_, c: string) => c.toUpperCase());
@@ -145,7 +146,7 @@ function toPascalCase(str: string): string {
  * toKebabCase('myButton')  // → 'my-button'
  * toKebabCase('my_button') // → 'my-button'
  */
-function toKebabCase(str: string): string {
+export function toKebabCase(str: string): string {
   return str
     .replace(/([a-z])([A-Z])/g, '$1-$2')
     .replace(/_/g, '-')

@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
-import { readdirSync } from 'fs';
-import { resolve } from 'path';
+import { readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const projectsRoot = '../packages';
 

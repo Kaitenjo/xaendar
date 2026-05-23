@@ -1,7 +1,7 @@
-import { TokenType } from "@xaendar/compiler";
 import { EQUAL_THEN, SEMICOLON, SPACE } from "../../costants/chars.constants";
 import { LexerCursor } from "../types/lexer-cursor.model";
 import { LexerState } from "../types/lexer-state.enum";
+import { TokenType } from "../types/token-type.enum";
 import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type";
 import { LexerTransitionFunctionReturnType } from "../types/transition-function/transition-function-return-type.type";
 

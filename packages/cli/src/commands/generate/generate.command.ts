@@ -8,7 +8,7 @@ import { generateComponent } from './component/component.command.js';
  * @returns The configured `generate` {@link Command} instance ready to be
  *   added to the root program.
  */
-export function makeGenerateCommand(): Command {
+export function generateCommand(): Command {
   const generate = new Command('generate').alias('g').description('Generate Xaendar building blocks');
 
   generate

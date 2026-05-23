@@ -1,5 +1,6 @@
 import ts, { Expression } from 'typescript';
 import { Context } from '../models/render-context.model';
+import { ElementNode } from '../../parser/types/nodes/element-node.type';
 
 /**
  * Complete set of JavaScript global identifiers up to ES2026.
@@ -220,6 +221,8 @@ export const GLOBAL_IDENTIFIERS: ReadonlySet<string> = new Set([
   'Window',
 ]);
 
+export const ROOT_NODE = 'this._root';
+
 /**
  * Resolves references to component properties inside a template expression.
  *
@@ -246,7 +249,7 @@ export const GLOBAL_IDENTIFIERS: ReadonlySet<string> = new Set([
  * // typeof id !== 'boolean' || pippo instanceof HTMLElement
  * // → typeof this.id !== 'boolean' || this.pippo instanceof HTMLElement
  */
-export function resolveExpression(expression: string | Expression, context: Context,): string {
+export function resolveExpression(expression: string | Expression, context: Context): string {
   return typeof expression === 'string'
     ? context.getIdentifier(expression) ?? `this.${expression}`
     : emitNode(expression, expression, context);
@@ -327,3 +330,20 @@ function needsResolution(node: ts.Identifier, parent: ts.Node): boolean {
 export function indent(...lines: string[]): string[] {
   return lines.map(line => `  ${line}`);
 } 
+
+/**
+ * Generates a unique variable name for an element based on its tag name and parent node.
+ * If the parent node is 'this._root', the identifier will be based solely on the element's type.
+ * Otherwise, it will be prefixed with the parent node's name to ensure uniqueness.
+ * @param node The ElementNode for which to generate the identifier.
+ * @param parentNode  The name of the parent node to ensure uniqueness in the context of nested elements.
+ * @returns A string representing the unique variable name for the element.
+ */
+export function getElementIdentifier(node: ElementNode, parentNode: string, index: string): string {
+  return parentNode !== ROOT_NODE ? `${parentNode}_${node.tagName}${index}` : `${node.tagName}${index}`;
+}
+
+export function getTextIdentifier(parentNode: string, index: string, prefix = 'text'): string {
+  return parentNode !== ROOT_NODE ? `${parentNode}_${prefix}${index}` : `${prefix}${index}`;
+}
+

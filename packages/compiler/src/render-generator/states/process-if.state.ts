@@ -21,7 +21,7 @@ export function processIf(node: IfNode, nodeName: string, parentNode: string, co
 
   const code = [
     `if (${resolveExpression(node.conditionNode, context)}) {`,
-    ...processConsequent(node, `${nodeName}_t`, parentNode, ifContext),
+    ...processConsequent(node, nodeName, parentNode, ifContext),
     '}'
   ];
 
@@ -31,7 +31,7 @@ export function processIf(node: IfNode, nodeName: string, parentNode: string, co
 
     code[code.length - 1] += ` else if (${resolveExpression(alt.conditionNode, context)}) {`
     code.push(
-      ...processConsequent(alt, `${nodeName}_e`, parentNode, elseIfContext),
+      ...processConsequent(alt, nodeName, parentNode, elseIfContext),
       '}'
     );
     alt = alt.alternate;
@@ -41,7 +41,7 @@ export function processIf(node: IfNode, nodeName: string, parentNode: string, co
     const elseContext = new Context([], context);
     code[code.length - 1] += ' else {';
     code.push(
-      ...processConsequent(alt, `${nodeName}_e`, parentNode, elseContext),
+      ...processConsequent(alt, nodeName, parentNode, elseContext),
       '}'
     );
   }
@@ -50,5 +50,5 @@ export function processIf(node: IfNode, nodeName: string, parentNode: string, co
 }
 
 function processConsequent(node: IfNode | ElseIfNode | ElseNode, nodeName: string, parentNode: string, context: Context): string[] {
-  return node.consequent.map((child, idx) => indent(...processNode(child, `${nodeName}_c${idx}`, parentNode, context))).flat();
+  return node.consequent.map((child, i) => indent(...processNode(child, `${nodeName}_${i}`, parentNode, context))).flat();
 }

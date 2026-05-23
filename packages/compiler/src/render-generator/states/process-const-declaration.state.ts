@@ -1,5 +1,6 @@
 import { ConstDeclarationNode } from '../../parser/types/nodes/const-declaration-node.type.js';
 import { Context } from '../models/render-context.model.js';
+import { resolveExpression } from '../utils/render-generator.utils.js';
 
 /**
  * Generates code for a `@const` declaration node.
@@ -15,6 +16,6 @@ export function processConstDeclaration(node: ConstDeclarationNode, _nodeName: s
   context.addIdentifier(node.varName);
   
   return [
-    `const ${node.varName} = ${node.expression};`
+    `const ${node.varName} = ${resolveExpression(node.expression, context)};`
   ];
 }

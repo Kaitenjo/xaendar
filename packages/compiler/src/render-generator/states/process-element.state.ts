@@ -1,6 +1,7 @@
 import { ElementNode } from '../../parser/types/nodes/element-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
+import { getElementIdentifier, resolveExpression } from '../utils/render-generator.utils.js';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -14,12 +15,13 @@ import { processNode } from '../render-generator.js';
  */
 export function processElement(node: ElementNode, nodeName: string, parentNode: string, context: Context): string[] {
   const childrenContext = new Context([], context);
+  const tagName = node.tagName;
 
   return [
-    `const ${nodeName} = document.createElement("${node.tagName}");`,
-    ...(node.attributes?.map(attr => `${nodeName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `this.${attr.value.expression}`});`) || []),
-    ...(node.events?.map(event => `${nodeName}.addEventListener("${event.name}", this.${event.handler}.bind(this));`) || []),
+    `const ${nodeName} = document.createElement("${tagName}");`,
+    ...(node.attributes?.map(attr => `${nodeName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `${resolveExpression(attr.value.expression, context)}`});`) || []),
+    ...(node.events?.map(event => `${nodeName}.addEventListener("${event.name}", ($event) => this.${event.handler}.bind(this));`) || []),
     `${parentNode}.appendChild(${nodeName});`,
-    ...(node.children.map((child, i) => processNode(child, `${nodeName}_c${i}`, nodeName, childrenContext)).flat())
+    ...(node.children.map((child, i) => processNode(child, i.toString(), nodeName, childrenContext)).flat())
   ];
 }

@@ -1,4 +1,4 @@
-import { TokenType } from "@xaendar/compiler"
+import { TokenType } from "../../lexer/types/token-type.enum"
 import { ConstDeclarationToken } from "../../lexer/types/tokens/const-declaration-token.type"
 import { ForToken } from "../../lexer/types/tokens/for-token.type"
 import { IfToken } from "../../lexer/types/tokens/if-token.type"

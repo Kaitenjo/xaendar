@@ -6,24 +6,6 @@
  * It won't appear by intellisense but it's there.
  */
 export class BaseWebComponent extends HTMLElement {
-
-  public static rendererTimes = 0;
-
-  /**
-   * Flag to track if the component has been initialized
-   * When istance is created, the flag is false
-   * After the connectedCallback has been called and all the attributes
-   * have been reflected on the relatives properties, the flag is set to true
-   * 
-   * This prevents the render method to be called by the properties setters
-   * before the component is fully initialized.
-   * 
-   * Otherwise the render function would be called N times where N is the
-   * number of properties decorated with @Property and specified as attributes
-   * on the CustomElement tag in the HTML
-  */
-  private _initialized = false;
-
   private readonly _root: ShadowRoot;
 
   constructor() {
@@ -36,11 +18,7 @@ export class BaseWebComponent extends HTMLElement {
    * update the rendering of the component
    * @internal 
    */
-  public internalRender(): void {
-    if (this._initialized) {
-      console.warn('Render times:', ++BaseWebComponent.rendererTimes);
-    }
-  }
+  private _render(): void { }
 
   /**
    * Method automatically called by the JavascriptEngine when an attribute
@@ -69,8 +47,7 @@ export class BaseWebComponent extends HTMLElement {
    * This method is called EVERY time the element is added
    */
   private connectedCallback(): void {
-    this._initialized = true;
-    this.internalRender();
+    this._render();
   }
 
   /**
@@ -84,6 +61,5 @@ export class BaseWebComponent extends HTMLElement {
    * the properties initialization won't call the render method
    */
   private disconnectedCallback(): void {
-    this._initialized = false
   }
 }

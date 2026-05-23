@@ -29,7 +29,6 @@ export function Property<
         const oldValue = classInstance[internalPropertyKey]!;
         if (oldValue !== value) {
           classInstance[internalPropertyKey] = value;
-          classInstance.internalRender();
         }
       },
       init(initialValue: Field) {

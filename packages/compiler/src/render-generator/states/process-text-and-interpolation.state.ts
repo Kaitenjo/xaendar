@@ -17,6 +17,7 @@ import { resolveExpression } from '../utils/render-generator.utils.js';
  */
 export function processTextAndInterpolation(node: TextNode | InterpolationNode, nodeName: string, parentNode: string, context: Context): string[] {
   const textValue = node.type === ASTNodeType.Text ? JSON.stringify(node.value) : resolveExpression(node.expression, context);
+
   return [
     `const ${nodeName} = document.createTextNode(${textValue});`,
     `${parentNode}.appendChild(${nodeName});`

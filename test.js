@@ -1,113 +1,143 @@
+_render() {
+  const label0 = document.createElement("label");
+  label0.setAttribute('for', this.id);
+  label0.setAttribute('aria-label', this.label);
+  label0.setAttribute('placeholder', this.placeholder);
+  label0.addEventListener("input", ($event) => this.onInput.bind(this));
+  this._root.appendChild(label0);
+  const label0_text0 = document.createTextNode(this.label);
+  label0.appendChild(label0_text0);
+  
+  const test = this.user.name;
+  
+  this.control_flow_if_2();
+  
+  this.control_flow_for_3();
+  
+  this.control_flow_switch_4();
+  
+  this.control_flow_switch_5();
+  
+  const input6 = document.createElement("input");
+  input6.setAttribute('id', this.id);
+  input6.setAttribute('type', "text");
+  input6.setAttribute('value', this.`${value} asd test`);
+  input6.setAttribute('placeholder', this.placeholder);
+  input6.addEventListener("change", ($event) => this.onChange($event).bind(this));
+  this._root.appendChild(input6);
+  
+}
 
-const shadow = this.shadowRoot!;
-
-const node0 = document.createElement("label");
-node0.setAttribute('for', this.id);
-node0.setAttribute('aria-label', this.label);
-node0.setAttribute('placeholder', this.placeholder);
-node0.addEventListener("input", this.onInput.bind(this));
-shadow.appendChild(node0);
-const node0_c0 = document.createTextNode(this.label);
-node0.appendChild(node0_c0);
-const test = user.name;
-if ((this.a || this.b) && this.c || this.id !== 'boolean' || this.pippo instanceof HTMLElement || this.id && this.id.length > 0) {
-  const test2 = user.name;
-  const test3 = user.name;
-  const node2_t_c2 = document.createElement("span");
-  shadow.appendChild(node2_t_c2);
-  const node2_t_c2_c0 = document.createTextNode("Id is present");
-  node2_t_c2.appendChild(node2_t_c2_c0);
-} else if (true) {
-  const node2_e_c0 = document.createElement("span");
-  shadow.appendChild(node2_e_c0);
-  const node2_e_c0_c0 = document.createTextNode("Id is missing");
-  node2_e_c0.appendChild(node2_e_c0_c0);
+control_flow_if_2() {
   if ((this.a || this.b) && this.c || this.id !== 'boolean' || this.pippo instanceof HTMLElement || this.id && this.id.length > 0) {
-    const test2 = user.name;
-    const test3 = user.name;
-    const node2_e_c1_t_c2 = document.createElement("span");
-    shadow.appendChild(node2_e_c1_t_c2);
-    const node2_e_c1_t_c2_c0 = document.createTextNode("Id is present");
-    node2_e_c1_t_c2.appendChild(node2_e_c1_t_c2_c0);
-  } else {
-    const node2_e_c1_e_c0 = document.createElement("span");
-    shadow.appendChild(node2_e_c1_e_c0);
-    const node2_e_c1_e_c0_c0 = document.createTextNode("Id is missing");
-    node2_e_c1_e_c0.appendChild(node2_e_c1_e_c0_c0);
-    if ((this.a || this.b) && this.c || this.id !== 'boolean' || this.pippo instanceof HTMLElement || this.id && this.id.length > 0) {
-      const test2 = user.name;
-      const test3 = user.name;
-      const node2_e_c1_e_c1_t_c2 = document.createElement("span");
-      shadow.appendChild(node2_e_c1_e_c1_t_c2);
-      const node2_e_c1_e_c1_t_c2_c0 = document.createTextNode("Id is present");
-      node2_e_c1_e_c1_t_c2.appendChild(node2_e_c1_e_c1_t_c2_c0);
-    } else {
-      const node2_e_c1_e_c1_e_c0 = document.createElement("span");
-      shadow.appendChild(node2_e_c1_e_c1_e_c0);
-      const node2_e_c1_e_c1_e_c0_c0 = document.createTextNode("Id is missing");
-      node2_e_c1_e_c1_e_c0.appendChild(node2_e_c1_e_c1_e_c0_c0);
+    const test2 = this.user.name;
+    const test3 = this.user.name;
+    const span2_2 = document.createElement("span");
+    this._root.appendChild(span2_2);
+    const span2_2_text0 = document.createTextNode("Id is present");
+    span2_2.appendChild(span2_2_text0);
+  } else if (true) {
+    const span2_0 = document.createElement("span");
+    this._root.appendChild(span2_0);
+    const span2_0_text0 = document.createTextNode("Id is missing");
+    span2_0.appendChild(span2_0_text0);
+    this.control_flow_if_2_1();
+  }
+}
+
+control_flow_for_3() {
+  const items3 = this.items;
+  for (let i3 = 0; i3 < items3.length; i3++) {
+    const item = items3[i3];
+    const i = i3;
+    const $first = i3 === 0;
+    const $last = i3 === items3.length - 1;
+    const $even = i3 % 2 === 0;
+    const $odd = i3 % 2 !== 0;
+    
+    const test3 = this.user.name;
+    const div3_1 = document.createElement("div");
+    this._root.appendChild(div3_1);
+    const div3_1_text0 = document.createTextNode(item);
+    div3_1.appendChild(div3_1_text0);
+  }
+}
+
+control_flow_switch_4() {
+  switch (this.status) {
+    case 'loading':
+    case 'error': {
+      const div4_0_0 = document.createElement("div");
+      this._root.appendChild(div4_0_0);
+      const div4_0_0_text0 = document.createTextNode("Loading...");
+      div4_0_0.appendChild(div4_0_0_text0);
+      break;
+    }
+    default: {
+      const div4_0_0 = document.createElement("div");
+      this._root.appendChild(div4_0_0);
+      const div4_0_0_text0 = document.createTextNode("Content");
+      div4_0_0.appendChild(div4_0_0_text0);
+      break;
     }
   }
 }
-const node3_items = this.items;
-for (let $i_node3 = 0; $i_node3 < node3_items.length; $i_node3++) {
-  const item = node3_items[$i_node3];
-  const i = $i_node3;
-  const $first = $i_node3 === 0;
-  const $last = $i_node3 === node3_items.length - 1;
-  const $even = $i_node3 % 2 === 0;
-  const $odd = $i_node3 % 2 !== 0;
-  
-  const test3 = user.name;
-  const node3_f1 = document.createElement("div");
-  shadow.appendChild(node3_f1);
-  const node3_f1_c0 = document.createTextNode(item);
-  node3_f1.appendChild(node3_f1_c0);
-}
-switch (this.status) {
-  case 'loading':
-  case 'error': {
-    const node4_s0_0 = document.createElement("div");
-    shadow.appendChild(node4_s0_0);
-    const node4_s0_0_c0 = document.createTextNode("Loading...");
-    node4_s0_0.appendChild(node4_s0_0_c0);
-    break;
-  }
-  default: {
-    const node4_s0_0 = document.createElement("div");
-    shadow.appendChild(node4_s0_0);
-    const node4_s0_0_c0 = document.createTextNode("Content");
-    node4_s0_0.appendChild(node4_s0_0_c0);
-    break;
+
+control_flow_switch_5() {
+  switch (this.status) {
+    case 'loading': {
+      const div5_0_0 = document.createElement("div");
+      this._root.appendChild(div5_0_0);
+      const div5_0_0_text0 = document.createTextNode("Loading...");
+      div5_0_0.appendChild(div5_0_0_text0);
+      break;
+    }
+    case 'error': {
+      const div5_0_0 = document.createElement("div");
+      this._root.appendChild(div5_0_0);
+      const div5_0_0_text0 = document.createTextNode("Error!");
+      div5_0_0.appendChild(div5_0_0_text0);
+      break;
+    }
+    default: {
+      const div5_0_0 = document.createElement("div");
+      this._root.appendChild(div5_0_0);
+      const div5_0_0_text0 = document.createTextNode("Content");
+      div5_0_0.appendChild(div5_0_0_text0);
+      break;
+    }
   }
 }
-switch (this.status) {
-  case 'loading': {
-    const node5_s0_0 = document.createElement("div");
-    shadow.appendChild(node5_s0_0);
-    const node5_s0_0_c0 = document.createTextNode("Loading...");
-    node5_s0_0.appendChild(node5_s0_0_c0);
-    break;
-  }
-  case 'error': {
-    const node5_s0_0 = document.createElement("div");
-    shadow.appendChild(node5_s0_0);
-    const node5_s0_0_c0 = document.createTextNode("Error!");
-    node5_s0_0.appendChild(node5_s0_0_c0);
-    break;
-  }
-  default: {
-    const node5_s0_0 = document.createElement("div");
-    shadow.appendChild(node5_s0_0);
-    const node5_s0_0_c0 = document.createTextNode("Content");
-    node5_s0_0.appendChild(node5_s0_0_c0);
-    break;
+
+control_flow_if_2_1() {
+  if ((this.a || this.b) && this.c || this.id !== 'boolean' || this.pippo instanceof HTMLElement || this.id && this.id.length > 0) {
+    const test2 = this.user.name;
+    const test3 = this.user.name;
+    const span2_1_2 = document.createElement("span");
+    this._root.appendChild(span2_1_2);
+    const span2_1_2_text0 = document.createTextNode("Id is present");
+    span2_1_2.appendChild(span2_1_2_text0);
+  } else {
+    const span2_1_0 = document.createElement("span");
+    this._root.appendChild(span2_1_0);
+    const span2_1_0_text0 = document.createTextNode("Id is missing");
+    span2_1_0.appendChild(span2_1_0_text0);
+    this.control_flow_if_2_1_1();
   }
 }
-const node6 = document.createElement("input");
-node6.setAttribute('id', this.id);
-node6.setAttribute('type', "text");
-node6.setAttribute('value', this.value + '' + 'asd' + ' ' + "test" );
-node6.setAttribute('placeholder', this.placeholder);
-node6.addEventListener("change", this.onChange($event).bind(this));
-shadow.appendChild(node6);
+
+control_flow_if_2_1_1() {
+  if ((this.a || this.b) && this.c || this.id !== 'boolean' || this.pippo instanceof HTMLElement || this.id && this.id.length > 0) {
+    const test2 = this.user.name;
+    const test3 = this.user.name;
+    const span2_1_1_2 = document.createElement("span");
+    this._root.appendChild(span2_1_1_2);
+    const span2_1_1_2_text0 = document.createTextNode("Id is present");
+    span2_1_1_2.appendChild(span2_1_1_2_text0);
+  } else {
+    const span2_1_1_0 = document.createElement("span");
+    this._root.appendChild(span2_1_1_0);
+    const span2_1_1_0_text0 = document.createTextNode("Id is missing");
+    span2_1_1_0.appendChild(span2_1_1_0_text0);
+  }
+}

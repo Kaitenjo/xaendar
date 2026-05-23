@@ -1,3 +1,4 @@
+import { NoArgsFunction } from "@xaendar/types";
 import { ASTNode } from "../parser/types/ast.type.js";
 import { ASTNodeType } from "../parser/types/node.enum.js";
 import { Context } from "./models/render-context.model.js";
@@ -7,6 +8,9 @@ import { processFor } from "./states/process-for.state.js";
 import { processIf } from "./states/process-if.state.js";
 import { processSwitch } from "./states/process-switch.state.js";
 import { processTextAndInterpolation } from "./states/process-text-and-interpolation.state.js";
+import { getElementIdentifier, getTextIdentifier, indent, ROOT_NODE } from "./utils/render-generator.utils.js";
+
+let nodeToProcess = new Map<string, NoArgsFunction<string[]>>;
 
 /**
  * Generates the TypeScript body of a render function from an AST.
@@ -15,13 +19,29 @@ import { processTextAndInterpolation } from "./states/process-text-and-interpola
  * @returns String containing the render function body
  */
 export function generateRenderFunction(ast: ASTNode[]): string {
+  nodeToProcess.clear();
   const context = new Context;
 
-  return [`
-const shadow = this.shadowRoot!;
-`,
-    ...ast.map((node, i) => processNode(node, `node${i}`, 'shadow', context)).flat()
-  ].join("\n");
+  const renderFunctions = [
+    '_render() {',
+    ...indent(
+      ...ast.map((node, i) => [...processNode(node, i.toString(), ROOT_NODE, context), '']).flat()
+    ),
+    '}',
+  ]
+
+  while (nodeToProcess.size > 0) {
+    const [key, fn] = nodeToProcess.entries().next().value!;
+    renderFunctions.push(
+      '',
+      `${key} {`,
+      ...indent(...fn()),
+      '}',
+    );
+    nodeToProcess.delete(key);
+  }
+
+  return renderFunctions.join("\n");
 }
 
 /**
@@ -33,19 +53,25 @@ export function processNode(node: ASTNode, nodeName: string, parentNode: string,
   switch (node.type) {
     case ASTNodeType.Text:
     case ASTNodeType.Interpolation:
-      return processTextAndInterpolation(node, nodeName, parentNode, context);
+      return processTextAndInterpolation(node, getTextIdentifier(parentNode, nodeName), parentNode, context);
 
     case ASTNodeType.Element:
-      return processElement(node, nodeName, parentNode, context);
+      return processElement(node, getElementIdentifier(node, parentNode, nodeName), parentNode, context);
 
     case ASTNodeType.If:
-      return processIf(node, nodeName, parentNode, context);
+      const keyIf = `control_flow_if_${nodeName}()`
+      nodeToProcess.set(keyIf, () => processIf(node, nodeName, parentNode, context));
+      return [`this.${keyIf};`];
 
     case ASTNodeType.For:
-      return processFor(node, nodeName, parentNode, context);
+      const keyFor = `control_flow_for_${nodeName}()`
+      nodeToProcess.set(keyFor, () => processFor(node, nodeName, parentNode, context));
+      return [`this.${keyFor};`];
 
     case ASTNodeType.Switch:
-      return processSwitch(node, nodeName, parentNode, context);
+      const keySwitch = `control_flow_switch_${nodeName}()`
+      nodeToProcess.set(keySwitch, () => processSwitch(node, nodeName, parentNode, context));
+      return [`this.${keySwitch};`];
 
     case ASTNodeType.ConstDeclaration:
       return processConstDeclaration(node, nodeName, parentNode, context);
