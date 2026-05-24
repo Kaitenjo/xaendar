@@ -10,7 +10,7 @@ import { processSwitch } from "./states/process-switch.state.js";
 import { processTextAndInterpolation } from "./states/process-text-and-interpolation.state.js";
 import { getElementIdentifier, getTextIdentifier, indent, ROOT_NODE } from "./utils/render-generator.utils.js";
 
-let nodeToProcess = new Map<string, NoArgsFunction<string[]>>;
+const nodeToProcess = new Map<string, NoArgsFunction<string[]>>;
 
 /**
  * Generates the TypeScript body of a render function from an AST.
@@ -18,13 +18,14 @@ let nodeToProcess = new Map<string, NoArgsFunction<string[]>>;
  * @param ast Top-level AST nodes produced by the Parser
  * @returns String containing the render function body
  */
-export function generateRenderFunction(ast: ASTNode[]): string {
+export function generateRenderFunction(ast: ASTNode[], cssVariableName: string): string {
   nodeToProcess.clear();
   const context = new Context;
 
   const renderFunctions = [
     '_render() {',
     ...indent(
+      `this._root.adoptedStyleSheets = [${cssVariableName}];`,
       ...ast.map((node, i) => [...processNode(node, i.toString(), ROOT_NODE, context), '']).flat()
     ),
     '}',

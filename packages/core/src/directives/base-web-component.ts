@@ -6,6 +6,9 @@
  * It won't appear by intellisense but it's there.
  */
 export class BaseWebComponent extends HTMLElement {
+  /**
+   * The root of the Web Component, where the content is rendered
+   */
   private readonly _root: ShadowRoot;
 
   constructor() {
