@@ -1,6 +1,6 @@
 {
   "name": "xaendar",
-  "version": "0.3.18",
+  "version": "0.3.20",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
@@ -20,7 +20,7 @@
     "start:browser": "vite",
     "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
     "update-version": "npm run update-version --prefix schematics",
-    "xd": "node --import tsx/esm packages/cli/src/index.ts new backoffice --path src --style scss"
+    "xd": "node dist/@xaendar/cli/index.js new backoffice --path src --style css"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",
