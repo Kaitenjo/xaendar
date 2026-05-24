@@ -14,7 +14,10 @@ export function tsconfigJson(): string {
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext", 
+      "DOM"
+    ],
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
@@ -30,7 +33,10 @@ export function tsconfigJson(): string {
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
-}
-`;
+  "exclude": [
+    "dist", 
+    "node_modules", 
+    "**/*.spec.ts"
+  ]
+}`;
 }

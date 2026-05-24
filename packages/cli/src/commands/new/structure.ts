@@ -100,18 +100,19 @@ function readCliVersion(): string {
  */
 export function buildStructure(context: ProjectContext): Entry[] {
   const version = readCliVersion();
-  const componentName = context.name;
+  const name = context.name;
+  const componentName = `${name}-root`;
 
   return [
     {
       type: 'file',
       name: 'package.json',
-      content: packageJson(componentName, version),
+      content: packageJson(name, version),
     },
     {
       type: 'file',
       name: 'xaendar.json',
-      content: xaendarJson(componentName, context.style),
+      content: xaendarJson(name, context.style),
     },
     {
       type: 'file',

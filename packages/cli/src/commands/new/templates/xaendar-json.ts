@@ -16,6 +16,5 @@ export function xaendarJson(name: string, style: string): string {
       "style": "${style}"
     }
   }
-}
-`;
+}`;
 }

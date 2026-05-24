@@ -4,8 +4,9 @@
  * @returns The formatted TypeScript source string.
  */
 export function viteConfigTs(): string {
-  return `import { defineConfig } from 'vite';
-import { xaendarPlugin } from '@xaendar/build-tools';
+  return `import babel from "@rolldown/plugin-babel";
+import { xaendarPlugin } from "@xaendar/build-tools";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: 'src',
@@ -13,7 +14,27 @@ export default defineConfig({
     open: true,
     port: 4200
   },
-  plugins: [xaendarPlugin()],
-});
-`;
+  plugins: [
+    babel({
+      presets: [
+        {
+          preset: () => ({
+            plugins: [
+              [
+                "@babel/plugin-proposal-decorators",
+                { version: "2023-11" }
+              ]
+            ]
+          }),
+          rolldown: {
+            filter: {
+              code: "@"
+            }
+          }
+        }
+      ]
+    }),
+    xaendarPlugin()
+  ]
+});`;
 }

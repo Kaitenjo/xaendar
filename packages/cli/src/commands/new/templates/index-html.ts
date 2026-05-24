@@ -11,7 +11,6 @@
  * @returns The formatted HTML string.
  */
 export function indexHtml(name: string): string {
-  const selector = `${name}-root`;
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -20,9 +19,8 @@ export function indexHtml(name: string): string {
     <title>${name}</title>
   </head>
   <body>
-    <${selector}></${selector}>
+    <${name}></${name}>
     <script type="module" src="./main.ts"></script>
   </body>
-</html>
-`;
+</html>`;
 }

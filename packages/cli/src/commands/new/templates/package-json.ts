@@ -22,6 +22,8 @@ export function packageJson(name: string, version: string): string {
     "@xaendar/types": "^${version}"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.29.0",
+    "@rolldown/plugin-babel": "^0.2.3",
     "@vitest/coverage-v8": "^4.1.7",
     "@xaendar/build-tools": "^${version}",
     "@xaendar/cli": "^${version}",

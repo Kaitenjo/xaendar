@@ -1,4 +1,4 @@
-import { toPascalCase } from "../../generate/component/component.command";
+import { toPascalCase } from '../../../utils/case.utils';
 
 /**
  * Generates the content of the project entry point `src/main.ts`.
@@ -8,7 +8,7 @@ import { toPascalCase } from "../../generate/component/component.command";
  * component so its `@Component` decorator runs and registers the custom
  * element with the browser.
  *
- * @param selector - The root component selector derived from the project
+ * @param componentName - The root component name derived from the project
  *   name (e.g. `app` → `'./app/app.component.js'`).
  * @returns The formatted TypeScript source string.
  */
@@ -18,6 +18,5 @@ export function mainTs(componentName: string): string {
 import { ${componentClassName} } from './${componentName}/${componentName}.xd.component';
 
 console.log(${componentClassName});
-loadSignals();
-`;
+loadSignals();`;
 }
