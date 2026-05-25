@@ -40,7 +40,15 @@ export class BaseWebComponent extends HTMLElement {
       We are sure that the property with the given name exists on the instance of the subclass
     */
     const context = this as BaseWebComponent & Record<string, unknown>;
-    context[name] = newValue;
+    if (!(name in context)) {
+      throw new Error(`Attribute ${name} is not associated to any property`);
+    }
+
+    if (!(context[name] instanceof Signal.State)) {
+      throw new Error(`Property ${name} is not a Signal.State`);
+    }
+
+    context[name].set(newValue);
   }
 
   /**

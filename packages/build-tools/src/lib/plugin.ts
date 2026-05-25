@@ -1,7 +1,7 @@
 import { compile } from '@xaendar/compiler';
-import { basename, dirname, extname, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import type { Plugin } from 'vite';
-import { COMPONENT_FILE_RE, STYLE_EXTENSION, TEMPLATE_EXTENSION } from './costants.js';
+import { COMPONENT_FILE_RE } from './costants.js';
 import { NodeCompilerHost } from './node-compiler-host.model.js';
 
 /**
@@ -41,13 +41,14 @@ export function xaendarPlugin(): Plugin {
         return null;
       }
 
-      const templatePath = resolveTemplatePath(id);
-      this.addWatchFile(templatePath);
+      const { templatePath, stylePath } = extractDecoratorPaths(code, dirname(id));
 
-      if (!host.fileExists(templatePath)) {
+      if (!templatePath || !host.fileExists(templatePath)) {
         this.warn(`Xaendar: could not find template at ${templatePath}`);
         return null;
       }
+
+      this.addWatchFile(templatePath);
 
       const templateSource = host.readFile(templatePath);
       if (templateSource === undefined) {
@@ -55,17 +56,16 @@ export function xaendarPlugin(): Plugin {
         return null;
       }
 
-
-      const stylePath = resolveStylePath(id);
       let cssContent = '';
 
-      if (host.fileExists(stylePath)) {
+      if (stylePath && host.fileExists(stylePath)) {
         this.addWatchFile(stylePath);
         cssContent = host.readFile(stylePath) ?? '';
       }
 
       let compiledMethods!: string;
-      const varName = getStyleVariableName(extractClassName(code));
+      const varName = `__${extractClassName(id)}_sheet`
+      ;
       try {
         compiledMethods = compile(templateSource, varName);
       } catch (err) {
@@ -86,51 +86,14 @@ export function xaendarPlugin(): Plugin {
   };
 }
 
-/**
- * Extracts the component name from the given file path by removing the directory
- * and file extension, and taking the first segment of the remaining base name.
- *
- * For example, given `src/components/app.xd.component.ts`, it will return `app`.
- * @param componentPath - The absolute path of the component file.
- * @returns The extracted component name.
- */
-function extractComponentName(componentPath: string): string {
-  const base = basename(componentPath, extname(componentPath));
-  return base.split('.')[0]!;
-}
+function extractDecoratorPaths(jsSource: string, componentDir: string): { templatePath: string | undefined; stylePath: string | undefined } {
+  const templateUrl = jsSource.match(/templateUrl\s*:\s*["'](.+?)["']/)?.[1];
+  const styleUrl = jsSource.match(/styleUrl\s*:\s*["'](.+?)["']/)?.[1];
 
-/**
- * Resolves the absolute path of the template file associated with a given
- * component `.ts` file, following the convention:
- *
- * ```
- * app.xd.component.ts  →  app.xd.component.html
- * ```
- *
- * @param componentPath - Absolute path of the component TypeScript file.
- * @returns Absolute path of the associated template file.
- */
-function resolveTemplatePath(componentPath: string): string {
-  const dir = dirname(componentPath);
-  const base = extractComponentName(componentPath);
-  return resolve(dir, `${base}${TEMPLATE_EXTENSION}`);
-}
-
-/**
- * Resolves the absolute path of the style file associated with a given
- * component `.css` file, following the convention:
- *
- * ```
- * app.xd.component.ts  →  app.xd.component.css
- * ```
- *
- * @param componentPath - Absolute path of the component TypeScript file.
- * @returns Absolute path of the associated style file.
- */
-function resolveStylePath(componentPath: string, ext = 'css'): string {
-  const dir = dirname(componentPath);
-  const base = extractComponentName(componentPath);
-  return resolve(dir, `${base}${STYLE_EXTENSION(ext)}`);
+  return {
+    templatePath: templateUrl ? resolve(componentDir, templateUrl) : undefined,
+    stylePath: styleUrl ? resolve(componentDir, styleUrl) : undefined,
+  };
 }
 
 /**
@@ -173,11 +136,12 @@ function injectRenderMethods(jsSource: string, compiledMethods: string, varName:
     throw new Error('Xaendar: could not find the static initializer block in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.');
   }
  
+  result = `import { effect } from "@xaendar/signals";\nimport { loadSignals } from '@xaendar/signals';\nloadSignals();\n${result}`;
   return result.replace(lastStaticBlock, (_, indent, initFn) => `${compiledMethods}\n  static {\n${indent}${initFn}();\n  }`);;
 }
-
 /**
  * Extracts the class name from the Babel-transpiled JS source.
+
  *
  * Babel always emits `class ClassName extends ...` so this is safe to match.
  * Used to generate a unique name for the per-class CSSStyleSheet variable
@@ -190,21 +154,6 @@ function injectRenderMethods(jsSource: string, compiledMethods: string, varName:
 function extractClassName(jsSource: string): string {
   const match = jsSource.match(/class\s+(\w+)\s+extends/);
   return match?.[1] ?? '__Component';
-}
- 
-/**
- * Escapes a CSS string so it can be safely embedded inside a JS template
- * literal (backtick string). Escapes backticks and `${` sequences that
- * would otherwise be interpreted as template literal syntax.
- *
- * @param css - Raw CSS content read from disk.
- * @returns The escaped CSS string.
- */
-function escapeCssForTemplateLiteral(css: string): string {
-  return css
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
 }
  
 /**
@@ -221,17 +170,12 @@ function escapeCssForTemplateLiteral(css: string): string {
  * @returns A JS snippet string ending with a newline.
  */
 function buildStyleSnippet(varName: string, css: string): string {
-  const escaped = escapeCssForTemplateLiteral(css);
+  const escaped = css.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
   return [
     `const ${varName} = new CSSStyleSheet();`,
     `${varName}.replaceSync(\`${escaped}\`);`,
     '',
   ].join('\n');
-}
-
-
-function getStyleVariableName(className: string): string {
-  return `__${className}_sheet`;
 }
 
 /**

@@ -19,8 +19,13 @@ export function processElement(node: ElementNode, nodeName: string, parentNode: 
 
   return [
     `const ${nodeName} = document.createElement("${tagName}");`,
-    ...(node.attributes?.map(attr => `${nodeName}.setAttribute('${attr.name}', ${typeof attr.value === "string" ? attr.value : `${resolveExpression(attr.value.expression, context)}`});`) || []),
-    ...(node.events?.map(event => `${nodeName}.addEventListener("${event.name}", ($event) => this.${event.handler}.bind(this));`) || []),
+    ...(node.attributes?.map(attr => {
+      const value = attr.value;
+      return typeof value === "string" 
+        ? `${nodeName}.setAttribute('${attr.name}', ${value});`
+        : `effect(() => ${nodeName}.setAttribute('${attr.name}', ${resolveExpression(value.expression, context)}));`
+    }) || []),
+    ...(node.events?.map(event => `${nodeName}.addEventListener("${event.name}", ($event) => this.${event.handler});`) || []),
     `${parentNode}.appendChild(${nodeName});`,
     ...(node.children.map((child, i) => processNode(child, i.toString(), nodeName, childrenContext)).flat())
   ];

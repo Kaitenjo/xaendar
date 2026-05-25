@@ -33,7 +33,7 @@ export function consumeEvent(cursor: LexerCursor, _context: LexerTransitionFunct
           Ex: @click="onClick" can be written as @click, and the emitted token will have "onClick" as part
         */
         if (!event.includes('=')) {
-          event = `${event}=on${event[0]!.toUpperCase()}${event.slice(1)}`;
+          event = `${event}=on${event[0]!.toUpperCase()}${event.slice(1)}($event)`;
         }
 
         retVal = {

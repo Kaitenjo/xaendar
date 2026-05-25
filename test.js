@@ -1,4 +1,5 @@
 _render() {
+  this._root.adoptedStyleSheets = [];
   const label0 = document.createElement("label");
   label0.setAttribute('for', this.id);
   label0.setAttribute('aria-label', this.label);
@@ -21,7 +22,7 @@ _render() {
   const input6 = document.createElement("input");
   input6.setAttribute('id', this.id);
   input6.setAttribute('type', "text");
-  input6.setAttribute('value', this.`${value} asd test`);
+  input6.setAttribute('value', this.value + 'test');
   input6.setAttribute('placeholder', this.placeholder);
   input6.addEventListener("change", ($event) => this.onChange($event).bind(this));
   this._root.appendChild(input6);

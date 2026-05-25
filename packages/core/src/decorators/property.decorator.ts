@@ -1,41 +1,17 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
-import { INTERNAL_OBSERVED_ATTRIBUTES, INTERNAL_PREFIX } from '../costants';
+import { INTERNAL_OBSERVED_ATTRIBUTES } from '../costants';
 import { BaseWebComponent } from '../directives/base-web-component';
-import { PropertyDecoratorParams } from '../types/property-decorator-params.type';
+import { PropertyDecoratorOptions } from '../types/property-decorator-params.type';
 
-export function Property<
-  Class extends BaseWebComponent,
-  Field
-  >(params?: PropertyDecoratorParams): AccessorDecorator<Class, Field> {
-  return function (_value: ClassAccessorDecoratorValue<Field>, context: ClassAccessorDecoratorContext<Class, Field>): ReturnType<AccessorDecorator<Class, Field>> {
-    context.metadata![INTERNAL_OBSERVED_ATTRIBUTES] ??= new Array<string>;
-    (context.metadata![INTERNAL_OBSERVED_ATTRIBUTES] as string[]).push(context.name as string);
-  
-    const propertyKey = context.name as string;
-    const internalPropertyKey = `${INTERNAL_PREFIX}${propertyKey}`
-    
-    return {
-      get() {
-        const classInstance = (this as BaseWebComponent & Record<typeof internalPropertyKey, Field>);
-        return classInstance[`${INTERNAL_PREFIX}${propertyKey}`]!;
-      },
-      set(value: Field) {
-        const classInstance = (this as BaseWebComponent & Record<typeof internalPropertyKey, Field>);
+export function Property<Class extends BaseWebComponent, Value, ActualValue = Value>(params?: PropertyDecoratorOptions<Value, ActualValue>) {
+  return function (_target: undefined, context: ClassFieldDecoratorContext<Class, Value>): void {
+    const propertyKey = context.name;
 
-        if (params?.required && !value) {
-          throw new Error(`Property '${propertyKey}' is required, current value: ${value}`);
-        }
+    if (typeof propertyKey === 'symbol') {
+      throw new Error('Symbol properties are not supported');
+    }
 
-        const oldValue = classInstance[internalPropertyKey]!;
-        if (oldValue !== value) {
-          classInstance[internalPropertyKey] = value;
-        }
-      },
-      init(initialValue: Field) {
-        const classInstance = (this as BaseWebComponent & Record<typeof internalPropertyKey, Field>);
-        classInstance[internalPropertyKey] = initialValue;
-        return initialValue;
-      }
-    };
-  }
+    const metadata = context.metadata as { [INTERNAL_OBSERVED_ATTRIBUTES]?: string[] };
+    metadata[INTERNAL_OBSERVED_ATTRIBUTES] ??= [];
+    metadata[INTERNAL_OBSERVED_ATTRIBUTES].push(propertyKey);
+  };
 }

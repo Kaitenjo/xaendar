@@ -20,6 +20,7 @@ export function processTextAndInterpolation(node: TextNode | InterpolationNode, 
 
   return [
     `const ${nodeName} = document.createTextNode(${textValue});`,
-    `${parentNode}.appendChild(${nodeName});`
+    `${parentNode}.appendChild(${nodeName});`,
+    `effect(() => ${nodeName}.textContent = ${textValue});`
   ];
 }

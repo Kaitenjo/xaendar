@@ -1,5 +1,8 @@
 import { compile } from "@xaendar/compiler";
+import { BaseWebComponent, Property, WebComponent } from "@xaendar/core";
+import { loadSignals } from "@xaendar/signals";
 import { writeFileSync } from "fs";
+loadSignals();
 
 let value = '';
 const template = `
@@ -59,7 +62,28 @@ const template = `
       <div>Content</div>
     }
   }
-  <input id={id} type="text" value={ \`\${value} asd test\`} placeholder={placeholder} @change="onChange($event)" />
+  <input id={id} type="text" value={value + 'test'} placeholder={placeholder} @change="onChange($event)" />
   `
 const filePath = 'test.js'
-writeFileSync(filePath, compile(template));
+writeFileSync(filePath, compile(template, ''));
+
+@WebComponent({
+  selector: 'backoffice-root',
+  styleUrl: './backoffice-root.xd.component.css',
+  templateUrl: './backoffice-root.xd.component.html'
+})
+export class BackofficeRootComponent extends BaseWebComponent {
+  @Property()
+  public label!: Signal.State<string>
+  
+  placeholder: string = '';
+  value: string = 'stocazzo';
+
+  onClick() {
+    this.label.set(this.value);
+  }
+
+  onInput(event: InputEvent) {
+    this.value = (event.target as HTMLInputElement).value;
+  }
+}

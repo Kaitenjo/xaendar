@@ -26,7 +26,7 @@ export function generateRenderFunction(ast: ASTNode[], cssVariableName: string):
     '_render() {',
     ...indent(
       `this._root.adoptedStyleSheets = [${cssVariableName}];`,
-      ...ast.map((node, i) => [...processNode(node, i.toString(), ROOT_NODE, context), '']).flat()
+      ...ast.map((node, i) => [...processNode(node, i.toString(), ROOT_NODE, context)]).flat()
     ),
     '}',
   ]
@@ -34,7 +34,6 @@ export function generateRenderFunction(ast: ASTNode[], cssVariableName: string):
   while (nodeToProcess.size > 0) {
     const [key, fn] = nodeToProcess.entries().next().value!;
     renderFunctions.push(
-      '',
       `${key} {`,
       ...indent(...fn()),
       '}',
