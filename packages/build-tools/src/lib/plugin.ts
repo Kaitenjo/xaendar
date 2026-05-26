@@ -42,14 +42,12 @@ export function xaendarPlugin(): Plugin {
       }
 
       const { templatePath, stylePath } = extractDecoratorPaths(code, dirname(id));
-
       if (!templatePath || !host.fileExists(templatePath)) {
         this.warn(`Xaendar: could not find template at ${templatePath}`);
         return null;
       }
 
       this.addWatchFile(templatePath);
-
       const templateSource = host.readFile(templatePath);
       if (templateSource === undefined) {
         this.warn(`Xaendar: could not read template at ${templatePath}`);
@@ -60,25 +58,25 @@ export function xaendarPlugin(): Plugin {
 
       if (stylePath && host.fileExists(stylePath)) {
         this.addWatchFile(stylePath);
-        cssContent = host.readFile(stylePath) ?? '';
+        cssContent = host.readFile(stylePath) ?? "";
       }
 
       let compiledMethods!: string;
-      const varName = `__${extractClassName(id)}_sheet`
-      ;
+      const varName = `__${extractClassName(id)}_sheet`;
+      
       try {
         compiledMethods = compile(templateSource, varName);
       } catch (err) {
-        this.error(`Xaendar: failed to compile template ${templatePath}:\n${String(err)}`);
+        this.error(`Xaendar: failed to compile template ${templatePath}: ${String(err)}`);
       }
-
-      let transformed!: string;
+      
+      let transformed: string;
       try {
         transformed = fixDecoratorExport(injectRenderMethods(code, compiledMethods, varName, cssContent));
       } catch (err) {
         this.error(String(err));
       }
-
+      
       return {
         code: transformed
       };
@@ -86,13 +84,13 @@ export function xaendarPlugin(): Plugin {
   };
 }
 
-function extractDecoratorPaths(jsSource: string, componentDir: string): { templatePath: string | undefined; stylePath: string | undefined } {
+function extractDecoratorPaths(jsSource: string, componentDir: string): { templatePath?: string, stylePath?: string } {
   const templateUrl = jsSource.match(/templateUrl\s*:\s*["'](.+?)["']/)?.[1];
   const styleUrl = jsSource.match(/styleUrl\s*:\s*["'](.+?)["']/)?.[1];
 
   return {
     templatePath: templateUrl ? resolve(componentDir, templateUrl) : undefined,
-    stylePath: styleUrl ? resolve(componentDir, styleUrl) : undefined,
+    stylePath: styleUrl ? resolve(componentDir, styleUrl) : undefined
   };
 }
 
@@ -123,20 +121,23 @@ function extractDecoratorPaths(jsSource: string, componentDir: string): { templa
  */
 function injectRenderMethods(jsSource: string, compiledMethods: string, varName: string, cssContent: string): string {
   const styleSnippet = cssContent.trim().length ? buildStyleSnippet(varName, cssContent) : '';
- 
+
   let result = jsSource;
- 
+
   if (styleSnippet) {
     result = result.replace(/^(class\s+\w+\s+extends)/m, `${styleSnippet}$1`);
   }
- 
+
   const lastStaticBlock = /static\s*\{\s*\n(\s*)(\w+)\(\);\s*\n\s*\}/;
- 
+
   if (!lastStaticBlock.test(result)) {
     throw new Error('Xaendar: could not find the static initializer block in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.');
   }
  
-  result = `import { effect } from "@xaendar/signals";\nimport { loadSignals } from '@xaendar/signals';\nloadSignals();\n${result}`;
+  result = `import { effect } from "@xaendar/signals";
+
+${result}`;
+  
   return result.replace(lastStaticBlock, (_, indent, initFn) => `${compiledMethods}\n  static {\n${indent}${initFn}();\n  }`);;
 }
 /**

@@ -1,3 +1,4 @@
+import { indent } from "@xaendar/common";
 import { NoArgsFunction } from "@xaendar/types";
 import { ASTNode } from "../parser/types/ast.type.js";
 import { ASTNodeType } from "../parser/types/node.enum.js";
@@ -8,7 +9,7 @@ import { processFor } from "./states/process-for.state.js";
 import { processIf } from "./states/process-if.state.js";
 import { processSwitch } from "./states/process-switch.state.js";
 import { processTextAndInterpolation } from "./states/process-text-and-interpolation.state.js";
-import { getElementIdentifier, getTextIdentifier, indent, ROOT_NODE } from "./utils/render-generator.utils.js";
+import { getElementIdentifier, getTextIdentifier, ROOT_NODE } from "./utils/render-generator.utils.js";
 
 const nodeToProcess = new Map<string, NoArgsFunction<string[]>>;
 
@@ -59,17 +60,17 @@ export function processNode(node: ASTNode, nodeName: string, parentNode: string,
       return processElement(node, getElementIdentifier(node, parentNode, nodeName), parentNode, context);
 
     case ASTNodeType.If:
-      const keyIf = `control_flow_if_${nodeName}()`
+      const keyIf = `if_${nodeName}()`
       nodeToProcess.set(keyIf, () => processIf(node, nodeName, parentNode, context));
       return [`this.${keyIf};`];
 
     case ASTNodeType.For:
-      const keyFor = `control_flow_for_${nodeName}()`
+      const keyFor = `for_${nodeName}()`
       nodeToProcess.set(keyFor, () => processFor(node, nodeName, parentNode, context));
       return [`this.${keyFor};`];
 
     case ASTNodeType.Switch:
-      const keySwitch = `control_flow_switch_${nodeName}()`
+      const keySwitch = `switch_${nodeName}()`
       nodeToProcess.set(keySwitch, () => processSwitch(node, nodeName, parentNode, context));
       return [`this.${keySwitch};`];
 

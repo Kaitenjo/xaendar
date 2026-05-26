@@ -325,13 +325,6 @@ function needsResolution(node: ts.Identifier, parent: ts.Node): boolean {
 }
 
 /**
- * Indents each line of a code block by two spaces.
- */
-export function indent(...lines: string[]): string[] {
-  return lines.map(line => `  ${line}`);
-} 
-
-/**
  * Generates a unique variable name for an element based on its tag name and parent node.
  * If the parent node is 'this._root', the identifier will be based solely on the element's type.
  * Otherwise, it will be prefixed with the parent node's name to ensure uniqueness.

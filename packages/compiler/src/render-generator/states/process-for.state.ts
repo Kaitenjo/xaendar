@@ -1,9 +1,10 @@
+import { indent } from '@xaendar/common';
 import { ForImplicitVariables } from '../../parser/types/nodes/for-implicit-variables.js';
 import { ForNode } from '../../parser/types/nodes/for-node.type.js';
 import { Context } from '../models/render-context.model.js';
 import { processNode } from '../render-generator.js';
-import { getTextIdentifier, indent } from '../utils/render-generator.utils.js';
- 
+import { getTextIdentifier } from '../utils/render-generator.utils.js';
+
 /**
  * Generates code for a `@for` iteration node.
  *
@@ -41,7 +42,7 @@ export function processFor(node: ForNode, nodeName: string, parentNode: string, 
 
   const itemsName = getTextIdentifier(parentNode, nodeName, 'items');
   const counterName = getTextIdentifier(parentNode, nodeName, 'i');
-  
+
   const indexName = resolveImplicit(node, '$index');
   const firstName = resolveImplicit(node, '$first');
   const lastName = resolveImplicit(node, '$last');
@@ -52,14 +53,14 @@ export function processFor(node: ForNode, nodeName: string, parentNode: string, 
   return [
     `const ${itemsName} = ${iterableExpr};`,
     `for (let ${counterName} = 0; ${counterName} < ${itemsName}.length; ${counterName}++) {`,
-    ...indent(`const ${node.itemAlias} = ${itemsName}[${counterName}];`),
-    ...indent(`const ${indexName} = ${counterName};`),
-    ...indent(`const ${firstName} = ${counterName} === 0;`),
-    ...indent(`const ${lastName} = ${counterName} === ${itemsName}.length - 1;`),
-    ...indent(`const ${evenName} = ${counterName} % 2 === 0;`),
-    ...indent(`const ${oddName} = ${counterName} % 2 !== 0;`),
-    ...indent(''),
-    ... node.children.flatMap((child, i) => indent(...processNode(child, `${nodeName}_${i}`, parentNode, forContext))),
+    ...indent(`const ${node.itemAlias} = ${itemsName}[${counterName}];`,
+      `const ${indexName} = ${counterName};`,
+      `const ${firstName} = ${counterName} === 0;`,
+      `const ${lastName} = ${counterName} === ${itemsName}.length - 1;`,
+      `const ${evenName} = ${counterName} % 2 === 0;`,
+      `const ${oddName} = ${counterName} % 2 !== 0;`
+    ),
+    ...node.children.flatMap((child, i) => indent(...processNode(child, `${nodeName}_${i}`, parentNode, forContext))),
     '}',
   ];
 }

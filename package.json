@@ -20,7 +20,7 @@
     "start:browser": "vite",
     "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
     "update-version": "npm run update-version --prefix schematics",
-    "xd": "node dist/@xaendar/cli/index.js new backoffice --path src --style css"
+    "xd": "node dist/@xaendar/cli/index.js new backoffice --style css"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",

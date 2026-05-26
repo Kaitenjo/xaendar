@@ -4,6 +4,7 @@ import { PackageJson } from 'type-fest';
 import { indexHtml } from './templates/index-html.js';
 import { mainTs } from './templates/main-ts.js';
 import { packageJson } from './templates/package-json.js';
+import { signalTs } from './templates/signal-ts.js';
 import { tsconfigJson } from './templates/tsconfig-json.js';
 import { viteConfigTs } from './templates/vite-config-ts.js';
 import { xaendarJson } from './templates/xaendar-json.js';
@@ -132,6 +133,11 @@ export function buildStructure(context: ProjectContext): Entry[] {
           type: 'file',
           name: 'index.html',
           content: indexHtml(componentName),
+        },
+        {
+          type: 'file',
+          name: 'signals.ts',
+          content: signalTs(),
         },
         {
           type: 'file',
