@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path/win32';
 import { generateComponent } from '../generate/component/component.command';
 import { buildStructure, Entry } from './structure';
+import { execSync } from 'node:child_process';
 
 /**
  * Creates and returns the `new` command.
@@ -15,7 +16,7 @@ import { buildStructure, Entry } from './structure';
  */
 export function newCommand(): Command {
   return new Command('new')
-    .description('Sccafold a new Xaendar project')
+    .description('Scaffold a new Xaendar project')
     .argument('<name>', 'Name of the project to create')
     .option('-p, --path <path>', 'Custom path for the generated project (default: current directory)')
     .option('-s, --style <style>', 'CSS preprocessor to use (css, scss, less, styl)', 'css')
@@ -26,6 +27,7 @@ export function newCommand(): Command {
 
       checkAndCreateProjectDirectory(projectDirectory);
       createFiles(buildStructure({ name, style }), projectDirectory, style);
+      execSync('npm i', { stdio: 'inherit', cwd: projectDirectory });
     });
 }
 

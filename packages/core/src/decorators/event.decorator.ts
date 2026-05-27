@@ -13,25 +13,35 @@ export function Event<
   Data = void,
 >(params?: EventParams): AccessorDecorator<Class, Field, Output<Data>> {
   return (_value: ClassAccessorDecoratorValue<Field>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): ReturnType<AccessorDecorator<Class, Field, Output<Data>>> => {
+    const name = context.name;
+    let dispatchEvent: EventTarget['dispatchEvent'];
+
+    context.addInitializer(function (this: Class) {
+      dispatchEvent = this.dispatchEvent.bind(this);
+    });
+
+    if (typeof name === 'symbol') {
+      throw new Error('Symbol properties are not supported as event names');
+    }
+
     const output: Output<Data> = {
       emit: (_valueOrOverrideParams?: Data | EventParams, _overrideParams?: EventParams) => { }
-     };
+    };
 
     return {
       get(): Output<Data> {
-        output.emit = function(this: Class, valueOrOverrideParams?: Data | EventParams, overrideParams?: EventParams) {
+        output.emit = function (this: Class, valueOrOverrideParams?: Data | EventParams, overrideParams?: EventParams) {
           let eventParams: CustomEventInit<Data> = {};
 
-            eventParams = isEventParams(valueOrOverrideParams)
-              ? { ...params, ...valueOrOverrideParams } 
-              : { ...params, ...overrideParams, detail: valueOrOverrideParams }
+          eventParams = isEventParams(valueOrOverrideParams)
+            ? { ...params, ...valueOrOverrideParams }
+            : { ...params, ...overrideParams, detail: valueOrOverrideParams }
 
-            const event = new CustomEvent(context.name as string, eventParams);
-            const classInstance = this;
-            classInstance.dispatchEvent(event);
-          };
-          return output;
-        }
+          const event = new CustomEvent(name, eventParams);
+          dispatchEvent(event);
+        };
+        return output;
       }
     }
   }
+}

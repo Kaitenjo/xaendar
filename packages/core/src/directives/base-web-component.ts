@@ -1,3 +1,6 @@
+import { INPUT_SIGNAL_SET_SYMBOL } from "../signals/input/input-set.symbol";
+import { InputSignal } from "../signals/input/input.model";
+
 /**
  * Base class for all Web Components in the framework
  * 
@@ -44,11 +47,17 @@ export class BaseWebComponent extends HTMLElement {
       throw new Error(`Attribute ${name} is not associated to any property`);
     }
 
-    if (!(context[name] instanceof Signal.State)) {
-      throw new Error(`Property ${name} is not a Signal.State`);
+
+    /*
+      @Property decorator types ensure that the property associated to the attribute is an InputSignal
+      but i prefer to check it at runtime anyway to avoid any possible error in the future 
+      if the decorator is used wrong or if the types are not respected for some reason 
+     */
+    if (!(context[name] instanceof InputSignal)) {
+      throw new Error(`Property ${name} is not an InputSignal`);
     }
 
-    context[name].set(newValue);
+    context[name].set(newValue, INPUT_SIGNAL_SET_SYMBOL);
   }
 
   /**
