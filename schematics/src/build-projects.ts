@@ -196,7 +196,7 @@ function buildNode(projectName: string, projectPath: string, pkg: XaendarPackage
 
   return tsupBuild({
     entry: {
-      index: entryPath
+      [projectName]: entryPath
     },
     outDir: distDir,
     format: ['esm'],
@@ -258,6 +258,7 @@ const require = createRequire(import.meta.url);
         '.': {
           ...(dts ? { types: `./dist/${projectName}.d.ts` } : {}),
           import: `./dist/${projectName}.js`,
+          require: `./dist/${projectName}.js`
         }
       },
       main: `./dist/${projectName}.js`,
