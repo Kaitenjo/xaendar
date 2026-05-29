@@ -1,8 +1,6 @@
 import { exec } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-
-const buildPackagesPath = '../dist/@xaendar';
 
 /**
  * Packs all built packages found under `../dist/@xaendar` into `.tgz` tarballs
@@ -29,9 +27,15 @@ const buildPackagesPath = '../dist/@xaendar';
  * //   xaendar-core-1.0.0.tgz
  */
 function packAll(): void {
-  if (!existsSync('../output')) {
-    mkdirSync('../output');
+  const outputPath = '../output';
+  const buildPackagesPath = '../dist/@xaendar';
+
+
+  if (existsSync(outputPath)) {
+    rmSync(outputPath, { recursive: true, force: true });
   }
+
+  mkdirSync(outputPath);
 
   for (const project of readdirSync(buildPackagesPath)) {
     const projectPath = resolve(buildPackagesPath, project);

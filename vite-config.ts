@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { PluginOption, UserConfig } from "vite";
 import dts from 'vite-plugin-dts';
@@ -20,6 +20,7 @@ const external = [
 export default function getViteConfig(name: string, dirName: string, options?: ViteConfigOptions): UserConfig {
   const fileName = name.split('/').join('-').slice(1);
   const outDir = resolve(dirName, `../../dist/${name}`);
+  const distDir = join(outDir, 'dist');
 
   return {
     build: {
@@ -30,12 +31,9 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         fileName: format => `${fileName}.${format}.js`,
         formats: ['es']
       },
-      outDir: 'dist',
+      outDir: distDir,
       emptyOutDir: true,
       rollupOptions: {
-        output: {
-          dir: outDir
-        },
         external
       },
       sourcemap: true,
@@ -54,30 +52,32 @@ export default function getViteConfig(name: string, dirName: string, options?: V
             description: pkg.description,
             sideEffects: false,
             type: "module",
-            main: `./${fileName}.es.js`,
-            module: `./${fileName}.es.js`,
-            types: `./${fileName}.es.d.ts`,
+            main: `./dist/${fileName}.es.js`,
+            module: `./dist/${fileName}.es.js`,
+            types: `./dist/${fileName}.es.d.ts`,
             exports: {
               ".": {
                 import: {
-                  types: `./${fileName}.es.d.ts`,
-                  default: `./${fileName}.es.js`
+                  types: `./dist/${fileName}.es.d.ts`,
+                  default: `./dist/${fileName}.es.js`
                 }
               }
             },
             ...(Object.keys(pkg.peerDependencies ?? {}).length ? { peerDependencies: pkg.peerDependencies } : {}),
             ...(Object.keys(pkg.dependencies ?? {}).length ? { dependencies: pkg.dependencies } : {}),
           };
+
+          mkdirSync(outDir, { recursive: true });
           writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
         }
       },
       dts({
         rollupTypes: true,
-        outDir,
+        outDir: distDir,
         root: resolve(dirName, 'src/public-api.ts'),
         afterBuild() {
-          const typesPath = resolve(outDir, `${fileName}.es.d.ts`);
-          const content = readFileSync(typesPath, 'utf-8')
+          const typesPath = resolve(distDir, `${fileName}.es.d.ts`);
+          const content = readFileSync(typesPath, 'utf-8');
           const result = content.replace(/from ['"](?:\.\.\/)*schematics\/packages\/([^/]+)\/src\/public-api['"]/g, (_, pkg) => `from '@xaendar/${pkg}'`);
           writeFileSync(typesPath, result);
         }

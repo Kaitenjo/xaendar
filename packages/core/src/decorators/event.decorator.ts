@@ -1,18 +1,17 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
 import { BaseWebComponent } from '../directives/base-web-component';
-import { EventParams } from '../types/event/event-params.type';
+import { EventOptions } from '../types/event/event-options.type';
 import { Output } from '../types/event/output.type';
 
-function isEventParams(value: EventParams | unknown): value is EventParams {
+function isEventOptions(value: EventOptions | unknown): value is EventOptions {
   return !!value && typeof value === 'object' && ('bubbles' in value || 'cancelable' in value || 'composed' in value);
 }
 
 export function Event<
   Class extends BaseWebComponent,
-  Field,
   Data = void,
->(params?: EventParams): AccessorDecorator<Class, Field, Output<Data>> {
-  return (_value: ClassAccessorDecoratorValue<Field>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): ReturnType<AccessorDecorator<Class, Field, Output<Data>>> => {
+>(options?: EventOptions): AccessorDecorator<Class, Output<Data>> {
+  return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): ReturnType<AccessorDecorator<Class, Output<Data>>> => {
     const name = context.name;
     let dispatchEvent: EventTarget['dispatchEvent'];
 
@@ -25,19 +24,19 @@ export function Event<
     }
 
     const output: Output<Data> = {
-      emit: (_valueOrOverrideParams?: Data | EventParams, _overrideParams?: EventParams) => { }
+      emit: (_valueOrOverrideOptions?: Data | EventOptions, _overrideOptions?: EventOptions) => { }
     };
 
     return {
       get(): Output<Data> {
-        output.emit = function (this: Class, valueOrOverrideParams?: Data | EventParams, overrideParams?: EventParams) {
-          let eventParams: CustomEventInit<Data> = {};
+        output.emit = function (this: Class, valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) {
+          let eventOptions: CustomEventInit<Data> = {};
 
-          eventParams = isEventParams(valueOrOverrideParams)
-            ? { ...params, ...valueOrOverrideParams }
-            : { ...params, ...overrideParams, detail: valueOrOverrideParams }
+          eventOptions = isEventOptions(valueOrOverrideOptions)
+            ? { ...options, ...valueOrOverrideOptions }
+            : { ...options, ...overrideOptions, detail: valueOrOverrideOptions }
 
-          const event = new CustomEvent(name, eventParams);
+          const event = new CustomEvent(name, eventOptions);
           dispatchEvent(event);
         };
         return output;

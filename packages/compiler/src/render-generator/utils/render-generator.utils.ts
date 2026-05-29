@@ -333,10 +333,12 @@ function needsResolution(node: ts.Identifier, parent: ts.Node): boolean {
  * @returns A string representing the unique variable name for the element.
  */
 export function getElementIdentifier(node: ElementNode, parentNode: string, index: string): string {
-  return parentNode !== ROOT_NODE ? `${parentNode}_${node.tagName}${index}` : `${node.tagName}${index}`;
+  const identifier = parentNode !== ROOT_NODE ? `${parentNode}_${node.tagName}${index}` : `${node.tagName}${index}`;
+  return identifier.replace(/-/g, '_');
 }
 
 export function getTextIdentifier(parentNode: string, index: string, prefix = 'text'): string {
-  return parentNode !== ROOT_NODE ? `${parentNode}_${prefix}${index}` : `${prefix}${index}`;
+  const identifier = parentNode !== ROOT_NODE ? `${parentNode}_${prefix}${index}` : `${prefix}${index}`;
+  return identifier.replace(/-/g, '_');
 }
 

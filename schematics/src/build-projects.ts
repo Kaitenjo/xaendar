@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { build as tsupBuild } from 'tsup';
 import { PackageJson } from 'type-fest';
 import { build as viteBuild } from 'vite';
-import { build as tsupBuild } from 'tsup';
 
 const projectsPath = '../packages';
 
@@ -35,6 +35,10 @@ type XaendarPackageJson = PackageJson & {
      * Used for CLI executables that should be self-contained.
      */
     noExternal?: boolean;
+    /**
+     * Whether to generate source maps for the output files. Defaults to `true`.
+     */
+    sourceMap?: boolean;
   };
 };
 
@@ -187,14 +191,25 @@ function buildNode(projectName: string, projectPath: string, pkg: XaendarPackage
   const dts = pkg.xaendar?.dts !== false;
   const bundleAll = pkg.xaendar?.noExternal === true;
   const outDir = resolve(projectPath, '../../dist/@xaendar', projectName);
+  const distDir = resolve(outDir, 'dist');
   const entryPath = resolve(projectPath, entry).replace(/\\/g, '/');
 
   return tsupBuild({
-    entry: { index: entryPath },
-    outDir,
+    entry: {
+      index: entryPath
+    },
+    outDir: distDir,
     format: ['esm'],
-    dts,
-    sourcemap: true,
+    dts: dts ? {
+      compilerOptions: {
+        ignoreDeprecations: '6.0',
+        rootDir: resolve(projectPath, '../..'),
+        paths: {
+          '@xaendar/compiler': [resolve(projectPath, '../../packages/compiler/src/public-api.ts').replace(/\\/g, '/')],
+        }
+      }
+    } : false,
+    sourcemap: pkg.xaendar?.sourceMap !== false,
     clean: true,
     ...(bundleAll
       ? {
@@ -236,14 +251,21 @@ const require = createRequire(import.meta.url);
       type: 'module',
       ...(bundleAll ? {
         bin: {
-          'xd': './index.js',
+          'xd': `./dist/${projectName}.js`,
         },
       } : {}),
       exports: {
-        '.': './index.js',
+        '.': {
+          ...(dts ? { types: `./dist/${projectName}.d.ts` } : {}),
+          import: `./dist/${projectName}.js`,
+        }
       },
+      main: `./dist/${projectName}.js`,
+      ...(dts ? { types: `./dist/${projectName}.d.ts` } : {}),
       dependencies: bundleAll ? undefined : pkg.dependencies
     };
+
+    mkdirSync(outDir, { recursive: true });
     writeFileSync(resolve(outDir, 'package.json'), JSON.stringify(distPkg, null, 2), 'utf-8');
   });
 }

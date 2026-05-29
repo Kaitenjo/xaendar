@@ -1,6 +1,6 @@
 {
   "name": "xaendar",
-  "version": "0.3.38",
+  "version": "0.4.1",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
@@ -22,6 +22,10 @@
     "update-version": "npm run update-version --prefix schematics",
     "xd": "node dist/@xaendar/cli/index.js new backoffice --style css"
   },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "typescript": "^6.0.3"
+  },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.7",
     "@types/node": "^25.9.1",
@@ -32,13 +36,9 @@
     "tsup": "^8.5.1",
     "tsx": "^4.22.3",
     "type-fest": "^5.6.0",
-    "typescript": "^6.0.3",
     "vite": "^8.0.14",
     "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.7"
-  },
-  "dependencies": {
-    "commander": "^14.0.3"
   }
 }

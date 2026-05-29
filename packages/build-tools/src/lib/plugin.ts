@@ -54,7 +54,7 @@ export function xaendarPlugin(): Plugin {
         return null;
       }
 
-      let cssContent = '';
+      let cssContent: string | undefined;
 
       if (stylePath && host.fileExists(stylePath)) {
         this.addWatchFile(stylePath);
@@ -62,7 +62,7 @@ export function xaendarPlugin(): Plugin {
       }
 
       let compiledMethods!: string;
-      const varName = `__${extractClassName(id)}_sheet`;
+      const varName = cssContent ? `__${extractClassName(id)}_sheet` : undefined;
       
       try {
         compiledMethods = compile(templateSource, varName);
@@ -70,7 +70,7 @@ export function xaendarPlugin(): Plugin {
         this.error(`Xaendar: failed to compile template ${templatePath}: ${String(err)}`);
       }
       
-      let transformed: string;
+      let transformed!: string;
       try {
         transformed = fixDecoratorExport(injectRenderMethods(code, compiledMethods, varName, cssContent));
       } catch (err) {
@@ -119,8 +119,8 @@ function extractDecoratorPaths(jsSource: string, componentDir: string): { templa
  * @throws {Error} When the placeholder is not found in the source — this
  *   means the component file was not scaffolded correctly by the CLI.
  */
-function injectRenderMethods(jsSource: string, compiledMethods: string, varName: string, cssContent: string): string {
-  const styleSnippet = cssContent.trim().length ? buildStyleSnippet(varName, cssContent) : '';
+function injectRenderMethods(jsSource: string, compiledMethods: string, varName?: string, cssContent?: string): string {
+  const styleSnippet = cssContent?.trim().length ? buildStyleSnippet(varName!, cssContent) : '';
 
   let result = jsSource;
 

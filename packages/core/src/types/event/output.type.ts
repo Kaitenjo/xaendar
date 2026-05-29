@@ -1,5 +1,5 @@
 import { VoidFunction } from '@xaendar/types';
-import { EventParams } from './event-params.type';
+import { EventOptions } from './event-options.type';
 
 /**
  * Rapresent the output type returned by an @Event Decorator in a Web Component.
@@ -10,5 +10,5 @@ import { EventParams } from './event-params.type';
  * This object's properties override the default event parameters defined in the decorator.
  */
 export type Output<Value = void> = {
-  emit: VoidFunction<Value extends void ? ([EventParams] | []) : ([Value, EventParams] | [Value])>;
+  emit: VoidFunction<Value extends void ? ([EventOptions] | []) : ([Value, EventOptions] | [Value])>;
 }

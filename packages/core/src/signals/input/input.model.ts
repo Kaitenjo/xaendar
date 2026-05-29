@@ -6,7 +6,7 @@ import { assertPrivateContext } from './input-set.symbol';
  * It extends the base `State` signal with additional functionality to handle incoming values, such as those from HTML attributes or external sources, 
  * and allows for optional transformation of these values before they are stored in the signal.
  */
-export class InputSignal<ActualValue = any, IncomingValue = ActualValue> extends Signal.State<ActualValue> {
+export class InputSignal<ActualValue = unknown, IncomingValue = ActualValue> extends Signal.State<ActualValue>{
   /**
    * Optional transform function to convert incoming values to the actual type stored in the signal.
    */
@@ -22,7 +22,7 @@ export class InputSignal<ActualValue = any, IncomingValue = ActualValue> extends
    *   - `unwatched` — called when the signal loses its last sink.
    *   - `transform` — function to transform incoming values before setting the signal's value.
    */
-  constructor(value: ActualValue, options?: SignalOptions<ActualValue> & { transform?: (value: IncomingValue) => ActualValue }) {
+  constructor(value?: ActualValue, options?: SignalOptions<ActualValue> & { transform?: (value: IncomingValue) => ActualValue }) {
     const transform = options?.transform;
     /* 
       Ensure transform field is not passed to super constructor
@@ -30,7 +30,7 @@ export class InputSignal<ActualValue = any, IncomingValue = ActualValue> extends
     */
     delete options?.transform;
 
-    super(value, options);
+    super(value as ActualValue, options);
     this._transform = transform;
   }
 

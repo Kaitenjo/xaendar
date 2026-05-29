@@ -1,7 +1,7 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
 import { INTERNAL_OBSERVED_ATTRIBUTES } from '../../costants';
 import { BaseWebComponent } from '../../directives/base-web-component';
-import { WebComponentDecoratorParams } from '../../types/web-component-decorator-params.type';
+import { WebComponentDecoratorParams } from '../../types/web-component/web-component-decorator-params.type';
 
 /**
  * Decorator to define a web component

@@ -7,9 +7,10 @@ export default defineConfig(getViteConfig('@xaendar/signals', __dirname, {
     {
       name: 'types',
       writeBundle() {
+        const pathDeclaration = '../dist/@xaendar/signals/dist/xaendar-signals.es.d.ts';
         const content = readFileSync('../packages/signals/src/globals.d.ts', 'utf-8');
-        const dtsContent = readFileSync('../dist/@xaendar/signals/xaendar-signals.es.d.ts', 'utf-8');
-        writeFileSync('../dist/@xaendar/signals/xaendar-signals.es.d.ts', `${content}\n\n${dtsContent}`);
+        const dtsContent = readFileSync(pathDeclaration, 'utf-8');
+        writeFileSync(pathDeclaration, `${content}\n\n${dtsContent}`);
       }
     }
   ]
