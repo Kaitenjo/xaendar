@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync, copyFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { PluginOption, UserConfig } from "vite";
 import dts from 'vite-plugin-dts';
@@ -73,12 +73,11 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         }
       },
       {
-        name: 'fix-sourcemap-paths',
-        generateBundle(_, bundle) {
-          for (const chunk of Object.values(bundle)) {
-            if (chunk.type === 'chunk' && chunk.map) {
-              chunk.map.sources = chunk.map.sources.map(s => s.replace(/\\/g, '/') .replace(/^(\.\.\/)+packages\/([^/]+)\/src\//, 'packages/$2/src/'));
-            }
+        name: 'copy-readme',
+        writeBundle() {
+          const readmePath = resolve(dirName, 'README.md');
+          if (existsSync(readmePath)) {
+            copyFileSync(readmePath, resolve(outDir, 'README.md'));
           }
         }
       },

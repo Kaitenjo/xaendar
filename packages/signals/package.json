@@ -1,15 +1,15 @@
 {
   "name": "@xaendar/signals",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "A library for managing signals in web applications",
+  "description": "A library implementing a reactive system for Xaendar framework. This signal implementation is based on the TC39 Stage1 proposal for reactive primitives.",
   "xaendar": {
     "target": "browser"
   },
   "dependencies": {
-    "@xaendar/common": "0.4.5",
-    "@xaendar/types": "0.4.5"
+    "@xaendar/common": "0.4.6",
+    "@xaendar/types": "0.4.6"
   }
 }
