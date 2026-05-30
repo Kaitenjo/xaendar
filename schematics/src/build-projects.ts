@@ -198,6 +198,7 @@ function buildNode(projectName: string, projectPath: string, pkg: XaendarPackage
     entry: {
       [projectName]: entryPath
     },
+    minify: true,
     outDir: distDir,
     format: ['esm'],
     dts: dts ? {
@@ -209,7 +210,7 @@ function buildNode(projectName: string, projectPath: string, pkg: XaendarPackage
         }
       }
     } : false,
-    sourcemap: pkg.xaendar?.sourceMap !== false,
+    sourcemap: false,
     clean: true,
     ...(bundleAll
       ? {

@@ -36,7 +36,8 @@ export default function getViteConfig(name: string, dirName: string, options?: V
       rollupOptions: {
         external
       },
-      sourcemap: true,
+      minify: false,
+      sourcemap: false
     },
     logLevel: 'info',
     plugins: [
@@ -69,6 +70,16 @@ export default function getViteConfig(name: string, dirName: string, options?: V
 
           mkdirSync(outDir, { recursive: true });
           writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));
+        }
+      },
+      {
+        name: 'fix-sourcemap-paths',
+        generateBundle(_, bundle) {
+          for (const chunk of Object.values(bundle)) {
+            if (chunk.type === 'chunk' && chunk.map) {
+              chunk.map.sources = chunk.map.sources.map(s => s.replace(/\\/g, '/') .replace(/^(\.\.\/)+packages\/([^/]+)\/src\//, 'packages/$2/src/'));
+            }
+          }
         }
       },
       dts({
