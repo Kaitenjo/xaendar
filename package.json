@@ -24,7 +24,7 @@
     "xd": "node dist/@xaendar/cli/dist/cli.js new backoffice --style css"
   },
   "dependencies": {
-    "@rolldown/plugin-babel": "^0.2.3",
+    "@rolldown/plugin-babel": "^0.2.4",
     "commander": "^15.0.0",
     "fast-glob": "^3.3.3",
     "typescript": "^6.0.3",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@microsoft/api-extractor": "^7.59.0",
     "@types/convert-source-map": "^2.0.3",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.5.0",
     "@types/vscode": "^1.136.0",
     "@vitest/coverage-v8": "^5.0.0",
     "depcheck": "^1.4.7",

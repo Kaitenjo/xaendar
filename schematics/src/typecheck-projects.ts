@@ -31,9 +31,9 @@ async function compileAll(): Promise<void> {
   for (let i = 0; i < projects.length; i++) {
     const project = projects[i];
     const projectPath = resolve(projectsRoot, project);
-    const tsconfigPath = resolve(projectPath, 'tsconfig.compile.json');
+    const tsconfigPath = resolve(projectPath, 'tsconfig.typecheck.json');
     if (!existsSync(tsconfigPath)) {
-      console.error(`❌  Error: @xaendar/${project}: no tsconfig.compile.json found\nPath: ${tsconfigPath}`);
+      console.error(`❌  Error: @xaendar/${project}: no tsconfig.typecheck.json found\nPath: ${tsconfigPath}`);
       process.exit(1);
     }
 
