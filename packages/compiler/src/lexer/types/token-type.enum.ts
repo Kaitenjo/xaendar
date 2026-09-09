@@ -90,10 +90,22 @@ export enum TokenType {
    * The closing `}` of a flow-control block body.
    */
   BLOCK_CLOSE,
-
+  /**
+   * An import statement, e.g. `@import 'module'`.
+   */
   IMPORT,
-
+  /**
+   * The path specified in an import statement, e.g. `'module'` in `@import 'module'`.
+   */
   IMPORT_PATH,
+  /**
+   * A dynamic binding, e.g. `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
+   */
+  DYNAMIC_BINDING,
+  /**
+   * The closing part of a dynamic binding, e.g. `")"` in `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
+   */
+  DYNAMIC_BINDING_CLOSE,
   /**
    * Sentinel token emitted when the end of the input is reached.
    */

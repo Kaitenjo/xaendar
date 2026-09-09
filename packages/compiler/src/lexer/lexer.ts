@@ -6,6 +6,8 @@ import { lexAttributeValue } from './states/lex-attribute-value.state';
 import { lexAttribute } from './states/lex-attribute.state';
 import { lexCaseFlowControlCondition } from './states/lex-case-flow-control-condition.state';
 import { lexDefaultFlowControlCondition } from './states/lex-default-flow-control-condition.state';
+import { lexDynamicBindingBody } from './states/lex-dynamic-binding-body.state';
+import { lexDynamicBindingStart } from './states/lex-dynamic-binding-start.state';
 import { lexEventHandler } from './states/lex-event-handler.state';
 import { lexEventParameter } from './states/lex-event-parameter.state';
 import { lexEvent } from './states/lex-event.state';
@@ -72,7 +74,9 @@ export class Lexer {
     [LexerState.INTERPOLATION_EXPRESSION]: lexInterpolationExpression,
     [LexerState.INTERPOLATION_LITERAL]: lexInterpolationliteral,
     [LexerState.IMPORT]: lexImport,
-    [LexerState.IMPORT_PATH]: lexImportPath
+    [LexerState.IMPORT_PATH]: lexImportPath,
+    [LexerState.DYNAMIC_BINDING_START]: lexDynamicBindingStart,
+    [LexerState.DYNAMIC_BINDING_BODY]: lexDynamicBindingBody,
   }
 
   /**
@@ -99,6 +103,9 @@ export class Lexer {
       try {
         stateStartIndex = cursor.currentChar.index + 1;
         const transitionFunction = this._states[this._state];
+        if (typeof transitionFunction !== 'function') {
+          debugger;
+        }
         const { state, tokens, popState, pushState } = transitionFunction!(cursor, {
           history: this._stack.values,
           tokens: [...this._tokens],

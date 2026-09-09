@@ -18,6 +18,7 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
   let read = true;
   let attribute = '';
   let retVal!: LexerTransitionFunctionReturnType;
+  const popState = _context.history.at(-1) === LexerState.DYNAMIC_BINDING_BODY;
   
   while (read) {
     switch (cursor.peek()) {
@@ -30,11 +31,12 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
         cursor.advance();
         read = false;
         retVal = {
-          state: LexerState.TAG_BODY,
+          state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
-          }]
+          }],
+          popState
         }
         break;
 
@@ -49,11 +51,12 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
       case SLASH:
         read = false;
         retVal = {
-          state: LexerState.TAG_BODY,
+          state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
-          }]
+          }],
+          popState
         }
         break;
 

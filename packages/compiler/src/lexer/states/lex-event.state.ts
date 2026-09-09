@@ -1,4 +1,4 @@
-import { DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LPAREN, SLASH, SPACE } from '../../costants/chars.constants';
+import { DOUBLE_QUOTE, EQUAL_THEN, SPACE } from '../../costants/chars.constants';
 import { LexerCursor } from '../types/lexer-cursor.model';
 import { LexerState } from '../types/lexer-state.enum';
 import { TokenType } from '../types/token-type.enum';

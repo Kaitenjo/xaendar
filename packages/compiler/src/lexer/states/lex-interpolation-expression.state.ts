@@ -56,6 +56,10 @@ export function lexInterpolationExpression(cursor: LexerCursor, context: LexerTr
               state = LexerState.TEXT
               break;
 
+            case LexerState.DYNAMIC_BINDING_BODY:
+              state = LexerState.DYNAMIC_BINDING_BODY
+              break;
+              
             default:
               throw `Unexpected state '${previousState}' after interpolation expression`;
           };

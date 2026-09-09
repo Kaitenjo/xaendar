@@ -22,8 +22,15 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
 
     switch (nextChar) {
       case AT_SIGN:
+        const dynamicBinding = cursor.peekMatch('@(');
+        let state = LexerState.EVENT;
+        if (dynamicBinding) {
+          state = LexerState.DYNAMIC_BINDING_START;
+          // Consume `@(`.
+          cursor.advance(2);
+        }
         retVal = {
-          state: LexerState.EVENT
+          state
         }
         read = false;
         break;

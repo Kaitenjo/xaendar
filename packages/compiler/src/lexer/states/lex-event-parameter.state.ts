@@ -13,15 +13,17 @@ import { LexerTransitionFunctionReturnType } from '../types/transition-function/
  * @param _context - Unused lexer context.
  * @returns Transition result with the EVENT_PARAMETER token and the EVENT state.
  */
-export function lexEventParameter(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let eventParameter = '';
   let charDelimiter: '"' | "'" | '[' | '{' |'' = '';
   let parameterStart = cursor.currentChar.index + 1;
 
+  const popState = context.history.pop() === LexerState.DYNAMIC_BINDING_BODY;
   const retVal: LexerTransitionFunctionReturnType = {
-    state: LexerState.TAG_BODY,
-    tokens: []
+    state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+    tokens: [],
+    popState
   }
 
   while (read) {
@@ -63,6 +65,7 @@ export function lexEventParameter(cursor: LexerCursor, _context: LexerTransition
         break;
 
       case RPAREN:
+        // Consume ')'
         cursor.advance();
         
         if (cursor.peek() !== DOUBLE_QUOTE) {

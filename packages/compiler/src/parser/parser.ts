@@ -1,7 +1,6 @@
 import { slice } from '@xaendar/common';
 import { TokenType } from '../lexer/types/token-type.enum.js';
 import { Token } from '../lexer/types/token.type.js';
-import { EOFToken } from '../lexer/types/tokens/eof-token.type.js';
 import { ParserCursor } from './models/parser-cursor.model.js';
 import { parseElement } from './states/parse-element.state.js';
 import { parseForControlFlow } from './states/parse-for.state.js';

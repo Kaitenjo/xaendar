@@ -68,13 +68,23 @@ export enum LexerState {
    */
   INTERPOLATION_EXPRESSION = 'interpolation-expression',
   /**
-   * Consuming a template-literal string inside `` {`...`} ``.
+   * Consuming a template-literal string inside {`...`}.
    */
   INTERPOLATION_LITERAL = 'interpolation-literal',
   /**
    * Consuming an import statement `@import { X, Y, ... }
    */
   IMPORT = 'import',
-
-  IMPORT_PATH = 'import-path'
+  /**
+   * Consuming the path of an import statement after `@import`.
+   */
+  IMPORT_PATH = 'import-path',
+  /**
+   * Consuming a dynamic binding start starting with `@(...`.
+   */
+  DYNAMIC_BINDING_START = 'dynamic-binding-start',
+  /**
+   * Consuming the content inside a dynamic binding started with `@(...`.
+   */
+  DYNAMIC_BINDING_BODY = 'dynamic-binding-body'
 }

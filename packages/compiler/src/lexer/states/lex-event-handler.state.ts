@@ -13,7 +13,7 @@ import { LexerTransitionFunctionReturnType } from '../types/transition-function/
  * @param _context - Unused lexer context.
  * @returns Transition result with EVENT_HANDLER token and next state.
  */
-export function lexEventHandler(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let handlerName = '';
   let retVal!: LexerTransitionFunctionReturnType;
@@ -32,8 +32,10 @@ export function lexEventHandler(cursor: LexerCursor, _context: LexerTransitionFu
         // consume '('
         cursor.advance();
 
+        let popState = false;
         if (cursor.peekMatch(')"')) {
-          state = LexerState.TAG_BODY;
+          popState = context.history.pop() === LexerState.DYNAMIC_BINDING_BODY;
+          state = popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY;
           cursor.advance(2);
         }
 
@@ -42,7 +44,8 @@ export function lexEventHandler(cursor: LexerCursor, _context: LexerTransitionFu
           tokens: [{
             type: TokenType.EVENT_HANDLER,
             parts: [handlerName]
-          }]
+          }],
+          popState
         };
         read = false;
         break;
