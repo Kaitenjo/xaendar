@@ -1,9 +1,9 @@
-import { LexerCursor } from "../types/lexer-cursor.model.js";
-import { LexerState } from "../types/lexer-state.enum.js";
-import { TokenType } from "../types/token-type.enum.js";
-import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type.js";
-import { LexerTransitionFunctionReturnType } from "../types/transition-function/transition-function-return-type.type.js";
-import { lexFlowControlCondition } from "../utils/lex-flow-control-condition.utils.js";
+import { LexerCursor } from '../types/lexer-cursor.model.js';
+import { LexerState } from '../types/lexer-state.enum.js';
+import { TokenType } from '../types/token-type.enum.js';
+import { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type.js';
+import { LexerTransitionFunctionReturnType } from '../types/transition-function/transition-function-return-type.type.js';
+import { lexFlowControlCondition } from '../utils/lex-flow-control-condition.utils.js';
 
 /**
  * Consumes the condition expression `(...)` of a flow-control directive,

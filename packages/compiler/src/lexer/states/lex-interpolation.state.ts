@@ -23,9 +23,7 @@ export function lexInterpolation(cursor: LexerCursor, _context: LexerTransitionF
   */
   cursor.skipSpaces();
   
-  const nextChar = cursor.peek();
-
-  return nextChar === GRAVE_ACCENT 
+  return cursor.peek() === GRAVE_ACCENT 
     ? { state: LexerState.INTERPOLATION_LITERAL } 
     : { state: LexerState.INTERPOLATION_EXPRESSION };
 }

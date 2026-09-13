@@ -20,21 +20,21 @@ export function lexDynamicBindingStart(cursor: LexerCursor, _context: LexerTrans
       case COMMA:
         // Consume ','
         cursor.advance();
+        read = false;
         break;
 
       default:
         cursor.advance();
         condition = `${condition}${cursor.currentChar.value}`;
-        read = false;
     }
   }
 
   return {
-    state: LexerState.DYNAMIC_BINDING_BODY,
+    state: LexerState.DYNAMIC_BINDING_START,
     tokens: [{
       type: TokenType.DYNAMIC_BINDING,
       parts: [condition]
-    }]
+    }],
+    pushState: true
   };
-
 } 

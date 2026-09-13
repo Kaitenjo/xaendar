@@ -11,10 +11,10 @@ import { LexerTransitionFunctionReturnType } from "../types/transition-function/
  * back to TAG_BODY.
  *
  * @param cursor - The lexer cursor positioned at the first character of the value (after the opening `"`).
- * @param _context - Unused lexer context.
+ * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE_VALUE token and the TAG_BODY state.
  */
-export function lexAttributeValue(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexAttributeValue(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let value = '';
   let retVal!: LexerTransitionFunctionReturnType;
@@ -24,8 +24,9 @@ export function lexAttributeValue(cursor: LexerCursor, _context: LexerTransition
       case DOUBLE_QUOTE:
         cursor.advance();
         read = false;
+
         retVal = {
-          state: LexerState.TAG_BODY,
+          state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
           tokens: [{
             type: TokenType.ATTRIBUTE_VALUE,
             parts: [value]

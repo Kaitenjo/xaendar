@@ -62,7 +62,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       };
     
     default:
-      throw new Error(`Unexpected State ${peekedTokenType}`);
+      throw new Error(`Unexpected token ${peekedTokenType}`);
   }
 
   // Parse children recursively until closing tag

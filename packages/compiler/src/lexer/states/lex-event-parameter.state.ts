@@ -19,11 +19,10 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
   let charDelimiter: '"' | "'" | '[' | '{' |'' = '';
   let parameterStart = cursor.currentChar.index + 1;
 
-  const popState = context.history.pop() === LexerState.DYNAMIC_BINDING_BODY;
   const retVal: LexerTransitionFunctionReturnType = {
-    state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+    state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
     tokens: [],
-    popState
+    popState: true
   }
 
   while (read) {

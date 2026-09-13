@@ -42,7 +42,8 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
       case GREATER_THEN:
       case SLASH:
         retVal = {
-          state: LexerState.TAG_OPEN_END
+          state: LexerState.TAG_OPEN_END,
+          popState: true
         }
         read = false;
         break;

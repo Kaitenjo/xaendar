@@ -36,24 +36,17 @@ export function lexInterpolationliteral(cursor: LexerCursor, context: LexerTrans
             The next state depends from the previous state
           */
           const previousState = context.history.pop();
-          let state!: LexerState;
+          let state = previousState;
 
           switch (previousState) {
             case LexerState.ATTRIBUTE:
               if (cursor.peek() !== DOUBLE_QUOTE) {
                 throw `Attribute interpolation expression must end with double quotes '"', found '${String.fromCharCode(cursor.peek())}'`;
               }
+
               // Consume '"'
               cursor.advance();
               state = LexerState.TAG_BODY
-              break;
-
-            case LexerState.TEXT:
-              state = LexerState.TEXT
-              break;
-
-            case LexerState.DYNAMIC_BINDING_BODY:
-              state = LexerState.DYNAMIC_BINDING_BODY
               break;
 
             default:

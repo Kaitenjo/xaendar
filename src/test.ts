@@ -3,7 +3,7 @@ import { writeFileSync } from "fs";
 
 const template = `
   <aside class="{ collapsed() ? 'sidebar sidebar--collapsed' : 'sidebar'}" />
-  <div @(porcodio dioocane="{vaffanculo}" madonna="{\`bastarda\`}" @event="handler()" @event2="handler2(param1, param2, true, null, 1, 'cazzo')") />
+  <div @(condition(), porcodio dioocane="{vaffanculo}" madonna="{\`bastarda\`}" @event="handler()" @event2="handler2(param1, param2, true, null, 1, 'cazzo')") />
 `
 
 const filePath = 'dist/compiled.js'

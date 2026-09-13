@@ -39,7 +39,7 @@ export function lexInterpolationExpression(cursor: LexerCursor, context: LexerTr
             The next state depends from the previous state
           */
           const previousState = context.history.pop();
-          let state!: LexerState;
+          let state = previousState;
 
           switch (previousState) {
             case LexerState.ATTRIBUTE:
@@ -52,14 +52,6 @@ export function lexInterpolationExpression(cursor: LexerCursor, context: LexerTr
               state = LexerState.TAG_BODY
               break;
 
-            case LexerState.TEXT:
-              state = LexerState.TEXT
-              break;
-
-            case LexerState.DYNAMIC_BINDING_BODY:
-              state = LexerState.DYNAMIC_BINDING_BODY
-              break;
-              
             default:
               throw `Unexpected state '${previousState}' after interpolation expression`;
           };

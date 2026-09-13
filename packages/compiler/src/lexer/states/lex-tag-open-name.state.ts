@@ -46,7 +46,8 @@ export function lexTagOpenName(cursor: LexerCursor, _context: LexerTransitionFun
           tokens: [{ 
             type: TokenType.TAG_OPEN_NAME, 
             parts: [tagName] 
-          }]
+          }],
+          pushState: true
         }
         read = false;
         break;

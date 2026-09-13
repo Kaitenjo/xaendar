@@ -11,14 +11,13 @@ import { LexerTransitionFunctionReturnType } from '../types/transition-function/
  * If the attribute value is an interpolation, pushes the INTERPOLATION state.
  *
  * @param cursor - The lexer cursor positioned at the start of the attribute.
- * @param _context - Unused lexer context.
+ * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
  */
-export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let attribute = '';
   let retVal!: LexerTransitionFunctionReturnType;
-  const popState = _context.history.at(-1) === LexerState.DYNAMIC_BINDING_BODY;
   
   while (read) {
     switch (cursor.peek()) {
@@ -31,12 +30,11 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
         cursor.advance();
         read = false;
         retVal = {
-          state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+          state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
-          }],
-          popState
+          }]
         }
         break;
 
@@ -51,12 +49,11 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
       case SLASH:
         read = false;
         retVal = {
-          state: popState ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+          state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
-          }],
-          popState
+          }]
         }
         break;
 
@@ -91,6 +88,23 @@ export function lexAttribute(cursor: LexerCursor, _context: LexerTransitionFunct
 
         retVal = {
           state: isInterpolatedValue ? LexerState.INTERPOLATION : LexerState.ATTRIBUTE_VALUE,
+          /*
+            This push is needed by
+            - Interpolation Expression
+            - Interpolation Literal
+
+            When we go back to their calling state, we need to consume Double Quotes '"'
+            if we arrived there from an Attribute Value state, otherwise we are arrived from 'tag body' (or others in the future) state.
+            In the case of 'tag body', we do not need to consume the double quotes beacuse there are no surrounding quotes to handle.
+
+            Example:
+              <input class="{expression}" /> <-- We must consume Double Quotes
+
+              <div>
+                {expression}                 <-- We do not need to consume Double Quotes
+              </div>
+
+           */
           pushState: true,
           tokens: [{
             type: TokenType.ATTRIBUTE,

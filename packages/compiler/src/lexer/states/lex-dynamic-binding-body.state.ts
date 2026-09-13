@@ -27,8 +27,7 @@ export function lexDynamicBindingBody(cursor: LexerCursor, context: LexerTransit
         }
 
         retVal = {
-          state,
-          pushState: true,
+          state
         };
         read = false;
         break;
@@ -46,18 +45,18 @@ export function lexDynamicBindingBody(cursor: LexerCursor, context: LexerTransit
             TAG_BODY or another state depending on the context.
             Another DYNAMIC_BINDING_BODY (improbable but we do support nesting)
           */
-          state: context.history.pop()!,
+          state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
           tokens: [{
             type: TokenType.DYNAMIC_BINDING_CLOSE
-          }]
+          }],
+          popState: true
         };
         read = false;
         break;
 
       default:
         retVal = {
-          state: LexerState.ATTRIBUTE,
-          pushState: true
+          state: LexerState.ATTRIBUTE
         };
         read = false;
     }
