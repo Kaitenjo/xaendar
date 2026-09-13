@@ -1,3 +1,6 @@
+- La cache dei metadati di un componente al momento manca di un sistema
+di invalidità e di decisione quando cachare, per questo è stata disattivata 
+
 - Creazione di una cache per l'estrazione dei Signals da una classe X:
   Si evita ricalcolo ad ogni salvataggio
   Va invalidata se:
@@ -7,8 +10,6 @@
     - un altro file del progetto
     - pacchetto npm
     - alias typescript che puo essere risolto in entrambi i casi precedenti
-
-- Riorganizzazioen del pacchetto  build-tools e capire dove inserire le utility di estrazione dei metadati
 
 - Ad oggi le funzioni generate dal generator vengono aggiunte come campi della classe ed è un grave errore
   Potenzialmente a RunTime esse potrebbero essere rimosse o modificate
