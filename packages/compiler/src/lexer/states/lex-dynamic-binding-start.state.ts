@@ -30,7 +30,7 @@ export function lexDynamicBindingStart(cursor: LexerCursor, _context: LexerTrans
   }
 
   return {
-    state: LexerState.DYNAMIC_BINDING_START,
+    state: LexerState.DYNAMIC_BINDING_BODY,
     tokens: [{
       type: TokenType.DYNAMIC_BINDING,
       parts: [condition]

@@ -10,6 +10,7 @@ import { ASTNodeType } from '../types/node.enum';
 import type { AttributeNode } from '../types/nodes/attribute-node.type';
 import type { DynamicBindingNode } from '../types/nodes/dynamic-binding-node.type';
 import type { EventNode } from '../types/nodes/event-node.type';
+import { validateExpression } from '../utils/expression-validator';
 import { parseAttribute } from './parse-attribute.state';
 import { parseEvent } from './parse-event.state';
 
@@ -20,8 +21,7 @@ export function parseDynamicBinding(cursor: ParserCursor, parseNode: NoArgsFunct
   const attributes = new Array<AttributeNode>();
   const events = new Array<EventNode>();
   const dynamicBindings = new Array<DynamicBindingNode>();
-  const conditionNode = cursor.getCurrentToken<DynamicBindingToken>();
-  const condition = conditionNode.value.parts[0];
+  const condition = validateExpression(token.parts[0]);
 
   let read = true;
 
@@ -52,7 +52,7 @@ export function parseDynamicBinding(cursor: ParserCursor, parseNode: NoArgsFunct
 
   return {
     type: ASTNodeType.DynamicBinding,
-    condition,
+    condition: condition.node,
     attributes,
     events,
     dynamicBindings,

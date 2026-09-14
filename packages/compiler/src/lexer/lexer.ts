@@ -84,7 +84,7 @@ export class Lexer {
    *
    * @param _input - The full template text to tokenise.
    */
-  constructor(private _input: string) {
+  constructor(private readonly _input: string) {
     this._cursor = new LexerCursor(this._input);
   }
 

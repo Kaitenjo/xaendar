@@ -1,5 +1,5 @@
-import { NoArgsFunction } from "@xaendar/types"
-import { bindAttribute, bindReactiveAttribute } from "../utils"
+import { NoArgsFunction } from '@xaendar/types'
+import { bindAttribute, bindReactiveAttribute } from '../utils'
 
 /**
  * Describes a single HTML attribute to be applied to a rendered DOM element.

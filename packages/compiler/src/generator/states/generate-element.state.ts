@@ -5,6 +5,7 @@ import { EventNode } from '../../parser/types/nodes/event-node.type';
 import { CompilerContext } from '../models/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression } from '../utils/generator.utils';
+import { DynamicBindingNode } from '../../parser/types/nodes/dynamic-binding-node.type';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -19,6 +20,7 @@ import { getElementIdentifier, resolveExpression } from '../utils/generator.util
 export function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): GeneratorTransitionFunctionReturnType {
   const attributes = mapAttributes(node.attributes, compilerContext);
   const events = mapEvents(node.events, compilerContext);
+  const dynamicBindings = mapDynamicBindings(node.dynamicBindings, compilerContext);
   const nodeName = getElementIdentifier(node, parentNode, index);
   const tagName = node.tagName;
   const retVal: GeneratorTransitionFunctionReturnType = {
@@ -35,7 +37,7 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
   }
 
   retVal.code.push(`const ${nodeName} = _renderElement(${parentNode}, context, ${anchor}, '${tagName}',`);
-  
+
   attributes.length
     ? retVal.code.push(
       ...indent([
@@ -53,11 +55,20 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
         ...indent(events),
         ']'
       ]),
+    )
+    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]},`;
+
+  dynamicBindings.length
+    ? retVal.code.push(
+      ...indent([
+        '[',
+        ...indent(dynamicBindings),
+        '],'
+      ]),
       ');'
     )
     : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} []);`;
 
-    
   switch (tagName) {
     case 'svg':
     case 'math':
@@ -66,9 +77,9 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
 
   if (node.children.length) {
     retVal.functionsToProcess!.set(`${nodeName}Children`, {
-      fn: { 
-        node, 
-        parentNode: nodeName, 
+      fn: {
+        node,
+        parentNode: nodeName,
         context: compilerContext,
         precode: getPrecode(tagName)
       },
@@ -76,7 +87,7 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
     });
     retVal.code.push(`this.${nodeName}Children(${nodeName}, context);`);
   }
-  
+
   return retVal;
 }
 
@@ -88,9 +99,9 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
  * @returns Array of generated code strings, one per attribute.
  */
 function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext): string[] {
-  return attributes?.map(({ name, value }) => {
+  return attributes.map(({ name, value }) => {
     if (typeof value === 'string') {
-       return `{ name: '${name}', value: () => '${value}', setter: bindAttribute },`
+      return `{ name: '${name}', value: () => '${value}', setter: bindAttribute },`
     } else {
       const { expression, reactive } = resolveExpression(value.expression, compilerContext);
       return `{ name: '${name}', value: () => ${expression},  setter: ${reactive ? 'bindReactiveAttribute' : 'bindAttribute'} },`
@@ -149,6 +160,70 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
 
   compilerContext.removeIdentifier('$event');
   return mappedEvents;
+}
+
+function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext): string[] {
+  return dynamicBindings.map(({ condition, attributes, events, dynamicBindings }) => {
+    if (!attributes.length && !events.length && !dynamicBindings.length) {
+      return '';
+    }
+
+    const { expression } = resolveExpression(condition, compilerContext);
+    const mappedAttributes = mapAttributes(attributes, compilerContext);
+    const mappedEvents = mapEvents(events, compilerContext);
+    const mappedDynamicBindings = mapDynamicBindings(dynamicBindings, compilerContext);
+
+    const retVal = [
+      '{',
+      indent([
+        `condition: () => ${expression},`
+      ])
+    ];
+
+    attributes.length
+      ? retVal.push(
+        ...indent([
+          'attributes: [',
+          ...indent(mappedAttributes),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'attributes: [],'
+        ])
+      );
+
+    events.length
+      ? retVal.push(
+        ...indent([
+          'events: [',
+          ...indent(mappedEvents),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'events: [],'
+        ])
+      );
+
+    dynamicBindings.length
+      ? retVal.push(
+        ...indent([
+          'dynamicBindings: [',
+          ...indent(mappedDynamicBindings),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'dynamicBindings: []'
+        ])
+      );
+
+    return `${retVal}}`;
+  });
 }
 
 function getPrecode(tagName: string): string {

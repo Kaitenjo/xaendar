@@ -1,7 +1,8 @@
-import { ASTNodeWithSpan } from '../ast.type';
-import { ASTNodeType } from '../node.enum';
-import { AttributeNode } from './attribute-node.type';
-import { EventNode } from './event-node.type';
+import type { Expression } from 'typescript';
+import type { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeType } from '../node.enum';
+import type { AttributeNode } from './attribute-node.type';
+import type { EventNode } from './event-node.type';
 
 export type DynamicBindingNode = ASTNodeWithSpan<{
   /**
@@ -11,7 +12,7 @@ export type DynamicBindingNode = ASTNodeWithSpan<{
   /**
    * The condition expression string.
    */
-  condition: string;
+  condition: Expression;
   /**
    * Attribute nodes bound to this element.
    */

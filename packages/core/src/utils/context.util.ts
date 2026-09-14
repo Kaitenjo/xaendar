@@ -32,7 +32,7 @@ export class Context {
    */
   private _unwatchFns = new Array<NoArgsVoidFunction>;
   /**
-   * 
+   * Function used to create new DOM elements within this context.
    */
   public createElement: Function<[string], Element>;
 
@@ -93,8 +93,10 @@ export class Context {
    *
    * @param context - The child context to add.
    */
-  public addChild(context: Context): void {
+  public addChild(context?: Context): Context {
+    context ??= new Context(this._root, this);
     this._children.push(context);
+    return context;
   }
 
   /**

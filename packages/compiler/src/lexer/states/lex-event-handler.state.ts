@@ -35,7 +35,7 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
         let popState = false;
         if (cursor.peekMatch(')"')) {
           cursor.advance(2);
-          state = context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_START,
+          state = context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_BODY,
           popState = true;
         }
 

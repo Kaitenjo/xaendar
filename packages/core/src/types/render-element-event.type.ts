@@ -1,4 +1,4 @@
-import { Function } from "@xaendar/types"
+import { Function } from '@xaendar/types'
 
 /**
  * Describes a single DOM event listener to be attached to a rendered element.
