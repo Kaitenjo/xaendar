@@ -5,9 +5,11 @@ import { ParserCursor } from '../models/parser-cursor.model';
 import { ASTNode, MaybeASTNodeWithSpan } from '../types/ast.type';
 import { ASTNodeType } from '../types/node.enum';
 import { AttributeNode } from '../types/nodes/attribute-node.type';
+import { DynamicBindingNode } from '../types/nodes/dynamic-binding-node.type';
 import { ElementNode } from '../types/nodes/element-node.type';
 import { EventNode } from '../types/nodes/event-node.type';
 import { parseAttribute } from './parse-attribute.state';
+import { parseDynamicBinding } from './parse-dynamic-binding.state';
 import { parseEvent } from './parse-event.state';
 
 /**
@@ -25,8 +27,9 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   const attributes = new Array<AttributeNode>();
   const events = new Array<EventNode>();
-
+  const dynamicBindings = new Array<DynamicBindingNode>();
   let read = true;
+
   while (read) {
     const token = cursor.peek();
     switch (token.type) {
@@ -36,6 +39,10 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
       case TokenType.EVENT:
         events.push(parseEvent(cursor, parseNode, token));
+        break;
+      
+      case TokenType.DYNAMIC_BINDING:
+        dynamicBindings.push(parseDynamicBinding(cursor, parseNode, token));
         break;
 
       default:
@@ -58,7 +65,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         tagName,
         attributes,
         events,
-        children: []
+        children: [],
+        dynamicBindings
       };
     
     default:
@@ -82,7 +90,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     tagName,
     attributes,
     events,
-    children
+    children,
+    dynamicBindings
   };
 }
 

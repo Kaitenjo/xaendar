@@ -6,11 +6,14 @@ export enum ASTNodeType {
    * An HTML element node with a tag name, attributes, events, and children.
    */
   Element,
-
+  /**
+   * An attribute node representing a key-value pair on an HTML element.
+   */
   Attribute,
-
+  /**
+   * An event binding node attached to an HTML element.
+   */
   Event,
-  
   /**
    * A plain text node.
    */
@@ -44,7 +47,11 @@ export enum ASTNodeType {
    */
   Case,
   /**
-   *
+   * An import statement node, typically used to import modules or components.
    */
-  Import
+  Import,
+  /**
+   * A dynamic binding node representing a conditionally evaluated expression or content.
+   */
+  DynamicBinding
 }
