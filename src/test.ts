@@ -2,8 +2,21 @@ import { compile } from "@xaendar/compiler";
 import { writeFileSync } from "fs";
 
 const template = `
-  <aside class="{ collapsed() ? 'sidebar sidebar--collapsed' : 'sidebar'}" />
-  <div @(condition(), porcodio dioocane="{vaffanculo}" madonna="{\`bastarda\`}" @event="handler()" @event2="handler2(param1, param2, true, null, 1, 'cazzo')") />
+<div class="shell">
+  <app-sidebar collapsed="{true}" @collapsedChange="onCollapseChange($event)" />
+
+  <div class="shell__main">
+    <app-topbar @menuToggle="onSidebarToggle()" />
+
+    <main class="shell__content">
+      <app-user-table />
+      
+      <input @(showPlaceholder(), placeholder="Enter text...") />
+      <button @click="onButtonClick()">Toggle Placeholder</button>
+    </main>
+  </div>
+</div>
+
 `
 
 const filePath = 'dist/compiled.js'
@@ -11,5 +24,5 @@ compile(template, { baseDir: 'asd', cssVariableName: 'asd', signals: ['csollapse
   writeFileSync(filePath, output.javascript);
   writeFileSync('dist/compiled.ts', output.typescript.text);
 }).catch(err => {
-  console.error(`Failed to compile template:${String(err.message.replace(/^Error:\s*/, ''))}`)
+  console.error(`Failed to compile template: ${err}`)
 });

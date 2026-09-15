@@ -36,7 +36,7 @@ export function lexInterpolationliteral(cursor: LexerCursor, context: LexerTrans
             The next state depends from the previous state
           */
           const previousState = context.history.pop();
-          let state = previousState;
+          let state: LexerState;
 
           switch (previousState) {
             case LexerState.ATTRIBUTE:
@@ -49,6 +49,11 @@ export function lexInterpolationliteral(cursor: LexerCursor, context: LexerTrans
               state = LexerState.TAG_BODY
               break;
 
+            case LexerState.TEXT:
+            case LexerState.TAG_BODY:
+              state = previousState;
+              break;
+              
             default:
               throw `Unexpected state '${previousState}' after interpolation literal`;
           };

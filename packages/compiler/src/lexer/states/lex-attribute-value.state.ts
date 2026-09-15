@@ -26,7 +26,8 @@ export function lexAttributeValue(cursor: LexerCursor, context: LexerTransitionF
         read = false;
 
         retVal = {
-          state: context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_BODY,
+          // Last state is the attribute, so we need to look two steps back in the history to determine the correct next state.
+          state: context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE_VALUE,
             parts: [value]

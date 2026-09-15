@@ -34,7 +34,7 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
 
         if (cursor.peekMatch(')"')) {
           cursor.advance(2);
-          state = context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_BODY;
+          state = context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY;
         }
 
         retVal = {

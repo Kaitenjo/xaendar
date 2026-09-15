@@ -1,6 +1,6 @@
 {
   "name": "xaendar",
-  "version": "0.10.8",
+  "version": "0.11.1",
   "author": "Kaitenjo",
   "license": "ISC",
   "type": "module",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@microsoft/api-extractor": "^7.59.1",
     "@types/convert-source-map": "^2.0.3",
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.0",
     "@types/vscode": "^1.137.0",
     "@vitest/coverage-v8": "^5.0.1",
     "depcheck": "^1.4.7",
