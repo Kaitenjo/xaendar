@@ -32,11 +32,9 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
         // consume '('
         cursor.advance();
 
-        let popState = false;
         if (cursor.peekMatch(')"')) {
           cursor.advance(2);
-          state = context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_BODY,
-          popState = true;
+          state = context.history.at(-1) === LexerState.TAG_OPEN_NAME ? LexerState.TAG_BODY : LexerState.DYNAMIC_BINDING_BODY;
         }
 
         retVal = {
@@ -44,8 +42,7 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
           tokens: [{
             type: TokenType.EVENT_HANDLER,
             parts: [handlerName]
-          }],
-          popState
+          }]
         };
         read = false;
         break;

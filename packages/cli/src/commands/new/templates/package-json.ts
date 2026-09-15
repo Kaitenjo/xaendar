@@ -23,11 +23,11 @@ export function packageJson(name: string, version: string): string {
     "@xaendar/types": "^${version}"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "@xaendar/cli": "^${version}",
     "typescript": "^6.0.3",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.1"
   }
 }
 `;

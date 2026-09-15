@@ -53,17 +53,17 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
       ...indent([
         '[',
         ...indent(events),
-        ']'
+        '],'
       ]),
     )
-    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]},`;
+    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} [],`;
 
   dynamicBindings.length
     ? retVal.code.push(
       ...indent([
         '[',
         ...indent(dynamicBindings),
-        '],'
+        ']'
       ]),
       ');'
     )
@@ -104,7 +104,7 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
       return `{ name: '${name}', value: () => '${value}', setter: bindAttribute },`
     } else {
       const { expression, reactive } = resolveExpression(value.expression, compilerContext);
-      return `{ name: '${name}', value: () => ${expression},  setter: ${reactive ? 'bindReactiveAttribute' : 'bindAttribute'} },`
+      return `{ name: '${name}', value: () => ${expression}, setter: ${reactive ? 'bindReactiveAttribute' : 'bindAttribute'} },`
     }
   })
 }
@@ -163,9 +163,9 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
 }
 
 function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext): string[] {
-  return dynamicBindings.map(({ condition, attributes, events, dynamicBindings }) => {
+  return dynamicBindings.flatMap(({ condition, attributes, events, dynamicBindings }) => {
     if (!attributes.length && !events.length && !dynamicBindings.length) {
-      return '';
+      return [];
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
@@ -175,7 +175,7 @@ function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerConte
 
     const retVal = [
       '{',
-      indent([
+      ...indent([
         `condition: () => ${expression},`
       ])
     ];
@@ -222,7 +222,8 @@ function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerConte
         ])
       );
 
-    return `${retVal}}`;
+    retVal.push('}');
+    return retVal;
   });
 }
 

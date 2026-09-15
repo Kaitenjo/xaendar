@@ -103,7 +103,7 @@ export class Lexer {
       try {
         stateStartIndex = cursor.currentChar.index + 1;
         const transitionFunction = this._states[this._state];
-        const { state, tokens, popState, pushState } =  transitionFunction!(cursor, {
+        const { state, tokens, popState, pushState } = transitionFunction!(cursor, {
           history: this._stack.values,
           tokens: [...this._tokens],
         });
