@@ -84,7 +84,7 @@ export function bindAttribute(element: Element, name: string, getter: NoArgsFunc
  * @param getter - A function that returns the attribute value.
  */
 export function bindReactiveAttribute(context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
-  context.listen(effect(() => element.setAttribute(name, String(getter()))))
+  context.listen(effect(() => element.setAttribute(name, String(getter()))));
 }
 
 /**
@@ -96,7 +96,8 @@ export function bindReactiveAttribute(context: Context, element: Element, name: 
 function bindAttributes(element: Element, context: Context, attributes: RenderElementAttribute[]): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter } = attributes[i];
-    setter === bindAttribute ? setter(element, name, value) : setter(context, element, name, value)
+    setter === bindAttribute ? setter(element, name, value) : setter(context, element, name, value);
+    context.listen(() => element.removeAttribute(name));
   }
 }
 
@@ -112,7 +113,7 @@ function bindEvents(element: Element, context: Context, events: RenderElementEve
     const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
     const name = event.name;
     element.addEventListener(name, handler);
-    context.listen(() => element.removeEventListener(name, handler))
+    context.listen(() => element.removeEventListener(name, handler));
   }
 }
 
