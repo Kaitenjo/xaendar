@@ -7,7 +7,7 @@ const template = `
   <div class="shell__main">
 
     <main class="shell__content">
-      <input @(showPlaceholder(), placeholder="Enter text...") />
+      <input @(showPlaceholder(), @input="@onInput($event)") />
       <button @click="onButtonClick()">Toggle Placeholder</button>
     </main>
   </div>

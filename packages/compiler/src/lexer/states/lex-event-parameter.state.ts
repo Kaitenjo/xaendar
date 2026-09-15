@@ -20,7 +20,7 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
   let parameterStart = cursor.currentChar.index + 1;
 
   const retVal: LexerTransitionFunctionReturnType = {
-    state: context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+    state: context.history.at(-1) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
     tokens: []
   }
 
