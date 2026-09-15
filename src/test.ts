@@ -3,14 +3,10 @@ import { writeFileSync } from "fs";
 
 const template = `
 <div class="shell">
-  <app-sidebar collapsed="{true}" @collapsedChange="onCollapseChange($event)" />
 
   <div class="shell__main">
-    <app-topbar @menuToggle="onSidebarToggle()" />
 
     <main class="shell__content">
-      <app-user-table />
-      
       <input @(showPlaceholder(), placeholder="Enter text...") />
       <button @click="onButtonClick()">Toggle Placeholder</button>
     </main>

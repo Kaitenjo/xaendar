@@ -131,6 +131,8 @@ function bindDynamicBindings(element: Element, context: Context, dynamicBindings
         bindAttributes(element, dynamicBindingContext, attributes);
         bindEvents(element, dynamicBindingContext, events);
         bindDynamicBindings(element, dynamicBindingContext, nestedDynamicBindings);
+      } else {
+        dynamicBindingContext.unlisten();
       }
     }));
   }
