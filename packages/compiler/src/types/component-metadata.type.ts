@@ -48,18 +48,32 @@ export type ComponentPropertyMetadata = {
    */
   name: string;
   /**
-   * Whether the property is required to be set.
-   */
-  required: boolean;
-  /**
    * Optional alias for attribute binding (if specified in decorator options).
-   */
+  */
   alias?: string;
   /**
    * TypeScript type of the property (e.g., 'string', 'number', 'boolean').
-   */
+  */
   type: string;
-};
+} & ({
+  /**
+   * Whether the property is required to be set.
+   */
+  required: true;
+  /**
+   * Default value for the property if not explicitly set.
+   */
+  defaultValue?: never;
+} | {
+  /**
+   * Whether the property is required to be set.
+   */
+  required: false;
+  /**
+   * Default value for the property if not explicitly set.
+   */
+  defaultValue: unknown;
+})
 
 /**
  * Represents a component event with metadata from @Event decorator.

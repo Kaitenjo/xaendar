@@ -3,12 +3,16 @@ import { writeFileSync } from "fs";
 
 const template = `
 <div class="shell">
+  <app-sidebar @(applyDinamicBinding(), icon="{a()}") collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  <button @click="onApplyDinamicBindingToggle()">
+    Toggle dinamic binding
+  </button>
 
   <div class="shell__main">
+    <app-topbar @menuToggle="onSidebarToggle()" />
 
     <main class="shell__content">
-      <input @(showPlaceholder(), @input="@onInput($event)") />
-      <button @click="onButtonClick()">Toggle Placeholder</button>
+      <app-form />
     </main>
   </div>
 </div>

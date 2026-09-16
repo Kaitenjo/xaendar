@@ -49,7 +49,7 @@ export function lexInterpolationExpression(cursor: LexerCursor, context: LexerTr
 
               // Consume '"'
               cursor.advance();
-              state = LexerState.TAG_BODY
+              state = context.history.at(-1) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY;
               break;
 
             case LexerState.TEXT:

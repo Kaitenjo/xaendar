@@ -1,4 +1,5 @@
 import { TypeCheckerCache } from "./type-checker/types/typechecker-cache.type";
+import { ComponentMetadata } from "./types/component-metadata.type";
 
 /**
  * Configuration options for the compile function.
@@ -67,4 +68,11 @@ export type CompileOptions = {
    * avoiding redundant parsing and extraction of imported components.
    */
   cache?: TypeCheckerCache
+  /**
+   * Component metadata extracted from the TypeScript source file.
+   * 
+   * Used to re apply default value to dynamic bindings when the condition
+   * of the dynamic binding changes.
+   */
+  metadata?: ComponentMetadata
 }

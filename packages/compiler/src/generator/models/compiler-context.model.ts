@@ -1,3 +1,5 @@
+import { ComponentMetadata, ComponentPropertyMetadata } from "../../types";
+
 /**
  * Whether a declared identifier holds a plain value or a signal.
  * Used by `resolveExpression`/`resolveIdentifier` to decide, at compile
@@ -33,6 +35,10 @@ export class CompilerContext {
    * (e.g. $event)
    */
   private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>()
+  /**
+   * Metadata associated with the component.
+   */
+  private readonly _componentMetadata: ComponentMetadata;
 
   /**
    * Creates a new scope context.
@@ -42,15 +48,20 @@ export class CompilerContext {
    *   to declare a signal-backed identifier.
    * @param parent - Optional parent context representing the enclosing scope.
    */
-  constructor();
+  constructor(metadata: ComponentMetadata);
   constructor(parent: CompilerContext);
-  constructor(idenfitiers: Array<string | [string, IdentifierKind]>);
   constructor(parent: CompilerContext, idenfitiers: Array<string | [string, IdentifierKind]>);
   constructor(
-    parent?: CompilerContext | Array<string | [string, IdentifierKind]>,
+    metadataOrParent: ComponentMetadata | CompilerContext,
     identifiers?: Array<string | [string, IdentifierKind]>,
   ) {
-    parent instanceof CompilerContext ? this.parent = parent : identifiers = parent;
+    if (metadataOrParent instanceof CompilerContext) {
+      this.parent = metadataOrParent;
+      this._componentMetadata = metadataOrParent._componentMetadata;
+    } else {
+      this._componentMetadata = metadataOrParent;
+    }
+
     if (identifiers?.length) {
       for (let i = 0; i < identifiers.length; i++) {
         const identifier = identifiers[i];
@@ -183,5 +194,15 @@ export class CompilerContext {
    */
   public getUnresolvableIdentifierKind(name: string): IdentifierKind | undefined {
     return this._unresolvableIdentifiers.get(name) ?? this.parent?.getUnresolvableIdentifierKind(name);
+  }
+
+  /**
+   * Returns the metadata for a component property with the given name.
+   *
+   * @param name - The name of the property to look up.
+   * @returns The metadata for the specified property, or `undefined` if it doesn't exist.
+   */
+  public getPropertyMetadata(name: string): ComponentPropertyMetadata | undefined {
+    return this._componentMetadata.properties.get(name);
   }
 }

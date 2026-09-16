@@ -12,6 +12,7 @@ import { GeneratorStates } from './types/generator-states.type.js';
 import { GeneratorTransitionFunctionReturnType } from './types/generator-transition-function-return-type.type.js';
 import { ROOT_NODE } from './utils/generator.utils.js';
 import { Span } from '../types/span.type.js';
+import { ComponentMetadata } from '../types/component-metadata.type.js';
 
 /**
  * The Generator class is responsible for generating code from an abstract syntax tree (AST) representation of the input source code. 
@@ -51,7 +52,7 @@ export class Generator {
    * @param signals An array of signal names to be included in the generated code.
    * @returns The generated code as a string.
    */
-  public generate(cssVariableName: string | undefined, signals: string[]): string {
+  public generate(cssVariableName: string | undefined, signals: string[], metadata: ComponentMetadata): string {
     const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess']) => {
       if (functionsToProcess) {
         for (const [key, value] of functionsToProcess.entries()) {
@@ -62,7 +63,7 @@ export class Generator {
 
     try {
       this._nodeToProcess.clear();
-      const compilerContext = new CompilerContext();
+      const compilerContext = new CompilerContext(metadata);
       for (let i = 0; i < signals.length; i++) {
         compilerContext.addSignalClassField(signals[i]);
       }

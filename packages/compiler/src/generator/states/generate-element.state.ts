@@ -1,11 +1,11 @@
-import { indent } from '@xaendar/common';
+import { indent, isValidCustomElementName } from '@xaendar/common';
 import { AttributeNode } from '../../parser/types/nodes/attribute-node.type';
+import { DynamicBindingNode } from '../../parser/types/nodes/dynamic-binding-node.type';
 import { ElementNode } from '../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../parser/types/nodes/event-node.type';
 import { CompilerContext } from '../models/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression } from '../utils/generator.utils';
-import { DynamicBindingNode } from '../../parser/types/nodes/dynamic-binding-node.type';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -18,11 +18,12 @@ import { DynamicBindingNode } from '../../parser/types/nodes/dynamic-binding-nod
  * @returns Array of generated code lines.
  */
 export function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): GeneratorTransitionFunctionReturnType {
+  const tagName = node.tagName;
+  const isCustomElement = isValidCustomElementName(tagName);
   const attributes = mapAttributes(node.attributes, compilerContext);
   const events = mapEvents(node.events, compilerContext);
-  const dynamicBindings = mapDynamicBindings(node.dynamicBindings, compilerContext);
+  const dynamicBindings = mapDynamicBindings(node.dynamicBindings, compilerContext, isCustomElement);
   const nodeName = getElementIdentifier(node, parentNode, index);
-  const tagName = node.tagName;
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -98,15 +99,40 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
  * @param compilerContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code strings, one per attribute.
  */
-function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext): string[] {
+function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): string[] {
+  isCustomElement = !!isCustomElement;
   return attributes.map(({ name, value }) => {
+    const extra = new Array<string>();
+    const metadata = compilerContext.getPropertyMetadata(name);
+    if (isCustomElement) {
+      extra.push('unbind: removeAttribute');
+    } else if (metadata?.required) {
+      extra.push('unbind: setAttribute',`defaultValue: ${metadata?.defaultValue}`);
+    }
+
     if (typeof value === 'string') {
-      return `{ name: '${name}', value: () => '${value}', setter: bindAttribute },`
+      return ['{',
+        ...indent([
+          `name: '${name}'`,
+          `value: () => '${value}'`,
+          'setter: bindProperty,',
+          ...extra
+        ]),
+        '}'
+      ];
     } else {
       const { expression, reactive } = resolveExpression(value.expression, compilerContext);
-      return `{ name: '${name}', value: () => ${expression}, setter: ${reactive ? 'bindReactiveAttribute' : 'bindAttribute'} },`
+      return ['{',
+        ...indent([
+          `name: '${name}'`,
+          `value: () => ${expression}`,
+          `setter: ${reactive ? 'bindReactiveProperty' : 'bindProperty'},`,
+          ...extra
+        ]),
+        '}'
+      ];
     }
-  })
+  }).flat();
 }
 
 /**
@@ -162,16 +188,16 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   return mappedEvents;
 }
 
-function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext): string[] {
+function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, isCustomElement: boolean = false): string[] {
   return dynamicBindings.flatMap(({ condition, attributes, events, dynamicBindings }) => {
     if (!attributes.length && !events.length && !dynamicBindings.length) {
       return [];
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
-    const mappedAttributes = mapAttributes(attributes, compilerContext);
+    const mappedAttributes = mapAttributes(attributes, compilerContext, isCustomElement);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedDynamicBindings = mapDynamicBindings(dynamicBindings, compilerContext);
+    const mappedDynamicBindings = mapDynamicBindings(dynamicBindings, compilerContext, isCustomElement);
 
     const retVal = [
       '{',

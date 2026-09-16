@@ -27,10 +27,62 @@ import { Context, mountNode } from './context.util';
 export function _renderElement(parentNode: Element, context: Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], dynamicBindings: RenderElementDynamicBinding[]): Element {
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
-  bindAttributes(element, context, attributes);
+  setAttributes(element, context, attributes);
   bindEvents(element, context, events);
   bindDynamicBindings(element, context, dynamicBindings);
   return element;
+}
+
+/**
+ * Binds a list of attributes to an HTML element, using either static or reactive binding depending on the attribute's setter.
+ * @param element - The element to bind the attributes to.
+ * @param context - The current template execution scope.
+ * @param attributes - The list of attributes to bind to the element.
+ */
+function setAttributes(element: Element, context: Context, attributes: RenderElementAttribute[]): void {
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value, setter, unbind, defaultValue } = attributes[i];
+    setter(context, element, name, value);
+    unbind && context.listen(() => unbind(element, name, defaultValue));
+  }
+}
+
+/**
+ * Binds a list of event listeners to an HTML element.
+ * @param element - The element to bind the events to.
+ * @param context - The current template execution scope.
+ * @param events - The list of events to bind to the element.
+ */
+function bindEvents(element: Element, context: Context, events: RenderElementEvent[]): void {
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
+    const name = event.name;
+    element.addEventListener(name, handler);
+    context.listen(() => element.removeEventListener(name, handler));
+  }
+}
+
+/**
+ * Binds a list of dynamic bindings to an HTML element, creating child contexts for each binding and applying attributes, events, and nested dynamic bindings conditionally.
+ * @param element - The element to bind the dynamic bindings to.
+ * @param context - The current template execution scope.
+ * @param dynamicBindings - The list of dynamic bindings to bind to the element.
+ */
+function bindDynamicBindings(element: Element, context: Context, dynamicBindings: RenderElementDynamicBinding[]): void {
+  for (let i = 0; i < dynamicBindings.length; i++) {
+    const dynamicBindingContext = context.addChild();
+    const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
+    context.listen(effect(() => {
+      if (condition()) {
+        setAttributes(element, dynamicBindingContext, attributes);
+        bindEvents(element, dynamicBindingContext, events);
+        bindDynamicBindings(element, dynamicBindingContext, nestedDynamicBindings);
+      } else {
+        dynamicBindingContext.unlisten();
+      }
+    }));
+  }
 }
 
 /**
@@ -66,11 +118,12 @@ export function createMATHMLElement(tagName: string): MathMLElement {
 /**
  * Sets a static attribute value on an HTML element.
  *
+ * @param _context - The current template execution scope.
  * @param element - The element to set the attribute on.
  * @param name - The name of the attribute.
  * @param getter - A function that returns the attribute value.
  */
-export function bindAttribute(element: Element, name: string, getter: NoArgsFunction<unknown>): void {
+export function bindProperty(_context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
   element.setAttribute(name, String(getter()))
 }
 
@@ -83,58 +136,27 @@ export function bindAttribute(element: Element, name: string, getter: NoArgsFunc
  * @param name - The name of the attribute.
  * @param getter - A function that returns the attribute value.
  */
-export function bindReactiveAttribute(context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
+export function bindReactiveProperty(context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
   context.listen(effect(() => element.setAttribute(name, String(getter()))));
 }
 
 /**
- * Binds a list of attributes to an HTML element, using either static or reactive binding depending on the attribute's setter.
- * @param element - The element to bind the attributes to.
- * @param context - The current template execution scope.
- * @param attributes - The list of attributes to bind to the element.
+ * Removes an attribute from an HTML element.
+ *
+ * @param element - The element to remove the attribute from.
+ * @param name - The name of the attribute to remove.
  */
-function bindAttributes(element: Element, context: Context, attributes: RenderElementAttribute[]): void {
-  for (let i = 0; i < attributes.length; i++) {
-    const { name, value, setter } = attributes[i];
-    setter === bindAttribute ? setter(element, name, value) : setter(context, element, name, value);
-    context.listen(() => element.removeAttribute(name));
-  }
+export function removeAttribute(element: Element, name: string, _value?: unknown): void {
+  element.removeAttribute(name);
 }
 
 /**
- * Binds a list of event listeners to an HTML element.
- * @param element - The element to bind the events to.
- * @param context - The current template execution scope.
- * @param events - The list of events to bind to the element.
+ * Sets a default attribute value on an HTML element.
+ *
+ * @param element - The element to set the attribute on.
+ * @param name - The name of the attribute.
+ * @param value - The default value to set for the attribute.
  */
-function bindEvents(element: Element, context: Context, events: RenderElementEvent[]): void {
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
-    const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
-    const name = event.name;
-    element.addEventListener(name, handler);
-    context.listen(() => element.removeEventListener(name, handler));
-  }
-}
-
-/**
- * Binds a list of dynamic bindings to an HTML element, creating child contexts for each binding and applying attributes, events, and nested dynamic bindings conditionally.
- * @param element - The element to bind the dynamic bindings to.
- * @param context - The current template execution scope.
- * @param dynamicBindings - The list of dynamic bindings to bind to the element.
- */
-function bindDynamicBindings(element: Element, context: Context, dynamicBindings: RenderElementDynamicBinding[]): void {
-  for (let i = 0; i < dynamicBindings.length; i++) {
-    const dynamicBindingContext = context.addChild();
-    const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
-    context.listen(effect(() => {
-      if (condition()) {
-        bindAttributes(element, dynamicBindingContext, attributes);
-        bindEvents(element, dynamicBindingContext, events);
-        bindDynamicBindings(element, dynamicBindingContext, nestedDynamicBindings);
-      } else {
-        dynamicBindingContext.unlisten();
-      }
-    }));
-  }
+export function setAttribute(element: Element, name: string, value: unknown): void {
+  element.setAttribute(name, String(value));
 }

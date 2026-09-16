@@ -6,6 +6,9 @@ import { InterpolationNode } from './interpolation-node.type';
  * AST node representing an HTML attribute on an element.
  */
 export type AttributeNode = ASTNodeWithSpan<{
+  /**
+   * The type of this AST node, which is always `ASTNodeType.Attribute`.
+   */
   type: ASTNodeType.Attribute
   /**
    * The attribute name.

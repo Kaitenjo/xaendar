@@ -121,7 +121,8 @@ export function xaendarPlugin(): Plugin {
           const result = await compile(templateSource, { 
             baseDir: dirname(templatePath), 
             cssVariableName: varName, 
-            signals, 
+            signals,
+            metadata,
             cache: { 
               get: getMetadataMapping, 
               set: registerMetadataMapping 
@@ -327,8 +328,8 @@ function insertRequiredImports(jsSource: string): string {
     { value: 'createElement', source: '@xaendar/core' },
     { value: 'createSVGElement', source: '@xaendar/core' },
     { value: 'createMATHMLElement', source: '@xaendar/core' },
-    { value: 'bindAttribute', source: '@xaendar/core' },
-    { value: 'bindReactiveAttribute', source: '@xaendar/core' },
+    { value: 'setAttribute', source: '@xaendar/core' },
+    { value: 'setReactiveAttribute', source: '@xaendar/core' },
   ];
 
   const alreadyImported = new Array<{ value: string; source: string }>();

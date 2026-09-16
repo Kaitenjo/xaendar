@@ -3,7 +3,7 @@ import { Generator } from './generator/generator';
 import { Lexer } from './lexer/lexer';
 import { Parser } from './parser/parser';
 import type { ASTNode } from './parser/types/ast.type';
-import type { TypeCheckerCache } from './public-api';
+import type { ComponentMetadata, TypeCheckerCache } from './public-api';
 import { TypeChecker } from './type-checker/type-checker';
 import type { TypeCheckResult } from './type-checker/types/type-checker-result.type';
 
@@ -21,8 +21,8 @@ import type { TypeCheckResult } from './type-checker/types/type-checker-result.t
  * @returns A string containing the compiled Javascript render method body.
  */
 export async function compile(input: string, options: { baseDir: string, cache?: { get: (key: string) => any; set: (key: string, value: any) => void } }): Promise<TypeCheckResult>
-export async function compile(input: string, options: { cssVariableName: string | undefined, signals: string[], cache?: { get: (key: string) => any; set: (key: string, value: any) => void } }): Promise<string>
-export async function compile(input: string, options: { baseDir: string, cssVariableName: string | undefined, signals: string[], cache?: { get: (key: string) => any; set: (key: string, value: any) => void } }): Promise<{ javascript: string; typescript: TypeCheckResult }>
+export async function compile(input: string, options: { cssVariableName: string | undefined, metadata: ComponentMetadata, signals: string[], cache?: { get: (key: string) => any; set: (key: string, value: any) => void } }): Promise<string>
+export async function compile(input: string, options: CompileOptions): Promise<{ javascript: string; typescript: TypeCheckResult }>
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
   const tokens = new Lexer(input).tokenize();
   const nodes = new Parser(input, tokens).parse();
@@ -31,17 +31,17 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     throw `CssVariableName or BaseDir must be specified`;
   }
   
-  const { baseDir, cssVariableName, signals, cache } = options;
-  if (cssVariableName && baseDir && signals) {
+  const { baseDir, cssVariableName, signals, cache, metadata } = options;
+  if (cssVariableName && baseDir && signals && metadata) {
     return {
-      javascript: generateJavascriptCode(input, nodes, cssVariableName, signals),
+      javascript: generateJavascriptCode(input, nodes, cssVariableName, signals, metadata),
       typescript: await generateTypecheckResult(input, nodes, baseDir)
     }
   } else if (baseDir) {
     return await generateTypecheckResult(input, nodes, baseDir, cache);
   } else {
     // Safe assertion! Override permit only cssVariableName and signals not nullable simultaneously
-    return generateJavascriptCode(input, nodes, cssVariableName, signals!);
+    return generateJavascriptCode(input, nodes, cssVariableName, signals!, metadata!);
   }
 }
 /**
@@ -52,8 +52,8 @@ export async function compile(input: string, options: CompileOptions): Promise<s
  * @param signals - Array of signal names to be used in the generated render function.
  * @returns A string containing the compiled Javascript render method body.
  */
-function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariableName: string | undefined, signals: string[]): string {
-  return new Generator(input, nodes).generate(cssVariableName, signals);
+function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariableName: string | undefined, signals: string[], metadata: ComponentMetadata): string {
+  return new Generator(input, nodes).generate(cssVariableName, signals, metadata);
 }
 
 /**
