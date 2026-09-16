@@ -102,36 +102,41 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
 function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): string[] {
   isCustomElement = !!isCustomElement;
   return attributes.map(({ name, value }) => {
+    const retval = [
+      '{',
+      indent(`name: '${name}',`)
+    ];
+
+    if (typeof value === 'string') {
+      retval.push('{',
+        ...indent([
+          `value: () => '${value}'`,
+          'setter: bindProperty',
+        ]),
+        '}'
+      );
+    } else {
+      const { expression, reactive } = resolveExpression(value.expression, compilerContext);
+      retval.push('{',
+        ...indent([
+          `value: () => ${expression}`,
+          `setter: ${reactive ? 'bindReactiveProperty' : 'bindProperty'}`,
+        ]),
+        '}'
+      );
+    }
+
     const extra = new Array<string>();
     const metadata = compilerContext.getPropertyMetadata(name);
     if (isCustomElement) {
+      extra[extra.length - 1] = `${extra[extra.length - 1]},`;
       extra.push('unbind: removeAttribute');
-    } else if (metadata?.required) {
-      extra.push('unbind: setAttribute',`defaultValue: ${metadata?.defaultValue}`);
+    } else if (metadata && !metadata.required) {
+      extra[extra.length - 1] = `${extra[extra.length - 1]},`;
+      extra.push('unbind: setAttribute', `defaultValue: ${metadata.defaultValue}`);
     }
 
-    if (typeof value === 'string') {
-      return ['{',
-        ...indent([
-          `name: '${name}'`,
-          `value: () => '${value}'`,
-          'setter: bindProperty,',
-          ...extra
-        ]),
-        '}'
-      ];
-    } else {
-      const { expression, reactive } = resolveExpression(value.expression, compilerContext);
-      return ['{',
-        ...indent([
-          `name: '${name}'`,
-          `value: () => ${expression}`,
-          `setter: ${reactive ? 'bindReactiveProperty' : 'bindProperty'},`,
-          ...extra
-        ]),
-        '}'
-      ];
-    }
+    return retval;
   }).flat();
 }
 

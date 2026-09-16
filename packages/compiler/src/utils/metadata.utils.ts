@@ -94,7 +94,9 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       name: metadata.name,
       required: metadata.required,
       type: metadata.type,
-      alias: metadata.alias
+      alias: metadata.alias,
+      required: metadata.required,
+      defaultValue: metadata.defaultValue
     }));
 
     const className = klass.name.text;
@@ -324,9 +326,8 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
 function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: Decorator, required: boolean): ComponentPropertyMetadataWishSpan | undefined {
   // modifier is a Decorator node, modifier.expression contains the decorator's expression
   const expr = decorator.expression;
-  const metadata: ComponentPropertyMetadataWishSpan = {
+  const metadata: Partial<ComponentPropertyMetadataWishSpan> = {
     name,
-    required,
     type: extractGenericArgument(property.type),
     span: {
       /*
@@ -339,22 +340,31 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
     }
   };
 
-  // Extract Alias
+  // Extract Alias and default value
   if (isCallExpression(expr)) {
     const args = expr.arguments;
-    const decoratorParameters = args.length ? args.find(arg => isObjectLiteralExpression(arg))! : undefined
-    const aliasNode = decoratorParameters?.properties?.find((prop): prop is PropertyAssignment => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias')
-    if (aliasNode && isStringLiteral(aliasNode.initializer)) {
-      const initializer = aliasNode.initializer;
-      metadata.alias = initializer.text;
-      metadata.span = {
-        start: initializer.getStart(),
-        end: initializer.getEnd()
+    if (args.length) {
+      const options = required ? args[0] : args[1];
+      const aliasNode = isObjectLiteralExpression(options) ? options?.properties?.find((prop): prop is PropertyAssignment => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias') : undefined;
+      if (aliasNode && isStringLiteral(aliasNode.initializer)) {
+        const initializer = aliasNode.initializer;
+        metadata.alias = initializer.text;
+        metadata.span = {
+          start: initializer.getStart(),
+          end: initializer.getEnd()
+        };
+      }
+
+      if (!required) {
+        metadata.required = false;
+        metadata.defaultValue = args[0].getText();
+      } else {
+        metadata.required = true;
       }
     }
   }
 
-  return metadata;
+  return metadata as ComponentPropertyMetadataWishSpan;
 }
 
 /**
