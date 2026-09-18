@@ -1,5 +1,5 @@
 import { NoArgsFunction } from '@xaendar/types';
-import { bindProperty, bindReactiveProperty, removeAttribute, setAttribute } from '../utils';
+import { _bindProperty, _bindReactiveProperty, _removeAttribute, _setAttribute } from '../utils';
 
 /**
  * Describes a single HTML attribute to be applied to a rendered DOM element.
@@ -20,12 +20,12 @@ export type RenderElementAttribute = {
   /** 
    * When `true`, the value is a static string literal; when `false`, it is a reactive expression. 
    */
-  setter: typeof bindProperty & typeof bindReactiveProperty;
+  setter: typeof _bindProperty & typeof _bindReactiveProperty;
 } & ({
   /**
    * A function to unbind or reset the attribute, such as removing it or setting a default value.
    */
-  unbind: typeof removeAttribute;
+  unbind: typeof _removeAttribute;
   /**
    * The default value to use when unbinding the attribute.
    */
@@ -34,7 +34,7 @@ export type RenderElementAttribute = {
   /**
    * A function to unbind or reset the attribute, such as removing it or setting a default value.
    */
-  unbind: typeof setAttribute;
+  unbind: typeof _setAttribute;
   /**
    * The default value to use when unbinding the attribute.
    */

@@ -1,6 +1,6 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { effect, untracked } from '../signals';
-import { Context, createAnchor } from './context.util';
+import { _Context, createAnchor } from './context.util';
 
 /**
  * Represents a single branch of a conditional structure (`if` / `else if` / `else`).
@@ -12,12 +12,12 @@ import { Context, createAnchor } from './context.util';
  */
 type Block = {
   condition?: NoArgsFunction<boolean>,
-  block: Function<[HTMLElement, Context, Node | null], Context>
+  block: Function<[HTMLElement, _Context, Node | null], _Context>
 };
 
 type State = {
   activeBranch: number | null;
-  context: Context
+  context: _Context
 }
 
 /**
@@ -38,7 +38,7 @@ type State = {
  * @param parentContext - The parent Context object containing all the variables definition from the Parent Closure
  * @param blocks - Ordered list of conditional branches to evaluate.
  */
-export function _if(parentNode: HTMLElement, parentContext: Context, blocks: Block[]): void {
+export function _if(parentNode: HTMLElement, parentContext: _Context, blocks: Block[]): void {
   const anchor = createAnchor('if', parentNode, parentContext);
   
   let state: State | undefined;
@@ -77,7 +77,7 @@ export function _if(parentNode: HTMLElement, parentContext: Context, blocks: Blo
  */
 function handleIf(
   parentNode: HTMLElement,
-  parentContext: Context,
+  parentContext: _Context,
   ifBlock: Block,
   state: State | undefined,
   anchor: Comment
@@ -105,7 +105,7 @@ function handleIf(
  */
 function handleIfElse(
   parentNode: HTMLElement,
-  parentContext: Context,
+  parentContext: _Context,
   ifBlock: Block,
   elseBlock: Block,
   state: State | undefined,
@@ -132,7 +132,7 @@ function handleIfElse(
  */
 function handleIfElseIf(
   parentNode: HTMLElement,
-  parentContext: Context,
+  parentContext: _Context,
   blocks: Block[],
   state: State | undefined,
   anchor: Comment
@@ -167,10 +167,10 @@ function handleIfElseIf(
  */
 function checkAndUpdateState(
   parentNode: HTMLElement,
-  parentContext: Context,
+  parentContext: _Context,
   state: State | undefined,
   newState: number | null,
-  conditionalBlockFn: Function<[HTMLElement, Context, Node | null], Context>,
+  conditionalBlockFn: Function<[HTMLElement, _Context, Node | null], _Context>,
   anchor: Comment
 ): State | undefined {
  if (state?.activeBranch === newState) {
@@ -202,7 +202,7 @@ function checkAndUpdateState(
  * @param state - The current state (active branch index and its context), or
  *   `undefined` if no branch is currently active.
  */
-function teardown(parentContext: Context, state: State | undefined): void {
+function teardown(parentContext: _Context, state: State | undefined): void {
   if (state) {
     state.context.unlisten();
     parentContext.removeChild(state.context);

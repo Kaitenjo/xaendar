@@ -1,16 +1,25 @@
-import { slice } from "@xaendar/common";
-import { existsSync } from "fs";
-import { resolve } from "path";
-import { ClassDeclaration, DeclarationName, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, SyntaxKind, TypeNode } from "typescript";
-import { ClassDeclarationWithName, ComponentDeclaration, ComponentEventMetadata, ComponentMetadata, ComponentPropertyMetadata } from "../types/component-metadata.type";
-import { Span } from "../types/span.type";
+import { slice } from '@xaendar/common';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { ClassDeclarationWithName, ComponentDeclaration, ComponentEventMetadata, ComponentMetadata, ComponentPropertyMetadata } from '../types/component-metadata.type';
+import { Span } from '../types/span.type';
 
 /**
  * Represents a component property with metadata from @Property decorator.
  */
-type ComponentPropertyMetadataWishSpan = ComponentPropertyMetadata & {
-  span: Span
-};
+class ComponentPropertyMetadataWishSpan extends ComponentPropertyMetadata {
+  /**
+   * Creates an instance of ComponentPropertyMetadataWishSpan.
+   * @param span The span information for the property in the source file.
+   * @param name The name of the property.
+   * @param type The type of the property.
+   * @param options Additional options for the property, such as whether it is required or has an alias.
+   */
+  constructor(public span: Span, name: string, type: string, options?: { required?: boolean, alias?: string }) {
+    super(name, type, options);
+  }
+}
 
 /**
  * Extracts component metadata from a source file by parsing decorators.
@@ -90,14 +99,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     }
 
     const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-    properties.entries().forEach(([propName, metadata]) => mappedProperties.set(propName, {
-      name: metadata.name,
-      required: metadata.required,
-      type: metadata.type,
-      alias: metadata.alias,
-      required: metadata.required,
-      defaultValue: metadata.defaultValue
-    }));
+    properties.entries().forEach(([propName, { name, type, required, alias }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias })));
 
     const className = klass.name.text;
     metadatas.set(className, {
@@ -326,27 +328,28 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
 function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: Decorator, required: boolean): ComponentPropertyMetadataWishSpan | undefined {
   // modifier is a Decorator node, modifier.expression contains the decorator's expression
   const expr = decorator.expression;
-  const metadata: Partial<ComponentPropertyMetadataWishSpan> = {
-    name,
-    type: extractGenericArgument(property.type),
-    span: {
-      /*
-        In case of duplicate @Property names (alias and propName or alias and alias)
-        We need to store the span where the propName is present, if an alias is declared
-        these values will be overwritten
-      */
-      start: nameNode.getStart(),
-      end: nameNode.getEnd()
-    }
-  };
+  /*
+    In case of duplicate @Property names (alias and propName or alias and alias)
+    We need to store the span where the propName is present, if an alias is declared
+    these values will be overwritten
+  */
+  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, name, extractGenericArgument(property.type));
+  metadata.required = required;
 
-  // Extract Alias and default value
   if (isCallExpression(expr)) {
     const args = expr.arguments;
+    let options: Expression;
+
+    if (!required) {
+      metadata.defaultValue = args[0]?.getText();
+      options = args[1];
+    } else {
+      options = args[0];
+    }
+
     if (args.length) {
-      const options = required ? args[0] : args[1];
-      const aliasNode = isObjectLiteralExpression(options) ? options?.properties?.find((prop): prop is PropertyAssignment => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias') : undefined;
-      if (aliasNode && isStringLiteral(aliasNode.initializer)) {
+      const aliasNode = options && isObjectLiteralExpression(options) && options?.properties?.find((prop): prop is Omit<PropertyAssignment, 'initializer'> & { initializer: StringLiteral } => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias' && isStringLiteral(prop.initializer));
+      if (aliasNode) {
         const initializer = aliasNode.initializer;
         metadata.alias = initializer.text;
         metadata.span = {
@@ -354,17 +357,10 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
           end: initializer.getEnd()
         };
       }
-
-      if (!required) {
-        metadata.required = false;
-        metadata.defaultValue = args[0].getText();
-      } else {
-        metadata.required = true;
-      }
     }
   }
 
-  return metadata as ComponentPropertyMetadataWishSpan;
+  return metadata
 }
 
 /**

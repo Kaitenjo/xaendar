@@ -1,6 +1,6 @@
 import { isInputSignal } from '../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../signals/input/input-set.symbol';
-import { Context } from '../utils';
+import { _Context } from '../utils';
 
 /**
  * Base class for all web components in the framework.
@@ -18,7 +18,7 @@ export class BaseWebComponent extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  protected context!: Context;
+  protected context!: _Context;
 
   /**
    * The root of the Web Component, where the content is rendered
@@ -39,9 +39,9 @@ export class BaseWebComponent extends HTMLElement {
    *
    * @internal
    */
-  private _render(): Context {
+  private _render(): _Context {
     // Ignore, the actual render body is injected by the compiler 
-    return {} as Context;
+    return {} as _Context;
   }
 
   /**

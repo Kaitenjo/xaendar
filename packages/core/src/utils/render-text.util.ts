@@ -1,6 +1,6 @@
 import { NoArgsFunction } from '@xaendar/types';
 import { effect } from '../signals/effect/effect';
-import { Context, mountNode } from './context.util';
+import { _Context, mountNode } from './context.util';
 
 /**
  * Creates a reactive text node bound to a named identifier in the current scope.
@@ -13,7 +13,7 @@ import { Context, mountNode } from './context.util';
  * @param context - The current template execution scope used to resolve `text`.
  * @param text - The identifier name to resolve as the text content.
  */
-export function _renderText(parentNode: HTMLElement, context: Context, textFn: NoArgsFunction<string>): void {
+export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<string>): void {
   const node = document.createTextNode(textFn());
   mountNode(node, parentNode, context);
   context.listen(effect(() => node.textContent = textFn()));
@@ -30,7 +30,7 @@ export function _renderText(parentNode: HTMLElement, context: Context, textFn: N
  * @param context - The current template execution scope.
  * @param text - The literal string to render as text content.
  */
-export function _renderLiteralText(parentNode: HTMLElement, context: Context, text: string): void {
+export function _renderLiteralText(parentNode: HTMLElement, context: _Context, text: string): void {
   const node = document.createTextNode(text);
   mountNode(node, parentNode, context);
 }

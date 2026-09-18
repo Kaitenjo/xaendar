@@ -34,11 +34,11 @@ export class CompilerContext {
    * and touched in anyway
    * (e.g. $event)
    */
-  private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>()
+  private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>();
   /**
    * Metadata associated with the component.
    */
-  private readonly _componentMetadata: ComponentMetadata;
+  private readonly _componentMetadata: ComponentMetadata | undefined;
 
   /**
    * Creates a new scope context.
@@ -48,17 +48,18 @@ export class CompilerContext {
    *   to declare a signal-backed identifier.
    * @param parent - Optional parent context representing the enclosing scope.
    */
+  constructor();
   constructor(metadata: ComponentMetadata);
   constructor(parent: CompilerContext);
   constructor(parent: CompilerContext, idenfitiers: Array<string | [string, IdentifierKind]>);
   constructor(
-    metadataOrParent: ComponentMetadata | CompilerContext,
+    metadataOrParent?: ComponentMetadata | CompilerContext,
     identifiers?: Array<string | [string, IdentifierKind]>,
   ) {
     if (metadataOrParent instanceof CompilerContext) {
       this.parent = metadataOrParent;
       this._componentMetadata = metadataOrParent._componentMetadata;
-    } else {
+    } else if (metadataOrParent) {
       this._componentMetadata = metadataOrParent;
     }
 
@@ -203,6 +204,6 @@ export class CompilerContext {
    * @returns The metadata for the specified property, or `undefined` if it doesn't exist.
    */
   public getPropertyMetadata(name: string): ComponentPropertyMetadata | undefined {
-    return this._componentMetadata.properties.get(name);
+    return this._componentMetadata?.properties.get(name);
   }
 }

@@ -4,7 +4,7 @@ import { effect } from '../signals/effect/effect';
 import type { RenderElementDynamicBinding } from '../types/render-dynamic-binding.type';
 import type { RenderElementAttribute } from '../types/render-element-attribute.type';
 import type { RenderElementEvent } from '../types/render-element-event.type';
-import { Context, mountNode } from './context.util';
+import { _Context, mountNode } from './context.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -24,10 +24,10 @@ import { Context, mountNode } from './context.util';
  * @param dynamicBindings - List of dynamic binding descriptors to apply to the element.
  * @returns The newly created HTML element.
  */
-export function _renderElement(parentNode: Element, context: Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], dynamicBindings: RenderElementDynamicBinding[]): Element {
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], dynamicBindings: RenderElementDynamicBinding[]): Element {
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
-  setAttributes(element, context, attributes);
+  bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
   bindDynamicBindings(element, context, dynamicBindings);
   return element;
@@ -39,7 +39,7 @@ export function _renderElement(parentNode: Element, context: Context, anchor: Co
  * @param context - The current template execution scope.
  * @param attributes - The list of attributes to bind to the element.
  */
-function setAttributes(element: Element, context: Context, attributes: RenderElementAttribute[]): void {
+function bindAttributes(element: Element, context: _Context, attributes: RenderElementAttribute[]): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter, unbind, defaultValue } = attributes[i];
     setter(context, element, name, value);
@@ -53,7 +53,7 @@ function setAttributes(element: Element, context: Context, attributes: RenderEle
  * @param context - The current template execution scope.
  * @param events - The list of events to bind to the element.
  */
-function bindEvents(element: Element, context: Context, events: RenderElementEvent[]): void {
+function bindEvents(element: Element, context: _Context, events: RenderElementEvent[]): void {
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
     const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
@@ -69,13 +69,13 @@ function bindEvents(element: Element, context: Context, events: RenderElementEve
  * @param context - The current template execution scope.
  * @param dynamicBindings - The list of dynamic bindings to bind to the element.
  */
-function bindDynamicBindings(element: Element, context: Context, dynamicBindings: RenderElementDynamicBinding[]): void {
+function bindDynamicBindings(element: Element, context: _Context, dynamicBindings: RenderElementDynamicBinding[]): void {
   for (let i = 0; i < dynamicBindings.length; i++) {
     const dynamicBindingContext = context.addChild();
     const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
     context.listen(effect(() => {
       if (condition()) {
-        setAttributes(element, dynamicBindingContext, attributes);
+        bindAttributes(element, dynamicBindingContext, attributes);
         bindEvents(element, dynamicBindingContext, events);
         bindDynamicBindings(element, dynamicBindingContext, nestedDynamicBindings);
       } else {
@@ -91,7 +91,7 @@ function bindDynamicBindings(element: Element, context: Context, dynamicBindings
  * @param tagName - The HTML tag name of the element to create.
  * @returns The newly created HTML element.
  */
-export function createElement(tagName: string): HTMLElement {
+export function _createElement(tagName: string): HTMLElement {
   return document.createElement(tagName);
 }
 
@@ -101,7 +101,7 @@ export function createElement(tagName: string): HTMLElement {
  * @param tagName - The SVG tag name of the element to create.
  * @returns The newly created SVG element.
  */
-export function createSVGElement(tagName: string): SVGElement {
+export function _createSVGElement(tagName: string): SVGElement {
   return document.createElementNS(SVG_NS, tagName);
 }
 
@@ -111,7 +111,7 @@ export function createSVGElement(tagName: string): SVGElement {
  * @param tagName - The MathML tag name of the element to create.
  * @returns The newly created MathML element.
  */
-export function createMATHMLElement(tagName: string): MathMLElement {
+export function _createMATHMLElement(tagName: string): MathMLElement {
   return document.createElementNS(MATHML_NS, tagName);
 }
 
@@ -123,7 +123,7 @@ export function createMATHMLElement(tagName: string): MathMLElement {
  * @param name - The name of the attribute.
  * @param getter - A function that returns the attribute value.
  */
-export function bindProperty(_context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
+export function _bindProperty(_context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
   element.setAttribute(name, String(getter()))
 }
 
@@ -136,7 +136,7 @@ export function bindProperty(_context: Context, element: Element, name: string, 
  * @param name - The name of the attribute.
  * @param getter - A function that returns the attribute value.
  */
-export function bindReactiveProperty(context: Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
+export function _bindReactiveProperty(context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
   context.listen(effect(() => element.setAttribute(name, String(getter()))));
 }
 
@@ -146,7 +146,7 @@ export function bindReactiveProperty(context: Context, element: Element, name: s
  * @param element - The element to remove the attribute from.
  * @param name - The name of the attribute to remove.
  */
-export function removeAttribute(element: Element, name: string, _value?: unknown): void {
+export function _removeAttribute(element: Element, name: string, _value?: unknown): void {
   element.removeAttribute(name);
 }
 
@@ -157,6 +157,6 @@ export function removeAttribute(element: Element, name: string, _value?: unknown
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function setAttribute(element: Element, name: string, value: unknown): void {
+export function _setAttribute(element: Element, name: string, value: unknown): void {
   element.setAttribute(name, String(value));
 }

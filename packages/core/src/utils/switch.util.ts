@@ -1,5 +1,5 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
-import { Context } from './context.util';
+import { _Context } from './context.util';
 import { _if } from './if.util';
 
 /**
@@ -27,11 +27,11 @@ import { _if } from './if.util';
  */
 export function _switch(
   parentNode: HTMLElement,
-  parentContext: Context,
+  parentContext: _Context,
   expression: NoArgsFunction<unknown>,
   blocks: Array<{ 
     condition: unknown[] | null, 
-    block: Function<[HTMLElement, Context, Node | null], Context> 
+    block: Function<[HTMLElement, _Context, Node | null], _Context> 
   }>
 ): void {
   _if(parentNode, parentContext, blocks.map(({ condition, block }) => ({

@@ -1,17 +1,16 @@
 import { Function, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
-import { BaseWebComponent } from '../directives';
-import { createElement } from './render-element.util';
+import { BaseWebComponent } from '../directives/base-web-component';
 
 /**
  * Tracks identifier scope during run time template function execution
  * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
  * and can be chained to a parent context for outer-scope resolution.
  */
-export class Context {
+export class _Context {
   /** 
    * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches). 
   */
-  private _children = new Array<Context>;
+  private _children = new Array<_Context>;
   /**
    * Map containing the run time values of variables defines during the run time execution
    * (e.g. {@for} variables: 'index', 'item', etc...)
@@ -43,7 +42,7 @@ export class Context {
    */
   constructor(
     private _root: BaseWebComponent,
-    private _parent: Context,
+    private _parent: _Context,
   ) {
     this.createElement = this._parent.createElement;
   }
@@ -93,8 +92,8 @@ export class Context {
    *
    * @param context - The child context to add.
    */
-  public addChild(context?: Context): Context {
-    context ??= new Context(this._root, this);
+  public addChild(context?: _Context): _Context {
+    context ??= new _Context(this._root, this);
     this._children.push(context);
     return context;
   }
@@ -104,9 +103,9 @@ export class Context {
    *
    * @param context - The child context to remove.
    */
-  public removeChild(context: Context) {
+  public removeChild(context: _Context) {
     const children = this._children;
-    const newChildren = new Array<Context>(children.length - 1);
+    const newChildren = new Array<_Context>(children.length - 1);
 
     let i = 0;
     let found = false;
@@ -205,7 +204,7 @@ export class Context {
  * @param referenceNode - The node to insert relative to (same semantics
  *   as `Node.insertBefore`). If `null`, the node is appended at the end of `parentNode`.
  */
-export function mountNode(node: Node, parentNode: Element, context: Context, referenceNode: Comment | null = null): void {
+export function mountNode(node: Node, parentNode: Element, context: _Context, referenceNode: Comment | null = null): void {
   context.addNode(node);
   parentNode.insertBefore(node, referenceNode);
 
@@ -234,7 +233,7 @@ export function mountNode(node: Node, parentNode: Element, context: Context, ref
  * @returns The created Comment node, to be used as the reference point for future
  *   insertions of dynamic content via `insertBefore(node, anchor)`.
  */
-export function createAnchor(label: string, parentNode: HTMLElement, context: Context, referenceNode: Comment | null = null): Comment {
+export function createAnchor(label: string, parentNode: HTMLElement, context: _Context, referenceNode: Comment | null = null): Comment {
   const anchor = document.createComment(label);
   mountNode(anchor, parentNode, context, referenceNode);
   return anchor;

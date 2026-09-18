@@ -16,13 +16,13 @@ const projectsRoot = '../packages';
  *
  * @example
  * // Typical output on success:
- * // ▶ Build: @xaendar/core
+ * // ▶ Typecheck: @xaendar/core
  * // ✅ @xaendar/core completato
- * // ▶ Build: @xaendar/ui
+ * // ▶ Typecheck: @xaendar/ui
  * // ✅ @xaendar/ui completato
  *
  * // Typical output on failure:
- * // ▶ Build: @xaendar/core
+ * // ▶ Typecheck: @xaendar/core
  * // ❌ Typescript Compilation failed for @xaendar/core:
  */
 async function compileAll(): Promise<void> {
@@ -37,7 +37,7 @@ async function compileAll(): Promise<void> {
       process.exit(1);
     }
 
-    console.log(`▶ Compile: @xaendar/${project}`);
+    console.log(`▶ Typecheck: @xaendar/${project}`);
 
     try {
       execSync(`tsc --noEmit --project "${tsconfigPath}"`, { stdio: 'inherit', cwd: projectPath });

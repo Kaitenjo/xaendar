@@ -14,9 +14,9 @@ import { NOT_ALLOWED_TAGS } from '../../costants/not-alllowed-tags.constants';
  * @param tagName - The tag name to validate.
  * @throws Will throw an error if the tag name is invalid.
  */
-export function isValidCustomElementName(tagName: string): boolean {
+export function isValidCustomElementName(tagName: string, logErrors = true): boolean {
   if (!/^[a-z][a-z0-9._\-]*-[a-z0-9._\-]*$/.test(tagName)) {
-    console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
+    logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
 - contain a hyphen
 - no spaces.
 - start with a lowercase letter.
@@ -28,7 +28,7 @@ export function isValidCustomElementName(tagName: string): boolean {
   }
 
   if (isReservedTagName(tagName)) {
-    console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
+    logErrors && console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
 Reserved names are: 
 - ${NOT_ALLOWED_TAGS.join('\n- ')}`);
     return false;

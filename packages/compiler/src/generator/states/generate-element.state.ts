@@ -19,7 +19,7 @@ import { getElementIdentifier, resolveExpression } from '../utils/generator.util
  */
 export function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): GeneratorTransitionFunctionReturnType {
   const tagName = node.tagName;
-  const isCustomElement = isValidCustomElementName(tagName);
+  const isCustomElement = isValidCustomElementName(tagName, false);
   const attributes = mapAttributes(node.attributes, compilerContext);
   const events = mapEvents(node.events, compilerContext);
   const dynamicBindings = mapDynamicBindings(node.dynamicBindings, compilerContext, isCustomElement);
@@ -29,14 +29,7 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
     functionsToProcess: new Map()
   }
 
-  switch (tagName) {
-    case 'svg':
-      retVal.code.push('context.createElement = createSVGElement');
-      break;
-    case 'math':
-      retVal.code.push('context.createElement = createMATHMLElement');
-  }
-
+  retVal.code.push(getPrecode(tagName));
   retVal.code.push(`const ${nodeName} = _renderElement(${parentNode}, context, ${anchor}, '${tagName}',`);
 
   attributes.length
@@ -73,7 +66,7 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
   switch (tagName) {
     case 'svg':
     case 'math':
-      retVal.code.push('context.createElement = createElement');
+      retVal.code.push('context.createElement = _createElement;');
   }
 
   if (node.children.length) {
@@ -100,7 +93,6 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
  * @returns Array of generated code strings, one per attribute.
  */
 function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): string[] {
-  isCustomElement = !!isCustomElement;
   return attributes.map(({ name, value }) => {
     const retval = [
       '{',
@@ -108,33 +100,45 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
     ];
 
     if (typeof value === 'string') {
-      retval.push('{',
+      retval.push(
         ...indent([
-          `value: () => '${value}'`,
-          'setter: bindProperty',
-        ]),
-        '}'
+          `value: () => '${value}',`,
+          'setter: _bindProperty',
+        ])
       );
     } else {
       const { expression, reactive } = resolveExpression(value.expression, compilerContext);
-      retval.push('{',
+      retval.push(
         ...indent([
-          `value: () => ${expression}`,
-          `setter: ${reactive ? 'bindReactiveProperty' : 'bindProperty'}`,
-        ]),
-        '}'
+          `value: () => ${expression}, `,
+          `setter: ${reactive ? '_bindReactiveProperty' : '_bindProperty'}`,
+        ])
       );
     }
 
     const extra = new Array<string>();
     const metadata = compilerContext.getPropertyMetadata(name);
-    if (isCustomElement) {
-      extra[extra.length - 1] = `${extra[extra.length - 1]},`;
-      extra.push('unbind: removeAttribute');
-    } else if (metadata && !metadata.required) {
-      extra[extra.length - 1] = `${extra[extra.length - 1]},`;
-      extra.push('unbind: setAttribute', `defaultValue: ${metadata.defaultValue}`);
+    if (isCustomElement !== undefined && !isCustomElement) {
+      if (metadata) {
+        /*
+          Teorically this control should not be necessary due to the typechecker checking
+          if a dynamic binding has a required attribute or not. Required attributes cannot be used with dynamic bindings
+          If typechecker is not correctly working this if prevents to generate code for required attributes
+        */
+        if (!metadata.required) {
+          retval[retval.length - 1] = `${retval[retval.length - 1]},`;
+          extra.push('unbind: _setAttribute', `defaultValue: ${metadata.defaultValue}`);
+        }
+      } else {
+        retval[retval.length - 1] = `${retval[retval.length - 1]},`;
+        extra.push('unbind: _removeAttribute');
+      }
     }
+
+    retval.push(
+      ...indent(extra),
+      '},'
+    );
 
     return retval;
   }).flat();
@@ -261,9 +265,9 @@ function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerConte
 function getPrecode(tagName: string): string {
   switch (tagName) {
     case 'svg':
-      return 'context.createElement = createSVGElement;';
+      return 'context.createElement = _createSVGElement;';
     case 'math':
-      return 'context.createElement = createMATHMLElement;';
+      return 'context.createElement = _createMATHMLElement;';
     default:
       return '';
   }

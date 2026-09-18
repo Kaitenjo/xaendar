@@ -1,11 +1,10 @@
 import { isValidCustomElementName, slice } from '@xaendar/common';
-import { compile, Cursor, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { compile, Cursor, extractComponentsMetadataFromSourceFile, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, disposeLanguageService, getLanguageService, loadCompilerOptions, registerRealFile, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptKind, ScriptTarget, SourceFile } from 'typescript';
 import type { Logger, Plugin } from 'vite';
-import { extractComponentsMetadataFromSourceFile } from '../../../../../compiler/src/utils/metadata.utils';
 import { COMPONENT_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportRegistry, clearImportsForComponent, findComponentsForImport, registerImportMapping } from '../import-registry';
 import { NodeCompilerHost } from '../node-compiler-host/node-compiler-host.model';
@@ -66,6 +65,7 @@ export function xaendarPlugin(): Plugin {
         return code;
       }
 
+      let first = true;
       for (const [className, metadata] of metadatas.entries()) {
         // TODO className is not unique, we can't use it as a key for the metadata cache
         registerMetadataMapping(className, metadata);
@@ -136,7 +136,8 @@ export function xaendarPlugin(): Plugin {
         }
   
         try {
-          code = injectFunctions(code, compiledMethods, className, varName, cssContent);
+          code = injectFunctions(code, first, compiledMethods, className, varName, cssContent);
+          first = false;
         } catch (err) {
           if (typeof err === 'string') {
             logError(err);
@@ -247,6 +248,7 @@ function extractImportedComponentPaths(templateSource: string, templateDir: stri
  *
  * @param jsSource - The transpiled JS source of the component file (post
  *   oxc + the stage-3 decorators babel plugin), before xaendar injection.
+ * @param first - Indicates if this is the first component of the file being processed.
  * @param compiledMethods - The raw output of the template compiler.
  * @param className - The name of the target class in this file.
  * @param varName - Variable name for the shared `CSSStyleSheet`, if any CSS is provided.
@@ -256,7 +258,7 @@ function extractImportedComponentPaths(templateSource: string, templateDir: stri
  *   block isn't found — meaning the component file wasn't scaffolded
  *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
  */
-function injectFunctions(jsSource: string, compiledMethods: string, className: string, varName?: string, cssContent?: string): string {
+function injectFunctions(jsSource: string, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): string {
   const sourceFile = createSourceFile('component.js', jsSource, ScriptTarget.Latest, true, ScriptKind.JS);
   const classDecl = findClassDeclarationByName(sourceFile, className);
 
@@ -266,7 +268,9 @@ function injectFunctions(jsSource: string, compiledMethods: string, className: s
 
   let result = insertTemplateMethods(jsSource, sourceFile, classDecl, compiledMethods);
   result = insertStyleSnippet(result, sourceFile, classDecl, varName, cssContent);
-  result = insertRequiredImports(result);
+  if (first) {
+    result = insertRequiredImports(result);
+  }
 
   return result;
 }
@@ -316,48 +320,7 @@ function insertStyleSnippet(jsSource: string, sourceFile: SourceFile, classDecl:
  * AST-position-based edits regardless of how much they shifted offsets.
  */
 function insertRequiredImports(jsSource: string): string {
-  const requiredImports = [
-    { value: '_if', source: '@xaendar/core' },
-    { value: '_switch', source: '@xaendar/core' },
-    { value: '_for', source: '@xaendar/core' },
-    { value: 'Context', source: '@xaendar/core' },
-    { value: '_iterationVariables', source: '@xaendar/core' },
-    { value: '_renderElement', source: '@xaendar/core' },
-    { value: '_renderText', source: '@xaendar/core' },
-    { value: '_renderLiteralText', source: '@xaendar/core' },
-    { value: 'createElement', source: '@xaendar/core' },
-    { value: 'createSVGElement', source: '@xaendar/core' },
-    { value: 'createMATHMLElement', source: '@xaendar/core' },
-    { value: 'setAttribute', source: '@xaendar/core' },
-    { value: 'setReactiveAttribute', source: '@xaendar/core' },
-  ];
-
-  const alreadyImported = new Array<{ value: string; source: string }>();
-  const importRegex = /import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g;
-  let match: RegExpExecArray | null;
-  while ((match = importRegex.exec(jsSource)) !== null) {
-    const parts = match[1]?.split(',');
-    const source = match[2];
-    if (parts) {
-      for (let i = 0; i < parts.length; i++) {
-        const name = parts[i].trim().split(/\s+as\s+/)[0]?.trim();
-        if (name) {
-          alreadyImported.push({ value: name, source });
-        }
-      }
-    }
-  }
-
-  const missingImports = requiredImports.filter(requiredImport => !alreadyImported.some(imported => imported.value === requiredImport.value && imported.source === requiredImport.source));
-
-  if (!missingImports.length) {
-    return jsSource;
-  }
-
-  const importsBySource = Map.groupBy(missingImports, missingImport => missingImport.source);
-  const importStatements = Array.from(importsBySource, ([source, imports]) => `import { ${imports.map(importItem => importItem.value).join(', ')} } from '${source}';`).join('\n');
-
-  return `${importStatements}\n\n${jsSource}`;
+  return `import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _bindProperty, _bindReactiveProperty, _removeAttribute, _setAttribute } from '@xaendar/core';\n${jsSource}`;
 }
 
 function findClassDeclarationByName(sourceFile: SourceFile, name: string): ClassDeclaration | undefined {

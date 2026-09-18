@@ -42,38 +42,57 @@ export type ComponentMetadata = {
 /**
  * Represents a component property with metadata from @Property decorator.
  */
-export type ComponentPropertyMetadata = {
+export class ComponentPropertyMetadata {
   /**
-   * Property name in the component class.
-   */
-  name: string;
-  /**
-   * Optional alias for attribute binding (if specified in decorator options).
+   * The default value for the property, if any.
   */
-  alias?: string;
+  public alias?: string;
   /**
-   * TypeScript type of the property (e.g., 'string', 'number', 'boolean').
-  */
-  type: string;
-} & ({
-  /**
-   * Whether the property is required to be set.
+   * The default value for the property, if any.
    */
-  required: true;
+  public defaultValue?: unknown;
   /**
-   * Default value for the property if not explicitly set.
+   * Indicates whether the property is required.
    */
-  defaultValue?: never;
-} | {
+  public required = false;
+
+  constructor(
+    public name: string,
+    public type: string,
+    public options?: { required?: boolean, alias?: string },
+  ) {
+    if (options) {
+      if (options.required !== undefined) {
+        this.required = options.required;
+      }
+      this.alias = options.alias;
+    }
+  }
+
   /**
-   * Whether the property is required to be set.
+   * Gets the default value for the property, considering whether it is required.
+   * @param required Whether to consider the property as required when getting the default value.
    */
-  required: false;
+  public getDefaultValue(): unknown;
+  public getDefaultValue(required: true): unknown;
+  public getDefaultValue(required: false): undefined;
+  public getDefaultValue(required?: boolean): unknown {
+    return !(required && this.required) ? this.defaultValue : undefined;
+  }
+
   /**
-   * Default value for the property if not explicitly set.
+   * Sets the default value for the property.
+   * @param value The default value to set for the property.
+   * @throws Throws an error if the property is required.
    */
-  defaultValue: unknown;
-})
+  public setDefaultValue(value: unknown) {
+    if (this.required) {
+      throw new Error(`Cannot set default value for required property "${this.name}".`);
+    }
+
+    this.defaultValue = value;
+  }
+}
 
 /**
  * Represents a component event with metadata from @Event decorator.

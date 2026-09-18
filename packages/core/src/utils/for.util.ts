@@ -1,12 +1,12 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { effect, signal, untracked } from '../signals';
 import { IterationVariablesHandle } from '../types/iteration-variables.type';
-import { Context, createAnchor } from './context.util';
+import { _Context, createAnchor } from './context.util';
 
 type ForKey = string | number;
 
 type ForEntry = {
-  context: Context;
+  context: _Context;
   update?: (newIndex: number, items: unknown[]) => void;
 };
 
@@ -26,7 +26,7 @@ type ForEntry = {
  *   `update` per aggiornare le variabili implicite in-place quando l'item
  *   viene riusato a un indice diverso.
  */
-export function _for(parentNode: HTMLElement, parentContext: Context, condition: NoArgsFunction<unknown[]>, trackExpression: Function<[unknown, number], ForKey>, forFn: Function<[HTMLElement, Context, unknown[], number, Node | null], { context: Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, condition: NoArgsFunction<unknown[]>, trackExpression: Function<[unknown, number], ForKey>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
   const anchor = createAnchor('for', parentNode, parentContext);
   let entries = new Map<ForKey, ForEntry>();
 
@@ -97,7 +97,7 @@ export function _for(parentNode: HTMLElement, parentContext: Context, condition:
  * @param aliases - Aliases for implicit variables defined in the `@for` loop.
  * @returns A handle exposing the resolved variables and an `update` function.
  */
-export function _iterationVariables(context: Context, items: unknown[], index: number, itemName: string, aliases: { $index: string, $first: string, $last: string, $even: string, $odd: string }): IterationVariablesHandle {
+export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string, aliases: { $index: string, $first: string, $last: string, $even: string, $odd: string }): IterationVariablesHandle {
   const $index = signal(index);
   const $first = signal(index === 0);
   const $last = signal(index === items.length - 1);
