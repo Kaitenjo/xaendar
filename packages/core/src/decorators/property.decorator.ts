@@ -1,13 +1,13 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
-import { INTERNAL_OBSERVED_ATTRIBUTES, INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
 import { BaseWebComponent } from '../directives/base-web-component';
 import { input } from '../signals/input/input';
-import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';
 import { InputSignal } from '../signals/types/input-signal.type';
+import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';
 
 const propertyDecoratorOptionsWithRequiredBrand = Symbol('PropertyDecoratorOptionsWithRequiredBrand');
-type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & { 
-  [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired' 
+type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & {
+  [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired'
 };
 
 function createPropertyDecorator<
@@ -25,7 +25,7 @@ function createPropertyDecorator<
     if (typeof propertyKey === 'symbol') {
       throw new Error('Symbol properties are not supported');
     }
-    
+
     let actualValue: ActualValue | undefined;
     let actualOptions: PropertyDecoratorOptions<ActualValue, IncomingValue> | undefined | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue> | undefined;
     if (!value || typeof value !== 'object' || !(propertyDecoratorOptionsWithRequiredBrand in value)) {
@@ -35,10 +35,8 @@ function createPropertyDecorator<
       actualOptions = value;
     }
 
-    const metadata = context.metadata as { [INTERNAL_OBSERVED_ATTRIBUTES]?: string[], [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
+    const metadata = context.metadata as { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
     const attributeName = actualOptions?.alias ?? propertyKey;
-    metadata[INTERNAL_OBSERVED_ATTRIBUTES] ??= [];
-    metadata[INTERNAL_OBSERVED_ATTRIBUTES].push(attributeName);
     metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] ??= {};
     metadata[INTERNAL_ALIAS_TO_ATTRIBUTE][attributeName] = propertyKey;
 

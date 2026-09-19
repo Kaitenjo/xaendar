@@ -320,7 +320,7 @@ function insertStyleSnippet(jsSource: string, sourceFile: SourceFile, classDecl:
  * AST-position-based edits regardless of how much they shifted offsets.
  */
 function insertRequiredImports(jsSource: string): string {
-  return `import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setAttribute, _setExpressionAttribute, _setReactiveAttribute, _removeAttribute } from '@xaendar/core';\n${jsSource}`;
+  return `import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute } from '@xaendar/core';\n${jsSource}`;
 }
 
 function findClassDeclarationByName(sourceFile: SourceFile, name: string): ClassDeclaration | undefined {

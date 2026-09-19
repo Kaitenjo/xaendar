@@ -1,6 +1,10 @@
-import type { NoArgsFunction } from '@xaendar/types';
+import type { Dictionary, NoArgsFunction } from '@xaendar/types';
 import { MATHML_NS, SVG_NS } from '../costants';
+import { BaseWebComponent } from '../directives';
+import { InputSignal } from '../signals';
 import { effect } from '../signals/effect/effect';
+import { isInputSignal } from '../signals/input/input-instance.symbol';
+import { INPUT_SIGNAL_SET_SYMBOL } from '../signals/input/input-set.symbol';
 import type { RenderElementDynamicBinding } from '../types/render-dynamic-binding.type';
 import type { RenderElementAttribute } from '../types/render-element-attribute.type';
 import type { RenderElementEvent } from '../types/render-element-event.type';
@@ -43,7 +47,7 @@ function bindAttributes(element: Element, context: _Context, attributes: RenderE
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter, unbind, defaultValue } = attributes[i];
     setter(context, element, name, value);
-    unbind && context.listen(() => unbind(element, name, () => defaultValue));
+    unbind && context.listen(() => unbind(context, element, name, () => defaultValue));
   }
 }
 
@@ -119,12 +123,13 @@ export function _createMATHMLElement(tagName: string): MathMLElement {
  * Sets a literal attribute value on an HTML element.
  * E.g., `<div id="example"></div>`.
  *
+ * @param _context - The current template execution scope.
  * @param element - The element to set the attribute on.
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setAttribute(element: Element, name: string, value: string): void {
-  element.setAttribute(name, value);
+export function _setProperty(_context: _Context, element: Element, name: string, value: string): void {
+  updateProperty(element, name, value);
 }
 
 /**
@@ -138,14 +143,14 @@ export function _setAttribute(element: Element, name: string, value: string): vo
  *       `<div maxlength="{ 1 + myVar}"></div>`.
  *       `<div maxlength="{ 1 + 3 }"></div>`.
  * 
+ * @param _context - The current template execution scope.
  * @param element - The element to set the attribute on.
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setExpressionAttribute(element: Element, name: string, value: NoArgsFunction<unknown>): void {
-  element.setAttribute(name, value() as string);
+export function _setExpressionProperty(_context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
+  updateProperty(element, name, value());
 }
-
 
 /**
  * Sets a reactive attribute value on an HTML element.
@@ -156,18 +161,33 @@ export function _setExpressionAttribute(element: Element, name: string, value: N
  * @param _context - The current template execution scope.
  * @param element - The element to set the attribute on.
  * @param name - The name of the attribute.
- * @param getter - A function that returns the attribute value.
+ * @param value - A function that returns the attribute value.
  */
-export function _setReactiveAttribute(_context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
-  element.setAttribute(name, getter() as string);
+export function _setReactiveProperty(context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
+  context.listen(effect(() => updateProperty(element, name, value())));
 }
 
 /**
  * Removes an attribute from an HTML element.
  *
+ * @param _context - The current template execution scope.
  * @param element - The element to remove the attribute from.
  * @param name - The name of the attribute to remove.
  */
-export function _removeAttribute(element: Element, name: string, _value?: unknown): void {
+export function _removeAttribute(_context: _Context, element: Element, name: string, _value?: unknown): void {
   element.removeAttribute(name);
+}
+
+/**
+ * Updates a property on an HTML element, ensuring it is an InputSignal and setting its value.
+ * @param element - The HTML element whose property is being updated.
+ * @param name - The name of the property to update.
+ * @param newValue - The new value to set for the property.
+ */
+function updateProperty(element: Element, name: string, newValue: unknown) {
+  const component = element as BaseWebComponent & Record<string, unknown> & { [name]: InputSignal<unknown> };
+  const constructor = component.constructor as unknown as Record<string | symbol, Record<string, Dictionary<string>>>;
+  name = constructor[Symbol.for('Symbol.metadata')].aliasToAttribute?.[name] ?? name;
+  const property = component[name];
+  property && isInputSignal(property) ? property.set(newValue, INPUT_SIGNAL_SET_SYMBOL) : component.setAttribute(name, String(newValue));
 }

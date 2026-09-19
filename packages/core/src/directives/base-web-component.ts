@@ -1,8 +1,3 @@
-import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { isInputSignal } from '../signals/input/input-instance.symbol';
-import { INPUT_SIGNAL_SET_SYMBOL } from '../signals/input/input-set.symbol';
-import { InputSignal } from '../signals/types/input-signal.type';
-import { BaseWebComponentConstructor } from '../types';
 import { _Context } from '../utils';
 
 /**
@@ -11,10 +6,6 @@ import { _Context } from '../utils';
  * Extends `HTMLElement` with Shadow DOM support and the lifecycle hooks
  * required for signal-based rendering. Concrete component classes should
  * extend this class and be decorated with `@WebComponent`.
- *
- * The `observedAttributes` static getter is added programmatically by the
- * `@WebComponent` decorator and will not appear in IDE autocompletion, but
- * it is present at runtime.
  */
 export class BaseWebComponent extends HTMLElement {
   /**
@@ -45,42 +36,6 @@ export class BaseWebComponent extends HTMLElement {
   private _render(): _Context {
     // Ignore, the actual render body is injected by the compiler 
     return {} as _Context;
-  }
-
-  /**
-   * Called by the browser engine when an observed attribute on the host
-   * element is added, changed, or removed.
-   *
-   * This callback may fire before `connectedCallback` if the attribute is
-   * already present on the element at parse time.
-   *
-   * @param name - The name of the attribute that changed.
-   * @param _oldValue - The previous value of the attribute (unused).
-   * @param newValue - The new value of the attribute.
-   */
-  private attributeChangedCallback(name: string, _oldValue: unknown, newValue: unknown): void {
-    /*
-      Since the 'Property Decorator add the property key to the ObservedAttributes
-      We are sure that the property with the given name exists on the instance of the subclass
-    */
-    const context = this as BaseWebComponent & Record<string, unknown> & { [name]: InputSignal<unknown> };
-    name = (this.constructor as BaseWebComponentConstructor)[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[name] ?? name;
-    if (!(name in context)) {
-      throw new Error(`Attribute ${name} is not associated to any property`);
-    }
-
-
-    /*
-      @Property decorator types ensure that the property associated to the attribute is an InputSignal
-      but i prefer to check it at runtime anyway to avoid any possible error in the future 
-      if the decorator is used wrong or if the types are not respected for some reason 
-     */
-    const property = context[name];
-    if (!isInputSignal(property)) {
-      throw new Error(`Property ${name} is not an InputSignal`);
-    }
-
-    property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
   }
 
   /**

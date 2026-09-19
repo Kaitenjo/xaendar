@@ -1,16 +1,12 @@
 /**
- * Metadata key used internally to store the list of observed attribute names
- * on a web component class.
- *
- * Populated by the `@Property` decorator and consumed by `@WebComponent` to
- * define `observedAttributes` on the custom element class.
- *
- * @internal
+ * Internal mapping from attribute aliases to property keys.
  */
-export const INTERNAL_OBSERVED_ATTRIBUTES = `observedAttributes`
-
 export const INTERNAL_ALIAS_TO_ATTRIBUTE = `aliasToAttribute`;
-
+/**
+ * Namespace for SVG elements.
+ */
 export const SVG_NS = 'http://www.w3.org/2000/svg';
-
+/**
+ * Namespace for MathML elements.
+ */
 export const MATHML_NS = "http://www.w3.org/1998/Math/MathML";

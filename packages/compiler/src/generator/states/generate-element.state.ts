@@ -103,7 +103,7 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
       retval.push(
         ...indent([
           `value: '${value}',`,
-          'setter: _setAttribute',
+          'setter: _setProperty',
         ])
       );
     } else {
@@ -111,14 +111,14 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
       retval.push(
         ...indent([
           `value: () => ${expression}, `,
-          `setter: ${reactive ? '_setReactiveAttribute' : '_setExpressionAttribute'}`,
+          `setter: ${reactive ? '_setReactiveProperty' : '_setExpressionProperty'}`,
         ])
       );
     }
 
     const extra = new Array<string>();
-    const metadata = compilerContext.getPropertyMetadata(name);
-    if (isCustomElement !== undefined && !isCustomElement) {
+    if (isCustomElement !== undefined) {
+      const metadata = compilerContext.getPropertyMetadata(name);
       if (metadata) {
         /*
           Teorically this control should not be necessary due to the typechecker checking
@@ -127,7 +127,7 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
         */
         if (!metadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
-          extra.push('unbind: _setExpressionAttribute', `defaultValue: ${metadata.defaultValue}`);
+          extra.push('unbind: _setExpressionProperty', `defaultValue: ${metadata.defaultValue}`);
         }
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;

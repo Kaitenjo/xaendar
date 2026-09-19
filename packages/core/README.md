@@ -24,7 +24,7 @@ npm install @xaendar/core
 | Primitive | Description |
 |-----------|-------------|
 | `BaseWebComponent` | Base class for every component — attaches a Shadow DOM and wires up lifecycle hooks |
-| `@WebComponent` | Class decorator that registers the element with the browser and binds observed attributes |
+| `@WebComponent` | Class decorator that registers the element with the browser |
 | `@Property` | Accessor decorator that exposes a reactive `InputSignal` as an HTML attribute |
 | `@Event` | Accessor decorator that creates a typed `CustomEvent` emitter |
 | `InputSignal` | A `Signal.State` specialised for attribute-driven input, with optional value transformation |
@@ -113,7 +113,6 @@ class Card extends BaseWebComponent { }
 
 Marks an `accessor` field as a reactive attribute-bound property.
 
-- Registers the property key in the element's `observedAttributes` list.
 - Wraps the value in an `InputSignal` — read it like a signal via `.get()`.
 - Supports an optional `transform` function to coerce the raw attribute string into a typed value.
 
