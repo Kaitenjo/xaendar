@@ -1,5 +1,5 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
-import { INTERNAL_OBSERVED_ATTRIBUTES } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_OBSERVED_ATTRIBUTES } from '../../costants';
 import { BaseWebComponent } from '../../directives/base-web-component';
 import { WebComponentDecoratorParams } from '../../types/web-component/web-component-decorator-params.type';
 
@@ -43,6 +43,11 @@ export function WebComponent<T extends BaseWebComponent>(options: WebComponentDe
 function defineObservedAttributes<T extends BaseWebComponent>(klass: Constructor<T>, context: ClassDecoratorContext<Constructor<T>>): void {
   Object.defineProperty(klass, 'observedAttributes', {
     get: () => context.metadata![INTERNAL_OBSERVED_ATTRIBUTES],
+    configurable: false,
+    enumerable: false
+  });
+  Object.defineProperty(klass, 'aliasToAttribute', {
+    get: () => context.metadata![INTERNAL_ALIAS_TO_ATTRIBUTE],
     configurable: false,
     enumerable: false
   });

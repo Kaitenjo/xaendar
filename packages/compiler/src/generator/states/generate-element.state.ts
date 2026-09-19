@@ -102,8 +102,8 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
     if (typeof value === 'string') {
       retval.push(
         ...indent([
-          `value: () => '${value}',`,
-          'setter: _bindProperty',
+          `value: '${value}',`,
+          'setter: _setAttribute',
         ])
       );
     } else {
@@ -111,7 +111,7 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
       retval.push(
         ...indent([
           `value: () => ${expression}, `,
-          `setter: ${reactive ? '_bindReactiveProperty' : '_bindProperty'}`,
+          `setter: ${reactive ? '_setReactiveAttribute' : '_setExpressionAttribute'}`,
         ])
       );
     }
@@ -127,7 +127,7 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
         */
         if (!metadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
-          extra.push('unbind: _setAttribute', `defaultValue: ${metadata.defaultValue}`);
+          extra.push('unbind: _setExpressionAttribute', `defaultValue: ${metadata.defaultValue}`);
         }
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;

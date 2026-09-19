@@ -1,5 +1,8 @@
+import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
 import { isInputSignal } from '../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../signals/input/input-set.symbol';
+import { InputSignal } from '../signals/types/input-signal.type';
+import { BaseWebComponentConstructor } from '../types';
 import { _Context } from '../utils';
 
 /**
@@ -60,7 +63,8 @@ export class BaseWebComponent extends HTMLElement {
       Since the 'Property Decorator add the property key to the ObservedAttributes
       We are sure that the property with the given name exists on the instance of the subclass
     */
-    const context = this as BaseWebComponent & Record<string, unknown>;
+    const context = this as BaseWebComponent & Record<string, unknown> & { [name]: InputSignal<unknown> };
+    name = (this.constructor as BaseWebComponentConstructor)[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[name] ?? name;
     if (!(name in context)) {
       throw new Error(`Attribute ${name} is not associated to any property`);
     }
@@ -71,11 +75,12 @@ export class BaseWebComponent extends HTMLElement {
       but i prefer to check it at runtime anyway to avoid any possible error in the future 
       if the decorator is used wrong or if the types are not respected for some reason 
      */
-    if (!isInputSignal(context[name])) {
+    const property = context[name];
+    if (!isInputSignal(property)) {
       throw new Error(`Property ${name} is not an InputSignal`);
     }
 
-    context[name].set(newValue, INPUT_SIGNAL_SET_SYMBOL);
+    property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
   }
 
   /**

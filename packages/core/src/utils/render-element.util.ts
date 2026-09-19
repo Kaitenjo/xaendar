@@ -43,7 +43,7 @@ function bindAttributes(element: Element, context: _Context, attributes: RenderE
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter, unbind, defaultValue } = attributes[i];
     setter(context, element, name, value);
-    unbind && context.listen(() => unbind(element, name, defaultValue));
+    unbind && context.listen(() => unbind(element, name, () => defaultValue));
   }
 }
 
@@ -107,37 +107,59 @@ export function _createSVGElement(tagName: string): SVGElement {
 
 /**
  * Creates a MathML element with the specified tag name using the MathML namespace.
- *
- * @param tagName - The MathML tag name of the element to create.
- * @returns The newly created MathML element.
- */
+*
+* @param tagName - The MathML tag name of the element to create.
+* @returns The newly created MathML element.
+*/
 export function _createMATHMLElement(tagName: string): MathMLElement {
   return document.createElementNS(MATHML_NS, tagName);
 }
 
 /**
- * Sets a static attribute value on an HTML element.
+ * Sets a literal attribute value on an HTML element.
+ * E.g., `<div id="example"></div>`.
+ *
+ * @param element - The element to set the attribute on.
+ * @param name - The name of the attribute.
+ * @param value - The default value to set for the attribute.
+ */
+export function _setAttribute(element: Element, name: string, value: string): void {
+  element.setAttribute(name, value);
+}
+
+/**
+ * Sets a Literal expression attribute and a non-reactive binding on an HTML element.
+ * A literal expression is an expression containing only one costant value
+ * A non-reactive binding is an expression containing one non-signal value or one literal value and one non-reactive value or one combination of these.
+ * 
+ * E.g., `<div id={expression}></div>`.
+ *       `<div id={ 'default' }></div>`.
+ *       `<div maxlength="{ 1 }"></div>`.
+ *       `<div maxlength="{ 1 + myVar}"></div>`.
+ *       `<div maxlength="{ 1 + 3 }"></div>`.
+ * 
+ * @param element - The element to set the attribute on.
+ * @param name - The name of the attribute.
+ * @param value - The default value to set for the attribute.
+ */
+export function _setExpressionAttribute(element: Element, name: string, value: NoArgsFunction<unknown>): void {
+  element.setAttribute(name, value() as string);
+}
+
+
+/**
+ * Sets a reactive attribute value on an HTML element.
+ * A reactive expression is an expression containing at least one signal.
+ * 
+ * E.g., `<div id={ mySignal() }></div>`.
  *
  * @param _context - The current template execution scope.
  * @param element - The element to set the attribute on.
  * @param name - The name of the attribute.
  * @param getter - A function that returns the attribute value.
  */
-export function _bindProperty(_context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
-  element.setAttribute(name, String(getter()))
-}
-
-/**
- * Sets a reactive attribute value on an HTML element that updates automatically
- * whenever the underlying signal changes.
- *
- * @param context - The current template execution scope.
- * @param element - The element to set the attribute on.
- * @param name - The name of the attribute.
- * @param getter - A function that returns the attribute value.
- */
-export function _bindReactiveProperty(context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
-  context.listen(effect(() => element.setAttribute(name, String(getter()))));
+export function _setReactiveAttribute(_context: _Context, element: Element, name: string, getter: NoArgsFunction<unknown>): void {
+  element.setAttribute(name, getter() as string);
 }
 
 /**
@@ -148,15 +170,4 @@ export function _bindReactiveProperty(context: _Context, element: Element, name:
  */
 export function _removeAttribute(element: Element, name: string, _value?: unknown): void {
   element.removeAttribute(name);
-}
-
-/**
- * Sets a default attribute value on an HTML element.
- *
- * @param element - The element to set the attribute on.
- * @param name - The name of the attribute.
- * @param value - The default value to set for the attribute.
- */
-export function _setAttribute(element: Element, name: string, value: unknown): void {
-  element.setAttribute(name, String(value));
 }

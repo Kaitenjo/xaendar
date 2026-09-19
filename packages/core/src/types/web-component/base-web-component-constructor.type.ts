@@ -8,5 +8,6 @@ import { BaseWebComponent } from '../../directives/base-web-component';
  * Elements API to register attribute change callbacks.
  */
 export type BaseWebComponentConstructor = Constructor<BaseWebComponent, {
-  observedAttributes: string[]
+  observedAttributes: string[],
+  aliasToAttribute: Record<string, string>
 }>;
