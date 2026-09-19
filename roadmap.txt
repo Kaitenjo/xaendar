@@ -25,3 +25,12 @@ di invalidità e di decisione quando cachare, per questo è stata disattivata
   - Direttive
   - Binding dinamico di eventi e attributi e Direttive
   - Creazione componenti imperativamente
+  - Proprieta di Input senza valore (simulare attributyi come readonly o disable)
+  - CustomElements che partrono da un HTMLElement specifico
+
+Le source maps vengono probabilmente genrate prima dell'aggiunta dei miei pezzi di codie andando
+a impedire il debugging dei componeti poiche ibreakpoitn nel .ts non matchato le reali righe del javascript
+
+compiler non genera unbind (lo vedo ora) -< (ho bisogno dei metadati di altri componenti prima :cCCCCCCCCCCCCCC)
+i decoreatori di proprieta sono applicati in ritardo al bootstrapping
+
