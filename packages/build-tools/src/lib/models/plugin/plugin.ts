@@ -1,5 +1,5 @@
 import { isValidCustomElementName, slice } from '@xaendar/common';
-import { compile, Cursor, extractComponentsMetadataFromSourceFile, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { compile, CompilerCache, ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, disposeLanguageService, getLanguageService, loadCompilerOptions, registerRealFile, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -10,6 +10,7 @@ import { clearImportRegistry, clearImportsForComponent, findComponentsForImport,
 import { NodeCompilerHost } from '../node-compiler-host/node-compiler-host.model';
 import { clearTemplateRegistry, findComponentForTemplate, registerTemplateMapping, removeAllMappingsForComponent, removeTemplateMapping } from '../template-registry';
 import { getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
+import { existsSync } from 'node:fs';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
@@ -87,12 +88,12 @@ export function xaendarPlugin(): Plugin {
           this.warn(`Could not find template at ${templatePath}`);
           return null;
         }
-  
+
         this.addWatchFile(templatePath);
         registerTemplateMapping(templatePath, id);
         // ! is a safe assertion because we check if the fileExists before reading it
         const templateSource = host.readFile(templatePath)!;
-  
+
         clearImportsForComponent(id);
         for (const importedPath of extractImportedComponentPaths(templateSource, dirname(templatePath))) {
           if (host.fileExists(importedPath)) {
@@ -100,9 +101,9 @@ export function xaendarPlugin(): Plugin {
             registerImportMapping(importedPath, id);
           }
         }
-  
+
         let cssContent: string | undefined;
-  
+
         if (styleUrl) {
           const stylePath = resolve(folder, styleUrl);
           if (host.fileExists(stylePath)) {
@@ -110,23 +111,22 @@ export function xaendarPlugin(): Plugin {
             cssContent = host.readFile(stylePath);
           }
         }
-  
+
         let compiledMethods: string | undefined;
         let typecheckBody: TypeCheckResult | undefined;
         const varName = cssContent ? `__${className}_sheet` : undefined;
-  
+
         try {
           // Todo Create a dedicated cache to store signal values metadata otherwise this will be done every time file is saved
           const signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass);
-          const result = await compile(templateSource, { 
-            baseDir: dirname(templatePath), 
-            cssVariableName: varName, 
+          const result = await compile(templateSource, {
+            baseDir: dirname(templatePath),
+            cssVariableName: varName,
             signals,
-            metadata,
-            cache: { 
-              get: getMetadataMapping, 
-              set: registerMetadataMapping 
-            } 
+            cache: {
+              get: getMetadataOrExtract,
+              set: registerMetadataMapping
+            }
           });
           compiledMethods = result.javascript;
           typecheckBody = result.typescript;
@@ -134,7 +134,7 @@ export function xaendarPlugin(): Plugin {
           logError(`Failed to compile template - ${templatePath}\n${err instanceof Error ? err.message : err}`);
           return null;
         }
-  
+
         try {
           code = injectFunctions(code, first, compiledMethods, className, varName, cssContent);
           first = false;
@@ -144,17 +144,17 @@ export function xaendarPlugin(): Plugin {
           }
           return null;
         }
-  
+
         registerRealFile(id);
-  
+
         const shim = createShim(new Map([[id, [className]]]), typecheckBody);
         const languageService = getLanguageService(compilerOptions);
         const diagnostics = languageService.getSemanticDiagnostics(shim.path);
-  
+
         for (let i = 0; i < diagnostics.length; i++) {
           logError(`Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
         }
-  
+
         // After logging every diagnostics we have to return null to raise an error
         if (diagnostics.length) {
           return null;
@@ -417,4 +417,59 @@ function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, body
 
   const templatePosition = cursor.getPositionFromCharacterIndex(templateSpan.start);
   return `${templatePosition} - ${message}\n ---> ${slice(templateSource, templateSpan.start, templateSpan.end)}`;
+}
+
+async function getMetadataOrExtract(name: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
+  let metadata = getMetadataMapping(name);
+  if (metadata) {
+    return metadata;
+  }
+  
+  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolve(path));
+  if (!resolvedPath) {
+    throw new Error(`Unable to resolve module path for "${name}".`);
+  }
+  
+  const sourceFile = createSourceFile('', await readFile(resolvedPath, 'utf-8'), ScriptTarget.Latest, true);
+  const metadatas = await extractComponentsMetadataFromSourceFile(sourceFile);
+  metadata = metadatas?.get(name);
+  if (!metadata) {
+    throw new Error(`Metadata for symbol "${name}" not found.`);
+  }
+  // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!
+  registerMetadataMapping(name, metadata);
+  return metadata;
+}
+
+/**
+ * Resolves a module import path to an actual file system path.
+ * Handles both relative paths (./button.component) and package paths (@scope/pkg).
+ * 
+ * @param baseDir - The directory to resolve relative imports from
+ * @param modulePath - The import module path
+ * @returns The resolved file path, or undefined if not found
+ */
+export function resolveModulePath(baseDir: string, modulePath: string): string | undefined {
+  // Handle relative imports
+  if (modulePath.startsWith('.')) {
+    const resolvedPath = resolve(baseDir, modulePath);
+
+    // Try with .ts extension
+    if (existsSync(`${resolvedPath}.ts`)) {
+      return resolvedPath + '.ts';
+    }
+
+    // Try with /index.ts if directory
+    if (existsSync(`${resolvedPath}/index.ts`)) {
+      return `${resolvedPath}/index.ts`;
+    }
+
+    // Try as-is (might already have extension)
+    if (existsSync(resolvedPath)) {
+      return resolvedPath;
+    }
+  }
+
+  // TODO: Handle package imports and tsconfig aliases
+  return undefined;
 }

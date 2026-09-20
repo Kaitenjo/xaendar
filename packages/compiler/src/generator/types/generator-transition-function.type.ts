@@ -1,6 +1,7 @@
-import { ASTNode } from '../../parser/types/ast.type';
+import type { AsyncFunction } from '@xaendar/types';
+import type { ASTNode } from '../../parser/types/ast.type';
 import { CompilerContext } from '../models/compiler-context.model';
-import { GeneratorTransitionFunctionReturnType } from './generator-transition-function-return-type.type';
+import type { GeneratorTransitionFunctionReturnType } from './generator-transition-function-return-type.type';
 
 /**
  * The signature of a generator transition function.
@@ -20,10 +21,10 @@ import { GeneratorTransitionFunctionReturnType } from './generator-transition-fu
  *   in the current scope.
  * @returns The generated output fragments for the provided node.
  */
-export type GeneratorTransitionFunction<T extends ASTNode = ASTNode> = (
+export type GeneratorTransitionFunction<T extends ASTNode = ASTNode> = AsyncFunction<[
   node: T,
   parentNode: string,
   index: string,
   compilerContext: CompilerContext,
   anchor: string | null
-) => GeneratorTransitionFunctionReturnType | undefined
+], GeneratorTransitionFunctionReturnType | undefined>

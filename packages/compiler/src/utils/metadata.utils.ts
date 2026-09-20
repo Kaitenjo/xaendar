@@ -1,6 +1,6 @@
 import { slice } from '@xaendar/common';
-import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ClassDeclarationWithName, ComponentDeclaration, ComponentEventMetadata, ComponentMetadata, ComponentPropertyMetadata } from '../types/component-metadata.type';
 import { Span } from '../types/span.type';
@@ -115,39 +115,6 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
   }
 
   return metadatas;
-}
-
-/**
- * Resolves a module import path to an actual file system path.
- * Handles both relative paths (./button.component) and package paths (@scope/pkg).
- * 
- * @param modulePath - The import module path
- * @param baseDir - The directory to resolve relative imports from
- * @returns The resolved file path, or undefined if not found
- */
-export function resolveModulePath(modulePath: string, baseDir: string): string | undefined {
-  // Handle relative imports
-  if (modulePath.startsWith('.')) {
-    const resolvedPath = resolve(baseDir, modulePath);
-
-    // Try with .ts extension
-    if (existsSync(`${resolvedPath}.ts`)) {
-      return resolvedPath + '.ts';
-    }
-
-    // Try with /index.ts if directory
-    if (existsSync(`${resolvedPath}/index.ts`)) {
-      return `${resolvedPath}/index.ts`;
-    }
-
-    // Try as-is (might already have extension)
-    if (existsSync(resolvedPath)) {
-      return resolvedPath;
-    }
-  }
-
-  // TODO: Handle package imports and tsconfig aliases
-  return undefined;
 }
 
 /**

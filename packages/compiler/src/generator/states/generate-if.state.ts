@@ -5,7 +5,7 @@ import { CompilerContext } from '../models/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, resolveExpression } from '../utils/generator.utils';
 
-export function generateIf(node: IfNode, parentNode: string, index: string, compilerContext: CompilerContext): GeneratorTransitionFunctionReturnType {
+export async function generateIf(node: IfNode, parentNode: string, index: string, compilerContext: CompilerContext): Promise<GeneratorTransitionFunctionReturnType> {
   const ifContext = new CompilerContext(compilerContext);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],

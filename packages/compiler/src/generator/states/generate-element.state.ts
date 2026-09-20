@@ -17,12 +17,12 @@ import { getElementIdentifier, resolveExpression } from '../utils/generator.util
  * @param compilerContext - Current render scope context.
  * @returns Array of generated code lines.
  */
-export function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): GeneratorTransitionFunctionReturnType {
+export async function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
   const isCustomElement = isValidCustomElementName(tagName, false);
-  const attributes = mapAttributes(node.attributes, compilerContext);
+  const attributes = await mapAttributes(node.attributes, compilerContext);
   const events = mapEvents(node.events, compilerContext);
-  const dynamicBindings = mapDynamicBindings(node.dynamicBindings, compilerContext, isCustomElement);
+  const dynamicBindings = await mapDynamicBindings(node.dynamicBindings, compilerContext, isCustomElement);
   const nodeName = getElementIdentifier(node, parentNode, index);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
@@ -92,8 +92,10 @@ export function generateElement(node: ElementNode, parentNode: string, index: st
  * @param compilerContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code strings, one per attribute.
  */
-function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): string[] {
-  return attributes.map(({ name, value }) => {
+async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): Promise<string[]> {
+  const mappedAttributes = new Array<string>(); 
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value } = attributes[i];
     const retval = [
       '{',
       indent(`name: '${name}',`)
@@ -118,16 +120,17 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
 
     const extra = new Array<string>();
     if (isCustomElement !== undefined) {
-      const metadata = compilerContext.getPropertyMetadata(name);
-      if (metadata) {
+      const metadata = await compilerContext.cache?.get(name);
+      const propertyMetadata = metadata?.properties.get(name);
+      if (propertyMetadata) {
         /*
           Teorically this control should not be necessary due to the typechecker checking
           if a dynamic binding has a required attribute or not. Required attributes cannot be used with dynamic bindings
           If typechecker is not correctly working this if prevents to generate code for required attributes
         */
-        if (!metadata.required) {
+        if (!propertyMetadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
-          extra.push('unbind: _setExpressionProperty', `defaultValue: ${metadata.defaultValue}`);
+          extra.push('unbind: _setExpressionProperty', `defaultValue: ${propertyMetadata.defaultValue}`);
         }
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;
@@ -140,8 +143,10 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
       '},'
     );
 
-    return retval;
-  }).flat();
+    mappedAttributes.push(...retval);
+  }
+
+  return mappedAttributes;
 }
 
 /**
@@ -197,16 +202,19 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   return mappedEvents;
 }
 
-function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, isCustomElement: boolean = false): string[] {
-  return dynamicBindings.flatMap(({ condition, attributes, events, dynamicBindings }) => {
+async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, isCustomElement: boolean = false): Promise<string[]> {
+  const mappedDynamicBindings = new Array<string>();
+
+  for (let i = 0; i < dynamicBindings.length; i++) {
+    const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
     if (!attributes.length && !events.length && !dynamicBindings.length) {
-      return [];
+      continue;
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
-    const mappedAttributes = mapAttributes(attributes, compilerContext, isCustomElement);
+    const mappedAttributes = await mapAttributes(attributes, compilerContext, isCustomElement);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedDynamicBindings = mapDynamicBindings(dynamicBindings, compilerContext, isCustomElement);
+    const mappedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, isCustomElement);
 
     const retVal = [
       '{',
@@ -258,8 +266,10 @@ function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerConte
       );
 
     retVal.push('}');
-    return retVal;
-  });
+    mappedDynamicBindings.push(...retVal);
+  };
+
+  return mappedDynamicBindings;
 }
 
 function getPrecode(tagName: string): string {

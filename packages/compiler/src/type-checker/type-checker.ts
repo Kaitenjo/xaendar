@@ -1,12 +1,10 @@
 import { slice } from '@xaendar/common';
-import { readFile } from 'fs/promises';
-import { createSourceFile, ScriptTarget } from 'typescript';
 import { Cursor } from '../models/cursor.js';
 import type { ASTNode } from '../parser/types/ast.type.js';
 import { ASTNodeType } from '../parser/types/node.enum.js';
 import type { ImportNode } from '../parser/types/nodes/import-node.type.js';
+import type { CompilerCache } from '../types/compiler-cache.type.js';
 import type { Span } from '../types/span.type.js';
-import { extractComponentsMetadataFromSourceFile, resolveModulePath } from '../utils/metadata.utils.js';
 import { TypeCheckContext } from './models/type-checker-context.js';
 import { typeCheckElement } from './states/type-check-element.state.js';
 import { typeCheckFor } from './states/type-check-for.state.js';
@@ -16,7 +14,6 @@ import { typeCheckTextAndInterpolation } from './states/type-check-text-and-inte
 import type { Line, LineMapping } from './types/generated-line.type.js';
 import type { TypeCheckResult } from './types/type-checker-result.type.js';
 import type { TypeCheckerStates } from './types/type-checker-states.type.js';
-import type { TypeCheckerCache } from './types/typechecker-cache.type.js';
 import { indentLines, plain } from './utils/line-builder.utils.js';
 
 /**
@@ -67,7 +64,7 @@ export class TypeChecker {
   constructor(
     private _input: string, 
     private _ast: ASTNode[],
-    private _cache?: TypeCheckerCache
+    private _cache?: CompilerCache
   ) { }
 
   /**
@@ -87,20 +84,11 @@ export class TypeChecker {
         node.specifiers
           .filter(({ imported }) => imported !== '*')
           .map(async ({ imported, local }) => {
-            const symbolName = imported === 'default' ? local : imported;
-            let metadata = this._cache?.get(symbolName);
-            if (!metadata) {
-              const sourceFile = createSourceFile('', await readFile(resolveModulePath(node.path, baseDir)!, 'utf-8'), ScriptTarget.Latest, true);
-              const metadatas = await extractComponentsMetadataFromSourceFile(sourceFile);
-              metadata = metadatas?.get(symbolName);
-              if (!metadata) {
-                throw new Error(`Metadata for symbol "${symbolName}" not found.`);
-              }
-              // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!
-              // this._cache?.set(symbolName, metadata);
+            const name = imported === 'default' ? local : imported;
+            const metadata = await this._cache?.get(name, [baseDir, node.path]);
+            if (metadata) {
+              this._context.addImport(metadata);
             }
-            
-            this._context.addImport(metadata);
           }
         )
       )

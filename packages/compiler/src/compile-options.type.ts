@@ -1,4 +1,4 @@
-import { TypeCheckerCache } from "./type-checker/types/typechecker-cache.type";
+import { CompilerCache } from "./types/compiler-cache.type";
 import { ComponentMetadata } from "./types/component-metadata.type";
 
 /**
@@ -60,19 +60,11 @@ export type CompileOptions = {
    * Required when generating JavaScript output. Ignored if undefined.
    */
   signals?: string[];
-
   /**
    * Optional caching layer for component and directive metadata.
    *
    * Improves compilation performance by caching extracted metadata,
    * avoiding redundant parsing and extraction of imported components.
    */
-  cache?: TypeCheckerCache
-  /**
-   * Component metadata extracted from the TypeScript source file.
-   * 
-   * Used to re apply default value to dynamic bindings when the condition
-   * of the dynamic binding changes.
-   */
-  metadata?: ComponentMetadata
+  cache?: CompilerCache
 }

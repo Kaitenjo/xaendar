@@ -1,4 +1,4 @@
-import { ComponentMetadata, ComponentPropertyMetadata } from "../../types";
+import type { CompilerCache } from '../../types/compiler-cache.type';
 
 /**
  * Whether a declared identifier holds a plain value or a signal.
@@ -14,6 +14,11 @@ export type IdentifierKind = 'value' | 'signal';
  * and can be chained to a parent context for outer-scope resolution.
  */
 export class CompilerContext {
+  /**
+   * The compiler cache associated with this context, used to store and retrieve
+   * intermediate compilation results for efficiency.
+   */
+  public cache?: CompilerCache;
   /**
    * Parent context representing the enclosing scope.
    */
@@ -35,10 +40,6 @@ export class CompilerContext {
    * (e.g. $event)
    */
   private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>();
-  /**
-   * Metadata associated with the component.
-   */
-  private readonly _componentMetadata: ComponentMetadata | undefined;
 
   /**
    * Creates a new scope context.
@@ -48,19 +49,13 @@ export class CompilerContext {
    *   to declare a signal-backed identifier.
    * @param parent - Optional parent context representing the enclosing scope.
    */
-  constructor();
-  constructor(metadata: ComponentMetadata);
-  constructor(parent: CompilerContext);
-  constructor(parent: CompilerContext, idenfitiers: Array<string | [string, IdentifierKind]>);
   constructor(
-    metadataOrParent?: ComponentMetadata | CompilerContext,
+    parent?: CompilerContext,
     identifiers?: Array<string | [string, IdentifierKind]>,
   ) {
-    if (metadataOrParent instanceof CompilerContext) {
-      this.parent = metadataOrParent;
-      this._componentMetadata = metadataOrParent._componentMetadata;
-    } else if (metadataOrParent) {
-      this._componentMetadata = metadataOrParent;
+    if (parent) {
+      this.parent = parent;
+      this.cache = parent.cache;
     }
 
     if (identifiers?.length) {
@@ -195,15 +190,5 @@ export class CompilerContext {
    */
   public getUnresolvableIdentifierKind(name: string): IdentifierKind | undefined {
     return this._unresolvableIdentifiers.get(name) ?? this.parent?.getUnresolvableIdentifierKind(name);
-  }
-
-  /**
-   * Returns the metadata for a component property with the given name.
-   *
-   * @param name - The name of the property to look up.
-   * @returns The metadata for the specified property, or `undefined` if it doesn't exist.
-   */
-  public getPropertyMetadata(name: string): ComponentPropertyMetadata | undefined {
-    return this._componentMetadata?.properties.get(name);
   }
 }

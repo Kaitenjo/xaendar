@@ -1,6 +1,8 @@
 import { indent, slice } from '@xaendar/common';
+import { CompilerCache } from '@xaendar/compiler';
 import { ASTNode } from '../parser/types/ast.type.js';
 import { ASTNodeType } from '../parser/types/node.enum.js';
+import { Span } from '../types/span.type.js';
 import { CompilerContext } from './models/compiler-context.model.js';
 import { generateElement } from './states/generate-element.state.js';
 import { generateFor } from './states/generate-for.state.js';
@@ -11,8 +13,6 @@ import { skipGeneration } from './states/skip-generation.state.js';
 import { GeneratorStates } from './types/generator-states.type.js';
 import { GeneratorTransitionFunctionReturnType } from './types/generator-transition-function-return-type.type.js';
 import { ROOT_NODE } from './utils/generator.utils.js';
-import { Span } from '../types/span.type.js';
-import { ComponentMetadata } from '../types/component-metadata.type.js';
 
 /**
  * The Generator class is responsible for generating code from an abstract syntax tree (AST) representation of the input source code. 
@@ -44,6 +44,7 @@ export class Generator {
   constructor(
     private readonly _input: string,
     private readonly _ast: ASTNode[],
+    private readonly _cache?: CompilerCache
   ) { }
 
   /**
@@ -52,7 +53,7 @@ export class Generator {
    * @param signals An array of signal names to be included in the generated code.
    * @returns The generated code as a string.
    */
-  public generate(cssVariableName: string | undefined, signals: string[], metadata: ComponentMetadata): string {
+  public async generate(cssVariableName: string | undefined, signals: string[]): Promise<string> {
     const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess']) => {
       if (functionsToProcess) {
         for (const [key, value] of functionsToProcess.entries()) {
@@ -63,7 +64,8 @@ export class Generator {
 
     try {
       this._nodeToProcess.clear();
-      const compilerContext = new CompilerContext(metadata);
+      const compilerContext = new CompilerContext();
+      compilerContext.cache = this._cache;
       for (let i = 0; i < signals.length; i++) {
         compilerContext.addSignalClassField(signals[i]);
       }
@@ -81,7 +83,7 @@ export class Generator {
       }
 
       for (let i = 0; i < this._ast.length; i++) {
-        const result = this._processNode(this._ast[i], ROOT_NODE, i.toString(), compilerContext, null);
+        const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), compilerContext, null);
         if (result) {
           const { code, functionsToProcess } = result;
           processFunctions(functionsToProcess);
@@ -106,18 +108,20 @@ export class Generator {
           generatedCode.push(indent(precode));
         }
 
+        const functionBody = [];
+        for (let i = 0; i < node.children.length; i++) {
+          const child = node.children[i];
+          const result = await this._processNode(child, parentNode, i.toString(), context, anchor ?? null);
+          if (result) {
+            const { code, functionsToProcess } = result;
+            processFunctions(functionsToProcess);
+            functionBody.push(...code);
+          }
+        }
+
         generatedCode.push(
           ...indent([
-            ...node.children.map((child, i) => {
-              const result = this._processNode(child, parentNode, i.toString(), context, anchor ?? null);
-              if (result) {
-                const { code, functionsToProcess } = result;
-                processFunctions(functionsToProcess);
-                return code;
-              }
-
-              return '';
-            }).flat(),
+            ...functionBody,
             fnData.fn.isForBody ? 'return { context, update };' : 'return context;'
           ]),
           '}'
@@ -141,13 +145,13 @@ export class Generator {
    * @param anchor The anchor point for inserting the generated code, if applicable.
    * @returns The result of processing the node, including generated code and functions to process, or undefined if no code is generated.
    */
-  private _processNode(node: ASTNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): GeneratorTransitionFunctionReturnType | undefined {
+  private async _processNode(node: ASTNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType | undefined> {
     const state = this._states[node.type];
 
     if (!state) {
       throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span });
     }
 
-    return state(node as never, parentNode, index, compilerContext, anchor);
+    return await state(node as never, parentNode, index, compilerContext, anchor);
   }
 }

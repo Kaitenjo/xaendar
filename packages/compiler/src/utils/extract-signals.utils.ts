@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve as resolvePath } from 'node:path';
-import { ClassDeclaration, ClassLikeDeclaration, EntityName, Expression, ImportDeclaration, PropertyDeclaration, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, forEachChild, getDecorators, isCallExpression, isClassDeclaration, isHeritageClause, isIdentifier, isImportDeclaration, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode } from 'typescript';
 import { PackageJson } from 'type-fest';
+import { ClassDeclaration, ClassLikeDeclaration, EntityName, Expression, ImportDeclaration, PropertyDeclaration, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, forEachChild, isCallExpression, isClassDeclaration, isIdentifier, isImportDeclaration, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode } from 'typescript';
 import { ClassDeclarationWithName } from '../types/component-metadata.type';
 
 const SIGNAL_MODULE_SPECIFIERS: ReadonlySet<string> = new Set(['@xaendar/core/signals']);
