@@ -10,6 +10,6 @@
  * @example
  * const headers: Dictionary<string, string> = { 'Content-Type': 'application/json' };
  */
-export type Dictionary<Key extends string | number, Value = string> = {
+export type Dictionary<Key extends string | number | symbol, Value = string> = {
   [K in Key]?: Value
 }

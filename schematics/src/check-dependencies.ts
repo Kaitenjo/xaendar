@@ -66,8 +66,8 @@ async function checkDependencies(): Promise<void> {
     // Rule 1 – invalid files
     const realAllInvalidFiles = Object.keys(depCheckResult.invalidFiles);
     if (realAllInvalidFiles.length) {
-      console.log(['Package', packageJson.name, 'invalid files!']);
-      console.log([depCheckResult.invalidFiles]);
+      console.log('Package', packageJson.name, 'invalid files!');
+      console.log(depCheckResult.invalidFiles);
       hasError = true;
     }
 
@@ -75,7 +75,7 @@ async function checkDependencies(): Promise<void> {
     const realAllDependenciesUsedNames = Object.keys(depCheckResult.using);
     const selfDepOnSourceCode = realAllDependenciesUsedNames.findIndex(d => d === packageJson.name);
     if (selfDepOnSourceCode > -1) {
-      console.log(['package', packageJson.name, 'has a self dep, remove it']);
+      console.log('Package', packageJson.name, 'has a self dep, remove it');
       hasError = true;
     }
 
@@ -90,7 +90,7 @@ async function checkDependencies(): Promise<void> {
       dependenciesNames
         .filter(depName => realAllDependenciesUsedNames.indexOf(depName) < 0)
         .forEach(depName => {
-          console.log([`Package ${packageJson.name} import unused library ${depName}\nIt will be removed automatically`]);
+          console.log(`Package ${packageJson.name} import unused library ${depName}\nIt will be removed automatically`);
           delete packageJson.dependencies![depName]
         });
     }

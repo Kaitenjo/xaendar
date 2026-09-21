@@ -13,13 +13,11 @@ export type ImportNode = ASTNodeWithSpan<{
    * Discriminant identifying this node as an import.
    */
   type: ASTNodeType.Import;
-
   /**
    * Array of import specifiers with optional aliases.
    * Each specifier maps an exported symbol to a local name.
    */
   specifiers: ImportSpecifier[];
-
   /**
    * Module path where the symbols are imported from.
    */

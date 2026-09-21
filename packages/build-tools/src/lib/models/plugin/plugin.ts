@@ -1,16 +1,16 @@
 import { isValidCustomElementName, slice } from '@xaendar/common';
-import { compile, CompilerCache, ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { compile, ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractSignalMembers, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, disposeLanguageService, getLanguageService, loadCompilerOptions, registerRealFile, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptKind, ScriptTarget, SourceFile } from 'typescript';
 import type { Logger, Plugin } from 'vite';
 import { COMPONENT_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportRegistry, clearImportsForComponent, findComponentsForImport, registerImportMapping } from '../import-registry';
+import { getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
 import { NodeCompilerHost } from '../node-compiler-host/node-compiler-host.model';
 import { clearTemplateRegistry, findComponentForTemplate, registerTemplateMapping, removeAllMappingsForComponent, removeTemplateMapping } from '../template-registry';
-import { getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
-import { existsSync } from 'node:fs';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
@@ -44,8 +44,9 @@ export function xaendarPlugin(): Plugin {
   const compilerOptions = loadCompilerOptions(import.meta.url);
   let logger: Logger | undefined;
 
-  const logError = (message: string): void => {
-    const redMessage = `\x1b[31m\rXaendar: ${message}\x1b[0m`;
+  const logError = (error: unknown, prefix: string): void => {
+    const stack = error instanceof Error ? error.stack : '';
+    const redMessage = `\x1b[31m\rXaendar: ${prefix} - ${error} ${stack?.slice(stack.indexOf('\n    at'))}\x1b[0m\n`;
     (logger ?? console).error(redMessage.replace(/^Error:\s*/, ''))
   };
 
@@ -75,7 +76,7 @@ export function xaendarPlugin(): Plugin {
         for (let i = 0; i < selectors.length; i++) {
           const selector = selectors[i];
           if (!isValidCustomElementName(selector)) {
-            logError(`Invalid custom element name "${selector}" in component ${id}`);
+            logError('', `Invalid custom element name "${selector}" in component ${id}`);
             return null;
           }
         }
@@ -124,14 +125,14 @@ export function xaendarPlugin(): Plugin {
             cssVariableName: varName,
             signals,
             cache: {
-              get: getMetadataOrExtract,
+              getOrInsert: getMetadataOrExtract,
               set: registerMetadataMapping
             }
           });
           compiledMethods = result.javascript;
           typecheckBody = result.typescript;
         } catch (err) {
-          logError(`Failed to compile template - ${templatePath}\n${err instanceof Error ? err.message : err}`);
+          logError(err, `Failed to compile template - ${templatePath}`);
           return null;
         }
 
@@ -139,9 +140,7 @@ export function xaendarPlugin(): Plugin {
           code = injectFunctions(code, first, compiledMethods, className, varName, cssContent);
           first = false;
         } catch (err) {
-          if (typeof err === 'string') {
-            logError(err);
-          }
+          logError(err, `Failed to inject functions into component - ${id}`);
           return null;
         }
 
@@ -152,7 +151,7 @@ export function xaendarPlugin(): Plugin {
         const diagnostics = languageService.getSemanticDiagnostics(shim.path);
 
         for (let i = 0; i < diagnostics.length; i++) {
-          logError(`Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
+          logError('', `Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
         }
 
         // After logging every diagnostics we have to return null to raise an error
@@ -176,7 +175,7 @@ export function xaendarPlugin(): Plugin {
           const components = findComponentsForImport(id);
           for (const componentId of components) {
             removeVirtualFile(`${componentId}.__typecheck__.ts`);
-            logError(`Component "${id}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
+            logError('', `Component "${id}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
           }
           clearImportsForComponent(id);
         } else if (id.endsWith('.html')) {
@@ -419,6 +418,12 @@ function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, body
   return `${templatePosition} - ${message}\n ---> ${slice(templateSource, templateSpan.start, templateSpan.end)}`;
 }
 
+/**
+ * Base implementation for getOrInsert Method of the plugin cache.
+ * @param name The name of the component or directive to retrieve metadata for.
+ * @param path Optional path(s) to the source file(s) containing the component or directive.
+ * @returns The metadata for the specified component or directive.
+ */
 async function getMetadataOrExtract(name: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
   let metadata = getMetadataMapping(name);
   if (metadata) {
@@ -436,8 +441,13 @@ async function getMetadataOrExtract(name: string, path?: string | string[]): Pro
   if (!metadata) {
     throw new Error(`Metadata for symbol "${name}" not found.`);
   }
+  
   // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!
   registerMetadataMapping(name, metadata);
+  for (let i = 0; i < metadata.selectors.length; i++) {
+    const selector = metadata.selectors[i];
+    registerMetadataMapping(selector, metadata);
+  }
   return metadata;
 }
 
@@ -454,19 +464,19 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   if (modulePath.startsWith('.')) {
     const resolvedPath = resolve(baseDir, modulePath);
 
+    // Try as-is (might already have extension)
+    if (existsSync(resolvedPath)) {
+      return resolvedPath;
+    }
+
     // Try with .ts extension
     if (existsSync(`${resolvedPath}.ts`)) {
-      return resolvedPath + '.ts';
+      return `${resolvedPath}.ts`;
     }
 
     // Try with /index.ts if directory
     if (existsSync(`${resolvedPath}/index.ts`)) {
       return `${resolvedPath}/index.ts`;
-    }
-
-    // Try as-is (might already have extension)
-    if (existsSync(resolvedPath)) {
-      return resolvedPath;
     }
   }
 

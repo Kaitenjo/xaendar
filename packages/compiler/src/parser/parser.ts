@@ -120,7 +120,7 @@ export class Parser {
       const message = err instanceof Error ? err.message : err;
       const currentToken = this._cursor.peek();
       const stateEndIndex = currentToken.type !== TokenType.EOF ? currentToken.span.end : undefined;
-      throw `${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`;
+      throw `[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`;
     }
   }
 }

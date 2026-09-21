@@ -17,7 +17,8 @@ const compiledCache = new Map<string, CompiledTemplate>();
  * @returns The compiled template metadata stored in the cache.
  */
 export async function compileTemplate(templateUri: string, templateSource: string, componentData: Map<string, string[]>): Promise<CompiledTemplate> {
-  const typecheckBody = await compile(templateSource, { baseDir: dirname(templateUri) });
+  // TODO Implement caching metadata mechanish for vscode extension
+  const typecheckBody = await compile(templateSource, { baseDir: dirname(templateUri), cache: {} as any });
   const shim = createShim(componentData, typecheckBody);
   const compiled: CompiledTemplate = {
     typecheckBody, 

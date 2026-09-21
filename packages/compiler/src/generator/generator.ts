@@ -1,8 +1,8 @@
-import { indent, slice } from '@xaendar/common';
-import { CompilerCache } from '@xaendar/compiler';
+import { indent } from '@xaendar/common';
 import { ASTNode } from '../parser/types/ast.type.js';
 import { ASTNodeType } from '../parser/types/node.enum.js';
-import { Span } from '../types/span.type.js';
+import { CompilerCache } from '../types/compiler-cache.type.js';
+import { catchErrorWithPrefix } from '../utils/catch-error-generation.utils.js';
 import { CompilerContext } from './models/compiler-context.model.js';
 import { generateElement } from './states/generate-element.state.js';
 import { generateFor } from './states/generate-for.state.js';
@@ -130,9 +130,7 @@ export class Generator {
 
       return generatedCode.join("\n");
     } catch (err) {
-      const error = err as Error;
-      const { start, end } = error.cause as Span;
-      throw new Error(`[Generator] ${error.message}\n----> ${slice(this._input, start, end)}`);
+      throw catchErrorWithPrefix('Generator', this._input, err);
     }
   }
 

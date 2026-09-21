@@ -66,5 +66,5 @@ export type CompileOptions = {
    * Improves compilation performance by caching extracted metadata,
    * avoiding redundant parsing and extraction of imported components.
    */
-  cache?: CompilerCache
+  cache: CompilerCache
 }

@@ -182,7 +182,7 @@ export class Lexer {
           const underlinedError = `\x1b[4m${slice(this._input, stateStartIndex, stateEndIndex)}\x1b[0m`;
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
           const message = isError ? err.message : err;
-          throw `${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`;
+          throw `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`;
         }
       }
     }

@@ -186,8 +186,8 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
  */
 function updateProperty(element: Element, name: string, newValue: unknown) {
   const component = element as BaseWebComponent & Record<string, unknown> & { [name]: InputSignal<unknown> };
-  const constructor = component.constructor as unknown as Record<string | symbol, Record<string, Dictionary<string>>>;
-  name = constructor[Symbol.for('Symbol.metadata')].aliasToAttribute?.[name] ?? name;
+  const constructor = component.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
+  name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
   const property = component[name];
   property && isInputSignal(property) ? property.set(newValue, INPUT_SIGNAL_SET_SYMBOL) : component.setAttribute(name, String(newValue));
 }

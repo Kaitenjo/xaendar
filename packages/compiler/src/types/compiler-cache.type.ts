@@ -3,14 +3,13 @@ import type { ComponentOrDirectiveMetadata } from './component-or-directive-meta
 
 export type CompilerCache = {
   /**
-   * Retrieve cached metadata by key.
-   *
-   * @param selector - The selector for the component or directive
-   * @param path - The absolute file path of the component or directive
-   * If metadata does not exists path can be used to load the file and extract them.
-   * @returns The cached metadata, or undefined if not found
+   * Retrieves cached metadata by key and populates the registry automatically if not present and path is provided.
+   * To achieve this, the function must implement a loading mechanism that can fetch files and calls the api to
+   * extract metadata and save them in cache
+   * 
+   * (e.g.)
    */
-  get: Function<[selector: string, path?: string | string[]], Promise<ComponentOrDirectiveMetadata>>;
+  getOrInsert: Function<[selector: string, path?: string | string[]], Promise<ComponentOrDirectiveMetadata>>;
   /**
  * Store metadata in the cache.
  *

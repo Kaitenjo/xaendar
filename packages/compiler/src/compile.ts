@@ -3,9 +3,12 @@ import { Generator } from './generator/generator';
 import { Lexer } from './lexer/lexer';
 import { Parser } from './parser/parser';
 import type { ASTNode } from './parser/types/ast.type';
-import type { ComponentMetadata, CompilerCache } from './public-api';
+import { ASTNodeType } from './parser/types/node.enum';
+import { ImportNode } from './parser/types/nodes/import-node.type';
 import { TypeChecker } from './type-checker/type-checker';
 import type { TypeCheckResult } from './type-checker/types/type-checker-result.type';
+import type { CompilerCache } from './types/compiler-cache.type';
+import type { ComponentOrDirectiveMetadata } from './types/component-or-directive-metadata.type';
 
 /**
  * Compiles a template string into a Javascript render function body.
@@ -30,15 +33,23 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   if (!('baseDir' in options || 'cssVariableName' in options)) {
     throw `CssVariableName or BaseDir must be specified`;
   }
-  
+
   const { baseDir, cssVariableName, signals, cache } = options;
+  const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (cssVariableName && baseDir && signals) {
+    const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
+    const [javascript, typescript] = await Promise.all([
+      generateJavascriptCode(input, nodes, cssVariableName, signals, cache),
+      generateTypecheckResult(input, nodes, metadatas)
+    ]);
+    
     return {
-      javascript: await generateJavascriptCode(input, nodes, cssVariableName, signals, cache),
-      typescript: await generateTypecheckResult(input, nodes, baseDir, cache)
+      javascript,
+      typescript
     }
   } else if (baseDir) {
-    return await generateTypecheckResult(input, nodes, baseDir, cache);
+    const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
+    return await generateTypecheckResult(input, nodes, metadatas);
   } else {
     // Safe assertion! Override permit only cssVariableName and signals not nullable simultaneously
     return await generateJavascriptCode(input, nodes, cssVariableName, signals!!, cache);
@@ -52,7 +63,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
  * @param signals - Array of signal names to be used in the generated render function.
  * @returns A string containing the compiled Javascript render method body.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariableName: string | undefined, signals: string[], cache?: CompilerCache): Promise<string> {
+async function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariableName: string | undefined, signals: string[], cache: CompilerCache): Promise<string> {
   return await new Generator(input, nodes, cache).generate(cssVariableName, signals);
 }
 
@@ -60,10 +71,35 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariab
  * Generates the type-checking result for the parsed AST nodes using the TypeChecker.
  * @param input - The raw HTML-like template source to compile.
  * @param nodes - The parsed AST nodes from the template.
- * @param baseDir - Absolute path used to resolve relative import paths for `@import` nodes.
+ * @param metadatas - Array of component and directive metadata extracted from the template.
  * @param cache - Optional cache for storing previously computed type-checking results to improve performance.
  * @returns A promise that resolves to the type-checking result.
  */
-async function generateTypecheckResult(input: string, nodes: ASTNode[], baseDir: string, cache?: CompilerCache): Promise<TypeCheckResult> {
-  return await new TypeChecker(input, nodes, cache).generate(baseDir);
+async function generateTypecheckResult(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[]): Promise<TypeCheckResult> {
+  return await new TypeChecker(input, nodes).generate(metadatas);
+}
+
+/**
+ * Extracts all component metadata referred in the template by analyzing the import nodes.
+ * @param nodes - The parsed AST nodes from the template.
+ * @param baseDir - Absolute path used to resolve relative import paths for `@import` nodes.
+ * @param cache - Optional cache for storing previously computed type-checking results to improve performance.
+ * @returns A promise that resolves when all component metadata referred in the template has been extracted.
+ */
+async function extractComponentMetadataReferredInTemplate(nodes: ASTNode[], baseDir: string, cache: CompilerCache): Promise<ComponentOrDirectiveMetadata[]> {
+  const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
+  const promises = new Array<Promise<ComponentOrDirectiveMetadata>>();
+
+  for (let i = 0; i < importNodes.length; i++) {
+    const { specifiers, path } = importNodes[i];
+    for (let j = 0; j < specifiers.length; j++) {
+      const { imported, local } = specifiers[j];
+      if (imported !== '*') {
+        const name = imported === 'default' ? local : imported;
+        promises.push(cache.getOrInsert(name, [baseDir, path]));
+      }
+    }
+  }
+
+  return await Promise.all(promises);
 }

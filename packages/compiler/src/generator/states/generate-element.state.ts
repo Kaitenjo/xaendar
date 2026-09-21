@@ -20,9 +20,9 @@ import { getElementIdentifier, resolveExpression } from '../utils/generator.util
 export async function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
   const isCustomElement = isValidCustomElementName(tagName, false);
-  const attributes = await mapAttributes(node.attributes, compilerContext);
+  const attributes = await mapAttributes(node.attributes, compilerContext, tagName);
   const events = mapEvents(node.events, compilerContext);
-  const dynamicBindings = await mapDynamicBindings(node.dynamicBindings, compilerContext, isCustomElement);
+  const dynamicBindings = await mapDynamicBindings(node.dynamicBindings, compilerContext, tagName, isCustomElement);
   const nodeName = getElementIdentifier(node, parentNode, index);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
@@ -92,7 +92,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
  * @param compilerContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code strings, one per attribute.
  */
-async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, isCustomElement?: boolean): Promise<string[]> {
+async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, tagName: string, isCustomElement?: boolean): Promise<string[]> {
   const mappedAttributes = new Array<string>(); 
   for (let i = 0; i < attributes.length; i++) {
     const { name, value } = attributes[i];
@@ -120,7 +120,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
 
     const extra = new Array<string>();
     if (isCustomElement !== undefined) {
-      const metadata = await compilerContext.cache?.get(name);
+      const metadata = await compilerContext.cache?.getOrInsert(tagName);
       const propertyMetadata = metadata?.properties.get(name);
       if (propertyMetadata) {
         /*
@@ -202,7 +202,7 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   return mappedEvents;
 }
 
-async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, isCustomElement: boolean = false): Promise<string[]> {
+async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, tagName: string, isCustomElement: boolean = false): Promise<string[]> {
   const mappedDynamicBindings = new Array<string>();
 
   for (let i = 0; i < dynamicBindings.length; i++) {
@@ -212,9 +212,9 @@ async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compile
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
-    const mappedAttributes = await mapAttributes(attributes, compilerContext, isCustomElement);
+    const mappedAttributes = await mapAttributes(attributes, compilerContext, tagName, isCustomElement);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, isCustomElement);
+    const mappedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, tagName, isCustomElement);
 
     const retVal = [
       '{',

@@ -19,8 +19,8 @@ export class TypeCheckContext extends CompilerContext {
    *
    * @param value - The component or directive import metadata to be added
    */
-  public addImport(value: ComponentOrDirectiveMetadata): void {
-    this._imports.push(value);
+  public addImport(...value: ComponentOrDirectiveMetadata[]): void {
+    this._imports.push(...value);
   }
 
   /**

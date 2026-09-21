@@ -1,10 +1,7 @@
-import { slice } from '@xaendar/common';
-import { Cursor } from '../models/cursor.js';
 import type { ASTNode } from '../parser/types/ast.type.js';
 import { ASTNodeType } from '../parser/types/node.enum.js';
-import type { ImportNode } from '../parser/types/nodes/import-node.type.js';
-import type { CompilerCache } from '../types/compiler-cache.type.js';
-import type { Span } from '../types/span.type.js';
+import { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type.js';
+import { catchErrorWithPrefix } from '../utils/catch-error-generation.utils.js';
 import { TypeCheckContext } from './models/type-checker-context.js';
 import { typeCheckElement } from './states/type-check-element.state.js';
 import { typeCheckFor } from './states/type-check-for.state.js';
@@ -59,41 +56,11 @@ export class TypeChecker {
   /**
    * @param _input - Raw template source string, used only to slice diagnostic spans into error messages.
    * @param _ast   - Parsed AST produced by the `Parser` for this template.
-   * @param _cache - Optional cache for storing previously computed type-checking results to improve performance.
    */
   constructor(
     private _input: string, 
     private _ast: ASTNode[],
-    private _cache?: CompilerCache
   ) { }
-
-  /**
-   * Pre-populates the shared context with component and directive metadata
-   * by parsing source files for all `@import` nodes in the AST.
-   *
-   * Must be awaited before calling `generate()` if metadata-driven
-   * validation (e.g. unknown component inputs) is desired.
-   *
-   * @param baseDir - Absolute path used to resolve relative import paths.
-   */
-  public async populateImportMetadata(baseDir: string): Promise<void> {
-    const importNodes = this._ast.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
-
-    await Promise.all(
-      importNodes.flatMap(node =>
-        node.specifiers
-          .filter(({ imported }) => imported !== '*')
-          .map(async ({ imported, local }) => {
-            const name = imported === 'default' ? local : imported;
-            const metadata = await this._cache?.get(name, [baseDir, node.path]);
-            if (metadata) {
-              this._context.addImport(metadata);
-            }
-          }
-        )
-      )
-    );
-  }
 
   /**
    * Generates the full `function typeCheck() { ... }` shim body for the
@@ -106,9 +73,9 @@ export class TypeChecker {
    * 
    * @param baseDir - Absolute path used to resolve relative import paths
    */
-  public async generate(baseDir: string): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[]): Promise<TypeCheckResult> {
     try {
-      await this.populateImportMetadata(baseDir);
+      this._context.addImport(...metadatas);
       const body = this._ast.flatMap(node => this._processNode(node, this._context));
 
       const lines: Line[] = [
@@ -122,19 +89,7 @@ export class TypeChecker {
         mappingTable: this.buildMappingTable(lines)
       };
     } catch (err) {
-      let message: string | unknown;
-      let span: Span | undefined;
-
-      if (err instanceof Error) {
-        const cause = err.cause
-        span = !!cause && typeof cause === 'object' && 'start' in cause && 'end' in cause ? cause as Span : undefined;
-        message = err.message;
-      } else {
-        message = err;
-      }
-      throw span
-        ? `${new Cursor(this._input).getPositionFromCharacterIndex(span.start + 1)} - ${message}\n ---> ${slice(this._input, span.start, span.end)}}`
-        : message;
+      throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
   }
 
