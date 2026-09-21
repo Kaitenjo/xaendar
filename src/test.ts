@@ -20,9 +20,8 @@ const template = `
 `
 
 const filePath = 'dist/compiled.js'
-compile(template, { baseDir: 'asd', cssVariableName: 'asd', signals: ['csollapsed'] }).then(output => {
-  writeFileSync(filePath, output.javascript);
-  writeFileSync('dist/compiled.ts', output.typescript.text);
+compile(template, { cssVariableName: 'asd', signals: ['csollapsed'], cache: { getOrInsert: () => {} } as any }).then(output => {
+  writeFileSync(filePath, output);
 }).catch(err => {
   console.error(`Failed to compile template: ${err}`)
 });

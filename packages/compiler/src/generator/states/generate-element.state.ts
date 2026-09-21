@@ -130,7 +130,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
         */
         if (!propertyMetadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
-          extra.push('unbind: _setExpressionProperty', `defaultValue: ${propertyMetadata.defaultValue}`);
+          extra.push('unbind: _setExpressionProperty,', `defaultValue: ${propertyMetadata.defaultValue}`);
         }
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;
@@ -214,7 +214,7 @@ async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compile
     const { expression } = resolveExpression(condition, compilerContext);
     const mappedAttributes = await mapAttributes(attributes, compilerContext, tagName, isCustomElement);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, tagName, isCustomElement);
+    const mappedNestedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, tagName, isCustomElement);
 
     const retVal = [
       '{',
@@ -251,11 +251,11 @@ async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compile
         ])
       );
 
-    dynamicBindings.length
+    mappedNestedDynamicBindings.length
       ? retVal.push(
         ...indent([
           'dynamicBindings: [',
-          ...indent(mappedDynamicBindings),
+          ...indent(mappedNestedDynamicBindings),
           '],'
         ])
       )
