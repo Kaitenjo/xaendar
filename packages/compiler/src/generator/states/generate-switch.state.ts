@@ -14,13 +14,13 @@ import { getBlockIdentifier, resolveExpression } from '../utils/generator.utils'
  * @param compilerContext - Current render scope context.
  * @returns An object with the main block code lines and a map of helper functions to register.
  */
-export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, compilerContext: CompilerContext): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
   }
 
-  retVal.code.push(`_switch(${parentNode}, context, () => ${resolveExpression(node.expression, compilerContext).expression}, [`);
+  retVal.code.push(`_switch(${parentNode}, context, ${anchor}, () => ${resolveExpression(node.expression, compilerContext).expression}, [`);
 
   const children = node.children;
   for (let i = 0; i < children.length; i++) {

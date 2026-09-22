@@ -35,7 +35,7 @@ import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../uti
  * @param compilerContext - The enclosing scope context.
  * @returns Array of generated code lines.
  */
-export async function generateFor(node: ForNode, parentNode: string, index: string, compilerContext: CompilerContext): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateFor(node: ForNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -99,7 +99,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
                                     <------- Context where executed at runtime
     }
   */
-  retVal.code.push(`_for(${parentNode}, context, () => ${iterableExpr}, (${node.itemAlias}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, this.${forKey}.bind(this));`);
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${node.itemAlias}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, this.${forKey}.bind(this));`);
 
   return retVal
 }

@@ -28,13 +28,14 @@ import { _if } from './if.util';
 export function _switch(
   parentNode: HTMLElement,
   parentContext: _Context,
+  anchor: Comment | null,
   expression: NoArgsFunction<unknown>,
   blocks: Array<{ 
     condition: unknown[] | null, 
     block: Function<[HTMLElement, _Context, Node | null], _Context> 
   }>
 ): void {
-  _if(parentNode, parentContext, blocks.map(({ condition, block }) => ({
+  _if(parentNode, parentContext, anchor, blocks.map(({ condition, block }) => ({
     condition: condition 
       ? () => condition.some(condition => condition === expression())
       : undefined,

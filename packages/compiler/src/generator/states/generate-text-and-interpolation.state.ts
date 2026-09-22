@@ -16,11 +16,11 @@ import { resolveExpression } from '../utils/generator.utils';
  * @param parentNode - Variable name of the parent DOM node to append to.
  * @returns Array of generated code lines.
  */
-export async function generateTextAndInterpolation(node: TextNode | InterpolationNode, parentNode: string, _index: string, compilerContext: CompilerContext): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateTextAndInterpolation(node: TextNode | InterpolationNode, parentNode: string, _index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   return {
     code: [`${node.type === ASTNodeType.Text
-      ? `_renderLiteralText(${parentNode}, context, '${node.value}');`
-      : `_renderText(${parentNode}, context, () => ${resolveExpression(node.expression, compilerContext).expression});`
+      ? `_renderLiteralText(${parentNode}, context, '${node.value}', ${anchor});`
+      : `_renderText(${parentNode}, context, () => ${resolveExpression(node.expression, compilerContext).expression}, ${anchor});`
       }`,
     ]
   };

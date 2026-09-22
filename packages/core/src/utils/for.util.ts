@@ -26,8 +26,8 @@ type ForEntry = {
  *   `update` per aggiornare le variabili implicite in-place quando l'item
  *   viene riusato a un indice diverso.
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, condition: NoArgsFunction<unknown[]>, trackExpression: Function<[unknown, number], ForKey>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
-  const anchor = createAnchor('for', parentNode, parentContext);
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[]>, trackExpression: Function<[unknown, number], ForKey>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
+  const anchor = createAnchor('for', parentNode, parentContext, referenceNode);
   let entries = new Map<ForKey, ForEntry>();
 
   const unlistener = effect(() => {

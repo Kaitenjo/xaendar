@@ -38,8 +38,8 @@ type State = {
  * @param parentContext - The parent Context object containing all the variables definition from the Parent Closure
  * @param blocks - Ordered list of conditional branches to evaluate.
  */
-export function _if(parentNode: HTMLElement, parentContext: _Context, blocks: Block[]): void {
-  const anchor = createAnchor('if', parentNode, parentContext);
+export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, blocks: Block[]): void {
+  const anchor = createAnchor('if', parentNode, parentContext, referenceNode);
   
   let state: State | undefined;
   let fn: (state: State | undefined) => State | undefined;

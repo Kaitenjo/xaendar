@@ -29,7 +29,15 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     functionsToProcess: new Map()
   }
 
-  retVal.code.push(getPrecode(tagName));
+  /* 
+    Remove the if would create an empty line in the generated code
+    when the precode is empty, it avoids adding unnecessary blank line.
+  */
+  const precode = overrideCreateElement(tagName);
+  if (precode) {
+    retVal.code.push(precode);
+  }
+
   retVal.code.push(`const ${nodeName} = _renderElement(${parentNode}, context, ${anchor}, '${tagName}',`);
 
   attributes.length
@@ -75,9 +83,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
         node,
         parentNode: nodeName,
         context: compilerContext,
-        precode: getPrecode(tagName)
+        precode: overrideCreateElement(tagName)
       },
-      args: [nodeName, 'parentContext']
+      args: [nodeName, 'parentContext', 'anchor']
     });
     retVal.code.push(`this.${nodeName}Children(${nodeName}, context);`);
   }
@@ -272,7 +280,7 @@ async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compile
   return mappedDynamicBindings;
 }
 
-function getPrecode(tagName: string): string {
+function overrideCreateElement(tagName: string): string {
   switch (tagName) {
     case 'svg':
       return 'context.createElement = _createSVGElement;';

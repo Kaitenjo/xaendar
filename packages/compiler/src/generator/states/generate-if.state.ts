@@ -5,14 +5,14 @@ import { CompilerContext } from '../models/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, resolveExpression } from '../utils/generator.utils';
 
-export async function generateIf(node: IfNode, parentNode: string, index: string, compilerContext: CompilerContext): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateIf(node: IfNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const ifContext = new CompilerContext(compilerContext);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
   };
 
-  retVal.code.push(`_if(${parentNode}, context, [`);
+  retVal.code.push(`_if(${parentNode}, context, ${anchor}, [`);
   const ifKey = getBlockIdentifier('if', parentNode, index);
   retVal.code.push(
     ...indent([
