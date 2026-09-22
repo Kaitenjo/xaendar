@@ -8,6 +8,7 @@ import { signalTs } from './templates/signal-ts';
 import { tsconfigJson } from './templates/tsconfig-json';
 import { viteConfigTs } from './templates/vite-config-ts';
 import { xaendarJson } from './templates/xaendar-json';
+import { stylesCss } from './templates/styles-css';
 
 /**
  * The context required to resolve all file contents when scaffolding
@@ -147,6 +148,11 @@ export function buildStructure(context: ProjectContext): Entry[] {
         {
           type: 'generateComponent',
           name: componentName,
+        },
+        {
+          type: 'file',
+          name: 'styles.css',
+          content: stylesCss()
         }
       ]
     }
