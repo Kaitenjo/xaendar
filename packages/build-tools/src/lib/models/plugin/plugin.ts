@@ -104,12 +104,12 @@ export function xaendarPlugin(): Plugin {
         }
 
         let cssContent: string | undefined;
-
         if (styleUrl) {
           const stylePath = resolve(folder, styleUrl);
           if (host.fileExists(stylePath)) {
             this.addWatchFile(stylePath);
-            cssContent = host.readFile(stylePath);
+            const rawCss = host.readFile(stylePath);
+            cssContent = rawCss && stripCssComments(rawCss).trim();
           }
         }
 
@@ -165,7 +165,6 @@ export function xaendarPlugin(): Plugin {
       };
     },
     watchChange(id, change) {
-      // Questo non ha funzionato, ritestare
       if (change.event === 'delete') {
         if (COMPONENT_FILE_RE.test(id)) {
           removeVirtualFile(`${id}.__typecheck__.ts`);
@@ -178,7 +177,7 @@ export function xaendarPlugin(): Plugin {
             logError('', `Component "${id}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
           }
           clearImportsForComponent(id);
-        } else if (id.endsWith('.html')) {
+        } else if (id.endsWith('.xd.component.html')) {
           const componentId = findComponentForTemplate(id);
           if (componentId) {
             removeVirtualFile(`${componentId}.__typecheck__.ts`);
@@ -226,6 +225,14 @@ function extractImportedComponentPaths(templateSource: string, templateDir: stri
   }
 
   return paths;
+}
+
+/**
+ * Strips CSS block comments (`/* ... *\/`) from a stylesheet, used to detect
+ * stylesheets that contain no actual rules.
+ */
+function stripCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
 /**
