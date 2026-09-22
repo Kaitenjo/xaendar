@@ -30,13 +30,9 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   const tokens = new Lexer(input).tokenize();
   const nodes = new Parser(input, tokens).parse();
 
-  if (!('baseDir' in options || 'cssVariableName' in options)) {
-    throw `CssVariableName or BaseDir must be specified`;
-  }
-
   const { baseDir, cssVariableName, signals, cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
-  if (cssVariableName && baseDir && signals) {
+  if (baseDir && signals) {
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
       generateJavascriptCode(input, nodes, cssVariableName, signals, cache),
@@ -52,7 +48,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     return await generateTypecheckResult(input, nodes, metadatas);
   } else {
     // Safe assertion! Override permit only cssVariableName and signals not nullable simultaneously
-    return await generateJavascriptCode(input, nodes, cssVariableName, signals!!, cache);
+    return await generateJavascriptCode(input, nodes, cssVariableName, signals!, cache);
   }
 }
 /**
