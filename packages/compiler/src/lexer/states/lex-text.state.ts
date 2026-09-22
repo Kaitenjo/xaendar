@@ -1,6 +1,6 @@
 import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from "../../costants/chars.constants.js";
 import { isNotBlank } from "../utils/chars.utils.js";
-import { LexerCursor } from "../types/lexer-cursor.model.js";
+import { endOfFile, LexerCursor } from "../types/lexer-cursor.model.js";
 import { LexerState } from "../types/lexer-state.enum.js";
 import { TokenType } from "../types/token-type.enum.js";
 import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type.js";
@@ -20,53 +20,72 @@ export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionCon
   let text = '';
   let retVal!: LexerTransitionFunctionReturnType
 
-  while (read) {
-    switch (cursor.peek()) {
-      case LESS_THAN:
-        // If after '<' we read a '/', we suppose we're approaching a ClosureTag, otherwise an OpenTag
-        const nextState = cursor.peek(1, { offset: 1 }) === SLASH ? LexerState.TAG_CLOSE : LexerState.TAG_OPEN_NAME;
-        retVal = { state: nextState }
-        read = false;
-        break;
-
-      case LEFT_BRACE:
-        retVal = { 
-          state: LexerState.INTERPOLATION,
-          pushState: true
-        };
-        read = false;
-        break;
-      
-      case AT_SIGN:
-        retVal = {
-          state: LexerState.FLOW_CONTROL,
-        }
-        read = false;
-        break;
-
-      case RIGHT_BRACE:
-        if (context.history[context.history.length - 1] === LexerState.FLOW_CONTROL_BLOCK) {
-          cursor.advance();
+  try {
+    while (read) {
+      switch (cursor.peek()) {
+        case LESS_THAN:
+          // If after '<' we read a '/', we suppose we're approaching a ClosureTag, otherwise an OpenTag
+          const nextState = cursor.peek(1, { offset: 1 }) === SLASH ? LexerState.TAG_CLOSE : LexerState.TAG_OPEN_NAME;
+          retVal = { state: nextState }
+          read = false;
+          break;
+  
+        case LEFT_BRACE:
           retVal = { 
-            state: LexerState.TEXT,
-            tokens: [{ type: TokenType.BLOCK_CLOSE }],
-            popState: true 
+            state: LexerState.INTERPOLATION,
+            pushState: true
           };
           read = false;
-        } else {
+          break;
+        
+        case AT_SIGN:
+          retVal = {
+            state: LexerState.FLOW_CONTROL
+          }
+          read = false;
+          break;
+  
+        case RIGHT_BRACE:
+          if (context.history[context.history.length - 1] === LexerState.FLOW_CONTROL_BLOCK) {
+            cursor.advance();
+            retVal = { 
+              state: LexerState.TEXT,
+              tokens: [{ type: TokenType.BLOCK_CLOSE }],
+              popState: true 
+            };
+            read = false;
+          } else {
+            cursor.advance();
+            text = `${text}${cursor.currentChar.value}`;
+          }
+          break;
+  
+        case LF:
+        case CR:
+          cursor.advance();
+          break;
+  
+        default:
           cursor.advance();
           text = `${text}${cursor.currentChar.value}`;
-        }
-        break;
+      }
+    }
+  } catch (err) {
+    /* 
+      If the template ends with a text, we cannot determine when the text actually ends, 
+      so we catch the expection and, if text is not empty, we emit a TEXT token.
 
-      case LF:
-      case CR:
-        cursor.advance();
-        break;
-
-      default:
-        cursor.advance();
-        text = `${text}${cursor.currentChar.value}`;
+      The next state will be TEXT with the accumulated text equal to empty
+      due to have reached end of file the previous state transition, so the
+      condition will not be met and the expection will be thrown with the same error
+      causing the correct exit from the lexer loop.
+    */
+    if (text && err instanceof Error && err.cause === endOfFile) {
+      retVal = { 
+        state: LexerState.TEXT,
+      };
+    } else {
+      throw err;
     }
   }
 

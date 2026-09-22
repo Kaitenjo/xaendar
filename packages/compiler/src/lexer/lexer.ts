@@ -23,7 +23,7 @@ import { lexTagClose } from './states/lex-tag-close.state';
 import { lexTagOpenEnd } from './states/lex-tag-open-end.state';
 import { lexTagOpenName } from './states/lex-tag-open-name.state';
 import { lexText } from './states/lex-text.state';
-import { LexerCursor } from './types/lexer-cursor.model';
+import { endOfFile, LexerCursor } from './types/lexer-cursor.model';
 import { LexerState } from './types/lexer-state.enum';
 import { Token, TokenWithOptionalSpan } from './types/token.type';
 import { LexerTransitionFunction } from './types/transition-function/transition-function.type';
@@ -124,7 +124,7 @@ export class Lexer {
         this._state = state;
       } catch (err) {
         const isError = err instanceof Error;
-        if (isError && err.cause === EOF) {
+        if (isError && err.cause === endOfFile) {
           eof = true;
         } else {
           const neighbourhood = 15;

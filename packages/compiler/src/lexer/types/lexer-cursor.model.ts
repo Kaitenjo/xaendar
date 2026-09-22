@@ -5,6 +5,12 @@ import { Cursor } from '../../models/cursor';
 import { CurrentChar } from './current-char.type';
 
 /**
+ * Unique identifier to be thrown in the cause field
+ * of an error when the template has reached its end.
+ */
+export const endOfFile = Symbol('endOfFile');
+
+/**
  * Cursor abstraction used by the Lexer to navigate the input source.
  *
  * The LexerCursor is responsible for:
@@ -201,6 +207,6 @@ export class LexerCursor extends Cursor {
    * to terminate tokenization.
    */
   private throwEOFError(): never {
-    throw new Error('', { cause: EOF });
+    throw new Error('', { cause: endOfFile });
   }
 }
