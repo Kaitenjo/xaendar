@@ -34,7 +34,3 @@ a impedire il debugging dei componeti poiche ibreakpoitn nel .ts non matchato le
 i decoreatori di proprieta sono applicati in ritardo al bootstrapping
 
 Supporptare i commenti nel template
-
-Non devo creare nodo css se nel relativo file ci sono soltanto commenti
-Attualmente il file .css viene generato con un commento inline e viene istanziato un nodo con il commento, INUTILE!!!
-
