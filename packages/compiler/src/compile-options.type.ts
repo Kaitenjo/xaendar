@@ -1,5 +1,4 @@
 import { CompilerCache } from "./types/compiler-cache.type";
-import { ComponentMetadata } from "./types/component-metadata.type";
 
 /**
  * Configuration options for the compile function.

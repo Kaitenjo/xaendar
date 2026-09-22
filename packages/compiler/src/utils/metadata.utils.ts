@@ -99,7 +99,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     }
 
     const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-    properties.entries().forEach(([propName, { name, type, required, alias }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias })));
+    properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
 
     const className = klass.name.text;
     metadatas.set(className, {

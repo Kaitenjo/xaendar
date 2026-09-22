@@ -1,4 +1,4 @@
-import { NoArgsVoidFunction } from "@xaendar/types";
+import { NoArgsVoidFunction } from '@xaendar/types';
 
 /**
  * Options for configuring an effect.

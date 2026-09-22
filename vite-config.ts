@@ -71,11 +71,12 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         root: resolve(dirName, 'src'),
         afterBuild() {
           const pkgImportRegex = /from (['"])(?:\.\.\/)*([^/'"]+)\/src\/public-api\1/g;
-          const dts = readdirSync(distDir, { recursive: true, encoding: 'utf-8' }).filter(entry => entry.endsWith('.d.ts')).map((entry) => join(distDir, entry))
+          const dts = readdirSync(distDir, { recursive: true, encoding: 'utf-8' }).filter(entry => entry.endsWith('.d.ts')).map((entry) => join(distDir, entry));
           for (const filePath of dts) {
             const content = readFileSync(filePath, 'utf-8');
             const result = content.replace(pkgImportRegex, (_match, quote, pkg) => `from ${quote}@xaendar/${pkg}${quote}`);
 
+            console.log(result === content, filePath);
             if (result !== content) {
               writeFileSync(filePath, result);
             }

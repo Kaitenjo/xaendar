@@ -59,13 +59,18 @@ export class ComponentPropertyMetadata {
   constructor(
     public name: string,
     public type: string,
-    public options?: { required?: boolean, alias?: string },
+    public options?: { required?: boolean, alias?: string, defaultValue?: unknown },
   ) {
     if (options) {
-      if (options.required !== undefined) {
-        this.required = options.required;
+      const { required, alias, defaultValue } = options;
+      if (required !== undefined) {
+        this.required = required;
+        if (!required && defaultValue !== undefined) {
+          this.defaultValue = defaultValue;
+        }
       }
-      this.alias = options.alias;
+      
+      this.alias = alias;
     }
   }
 
