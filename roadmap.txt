@@ -23,9 +23,7 @@ di invalidità e di decisione quando cachare, per questo è stata disattivata
 
   - Scss, Less e Sass
   - Direttive
-  - Binding dinamico di eventi e attributi e Direttive
   - Creazione componenti imperativamente
-  - Proprieta di Input senza valore (simulare attributyi come readonly o disable)
   - CustomElements che partrono da un HTMLElement specifico
 
 Le source maps vengono probabilmente genrate prima dell'aggiunta dei miei pezzi di codie andando

@@ -86,7 +86,7 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
       state: LexerState.IMPORT
     };
   } else {
-    throw `Unknown flow-control keyword`;
+    throw 'Unknown flow-control keyword';
   }
 
   return retVal

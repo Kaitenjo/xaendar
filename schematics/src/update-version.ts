@@ -144,7 +144,7 @@ function parseBump(): 'patch' | 'minor' | 'major' {
   const arg = process.argv.find((a) => a.startsWith('--bump='));
 
   if (!arg) {
-    console.error(`❌ Missing required argument: --bump\n   Usage: node script.js --bump=patch|minor|major`);
+    console.error('❌ Missing required argument: --bump\n   Usage: node script.js --bump=patch|minor|major');
     process.exit(1);
   }
 

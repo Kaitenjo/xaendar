@@ -20,7 +20,7 @@ export function lexImportPath(cursor: LexerCursor, _context: LexerTransitionFunc
   cursor.skipSpaces();
 
   if (!cursor.peekMatch('from')) {
-    throw `Expected 'from' keyword after import list`;
+    throw 'Expected \'from\' keyword after import list';
   }
 
   cursor.advance(4);

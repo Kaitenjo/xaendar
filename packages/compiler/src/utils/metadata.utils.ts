@@ -1,6 +1,4 @@
 import { slice } from '@xaendar/common';
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ClassDeclarationWithName, ComponentDeclaration, ComponentEventMetadata, ComponentMetadata, ComponentPropertyMetadata } from '../types/component-metadata.type';
 import { Span } from '../types/span.type';

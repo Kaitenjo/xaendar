@@ -78,7 +78,7 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         
         // If attribute has a value, it must start with double quotes
         if (cursor.peek() !== DOUBLE_QUOTE) {
-          throw `Attribute value must start with double quotes '"'`;
+          throw 'Attribute value must start with double quotes \'"\'';
         }
 
         // Consume '"'

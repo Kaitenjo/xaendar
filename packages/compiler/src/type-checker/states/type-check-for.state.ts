@@ -37,7 +37,7 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   // (l'intero blocco @for). Se al momento il parser non lo produce, questo
   // è un buon segnale per aggiungerlo: senza, l'errore su "root.foo non
   // esiste" punterebbe sempre all'intero blocco invece che al solo nome.
-  lines.push(line(`for (const ${node.itemAlias} of root.`, mapped(node.iterableSource, node.span), `) {`));
+  lines.push(line(`for (const ${node.itemAlias} of root.`, mapped(node.iterableSource, node.span), ') {'));
 
   lines.push(...indentLines([
     plain(`let ${indexName}!: Signal<number>;`),

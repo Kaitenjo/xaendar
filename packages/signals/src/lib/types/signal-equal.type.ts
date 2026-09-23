@@ -1,5 +1,5 @@
-import { Computed } from "../models/computed/computed";
-import { State } from "../models/state/state";
+import { Computed } from '../models/computed/computed';
+import { State } from '../models/state/state';
 
 /**
  * A function that compares two values of type `T` and returns `true` if they are considered equal, or `false` otherwise. 

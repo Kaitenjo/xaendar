@@ -10,7 +10,7 @@ import { InputSignal } from '../types/input-signal.type';
  *
  * @internal
  */
-export const INPUT_SIGNAL_INSTANCE_SYMBOL = Symbol(`InputSignalInstance`);
+export const INPUT_SIGNAL_INSTANCE_SYMBOL = Symbol('InputSignalInstance');
 
 /**
  * Type guard that checks whether a given value is an `InputSignal` instance.

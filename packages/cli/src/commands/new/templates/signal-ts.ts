@@ -3,7 +3,7 @@
  * @returns The formatted TypeScript source string.
  */
 export function signalTs(): string {
-  return `import { loadSignals } from "@xaendar/signals";
+  return `import { loadSignals } from '@xaendar/signals';
 
 loadSignals();`;
 }

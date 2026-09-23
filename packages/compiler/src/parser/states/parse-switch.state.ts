@@ -56,7 +56,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
 
           const caseCondition = cursor.peek();
           if (caseCondition.type !== TokenType.CONDITION) {
-            throw `Expected CONDITION after CASE`;
+            throw 'Expected CONDITION after CASE';
           }
   
           condition.push(caseCondition.parts[0]);

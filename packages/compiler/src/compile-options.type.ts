@@ -1,4 +1,4 @@
-import { CompilerCache } from "./types/compiler-cache.type";
+import { CompilerCache } from './types/compiler-cache.type';
 
 /**
  * Configuration options for the compile function.

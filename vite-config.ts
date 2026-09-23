@@ -1,7 +1,7 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { PackageJson } from "type-fest";
-import { PluginOption, UserConfig } from "vite";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { PackageJson } from 'type-fest';
+import { PluginOption, UserConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
 /**
@@ -50,7 +50,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
           '@xaendar/core',
           '@xaendar/signals',
           '@xaendar/types',
-          "typescript"
+          'typescript'
         ]
       },
       minify: false,
@@ -109,12 +109,12 @@ function createGeneratePackageJsonPlugin(dirName: string, fileName: string, outD
         version: pkg.version,
         description: pkg.description,
         sideEffects: false,
-        type: "module",
+        type: 'module',
         main: `./dist/${fileName}.js`,
         module: `./dist/${fileName}.js`,
         types: `./dist/${fileName}.d.ts`,
         exports: {
-          ".": {
+          '.': {
             import: {
               types: `./dist/${fileName}.d.ts`,
               default: `./dist/${fileName}.js`

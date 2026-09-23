@@ -52,7 +52,7 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
   }
 
   if (requiredProperties.size) {
-    throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join(`\n ● `)}`, { cause: node.span });
+    throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
   }
 
   const events = node.events;

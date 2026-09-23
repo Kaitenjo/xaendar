@@ -1,4 +1,4 @@
-import { ComponentMetadata } from "./component-metadata.type";
+import { ComponentMetadata } from './component-metadata.type';
 
 /**
  * Metadata type for directive declarations, derived from component metadata by omitting component-specific properties.

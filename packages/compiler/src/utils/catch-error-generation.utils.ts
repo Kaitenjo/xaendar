@@ -1,5 +1,5 @@
-import { slice } from "@xaendar/common";
-import { Span } from "../types/span.type";
+import { slice } from '@xaendar/common';
+import { Span } from '../types/span.type';
 
 /**
  * Catches an error and formats it with a given prefix, including the relevant input slice if available.

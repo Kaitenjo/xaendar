@@ -9,7 +9,7 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
   let read = true;
   let importValue = '';
   let importStart = cursor.currentChar.index + 1;
-  let retVal: LexerTransitionFunctionReturnType = {
+  const retVal: LexerTransitionFunctionReturnType = {
     state: LexerState.IMPORT_PATH,
     tokens: []
   }
@@ -24,7 +24,7 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
 
   cursor.advance();
   if (cursor.currentChar.code !== LEFT_BRACE) {
-    throw `Expected { after @import`;
+    throw 'Expected { after @import';
   }
 
   while (read) {

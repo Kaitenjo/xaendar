@@ -167,9 +167,8 @@ function firstExisting(paths: string[]): string | undefined {
 
 function findPackageRoot(specifier: string, containingDir: string): string | undefined {
   let dir = containingDir;
-  let found: string | undefined;
 
-  while (!found && dir) {
+  while (dir) {
     const candidate = join(dir, 'node_modules', specifier);
     if (existsSync(candidate)) {
       return candidate;
@@ -178,8 +177,6 @@ function findPackageRoot(specifier: string, containingDir: string): string | und
     const parent = dirname(dir);
     dir = parent === dir ? '' : parent
   }
-
-  return found;
 }
 
 /**

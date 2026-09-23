@@ -1,6 +1,6 @@
 import { slice, Stack } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
-import { CR, EOF, LF, SPACE } from '../costants/chars.constants';
+import { CR, LF, SPACE } from '../costants/chars.constants';
 import { Span } from '../types/span.type';
 import { lexAttributeValue } from './states/lex-attribute-value.state';
 import { lexAttribute } from './states/lex-attribute.state';

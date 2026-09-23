@@ -49,11 +49,9 @@ export function Event<
     return {
       get(): Output<Data> {
         output.emit = function (this: Class, valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) {
-          let eventOptions: CustomEventInit<Data> = {};
-
-          eventOptions = isEventOptions(valueOrOverrideOptions)
+          const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
             ? { ...options, ...valueOrOverrideOptions }
-            : { ...options, ...overrideOptions, detail: valueOrOverrideOptions }
+            : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
 
           const event = new CustomEvent(name, eventOptions);
           dispatchEvent(event);

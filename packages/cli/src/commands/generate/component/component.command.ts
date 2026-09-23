@@ -100,7 +100,7 @@ function htmlTemplate(name: string): string {
  * @returns A string containing an empty stylesheet with a placeholder comment.
  */
 function cssTemplate(_name: string): string {
-  return `/* component styles */\n`;
+  return '/* component styles */\n';
 }
 
 /**

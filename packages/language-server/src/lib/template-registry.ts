@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import fg from 'fast-glob';
 import { resolve } from 'node:path';
 
@@ -42,7 +41,7 @@ export async function buildComponentIndex(workspaceRoots: string[]): Promise<voi
  * updates the index. Should be called when a `.ts` file is created or
  * modified, because its `templateUrl` may have changed.
  */
-export function indexComponent(componentPath: string): void {
+export function indexComponent(_componentPath: string): void {
   try {
     // const source = readFileSync(componentPath, 'utf-8');
     // const { templatePath } = extractDecoratorPaths(source, componentPath.replace(/[^/\\]+$/, ''));

@@ -1,4 +1,4 @@
-import { EQUAL_THEN, GREATER_THEN, LPAREN, RPAREN, SLASH, SPACE } from '../../costants/chars.constants';
+import { LPAREN, SPACE } from '../../costants/chars.constants';
 import { LexerCursor } from '../types/lexer-cursor.model';
 import { LexerState } from '../types/lexer-state.enum';
 import { TokenType } from '../types/token-type.enum';
@@ -25,7 +25,7 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
         
       case LPAREN:
         if (!handlerName) {
-          throw `Event handler cannot be empty`;
+          throw 'Event handler cannot be empty';
         }
 
         let state = LexerState.EVENT_PARAMETER; 

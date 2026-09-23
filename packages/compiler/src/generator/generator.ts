@@ -128,7 +128,7 @@ export class Generator {
         );
       }
 
-      return generatedCode.join("\n");
+      return generatedCode.join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
     }

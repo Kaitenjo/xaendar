@@ -3,7 +3,7 @@
  * Normally the set method is permitted internally and should not be called
  * by the User
  */
-export const INPUT_SIGNAL_SET_SYMBOL = Symbol(`InputSignalSet`);
+export const INPUT_SIGNAL_SET_SYMBOL = Symbol('InputSignalSet');
 
 /**
  * Asserts that the provided symbol matches the internal {@link INPUT_SIGNAL_SET_SYMBOL} symbol,

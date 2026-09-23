@@ -18,7 +18,7 @@ import { WebComponentDecoratorParams } from '../../types/web-component/web-compo
  * ```
  */
 export function WebComponent<T extends BaseWebComponent>(options: WebComponentDecoratorParams): ClassDecorator<T> {
-  return function (klass: Constructor<T>, context: ClassDecoratorContext<Constructor<T>>): void {
+  return function (klass: Constructor<T>, _context: ClassDecoratorContext<Constructor<T>>): void {
     setSelectors(klass, options.selector);
   };
 }

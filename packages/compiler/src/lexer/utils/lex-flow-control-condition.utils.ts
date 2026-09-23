@@ -1,6 +1,6 @@
-import { LPAREN, RPAREN } from "../../costants/chars.constants";
-import { LexerCursor } from "../types/lexer-cursor.model";
-import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type";
+import { LPAREN, RPAREN } from '../../costants/chars.constants';
+import { LexerCursor } from '../types/lexer-cursor.model';
+import { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type';
 
 /**
  * Consumes a parenthesised flow-control condition expression from the cursor.

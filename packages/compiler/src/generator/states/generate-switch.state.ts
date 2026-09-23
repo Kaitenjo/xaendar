@@ -37,7 +37,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`condition: ${caseNode.condition ? `[${caseNode.condition.join(', ')}]` : `null`},`, `block: ${fnName}`]),
+        ...indent([`condition: ${caseNode.condition ? `[${caseNode.condition.join(', ')}]` : 'null'},`, `block: ${fnName}`]),
         '},'
       ])
     );

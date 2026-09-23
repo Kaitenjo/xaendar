@@ -200,7 +200,7 @@ describe('xaendarPlugin()', () => {
 
   describe('selector validation', () => {
     it('logs and returns null when no @WebComponent selector is found', async () => {
-      const code = `class MyComponent extends HTMLElement {\n  static {\n    __init();\n  }\n}`;
+      const code = 'class MyComponent extends HTMLElement {\n  static {\n    __init();\n  }\n}';
       await expect(callTransform(code, COMPONENT_ID)).resolves.toBeNull();
     });
 
@@ -491,7 +491,7 @@ class MyComponent extends HTMLElement {
       expect(mockUpsertVirtualFile).toHaveBeenCalledWith(`${COMPONENT_ID}.__typecheck__.ts`, expect.stringContaining(TYPECHECK_BODY));
 
       const [, shimSource] = mockUpsertVirtualFile.mock.calls[0];
-      expect(shimSource).toContain(`from './my-comp.xd.component'`);
+      expect(shimSource).toContain('from \'./my-comp.xd.component\'');
       expect(shimSource).toMatch(/declare const root: \w+;/);
     });
 
