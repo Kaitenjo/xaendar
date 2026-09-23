@@ -76,7 +76,7 @@ export class Lexer {
     [LexerState.IMPORT]: lexImport,
     [LexerState.IMPORT_PATH]: lexImportPath,
     [LexerState.DYNAMIC_BINDING_START]: lexDynamicBindingStart,
-    [LexerState.DYNAMIC_BINDING_BODY]: lexDynamicBindingBody,
+    [LexerState.DYNAMIC_BINDING_BODY]: lexDynamicBindingBody
   }
 
   /**
@@ -138,9 +138,9 @@ export class Lexer {
 
             When we find a space we are sure the word is ended
           */
-          while (!stop) {
-            const chardCode = this._input.charCodeAt(i); 
-            if (chardCode === LF || chardCode === CR || (startInterval - i > neighbourhood && chardCode === SPACE)) {
+          while (!stop && i > 0) {
+            const charCode = this._input.charCodeAt(i); 
+            if (charCode === LF || charCode === CR || (startInterval - i > neighbourhood && charCode === SPACE)) {
               // + 1 to ignore the LF, CR or SPACE in the interval to be printed
               startInterval = i + 1;
               stop = true;
@@ -167,9 +167,9 @@ export class Lexer {
 
             When we find a space or the row is finished we are sure the word is ended
           */
-          while (!stop) {
-            const chardCode = this._input.charCodeAt(i); 
-            if (chardCode === LF || chardCode === CR || (i - endInterval > neighbourhood && chardCode === SPACE)) {
+          while (!stop && i < this._input.length) {
+            const charCode = this._input.charCodeAt(i); 
+            if (charCode === LF || charCode === CR || (i - endInterval > neighbourhood && charCode === SPACE)) {
               // - 1 to ignore the LF, CR or SPACE in the interval to be printed
               endInterval = i - 1;
               stop = true;

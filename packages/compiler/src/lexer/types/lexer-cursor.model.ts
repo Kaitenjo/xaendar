@@ -1,6 +1,7 @@
 import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
 import { CR, EOF, LF, SPACE } from '../../costants/chars.constants';
+import { COMMENT_START } from '../../costants/comment.costants';
 import { Cursor } from '../../models/cursor';
 import { CurrentChar } from './current-char.type';
 
@@ -53,13 +54,17 @@ export class LexerCursor extends Cursor {
    * Value: Unicode code point
    */
   private readonly _peekCache = new Map<number, number>();
+  /**
+   * Flag indicating whether the cursor is currently consuming a comment block.
+   */
+  private consumingComment = false;
 
   /**
    * Creates a new cursor for the given input source.
    *
    * @param input - Full source string to be tokenised.
    */
-  constructor(input: string) { 
+  constructor(input: string) {
     super(input);
   }
 
@@ -89,10 +94,10 @@ export class LexerCursor extends Cursor {
       this.throwEOFError();
     } else {
       // Clear cache when advance
-      for (let i = this._currentChar.index + 1; i <= newIndex ; i++) {
+      for (let i = this._currentChar.index + 1; i <= newIndex; i++) {
         this._peekCache.delete(i);
       }
-      
+
       this._currentChar.index = newIndex;
       this._currentChar.value = this.input[newIndex];
       this._currentChar.code = this.input.charCodeAt(newIndex);
@@ -152,14 +157,16 @@ export class LexerCursor extends Cursor {
   public peek(): number;
   public peek<OffSet extends number>(options?: { offset?: PositiveInteger<OffSet> }): number;
   public peek(chars: 1): number;
-  public peek<OffSet extends number>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): number; 
-  public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars>; 
+  public peek<OffSet extends number>(chars: 1, options?: { offset?: PositiveInteger<OffSet> }): number;
+  public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars>;
   public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): number | number[] {
+    this.consumeComment();
     const cache = this._peekCache;
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
-    return chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(chars + offset, cache);
+    const result = chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(chars + offset, cache);
+    return result;
   }
 
   /**
@@ -200,6 +207,26 @@ export class LexerCursor extends Cursor {
     const charCode = this.input.charCodeAt(index);
     cache.set(index, charCode);
     return charCode;
+  }
+
+  private consumeComment(): void {
+    if (!this.consumingComment && this.currentChar.index < this.input.length - 7) {
+      this.consumingComment = true;
+
+      if (this.peekMatch(COMMENT_START)) {
+        this.advance(4);
+  
+        while (!this.peekMatch('-->') && this.currentChar.index < this.input.length - 3) {
+          this.advance();
+        }
+  
+        // Consume the closing '-->'
+        this.advance(3);
+        this.consumingComment = false;
+      } else {
+        this.consumingComment = false;
+      }
+    }
   }
 
   /**

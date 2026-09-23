@@ -1,8 +1,8 @@
-import { LexerCursor } from "../types/lexer-cursor.model.js";
-import { LexerState } from "../types/lexer-state.enum.js";
-import { TokenType } from "../types/token-type.enum.js";
-import { LexerTransitionFunctionContext } from "../types/transition-function/transition-function-context.type.js";
-import { LexerTransitionFunctionReturnType } from "../types/transition-function/transition-function-return-type.type.js";
+import { LexerCursor } from '../types/lexer-cursor.model.js';
+import { LexerState } from '../types/lexer-state.enum.js';
+import { TokenType } from '../types/token-type.enum.js';
+import { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type.js';
+import { LexerTransitionFunctionReturnType } from '../types/transition-function/transition-function-return-type.type.js';
 
 /**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.

@@ -18,9 +18,7 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
   let retVal!: LexerTransitionFunctionReturnType;
 
   while (read) {
-    const nextChar = cursor.peek();
-
-    switch (nextChar) {
+    switch (cursor.peek()) {
       case AT_SIGN:
         const dynamicBinding = cursor.peekMatch('@(');
         let state = LexerState.EVENT;

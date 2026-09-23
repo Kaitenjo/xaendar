@@ -32,5 +32,3 @@ Le source maps vengono probabilmente genrate prima dell'aggiunta dei miei pezzi 
 a impedire il debugging dei componeti poiche ibreakpoitn nel .ts non matchato le reali righe del javascript
 
 i decoreatori di proprieta sono applicati in ritardo al bootstrapping
-
-Supporptare i commenti nel template
