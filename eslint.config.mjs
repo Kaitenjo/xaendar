@@ -35,7 +35,7 @@ export default defineConfig(
       'no-unused-vars': 'off',
       'no-useless-escape': 'off',
       quotes: ['error', 'single', { avoidEscape: true }],
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-this-alias': 'off',
