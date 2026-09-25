@@ -6,9 +6,9 @@ import { dirname, resolve } from 'node:path';
 import { createSourceFile, ScriptTarget } from 'typescript';
 import type { Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
-import { clearComponentToImports, registerImportMapping } from '../../registry/import-registry/import-registry';
-import { clearMetadataMappingsForFile, registerMetadataMapping } from '../../registry/metadata-registry/metadata-registry';
-import { registerTemplateMapping, removeAllMappingsForComponent } from '../../registry/template-registry/template-registry';
+import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
+import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
+import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions, stripCssComments } from '../plugin.utils/plugin.utils';
 
@@ -29,14 +29,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
     }
 
     // clear stale keys from a prior edit (e.g. a renamed className/selector) before re-registering
-    clearMetadataMappingsForFile(id);
+    clearMetadataForFile(id);
     clearComponentToImports(id);
-    removeAllMappingsForComponent(id);
+    removeComponentPath(id);
 
     let first = true;
     for (const [className, metadata] of metadatas.entries()) {
       // TODO className is not unique, we can't use it as a key for the metadata cache
-      registerMetadataMapping(className, metadata);
+      registerMetadata(className, metadata);
 
       const { selectors, styleUrl, templateUrl } = metadata;
       for (let i = 0; i < selectors.length; i++) {
@@ -57,14 +57,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
       }
 
       this.addWatchFile(templatePath);
-      registerTemplateMapping(templatePath, id);
+      registerTemplatePath(templatePath, id);
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
       for (const importedPath of extractImportedComponentPaths(templateSource, dirname(templatePath))) {
         if (state.host.fileExists(importedPath)) {
           this.addWatchFile(importedPath);
-          registerImportMapping(importedPath, id);
+          registerImport(importedPath, id);
         }
       }
 
@@ -91,7 +91,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
           signals,
           cache: {
             getOrInsert: getMetadataOrExtract,
-            set: registerMetadataMapping
+            set: registerMetadata
           }
         });
         compiledMethods = result.javascript;

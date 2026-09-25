@@ -12,10 +12,17 @@
  */
 
 /**
- * templatePath (absolute) -> componentId (absolute path of the .xd.component.ts)
+ * Map a template path to the set of component Paths (absolute paths of the component files)
+ * The mapping is many-to-many:
+ * - A template could theoretically be referenced by multiple components in the same or different files
  */
-const templateToComponent = new Map<string, Set<string>>();
-const componentToTemplates = new Map<string, Set<string>>();
+const templateToComponentsPath = new Map<string, Set<string>>();
+/**
+ * Map a component path to the set of template paths it references.
+ * The mapping is many-to-many: 
+ * - A component path could reference 1 to N template files where N is the number of components declared in that file.
+ */
+const componentPathToTemplates = new Map<string, Set<string>>();
 
 /**
  * Registers (or updates) the association between a template file and the
@@ -24,12 +31,12 @@ const componentToTemplates = new Map<string, Set<string>>();
  * the same pair is a no-op in practice.
  *
  * @param templatePath - Absolute path of the `.html` template file.
- * @param componentId - Absolute path of the component file that references
+ * @param componentPath - Absolute path of the component file that references
  *   it via `templateUrl`.
  */
-export function registerTemplateMapping(templatePath: string, componentId: string): void {
-  templateToComponent.getOrInsert(templatePath, new Set()).add(componentId);
-  componentToTemplates.getOrInsert(componentId, new Set()).add(templatePath);
+export function registerTemplatePath(templatePath: string, componentPath: string): void {
+  templateToComponentsPath.getOrInsert(templatePath, new Set()).add(componentPath);
+  componentPathToTemplates.getOrInsert(componentPath, new Set()).add(templatePath);
 }
 
 /**
@@ -40,8 +47,8 @@ export function registerTemplateMapping(templatePath: string, componentId: strin
  *   component has registered this template path (e.g. it was never
  *   processed, or was already removed).
  */
-export function findComponentsForTemplate(templatePath: string): Set<string> | undefined {
-  return templateToComponent.get(templatePath);
+export function findComponentPathsForTemplate(templatePath: string): Set<string> | undefined {
+  return templateToComponentsPath.get(templatePath);
 }
 
 /**
@@ -51,25 +58,25 @@ export function findComponentsForTemplate(templatePath: string): Set<string> | u
  * a single `templateUrl`), but this scans defensively in case of stale
  * entries from a renamed templateUrl.
  *
- * @param componentId - Absolute path of the component file being torn down.
+ * @param componentPath - Absolute path of the component file being torn down.
  */
-export function removeAllMappingsForComponent(componentId: string): void {
-  const templatePaths = componentToTemplates.get(componentId);
+export function removeComponentPath(componentPath: string): void {
+  const templatePaths = componentPathToTemplates.get(componentPath);
   if (!templatePaths) {
     return;
   }
 
   for (const templatePath of [...templatePaths]) {
-    const ownerIds = templateToComponent.get(templatePath);
+    const ownerIds = templateToComponentsPath.get(templatePath);
     if (ownerIds) {
-      ownerIds.delete(componentId);
+      ownerIds.delete(componentPath);
       if (!ownerIds.size) {
-        templateToComponent.delete(templatePath);
+        templateToComponentsPath.delete(templatePath);
       }
     }
   }
 
-  componentToTemplates.delete(componentId);
+  componentPathToTemplates.delete(componentPath);
 }
 
 /**
@@ -78,6 +85,6 @@ export function removeAllMappingsForComponent(componentId: string): void {
  * mappings into a fresh session.
  */
 export function clearTemplateRegistry(): void {
-  templateToComponent.clear();
-  componentToTemplates.clear();
+  templateToComponentsPath.clear();
+  componentPathToTemplates.clear();
 }

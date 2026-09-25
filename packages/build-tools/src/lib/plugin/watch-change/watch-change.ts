@@ -2,8 +2,8 @@ import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import type { Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE, COMPONENT_HTML_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportToComponents, clearComponentToImports, findComponentsForImport } from '../../registry/import-registry/import-registry';
-import { clearMetadataMappingsForFile } from '../../registry/metadata-registry/metadata-registry';
-import { findComponentsForTemplate, removeAllMappingsForComponent } from '../../registry/template-registry/template-registry';
+import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
+import { findComponentPathsForTemplate, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 
 export function createWatchChangeHook(state: XaendarPluginState): NonNullable<Plugin['watchChange']> {
@@ -23,8 +23,8 @@ export function createWatchChangeHook(state: XaendarPluginState): NonNullable<Pl
 export function handleTsDelete(id: string, state: XaendarPluginState) {
   removeVirtualFile(`${id}.__typecheck__.ts`);
   removeRealFile(id);
-  removeAllMappingsForComponent(id);
-  clearMetadataMappingsForFile(id);
+  removeComponentPath(id);
+  clearMetadataForFile(id);
 
   const components = findComponentsForImport(id);
   for (const componentId of components) {
@@ -37,7 +37,7 @@ export function handleTsDelete(id: string, state: XaendarPluginState) {
 }
 
 export function handleHtmlDelete(id: string) {
-  const componentIds = findComponentsForTemplate(id);
+  const componentIds = findComponentPathsForTemplate(id);
   if (componentIds) {
     for (const componentId of componentIds) {
       removeVirtualFile(`${componentId}.__typecheck__.ts`);

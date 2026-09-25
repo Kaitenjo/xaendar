@@ -32,7 +32,7 @@ const metadatas = new Map<string, Map<string, MetadataEntry>>();
  *     "/src/app/shell/shell.xd.component.ts": new Set(["ShellComponent"])
  *   }
  */
-const fileToKeys = new Map<string, Set<string>>();
+const filePathToMetadataKeys = new Map<string, Set<string>>();
 /**
  * Timer handle for the periodic idle sweep.
  */
@@ -43,7 +43,7 @@ let sweepTimer: NodeJS.Timeout | undefined;
  * @param key - The unique identifier for the metadata mapping
  * @param metadataMapping - The metadata object to register
  */
-export function registerMetadataMapping(key: string, metadataMapping: ComponentOrDirectiveMetadata) {
+export function registerMetadata(key: string, metadataMapping: ComponentOrDirectiveMetadata) {
   const ownerFile = getOwnerFilePath(metadataMapping);
   if (!ownerFile) {
     return;
@@ -54,7 +54,7 @@ export function registerMetadataMapping(key: string, metadataMapping: ComponentO
     lastAccessed: Date.now()
   });
 
-  fileToKeys.getOrInsert(ownerFile, new Set()).add(key);
+  filePathToMetadataKeys.getOrInsert(ownerFile, new Set()).add(key);
 
   ensureSweepStarted();
 }
@@ -64,7 +64,7 @@ export function registerMetadataMapping(key: string, metadataMapping: ComponentO
  * @param key - The unique identifier of the metadata mapping
  * @returns The metadata object if found, otherwise undefined
  */
-export function getMetadataMapping(key: string, ownerFile?: string): ComponentOrDirectiveMetadata | undefined {
+export function getMetadata(key: string, ownerFile?: string): ComponentOrDirectiveMetadata | undefined {
   const entries = metadatas.get(key);
   if (!entries?.size) {
     return;
@@ -86,8 +86,8 @@ export function getMetadataMapping(key: string, ownerFile?: string): ComponentOr
  *
  * @param filePath - Absolute path of the owner source file.
  */
-export function clearMetadataMappingsForFile(filePath: string): void {
-  const keys = fileToKeys.get(filePath);
+export function clearMetadataForFile(filePath: string): void {
+  const keys = filePathToMetadataKeys.get(filePath);
   if (keys) {
     for (const key of keys) {
       const entries = metadatas.get(key);
@@ -97,7 +97,7 @@ export function clearMetadataMappingsForFile(filePath: string): void {
       }
     }
 
-    fileToKeys.delete(filePath);
+    filePathToMetadataKeys.delete(filePath);
   }
 }
 
@@ -107,7 +107,7 @@ export function clearMetadataMappingsForFile(filePath: string): void {
  */
 export function clearMetadataRegistry(): void {
   metadatas.clear();
-  fileToKeys.clear();
+  filePathToMetadataKeys.clear();
 
   if (sweepTimer) {
     clearInterval(sweepTimer);
@@ -143,10 +143,10 @@ function sweepIdleEntries(): void {
       if (now - entry.lastAccessed > IDLE_TTL_MS) {
         entries.delete(filePath);
 
-        const keys = fileToKeys.get(filePath);
+        const keys = filePathToMetadataKeys.get(filePath);
         keys?.delete(key);
         if (!keys?.size) {
-          fileToKeys.delete(filePath);
+          filePathToMetadataKeys.delete(filePath);
         }
       }
     }

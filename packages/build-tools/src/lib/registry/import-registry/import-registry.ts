@@ -22,7 +22,7 @@ const componentToImports = new Map<string, Set<string>>();
  * @param importedPath - Absolute path of the imported `.xd.component.ts` file.
  * @param componentId - Absolute path of the component file that imports it.
  */
-export function registerImportMapping(importedPath: string, componentId: string): void {
+export function registerImport(importedPath: string, componentId: string): void {
   const importedPathSet = importToComponents.getOrInsert(importedPath, new Set());
   importedPathSet.add(componentId);
 

@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptKind, ScriptTarget, SourceFile } from 'typescript';
-import { getMetadataMapping, registerMetadataMapping } from '../../registry/metadata-registry/metadata-registry';
+import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 
 /**
  * TODO: This could be eliminated if we find a way to extract the metadata informations
@@ -126,7 +126,7 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  */
 export async function getMetadataOrExtract(name: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
   const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolve(path));
-  let metadata = getMetadataMapping(name, resolvedPath) ?? getMetadataMapping(name);
+  let metadata = getMetadata(name, resolvedPath) ?? getMetadata(name);
   if (metadata) {
     return metadata;
   }
@@ -143,10 +143,10 @@ export async function getMetadataOrExtract(name: string, path?: string | string[
   }
 
   // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!
-  registerMetadataMapping(name, metadata);
+  registerMetadata(name, metadata);
   for (let i = 0; i < metadata.selectors.length; i++) {
     const selector = metadata.selectors[i];
-    registerMetadataMapping(selector, metadata);
+    registerMetadata(selector, metadata);
   }
   return metadata;
 }
