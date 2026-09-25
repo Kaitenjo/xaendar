@@ -1,5 +1,5 @@
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
-import type { Plugin } from 'vite';
+import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE, COMPONENT_HTML_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportToComponents, clearComponentToImports, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
@@ -7,7 +7,7 @@ import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependenc
 import { findComponentPathsForTemplate, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 
-export function createWatchChangeHook(state: XaendarPluginState): NonNullable<Plugin['watchChange']> {
+export function createWatchChangeHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['watchChange']>> {
   return function watchChange(path, change) {
     switch (change.event) {
       case 'delete':

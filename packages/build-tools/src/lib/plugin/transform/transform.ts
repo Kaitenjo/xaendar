@@ -4,7 +4,7 @@ import { createShim, getLanguageService, registerRealFile } from '@xaendar/langu
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { createSourceFile, ScriptTarget } from 'typescript';
-import type { Plugin } from 'vite';
+import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -14,7 +14,7 @@ import type { XaendarPluginState } from '../../types/plugin.types';
 import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 
-export function createTransformHook(state: XaendarPluginState): NonNullable<Plugin['transform']> {
+export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
     if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
       return code;
@@ -50,8 +50,6 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
         }
       }
 
-      // qui non stiamo gestendo la possibiltia di avere piu di un componente per file
-      // controllo debole su regex, sarebbe otimale estender
       const folder = dirname(componentPath);
       const templatePath = resolve(folder, templateUrl);
       if (!templatePath || !state.host.fileExists(templatePath)) {

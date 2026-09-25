@@ -1,6 +1,3 @@
-- La cache dei metadati di un componente al momento manca di un sistema
-di invalidità e di decisione quando cachare, per questo è stata disattivata 
-
 - Creazione di una cache per l'estrazione dei Signals da una classe X:
   Si evita ricalcolo ad ogni salvataggio
   Va invalidata se:
@@ -21,7 +18,7 @@ di invalidità e di decisione quando cachare, per questo è stata disattivata
   Per il secondo e il terzo caso va passato esplicitamente il 'this' per accedere ai campi della classe utilizzati
   nel template, cosa che ad oggi non è necessaria poiche le funzioni sono metodi del componente stesso
 
-  - Scss, Less e Sass
+  - Scss, Less e Sass (Sistema è stato rifattorizzato per poter essere estendibile ed usarli)
   - Direttive
   - Creazione componenti imperativamente
   - CustomElements che partrono da un HTMLElement specifico

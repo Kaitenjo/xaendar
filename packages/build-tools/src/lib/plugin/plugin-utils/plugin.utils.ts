@@ -184,10 +184,6 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   return undefined;
 }
 
-function fixDecoratorExport(code: string): string {
-  return code.replace(/^export\s+(@\w+[\s\S]*?)\s+(class\s)/gm, '$1\nexport $2');
-}
-
 function insertTemplateMethods(jsSource: string, sourceFile: SourceFile, classDecl: ClassDeclaration, compiledMethods: string): string {
   const placeholderBlock = classDecl.members.find(isDecoratorInitStaticBlock);
 

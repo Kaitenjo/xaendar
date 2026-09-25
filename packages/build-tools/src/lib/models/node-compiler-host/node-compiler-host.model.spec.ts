@@ -22,7 +22,7 @@ describe('NodeCompilerHost', () => {
 
   describe('readFile()', () => {
     it('returns the file contents as a UTF-8 string when the file exists', () => {
-      vi.mocked(readFileSync).mockReturnValue('hello world' as any);
+      vi.mocked(readFileSync).mockReturnValue('hello world');
 
       expect(host.readFile('/some/file.ts')).toBe('hello world');
       expect(readFileSync).toHaveBeenCalledWith('/some/file.ts', 'utf-8');
@@ -86,7 +86,7 @@ describe('NodeCompilerHost', () => {
 
   describe('getDirectoryEntries()', () => {
     it('returns the list of entry names inside the directory', () => {
-      vi.mocked(readdirSync).mockReturnValue(['button', 'input', 'modal'] as any);
+      vi.mocked(readdirSync).mockReturnValue(['button', 'input', 'modal'] as unknown as ReturnType<typeof readdirSync>);
 
       const entries = host.getDirectoryEntries('/src/components');
 
@@ -121,14 +121,14 @@ describe('NodeCompilerHost', () => {
 
   describe('isDirectory()', () => {
     it('returns true when statSync reports a directory', () => {
-      vi.mocked(statSync).mockReturnValue({ isDirectory: () => true } as any);
+      vi.mocked(statSync).mockReturnValue({ isDirectory: () => true } as unknown as ReturnType<typeof statSync>);
 
       expect(host.isDirectory('/some/dir')).toBe(true);
       expect(statSync).toHaveBeenCalledWith('/some/dir');
     });
 
     it('returns false when statSync reports a regular file', () => {
-      vi.mocked(statSync).mockReturnValue({ isDirectory: () => false } as any);
+      vi.mocked(statSync).mockReturnValue({ isDirectory: () => false } as unknown as ReturnType<typeof statSync>);
 
       expect(host.isDirectory('/some/file.ts')).toBe(false);
     });
@@ -152,7 +152,7 @@ describe('NodeCompilerHost', () => {
 
   describe('getRealPath()', () => {
     it('returns the resolved real path when realpathSync succeeds', () => {
-      vi.mocked(realpathSync).mockReturnValue('/packages/core/src/index.ts' as any);
+      vi.mocked(realpathSync).mockReturnValue('/packages/core/src/index.ts');
 
       const result = host.getRealPath('/app/node_modules/@xaendar/core/index.ts');
 
