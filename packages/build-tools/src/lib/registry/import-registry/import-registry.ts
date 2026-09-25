@@ -48,7 +48,7 @@ export function findComponentsForImport(importedPath: string): Set<string> {
  *
  * @param componentId - Absolute path of the component file.
  */
-export function clearImportsForComponent(componentId: string): void {
+export function clearComponentToImports(componentId: string): void {
   const previousImports = componentToImports.get(componentId);
   if (previousImports) {
     for (const importedPath of previousImports) {
@@ -62,6 +62,31 @@ export function clearImportsForComponent(componentId: string): void {
     }
   }
   componentToImports.delete(componentId);
+}
+
+/**
+ * Clears all reverse import mappings that point to `importedPath`, e.g. when
+ * the imported component file itself is deleted.
+ *
+ * @param importedPath - Absolute path of the deleted imported component file.
+ */
+export function clearImportToComponents(importedPath: string): void {
+  const components = importToComponents.get(importedPath);
+  if (!components) {
+    return;
+  }
+
+  for (const componentId of components) {
+    const imports = componentToImports.get(componentId);
+    if (imports) {
+      imports.delete(importedPath);
+      if (!imports.size) {
+        componentToImports.delete(componentId);
+      }
+    }
+  }
+
+  importToComponents.delete(importedPath);
 }
 
 /**

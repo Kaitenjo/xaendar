@@ -125,12 +125,12 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  * @returns The metadata for the specified component or directive.
  */
 export async function getMetadataOrExtract(name: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
-  let metadata = getMetadataMapping(name);
+  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolve(path));
+  let metadata = getMetadataMapping(name, resolvedPath) ?? getMetadataMapping(name);
   if (metadata) {
     return metadata;
   }
 
-  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolve(path));
   if (!resolvedPath) {
     throw new Error(`Unable to resolve module path for "${name}".`);
   }

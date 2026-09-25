@@ -6,9 +6,9 @@ import { dirname, resolve } from 'node:path';
 import { createSourceFile, ScriptTarget } from 'typescript';
 import type { Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
-import { clearImportsForComponent, registerImportMapping } from '../../registry/import-registry/import-registry';
+import { clearComponentToImports, registerImportMapping } from '../../registry/import-registry/import-registry';
 import { clearMetadataMappingsForFile, registerMetadataMapping } from '../../registry/metadata-registry/metadata-registry';
-import { registerTemplateMapping } from '../../registry/template-registry/template-registry';
+import { registerTemplateMapping, removeAllMappingsForComponent } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions, stripCssComments } from '../plugin.utils/plugin.utils';
 
@@ -30,6 +30,8 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
 
     // clear stale keys from a prior edit (e.g. a renamed className/selector) before re-registering
     clearMetadataMappingsForFile(id);
+    clearComponentToImports(id);
+    removeAllMappingsForComponent(id);
 
     let first = true;
     for (const [className, metadata] of metadatas.entries()) {
@@ -59,7 +61,6 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
-      clearImportsForComponent(id);
       for (const importedPath of extractImportedComponentPaths(templateSource, dirname(templatePath))) {
         if (state.host.fileExists(importedPath)) {
           this.addWatchFile(importedPath);

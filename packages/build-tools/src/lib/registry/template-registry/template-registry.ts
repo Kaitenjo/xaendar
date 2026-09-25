@@ -15,6 +15,7 @@
  * templatePath (absolute) -> componentId (absolute path of the .xd.component.ts)
  */
 const templateToComponent = new Map<string, Set<string>>();
+const componentToTemplates = new Map<string, Set<string>>();
 
 /**
  * Registers (or updates) the association between a template file and the
@@ -28,6 +29,7 @@ const templateToComponent = new Map<string, Set<string>>();
  */
 export function registerTemplateMapping(templatePath: string, componentId: string): void {
   templateToComponent.getOrInsert(templatePath, new Set()).add(componentId);
+  componentToTemplates.getOrInsert(componentId, new Set()).add(templatePath);
 }
 
 /**
@@ -43,26 +45,6 @@ export function findComponentsForTemplate(templatePath: string): Set<string> | u
 }
 
 /**
- * Removes the mapping for a given template path, e.g. once its component
- * has been fully torn down (component file deleted) and the mapping is no
- * longer needed.
- *
- * Note: when only the template is deleted (component `.ts` still exists),
- * you generally do NOT want to call this — see `unregisterTemplateMapping`
- * usage guidance in the module doc comment on `watchChange` in plugin.ts.
- * Removing the mapping here means a later recreation of the template file
- * won't be automatically re-associated until `transform` runs again for
- * the component (which it will, since Vite invalidates the component
- * module too in that scenario).
- *
- * @param templatePath - Absolute path of the `.html` template file to
- *   forget.
- */
-export function removeTemplateMapping(templatePath: string): void {
-  templateToComponent.delete(templatePath);
-}
-
-/**
  * Removes every template mapping that points to the given component,
  * e.g. when the component file itself is deleted. A component could in
  * principle have registered only one template at a time (a component has
@@ -72,16 +54,22 @@ export function removeTemplateMapping(templatePath: string): void {
  * @param componentId - Absolute path of the component file being torn down.
  */
 export function removeAllMappingsForComponent(componentId: string): void {
-  for (const [templatePath, ownerIds] of templateToComponent) {
-    if (ownerIds.has(componentId)) {
-      /*
-        We return after the first match because a component can only have one
-        template associated with it at a time.
-      */
-      templateToComponent.delete(templatePath);
-      return;
+  const templatePaths = componentToTemplates.get(componentId);
+  if (!templatePaths) {
+    return;
+  }
+
+  for (const templatePath of [...templatePaths]) {
+    const ownerIds = templateToComponent.get(templatePath);
+    if (ownerIds) {
+      ownerIds.delete(componentId);
+      if (!ownerIds.size) {
+        templateToComponent.delete(templatePath);
+      }
     }
   }
+
+  componentToTemplates.delete(componentId);
 }
 
 /**
@@ -91,4 +79,5 @@ export function removeAllMappingsForComponent(componentId: string): void {
  */
 export function clearTemplateRegistry(): void {
   templateToComponent.clear();
+  componentToTemplates.clear();
 }

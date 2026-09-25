@@ -21,7 +21,7 @@ const SWEEP_INTERVAL_MS = 60_000;
  *   }
  *
  */
-const metadatas = new Map<string, MetadataEntry>();
+const metadatas = new Map<string, Map<string, MetadataEntry>>();
 /**
  * Map component file paths to the metadata extracted
  *
@@ -44,15 +44,17 @@ let sweepTimer: NodeJS.Timeout | undefined;
  * @param metadataMapping - The metadata object to register
  */
 export function registerMetadataMapping(key: string, metadataMapping: ComponentOrDirectiveMetadata) {
-  metadatas.set(key, {
+  const ownerFile = getOwnerFilePath(metadataMapping);
+  if (!ownerFile) {
+    return;
+  }
+
+  metadatas.getOrInsert(key, new Map()).set(ownerFile, {
     metadata: metadataMapping,
     lastAccessed: Date.now()
   });
 
-  const ownerFile = getOwnerFilePath(metadataMapping);
-  if (ownerFile) {
-    fileToKeys.getOrInsert(ownerFile, new Set()).add(key);
-  }
+  fileToKeys.getOrInsert(ownerFile, new Set()).add(key);
 
   ensureSweepStarted();
 }
@@ -62,12 +64,19 @@ export function registerMetadataMapping(key: string, metadataMapping: ComponentO
  * @param key - The unique identifier of the metadata mapping
  * @returns The metadata object if found, otherwise undefined
  */
-export function getMetadataMapping(key: string): ComponentOrDirectiveMetadata | undefined {
-  const entry = metadatas.get(key);
-  if (entry) {
-    entry.lastAccessed = Date.now();
-    return entry.metadata;
+export function getMetadataMapping(key: string, ownerFile?: string): ComponentOrDirectiveMetadata | undefined {
+  const entries = metadatas.get(key);
+  if (!entries?.size) {
+    return;
   }
+
+  const entry = ownerFile ? entries.get(ownerFile) : (entries.size === 1 ? entries.values().next().value : undefined);
+  if (!entry) {
+    return;
+  }
+
+  entry.lastAccessed = Date.now();
+  return entry.metadata;
 }
 
 /**
@@ -81,7 +90,11 @@ export function clearMetadataMappingsForFile(filePath: string): void {
   const keys = fileToKeys.get(filePath);
   if (keys) {
     for (const key of keys) {
-      metadatas.delete(key);
+      const entries = metadatas.get(key);
+      entries?.delete(filePath);
+      if (!entries?.size) {
+        metadatas.delete(key);
+      }
     }
 
     fileToKeys.delete(filePath);
@@ -124,30 +137,22 @@ function ensureSweepStarted(): void {
  */
 function sweepIdleEntries(): void {
   const now = Date.now();
-  const expiredKeys = new Set<string>();
 
-  for (const [key, entry] of metadatas) {
-    if (now - entry.lastAccessed > IDLE_TTL_MS) {
+  for (const [key, entries] of metadatas) {
+    for (const [filePath, entry] of entries) {
+      if (now - entry.lastAccessed > IDLE_TTL_MS) {
+        entries.delete(filePath);
+
+        const keys = fileToKeys.get(filePath);
+        keys?.delete(key);
+        if (!keys?.size) {
+          fileToKeys.delete(filePath);
+        }
+      }
+    }
+
+    if (!entries.size) {
       metadatas.delete(key);
-      expiredKeys.add(key);
-    }
-  }
-
-  if (!expiredKeys.size) {
-    return;
-  }
-
-  for (const [filePath, keys] of fileToKeys) {
-    for (const key of expiredKeys) {
-      /*
-        We do not know which filepath could contain the timed-out key,
-        so we check all file paths.
-      */
-      keys.delete(key);
-    }
-
-    if (!keys.size) {
-      fileToKeys.delete(filePath);
     }
   }
 }

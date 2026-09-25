@@ -1,9 +1,9 @@
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import type { Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE, COMPONENT_HTML_FILE_RE } from '../../costants/component-filename-regex';
-import { clearImportsForComponent, findComponentsForImport } from '../../registry/import-registry/import-registry';
+import { clearImportToComponents, clearComponentToImports, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataMappingsForFile } from '../../registry/metadata-registry/metadata-registry';
-import { findComponentsForTemplate, removeAllMappingsForComponent, removeTemplateMapping } from '../../registry/template-registry/template-registry';
+import { findComponentsForTemplate, removeAllMappingsForComponent } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 
 export function createWatchChangeHook(state: XaendarPluginState): NonNullable<Plugin['watchChange']> {
@@ -31,7 +31,9 @@ export function handleTsDelete(id: string, state: XaendarPluginState) {
     removeVirtualFile(`${componentId}.__typecheck__.ts`);
     state.logError('', `Component "${id}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
   }
-  clearImportsForComponent(id);
+
+  clearImportToComponents(id);
+  clearComponentToImports(id);
 }
 
 export function handleHtmlDelete(id: string) {
@@ -40,6 +42,5 @@ export function handleHtmlDelete(id: string) {
     for (const componentId of componentIds) {
       removeVirtualFile(`${componentId}.__typecheck__.ts`);
     }
-    removeTemplateMapping(id);
   }
 }
