@@ -14,7 +14,7 @@
 /** 
  * templatePath (absolute) -> componentId (absolute path of the .xd.component.ts) 
  */
-const templateToComponent = new Map<string, string>();
+const templateToComponent = new Map<string, Set<string>>();
 
 /**
  * Registers (or updates) the association between a template file and the
@@ -27,7 +27,7 @@ const templateToComponent = new Map<string, string>();
  *   it via `templateUrl`.
  */
 export function registerTemplateMapping(templatePath: string, componentId: string): void {
-  templateToComponent.set(templatePath, componentId);
+  templateToComponent.getOrInsert(templatePath, new Set()).add(componentId);
 }
 
 /**
@@ -38,7 +38,7 @@ export function registerTemplateMapping(templatePath: string, componentId: strin
  *   component has registered this template path (e.g. it was never
  *   processed, or was already removed).
  */
-export function findComponentForTemplate(templatePath: string): string | undefined {
+export function findComponentsForTemplate(templatePath: string): Set<string> | undefined {
   return templateToComponent.get(templatePath);
 }
 
@@ -72,9 +72,14 @@ export function removeTemplateMapping(templatePath: string): void {
  * @param componentId - Absolute path of the component file being torn down.
  */
 export function removeAllMappingsForComponent(componentId: string): void {
-  for (const [templatePath, ownerId] of templateToComponent) {
-    if (ownerId === componentId) {
+  for (const [templatePath, ownerIds] of templateToComponent) {
+    if (ownerIds.has(componentId)) {
+      /*
+        We return after the first match because a component can only have one 
+        template associated with it at a time.
+      */
       templateToComponent.delete(templatePath);
+      return;
     }
   }
 }

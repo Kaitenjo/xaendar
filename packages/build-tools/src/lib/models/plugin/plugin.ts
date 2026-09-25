@@ -10,7 +10,7 @@ import { COMPONENT_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportRegistry, clearImportsForComponent, findComponentsForImport, registerImportMapping } from '../import-registry';
 import { clearMetadataMappingsForFile, clearMetadataRegistry, getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
 import { NodeCompilerHost } from '../node-compiler-host/node-compiler-host.model';
-import { clearTemplateRegistry, findComponentForTemplate, registerTemplateMapping, removeAllMappingsForComponent, removeTemplateMapping } from '../template-registry';
+import { clearTemplateRegistry, findComponentsForTemplate, registerTemplateMapping, removeAllMappingsForComponent, removeTemplateMapping } from '../template-registry';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
@@ -182,9 +182,11 @@ export function xaendarPlugin(): Plugin {
           }
           clearImportsForComponent(id);
         } else if (id.endsWith('.xd.component.html')) {
-          const componentId = findComponentForTemplate(id);
-          if (componentId) {
-            removeVirtualFile(`${componentId}.__typecheck__.ts`);
+          const componentIds = findComponentsForTemplate(id);
+          if (componentIds) {
+            for (const componentId of componentIds) {
+              removeVirtualFile(`${componentId}.__typecheck__.ts`);
+            }
             removeTemplateMapping(id);
           }
         }
