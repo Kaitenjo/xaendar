@@ -61,6 +61,7 @@ export function clearComponentToImports(componentId: string): void {
       }
     }
   }
+  
   componentToImports.delete(componentId);
 }
 

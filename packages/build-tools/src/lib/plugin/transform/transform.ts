@@ -8,17 +8,19 @@ import type { Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
+import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
-import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions, stripCssComments } from '../plugin.utils/plugin.utils';
+import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions } from '../plugin-utils/plugin.utils';
+import { compileStyle } from '../style/compile-style';
 
 export function createTransformHook(state: XaendarPluginState): NonNullable<Plugin['transform']> {
-  return async function transform(this: any, code, id) {
-    if (!COMPONENT_TS_FILE_RE.test(id)) {
+  return async function transform(this, code, componentPath) {
+    if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
       return code;
     }
 
-    const tsSource = createSourceFile(id, await readFile(id, 'utf8'), ScriptTarget.Latest, true);
+    const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
     const metadatas = await extractComponentsMetadataFromSourceFile(tsSource);
     if (!metadatas?.size) {
       /*
@@ -29,9 +31,10 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
     }
 
     // clear stale keys from a prior edit (e.g. a renamed className/selector) before re-registering
-    clearMetadataForFile(id);
-    clearComponentToImports(id);
-    removeComponentPath(id);
+    clearMetadataForFile(componentPath);
+    clearComponentToImports(componentPath);
+    clearStyleDependenciesForComponent(componentPath);
+    removeComponentPath(componentPath);
 
     let first = true;
     for (const [className, metadata] of metadatas.entries()) {
@@ -42,14 +45,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
       for (let i = 0; i < selectors.length; i++) {
         const selector = selectors[i];
         if (!isValidCustomElementName(selector)) {
-          state.logError('', `Invalid custom element name "${selector}" in component ${id}`);
+          state.logError('', `Invalid custom element name "${selector}" in component ${componentPath}`);
           return null;
         }
       }
 
       // qui non stiamo gestendo la possibiltia di avere piu di un componente per file
       // controllo debole su regex, sarebbe otimale estender
-      const folder = dirname(id);
+      const folder = dirname(componentPath);
       const templatePath = resolve(folder, templateUrl);
       if (!templatePath || !state.host.fileExists(templatePath)) {
         this.warn(`Could not find template at ${templatePath}`);
@@ -57,24 +60,26 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
       }
 
       this.addWatchFile(templatePath);
-      registerTemplatePath(templatePath, id);
+      registerTemplatePath(templatePath, componentPath);
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
       for (const importedPath of extractImportedComponentPaths(templateSource, dirname(templatePath))) {
         if (state.host.fileExists(importedPath)) {
           this.addWatchFile(importedPath);
-          registerImport(importedPath, id);
+          registerImport(importedPath, componentPath);
         }
       }
 
       let cssContent: string | undefined;
       if (styleUrl) {
         const stylePath = resolve(folder, styleUrl);
-        if (state.host.fileExists(stylePath)) {
-          this.addWatchFile(stylePath);
-          const rawCss = state.host.readFile(stylePath);
-          cssContent = rawCss && stripCssComments(rawCss).trim();
+        const styleResult = compileStyle(stylePath, state.host);
+        cssContent = styleResult.cssText;
+
+        for (const dependencyPath of styleResult.dependencyPaths) {
+          this.addWatchFile(dependencyPath);
+          registerStyleDependency(dependencyPath, componentPath);
         }
       }
 
@@ -105,13 +110,13 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Plug
         code = injectFunctions(code, first, compiledMethods, className, varName, cssContent);
         first = false;
       } catch (err) {
-        state.logError(err, `Failed to inject functions into component - ${id}`);
+        state.logError(err, `Failed to inject functions into component - ${componentPath}`);
         return null;
       }
 
-      registerRealFile(id);
+      registerRealFile(componentPath);
 
-      const shim = createShim(new Map([[id, [className]]]), typecheckBody);
+      const shim = createShim(new Map([[componentPath, [className]]]), typecheckBody);
       const languageService = getLanguageService(state.compilerOptions);
       const diagnostics = languageService.getSemanticDiagnostics(shim.path);
 

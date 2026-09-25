@@ -2,6 +2,7 @@ import { disposeLanguageService } from '@xaendar/language-core';
 import type { Plugin } from 'vite';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
+import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
 import { clearTemplateRegistry } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 
@@ -10,6 +11,7 @@ export function createConfigureServerHook(state: XaendarPluginState): NonNullabl
     state.setLogger(server.config.logger);
     server.httpServer?.on('close', () => {
       clearTemplateRegistry();
+      clearStyleRegistry();
       clearImportRegistry();
       clearMetadataRegistry();
       disposeLanguageService();
