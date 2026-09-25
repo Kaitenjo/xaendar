@@ -1,1 +1,1 @@
-export * from './lib/models/plugin/plugin';
+export * from './lib/plugin/plugin/plugin';

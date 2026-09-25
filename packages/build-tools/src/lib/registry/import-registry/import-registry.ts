@@ -23,10 +23,10 @@ const componentToImports = new Map<string, Set<string>>();
  * @param componentId - Absolute path of the component file that imports it.
  */
 export function registerImportMapping(importedPath: string, componentId: string): void {
-  const importedPathSet = importToComponents.getOrInsert(importedPath, new Set())
+  const importedPathSet = importToComponents.getOrInsert(importedPath, new Set());
   importedPathSet.add(componentId);
 
-  const importedComponentToImportsSet = componentToImports.getOrInsert(componentId, new Set())
+  const importedComponentToImportsSet = componentToImports.getOrInsert(componentId, new Set());
   importedComponentToImportsSet.add(importedPath);
 }
 

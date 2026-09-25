@@ -3,7 +3,7 @@
  *
  * Module-level singleton that tracks the reverse mapping from a template
  * file's absolute path to the absolute path of the component file that
- * declares it via `templateUrl`. 
+ * declares it via `templateUrl`.
  * Populated inside the plugin's `transform`
  * hook, the first time a component is processed and its templatePath is
  * resolved — and consulted from `watchChange` when a template file is
@@ -11,8 +11,8 @@
  * the component `.ts` file itself is untouched.
  */
 
-/** 
- * templatePath (absolute) -> componentId (absolute path of the .xd.component.ts) 
+/**
+ * templatePath (absolute) -> componentId (absolute path of the .xd.component.ts)
  */
 const templateToComponent = new Map<string, Set<string>>();
 
@@ -75,7 +75,7 @@ export function removeAllMappingsForComponent(componentId: string): void {
   for (const [templatePath, ownerIds] of templateToComponent) {
     if (ownerIds.has(componentId)) {
       /*
-        We return after the first match because a component can only have one 
+        We return after the first match because a component can only have one
         template associated with it at a time.
       */
       templateToComponent.delete(templatePath);

@@ -1,12 +1,12 @@
 import { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
-import { MetadataEntry } from '../types/metadata-entry';
+import { MetadataEntry } from '../../types/metadata-entry';
 
-/** 
- * Entries idle for longer than this are reclaimed by the sweep (see `sweepIdleEntries`). 
+/**
+ * Entries idle for longer than this are reclaimed by the sweep (see `sweepIdleEntries`).
  */
 const IDLE_TTL_MS = 5 * 60_000;
-/** 
- * How often the idle sweep runs; a fraction of `IDLE_TTL_MS` for reasonably prompt reclamation. 
+/**
+ * How often the idle sweep runs; a fraction of `IDLE_TTL_MS` for reasonably prompt reclamation.
  */
 const SWEEP_INTERVAL_MS = 60_000;
 
@@ -19,13 +19,13 @@ const SWEEP_INTERVAL_MS = 60_000;
  *       lastAccessed: 1680000000000
  *     }
  *   }
- * 
+ *
  */
 const metadatas = new Map<string, MetadataEntry>();
 /**
  * Map component file paths to the metadata extracted
- * 
- * This allows to track whenever a Component Class Name has been changed 
+ *
+ * This allows to track whenever a Component Class Name has been changed
  * to permit his cancellation
  * (e.g.)
  *   {
@@ -42,11 +42,11 @@ let sweepTimer: NodeJS.Timeout | undefined;
  * Registers a metadata mapping for a component or directive.
  * @param key - The unique identifier for the metadata mapping
  * @param metadataMapping - The metadata object to register
- */ 
+ */
 export function registerMetadataMapping(key: string, metadataMapping: ComponentOrDirectiveMetadata) {
-  metadatas.set(key, { 
-    metadata: metadataMapping, 
-    lastAccessed: Date.now() 
+  metadatas.set(key, {
+    metadata: metadataMapping,
+    lastAccessed: Date.now()
   });
 
   const ownerFile = getOwnerFilePath(metadataMapping);
@@ -83,7 +83,7 @@ export function clearMetadataMappingsForFile(filePath: string): void {
     for (const key of keys) {
       metadatas.delete(key);
     }
-  
+
     fileToKeys.delete(filePath);
   }
 }
@@ -140,7 +140,7 @@ function sweepIdleEntries(): void {
   for (const [filePath, keys] of fileToKeys) {
     for (const key of expiredKeys) {
       /*
-        We do not know which filepath could contain the timed-out key, 
+        We do not know which filepath could contain the timed-out key,
         so we check all file paths.
       */
       keys.delete(key);
