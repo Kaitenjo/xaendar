@@ -13,26 +13,26 @@
     "check:dependencies": "npm run check-dependencies --prefix schematics",
     "deploy": "npm run build:schematics && npm run check:dependencies && npm run typecheck:projects && npm run update:version && npm run build:projects && npm run pack:projects && npm run publish:projects && npm i",
     "i": "npm i --ignore-scripts",
-    "install:clean": "rimraf package-lock.json node_modules && npm run i",
+    "i:clean": "rimraf package-lock.json node_modules && npm run i",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "pack:projects": "npm run pack --prefix schematics",
     "publish:projects": "npm run publish --prefix schematics",
-    "start:node": "nodemon --watch src --watch packages -e ts --exec \"node --inspect-brk --import tsx/esm src/test.ts\"",
-    "start:browser": "vite",
-    "test:debug": "node --inspect-brk ./node_modules/.bin/vitest run signals",
+    "start": "nodemon --watch src --watch packages -e ts --exec \"node --inspect-brk --import tsx/esm src/test.ts\"",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
     "typecheck:projects": "npm run typecheck-projects --prefix schematics",
-    "update:version": "npm run update-version --prefix schematics",
-    "xd": "node dist/@xaendar/cli/dist/cli.js new backoffice --style css"
+    "update:version": "npm run update-version --prefix schematics"
   },
   "dependencies": {
     "@rolldown/plugin-babel": "^0.2.4",
     "commander": "^15.0.0",
     "fast-glob": "^3.3.3",
     "typescript": "^6.0.3",
-    "vscode-languageclient": "^10.1.1",
-    "vscode-languageserver": "^10.1.1",
-    "vscode-languageserver-textdocument": "^1.0.14",
+    "vscode-languageclient": "^10.1.2",
+    "vscode-languageserver": "^10.1.2",
+    "vscode-languageserver-textdocument": "^1.0.15",
     "vscode-uri": "^3.2.0"
   },
   "devDependencies": {
@@ -41,7 +41,7 @@
     "@types/convert-source-map": "^2.0.3",
     "@types/node": "^26.6.2",
     "@types/vscode": "^1.138.0",
-    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/coverage-v8": "^5.0.2",
     "depcheck": "^1.4.7",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
@@ -51,9 +51,9 @@
     "tsx": "^4.23.15",
     "type-fest": "^5.10.0",
     "typescript-eslint": "^8.70.1",
-    "vite": "^8.3.0",
+    "vite": "^8.3.1",
     "vite-plugin-dts": "5.1.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   },
   "engines": {
     "node": ">=26.8.0",
