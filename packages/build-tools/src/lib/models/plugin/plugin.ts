@@ -8,7 +8,7 @@ import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagno
 import type { Logger, Plugin } from 'vite';
 import { COMPONENT_FILE_RE } from '../../costants/component-filename-regex';
 import { clearImportRegistry, clearImportsForComponent, findComponentsForImport, registerImportMapping } from '../import-registry';
-import { getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
+import { clearMetadataMappingsForFile, clearMetadataRegistry, getMetadataMapping, registerMetadataMapping } from '../metadata-registry';
 import { NodeCompilerHost } from '../node-compiler-host/node-compiler-host.model';
 import { clearTemplateRegistry, findComponentForTemplate, registerTemplateMapping, removeAllMappingsForComponent, removeTemplateMapping } from '../template-registry';
 
@@ -66,6 +66,9 @@ export function xaendarPlugin(): Plugin {
         */
         return code;
       }
+
+      // clear stale keys from a prior edit (e.g. a renamed className/selector) before re-registering
+      clearMetadataMappingsForFile(id);
 
       let first = true;
       for (const [className, metadata] of metadatas.entries()) {
@@ -170,6 +173,7 @@ export function xaendarPlugin(): Plugin {
           removeVirtualFile(`${id}.__typecheck__.ts`);
           removeRealFile(id);
           removeAllMappingsForComponent(id);
+          clearMetadataMappingsForFile(id);
 
           const components = findComponentsForImport(id);
           for (const componentId of components) {
@@ -192,6 +196,7 @@ export function xaendarPlugin(): Plugin {
       server.httpServer?.on('close', () => {
         clearTemplateRegistry();
         clearImportRegistry();
+        clearMetadataRegistry();
         disposeLanguageService();
         logger = undefined;
       });
@@ -442,7 +447,7 @@ async function getMetadataOrExtract(name: string, path?: string | string[]): Pro
     throw new Error(`Unable to resolve module path for "${name}".`);
   }
   
-  const sourceFile = createSourceFile('', await readFile(resolvedPath, 'utf-8'), ScriptTarget.Latest, true);
+  const sourceFile = createSourceFile(resolvedPath, await readFile(resolvedPath, 'utf-8'), ScriptTarget.Latest, true);
   const metadatas = await extractComponentsMetadataFromSourceFile(sourceFile);
   metadata = metadatas?.get(name);
   if (!metadata) {

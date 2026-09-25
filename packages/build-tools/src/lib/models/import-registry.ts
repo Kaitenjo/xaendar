@@ -6,8 +6,14 @@
  * Mirrors the shape of `template-registry`, but keyed on imported
  * component paths rather than template paths, and supports multiple
  * components per import (a component can be imported by several templates).
+ *
+ * The set of component files that currently import the component at this key.
  */
 const importToComponents = new Map<string, Set<string>>();
+
+/**
+ * The set of import paths that the component at this key currently imports.
+ */
 const componentToImports = new Map<string, Set<string>>();
 
 /**

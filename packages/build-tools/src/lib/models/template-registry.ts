@@ -3,7 +3,8 @@
  *
  * Module-level singleton that tracks the reverse mapping from a template
  * file's absolute path to the absolute path of the component file that
- * declares it via `templateUrl`. Populated inside the plugin's `transform`
+ * declares it via `templateUrl`. 
+ * Populated inside the plugin's `transform`
  * hook, the first time a component is processed and its templatePath is
  * resolved — and consulted from `watchChange` when a template file is
  * deleted, so the corresponding type-check shim can be removed even though
