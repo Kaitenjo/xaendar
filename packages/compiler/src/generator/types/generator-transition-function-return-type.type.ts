@@ -2,7 +2,7 @@ import { ASTNode } from '../../parser/types/ast.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type';
 import { InterpolationNode } from '../../parser/types/nodes/interpolation-node.type'
 import { TextNode } from '../../parser/types/nodes/text-node.type'
-import { CompilerContext } from '../models/compiler-context.model'
+import { CompilerContext } from '../models/compiler-context/compiler-context.model'
 
 export type GeneratorTransitionFunctionReturnType = {
   /**

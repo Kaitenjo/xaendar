@@ -1,11 +1,10 @@
-export * from './compile';
+export * from './compile/compile';
 export * from './compile-options.type';
 export * from './compiler-host.interface';
-export * from './models/cursor';
+export * from './models/cursor/cursor';
 export * from './type-checker/types/type-checker-result.type';
 export * from './types/compiler-cache.type';
-export * from './type-checker/utils/mapping-resolver.utils';
+export * from './type-checker/utils/mapping-resolver/mapping-resolver.utils';
 export * from './types';
-export * from './utils/extract-signals.utils';
-export * from './utils/metadata.utils';
-
+export * from './utils/extract-signals/extract-signals.utils';
+export * from './utils/metadata/metadata.utils';

@@ -50,7 +50,7 @@ describe('State', () => {
 
     it('registers the state as a source of the currently computing Computed', () => {
       const addSource = vi.fn();
-      GLOBAL_STATE.computing = { addSource } as any;
+      GLOBAL_STATE.computing = { addSource } as unknown as Computed;
 
       const state = new State(99);
       state.get();

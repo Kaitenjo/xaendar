@@ -1,4 +1,4 @@
-import { ComponentMetadata } from './component-metadata.type';
+import { ComponentMetadata } from './component-metadata/component-metadata.type';
 import { DirectiveMetadata } from './directive-metadata.type';
 
 /**

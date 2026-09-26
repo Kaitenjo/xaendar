@@ -1,6 +1,6 @@
 import type { AsyncFunction } from '@xaendar/types';
 import type { ASTNode } from '../../parser/types/ast.type';
-import { CompilerContext } from '../models/compiler-context.model';
+import { CompilerContext } from '../models/compiler-context/compiler-context.model';
 import type { GeneratorTransitionFunctionReturnType } from './generator-transition-function-return-type.type';
 
 /**
