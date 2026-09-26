@@ -43,19 +43,18 @@ export function Event<
     }
 
     const output: Output<Data> = {
-      emit: (_valueOrOverrideOptions?: Data | EventOptions, _overrideOptions?: EventOptions) => { }
+      emit: (valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
+        const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
+          ? { ...options, ...valueOrOverrideOptions }
+          : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
+
+        const event = new CustomEvent(name, eventOptions);
+        dispatchEvent(event);
+      }
     };
 
     return {
       get(): Output<Data> {
-        output.emit = function (this: Class, valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) {
-          const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
-            ? { ...options, ...valueOrOverrideOptions }
-            : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
-
-          const event = new CustomEvent(name, eventOptions);
-          dispatchEvent(event);
-        };
         return output;
       }
     }

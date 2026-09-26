@@ -110,7 +110,7 @@ export class _Context {
     let i = 0;
     let found = false;
 
-    while (!found) {
+    while (!found && i < children.length) {
       const child = children[i];
       if (child !== context) {
         newChildren[i] = child;

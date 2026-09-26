@@ -143,6 +143,8 @@ function handleIfElseIf(
       return checkAndUpdateState(parentNode, parentContext, state, i, block, anchor);
     }
   }
+
+  teardown(parentContext, state);
 }
 
 /**
