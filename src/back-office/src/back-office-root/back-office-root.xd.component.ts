@@ -1,4 +1,5 @@
 import { BaseWebComponent, WebComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
 
 @WebComponent({
   selector: 'back-office-root',
@@ -7,4 +8,9 @@ import { BaseWebComponent, WebComponent } from '@xaendar/core';
 })
 export class BackOfficeRootComponent extends BaseWebComponent {
 
+  public state = signal(true)
+  
+  public onClick(): void {
+    this.state.update(value => !value)
+  }
 }

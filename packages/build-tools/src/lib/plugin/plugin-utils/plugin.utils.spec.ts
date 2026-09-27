@@ -27,7 +27,8 @@ vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
 }));
 
 import { extractComponentsMetadataFromSourceFile, resolveTemplateSpan } from '@xaendar/compiler';
-import { Diagnostic } from 'typescript';
+import MagicString from 'magic-string';
+import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions, resolveModulePath, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
@@ -86,10 +87,17 @@ describe('injectFunctions()', () => {
     '}'
   ].join('\n');
 
+  function inject(source: string, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): string {
+    const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
+    const s = new MagicString(source);
+    injectFunctions(s, sourceFile, first, compiledMethods, className, varName, cssContent);
+    return s.toString();
+  }
+
   it('throws when the target class cannot be found', () => {
     let error: unknown;
     try {
-      injectFunctions(jsSource, true, '/* methods */', 'Missing');
+      inject(jsSource, true, '/* methods */', 'Missing');
     } catch (err) {
       error = err;
     }
@@ -111,7 +119,7 @@ describe('injectFunctions()', () => {
 
     let error: unknown;
     try {
-      injectFunctions(source, true, '/* methods */', 'Foo');
+      inject(source, true, '/* methods */', 'Foo');
     } catch (err) {
       error = err;
     }
@@ -120,25 +128,25 @@ describe('injectFunctions()', () => {
   });
 
   it('inserts the compiled template methods before the static initializer block', () => {
-    const result = injectFunctions(jsSource, false, '/* METHODS */', 'Foo');
+    const result = inject(jsSource, false, '/* METHODS */', 'Foo');
 
     expect(result.indexOf('/* METHODS */')).toBeLessThan(result.indexOf('_initClass()'));
   });
 
   it('does not insert a style snippet when there is no CSS content', () => {
-    const result = injectFunctions(jsSource, false, '/* methods */', 'Foo');
+    const result = inject(jsSource, false, '/* methods */', 'Foo');
 
     expect(result).not.toContain('CSSStyleSheet');
   });
 
   it('does not insert a style snippet when the CSS content is blank', () => {
-    const result = injectFunctions(jsSource, false, '/* methods */', 'Foo', '__sheet', '   ');
+    const result = inject(jsSource, false, '/* methods */', 'Foo', '__sheet', '   ');
 
     expect(result).not.toContain('CSSStyleSheet');
   });
 
   it('inserts the style snippet before the class declaration when CSS content is provided', () => {
-    const result = injectFunctions(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', '.a { color: red; }');
+    const result = inject(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', '.a { color: red; }');
 
     expect(result).toContain('const __Foo_sheet = new CSSStyleSheet();');
     expect(result).toContain('__Foo_sheet.replaceSync(`.a { color: red; }`);');
@@ -146,19 +154,19 @@ describe('injectFunctions()', () => {
   });
 
   it('doubles backslashes in the injected CSS payload', () => {
-    const result = injectFunctions(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', 'a\\b');
+    const result = inject(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', 'a\\b');
 
     expect(result).toContain('a\\\\b');
   });
 
   it('prepends the required runtime imports only on the first component of the file', () => {
-    const result = injectFunctions(jsSource, true, '/* methods */', 'Foo');
+    const result = inject(jsSource, true, '/* methods */', 'Foo');
 
-    expect(result.startsWith("import { _if, _switch")).toBe(true);
+    expect(result.startsWith('import { _if, _switch')).toBe(true);
   });
 
   it('does not prepend the required runtime imports when it is not the first component', () => {
-    const result = injectFunctions(jsSource, false, '/* methods */', 'Foo');
+    const result = inject(jsSource, false, '/* methods */', 'Foo');
 
     expect(result.startsWith('import {')).toBe(false);
   });

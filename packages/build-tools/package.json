@@ -12,6 +12,7 @@
     "@xaendar/common": "0.12.0",
     "@xaendar/compiler": "0.12.0",
     "@xaendar/language-core": "0.12.0",
+    "magic-string": "^1.4.2",
     "typescript": "^6.0.3",
     "vite": "^8.3.1"
   },

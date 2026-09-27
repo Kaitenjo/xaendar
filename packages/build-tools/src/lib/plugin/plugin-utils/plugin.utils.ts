@@ -1,9 +1,10 @@
 import { slice } from '@xaendar/common';
 import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import type MagicString from 'magic-string';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptKind, ScriptTarget, SourceFile } from 'typescript';
+import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
 import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 
 /**
@@ -43,49 +44,45 @@ export function stripCssComments(css: string): string {
 }
 
 /**
- * Compiles and injects a component's generated template code end-to-end:
- * parses the transpiled source once, then applies the three required
+ * Injects a component's generated template code into the shared `MagicString`
+ * wrapping the whole transpiled component file, applying the three required
  * mutations — template render methods, scoped CSS stylesheet, and missing
  * runtime imports — each in its own dedicated function.
  *
- * Mutation order matters and must not be changed carelessly: template
- * methods are inserted first (at `blockStart`, the deepest position in the
- * class body), then the style snippet (at `classStart`, before the class
- * declaration). Both offsets are computed once from the ORIGINAL,
- * unmodified `sourceFile` — this stays valid across both edits only because
- * `classStart < blockStart`, so inserting text at `blockStart` never shifts
- * the still-unused `classStart` offset. Required imports are inserted last,
- * via textual regex scanning of the file's current top rather than AST
- * positions, so it's insensitive to any offset shifting caused by the two
- * prior edits.
+ * All offsets are resolved against `sourceFile`, which must be parsed once
+ * from the file's ORIGINAL (pre-injection) text and reused across every
+ * component declared in the file: `MagicString` edits are addressed by
+ * position in that original string, so appending content at one offset never
+ * invalidates another offset computed from the same unmodified source — this
+ * is what lets every mutation, across every component in the file, compose
+ * into a single accurate sourcemap instead of each edit invalidating the
+ * next one's line/column bookkeeping.
  *
- * @param jsSource - The transpiled JS source of the component file (post
- *   oxc + the stage-3 decorators babel plugin), before xaendar injection.
+ * @param s - The `MagicString` wrapping the whole component file, shared
+ *   across every component declared in it.
+ * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source,
+ *   shared across every component declared in it.
  * @param first - Indicates if this is the first component of the file being processed.
  * @param compiledMethods - The raw output of the template compiler.
  * @param className - The name of the target class in this file.
  * @param varName - Variable name for the shared `CSSStyleSheet`, if any CSS is provided.
  * @param cssContent - Raw CSS content to inject as a shared `CSSStyleSheet`, if not empty.
- * @returns The fully transformed source.
  * @throws When `className` isn't found, or its decorator finalizer static
  *   block isn't found — meaning the component file wasn't scaffolded
  *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectFunctions(jsSource: string, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): string {
-  const sourceFile = createSourceFile('component.js', jsSource, ScriptTarget.Latest, true, ScriptKind.JS);
+export function injectFunctions(s: MagicString, sourceFile: SourceFile, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): void {
   const classDecl = findClassDeclarationByName(sourceFile, className);
 
   if (!classDecl) {
     throw `Could not find class "${className}" in the transpiled output.`;
   }
 
-  let result = insertTemplateMethods(jsSource, sourceFile, classDecl, compiledMethods);
-  result = insertStyleSnippet(result, sourceFile, classDecl, varName, cssContent);
+  insertTemplateMethods(s, sourceFile, classDecl, compiledMethods);
+  insertStyleSnippet(s, sourceFile, classDecl, varName, cssContent);
   if (first) {
-    result = insertRequiredImports(result);
+    insertRequiredImports(s);
   }
-
-  return result;
 }
 
 /**
@@ -184,7 +181,7 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   return undefined;
 }
 
-function insertTemplateMethods(jsSource: string, sourceFile: SourceFile, classDecl: ClassDeclaration, compiledMethods: string): string {
+function insertTemplateMethods(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, compiledMethods: string): void {
   const placeholderBlock = classDecl.members.find(isDecoratorInitStaticBlock);
 
   if (!placeholderBlock) {
@@ -192,22 +189,22 @@ function insertTemplateMethods(jsSource: string, sourceFile: SourceFile, classDe
   }
 
   const blockStart = placeholderBlock.getStart(sourceFile);
-  return `${jsSource.slice(0, blockStart)}${compiledMethods}\n\n  ${jsSource.slice(blockStart)}`;
+  s.appendLeft(blockStart, `${compiledMethods}\n\n  `);
 }
 
-function insertStyleSnippet(jsSource: string, sourceFile: SourceFile, classDecl: ClassDeclaration, varName?: string, cssContent?: string): string {
+function insertStyleSnippet(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, varName?: string, cssContent?: string): void {
   if (!cssContent?.trim().length) {
-    return jsSource;
+    return;
   }
 
   const styleSnippet = buildStyleSnippet(varName!, cssContent);
   const classStart = classDecl.getStart(sourceFile);
 
-  return `${jsSource.slice(0, classStart)}${styleSnippet}${jsSource.slice(classStart)}`;
+  s.appendLeft(classStart, styleSnippet);
 }
 
-function insertRequiredImports(jsSource: string): string {
-  return `import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute } from '@xaendar/core';\n${jsSource}`;
+function insertRequiredImports(s: MagicString): void {
+  s.prepend(`import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute } from '@xaendar/core';\n`);
 }
 
 function buildStyleSnippet(varName: string, css: string): string {

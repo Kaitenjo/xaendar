@@ -21,6 +21,7 @@
       "@/*": ["./src/*"],
       "@xaendar/common": ["../../packages/common/src/public-api"],
       "@xaendar/core": ["../../packages/core/src/public-api"],
+      "@xaendar/core/signals": ["../../packages/core/src/signals/index.ts"],
       "@xaendar/signals": ["../../packages/signals/src/public-api"],
       "@xaendar/types": ["../../packages/types/src/public-api"]
     }

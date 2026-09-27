@@ -135,7 +135,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isValidCustomElementName).mockReturnValue(true);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
-  vi.mocked(injectFunctions).mockImplementation((code) => code);
+  vi.mocked(injectFunctions).mockImplementation(() => undefined);
   mockSuccessfulCompile();
   mockNoDiagnostics();
 });
@@ -248,7 +248,7 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compileStyle).not.toHaveBeenCalled();
-    expect(injectFunctions).toHaveBeenCalledWith('original code', true, '/* compiled methods */', 'FooComponent', undefined, undefined);
+    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
   });
 
   it('compiles and watches every style dependency when a styleUrl is set', async () => {
@@ -271,7 +271,7 @@ describe('createTransformHook()', () => {
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/partial.css');
     expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/foo.css', COMPONENT_PATH);
     expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/partial.css', COMPONENT_PATH);
-    expect(injectFunctions).toHaveBeenCalledWith('original code', true, '/* compiled methods */', 'FooComponent', '__FooComponent_sheet', '.a { color: red; }');
+    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', '__FooComponent_sheet', '.a { color: red; }');
   });
 
   it('leaves varName undefined when style compilation yields no CSS text', async () => {
@@ -284,7 +284,7 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectFunctions).toHaveBeenCalledWith('original code', true, '/* compiled methods */', 'FooComponent', undefined, undefined);
+    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
   });
 
   it('logs an error and returns null when template compilation throws', async () => {
@@ -361,21 +361,21 @@ describe('createTransformHook()', () => {
 
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectFunctions).toHaveBeenNthCalledWith(1, 'original code', true, '/* compiled methods */', 'FooComponent', undefined, undefined);
-    expect(injectFunctions).toHaveBeenNthCalledWith(2, 'original code', false, '/* compiled methods */', 'BarComponent', undefined, undefined);
-    expect(result).toEqual({ code: 'original code' });
+    expect(injectFunctions).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
+    expect(injectFunctions).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), false, '/* compiled methods */', 'BarComponent', undefined, undefined);
+    expect(result).toEqual({ code: 'original code', map: expect.anything() });
   });
 
   it('reorders a decorator placed before an export before the class declaration in the final output', async () => {
-    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const sourceCode = 'export @Component()\nclass FooComponent {}';
+    vi.mocked(readFile).mockResolvedValue(sourceCode);
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(injectFunctions).mockReturnValue('export @Component()\nclass FooComponent {}');
     const state = createState();
     const hook = createTransformHook(state);
 
-    const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+    const result = await hook.call(createPluginContext(), sourceCode, COMPONENT_PATH, undefined);
 
-    expect(result).toEqual({ code: '@Component()\nexport class FooComponent {}' });
+    expect(result).toEqual({ code: '@Component()\nexport class FooComponent {}', map: expect.anything() });
   });
 });

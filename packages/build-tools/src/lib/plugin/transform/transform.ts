@@ -1,9 +1,10 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
+import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { createSourceFile, ScriptTarget } from 'typescript';
+import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
@@ -35,6 +36,12 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     clearComponentToImports(componentPath);
     clearStyleDependenciesForComponent(componentPath);
     removeComponentPath(componentPath);
+
+    // Parsed once from the ORIGINAL (pre-injection) text and shared across every
+    // component in the file, so every MagicString edit below is addressed against
+    // offsets that never shift - see injectFunctions() for why that matters.
+    const jsSourceFile = createSourceFile(componentPath, code, ScriptTarget.Latest, true, ScriptKind.JS);
+    const magicString = new MagicString(code);
 
     let first = true;
     for (const [className, metadata] of metadatas.entries()) {
@@ -105,7 +112,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       try {
-        code = injectFunctions(code, first, compiledMethods, className, varName, cssContent);
+        injectFunctions(magicString, jsSourceFile, first, compiledMethods, className, varName, cssContent);
         first = false;
       } catch (err) {
         state.logError(err, `Failed to inject functions into component - ${componentPath}`);
@@ -128,12 +135,29 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
     }
 
+    fixDecoratorExport(magicString, code);
+
     return {
-      code: fixDecoratorExport(code)
+      code: magicString.toString(),
+      map: magicString.generateMap({ source: componentPath, includeContent: true, hires: true })
     };
   };
 }
 
-function fixDecoratorExport(code: string): string {
-  return code.replace(/^export\s+(@\w+[\s\S]*?)\s+(class\s)/gm, '$1\nexport $2');
+/**
+ * Reorders a decorator emitted before `export` (`export @Foo class X {}`) to
+ * after it (`@Foo\nexport class X {}`). Operates on the shared `MagicString`
+ * via `overwrite()`, keyed off offsets found by scanning the ORIGINAL
+ * (pre-injection) `code`, so the inserted newline is properly reflected in
+ * the final sourcemap instead of silently shifting every following line.
+ */
+function fixDecoratorExport(s: MagicString, code: string): void {
+  const regex = /^export\s+(@\w+[\s\S]*?)\s+(class\s)/gm;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(code)) !== null) {
+    const start = match.index;
+    const end = start + match[0].length;
+    s.overwrite(start, end, `${match[1]}\nexport ${match[2]}`);
+  }
 }
