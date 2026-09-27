@@ -1,5 +1,5 @@
-import { BaseWebComponent } from '@xaendar/core';
 import { AccessorDecorator, Beautify } from '@xaendar/types';
+import { BaseWebComponent } from '../../directives/base-web-component';
 
 /**
  * Represents the return type of an event decorator, ensuring it has a 'get' method and only 'get' method.
