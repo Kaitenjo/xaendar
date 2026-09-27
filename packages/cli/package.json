@@ -5,12 +5,16 @@
   "author": "Kaitenjo",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "xd": "./bin/xd.mjs"
+  },
   "dependencies": {
     "@rolldown/plugin-babel": "^0.2.4",
     "@xaendar/build-tools": "0.12.0",
     "@xaendar/common": "0.12.0",
     "commander": "^15.0.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.1",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
     "type-fest": "^5.9.0"

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
 import { indexHtml } from '../templates/index-html/index-html';
@@ -72,20 +72,11 @@ export type Entry = {
  */
 function readCliVersion(): string {
   try {
-    /*
-      The build package has the following structure:
-      .
-      ├─ package.json
-      └─ dist/
-         └─ index.js
+    const cliPackageJson: PackageJson = JSON.parse(readFileSync(findCliPackageJsonPath(), 'utf8'));
 
-      We just need to go back up one level
-    */
-    const cliPackageJson: PackageJson = JSON.parse(readFileSync(resolve(import.meta.dirname , '../package.json'), 'utf8'));
-    
     /*
       This should never happen since the CLI's own package.json must have a version field
-      If it doesn't, something went wrong during the last publish process  
+      If it doesn't, something went wrong during the last publish process
     */
     if (!cliPackageJson.version) {
       throw 'Unable to determine Xaendar CLI version.';
@@ -94,6 +85,35 @@ function readCliVersion(): string {
   } catch (error) {
     console.error('Error reading Xaendar CLI version:', error);
     process.exit(1);
+  }
+}
+
+/**
+ * Locates the CLI's own `package.json` by walking up from the running
+ * module's directory until one is found.
+ *
+ * The distance to it varies by how the CLI is running: bundled for
+ * publishing (`dist/index.js`, one level below the package root) or
+ * executed directly from source via `tsx` (nested several levels below
+ * `packages/cli/`, e.g. under `src/commands/new/structure/`). No other
+ * `package.json` exists in between in either case, so the first one found
+ * walking up is always the CLI's.
+ */
+function findCliPackageJsonPath(): string {
+  let dir = import.meta.dirname;
+
+  while (true) {
+    const candidate = resolve(dir, 'package.json');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+
+    const parent = resolve(dir, '..');
+    if (parent === dir) {
+      throw new Error('Unable to locate the CLI package.json.');
+    }
+    
+    dir = parent;
   }
 }
 

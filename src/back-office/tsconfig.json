@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ESNext", 
+      "DOM"
+    ],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@xaendar/common": ["../../packages/common/src/public-api"],
+      "@xaendar/core": ["../../packages/core/src/public-api"],
+      "@xaendar/signals": ["../../packages/signals/src/public-api"],
+      "@xaendar/types": ["../../packages/types/src/public-api"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "dist", 
+    "node_modules", 
+    "**/*.spec.ts"
+  ]
+}

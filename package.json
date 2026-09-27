@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix",
     "pack:projects": "npm run pack --prefix schematics",
     "publish:projects": "npm run publish --prefix schematics",
-    "start": "nodemon --watch src --watch packages -e ts --exec \"node --inspect-brk --import tsx/esm src/test.ts\"",
+    "start": "npm start --prefix src/back-office",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",

@@ -1,15 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:fs', () => ({
-  readFileSync: vi.fn()
+  readFileSync: vi.fn(),
+  existsSync: vi.fn()
 }));
 
 import { buildStructure } from './structure';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(existsSync).mockImplementation((path) => path === resolve(import.meta.dirname, '../../../../package.json'));
 });
 
 describe('buildStructure()', () => {
@@ -28,12 +30,12 @@ describe('buildStructure()', () => {
     expect((xaendarJsonEntry as { content: string }).content).toContain('"style": "scss"');
   });
 
-  it('reads the version from the package.json one level up from the running module\'s own directory', () => {
+  it('reads the version from the nearest package.json found walking up from the running module\'s own directory', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
     buildStructure({ name: 'my-app', style: 'css' });
 
-    expect(readFileSync).toHaveBeenCalledWith(resolve(import.meta.dirname, '../package.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve(import.meta.dirname, '../../../../package.json'), 'utf8');
   });
 
   it('derives the root component name by appending "-root" to the project name', () => {
@@ -78,5 +80,19 @@ describe('buildStructure()', () => {
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error reading Xaendar CLI version:', 'Unable to determine Xaendar CLI version.');
     expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('exits the process when no package.json is found walking up to the filesystem root', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+
+    expect(() => buildStructure({ name: 'my-app', style: 'css' })).toThrow('process.exit called');
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error reading Xaendar CLI version:', new Error('Unable to locate the CLI package.json.'));
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(readFileSync).not.toHaveBeenCalled();
   });
 });
