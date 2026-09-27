@@ -1,14 +1,14 @@
 import type { Dictionary, NoArgsFunction } from '@xaendar/types';
-import { MATHML_NS, SVG_NS } from '../costants';
-import { BaseWebComponent } from '../directives';
-import { InputSignal } from '../signals';
-import { effect } from '../signals/effect/effect';
-import { isInputSignal } from '../signals/input/input-instance.symbol';
-import { INPUT_SIGNAL_SET_SYMBOL } from '../signals/input/input-set.symbol';
-import type { RenderElementDynamicBinding } from '../types/render-dynamic-binding.type';
-import type { RenderElementAttribute } from '../types/render-element-attribute.type';
-import type { RenderElementEvent } from '../types/render-element-event.type';
-import { _Context, mountNode } from './context.util';
+import { MATHML_NS, SVG_NS } from '../../costants';
+import { BaseWebComponent } from '../../directives';
+import { InputSignal } from '../../signals';
+import { effect } from '../../signals/effect/effect';
+import { isInputSignal } from '../../signals/input/input-instance.symbol';
+import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
+import type { RenderElementDynamicBinding } from '../../types/render-dynamic-binding.type';
+import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { RenderElementEvent } from '../../types/render-element-event.type';
+import { _Context, mountNode } from '../context/context.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it

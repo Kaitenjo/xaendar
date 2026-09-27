@@ -6,9 +6,9 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _Context, mountNode } = await import('./context.util');
+const { _Context, mountNode } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
-const { signal } = await import('../signals');
+const { signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 

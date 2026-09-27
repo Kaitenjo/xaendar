@@ -1,6 +1,6 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
-import { effect, untracked } from '../signals';
-import { _Context, createAnchor } from './context.util';
+import { effect, untracked } from '../../signals';
+import { _Context, createAnchor } from '../context/context.util';
 
 /**
  * Represents a single branch of a conditional structure (`if` / `else if` / `else`).

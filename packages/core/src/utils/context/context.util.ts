@@ -1,5 +1,5 @@
 import { Function, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
-import { BaseWebComponent } from '../directives/base-web-component';
+import { BaseWebComponent } from '../../directives/base-web-component';
 
 /**
  * Tracks identifier scope during run time template function execution

@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
-import { indexHtml } from './templates/index-html';
-import { mainTs } from './templates/main-ts';
-import { packageJson } from './templates/package-json';
-import { signalTs } from './templates/signal-ts';
-import { tsconfigJson } from './templates/tsconfig-json';
-import { viteConfigTs } from './templates/vite-config-ts';
-import { xaendarJson } from './templates/xaendar-json';
-import { stylesCss } from './templates/styles-css';
+import { indexHtml } from '../templates/index-html/index-html';
+import { mainTs } from '../templates/main-ts/main-ts';
+import { packageJson } from '../templates/package-json/package-json';
+import { signalTs } from '../templates/signal-ts/signal-ts';
+import { tsconfigJson } from '../templates/tsconfig-json/tsconfig-json';
+import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
+import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
+import { stylesCss } from '../templates/styles-css/styles-css';
 
 /**
  * The context required to resolve all file contents when scaffolding
@@ -72,7 +72,16 @@ export type Entry = {
  */
 function readCliVersion(): string {
   try {
-    const cliPackageJson: PackageJson = JSON.parse(readFileSync(resolve(import.meta.filename , '..', '../package.json'), 'utf8'));
+    /*
+      The build package has the following structure:
+      .
+      ├─ package.json
+      └─ dist/
+         └─ index.js
+
+      We just need to go back up one level
+    */
+    const cliPackageJson: PackageJson = JSON.parse(readFileSync(resolve(import.meta.dirname , '../package.json'), 'utf8'));
     
     /*
       This should never happen since the CLI's own package.json must have a version field

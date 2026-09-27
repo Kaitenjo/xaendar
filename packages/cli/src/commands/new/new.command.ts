@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path/win32';
 import { generateComponent } from '../generate/component/component.command';
-import { buildStructure, Entry } from './structure';
+import { buildStructure, Entry } from './structure/structure';
 import { execSync } from 'node:child_process';
 
 /**

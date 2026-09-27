@@ -1,4 +1,4 @@
-import { toPascalCase } from '../../../utils/case.utils';
+import { toPascalCase } from '../../../../utils/case/case.utils';
 
 /**
  * Generates the content of the project entry point `src/main.ts`.

@@ -17,6 +17,7 @@ This is a monorepo of the framework's own client libraries, published as separat
 - **Strict mode:** respect `tsconfig.json` (strict enabled); explicitly type parameters and return values of public functions (`public-api.ts`).
 - **Type-only imports:** use `import type { ... }` for type-only imports, to keep the runtime/type boundary clear (not ESLint-enforced, but preferred).
 - **File names:** follow the existing `*.type.ts`, `*.model.ts`, `*.utils.ts`, `*.decorator.ts`, `*.spec.ts` convention used under `packages/*/src`.
+- **One file per folder:** a leaf source file `pippo.<suffix>.ts` (e.g. `pippo.model.ts`, `pippo.utils.ts`) lives in its own folder named after the identifier before the first dot (`pippo/pippo.<suffix>.ts`), and that folder holds only that file plus its `pippo.<suffix>.spec.ts` — no other unrelated loose files (nested sub-folders for further grouping are fine, e.g. `plugin/plugin-utils/plugin.utils.ts`). Entry/barrel files directly under a package's `src/` (`public-api.ts`, `index.ts`) are exempt. When adding a `*.spec.ts` for a source file that isn't already isolated this way, create the folder first and move the source file into it before adding the spec.
 - **Barrel files:** expose each package's public API only via `src/public-api.ts`; never import another package's internal files directly (use the `@xaendar/*` aliases defined in `tsconfig.json`).
 - **No implicit `any`:** prefer precise types or `unknown` + narrowing when the type isn't known upfront. If a cast is unavoidable, use `as unknown as <target-type>`.
 - **Unused vars/params:** prefix with `_` (e.g. `_event`) to satisfy `no-unused-vars` (warning, not error).
@@ -60,28 +61,35 @@ Each publishable package's `vite.config.ts` just calls the shared `getViteConfig
 
 ### Package pipeline
 
+Dependency edges below are the actual `@xaendar/*` entries in each package's `package.json` — always the source of truth over prose (verify with `node -e "console.log(require('./packages/<name>/package.json').dependencies)"` if this ever looks stale). `compiler` does **not** depend on `core` — the two are independent consumers of `types`/`common`, and it's `core` that depends on `signals`, not on `compiler`.
+
 ```
-types  ──┐
-common ──┼──►  signals  ──►  core  ──►  compiler  ──►  build-tools ──► cli
-         │                              (also used by)
-         └──────────────────────────────────────────►  language-core ──► language-server ──► vscode-client
+types ────┬──►  signals  ──►  core
+          │
+common ───┼──►  compiler  ──►  language-core  ──►  language-server
+          │         │                │
+          │         └───────┬────────┘
+          │                 ▼
+          └────────────►  build-tools  ──►  cli
+
+vscode-client — standalone; launches language-server as an external process (no @xaendar/* package dependency)
 ```
 
 - **`types`** — shared public TS utility types (constructors, decorators, functions) used across every other package.
-- **`common`** — shared runtime utilities/models with no framework dependency (string/indent/tag utils, a `stack` model).
-- **`signals`** — full implementation of the TC39 Signals proposal (`Signal.State`, `Signal.Computed`, `Signal.subtle.Watcher`, `effect()`), installed as the global `Signal` namespace via `loadSignals()`. This is the reactivity primitive everything else builds on.
-- **`core`** — runtime primitives for authoring components: `BaseWebComponent` (attaches Shadow DOM, wires `attributeChangedCallback`/`connectedCallback`/`disconnectedCallback`), the `@WebComponent`/`@Property`/`@Event` decorators, `InputSignal`, and template-runtime helpers (`_Context`, `mountNode`, `createAnchor` in `src/utils/context.util.ts`) that the *compiler-generated* render code calls into to mount/unmount nodes and manage nested scopes (e.g. `@for`/`@if` bodies). Uses stage-3 (`accessor`) decorators, not `experimentalDecorators`.
+- **`common`** — shared runtime utilities/models with no framework dependency (string/indent/tag utils, a `stack` model). Depended on by `signals`, `compiler`, `build-tools`, and `cli`.
+- **`signals`** — full implementation of the TC39 Signals proposal (`Signal.State`, `Signal.Computed`, `Signal.subtle.Watcher`, `effect()`), installed as the global `Signal` namespace via `loadSignals()`. This is the reactivity primitive everything else builds on. Depends on `common`/`types`.
+- **`core`** — runtime primitives for authoring components: `BaseWebComponent` (attaches Shadow DOM, wires `attributeChangedCallback`/`connectedCallback`/`disconnectedCallback`), the `@WebComponent`/`@Property`/`@Event` decorators, `InputSignal`, and template-runtime helpers (`_Context`, `mountNode`, `createAnchor` in `src/utils/context.util.ts`) that the *compiler-generated* render code calls into to mount/unmount nodes and manage nested scopes (e.g. `@for`/`@if` bodies). Uses stage-3 (`accessor`) decorators, not `experimentalDecorators`. Depends only on `signals`/`types` — **not** on `compiler`; the compiler-generated code targets `core`'s runtime shape but there is no build-time dependency edge between them.
 - **`compiler`** — turns a `.html`-like Xaendar template into a JS render-function body plus a type-check result. Four-stage pipeline, each stage in its own subfolder mirroring the same internal layout (`<stage>/<stage>/`, `models/`, `states/`, `types/`, `utils/`):
   1. **`lexer`** tokenizes the raw template text.
   2. **`parser`** turns tokens into an AST (`ASTNode`, `ASTNodeType`, node types like `ImportNode`).
   3. **`type-checker`** builds a `TypeCheckResult` from the AST plus component/directive metadata (resolved from `@import` nodes via a caller-supplied `CompilerCache`).
   4. **`generator`** emits the JS render function body from the AST.
-  The public entry point is `compile()` in `src/compile/compile.ts`, overloaded on `CompileOptions`: pass `baseDir` (+ optional `cache`) to get only a `TypeCheckResult` (for editor tooling), pass `cssVariableName`/`signals` to get only compiled JS, or pass both to get `{ javascript, typescript }` concurrently.
-- **`build-tools`** — build-time plugins/registry (e.g. for wiring the compiler into a bundler) plus shared build models/constants.
-- **`cli`** (`xaendar` CLI, via `commander`) — `new`, `generate`, `start` commands under `src/commands/`.
-- **`language-core`** — base language-service layer built on `compiler`, exposing `language-service`, `compiler-options.utils`, and `shim.utils`; consumed by `language-server`.
-- **`language-server`** — LSP server (`vscode-languageserver`) built on `language-core`, for editor diagnostics/completions on Xaendar templates.
-- **`vscode-client`** — the VS Code extension (`src/lib/extension.ts`) that launches `language-server` via `vscode-languageclient`.
+  The public entry point is `compile()` in `src/compile/compile.ts`, overloaded on `CompileOptions`: pass `baseDir` (+ optional `cache`) to get only a `TypeCheckResult` (for editor tooling), pass `cssVariableName`/`signals` to get only compiled JS, or pass both to get `{ javascript, typescript }` concurrently. Depends on `common`/`types` only.
+- **`build-tools`** — build-time plugins/registry (e.g. for wiring the compiler into a bundler) plus shared build models/constants. Depends on `common`, `compiler`, and `language-core`.
+- **`cli`** (`xaendar` CLI, via `commander`) — `new`, `generate`, `start` commands under `src/commands/`. Depends on `build-tools`/`common`.
+- **`language-core`** — base language-service layer built on `compiler`, exposing `language-service`, `compiler-options.utils`, and `shim.utils`; consumed by `language-server` and `build-tools`.
+- **`language-server`** — LSP server (`vscode-languageserver`) built on `compiler`/`language-core`/`types`, for editor diagnostics/completions on Xaendar templates.
+- **`vscode-client`** — the VS Code extension (`src/lib/extension.ts`) that launches `language-server` via `vscode-languageclient` as an external process; it has no `@xaendar/*` package dependency.
 
 ### Template runtime model
 

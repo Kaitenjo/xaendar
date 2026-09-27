@@ -6,9 +6,9 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { MATHML_NS, SVG_NS } = await import('../costants');
-const { input } = await import('../signals/input/input');
-const { _Context } = await import('./context.util');
+const { MATHML_NS, SVG_NS } = await import('../../costants');
+const { input } = await import('../../signals/input/input');
+const { _Context } = await import('../context/context.util');
 const {
   _createElement,
   _createMATHMLElement,
@@ -19,7 +19,7 @@ const {
   _setProperty,
   _setReactiveProperty
 } = await import('./render-element.util');
-const { signal } = await import('../signals');
+const { signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 

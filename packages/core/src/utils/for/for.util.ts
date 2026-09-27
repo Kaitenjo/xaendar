@@ -1,7 +1,7 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
-import { effect, signal, untracked } from '../signals';
-import { IterationVariablesHandle } from '../types/iteration-variables.type';
-import { _Context, createAnchor } from './context.util';
+import { effect, signal, untracked } from '../../signals';
+import { IterationVariablesHandle } from '../../types/iteration-variables.type';
+import { _Context, createAnchor } from '../context/context.util';
 
 type ForKey = string | number;
 

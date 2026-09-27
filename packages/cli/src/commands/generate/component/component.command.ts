@@ -1,7 +1,7 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { toPascalCase } from '../../../utils/case.utils';
+import { toPascalCase } from '../../../utils/case/case.utils';
 
 /**
  * Scaffolds a new Xaendar component inside a dedicated folder.

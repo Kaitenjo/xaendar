@@ -1,6 +1,6 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
-import { _Context } from './context.util';
-import { _if } from './if.util';
+import { _Context } from '../context/context.util';
+import { _if } from '../if/if.util';
 
 /**
  * Creates a reactive switch/case structure by converting it into an if/else-if chain

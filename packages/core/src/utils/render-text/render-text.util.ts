@@ -1,6 +1,6 @@
 import { NoArgsFunction } from '@xaendar/types';
-import { effect } from '../signals/effect/effect';
-import { _Context, mountNode } from './context.util';
+import { effect } from '../../signals/effect/effect';
+import { _Context, mountNode } from '../context/context.util';
 
 /**
  * Creates a reactive text node bound to a named identifier in the current scope.
