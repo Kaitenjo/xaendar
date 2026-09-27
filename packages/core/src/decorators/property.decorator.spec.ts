@@ -1,4 +1,9 @@
+import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
+import { BaseWebComponent } from '../directives';
+import type { InputSignal } from '../signals/types/input-signal.type';
+import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../types/property-decorator-options.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -6,77 +11,103 @@ await vi.hoisted(async () => {
 });
 
 const { Property } = await import('./property.decorator');
+const { isInputSignal } = await import('../signals/input/input-instance.symbol');
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../signals/input/input-set.symbol');
 
-type Decorated = { get(): any, init(value?: unknown): any };
-type Metadata = { aliasToAttribute?: Record<string, string> };
+type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
+type Decorated<ActualValue, IncomingValue> = { get(): InputSignal<ActualValue, IncomingValue>; init(): InputSignal<ActualValue, IncomingValue> };
 
-function apply(decorator: unknown, name: string | symbol = 'label', metadata: Metadata = {}): Decorated {
-  return (decorator as (value: unknown, context: unknown) => Decorated)(undefined, { name, metadata });
+function setup<ActualValue = unknown, IncomingValue = ActualValue>(
+  value?: ActualValue,
+  options?: PropertyDecoratorOptions<ActualValue, IncomingValue>,
+  name: string | symbol = 'label',
+  metadata: Metadata = {}
+): Decorated<ActualValue, IncomingValue> {
+  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue, IncomingValue>>;
+  const decorated = Property<BaseWebComponent, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>(value, options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue, IncomingValue>>, context);
+  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+}
+
+function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
+  options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>,
+  name: string | symbol = 'label',
+  metadata: Metadata = {}
+): Decorated<ActualValue, IncomingValue> {
+  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue, IncomingValue>>;
+  const decorated = Property.required<BaseWebComponent, ActualValue, IncomingValue>(options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue, IncomingValue>>, context);
+  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+}
+
+function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue, IncomingValue>, value: IncomingValue): void {
+  if (!isInputSignal(signal)) {
+    throw new Error('Expected an InputSignal');
+  }
+
+  signal.set(value, INPUT_SIGNAL_SET_SYMBOL);
 }
 
 describe('Property decorator', () => {
   it('throws for symbol properties', () => {
-    expect(() => apply(Property(), Symbol('label'))).toThrow('Symbol properties are not supported');
+    expect(() => setup(undefined, undefined, Symbol('label'))).toThrow('Symbol properties are not supported');
   });
 
   it('creates an input signal without default value', () => {
-    expect(apply(Property()).get()()).toBeUndefined();
+    expect(setup().get()()).toBeUndefined();
   });
 
   it('creates an input signal with the default value', () => {
-    expect(apply(Property(5)).get()()).toBe(5);
+    expect(setup(5).get()()).toBe(5);
   });
 
   it('returns the same signal from get() and init()', () => {
-    const decorated = apply(Property(1));
+    const decorated = setup(1);
     expect(decorated.init()).toBe(decorated.get());
   });
 
   it('accepts an object as default value', () => {
     const value = { a: 1 };
-    expect(apply(Property(value)).get()()).toBe(value);
+    expect(setup(value).get()()).toBe(value);
   });
 
   it('registers the property name as attribute in the metadata', () => {
     const metadata: Metadata = {};
-    apply(Property(), 'label', metadata);
-    expect(metadata.aliasToAttribute).toEqual({ label: 'label' });
+    setup(undefined, undefined, 'label', metadata);
+    expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ label: 'label' });
   });
 
   it('registers the alias as attribute in the metadata', () => {
     const metadata: Metadata = {};
-    apply(Property('a', { alias: 'my-label' }), 'label', metadata);
-    expect(metadata.aliasToAttribute).toEqual({ 'my-label': 'label' });
+    setup('a', { alias: 'my-label' }, 'label', metadata);
+    expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ 'my-label': 'label' });
   });
 
   it('accumulates the aliases of multiple properties in the same metadata', () => {
     const metadata: Metadata = {};
-    apply(Property(), 'first', metadata);
-    apply(Property(), 'second', metadata);
-    expect(metadata.aliasToAttribute).toEqual({ first: 'first', second: 'second' });
+    setup(undefined, undefined, 'first', metadata);
+    setup(undefined, undefined, 'second', metadata);
+    expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ first: 'first', second: 'second' });
   });
 
   it('forwards the transform option', () => {
-    const signal = apply(Property<any, any, number, string>(0, { transform: Number })).get();
-    signal.set('7', INPUT_SIGNAL_SET_SYMBOL);
+    const signal = setup<number, string>(0, { transform: Number }).get();
+    setValue(signal, '7');
     expect(signal()).toBe(7);
   });
 
   describe('required', () => {
     it('creates an input signal with no default value', () => {
-      expect(apply(Property.required()).get()()).toBeUndefined();
+      expect(setupRequired().get()()).toBeUndefined();
     });
 
     it('registers the alias in the metadata', () => {
       const metadata: Metadata = {};
-      apply(Property.required({ alias: 'user-id' }), 'userId', metadata);
-      expect(metadata.aliasToAttribute).toEqual({ 'user-id': 'userId' });
+      setupRequired({ alias: 'user-id' }, 'userId', metadata);
+      expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ 'user-id': 'userId' });
     });
 
     it('forwards the transform option', () => {
-      const signal = apply(Property.required<any, number, string>({ transform: Number })).get();
-      signal.set('3', INPUT_SIGNAL_SET_SYMBOL);
+      const signal = setupRequired<number, string>({ transform: Number }).get();
+      setValue(signal, '3');
       expect(signal()).toBe(3);
     });
   });

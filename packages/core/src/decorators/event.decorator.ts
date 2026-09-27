@@ -1,6 +1,7 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue } from '@xaendar/types';
+import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
 import { BaseWebComponent } from '../directives/base-web-component';
 import { EventOptions } from '../types/event/event-options.type';
+import { EventDecoratorReturnType } from '../types/event/event-return-type.type';
 import { Output } from '../types/event/output.type';
 
 function isEventOptions(value: EventOptions | unknown): value is EventOptions {
@@ -29,8 +30,8 @@ function isEventOptions(value: EventOptions | unknown): value is EventOptions {
 export function Event<
   Class extends BaseWebComponent,
   Data = void,
->(options?: EventOptions): AccessorDecorator<Class, Output<Data>> {
-  return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): ReturnType<AccessorDecorator<Class, Output<Data>>> => {
+>(options?: EventOptions): Function<Parameters<AccessorDecorator<Class, Output<Data>>>, EventDecoratorReturnType<Class, Output<Data>>> {
+  return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): EventDecoratorReturnType<Class, Output<Data>> => {
     const name = context.name;
     let dispatchEvent: EventTarget['dispatchEvent'];
 

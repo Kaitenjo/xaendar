@@ -1,12 +1,11 @@
 // @vitest-environment happy-dom
+import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import type { BaseWebComponent } from '../directives/base-web-component';
+import { BaseWebComponent } from '../directives';
 import type { Output } from '../types/event/output.type';
 import { Event } from './event.decorator';
 
-type Emit = (valueOrOptions?: unknown, options?: unknown) => void;
-
-function setup(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]) {
+function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]) {
   const initializers = new Array<(this: unknown) => void>();
   const context = {
     name,
@@ -17,11 +16,11 @@ function setup(name: string | symbol = 'clicked', options?: Parameters<typeof Ev
   const listener = vi.fn();
   element.addEventListener('clicked', listener);
 
-  const decorated = (Event(options) as unknown as (value: unknown, context: unknown) => { get(): Output<unknown> })(undefined, context);
+  const decorated = Event<BaseWebComponent, ReturnType>(options)({} as  ClassAccessorDecoratorValue<Output<ReturnType>>, context);
   initializers.forEach(fn => fn.call(element));
 
-  const emit = decorated.get().emit as unknown as Emit;
-  return { emit: (...args: Parameters<Emit>) => emit.call(element, ...args), listener };
+  const emit = (decorated as unknown as { get(): Output<ReturnType> }).get().emit;
+  return { emit: (...args: Parameters<Output<ReturnType>['emit']>) => emit.call(element, ...args), listener };
 }
 
 function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
@@ -43,7 +42,7 @@ describe('Event decorator', () => {
   });
 
   it('dispatches without detail when called with no arguments', () => {
-    const { emit, listener } = setup();
+    const { emit, listener } = setup<void>();
     emit();
 
     expect(lastEvent(listener).detail).toBeNull();
