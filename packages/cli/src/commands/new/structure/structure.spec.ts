@@ -28,12 +28,12 @@ describe('buildStructure()', () => {
     expect((xaendarJsonEntry as { content: string }).content).toContain('"style": "scss"');
   });
 
-  it('reads the version from the CLI package\'s own package.json, not a nested one', () => {
+  it('reads the version from the package.json one level up from the running module\'s own directory', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
     buildStructure({ name: 'my-app', style: 'css' });
 
-    expect(readFileSync).toHaveBeenCalledWith(resolve(import.meta.dirname, '../../../../package.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve(import.meta.dirname, '../package.json'), 'utf8');
   });
 
   it('derives the root component name by appending "-root" to the project name', () => {

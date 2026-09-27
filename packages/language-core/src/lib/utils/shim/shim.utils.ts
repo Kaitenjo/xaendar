@@ -1,7 +1,18 @@
 import type { TypeCheckResult } from '@xaendar/compiler';
 import { basename, extname } from 'node:path';
-import { upsertVirtualFile } from '../language-service';
+import { upsertVirtualFile } from '../../language-service/language-service';
 
+/**
+ * Builds the type-check shim source for a component and upserts it into the
+ * language service's virtual filesystem so the LanguageServiceHost picks it up.
+ *
+ * @param componentData - Map from each involved component file's absolute
+ *   path to the exported class names it declares.
+ * @param typecheckBody - The compiler's `TypeCheckResult` whose `text` supplies
+ *   the fictitious-TS type-check body to wrap.
+ * @returns The shim's full source, its path, the line offset at which the
+ *   type-check body starts, and the collected class names.
+ */
 export function createShim(componentData: Map<string, string[]>, typecheckBody: TypeCheckResult): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
   const entries = Array.from(componentData.entries());
   const shimPath = `${entries[0][0]}.__typecheck__.ts`;
