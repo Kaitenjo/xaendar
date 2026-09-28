@@ -17,3 +17,14 @@ L'ordine di import delle classi javascript dei web components sembra essere
 decisivo al bootstrapping perchè i decoratori di classe e proprieta vengono invocati
 al caricamento della classe nell'engine. Ma implementata una strategia di caricamento dei componenti
 in modo da rispettare le dipendenze fra di essi (non dovrebbero mai essere circular)
+
+Se piu di un componente importa un file .css, il suo contenuto viene copiato come literal string
+all'interno del javascript N volte. Andrebbe caricato tramite un .js isolato e poi importato dai 
+vari consumer (stessa logica per il riutizillo del template)
+
+import { render as __Shell2Component_render } from "/@id/__x00__virtual:xaendar-template:C:/Users/Dario Spinosa/Desktop/Tutto/Progetti/xaendar/src/back-office/src/shell/shell.xd.component.html?import&signals=applyDinamicBinding,sidebarCollapsed,text&lang.js";
+import { _defineRender } from "/@fs/C:/Users/Dario Spinosa/Desktop/Tutto/Progetti/xaendar/packages/core/src/public-api.ts";
+import { render as __ShellComponent_render } from "/@id/__x00__virtual:xaendar-template:C:/Users/Dario Spinosa/Desktop/Tutto/Progetti/xaendar/src/back-office/src/shell/shell.xd.component.html?import&signals=applyDinamicBinding,sidebarCollapsed,text&lang.js";
+
+Quando 2 componenti nello stesso file usano lo stesso template vi è un doppio import,
+andrebbe cambiato il behaviour
