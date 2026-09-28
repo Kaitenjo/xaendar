@@ -25,7 +25,10 @@
       "@xaendar/types": ["../../packages/types/src/public-api"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../../packages/core/src/globals.d.ts"
+  ],
   "exclude": [
     "dist", 
     "node_modules", 

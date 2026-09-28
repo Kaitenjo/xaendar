@@ -1,4 +1,4 @@
-import { loadCompilerOptions } from '@xaendar/language-core';
+import { loadTsConfig } from '@xaendar/language-core';
 import type { Logger, Plugin } from 'vite';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
@@ -45,7 +45,8 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  */
 export function xaendarPlugin(): Plugin {
   const host = new NodeCompilerHost;
-  const compilerOptions = loadCompilerOptions(import.meta.url);
+  // The project tsconfig is resolved from the directory Vite is launched from.
+  const tsConfig = loadTsConfig(process.cwd());
   let logger: Logger | undefined;
 
   const logError = (error: unknown, prefix: string): void => {
@@ -56,7 +57,8 @@ export function xaendarPlugin(): Plugin {
 
   const state: XaendarPluginState = {
     host,
-    compilerOptions,
+    compilerOptions: tsConfig.options,
+    projectFileNames: tsConfig.fileNames,
     setLogger: (value) => logger = value,
     logError
   };

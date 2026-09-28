@@ -106,6 +106,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
       readFile: vi.fn(readFileFromHost)
     } as unknown as NodeCompilerHost,
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
+    projectFileNames: ['/project/src/globals.d.ts'],
     setLogger: vi.fn(),
     logError: vi.fn()
   };
@@ -340,7 +341,7 @@ describe('createTransformHook()', () => {
 
     expect(registerRealFile).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(createShim).toHaveBeenCalledWith(new Map([[COMPONENT_PATH, ['FooComponent']]]), expect.any(Object));
-    expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions);
+    expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions, state.projectFileNames);
   });
 
   it('logs every semantic diagnostic and returns null when the shim reports errors', async () => {

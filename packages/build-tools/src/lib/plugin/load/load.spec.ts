@@ -32,6 +32,7 @@ function createState(files: Record<string, string>): XaendarPluginState {
       readFile: vi.fn((path: string) => files[path])
     } as unknown as NodeCompilerHost,
     compilerOptions: {},
+    projectFileNames: [],
     setLogger: vi.fn(),
     logError: vi.fn()
   };

@@ -4,7 +4,7 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
   return {
     ...actual,
-    loadCompilerOptions: vi.fn()
+    loadTsConfig: vi.fn()
   };
 });
 
@@ -28,7 +28,7 @@ vi.mock('../watch-change/watch-change', () => ({
   createWatchChangeHook: vi.fn()
 }));
 
-import { loadCompilerOptions } from '@xaendar/language-core';
+import { loadTsConfig } from '@xaendar/language-core';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createLoadHook } from '../load/load';
@@ -50,7 +50,7 @@ beforeEach(() => {
   transformHook = {} as NonNullable<ReturnType<typeof createTransformHook>>;
   watchChangeHook = {} as NonNullable<ReturnType<typeof createWatchChangeHook>>;
   configureServerHook = {} as NonNullable<ReturnType<typeof createConfigureServerHook>>;
-  vi.mocked(loadCompilerOptions).mockReturnValue({ target: 99 });
+  vi.mocked(loadTsConfig).mockReturnValue({ options: { target: 99 }, fileNames: ['/project/src/globals.d.ts'] });
   vi.mocked(createConfigureServerHook).mockReturnValue(configureServerHook);
   vi.mocked(createResolveIdHook).mockReturnValue(resolveIdHook);
   vi.mocked(createLoadHook).mockReturnValue(loadHook);
@@ -70,13 +70,15 @@ describe('xaendarPlugin()', () => {
     expect(plugin.configureServer).toBe(configureServerHook);
   });
 
-  it('shares a single plugin state with a real NodeCompilerHost and the loaded compiler options across every hook', () => {
+  it('shares a single plugin state with a real NodeCompilerHost and the loaded tsconfig across every hook', () => {
     xaendarPlugin();
 
     const stateArg = vi.mocked(createTransformHook).mock.calls[0][0];
 
     expect(stateArg.host).toBeInstanceOf(NodeCompilerHost);
+    expect(loadTsConfig).toHaveBeenCalledWith(process.cwd());
     expect(stateArg.compilerOptions).toEqual({ target: 99 });
+    expect(stateArg.projectFileNames).toEqual(['/project/src/globals.d.ts']);
     expect(vi.mocked(createLoadHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createWatchChangeHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createConfigureServerHook).mock.calls[0][0]).toBe(stateArg);

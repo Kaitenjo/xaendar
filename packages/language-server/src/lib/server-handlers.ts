@@ -1,5 +1,5 @@
 import { TypeCheckResult } from '@xaendar/compiler';
-import { getLanguageService, loadCompilerOptions } from '@xaendar/language-core';
+import { getLanguageService, loadTsConfig } from '@xaendar/language-core';
 import { VoidFunction } from '@xaendar/types';
 import { dirname } from 'node:path';
 import { Diagnostic, DiagnosticCategory, ScriptElementKind } from 'typescript';
@@ -80,8 +80,8 @@ export async function onCompletion(params: CompletionParams, documents: TextDocu
     return [];
   }
 
-  const compilerOptions = loadCompilerOptions(dirname(templatePath));
-  const languageService = getLanguageService(compilerOptions);
+  const tsConfig = loadTsConfig(dirname(templatePath));
+  const languageService = getLanguageService(tsConfig.options, tsConfig.fileNames);
   // Assertion is safe because recompileTemplate registers the generated shim in the language service.
   const shimSourceFile = languageService.getProgram()?.getSourceFile(compiled.shimPath)!;
   const offset = shimSourceFile.getPositionOfLineAndCharacter(shimPosition.line, shimPosition.character);
@@ -181,9 +181,9 @@ export async function validate(uri: string, document: TextDocument, connection: 
       return;
     }
 
-    const compilerOptions = loadCompilerOptions(dirname(uri));
+    const tsConfig = loadTsConfig(dirname(uri));
     const compiled = await compileTemplate(uri, document.getText(), componentPath);
-    const languageService = getLanguageService(compilerOptions);
+    const languageService = getLanguageService(tsConfig.options, tsConfig.fileNames);
     const tsDiagnostics = languageService.getSemanticDiagnostics(compiled.shimPath);
     connection.sendDiagnostics({
       uri,

@@ -14,7 +14,7 @@ type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, Incom
 
 function createPropertyDecorator<
   Class extends BaseWebComponent,
-  Value extends InputSignal<ActualValue, IncomingValue>,
+  Value extends InputSignal<ActualValue>,
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(
@@ -56,7 +56,7 @@ function createPropertyDecorator<
       get() {
         return signal as Value;
       },
-      init(_?: InputSignal<ActualValue, IncomingValue>) {
+      init(_?: InputSignal<ActualValue>) {
         return signal as Value;
       },
     };
@@ -86,14 +86,14 @@ function createPropertyDecorator<
  */
 export function Property<
   Class extends BaseWebComponent,
-  Value extends InputSignal<ActualValue, IncomingValue>,
-  ActualValue = Value extends InputSignal<infer U, any> ? U : unknown,
-  IncomingValue = Value extends InputSignal<any, infer V> ? V : ActualValue
+  Value extends InputSignal<ActualValue>,
+  ActualValue = Value extends InputSignal<infer U> ? U : unknown,
+  IncomingValue = ActualValue
 >(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue, IncomingValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue, IncomingValue>>> {
-  return createPropertyDecorator<Class, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>(value, options);
+): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue>>> {
+  return createPropertyDecorator<Class, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
 }
 
 /**\
@@ -123,8 +123,8 @@ Property.required = function required<
   IncomingValue = ActualValue
 >(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>
-): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue, IncomingValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue, IncomingValue>>> {
-  return createPropertyDecorator<Class, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>({
+): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue>>> {
+  return createPropertyDecorator<Class, InputSignal<ActualValue>, ActualValue, IncomingValue>({
     ...options,
     [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired',
     required: true,

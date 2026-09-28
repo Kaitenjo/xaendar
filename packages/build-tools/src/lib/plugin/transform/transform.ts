@@ -122,7 +122,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       registerRealFile(componentPath);
 
       const shim = createShim(new Map([[componentPath, [className]]]), typecheckBody);
-      const languageService = getLanguageService(state.compilerOptions);
+      const languageService = getLanguageService(state.compilerOptions, state.projectFileNames);
       const diagnostics = languageService.getSemanticDiagnostics(shim.path);
 
       for (let i = 0; i < diagnostics.length; i++) {

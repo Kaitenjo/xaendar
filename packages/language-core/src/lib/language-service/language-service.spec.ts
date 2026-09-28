@@ -91,6 +91,29 @@ describe('getLanguageService()', () => {
     expect(first).not.toBe(second);
     expect(ts.createLanguageService).toHaveBeenCalledTimes(2);
   });
+
+  it('adds the project files to the root file names, without duplicating registered real files', async () => {
+    const { mod, ts } = await load();
+    const { hosts } = mockLanguageServiceFactory(ts);
+    vi.mocked(ts.createDocumentRegistry).mockReturnValue({} as never);
+
+    mod.getLanguageService({}, ['/src/globals.d.ts', '/src/real.ts']);
+    mod.registerRealFile('/src/real.ts');
+
+    expect(hosts[0].getScriptFileNames()).toEqual(['/src/globals.d.ts', '/src/real.ts']);
+  });
+
+  it('updates the project files without recreating the LanguageService', async () => {
+    const { mod, ts } = await load();
+    const { hosts } = mockLanguageServiceFactory(ts);
+    vi.mocked(ts.createDocumentRegistry).mockReturnValue({} as never);
+
+    mod.getLanguageService({}, ['/src/a.ts']);
+    mod.getLanguageService({}, ['/src/b.ts']);
+
+    expect(ts.createLanguageService).toHaveBeenCalledTimes(1);
+    expect(hosts[0].getScriptFileNames()).toEqual(['/src/b.ts']);
+  });
 });
 
 describe('disposeLanguageService()', () => {
@@ -99,7 +122,7 @@ describe('disposeLanguageService()', () => {
     const { hosts, instances } = mockLanguageServiceFactory(ts);
     vi.mocked(ts.createDocumentRegistry).mockReturnValue({} as never);
 
-    mod.getLanguageService({ strict: true });
+    mod.getLanguageService({ strict: true }, ['/src/globals.d.ts']);
     mod.registerRealFile('/src/real.ts');
     mod.upsertVirtualFile('/src/virtual.ts', 'content');
 

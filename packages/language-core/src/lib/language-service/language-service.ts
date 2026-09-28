@@ -39,7 +39,15 @@ const realFileVersions = new Map<string, string>();
  */
 const realFiles = new Set<string>();
 
-/** 
+/**
+ * Project files matched by the tsconfig's `files`/`include`/`exclude`, set on
+ * every getLanguageService() call. They are part of the Program so that
+ * ambient declarations not reachable through imports (e.g. a `globals.d.ts`
+ * declaring the global `Signal` namespace) are visible to the shims.
+ */
+let projectFileNames: readonly string[] = [];
+
+/**
  * The shared LanguageService instance, lazily created on first use by
  * getLanguageService() and torn down by disposeLanguageService(). 
  * */
@@ -58,8 +66,13 @@ let currentCompilerOptions: CompilerOptions | undefined;
  * LanguageService was created with, the old instance is disposed and a
  * fresh one is created — this covers the case where vite.config / tsconfig
  * changes while the dev server is running.
+ *
+ * @param compilerOptions - The compilerOptions loaded from the project tsconfig.
+ * @param fileNames - The project files loaded from the project tsconfig (see
+ *   `loadTsConfig`). Changing them does not recreate the LanguageService: the
+ *   host reads the root file names lazily.
  */
-export function getLanguageService(compilerOptions: CompilerOptions): LanguageService {
+export function getLanguageService(compilerOptions: CompilerOptions, fileNames: readonly string[] = []): LanguageService {
   const optionsChanged = currentCompilerOptions && JSON.stringify(currentCompilerOptions) !== JSON.stringify(compilerOptions);
 
   if (languageService && optionsChanged) {
@@ -67,7 +80,8 @@ export function getLanguageService(compilerOptions: CompilerOptions): LanguageSe
   }
 
   currentCompilerOptions = compilerOptions;
-  languageService ??= createLanguageService(createHost(() => [...realFiles]), createDocumentRegistry());
+  projectFileNames = fileNames;
+  languageService ??= createLanguageService(createHost(() => [...new Set([...projectFileNames, ...realFiles])]), createDocumentRegistry());
   return languageService;
 }
 
@@ -136,6 +150,7 @@ export function disposeLanguageService(): void {
   languageService!.dispose();
   languageService = undefined;
   currentCompilerOptions = undefined;
+  projectFileNames = [];
   virtualFiles.clear();
   realFileVersions.clear();
   realFiles.clear();

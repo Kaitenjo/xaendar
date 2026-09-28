@@ -17,11 +17,9 @@ export function signal<T = unknown>(value: T, options?: SignalOptions<T>): Signa
   const signal = new Signal.State(value, options);
   const getter = function () { return signal.get(); }
 
-  Object.assign(getter, {
+  return Object.assign(getter, {
     set: signal.set.bind(signal),
     get: signal.get.bind(signal),
     update: (updater: (prev: T) => T) => signal.set(updater(signal.get()))
   });
-
-  return getter as unknown as SignalType<T>;
 }

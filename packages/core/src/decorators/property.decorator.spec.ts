@@ -15,30 +15,30 @@ const { isInputSignal } = await import('../signals/input/input-instance.symbol')
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../signals/input/input-set.symbol');
 
 type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
-type Decorated<ActualValue, IncomingValue> = { get(): InputSignal<ActualValue, IncomingValue>; init(): InputSignal<ActualValue, IncomingValue> };
+type Decorated<ActualValue> = { get(): InputSignal<ActualValue>; init(): InputSignal<ActualValue> };
 
 function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>,
   name: string | symbol = 'label',
   metadata: Metadata = {}
-): Decorated<ActualValue, IncomingValue> {
-  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue, IncomingValue>>;
-  const decorated = Property<BaseWebComponent, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>(value, options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue, IncomingValue>>, context);
-  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+): Decorated<ActualValue> {
+  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue>>;
+  const decorated = Property<BaseWebComponent, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue>>, context);
+  return decorated as unknown as Decorated<ActualValue>;
 }
 
 function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>,
   name: string | symbol = 'label',
   metadata: Metadata = {}
-): Decorated<ActualValue, IncomingValue> {
-  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue, IncomingValue>>;
-  const decorated = Property.required<BaseWebComponent, ActualValue, IncomingValue>(options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue, IncomingValue>>, context);
-  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+): Decorated<ActualValue> {
+  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, InputSignal<ActualValue>>;
+  const decorated = Property.required<BaseWebComponent, ActualValue, IncomingValue>(options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue>>, context);
+  return decorated as unknown as Decorated<ActualValue>;
 }
 
-function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue, IncomingValue>, value: IncomingValue): void {
+function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue>, value: IncomingValue): void {
   if (!isInputSignal(signal)) {
     throw new Error('Expected an InputSignal');
   }

@@ -6,7 +6,7 @@
  *
  * @template Value - The type of the stored value. Defaults to `any`.
  */
-export type Signal<Value = any> = Signal.State<Value> & {
+export type Signal<Value = unknown> = Signal.State<Value> & {
   /**
    * Get the current value of the signal.
    *

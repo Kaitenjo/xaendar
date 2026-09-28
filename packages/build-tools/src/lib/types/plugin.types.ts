@@ -15,6 +15,11 @@ export type XaendarPluginState = {
    */
   compilerOptions: CompilerOptions;
   /**
+   * Project files matched by the project tsconfig, added to the type-check
+   * Program so ambient declarations (e.g. `globals.d.ts`) are visible.
+   */
+  projectFileNames: readonly string[];
+  /**
    * Sets the active Vite logger used by hook-level error reporting.
    */
   setLogger(logger: Logger | undefined): void;

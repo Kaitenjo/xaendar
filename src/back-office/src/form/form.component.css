@@ -1,5 +1,6 @@
 .table-container {
   font-family: 'Segoe UI', Arial, sans-serif;
+  color: #e4e6ef;
 }
 
 .toolbar {
@@ -23,17 +24,17 @@
 }
 
 .btn-primary {
-  background-color: #2563eb;
+  background-color: #6366f1;
   color: #fff;
 }
 
 .btn-secondary {
-  background-color: #6b7280;
+  background-color: #2a2e3d;
   color: #fff;
 }
 
 .btn-danger {
-  background-color: #dc2626;
+  background-color: #b91c1c;
   color: #fff;
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
@@ -42,29 +43,30 @@
 .user-table {
   width: 100%;
   border-collapse: collapse;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #12141c;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .user-table th,
 .user-table td {
   text-align: left;
   padding: 0.65rem 0.9rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #232634;
 }
 
 .user-table th {
-  background-color: #f3f4f6;
+  background-color: #1a1d28;
   font-weight: 600;
-  color: #374151;
+  color: #c9cddb;
 }
 
 .user-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: #1c1f2b;
 }
 
 .empty-message {
   text-align: center;
-  color: #6b7280;
+  color: #8a90a6;
   padding: 1.5rem;
   font-style: italic;
 }

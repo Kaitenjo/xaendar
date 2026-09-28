@@ -18,15 +18,16 @@ import { assertPrivateContext } from './input-set.symbol';
  *   lifecycle hooks, and a `transform` function applied to incoming values.
  * @returns A new `InputSignal` instance.
  */
-export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue>): InputSignal<ActualValue, IncomingValue> {
+export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue>): InputSignal<ActualValue> {
   const transform = options?.transform;
   delete options?.transform;
 
-  const signal = new Signal.State(value, options);
+  const signal = new Signal.State<ActualValue>(value as ActualValue, options);
   const originalSet = signal.set;
 
   const getter = function () { return signal.get(); }
-  Object.assign(getter, {
+
+  return Object.assign(getter, {
     set(newValue: IncomingValue, symbol: symbol): void {
       assertPrivateContext(symbol);
       const transformedValue = transform ? transform(newValue) : newValue;
@@ -35,6 +36,4 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
     get: signal.get.bind(signal),
     [INPUT_SIGNAL_INSTANCE_SYMBOL]: true
   });
-
-  return getter as unknown as InputSignal<ActualValue, IncomingValue>;
 }
