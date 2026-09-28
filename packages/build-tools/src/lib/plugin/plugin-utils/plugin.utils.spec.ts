@@ -199,6 +199,27 @@ describe('injectTemplate()', () => {
     expect(result.indexOf(registration)).toBeLessThan(result.indexOf('_initClass()'));
   });
 
+  it('registers the render function before the static block applying the decorators', () => {
+    const source = [
+      'let _Foo;',
+      'class Foo extends Base {',
+      '  static {',
+      '    [_Foo, _initClass] = _applyDecs2311(this, [WebComponent({ selector: "x-foo" })], [], 0, void 0, Base).c;',
+      '  }',
+      '  state = signal(true);',
+      '  static {',
+      '    _initClass();',
+      '  }',
+      '}'
+    ].join('\n');
+    const result = inject(source, false, 'Foo');
+    const registration = 'static { _defineRender(this, __Foo_render); }';
+
+    expect(result).toContain(`${registration}\n\n  static {\n    [_Foo, _initClass] = _applyDecs2311(`);
+    expect(result.indexOf(registration)).toBeLessThan(result.indexOf('_applyDecs2311'));
+    expect(result.split('_defineRender(').length).toBe(2);
+  });
+
   it('does not insert a style snippet when there is no CSS content', () => {
     const result = inject(jsSource, false, 'Foo');
 

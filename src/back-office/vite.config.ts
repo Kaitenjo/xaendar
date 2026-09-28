@@ -7,13 +7,13 @@ const monorepoRoot = path.resolve(dirName, '../..');
 export default defineConfig({
   root: 'src',
   resolve: {
-    alias: {
-      '@xaendar/common': path.resolve(monorepoRoot, 'packages/common/src/public-api.ts'),
-      '@xaendar/core': path.resolve(monorepoRoot, 'packages/core/src/public-api.ts'),
-      '@xaendar/core/signals': path.resolve(monorepoRoot, 'packages/core/signals/index.ts'),
-      '@xaendar/signals': path.resolve(monorepoRoot, 'packages/signals/src/public-api.ts'),
-      '@xaendar/types': path.resolve(monorepoRoot, 'packages/types/src/public-api.ts'),
-    }
+    alias: [
+      { find: /^@xaendar\/common$/, replacement: path.resolve(monorepoRoot, 'packages/common/src/public-api.ts') },
+      { find: /^@xaendar\/core$/, replacement: path.resolve(monorepoRoot, 'packages/core/src/public-api.ts') },
+      { find: /^@xaendar\/core\/signals$/, replacement: path.resolve(monorepoRoot, 'packages/core/src/signals/index.ts') },
+      { find: /^@xaendar\/signals$/, replacement: path.resolve(monorepoRoot, 'packages/signals/src/public-api.ts') },
+      { find: /^@xaendar\/types$/, replacement: path.resolve(monorepoRoot, 'packages/types/src/public-api.ts') },
+    ]
   },
   server: {
     open: true,

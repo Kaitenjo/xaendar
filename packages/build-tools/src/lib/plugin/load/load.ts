@@ -56,8 +56,15 @@ export function createLoadHook(state: XaendarPluginState): NonNullable<HookHandl
       return this.error(`Failed to compile template - ${templatePath}\n${err}`);
     }
 
+    /*
+      An empty mappings map marks the module as having no original source. Without it, Vite would generate
+      a sourcemap treating this generated JS as the original source, named after the template path and
+      shown by DevTools as a fake `.html` file.
+      TODO: replace it with a real sourcemap from the generated code back to the template.
+    */
     return {
       code: generateTemplateModule(compiledFunctions),
+      map: { mappings: '' },
       moduleType: 'js'
     };
   };

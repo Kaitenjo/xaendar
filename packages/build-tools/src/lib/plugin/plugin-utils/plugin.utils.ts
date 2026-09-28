@@ -149,8 +149,13 @@ export function injectTemplate(s: MagicString, sourceFile: SourceFile, first: bo
     throw `Could not find the static initializer block for class "${className}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
   }
 
+  /*
+    The registration must run before the decorators are applied, so it goes before the static block
+    calling babel's `_applyDecs` helper (falling back to the finalizer block when there's none).
+  */
+  const registrationBlock = classDecl.members.find(isApplyDecoratorsStaticBlock) ?? placeholderBlock;
   const styleSheetName = insertStyleSnippet(s, sourceFile, classDecl, className, cssContent);
-  insertRenderRegistration(s, sourceFile, placeholderBlock, className, templateModuleSpecifier, styleSheetName);
+  insertRenderRegistration(s, sourceFile, registrationBlock, className, templateModuleSpecifier, styleSheetName);
   if (first) {
     insertRequiredImports(s);
   }
@@ -252,12 +257,12 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   return undefined;
 }
 
-function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, placeholderBlock: ClassStaticBlockDeclaration, className: string, templateModuleSpecifier: string, styleSheetName?: string): void {
+function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, className: string, templateModuleSpecifier: string, styleSheetName?: string): void {
   const renderName = `__${className}_render`;
   const args = `this, ${renderName}${styleSheetName ? `, ${styleSheetName}` : ''}`;
 
   s.prepend(`import { render as ${renderName} } from ${JSON.stringify(templateModuleSpecifier)};\n`);
-  s.appendLeft(placeholderBlock.getStart(sourceFile), `static { _defineRender(${args}); }\n\n  `);
+  s.appendLeft(registrationBlock.getStart(sourceFile), `static { _defineRender(${args}); }\n\n  `);
 }
 
 /**
@@ -314,4 +319,20 @@ function isDecoratorInitStaticBlock(node: Node): node is ClassStaticBlockDeclara
 
   const { expression: callee, arguments: args } = statement.expression;
   return args.length === 0 && isIdentifier(callee) && /^_initClass\d*$/.test(callee.text);
+}
+
+/**
+ * Checks whether `node` is the static block emitted by babel to apply the class decorators,
+ * i.e. a static block containing a call to the `_applyDecs` helper (e.g. `_applyDecs2311`).
+ */
+function isApplyDecoratorsStaticBlock(node: Node): node is ClassStaticBlockDeclaration {
+  return isClassStaticBlockDeclaration(node) && containsApplyDecoratorsCall(node);
+}
+
+function containsApplyDecoratorsCall(node: Node): boolean {
+  if (isCallExpression(node) && isIdentifier(node.expression) && /^_applyDecs\w*$/.test(node.expression.text)) {
+    return true;
+  }
+
+  return forEachChild(node, containsApplyDecoratorsCall) ?? false;
 }

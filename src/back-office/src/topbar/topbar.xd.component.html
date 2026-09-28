@@ -1,0 +1,54 @@
+<header class="topbar">
+
+  <div class="topbar__left">
+    <button type="button" class="topbar__icon-btn topbar__menu-btn" @click="onMenuToggle()" aria-label="Apri/chiudi menu">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="topbar__search">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input type="text" placeholder="Cerca progetti, attività, persone…" />
+      <kbd>⌘K</kbd>
+    </div>
+  </div>
+
+  <div class="topbar__right">
+
+    <button type="button" class="topbar__icon-btn" @click="toggleNotifications()" aria-label="Notifiche">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M18 9a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      @if (notificationsCount > 0) {
+        <span class="topbar__badge">{ notificationsCount }</span>
+      }
+    </button>
+
+    <div class="topbar__divider"></div>
+
+    <button type="button" class="topbar__user" @click="toggleUserMenu()">
+      <div class="topbar__avatar">{ user.name.charAt(0) }</div>
+      <div class="topbar__user-info">
+        <span class="topbar__user-name">{ user.name }</span>
+        <span class="topbar__user-role">{ user.role }</span>
+      </div>
+      <svg class="topbar__chevron" viewBox="0 0 24 24" fill="none" class="{ isUserMenuOpen() ? 'open' : ''}">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    @if (isUserMenuOpen()) {
+      <div class="topbar__dropdown">
+        <a class="topbar__dropdown-item">Il mio profilo</a>
+        <a class="topbar__dropdown-item">Impostazioni account</a>
+        <div class="topbar__dropdown-sep"></div>
+        <a class="topbar__dropdown-item topbar__dropdown-item--danger">Esci</a>
+      </div>
+    }
+  </div>
+</header>

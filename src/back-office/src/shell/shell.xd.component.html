@@ -1,0 +1,21 @@
+@import { SidebarComponent } from '../sidebar/sidebar.xd.component.ts'
+@import { TopbarComponent } from '../topbar/topbar.xd.component.ts'
+@import { FormComponent } from '../form/form.xd.component.ts'
+
+<div class="shell">
+  <app-sidebar @(applyDinamicBinding(), text="{text()}") collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  <button @click="onApplyDinamicBindingToggle()">
+    Toggle dinamic binding
+  </button>
+  <button @click="onTextToggle()">
+    Toggle text
+  </button>
+
+  <div class="shell__main">
+    <app-topbar @menuToggle="onSidebarToggle()" />
+
+    <main class="shell__content">
+      <app-form />
+    </main>
+  </div>
+</div>

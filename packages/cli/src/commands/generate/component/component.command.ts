@@ -112,7 +112,7 @@ function cssTemplate(_name: string): string {
  */
 function specTemplate(name: string): string {
   const className = toPascalCase(name);
-  return `import { describe, expect, it } from "vitest";
+  return `import { describe, expect, it } from 'vitest';
 import { ${className}Component } from './${name}.xd.component';
 
 describe('${className}Component', () => {
