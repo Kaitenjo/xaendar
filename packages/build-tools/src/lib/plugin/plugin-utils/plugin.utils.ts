@@ -5,7 +5,9 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
+import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
+import type { TemplateModuleRequest } from '../../types/template-module-request.type';
 
 /**
  * TODO: This could be eliminated if we find a way to extract the metadata informations
@@ -44,10 +46,75 @@ export function stripCssComments(css: string): string {
 }
 
 /**
- * Injects a component's generated template code into the shared `MagicString`
+ * Builds the import specifier of the module exporting the compiled render function of a template.
+ *
+ * The compiled code depends on the template and on which of the identifiers it references
+ * are signal members of the component class, so both are encoded in the specifier: components
+ * sharing the same template and signals import the very same module, which is therefore
+ * compiled and bundled only once. Signals are sorted so their declaration order doesn't matter.
+ *
+ * The trailing `lang.js` query flag makes the id look like a JavaScript request to the
+ * extension-based checks of the dev server (same convention used by Vue SFC sub-modules).
+ *
+ * @param templatePath - Absolute path of the template file.
+ * @param signals - Signal members of the component class.
+ * @returns The import specifier, resolved by the plugin `resolveId` hook.
+ */
+export function createTemplateModuleSpecifier(templatePath: string, signals: string[]): string {
+  const path = templatePath.replace(/\\/g, '/');
+  const encodedSignals = [...signals].sort().map(encodeURIComponent).join(',');
+  return `${TEMPLATE_MODULE_PREFIX}${path}?signals=${encodedSignals}&lang.js`;
+}
+
+/**
+ * Decodes the resolved id of a template module built from {@link createTemplateModuleSpecifier}.
+ *
+ * @param id - The resolved module id.
+ * @returns The template path and signals encoded in the id, or `undefined` if `id`
+ *   doesn't identify a template module.
+ */
+export function parseTemplateModuleId(id: string): TemplateModuleRequest | undefined {
+  const queryIndex = id.lastIndexOf('?');
+  if (!id.startsWith(RESOLVED_TEMPLATE_MODULE_PREFIX) || queryIndex === -1) {
+    return undefined;
+  }
+
+  const signals = new URLSearchParams(slice(id, queryIndex + 1)).get('signals');
+  return {
+    templatePath: slice(id, RESOLVED_TEMPLATE_MODULE_PREFIX.length, queryIndex),
+    signals: signals?.split(',') ?? []
+  };
+}
+
+/**
+ * Wraps the output of the template compiler into an ES module importing the runtime
+ * helpers it relies on and exporting its `render` entry point. Every other generated
+ * function stays private to the module, so it can't be overridden or removed at runtime.
+ *
+ * @param compiledFunctions - The raw output of the template compiler.
+ * @returns The source code of the template module.
+ */
+export function generateTemplateModule(compiledFunctions: string): string {
+  return [
+    'import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute } from \'@xaendar/core\';',
+    '',
+    compiledFunctions,
+    '',
+    'export { render };',
+    ''
+  ].join('\n');
+}
+
+/**
+ * Wires a component to its compiled template into the shared `MagicString`
  * wrapping the whole transpiled component file, applying the three required
- * mutations — template render methods, scoped CSS stylesheet, and missing
+ * mutations — render function registration, scoped CSS stylesheet, and missing
  * runtime imports — each in its own dedicated function.
+ *
+ * The render function isn't generated inline: it is imported from the template
+ * module identified by `templateModuleSpecifier`, shared by every component using
+ * the same template, and registered along with the stylesheet via `_defineRender`
+ * in a static block of the class.
  *
  * All offsets are resolved against `sourceFile`, which must be parsed once
  * from the file's ORIGINAL (pre-injection) text and reused across every
@@ -63,23 +130,27 @@ export function stripCssComments(css: string): string {
  * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source,
  *   shared across every component declared in it.
  * @param first - Indicates if this is the first component of the file being processed.
- * @param compiledMethods - The raw output of the template compiler.
  * @param className - The name of the target class in this file.
- * @param varName - Variable name for the shared `CSSStyleSheet`, if any CSS is provided.
+ * @param templateModuleSpecifier - The import specifier of the compiled template module
+ *   (see {@link createTemplateModuleSpecifier}).
  * @param cssContent - Raw CSS content to inject as a shared `CSSStyleSheet`, if not empty.
  * @throws When `className` isn't found, or its decorator finalizer static
  *   block isn't found — meaning the component file wasn't scaffolded
  *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectFunctions(s: MagicString, sourceFile: SourceFile, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): void {
+export function injectTemplate(s: MagicString, sourceFile: SourceFile, first: boolean, className: string, templateModuleSpecifier: string, cssContent?: string): void {
   const classDecl = findClassDeclarationByName(sourceFile, className);
-
   if (!classDecl) {
     throw `Could not find class "${className}" in the transpiled output.`;
   }
 
-  insertTemplateMethods(s, sourceFile, classDecl, compiledMethods);
-  insertStyleSnippet(s, sourceFile, classDecl, varName, cssContent);
+  const placeholderBlock = classDecl.members.find(isDecoratorInitStaticBlock);
+  if (!placeholderBlock) {
+    throw `Could not find the static initializer block for class "${className}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
+  }
+
+  const styleSheetName = insertStyleSnippet(s, sourceFile, classDecl, className, cssContent);
+  insertRenderRegistration(s, sourceFile, placeholderBlock, className, templateModuleSpecifier, styleSheetName);
   if (first) {
     insertRequiredImports(s);
   }
@@ -181,30 +252,30 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   return undefined;
 }
 
-function insertTemplateMethods(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, compiledMethods: string): void {
-  const placeholderBlock = classDecl.members.find(isDecoratorInitStaticBlock);
+function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, placeholderBlock: ClassStaticBlockDeclaration, className: string, templateModuleSpecifier: string, styleSheetName?: string): void {
+  const renderName = `__${className}_render`;
+  const args = `this, ${renderName}${styleSheetName ? `, ${styleSheetName}` : ''}`;
 
-  if (!placeholderBlock) {
-    throw `Could not find the static initializer block for class "${classDecl.name?.text}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
-  }
-
-  const blockStart = placeholderBlock.getStart(sourceFile);
-  s.appendLeft(blockStart, `${compiledMethods}\n\n  `);
+  s.prepend(`import { render as ${renderName} } from ${JSON.stringify(templateModuleSpecifier)};\n`);
+  s.appendLeft(placeholderBlock.getStart(sourceFile), `static { _defineRender(${args}); }\n\n  `);
 }
 
-function insertStyleSnippet(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, varName?: string, cssContent?: string): void {
+/**
+ * Inserts the shared `CSSStyleSheet` of the component before its class declaration.
+ * @returns The name of the stylesheet variable, or `undefined` if there's no CSS to inject.
+ */
+function insertStyleSnippet(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, className: string, cssContent?: string): string | undefined {
   if (!cssContent?.trim().length) {
-    return;
+    return undefined;
   }
 
-  const styleSnippet = buildStyleSnippet(varName!, cssContent);
-  const classStart = classDecl.getStart(sourceFile);
-
-  s.appendLeft(classStart, styleSnippet);
+  const styleSheetName = `__${className}_sheet`;
+  s.appendLeft(classDecl.getStart(sourceFile), buildStyleSnippet(styleSheetName, cssContent));
+  return styleSheetName;
 }
 
 function insertRequiredImports(s: MagicString): void {
-  s.prepend(`import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute } from '@xaendar/core';\n`);
+  s.prepend('import { _defineRender } from \'@xaendar/core\';\n');
 }
 
 function buildStyleSnippet(varName: string, css: string): string {

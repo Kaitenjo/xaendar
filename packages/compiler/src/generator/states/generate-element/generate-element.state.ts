@@ -87,7 +87,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
       },
       args: [nodeName, 'parentContext', 'anchor']
     });
-    retVal.code.push(`this.${nodeName}Children(${nodeName}, context);`);
+    retVal.code.push(`${nodeName}Children.call(this, ${nodeName}, context);`);
   }
 
   return retVal;

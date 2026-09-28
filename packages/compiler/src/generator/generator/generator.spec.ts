@@ -6,23 +6,19 @@ import { ASTNodeType } from '../../parser/types/node.enum';
 import { Generator } from './generator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
-const generate = (template: string, css?: string, signals: string[] = []) => new Generator(template, parse(template)).generate(css, signals);
+const generate = (template: string, signals: string[] = []) => new Generator(template, parse(template)).generate(signals);
 
 describe('Generator', () => {
-  it('wraps the generated nodes in a _render method', async () => {
+  it('wraps the generated nodes in a module-level render function', async () => {
     const code = await generate('hello');
     expect(code).toBe([
-      '_render() {',
+      'function render() {',
       '  const root = this._root;',
       '  const context = new _Context(this, { createElement: document.createElement.bind(document), get: () => undefined });',
       '  _renderLiteralText(root, context, \'hello\', null);',
       '  return context;',
       '}'
     ].join('\n'));
-  });
-
-  it('adopts the stylesheet when a css variable is provided', async () => {
-    expect(await generate('hello', 'styles')).toContain('root.adoptedStyleSheets = [styles];');
   });
 
   it('generates the helper functions for nested nodes', async () => {
@@ -35,37 +31,49 @@ describe('Generator', () => {
     expect(code).toContain('const { vars, update } = _iterationVariables(');
   });
 
+  it('emits module-level helper functions invoked with the component bound as this', async () => {
+    const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i) { <li></li> }');
+
+    expect(code).toContain('function div0Children(div0, parentContext, anchor) {');
+    expect(code).toContain('div0Children.call(this, div0, context);');
+    expect(code).toContain('function if1(if1, parentContext, anchor) {');
+    expect(code).toContain('block: if1.bind(this)');
+    expect(code).toContain('function for2(for2, parentContext, items2, i2, anchor) {');
+    expect(code).toContain('for2.bind(this));');
+    expect(code).not.toMatch(/this\.(render|div0Children|if1|for2)\b/);
+  });
+
   it('skips nodes that generate no code', async () => {
     const code = await generate('@import { A } from \'./a\'\n<div>@import { B } from \'./b\'<span></span></div>');
     expect(code).not.toContain('import');
   });
 
   it('registers signals as reactive class fields', async () => {
-    expect(await generate('{count}', undefined, ['count'])).toContain('_renderText(root, context, () => this.count, null);');
+    expect(await generate('{count}', ['count'])).toContain('_renderText(root, context, () => this.count, null);');
   });
 
   it('resets the pending functions between generations', async () => {
     const template = '<div><span></span></div>';
     const generator = new Generator(template, parse(template));
-    const first = await generator.generate(undefined, []);
-    expect(await generator.generate(undefined, [])).toBe(first);
+    const first = await generator.generate([]);
+    expect(await generator.generate([])).toBe(first);
   });
 
   it('forwards the compiler cache to the context', async () => {
     const template = '<my-el @(cond(), title="x")></my-el>';
     const cache = { getOrInsert: async () => ({ properties: new Map() }) as never, set: () => undefined };
-    const code = await new Generator(template, parse(template), cache).generate(undefined, []);
+    const code = await new Generator(template, parse(template), cache).generate([]);
 
     expect(code).toContain('unbind: _removeAttribute');
   });
 
   it('prefixes errors thrown while registering signals', async () => {
-    await expect(generate('hello', undefined, ['a', 'a'])).rejects.toThrow('[Generator] Signal field "a" is already declared in this scope.');
+    await expect(generate('hello', ['a', 'a'])).rejects.toThrow('[Generator] Signal field "a" is already declared in this scope.');
   });
 
   it('reports nodes without a registered transition function', async () => {
     const ast = [{ type: ASTNodeType.Case, span: { start: 0, end: 5 } }] as unknown as ASTNode[];
 
-    await expect(new Generator('hello', ast).generate(undefined, [])).rejects.toContain('[Generator] No transition function for ASTNode of type Case');
+    await expect(new Generator('hello', ast).generate([])).rejects.toContain('[Generator] No transition function for ASTNode of type Case');
   });
 });

@@ -58,10 +58,11 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 }));
 
 vi.mock('../plugin-utils/plugin.utils', () => ({
+  createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
   extractImportedComponentPaths: vi.fn(),
   getMetadataOrExtract: vi.fn(),
-  injectFunctions: vi.fn()
+  injectTemplate: vi.fn()
 }));
 
 vi.mock('../style/compile-style', () => ({
@@ -69,14 +70,14 @@ vi.mock('../style/compile-style', () => ({
 }));
 
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
-import { describeDiagnostic, extractImportedComponentPaths, injectFunctions } from '../plugin-utils/plugin.utils';
+import { createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { createTransformHook } from './transform';
 
@@ -118,10 +119,7 @@ function createPluginContext(): TransformPluginContext {
 }
 
 function mockSuccessfulCompile(typecheckBody: Partial<TypeCheckResult> = {}) {
-  vi.mocked(compile).mockResolvedValue({
-    javascript: '/* compiled methods */',
-    typescript: { mappingTable: new Map(), ...typecheckBody } as TypeCheckResult
-  });
+  vi.mocked(compile).mockResolvedValue({ mappingTable: new Map(), ...typecheckBody } as TypeCheckResult);
 }
 
 function mockNoDiagnostics() {
@@ -135,7 +133,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isValidCustomElementName).mockReturnValue(true);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
-  vi.mocked(injectFunctions).mockImplementation(() => undefined);
+  vi.mocked(injectTemplate).mockImplementation(() => undefined);
+  vi.mocked(extractSignalMembers).mockReturnValue(['count']);
+  vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
   mockSuccessfulCompile();
   mockNoDiagnostics();
 });
@@ -248,7 +248,21 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compileStyle).not.toHaveBeenCalled();
-    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, 'FooComponent', 'template-module', undefined);
+  });
+
+  it('only type-checks the template, leaving the render function to the template module', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const metadata = createMetadata();
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    const templatePath = resolve(dirname(COMPONENT_PATH), './foo.xd.component.html');
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), cache: expect.any(Object) });
+    expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
   });
 
   it('compiles and watches every style dependency when a styleUrl is set', async () => {
@@ -271,10 +285,10 @@ describe('createTransformHook()', () => {
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/partial.css');
     expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/foo.css', COMPONENT_PATH);
     expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/partial.css', COMPONENT_PATH);
-    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', '__FooComponent_sheet', '.a { color: red; }');
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, 'FooComponent', 'template-module', '.a { color: red; }');
   });
 
-  it('leaves varName undefined when style compilation yields no CSS text', async () => {
+  it('injects no CSS when style compilation yields no CSS text', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata({ styleUrl: './foo.css' });
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
@@ -284,7 +298,7 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectFunctions).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), true, 'FooComponent', 'template-module', undefined);
   });
 
   it('logs an error and returns null when template compilation throws', async () => {
@@ -301,18 +315,18 @@ describe('createTransformHook()', () => {
     expect(state.logError).toHaveBeenCalledWith(expect.any(Error), expect.stringContaining('Failed to compile template'));
   });
 
-  it('logs an error and returns null when injecting the compiled functions throws', async () => {
+  it('logs an error and returns null when injecting the template throws', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(injectFunctions).mockImplementation(() => { throw new Error('inject failed'); });
+    vi.mocked(injectTemplate).mockImplementation(() => { throw new Error('inject failed'); });
     const state = createState();
     const hook = createTransformHook(state);
 
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(result).toBeNull();
-    expect(state.logError).toHaveBeenCalledWith(expect.any(Error), expect.stringContaining('Failed to inject functions into component'));
+    expect(state.logError).toHaveBeenCalledWith(expect.any(Error), expect.stringContaining('Failed to inject template into component'));
   });
 
   it('registers the real file and requests semantic diagnostics for the generated shim', async () => {
@@ -361,8 +375,8 @@ describe('createTransformHook()', () => {
 
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectFunctions).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), true, '/* compiled methods */', 'FooComponent', undefined, undefined);
-    expect(injectFunctions).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), false, '/* compiled methods */', 'BarComponent', undefined, undefined);
+    expect(injectTemplate).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), true, 'FooComponent', 'template-module', undefined);
+    expect(injectTemplate).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), false, 'BarComponent', 'template-module', undefined);
     expect(result).toEqual({ code: 'original code', map: expect.anything() });
   });
 

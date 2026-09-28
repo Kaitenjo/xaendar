@@ -99,7 +99,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
                                     <------- Context where executed at runtime
     }
   */
-  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${node.itemAlias}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, this.${forKey}.bind(this));`);
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${node.itemAlias}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, ${forKey}.bind(this));`);
 
   return retVal
 }

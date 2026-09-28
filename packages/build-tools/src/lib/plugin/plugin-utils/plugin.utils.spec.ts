@@ -30,7 +30,7 @@ import { extractComponentsMetadataFromSourceFile, resolveTemplateSpan } from '@x
 import MagicString from 'magic-string';
 import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
-import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions, resolveModulePath, stripCssComments } from './plugin.utils';
+import { createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseTemplateModuleId, resolveModulePath, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selectors: string[]): ComponentOrDirectiveMetadata {
@@ -78,7 +78,54 @@ describe('stripCssComments()', () => {
   });
 });
 
-describe('injectFunctions()', () => {
+describe('createTemplateModuleSpecifier()', () => {
+  it('encodes the template path and the sorted signals', () => {
+    expect(createTemplateModuleSpecifier('/src/foo/foo.xd.component.html', ['b', 'a'])).toBe('virtual:xaendar-template:/src/foo/foo.xd.component.html?signals=a,b&lang.js');
+  });
+
+  it('normalizes windows path separators', () => {
+    expect(createTemplateModuleSpecifier('C:\\src\\foo.xd.component.html', [])).toBe('virtual:xaendar-template:C:/src/foo.xd.component.html?signals=&lang.js');
+  });
+
+  it('does not mutate the given signals', () => {
+    const signals = ['b', 'a'];
+    createTemplateModuleSpecifier('/foo.html', signals);
+
+    expect(signals).toEqual(['b', 'a']);
+  });
+});
+
+describe('parseTemplateModuleId()', () => {
+  it('decodes the template path and the signals of a resolved template module id', () => {
+    const id = `\0${createTemplateModuleSpecifier('/src/foo/foo.xd.component.html', ['$count', 'items'])}`;
+
+    expect(parseTemplateModuleId(id)).toEqual({ templatePath: '/src/foo/foo.xd.component.html', signals: ['$count', 'items'] });
+  });
+
+  it('decodes an empty signal list', () => {
+    expect(parseTemplateModuleId(`\0${createTemplateModuleSpecifier('/foo.html', [])}`)).toEqual({ templatePath: '/foo.html', signals: [] });
+  });
+
+  it('returns undefined for ids of other modules', () => {
+    expect(parseTemplateModuleId('/src/foo/foo.xd.component.ts')).toBeUndefined();
+    expect(parseTemplateModuleId('virtual:xaendar-template:/foo.html?signals=')).toBeUndefined();
+  });
+
+  it('returns undefined for a template module id without query', () => {
+    expect(parseTemplateModuleId('\0virtual:xaendar-template:/foo.html')).toBeUndefined();
+  });
+});
+
+describe('generateTemplateModule()', () => {
+  it('imports the runtime helpers and exports the render function', () => {
+    const code = generateTemplateModule('function render() {}');
+
+    expect(code.startsWith('import { _if, _switch')).toBe(true);
+    expect(code).toContain('} from \'@xaendar/core\';\n\nfunction render() {}\n\nexport { render };\n');
+  });
+});
+
+describe('injectTemplate()', () => {
   const jsSource = [
     'class Foo {',
     '  static {',
@@ -86,18 +133,19 @@ describe('injectFunctions()', () => {
     '  }',
     '}'
   ].join('\n');
+  const specifier = 'virtual:xaendar-template:/foo.html?signals=&lang.js';
 
-  function inject(source: string, first: boolean, compiledMethods: string, className: string, varName?: string, cssContent?: string): string {
+  function inject(source: string, first: boolean, className: string, cssContent?: string): string {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
-    injectFunctions(s, sourceFile, first, compiledMethods, className, varName, cssContent);
+    injectTemplate(s, sourceFile, first, className, specifier, cssContent);
     return s.toString();
   }
 
   it('throws when the target class cannot be found', () => {
     let error: unknown;
     try {
-      inject(jsSource, true, '/* methods */', 'Missing');
+      inject(jsSource, true, 'Missing');
     } catch (err) {
       error = err;
     }
@@ -119,7 +167,7 @@ describe('injectFunctions()', () => {
 
     let error: unknown;
     try {
-      inject(source, true, '/* methods */', 'Foo');
+      inject(source, true, 'Foo');
     } catch (err) {
       error = err;
     }
@@ -127,48 +175,90 @@ describe('injectFunctions()', () => {
     expect(error).toContain('Could not find the static initializer block for class "Foo"');
   });
 
-  it('inserts the compiled template methods before the static initializer block', () => {
-    const result = inject(jsSource, false, '/* METHODS */', 'Foo');
+  it('leaves the source untouched when the static initializer block is missing', () => {
+    const source = 'class Foo { }';
+    const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
+    const s = new MagicString(source);
 
-    expect(result.indexOf('/* METHODS */')).toBeLessThan(result.indexOf('_initClass()'));
+    expect(() => injectTemplate(s, sourceFile, true, 'Foo', specifier, '.a { color: red; }')).toThrow();
+    expect(s.toString()).toBe(source);
+  });
+
+  it('imports the render function from the template module', () => {
+    const result = inject(jsSource, false, 'Foo');
+
+    expect(result.startsWith(`import { render as __Foo_render } from ${JSON.stringify(specifier)};\nclass Foo {`)).toBe(true);
+  });
+
+  it('registers the render function in a static block before the static initializer block', () => {
+    const result = inject(jsSource, false, 'Foo');
+    const registration = 'static { _defineRender(this, __Foo_render); }';
+
+    expect(result).toContain(registration);
+    expect(result.indexOf('class Foo')).toBeLessThan(result.indexOf(registration));
+    expect(result.indexOf(registration)).toBeLessThan(result.indexOf('_initClass()'));
   });
 
   it('does not insert a style snippet when there is no CSS content', () => {
-    const result = inject(jsSource, false, '/* methods */', 'Foo');
+    const result = inject(jsSource, false, 'Foo');
 
     expect(result).not.toContain('CSSStyleSheet');
   });
 
-  it('does not insert a style snippet when the CSS content is blank', () => {
-    const result = inject(jsSource, false, '/* methods */', 'Foo', '__sheet', '   ');
+  it('does not insert nor register a style snippet when the CSS content is blank', () => {
+    const result = inject(jsSource, false, 'Foo', '   ');
 
     expect(result).not.toContain('CSSStyleSheet');
+    expect(result).toContain('static { _defineRender(this, __Foo_render); }');
   });
 
-  it('inserts the style snippet before the class declaration when CSS content is provided', () => {
-    const result = inject(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', '.a { color: red; }');
+  it('inserts the style snippet before the class declaration and registers it along with the render function', () => {
+    const result = inject(jsSource, false, 'Foo', '.a { color: red; }');
 
     expect(result).toContain('const __Foo_sheet = new CSSStyleSheet();');
     expect(result).toContain('__Foo_sheet.replaceSync(`.a { color: red; }`);');
     expect(result.indexOf('__Foo_sheet.replaceSync')).toBeLessThan(result.indexOf('class Foo'));
+    expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }');
   });
 
   it('doubles backslashes in the injected CSS payload', () => {
-    const result = inject(jsSource, false, '/* methods */', 'Foo', '__Foo_sheet', 'a\\b');
+    const result = inject(jsSource, false, 'Foo', 'a\\b');
 
     expect(result).toContain('a\\\\b');
   });
 
   it('prepends the required runtime imports only on the first component of the file', () => {
-    const result = inject(jsSource, true, '/* methods */', 'Foo');
+    const result = inject(jsSource, true, 'Foo');
 
-    expect(result.startsWith('import { _if, _switch')).toBe(true);
+    expect(result.startsWith('import { _defineRender } from \'@xaendar/core\';\n')).toBe(true);
   });
 
   it('does not prepend the required runtime imports when it is not the first component', () => {
-    const result = inject(jsSource, false, '/* methods */', 'Foo');
+    const result = inject(jsSource, false, 'Foo');
 
-    expect(result.startsWith('import {')).toBe(false);
+    expect(result).not.toContain('_defineRender }');
+  });
+
+  it('imports the shared template module once per component of the file', () => {
+    const source = [
+      'class Foo {',
+      '  static { _initClass(); }',
+      '}',
+      'class Bar {',
+      '  static { _initClass2(); }',
+      '}'
+    ].join('\n');
+    const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
+    const s = new MagicString(source);
+
+    injectTemplate(s, sourceFile, true, 'Foo', specifier);
+    injectTemplate(s, sourceFile, false, 'Bar', specifier);
+    const result = s.toString();
+
+    expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
+    expect(result).toContain(`import { render as __Bar_render } from ${JSON.stringify(specifier)};`);
+    expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
+    expect(result).toContain('static { _defineRender(this, __Bar_render); }\n\n  static { _initClass2(); }');
   });
 });
 

@@ -62,7 +62,7 @@ describe('generateElement', () => {
 
   it('registers a children function when the element has children', async () => {
     const { code, functionsToProcess } = await run('<div><span></span></div>');
-    expect(code).toContain('this.div0Children(div0, context);');
+    expect(code).toContain('div0Children.call(this, div0, context);');
     expect(functionsToProcess?.get('div0Children')).toMatchObject({
       fn: { parentNode: 'div0', precode: '' },
       args: ['div0', 'parentContext', 'anchor']

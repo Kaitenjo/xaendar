@@ -15,7 +15,7 @@ describe('generateIf', () => {
       '_if(root, context, null, [',
       '  {',
       '    condition: () => this.a,',
-      '    block: this.if0.bind(this)',
+      '    block: if0.bind(this)',
       '  },',
       ']);'
     ].join('\n'));
@@ -29,9 +29,9 @@ describe('generateIf', () => {
     const output = code.join('\n');
 
     expect(output).toContain('condition: () => this.b,');
-    expect(output).toContain('block: this.elseIf0_0.bind(this)');
-    expect(output).toContain('block: this.elseIf0_1.bind(this)');
-    expect(output).toContain('block: this.else0.bind(this)');
+    expect(output).toContain('block: elseIf0_0.bind(this)');
+    expect(output).toContain('block: elseIf0_1.bind(this)');
+    expect(output).toContain('block: else0.bind(this)');
     expect([...functionsToProcess?.keys() ?? []]).toEqual(['if0', 'elseIf0_0', 'elseIf0_1', 'else0']);
     expect(functionsToProcess?.get('else0')?.args).toEqual(['root', 'parentContext', 'anchor']);
   });

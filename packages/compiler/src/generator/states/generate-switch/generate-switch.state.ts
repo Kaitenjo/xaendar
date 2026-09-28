@@ -33,7 +33,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
       args: [caseKey, 'parentContext', 'anchor']
     });
 
-    const fnName = `this.${caseKey}.bind(this)`;
+    const fnName = `${caseKey}.bind(this)`;
     retVal.code.push(
       ...indent([
         '{',

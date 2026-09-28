@@ -1,4 +1,5 @@
-import { _Context } from '../utils';
+import type { _Context } from '../utils/context/context.util';
+import { _getRender } from '../utils/render-registry/render-registry.util';
 
 /**
  * Base class for all web components in the framework.
@@ -25,27 +26,26 @@ export class BaseWebComponent extends HTMLElement {
   }
 
   /**
-   * Initialises the component's Shadow DOM render tree.
-   *
-   * Overridden by the compiler-generated code injected via the `@WebComponent`
-   * decorator pipeline. Returns an array of effect disposer functions that
-   * should be called when the component is disconnected.
-   *
-   * @internal
-   */
-  private _render(): _Context {
-    // Ignore, the actual render body is injected by the compiler 
-    return {} as _Context;
-  }
-
-  /**
    * Called by the browser engine each time the element is inserted into the DOM.
    *
-   * Triggers the initial render by calling `_render()`, which builds the
-   * Shadow DOM tree and sets up reactive signal subscriptions.
+   * Adopts the stylesheet registered for this component class (see `_defineRender`), if any,
+   * then triggers the initial render by invoking the compiler-generated render
+   * function registered for it, which builds the Shadow DOM tree and sets up
+   * reactive signal subscriptions.
+   *
+   * @throws When no render function is registered for this component class.
    */
   private connectedCallback(): void {
-    this.context = this._render();
+    const definition = _getRender(this.constructor);
+    if (!definition) {
+      throw new Error(`${this.constructor.name} does not seems to have a Render Function`);
+    }
+
+    if (definition.styleSheet) {
+      this._root.adoptedStyleSheets = [definition.styleSheet];
+    }
+
+    this.context = definition.render.call(this);
   }
 
   /**

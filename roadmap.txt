@@ -7,23 +7,10 @@
     - un altro file del progetto
     - pacchetto npm
     - alias typescript che puo essere risolto in entrambi i casi precedenti
-
-- Ad oggi le funzioni generate dal generator vengono aggiunte come campi della classe ed è un grave errore
-  Potenzialmente a RunTime esse potrebbero essere rimosse o modificate
-  Capire se:
-  - Definirle programmaticamente con writable e enumerable settato a false
-  - Scriverle nello stesso file .js ma fuori dalla classe (possibile collisione rarissima di nomi di funzione)
-  - Definirle in un altro file importato dal Componente
-
-  Per il secondo e il terzo caso va passato esplicitamente il 'this' per accedere ai campi della classe utilizzati
-  nel template, cosa che ad oggi non è necessaria poiche le funzioni sono metodi del componente stesso
-
+    
   - Scss, Less e Sass (Sistema è stato rifattorizzato per poter essere estendibile ed usarli)
   - Direttive
   - Creazione componenti imperativamente
   - CustomElements che partrono da un HTMLElement specifico
-
-Le source maps vengono probabilmente genrate prima dell'aggiunta dei miei pezzi di codie andando
-a impedire il debugging dei componeti poiche ibreakpoitn nel .ts non matchato le reali righe del javascript
 
 i decoreatori di proprieta sono applicati in ritardo al bootstrapping

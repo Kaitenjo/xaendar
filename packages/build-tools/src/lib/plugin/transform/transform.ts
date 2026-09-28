@@ -12,7 +12,7 @@ import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
-import { describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectFunctions } from '../plugin-utils/plugin.utils';
+import { createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
@@ -37,9 +37,11 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     clearStyleDependenciesForComponent(componentPath);
     removeComponentPath(componentPath);
 
-    // Parsed once from the ORIGINAL (pre-injection) text and shared across every
-    // component in the file, so every MagicString edit below is addressed against
-    // offsets that never shift - see injectFunctions() for why that matters.
+    /*
+      Parsed once from the ORIGINAL (pre-injection) text and shared across every
+      component in the file, so every MagicString edit below is addressed against
+      offsets that never shift - see injectTemplate() for why that matters.
+    */
     const jsSourceFile = createSourceFile(componentPath, code, ScriptTarget.Latest, true, ScriptKind.JS);
     const magicString = new MagicString(code);
 
@@ -88,34 +90,32 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         }
       }
 
-      let compiledMethods: string | undefined;
-      let typecheckBody: TypeCheckResult | undefined;
-      const varName = cssContent ? `__${className}_sheet` : undefined;
+      let signals: string[];
+      let typecheckBody: TypeCheckResult;
 
       try {
-        // Todo Create a dedicated cache to store signal values metadata otherwise this will be done every time file is saved
-        const signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass);
-        const result = await compile(templateSource, {
+        signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass);
+        /*
+          Only the type-check is performed here, as it depends on the component class.
+          The render function is compiled once per template in its own module (see the load hook).
+        */
+        typecheckBody = await compile(templateSource, {
           baseDir: dirname(templatePath),
-          cssVariableName: varName,
-          signals,
           cache: {
             getOrInsert: getMetadataOrExtract,
             set: registerMetadata
           }
         });
-        compiledMethods = result.javascript;
-        typecheckBody = result.typescript;
       } catch (err) {
         state.logError(err, `Failed to compile template - ${templatePath}`);
         return null;
       }
 
       try {
-        injectFunctions(magicString, jsSourceFile, first, compiledMethods, className, varName, cssContent);
+        injectTemplate(magicString, jsSourceFile, first, className, createTemplateModuleSpecifier(templatePath, signals), cssContent);
         first = false;
       } catch (err) {
-        state.logError(err, `Failed to inject functions into component - ${componentPath}`);
+        state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return null;
       }
 

@@ -1,13 +1,19 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { _defineRender } from '../utils/render-registry/render-registry.util';
 import { BaseWebComponent } from './base-web-component';
 
-type TestElement = HTMLElement & { _render(): unknown, context: unknown };
+type TestElement = HTMLElement & { context: unknown, connectedCallback(): void };
 
 let counter = 0;
-function create(): TestElement {
+function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
   const name = `x-base-${counter++}`;
-  customElements.define(name, class extends BaseWebComponent { });
+  const klass = class extends BaseWebComponent { };
+  if (context) {
+    _defineRender(klass, () => context as never, styleSheet);
+  }
+
+  customElements.define(name, klass);
   return document.createElement(name) as unknown as TestElement;
 }
 
@@ -16,25 +22,36 @@ describe('BaseWebComponent', () => {
     expect(create().shadowRoot?.mode).toBe('open');
   });
 
-  it('returns an empty context from the default _render', () => {
-    expect(create()._render()).toEqual({});
+  it('throws when no render function is registered', () => {
+    const element = create();
+
+    expect(() => element.connectedCallback()).toThrow('does not seems to have a Render Function');
   });
 
   it('renders on connection', () => {
-    const element = create();
     const context = { unlisten: vi.fn() };
-    vi.spyOn(element, '_render').mockReturnValue(context);
+    const element = create(context);
 
     document.body.appendChild(element);
 
     expect(element.context).toBe(context);
+    expect(element.shadowRoot?.adoptedStyleSheets).toEqual([]);
+    element.remove();
+  });
+
+  it('adopts the registered stylesheet on connection', () => {
+    const styleSheet = new CSSStyleSheet();
+    const element = create({ unlisten: vi.fn() }, styleSheet);
+
+    document.body.appendChild(element);
+
+    expect(element.shadowRoot?.adoptedStyleSheets).toEqual([styleSheet]);
     element.remove();
   });
 
   it('unlistens the context on disconnection', () => {
-    const element = create();
     const context = { unlisten: vi.fn() };
-    vi.spyOn(element, '_render').mockReturnValue(context);
+    const element = create(context);
 
     document.body.appendChild(element);
     element.remove();

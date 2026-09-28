@@ -15,7 +15,7 @@ describe('compile', () => {
 
   it('generates only javascript when no base directory is provided', async () => {
     const result = await compile('hello', { signals: [], cache: createCache() });
-    expect(result).toContain('_render() {');
+    expect(result).toContain('function render() {');
   });
 
   it('generates only the type-check result when signals are not provided', async () => {
@@ -28,9 +28,9 @@ describe('compile', () => {
   });
 
   it('generates both outputs when base directory and signals are provided', async () => {
-    const result = await compile('{count}', { baseDir: '/base', signals: ['count'], cssVariableName: 'styles', cache: createCache() });
+    const result = await compile('{count}', { baseDir: '/base', signals: ['count'], cache: createCache() });
 
-    expect(result).toMatchObject({ javascript: expect.stringContaining('root.adoptedStyleSheets = [styles];'), typescript: { text: expect.stringContaining('root.count;') } });
+    expect(result).toMatchObject({ javascript: expect.stringContaining('() => this.count'), typescript: { text: expect.stringContaining('root.count;') } });
   });
 
   it('resolves default imports through their local name and skips namespace imports', async () => {

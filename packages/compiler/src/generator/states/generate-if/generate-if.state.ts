@@ -17,7 +17,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   retVal.code.push(
     ...indent([
       '{',
-      ...indent([`condition: () => ${resolveExpression(node.conditionNode, compilerContext).expression},`, `block: this.${ifKey}.bind(this)`]),
+      ...indent([`condition: () => ${resolveExpression(node.conditionNode, compilerContext).expression},`, `block: ${ifKey}.bind(this)`]),
       '},'
     ])
   );
@@ -37,7 +37,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`condition: () => ${resolveExpression(conditionNode, compilerContext).expression},`, `block: this.${keyElseIf}.bind(this)`]),
+        ...indent([`condition: () => ${resolveExpression(conditionNode, compilerContext).expression},`, `block: ${keyElseIf}.bind(this)`]),
         '},'
       ])
     );
@@ -56,7 +56,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`block: this.${keyElse}.bind(this)`]),
+        ...indent([`block: ${keyElse}.bind(this)`]),
         '},'
       ])
     );

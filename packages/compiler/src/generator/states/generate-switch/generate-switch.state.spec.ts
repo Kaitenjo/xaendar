@@ -17,8 +17,8 @@ describe('generateSwitch', () => {
     expect(output).toContain('condition: [1],');
     expect(output).toContain('condition: [2, 3],');
     expect(output).toContain('condition: null,');
-    expect(output).toContain('block: this.case0_0.bind(this)');
-    expect(output).toContain('block: this.default0.bind(this)');
+    expect(output).toContain('block: case0_0.bind(this)');
+    expect(output).toContain('block: default0.bind(this)');
     expect(code.at(-1)).toBe('])');
     expect([...functionsToProcess?.keys() ?? []]).toEqual(['case0_0', 'case0_1', 'default0']);
   });

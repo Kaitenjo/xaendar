@@ -12,6 +12,14 @@ vi.mock('../configure-server/configure-server', () => ({
   createConfigureServerHook: vi.fn()
 }));
 
+vi.mock('../load/load', () => ({
+  createLoadHook: vi.fn()
+}));
+
+vi.mock('../resolve-id/resolve-id', () => ({
+  createResolveIdHook: vi.fn()
+}));
+
 vi.mock('../transform/transform', () => ({
   createTransformHook: vi.fn()
 }));
@@ -23,30 +31,40 @@ vi.mock('../watch-change/watch-change', () => ({
 import { loadCompilerOptions } from '@xaendar/language-core';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import { createConfigureServerHook } from '../configure-server/configure-server';
+import { createLoadHook } from '../load/load';
+import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
 import { createWatchChangeHook } from '../watch-change/watch-change';
 import { xaendarPlugin } from './plugin';
 
+let resolveIdHook: NonNullable<ReturnType<typeof createResolveIdHook>>;
+let loadHook: NonNullable<ReturnType<typeof createLoadHook>>;
 let transformHook: NonNullable<ReturnType<typeof createTransformHook>>;
 let watchChangeHook: NonNullable<ReturnType<typeof createWatchChangeHook>>;
 let configureServerHook: NonNullable<ReturnType<typeof createConfigureServerHook>>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveIdHook = {} as NonNullable<ReturnType<typeof createResolveIdHook>>;
+  loadHook = {} as NonNullable<ReturnType<typeof createLoadHook>>;
   transformHook = {} as NonNullable<ReturnType<typeof createTransformHook>>;
   watchChangeHook = {} as NonNullable<ReturnType<typeof createWatchChangeHook>>;
   configureServerHook = {} as NonNullable<ReturnType<typeof createConfigureServerHook>>;
   vi.mocked(loadCompilerOptions).mockReturnValue({ target: 99 });
   vi.mocked(createConfigureServerHook).mockReturnValue(configureServerHook);
+  vi.mocked(createResolveIdHook).mockReturnValue(resolveIdHook);
+  vi.mocked(createLoadHook).mockReturnValue(loadHook);
   vi.mocked(createTransformHook).mockReturnValue(transformHook);
   vi.mocked(createWatchChangeHook).mockReturnValue(watchChangeHook);
 });
 
 describe('xaendarPlugin()', () => {
-  it('builds a Vite plugin wiring the transform, watchChange and configureServer hooks', () => {
+  it('builds a Vite plugin wiring the resolveId, load, transform, watchChange and configureServer hooks', () => {
     const plugin = xaendarPlugin();
 
     expect(plugin.name).toBe('xaendar');
+    expect(plugin.resolveId).toBe(resolveIdHook);
+    expect(plugin.load).toBe(loadHook);
     expect(plugin.transform).toBe(transformHook);
     expect(plugin.watchChange).toBe(watchChangeHook);
     expect(plugin.configureServer).toBe(configureServerHook);
@@ -59,6 +77,7 @@ describe('xaendarPlugin()', () => {
 
     expect(stateArg.host).toBeInstanceOf(NodeCompilerHost);
     expect(stateArg.compilerOptions).toEqual({ target: 99 });
+    expect(vi.mocked(createLoadHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createWatchChangeHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createConfigureServerHook).mock.calls[0][0]).toBe(stateArg);
   });

@@ -3,12 +3,22 @@ import type { Logger, Plugin } from 'vite';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { createConfigureServerHook } from '../configure-server/configure-server';
+import { createLoadHook } from '../load/load';
+import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
 import { createWatchChangeHook } from '../watch-change/watch-change';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
- * and injects the generated render methods into the associated component class.
+ * and wires the generated render function to the associated component class.
+ *
+ * ## Template modules
+ *
+ * Every template is compiled into its own virtual module exporting its render
+ * function, imported and registered by the component files referencing it.
+ * Templates are compiled only when a component using them is part of the module
+ * graph, and components sharing a template share the same module, so the
+ * template is compiled and bundled once.
  *
  * ## Dev mode
  *
@@ -53,6 +63,8 @@ export function xaendarPlugin(): Plugin {
 
   return {
     name: 'xaendar',
+    resolveId: createResolveIdHook(),
+    load: createLoadHook(state),
     transform: createTransformHook(state),
     watchChange: createWatchChangeHook(state),
     configureServer: createConfigureServerHook(state),

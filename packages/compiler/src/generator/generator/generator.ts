@@ -48,12 +48,12 @@ export class Generator {
   ) { }
 
   /**
-   * Generates the code for the given AST using the specified CSS variable name and signals.
-   * @param cssVariableName The name of the CSS variable to be used in the generated code.
+   * Generates the code for the given AST using the specified signals.
    * @param signals An array of signal names to be included in the generated code.
-   * @returns The generated code as a string.
+   * @returns The generated code as a string: module-level functions, the entry point being `render`,
+   *   each expecting to be invoked with the component instance bound as `this`.
    */
-  public async generate(cssVariableName: string | undefined, signals: string[]): Promise<string> {
+  public async generate(signals: string[]): Promise<string> {
     const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess']) => {
       if (functionsToProcess) {
         for (const [key, value] of functionsToProcess.entries()) {
@@ -71,16 +71,12 @@ export class Generator {
       }
 
       const generatedCode = [
-        '_render() {',
+        'function render() {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
           'const context = new _Context(this, { createElement: document.createElement.bind(document), get: () => undefined });'
         ])
       ]
-
-      if (cssVariableName) {
-        generatedCode.push(indent(`${ROOT_NODE}.adoptedStyleSheets = [${cssVariableName}];`));
-      }
 
       for (let i = 0; i < this._ast.length; i++) {
         const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), compilerContext, null);
@@ -100,7 +96,7 @@ export class Generator {
         const { node, parentNode, context, precode, anchor } = fnData.fn;
 
         generatedCode.push(
-          `\n${key}(${fnData.args?.join(', ')}) {`,
+          `\nfunction ${key}(${fnData.args?.join(', ')}) {`,
           ...indent(['const context = new _Context(this, parentContext);'])
         );
 

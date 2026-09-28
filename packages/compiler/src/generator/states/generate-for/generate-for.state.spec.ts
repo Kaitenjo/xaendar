@@ -11,7 +11,7 @@ describe('generateFor', () => {
   it('generates the _for call and registers the loop body function', async () => {
     const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li></li> }'), 'root', '0', new CompilerContext(), null);
 
-    expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index) => item.id, this.for0.bind(this));']);
+    expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index) => item.id, for0.bind(this));']);
 
     const body = functionsToProcess?.get('for0');
     expect(body?.args).toEqual(['for0', 'parentContext', 'items0', 'i0', 'anchor']);

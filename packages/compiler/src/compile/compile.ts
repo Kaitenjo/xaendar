@@ -19,9 +19,8 @@ import type { ComponentOrDirectiveMetadata } from '../types/component-or-directi
  * 3. **Render generator** — emits Javascript source lines from the AST.
  *
  * @param input - The raw HTML-like template source to compile.
- * @param cssVariableName - Optional name of the CSS variable to inject
- *   into the generated `adoptedStyleSheets` assignment.
- * @returns A string containing the compiled Javascript render method body.
+ * @param options - The compilation options, selecting which outputs are produced.
+ * @returns The compiled Javascript render functions, the type-check result, or both.
  */
 export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'cache'>): Promise<TypeCheckResult>
 export async function compile(input: string, options: Omit<CompileOptions, 'baseDir'>): Promise<string>
@@ -30,12 +29,12 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   const tokens = new Lexer(input).tokenize();
   const nodes = new Parser(input, tokens).parse();
 
-  const { baseDir, cssVariableName, signals, cache } = options;
+  const { baseDir, signals, cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (baseDir && signals) {
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
-      generateJavascriptCode(input, nodes, cssVariableName, signals, cache),
+      generateJavascriptCode(input, nodes, signals, cache),
       generateTypecheckResult(input, nodes, metadatas)
     ]);
     
@@ -47,20 +46,19 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
     return await generateTypecheckResult(input, nodes, metadatas);
   } else {
-    // Safe assertion! Override permit only cssVariableName and signals not nullable simultaneously
-    return await generateJavascriptCode(input, nodes, cssVariableName, signals!, cache);
+    // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
+    return await generateJavascriptCode(input, nodes, signals!, cache);
   }
 }
 /**
- * Generates the Javascript render method body from the parsed AST nodes.
+ * Generates the Javascript render functions from the parsed AST nodes.
  * @param input - The raw HTML-like template source to compile.
  * @param nodes - The parsed AST nodes from the template.
- * @param cssVariableName - Optional name of the CSS variable to inject into the generated `adoptedStyleSheets` assignment.
  * @param signals - Array of signal names to be used in the generated render function.
- * @returns A string containing the compiled Javascript render method body.
+ * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], cssVariableName: string | undefined, signals: string[], cache: CompilerCache): Promise<string> {
-  return await new Generator(input, nodes, cache).generate(cssVariableName, signals);
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], cache: CompilerCache): Promise<string> {
+  return await new Generator(input, nodes, cache).generate(signals);
 }
 
 /**

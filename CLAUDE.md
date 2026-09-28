@@ -84,7 +84,7 @@ vscode-client — standalone; launches language-server as an external process (n
   2. **`parser`** turns tokens into an AST (`ASTNode`, `ASTNodeType`, node types like `ImportNode`).
   3. **`type-checker`** builds a `TypeCheckResult` from the AST plus component/directive metadata (resolved from `@import` nodes via a caller-supplied `CompilerCache`).
   4. **`generator`** emits the JS render function body from the AST.
-  The public entry point is `compile()` in `src/compile/compile.ts`, overloaded on `CompileOptions`: pass `baseDir` (+ optional `cache`) to get only a `TypeCheckResult` (for editor tooling), pass `cssVariableName`/`signals` to get only compiled JS, or pass both to get `{ javascript, typescript }` concurrently. Depends on `common`/`types` only.
+  The public entry point is `compile()` in `src/compile/compile.ts`, overloaded on `CompileOptions`: pass `baseDir` (+ optional `cache`) to get only a `TypeCheckResult` (for editor tooling), pass `signals` to get only compiled JS (module-level functions whose `render` entry point is invoked with the component bound as `this`), or pass both to get `{ javascript, typescript }` concurrently. Depends on `common`/`types` only.
 - **`build-tools`** — build-time plugins/registry (e.g. for wiring the compiler into a bundler) plus shared build models/constants. Depends on `common`, `compiler`, and `language-core`.
 - **`cli`** (`xaendar` CLI, via `commander`) — `new`, `generate`, `start` commands under `src/commands/`. Depends on `build-tools`/`common`.
 - **`language-core`** — base language-service layer built on `compiler`, exposing `language-service`, `compiler-options.utils`, and `shim.utils`; consumed by `language-server` and `build-tools`.
