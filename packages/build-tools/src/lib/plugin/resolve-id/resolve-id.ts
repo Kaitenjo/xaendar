@@ -1,8 +1,9 @@
 import type { HookHandler, Plugin } from 'vite';
+import { STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 
 /**
- * Resolves the import specifiers of compiled template modules (injected in
+ * Resolves the import specifiers of compiled template and style modules (injected in
  * component files by the `transform` hook) to virtual module ids, loaded by the `load` hook.
  *
  * Every `import` must be resolved to a module id before Vite can load it. Since the
@@ -24,11 +25,16 @@ import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
  * // loads (and compiles) the module only once.
  *
  * @example
+ * // Style modules are resolved the same way, and shared by every component using the same style file
+ * import { sheet as __Foo_sheet } from 'virtual:xaendar-style?path=%2Fsrc%2Ffoo%2Ffoo.css&lang.js';
+ * // resolved to '\0virtual:xaendar-style?path=%2Fsrc%2Ffoo%2Ffoo.css&lang.js'
+ *
+ * @example
  * // Any other specifier is left to the other plugins
  * import { BaseWebComponent } from '@xaendar/core'; // → null
  */
 export function createResolveIdHook(): NonNullable<HookHandler<Plugin['resolveId']>> {
   return function resolveId(source) {
-    return source.startsWith(TEMPLATE_MODULE_PREFIX) ? `\0${source}` : null;
+    return source.startsWith(TEMPLATE_MODULE_PREFIX) || source.startsWith(STYLE_MODULE_PREFIX) ? `\0${source}` : null;
   };
 }

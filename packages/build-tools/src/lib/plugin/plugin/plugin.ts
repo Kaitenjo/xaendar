@@ -20,6 +20,12 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  * graph, and components sharing a template share the same module, so the
  * template is compiled and bundled once.
  *
+ * ## Style modules
+ *
+ * Likewise, every style file is compiled into its own virtual module exporting
+ * a `CSSStyleSheet`, so components sharing a style file, in the same file or in
+ * different ones, share the same module and adopt the same stylesheet instance.
+ *
  * ## Dev mode
  *
  * Files are transformed on demand when the browser requests them. The plugin

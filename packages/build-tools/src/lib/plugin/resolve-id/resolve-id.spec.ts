@@ -9,6 +9,10 @@ describe('createResolveIdHook()', () => {
     expect(resolveId('virtual:xaendar-template:/foo.html?signals=&lang.js')).toBe('\0virtual:xaendar-template:/foo.html?signals=&lang.js');
   });
 
+  it('resolves a style module specifier to a virtual module id', () => {
+    expect(resolveId('virtual:xaendar-style?path=%2Ffoo.css&lang.js')).toBe('\0virtual:xaendar-style?path=%2Ffoo.css&lang.js');
+  });
+
   it('ignores every other specifier', () => {
     expect(resolveId('./foo.xd.component')).toBeNull();
   });

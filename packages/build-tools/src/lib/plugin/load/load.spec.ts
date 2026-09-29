@@ -19,11 +19,13 @@ vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
 import { compile } from '@xaendar/compiler';
 import type { PluginContext } from 'rolldown';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
-import { createTemplateModuleSpecifier, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
+import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
 import { createLoadHook } from './load';
 
 const TEMPLATE_PATH = '/src/foo/foo.xd.component.html';
 const TEMPLATE_MODULE_ID = `\0${createTemplateModuleSpecifier(TEMPLATE_PATH, ['items', 'count'])}`;
+const STYLE_PATH = '/src/foo/foo.css';
+const STYLE_MODULE_ID = `\0${createStyleModuleSpecifier(STYLE_PATH)}`;
 
 function createState(files: Record<string, string>): XaendarPluginState {
   return {
@@ -97,5 +99,31 @@ describe('createLoadHook()', () => {
     const ctx = createPluginContext();
 
     await expect(load(createState({ [TEMPLATE_PATH]: 'template source' }), ctx, TEMPLATE_MODULE_ID)).rejects.toThrow(`Failed to compile template - ${TEMPLATE_PATH}\nboom`);
+  });
+
+  it('compiles the style file encoded in the id into a javascript module exporting its stylesheet', async () => {
+    const ctx = createPluginContext();
+
+    const result = await load(createState({ [STYLE_PATH]: '/* comment */ .a { color: red; }' }), ctx, STYLE_MODULE_ID);
+
+    expect(result).toEqual({ code: expect.stringContaining('sheet.replaceSync(".a { color: red; }");\n\nexport { sheet };'), map: { mappings: '' }, moduleType: 'js' });
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(STYLE_PATH);
+    expect(compile).not.toHaveBeenCalled();
+  });
+
+  it('exports an undefined stylesheet when the style file cannot be read, still watching it', async () => {
+    const ctx = createPluginContext();
+
+    const result = await load(createState({}), ctx, STYLE_MODULE_ID);
+
+    expect(result).toEqual({ code: 'export const sheet = undefined;\n', map: { mappings: '' }, moduleType: 'js' });
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(STYLE_PATH);
+  });
+
+  it('raises an error when the style compilation fails', async () => {
+    const stylePath = '/src/foo/foo.unknown';
+    const ctx = createPluginContext();
+
+    await expect(load(createState({ [stylePath]: '' }), ctx, `\0${createStyleModuleSpecifier(stylePath)}`)).rejects.toThrow(`Failed to compile style - ${stylePath}\nError: Unsupported stylesheet extension ".unknown"`);
   });
 });

@@ -58,15 +58,12 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 }));
 
 vi.mock('../plugin-utils/plugin.utils', () => ({
+  createStyleModuleSpecifier: vi.fn(),
   createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
   extractImportedComponentPaths: vi.fn(),
   getMetadataOrExtract: vi.fn(),
   injectTemplate: vi.fn()
-}));
-
-vi.mock('../style/compile-style', () => ({
-  compileStyle: vi.fn()
 }));
 
 import { isValidCustomElementName } from '@xaendar/common';
@@ -77,8 +74,7 @@ import { clearComponentToImports, registerImport } from '../../registry/import-r
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
-import { createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
-import { compileStyle } from '../style/compile-style';
+import { createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
 const COMPONENT_PATH = '/src/foo/foo.xd.component.ts';
@@ -137,6 +133,7 @@ beforeEach(() => {
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
   vi.mocked(extractSignalMembers).mockReturnValue(['count']);
   vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
+  vi.mocked(createStyleModuleSpecifier).mockReturnValue('style-module');
   mockSuccessfulCompile();
   mockNoDiagnostics();
 });
@@ -239,7 +236,7 @@ describe('createTransformHook()', () => {
     expect(registerImport).not.toHaveBeenCalledWith('/src/foo/missing.xd.component.ts', COMPONENT_PATH);
   });
 
-  it('skips style compilation when the component has no styleUrl', async () => {
+  it('imports no style module when the component has no styleUrl', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
@@ -248,7 +245,8 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(compileStyle).not.toHaveBeenCalled();
+    expect(createStyleModuleSpecifier).not.toHaveBeenCalled();
+    expect(registerStyleDependency).not.toHaveBeenCalled();
     expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined);
   });
 
@@ -266,14 +264,10 @@ describe('createTransformHook()', () => {
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
   });
 
-  it('compiles and watches every style dependency when a styleUrl is set', async () => {
+  it('imports the style module of the styleUrl, leaving its compilation to the style module', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata({ styleUrl: './foo.css' });
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(compileStyle).mockReturnValue({
-      cssText: '.a { color: red; }',
-      dependencyPaths: ['/src/foo/foo.css', '/src/foo/partial.css']
-    });
     const state = createState();
     const hook = createTransformHook(state);
     const ctx = createPluginContext();
@@ -281,25 +275,11 @@ describe('createTransformHook()', () => {
     await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
     const stylePath = resolve(dirname(COMPONENT_PATH), './foo.css');
-    expect(compileStyle).toHaveBeenCalledWith(stylePath, state.host);
-    expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/foo.css');
-    expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/partial.css');
-    expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/foo.css', COMPONENT_PATH);
-    expect(registerStyleDependency).toHaveBeenCalledWith('/src/foo/partial.css', COMPONENT_PATH);
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', '.a { color: red; }');
-  });
-
-  it('injects no CSS when style compilation yields no CSS text', async () => {
-    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
-    const metadata = createMetadata({ styleUrl: './foo.css' });
-    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(compileStyle).mockReturnValue({ cssText: undefined, dependencyPaths: [] });
-    const state = createState();
-    const hook = createTransformHook(state);
-
-    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
-
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined);
+    expect(createStyleModuleSpecifier).toHaveBeenCalledWith(stylePath);
+    expect(registerStyleDependency).toHaveBeenCalledWith(stylePath, COMPONENT_PATH);
+    expect(state.host.readFile).not.toHaveBeenCalledWith(stylePath);
+    expect(ctx.addWatchFile).not.toHaveBeenCalledWith(stylePath);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module');
   });
 
   it('logs an error and returns null when template compilation throws', async () => {
@@ -363,7 +343,7 @@ describe('createTransformHook()', () => {
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('second problem'));
   });
 
-  it('processes every declared component sharing the same render imports of the file', async () => {
+  it('processes every declared component sharing the same module imports of the file', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {} class BarComponent {}');
     const fooMetadata = createMetadata({ className: 'FooComponent' });
     const barMetadata = createMetadata({ className: 'BarComponent', selectors: ['bar-el'], templateUrl: './bar.xd.component.html' });

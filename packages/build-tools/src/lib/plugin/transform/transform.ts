@@ -12,8 +12,7 @@ import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
-import { createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
-import { compileStyle } from '../style/compile-style';
+import { createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
@@ -45,7 +44,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     const jsSourceFile = createSourceFile(componentPath, code, ScriptTarget.Latest, true, ScriptKind.JS);
     const magicString = new MagicString(code);
 
-    const renderImports = new Map<string, string>();
+    const moduleImports = new Map<string, string>();
     for (const [className, metadata] of metadatas.entries()) {
       // TODO className is not unique, we can't use it as a key for the metadata cache
       registerMetadata(className, metadata);
@@ -78,16 +77,15 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         }
       }
 
-      let cssContent: string | undefined;
+      /*
+        The stylesheet is compiled once per style file in its own module (see the load hook),
+        which watches every file it depends on.
+      */
+      let styleModuleSpecifier: string | undefined;
       if (styleUrl) {
         const stylePath = resolve(folder, styleUrl);
-        const styleResult = compileStyle(stylePath, state.host);
-        cssContent = styleResult.cssText;
-
-        for (const dependencyPath of styleResult.dependencyPaths) {
-          this.addWatchFile(dependencyPath);
-          registerStyleDependency(dependencyPath, componentPath);
-        }
+        registerStyleDependency(stylePath, componentPath);
+        styleModuleSpecifier = createStyleModuleSpecifier(stylePath);
       }
 
       let signals: string[];
@@ -112,7 +110,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       try {
-        injectTemplate(magicString, jsSourceFile, renderImports, className, createTemplateModuleSpecifier(templatePath, signals), cssContent);
+        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, signals), styleModuleSpecifier);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return null;

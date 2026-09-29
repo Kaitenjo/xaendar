@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
+import { RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
@@ -40,6 +41,9 @@ export function extractImportedComponentPaths(templateSource: string, templateDi
 /**
  * Strips CSS block comments (`/* ... *\/`) from a stylesheet, used to detect
  * stylesheets that contain no actual rules.
+ *
+ * @param css - The raw stylesheet content.
+ * @returns The stylesheet content without block comments.
  */
 export function stripCssComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -106,16 +110,67 @@ export function generateTemplateModule(compiledFunctions: string): string {
 }
 
 /**
+ * Builds the import specifier of the module exporting the compiled stylesheet of a style file.
+ *
+ * The stylesheet only depends on the style file, so every component using it, in the same file
+ * or in different ones, imports the very same module: the CSS is compiled and bundled only once,
+ * and a single `CSSStyleSheet` is shared by all of them.
+ *
+ * @param stylePath - Absolute path of the style file.
+ * @returns The import specifier, resolved by the plugin `resolveId` hook.
+ */
+export function createStyleModuleSpecifier(stylePath: string): string {
+  const path = stylePath.replace(/\\/g, '/');
+  return `${STYLE_MODULE_PREFIX}path=${encodeURIComponent(path)}&lang.js`;
+}
+
+/**
+ * Decodes the resolved id of a style module built from {@link createStyleModuleSpecifier}.
+ *
+ * @param id - The resolved module id.
+ * @returns The style path encoded in the id, or `undefined` if `id` doesn't identify a style module.
+ */
+export function parseStyleModuleId(id: string): string | undefined {
+  if (!id.startsWith(RESOLVED_STYLE_MODULE_PREFIX)) {
+    return undefined;
+  }
+
+  return new URLSearchParams(slice(id, RESOLVED_STYLE_MODULE_PREFIX.length)).get('path') ?? undefined;
+}
+
+/**
+ * Wraps the compiled CSS of a style file into an ES module exporting it as a `sheet` `CSSStyleSheet`.
+ * A style file with no actual rules exports an `undefined` sheet, so no stylesheet is adopted.
+ *
+ * @param cssText - The compiled CSS.
+ * @returns The source code of the style module.
+ */
+export function generateStyleModule(cssText: string | undefined): string {
+  if (!cssText?.trim().length) {
+    return 'export const sheet = undefined;\n';
+  }
+
+  return [
+    'const sheet = new CSSStyleSheet();',
+    `sheet.replaceSync(${JSON.stringify(cssText)});`,
+    '',
+    'export { sheet };',
+    ''
+  ].join('\n');
+}
+
+/**
  * Wires a component to its compiled template into the shared `MagicString`
  * wrapping the whole transpiled component file, applying the three required
- * mutations — render function registration, scoped CSS stylesheet, and missing
- * runtime imports — each in its own dedicated function.
+ * mutations — template and style module imports, render function registration,
+ * and missing runtime imports — each in its own dedicated function.
  *
- * The render function isn't generated inline: it is imported from the template
- * module identified by `templateModuleSpecifier`, shared by every component using
- * the same template, and registered along with the stylesheet via `_defineRender`
+ * Neither the render function nor the stylesheet is generated inline: they are
+ * imported from the template module identified by `templateModuleSpecifier` and
+ * from the style module identified by `styleModuleSpecifier`, each shared by every
+ * component using the same template or style file, and registered via `_defineRender`
  * in a static block of the class. Components of the same file sharing the same
- * template module share a single import of it too.
+ * module share a single import of it too.
  *
  * All offsets are resolved against `sourceFile`, which must be parsed once
  * from the file's ORIGINAL (pre-injection) text and reused across every
@@ -130,19 +185,20 @@ export function generateTemplateModule(compiledFunctions: string): string {
  *   across every component declared in it.
  * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source,
  *   shared across every component declared in it.
- * @param renderImports - The render functions already imported in the file, keyed by template
- *   module specifier and mapped to their local binding. Must be created once per file, empty,
- *   and shared across every component declared in it: the component finding it empty is the
- *   first one of the file.
+ * @param moduleImports - The template and style modules already imported in the file, keyed by
+ *   module specifier and mapped to the local binding of their export. Must be created once per
+ *   file, empty, and shared across every component declared in it: the component finding it
+ *   empty is the first one of the file.
  * @param className - The name of the target class in this file.
  * @param templateModuleSpecifier - The import specifier of the compiled template module
  *   (see {@link createTemplateModuleSpecifier}).
- * @param cssContent - Raw CSS content to inject as a shared `CSSStyleSheet`, if not empty.
+ * @param styleModuleSpecifier - The import specifier of the compiled style module
+ *   (see {@link createStyleModuleSpecifier}), if the component has a stylesheet.
  * @throws When `className` isn't found, or its decorator finalizer static
  *   block isn't found — meaning the component file wasn't scaffolded
  *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectTemplate(s: MagicString, sourceFile: SourceFile, renderImports: Map<string, string>, className: string, templateModuleSpecifier: string, cssContent?: string): void {
+export function injectTemplate(s: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, styleModuleSpecifier?: string): void {
   const classDecl = findClassDeclarationByName(sourceFile, className);
   if (!classDecl) {
     throw `Could not find class "${className}" in the transpiled output.`;
@@ -158,9 +214,9 @@ export function injectTemplate(s: MagicString, sourceFile: SourceFile, renderImp
     calling babel's `_applyDecs` helper (falling back to the finalizer block when there's none).
   */
   const registrationBlock = classDecl.members.find(isApplyDecoratorsStaticBlock) ?? placeholderBlock;
-  const first = renderImports.size === 0;
-  const styleSheetName = insertStyleSnippet(s, sourceFile, classDecl, className, cssContent);
-  const renderName = insertRenderImport(s, renderImports, className, templateModuleSpecifier);
+  const first = moduleImports.size === 0;
+  const renderName = insertModuleImport(s, moduleImports, 'render', `__${className}_render`, templateModuleSpecifier);
+  const styleSheetName = styleModuleSpecifier && insertModuleImport(s, moduleImports, 'sheet', `__${className}_sheet`, styleModuleSpecifier);
   insertRenderRegistration(s, sourceFile, registrationBlock, renderName, styleSheetName);
   if (first) {
     insertRequiredImports(s);
@@ -174,6 +230,13 @@ export function injectTemplate(s: MagicString, sourceFile: SourceFile, renderImp
  * Note: the location currently points into the generated shim file, not
  * the original DSL template — remapping to template positions is not yet
  * implemented (see the module-level doc comment on `xaendarPlugin`).
+ *
+ * @param templateSource - The raw content of the template the shim was generated from.
+ * @param diagnostic - The TS diagnostic reported on the shim.
+ * @param bodyLineOffset - The line of the shim where the template body starts.
+ * @param mappingTable - The mapping from shim positions to template spans.
+ * @returns The diagnostic message, prefixed with its template position and followed by the
+ *   offending template snippet when the diagnostic can be mapped back to the template.
  */
 export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, mappingTable: TypeCheckResult['mappingTable']): string {
   const message = typeof diagnostic.messageText === 'string' ? diagnostic.messageText : diagnostic.messageText.messageText;
@@ -264,21 +327,37 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
 }
 
 /**
- * Imports the render function of the template module, unless another component of the file
- * sharing the same template module has already imported it.
- * @returns The local binding of the render function.
+ * Imports `exportName` from the module identified by `specifier` as `localName`, unless another
+ * component of the file sharing the same module has already imported it.
+ *
+ * @param s - The `MagicString` wrapping the whole component file.
+ * @param moduleImports - The modules already imported in the file (see {@link injectTemplate}).
+ * @param exportName - The name of the export to import.
+ * @param localName - The local binding to import the export as, if not already imported.
+ * @param specifier - The import specifier of the module.
+ * @returns The local binding of the imported export.
  */
-function insertRenderImport(s: MagicString, renderImports: Map<string, string>, className: string, templateModuleSpecifier: string): string {
-  let renderName = renderImports.get(templateModuleSpecifier);
-  if (!renderName) {
-    renderName = `__${className}_render`;
-    renderImports.set(templateModuleSpecifier, renderName);
-    s.prepend(`import { render as ${renderName} } from ${JSON.stringify(templateModuleSpecifier)};\n`);
+function insertModuleImport(s: MagicString, moduleImports: Map<string, string>, exportName: string, localName: string, specifier: string): string {
+  const importedName = moduleImports.get(specifier);
+  if (importedName) {
+    return importedName;
   }
 
-  return renderName;
+  moduleImports.set(specifier, localName);
+  s.prepend(`import { ${exportName} as ${localName} } from ${JSON.stringify(specifier)};\n`);
+  return localName;
 }
 
+/**
+ * Inserts the static block registering the render function and the stylesheet of the component
+ * via `_defineRender`, right before `registrationBlock`.
+ *
+ * @param s - The `MagicString` wrapping the whole component file.
+ * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source.
+ * @param registrationBlock - The static block the registration is inserted before.
+ * @param renderName - The local binding of the render function.
+ * @param styleSheetName - The local binding of the stylesheet, if the component has one.
+ */
 function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, renderName: string, styleSheetName?: string): void {
   const args = `this, ${renderName}${styleSheetName ? `, ${styleSheetName}` : ''}`;
 
@@ -286,32 +365,21 @@ function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, regist
 }
 
 /**
- * Inserts the shared `CSSStyleSheet` of the component before its class declaration.
- * @returns The name of the stylesheet variable, or `undefined` if there's no CSS to inject.
+ * Imports the runtime helpers needed by the injected code, once per file.
+ *
+ * @param s - The `MagicString` wrapping the whole component file.
  */
-function insertStyleSnippet(s: MagicString, sourceFile: SourceFile, classDecl: ClassDeclaration, className: string, cssContent?: string): string | undefined {
-  if (!cssContent?.trim().length) {
-    return undefined;
-  }
-
-  const styleSheetName = `__${className}_sheet`;
-  s.appendLeft(classDecl.getStart(sourceFile), buildStyleSnippet(styleSheetName, cssContent));
-  return styleSheetName;
-}
-
 function insertRequiredImports(s: MagicString): void {
   s.prepend('import { _defineRender } from \'@xaendar/core\';\n');
 }
 
-function buildStyleSnippet(varName: string, css: string): string {
-  const escaped = css.replace(/\\/g, '\\\\').replace(/`/g, '\`').replace(/\$\{/g, '\${');
-  return [
-    `const ${varName} = new CSSStyleSheet();`,
-    `${varName}.replaceSync(\`${escaped}\`);`,
-    '',
-  ].join('\n');
-}
-
+/**
+ * Finds a top-level class declaration by name.
+ *
+ * @param sourceFile - The AST to search in.
+ * @param name - The name of the class.
+ * @returns The first class declaration named `name`, or `undefined` if there's none.
+ */
 function findClassDeclarationByName(sourceFile: SourceFile, name: string): ClassDeclaration | undefined {
   let found: ClassDeclaration | undefined;
   forEachChild(sourceFile, node => {
@@ -322,6 +390,13 @@ function findClassDeclarationByName(sourceFile: SourceFile, name: string): Class
   return found;
 }
 
+/**
+ * Checks whether `node` is the static block emitted by babel to finalize the decorated class,
+ * i.e. a static block containing only an argument-less call to `_initClass` (e.g. `_initClass2()`).
+ *
+ * @param node - The node to check.
+ * @returns `true` if `node` is the decorator finalizer static block.
+ */
 function isDecoratorInitStaticBlock(node: Node): node is ClassStaticBlockDeclaration {
   if (!isClassStaticBlockDeclaration(node)) {
     return false;
@@ -344,11 +419,20 @@ function isDecoratorInitStaticBlock(node: Node): node is ClassStaticBlockDeclara
 /**
  * Checks whether `node` is the static block emitted by babel to apply the class decorators,
  * i.e. a static block containing a call to the `_applyDecs` helper (e.g. `_applyDecs2311`).
+ *
+ * @param node - The node to check.
+ * @returns `true` if `node` is the static block applying the decorators.
  */
 function isApplyDecoratorsStaticBlock(node: Node): node is ClassStaticBlockDeclaration {
   return isClassStaticBlockDeclaration(node) && containsApplyDecoratorsCall(node);
 }
 
+/**
+ * Checks whether `node`, or any of its descendants, is a call to babel's `_applyDecs` helper.
+ *
+ * @param node - The node to search in.
+ * @returns `true` if a call to the `_applyDecs` helper is found.
+ */
 function containsApplyDecoratorsCall(node: Node): boolean {
   if (isCallExpression(node) && isIdentifier(node.expression) && /^_applyDecs\w*$/.test(node.expression.text)) {
     return true;
