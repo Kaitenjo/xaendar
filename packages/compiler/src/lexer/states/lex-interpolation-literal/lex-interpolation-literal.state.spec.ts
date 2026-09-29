@@ -36,10 +36,10 @@ describe('lexInterpolationliteral', () => {
     expect(lexInterpolationliteral(cursor, context).state).toBe(LexerState.TAG_BODY);
   });
 
-  it('restores DYNAMIC_BINDING_BODY for an ATTRIBUTE interpolation nested in a dynamic binding', () => {
+  it('restores CONDITIONAL_BINDING_BODY for an ATTRIBUTE interpolation nested in a conditional binding', () => {
     const cursor = new LexerCursor('`text`}"');
-    const context: LexerTransitionFunctionContext = { history: [LexerState.DYNAMIC_BINDING_START, LexerState.ATTRIBUTE], tokens: [] };
-    expect(lexInterpolationliteral(cursor, context).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    const context: LexerTransitionFunctionContext = { history: [LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE], tokens: [] };
+    expect(lexInterpolationliteral(cursor, context).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
   it('throws when an ATTRIBUTE interpolation is not followed by a double quote', () => {

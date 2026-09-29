@@ -5,7 +5,7 @@ import { InputSignal } from '../../signals';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
-import type { RenderElementDynamicBinding } from '../../types/render-dynamic-binding.type';
+import type { RenderElementConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import { _Context, mountNode } from '../context/context.util';
@@ -25,15 +25,15 @@ import { _Context, mountNode } from '../context/context.util';
  * @param tagName - The HTML tag name of the element to create.
  * @param attributes - List of attribute descriptors to apply to the element.
  * @param events - List of event listener descriptors to attach to the element.
- * @param dynamicBindings - List of dynamic binding descriptors to apply to the element.
+ * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
  * @returns The newly created HTML element.
  */
-export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], dynamicBindings: RenderElementDynamicBinding[]): Element {
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[]): Element {
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
   bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
-  bindDynamicBindings(element, context, dynamicBindings);
+  bindConditionalBindings(element, context, conditionalBindings);
   return element;
 }
 
@@ -68,22 +68,22 @@ function bindEvents(element: Element, context: _Context, events: RenderElementEv
 }
 
 /**
- * Binds a list of dynamic bindings to an HTML element, creating child contexts for each binding and applying attributes, events, and nested dynamic bindings conditionally.
- * @param element - The element to bind the dynamic bindings to.
+ * Binds a list of conditional bindings to an HTML element, creating child contexts for each binding and applying attributes, events, and nested conditional bindings conditionally.
+ * @param element - The element to bind the conditional bindings to.
  * @param context - The current template execution scope.
- * @param dynamicBindings - The list of dynamic bindings to bind to the element.
+ * @param conditionalBindings - The list of conditional bindings to bind to the element.
  */
-function bindDynamicBindings(element: Element, context: _Context, dynamicBindings: RenderElementDynamicBinding[]): void {
-  for (let i = 0; i < dynamicBindings.length; i++) {
-    const dynamicBindingContext = context.addChild();
-    const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
+function bindConditionalBindings(element: Element, context: _Context, conditionalBindings: RenderElementConditionalBinding[]): void {
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const conditionalBindingContext = context.addChild();
+    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
     context.listen(effect(() => {
       if (condition()) {
-        bindAttributes(element, dynamicBindingContext, attributes);
-        bindEvents(element, dynamicBindingContext, events);
-        bindDynamicBindings(element, dynamicBindingContext, nestedDynamicBindings);
+        bindAttributes(element, conditionalBindingContext, attributes);
+        bindEvents(element, conditionalBindingContext, events);
+        bindConditionalBindings(element, conditionalBindingContext, nestedConditionalBindings);
       } else {
-        dynamicBindingContext.unlisten();
+        conditionalBindingContext.unlisten();
       }
     }));
   }

@@ -6,8 +6,8 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { lexEventParameter } from './lex-event-parameter.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
-const dynamicBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.DYNAMIC_BINDING_START],
+const conditionalBindingContext: LexerTransitionFunctionContext = {
+  history: [LexerState.CONDITIONAL_BINDING_START],
   tokens: []
 };
 
@@ -22,9 +22,9 @@ describe('lexEventParameter', () => {
     ]);
   });
 
-  it('resolves to DYNAMIC_BINDING_BODY when nested inside a dynamic binding', () => {
+  it('resolves to CONDITIONAL_BINDING_BODY when nested inside a conditional binding', () => {
     const cursor = new LexerCursor('a)"');
-    expect(lexEventParameter(cursor, dynamicBindingContext).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    expect(lexEventParameter(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
   it('keeps a comma inside brackets as part of the same parameter', () => {

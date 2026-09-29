@@ -80,11 +80,11 @@ export enum LexerState {
    */
   IMPORT_PATH = 'import-path',
   /**
-   * Consuming a dynamic binding start starting with `@(...`.
+   * Consuming a conditional binding start starting with `@(...`.
    */
-  DYNAMIC_BINDING_START = 'dynamic-binding-start',
+  CONDITIONAL_BINDING_START = 'conditional-binding-start',
   /**
-   * Consuming the content inside a dynamic binding started with `@(...`.
+   * Consuming the content inside a conditional binding started with `@(...`.
    */
-  DYNAMIC_BINDING_BODY = 'dynamic-binding-body'
+  CONDITIONAL_BINDING_BODY = 'conditional-binding-body'
 }

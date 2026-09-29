@@ -6,8 +6,8 @@ import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-v
 import { lexAttribute } from '../states/lex-attribute/lex-attribute.state';
 import { lexCaseFlowControlCondition } from '../states/lex-case-flow-control-condition/lex-case-flow-control-condition.state';
 import { lexDefaultFlowControlCondition } from '../states/lex-default-flow-control-condition/lex-default-flow-control-condition.state';
-import { lexDynamicBindingBody } from '../states/lex-dynamic-binding-body/lex-dynamic-binding-body.state';
-import { lexDynamicBindingStart } from '../states/lex-dynamic-binding-start/lex-dynamic-binding-start.state';
+import { lexConditionalBindingBody } from '../states/lex-conditional-binding-body/lex-conditional-binding-body.state';
+import { lexConditionalBindingStart } from '../states/lex-conditional-binding-start/lex-conditional-binding-start.state';
 import { lexEventHandler } from '../states/lex-event-handler/lex-event-handler.state';
 import { lexEventParameter } from '../states/lex-event-parameter/lex-event-parameter.state';
 import { lexEvent } from '../states/lex-event/lex-event.state';
@@ -75,8 +75,8 @@ export class Lexer {
     [LexerState.INTERPOLATION_LITERAL]: lexInterpolationliteral,
     [LexerState.IMPORT]: lexImport,
     [LexerState.IMPORT_PATH]: lexImportPath,
-    [LexerState.DYNAMIC_BINDING_START]: lexDynamicBindingStart,
-    [LexerState.DYNAMIC_BINDING_BODY]: lexDynamicBindingBody
+    [LexerState.CONDITIONAL_BINDING_START]: lexConditionalBindingStart,
+    [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody
   }
 
   /**

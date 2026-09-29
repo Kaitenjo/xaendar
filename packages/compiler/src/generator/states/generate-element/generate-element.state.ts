@@ -1,6 +1,6 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
-import { DynamicBindingNode } from '../../../parser/types/nodes/dynamic-binding-node.type';
+import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
@@ -22,7 +22,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const isCustomElement = isValidCustomElementName(tagName, false);
   const attributes = await mapAttributes(node.attributes, compilerContext, tagName);
   const events = mapEvents(node.events, compilerContext);
-  const dynamicBindings = await mapDynamicBindings(node.dynamicBindings, compilerContext, tagName, isCustomElement);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, compilerContext, tagName, isCustomElement);
   const nodeName = getElementIdentifier(node, parentNode, index);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
@@ -60,11 +60,11 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     )
     : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} [],`;
 
-  dynamicBindings.length
+  conditionalBindings.length
     ? retVal.code.push(
       ...indent([
         '[',
-        ...indent(dynamicBindings),
+        ...indent(conditionalBindings),
         ']'
       ]),
       ');'
@@ -133,7 +133,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
       if (propertyMetadata) {
         /*
           Teorically this control should not be necessary due to the typechecker checking
-          if a dynamic binding has a required attribute or not. Required attributes cannot be used with dynamic bindings
+          if a conditional binding has a required attribute or not. Required attributes cannot be used with conditional bindings
           If typechecker is not correctly working this if prevents to generate code for required attributes
         */
         if (!propertyMetadata.required) {
@@ -210,19 +210,19 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   return mappedEvents;
 }
 
-async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compilerContext: CompilerContext, tagName: string, isCustomElement: boolean = false): Promise<string[]> {
-  const mappedDynamicBindings = new Array<string>();
+async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, tagName: string, isCustomElement: boolean = false): Promise<string[]> {
+  const mappedConditionalBindings = new Array<string>();
 
-  for (let i = 0; i < dynamicBindings.length; i++) {
-    const { condition, attributes, events, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
-    if (!attributes.length && !events.length && !nestedDynamicBindings.length) {
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
+    if (!attributes.length && !events.length && !nestedConditionalBindings.length) {
       continue;
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
     const mappedAttributes = await mapAttributes(attributes, compilerContext, tagName, isCustomElement);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedNestedDynamicBindings = await mapDynamicBindings(nestedDynamicBindings, compilerContext, tagName, isCustomElement);
+    const mappedNestedConditionalBindings = await mapConditionalBindings(nestedConditionalBindings, compilerContext, tagName, isCustomElement);
 
     const retVal = [
       '{',
@@ -259,25 +259,25 @@ async function mapDynamicBindings(dynamicBindings: DynamicBindingNode[], compile
         ])
       );
 
-    mappedNestedDynamicBindings.length
+    mappedNestedConditionalBindings.length
       ? retVal.push(
         ...indent([
-          'dynamicBindings: [',
-          ...indent(mappedNestedDynamicBindings),
+          'conditionalBindings: [',
+          ...indent(mappedNestedConditionalBindings),
           '],'
         ])
       )
       : retVal.push(
         ...indent([
-          'dynamicBindings: []'
+          'conditionalBindings: []'
         ])
       );
 
     retVal.push('}');
-    mappedDynamicBindings.push(...retVal);
+    mappedConditionalBindings.push(...retVal);
   };
 
-  return mappedDynamicBindings;
+  return mappedConditionalBindings;
 }
 
 function overrideCreateElement(tagName: string): string {

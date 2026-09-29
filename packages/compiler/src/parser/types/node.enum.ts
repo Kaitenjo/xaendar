@@ -51,7 +51,7 @@ export enum ASTNodeType {
    */
   Import,
   /**
-   * A dynamic binding node representing a conditionally evaluated expression or content.
+   * A conditional binding node representing a conditionally evaluated expression or content.
    */
-  DynamicBinding
+  ConditionalBinding
 }

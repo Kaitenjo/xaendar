@@ -12,10 +12,10 @@ describe('lexTagBody', () => {
     expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.EVENT });
   });
 
-  it('transitions to DYNAMIC_BINDING_START and consumes "@(" for a dynamic binding', () => {
+  it('transitions to CONDITIONAL_BINDING_START and consumes "@(" for a conditional binding', () => {
     const cursor = new LexerCursor('@(bind(), other)');
     const result = lexTagBody(cursor, context);
-    expect(result).toEqual({ state: LexerState.DYNAMIC_BINDING_START });
+    expect(result).toEqual({ state: LexerState.CONDITIONAL_BINDING_START });
     expect(cursor.peek()).toBe('b'.charCodeAt(0));
   });
 

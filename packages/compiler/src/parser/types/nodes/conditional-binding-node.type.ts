@@ -4,11 +4,11 @@ import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
 import type { EventNode } from './event-node.type';
 
-export type DynamicBindingNode = ASTNodeWithSpan<{
+export type ConditionalBindingNode = ASTNodeWithSpan<{
   /**
-   * Discriminant identifying this node as a dynamic binding.
+   * Discriminant identifying this node as a conditional binding.
    */
-  type: ASTNodeType.DynamicBinding,
+  type: ASTNodeType.ConditionalBinding,
   /**
    * The condition expression string.
    */
@@ -22,7 +22,7 @@ export type DynamicBindingNode = ASTNodeWithSpan<{
    */
   events: EventNode[],
   /**
-   * Nested dynamic binding nodes within this dynamic binding.
+   * Nested conditional binding nodes within this conditional binding.
    */
-  dynamicBindings: DynamicBindingNode[];
+  conditionalBindings: ConditionalBindingNode[];
 }>

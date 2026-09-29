@@ -21,11 +21,11 @@ describe('parseElement', () => {
     expect(node).toMatchObject({ tagName: 'input', children: [] });
   });
 
-  it('parses attributes, events and dynamic bindings', () => {
+  it('parses attributes, events and conditional bindings', () => {
     const [node] = parse('<div class="a" @click="f()" @(cond(), title="x")></div>') as ElementNode[];
     expect(node.attributes).toHaveLength(1);
     expect(node.events).toHaveLength(1);
-    expect(node.dynamicBindings).toHaveLength(1);
+    expect(node.conditionalBindings).toHaveLength(1);
   });
 
   it('allows the same event to be bound more than once', () => {
@@ -35,9 +35,9 @@ describe('parseElement', () => {
 
   it.each([
     ['on the element', '<div title="a" title="{b}"></div>'],
-    ['on the element and in a dynamic binding', '<div title="a" @(cond(), title="b")></div>'],
-    ['in two dynamic bindings', '<div @(cond(), title="a") @(other(), title="b")></div>'],
-    ['in a nested dynamic binding', '<div @(cond(), title="a" @(other(), title="b"))></div>']
+    ['on the element and in a conditional binding', '<div title="a" @(cond(), title="b")></div>'],
+    ['in two conditional bindings', '<div @(cond(), title="a") @(other(), title="b")></div>'],
+    ['in a nested conditional binding', '<div @(cond(), title="a" @(other(), title="b"))></div>']
   ])('throws when an attribute is bound more than once %s', (_description, template) => {
     expect(() => parse(template)).toThrow('Attribute "title" is bound more than once on <div>');
   });

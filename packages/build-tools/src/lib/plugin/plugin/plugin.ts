@@ -59,7 +59,7 @@ export function xaendarPlugin(): Plugin {
   const logError = (error: unknown, prefix: string): void => {
     const stack = error instanceof Error ? error.stack : '';
     const redMessage = `\x1b[31m\rXaendar: ${prefix}\n${error} ${stack?.slice(stack.indexOf('\n    at'))}\x1b[0m\n`;
-    (logger ?? console).error(redMessage.replace(/^Error:\s*/, ''));
+    (logger ?? console).error(redMessage);
   };
 
   const state: XaendarPluginState = {

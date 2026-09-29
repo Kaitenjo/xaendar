@@ -149,7 +149,7 @@ describe('xaendarPlugin()', () => {
     state.logError('a plain string error', 'Something failed');
 
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy.mock.calls[0][0]).toContain('Xaendar: Something failed - a plain string error');
+    expect(consoleErrorSpy.mock.calls[0][0]).toContain('Xaendar: Something failed\na plain string error');
 
     consoleErrorSpy.mockRestore();
   });

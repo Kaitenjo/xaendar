@@ -44,7 +44,7 @@ describe('typeCheckElement', () => {
       expect(lines.every(l => l.mappings?.length)).toBe(true);
     });
 
-    it('type-checks dynamic bindings as nested if blocks', () => {
+    it('type-checks conditional bindings as nested if blocks', () => {
       const lines = run('<div @(cond(), title="{name}" @click="f($event)" @(inner, id="{b}"))></div>');
 
       expect(text(lines)).toEqual([
@@ -108,7 +108,7 @@ describe('typeCheckElement', () => {
       expect(() => run('<my-el @nope="f()"></my-el>', metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
     });
 
-    it('type-checks inputs and outputs inside dynamic bindings', () => {
+    it('type-checks inputs and outputs inside conditional bindings', () => {
       const component = metadata(properties, { done: 'number' });
       const lines = run('<my-el @(cond, title="{name}" @done="f($event)" @(inner, label="x"))></my-el>', component);
 
@@ -131,13 +131,13 @@ describe('typeCheckElement', () => {
       ]);
     });
 
-    it('throws for an unknown event inside a dynamic binding', () => {
+    it('throws for an unknown event inside a conditional binding', () => {
       expect(() => run('<my-el @(cond, @nope="f()")></my-el>', metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
     });
 
-    it('throws when a required property is bound inside a dynamic binding', () => {
+    it('throws when a required property is bound inside a conditional binding', () => {
       const component = metadata({ title: new ComponentPropertyMetadata('title', 'string', { required: true }) });
-      expect(() => run('<my-el @(cond, title="b")></my-el>', component)).toThrow('Required property "title" of <my-el> cannot be bound inside a dynamic binding.');
+      expect(() => run('<my-el @(cond, title="b")></my-el>', component)).toThrow('Required property "title" of <my-el> cannot be bound inside a conditional binding.');
     });
   });
 });

@@ -1,7 +1,7 @@
 // states/type-check-element.state.ts
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
-import type { DynamicBindingNode } from '../../../parser/types/nodes/dynamic-binding-node.type';
+import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { EventNode } from '../../../parser/types/nodes/event-node.type';
 import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
@@ -12,7 +12,7 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
 
 /**
  * Type-checks an element node: emits the type-check lines for its
- * attributes, events and dynamic bindings, then recurses into its children.
+ * attributes, events and conditional bindings, then recurses into its children.
  *
  * Custom elements (tag names containing a dash) are checked against the
  * metadata of the component imported for their selector; native elements
@@ -48,17 +48,17 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
 
 /**
  * Type-checks the bindings of a custom element against its component metadata:
- * attributes, events and dynamic bindings.
+ * attributes, events and conditional bindings.
  *
  * Required properties must be bound directly on the element, since a
- * property bound inside a dynamic binding is only set when its condition
+ * property bound inside a conditional binding is only set when its condition
  * holds.
  *
  * @param node - The custom element node.
  * @param metadata - Metadata of the component registered for the element's selector.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If a required property is missing, is bound inside a dynamic binding, or an event is unknown.
+ * @throws If a required property is missing, is bound inside a conditional binding, or an event is unknown.
  */
 function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetadata, context: TypeCheckContext): Line[] {
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
@@ -66,12 +66,12 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
 
   /*
     Checked before the missing required properties, so that a required property
-    bound only inside a dynamic binding gets the more specific error.
+    bound only inside a conditional binding gets the more specific error.
   */
-  const dynamicBindingLines = typeCheckDynamicBindings(node.dynamicBindings, context, binding => {
+  const conditionalBindingLines = typeCheckConditionalBindings(node.conditionalBindings, context, binding => {
     for (const { name, span } of binding.attributes) {
       if (metadata.properties.get(name)?.required) {
-        throw new Error(`Required property "${name}" of <${node.tagName}> cannot be bound inside a dynamic binding.`, { cause: span });
+        throw new Error(`Required property "${name}" of <${node.tagName}> cannot be bound inside a conditional binding.`, { cause: span });
       }
     }
 
@@ -91,7 +91,7 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
   }
 
   lines.push(...typeCheckComponentEvents(node.events, node.tagName, metadata, context));
-  lines.push(...dynamicBindingLines);
+  lines.push(...conditionalBindingLines);
 
   return lines;
 }
@@ -178,7 +178,7 @@ function typeCheckComponentEvents(events: EventNode[], tagName: string, metadata
 
 /**
  * Type-checks the bindings of a native element: attributes, events and
- * dynamic bindings.
+ * conditional bindings.
  *
  * @param node - The native element node.
  * @param context - Current type-check scope.
@@ -188,7 +188,7 @@ function typeCheckNativeBindings(node: ElementNode, context: TypeCheckContext): 
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
     ...typeCheckNativeEvents(node.events, context),
-    ...typeCheckDynamicBindings(node.dynamicBindings, context, binding => [
+    ...typeCheckConditionalBindings(node.conditionalBindings, context, binding => [
       ...typeCheckNativeAttributes(binding.attributes, context),
       ...typeCheckNativeEvents(binding.events, context)
     ])
@@ -243,28 +243,28 @@ function typeCheckNativeEvents(events: EventNode[], context: TypeCheckContext): 
 }
 
 /**
- * Type-checks dynamic bindings as real, nested TypeScript `if` blocks: the
+ * Type-checks conditional bindings as real, nested TypeScript `if` blocks: the
  * condition is checked like an `@if` condition (and narrows inside the
  * block), while the bound attributes/events are checked by `bindings`,
  * exactly as if they were declared directly on the element.
  *
- * @param dynamicBindings - The dynamic bindings to type-check.
+ * @param conditionalBindings - The conditional bindings to type-check.
  * @param context - Current type-check scope.
  * @param bindings - Emits the type-check lines for a single binding's attributes and events.
  * @returns The generated type-check lines.
  */
-function typeCheckDynamicBindings(dynamicBindings: DynamicBindingNode[], context: TypeCheckContext, bindings: (binding: DynamicBindingNode) => Line[]): Line[] {
+function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNode[], context: TypeCheckContext, bindings: (binding: ConditionalBindingNode) => Line[]): Line[] {
   const lines = new Array<Line>();
 
-  for (let i = 0; i < dynamicBindings.length; i++) {
-    const binding = dynamicBindings[i];
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const binding = conditionalBindings[i];
     const condition = resolveExpression(binding.condition, context, { resolver: 'root' });
 
     lines.push(
       line('if (', mapped(condition.expression, binding.span), ') {'),
       ...indentLines([
         ...bindings(binding),
-        ...typeCheckDynamicBindings(binding.dynamicBindings, context, bindings)
+        ...typeCheckConditionalBindings(binding.conditionalBindings, context, bindings)
       ]),
       plain('}')
     );

@@ -99,13 +99,13 @@ export enum TokenType {
    */
   IMPORT_PATH,
   /**
-   * A dynamic binding, e.g. `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
+   * A conditional binding, e.g. `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
    */
-  DYNAMIC_BINDING,
+  CONDITIONAL_BINDING,
   /**
-   * The closing part of a dynamic binding, e.g. `")"` in `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
+   * The closing part of a conditional binding, e.g. `")"` in `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
    */
-  DYNAMIC_BINDING_CLOSE,
+  CONDITIONAL_BINDING_CLOSE,
   /**
    * Sentinel token emitted when the end of the input is reached.
    */

@@ -6,8 +6,8 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { lexAttribute } from './lex-attribute.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
-const dynamicBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.TAG_BODY, LexerState.DYNAMIC_BINDING_START, LexerState.ATTRIBUTE],
+const conditionalBindingContext: LexerTransitionFunctionContext = {
+  history: [LexerState.TAG_BODY, LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE],
   tokens: []
 };
 
@@ -36,14 +36,14 @@ describe('lexAttribute', () => {
     });
   });
 
-  it('transitions to DYNAMIC_BINDING_BODY when nested inside a dynamic binding (space terminator)', () => {
+  it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding (space terminator)', () => {
     const cursor = new LexerCursor('disabled ');
-    expect(lexAttribute(cursor, dynamicBindingContext).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    expect(lexAttribute(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
-  it('transitions to DYNAMIC_BINDING_BODY when nested inside a dynamic binding (> terminator)', () => {
+  it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding (> terminator)', () => {
     const cursor = new LexerCursor('disabled>');
-    expect(lexAttribute(cursor, dynamicBindingContext).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    expect(lexAttribute(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
   it('starts an attribute value after = and consumes the opening quote', () => {

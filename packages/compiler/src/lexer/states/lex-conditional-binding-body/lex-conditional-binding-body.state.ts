@@ -6,22 +6,22 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 
 /**
- * Lexes the body of a dynamic binding, handling the various characters that can appear within it.
+ * Lexes the body of a conditional binding, handling the various characters that can appear within it.
  * @param cursor - The lexer cursor pointing to the current position in the input.
  * @param context - The context object providing additional information for the transition function.
  * @returns An object containing the next lexer state and the tokens produced.
  */
-export function lexDynamicBindingBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let retVal!: LexerTransitionFunctionReturnType;
 
   while (read) {
     switch (cursor.peek()) {
       case AT_SIGN:
-        const dynamicBinding = cursor.peekMatch('@(');
+        const conditionalBinding = cursor.peekMatch('@(');
         let state = LexerState.EVENT;
-        if (dynamicBinding) {
-          state = LexerState.DYNAMIC_BINDING_START;
+        if (conditionalBinding) {
+          state = LexerState.CONDITIONAL_BINDING_START;
           // Consume `@(`.
           cursor.advance(2);
         }
@@ -40,14 +40,14 @@ export function lexDynamicBindingBody(cursor: LexerCursor, context: LexerTransit
         cursor.advance();
         retVal = {
           /*
-            Safe assertion. When the dynamic binding body is closed, there should always be a previous state in the history.
+            Safe assertion. When the conditional binding body is closed, there should always be a previous state in the history.
             It could be a
             TAG_BODY or another state depending on the context.
-            Another DYNAMIC_BINDING_BODY (improbable but we do support nesting)
+            Another CONDITIONAL_BINDING_BODY (improbable but we do support nesting)
           */
-          state: context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
-            type: TokenType.DYNAMIC_BINDING_CLOSE
+            type: TokenType.CONDITIONAL_BINDING_CLOSE
           }],
           popState: true
         };

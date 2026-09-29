@@ -6,8 +6,8 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { lexAttributeValue } from './lex-attribute-value.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
-const dynamicBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.TAG_BODY, LexerState.DYNAMIC_BINDING_START, LexerState.ATTRIBUTE],
+const conditionalBindingContext: LexerTransitionFunctionContext = {
+  history: [LexerState.TAG_BODY, LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE],
   tokens: []
 };
 
@@ -21,8 +21,8 @@ describe('lexAttributeValue', () => {
     });
   });
 
-  it('transitions to DYNAMIC_BINDING_BODY when nested inside a dynamic binding', () => {
+  it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding', () => {
     const cursor = new LexerCursor('foo")');
-    expect(lexAttributeValue(cursor, dynamicBindingContext).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    expect(lexAttributeValue(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 });

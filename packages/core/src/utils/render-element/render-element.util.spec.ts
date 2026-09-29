@@ -30,8 +30,8 @@ function createRoot(root: Record<string, unknown> = {}) {
 const render = (
   parent: Element,
   context: InstanceType<typeof _Context>,
-  { attributes = [], events = [], dynamicBindings = [], anchor = null }: { attributes?: unknown[], events?: unknown[], dynamicBindings?: unknown[], anchor?: Comment | null } = {}
-) => _renderElement(parent, context, anchor, 'div', attributes as never, events as never, dynamicBindings as never);
+  { attributes = [], events = [], conditionalBindings = [], anchor = null }: { attributes?: unknown[], events?: unknown[], conditionalBindings?: unknown[], anchor?: Comment | null } = {}
+) => _renderElement(parent, context, anchor, 'div', attributes as never, events as never, conditionalBindings as never);
 
 describe('element factories', () => {
   it('creates an HTML element', () => {
@@ -217,13 +217,13 @@ describe('_renderElement', () => {
     });
   });
 
-  describe('dynamic bindings', () => {
+  describe('conditional bindings', () => {
     const attribute = (name: string) => ({ name, value: 'on', setter: _setProperty, unbind: _removeAttribute });
 
     it('applies attributes only while the condition is true', async () => {
       const enabled = signal(false);
       const element = render(document.createElement('div'), createRoot(), {
-        dynamicBindings: [{ condition: () => enabled(), attributes: [attribute('data-on')], events: [], dynamicBindings: [] }]
+        conditionalBindings: [{ condition: () => enabled(), attributes: [attribute('data-on')], events: [], conditionalBindings: [] }]
       });
       expect(element.hasAttribute('data-on')).toBe(false);
 
@@ -240,11 +240,11 @@ describe('_renderElement', () => {
       const onClick = vi.fn();
       const enabled = signal(true);
       const element = render(document.createElement('div'), createRoot({ onClick }), {
-        dynamicBindings: [{
+        conditionalBindings: [{
           condition: () => enabled(),
           attributes: [],
           events: [{ name: 'click', handler: 'onClick', parameters: [] }],
-          dynamicBindings: []
+          conditionalBindings: []
         }]
       });
 
@@ -257,14 +257,14 @@ describe('_renderElement', () => {
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('supports nested dynamic bindings', async () => {
+    it('supports nested conditional bindings', async () => {
       const inner = signal(false);
       const element = render(document.createElement('div'), createRoot(), {
-        dynamicBindings: [{
+        conditionalBindings: [{
           condition: () => true,
           attributes: [],
           events: [],
-          dynamicBindings: [{ condition: () => inner(), attributes: [attribute('data-inner')], events: [], dynamicBindings: [] }]
+          conditionalBindings: [{ condition: () => inner(), attributes: [attribute('data-inner')], events: [], conditionalBindings: [] }]
         }]
       });
       expect(element.hasAttribute('data-inner')).toBe(false);
@@ -279,7 +279,7 @@ describe('_renderElement', () => {
       const enabled = signal(false);
       const context = createRoot();
       const element = render(document.createElement('div'), context, {
-        dynamicBindings: [{ condition: () => enabled(), attributes: [attribute('data-on')], events: [], dynamicBindings: [] }]
+        conditionalBindings: [{ condition: () => enabled(), attributes: [attribute('data-on')], events: [], conditionalBindings: [] }]
       });
 
       context.unlisten();

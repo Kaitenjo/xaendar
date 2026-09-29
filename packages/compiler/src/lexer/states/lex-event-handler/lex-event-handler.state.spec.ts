@@ -6,8 +6,8 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { lexEventHandler } from './lex-event-handler.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
-const dynamicBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.DYNAMIC_BINDING_START],
+const conditionalBindingContext: LexerTransitionFunctionContext = {
+  history: [LexerState.CONDITIONAL_BINDING_START],
   tokens: []
 };
 
@@ -28,9 +28,9 @@ describe('lexEventHandler', () => {
     });
   });
 
-  it('transitions to DYNAMIC_BINDING_BODY when nested inside a dynamic binding and the handler has no parameters', () => {
+  it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding and the handler has no parameters', () => {
     const cursor = new LexerCursor('onClick()"');
-    expect(lexEventHandler(cursor, dynamicBindingContext).state).toBe(LexerState.DYNAMIC_BINDING_BODY);
+    expect(lexEventHandler(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
   it('throws on a space inside the handler name', () => {

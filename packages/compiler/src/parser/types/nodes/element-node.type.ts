@@ -1,7 +1,7 @@
 import { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
-import { DynamicBindingNode } from './dynamic-binding-node.type';
+import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { EventNode } from './event-node.type';
 
 /**
@@ -29,7 +29,7 @@ export type ElementNode = ASTNodeWithSpan<{
    */
   children: ASTNode[];
   /**
-   * Dynamic binding nodes attached to this element.
+   * Conditional binding nodes attached to this element.
    */
-  dynamicBindings: DynamicBindingNode[];
+  conditionalBindings: ConditionalBindingNode[];
 }>

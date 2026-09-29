@@ -30,7 +30,7 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         cursor.advance();
         read = false;
         retVal = {
-          state: context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
@@ -49,7 +49,7 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
       case SLASH:
         read = false;
         retVal = {
-          state: context.history.at(-2) === LexerState.DYNAMIC_BINDING_START ? LexerState.DYNAMIC_BINDING_BODY : LexerState.TAG_BODY,
+          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]

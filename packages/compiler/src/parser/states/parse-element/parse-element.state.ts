@@ -5,11 +5,11 @@ import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import { AttributeNode } from '../../types/nodes/attribute-node.type';
-import { DynamicBindingNode } from '../../types/nodes/dynamic-binding-node.type';
+import { ConditionalBindingNode } from '../../types/nodes/conditional-binding-node.type';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import { EventNode } from '../../types/nodes/event-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { parseDynamicBinding } from '../parse-dynamic-binding/parse-dynamic-binding.state';
+import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 
 /**
@@ -27,7 +27,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   const attributes = new Array<AttributeNode>();
   const events = new Array<EventNode>();
-  const dynamicBindings = new Array<DynamicBindingNode>();
+  const conditionalBindings = new Array<ConditionalBindingNode>();
   let read = true;
 
   while (read) {
@@ -41,8 +41,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         events.push(parseEvent(cursor, parseNode, token));
         break;
       
-      case TokenType.DYNAMIC_BINDING:
-        dynamicBindings.push(parseDynamicBinding(cursor, parseNode, token));
+      case TokenType.CONDITIONAL_BINDING:
+        conditionalBindings.push(parseConditionalBinding(cursor, parseNode, token));
         break;
 
       default:
@@ -50,7 +50,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     }
   }
 
-  assertUniqueAttributes(tagName, attributes, dynamicBindings);
+  assertUniqueAttributes(tagName, attributes, conditionalBindings);
 
   const peekedTokenType = cursor.peek().type;
   switch (peekedTokenType) {
@@ -68,7 +68,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         attributes,
         events,
         children: [],
-        dynamicBindings
+        conditionalBindings
       };
     
     default:
@@ -93,27 +93,27 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     attributes,
     events,
     children,
-    dynamicBindings
+    conditionalBindings
   };
 }
 
 /**
  * Ensures every attribute/property is bound at most once on an element,
- * across the element itself and all of its (nested) dynamic bindings.
+ * across the element itself and all of its (nested) conditional bindings.
  *
- * A dynamic binding cannot share an attribute with the element or with
- * another dynamic binding: when its condition turns false the runtime
+ * A conditional binding cannot share an attribute with the element or with
+ * another conditional binding: when its condition turns false the runtime
  * unbinds the attribute (removing it or restoring the property's default),
  * which would clobber the value set by the other binding.
  * Events are not checked, since an element may listen to the same event more than once.
  *
  * @param tagName - Tag name of the element, used in the error message.
  * @param attributes - Attribute nodes to check.
- * @param dynamicBindings - Dynamic bindings whose attributes are checked recursively.
+ * @param conditionalBindings - Conditional bindings whose attributes are checked recursively.
  * @param bound - Attribute names already bound on the element.
  * @throws If an attribute is bound more than once.
  */
-function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], dynamicBindings: DynamicBindingNode[], bound = new Set<string>()): void {
+function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], conditionalBindings: ConditionalBindingNode[], bound = new Set<string>()): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, span } = attributes[i];
     if (bound.has(name)) {
@@ -123,9 +123,9 @@ function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], dy
     bound.add(name);
   }
 
-  for (let i = 0; i < dynamicBindings.length; i++) {
-    const { attributes, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
-    assertUniqueAttributes(tagName, attributes, nestedDynamicBindings, bound);
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { attributes, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
+    assertUniqueAttributes(tagName, attributes, nestedConditionalBindings, bound);
   }
 }
 

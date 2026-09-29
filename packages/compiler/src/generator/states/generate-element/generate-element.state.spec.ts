@@ -79,7 +79,7 @@ describe('generateElement', () => {
     expect(functionsToProcess?.get(`${tag}0Children`)?.fn.precode).toBe(precode);
   });
 
-  describe('dynamic bindings', () => {
+  describe('conditional bindings', () => {
     it('skips bindings without content', async () => {
       const { code } = await run('<div @(cond(),)></div>');
       expect(code).toEqual(['const div0 = _renderElement(root, context, null, \'div\', [], [], []);']);
@@ -92,7 +92,7 @@ describe('generateElement', () => {
       expect(output).toContain('condition: () => this.cond(),');
       expect(output).toContain('attributes: [');
       expect(output).toContain('events: [');
-      expect(output).toContain('dynamicBindings: [');
+      expect(output).toContain('conditionalBindings: [');
       expect(output).toContain('unbind: _removeAttribute');
     });
 
@@ -102,7 +102,7 @@ describe('generateElement', () => {
 
       expect(output).toContain('attributes: [],');
       expect(output).toContain('events: [],');
-      expect(output).toContain('dynamicBindings: []');
+      expect(output).toContain('conditionalBindings: []');
     });
 
     it('uses the component metadata to describe known optional properties', async () => {

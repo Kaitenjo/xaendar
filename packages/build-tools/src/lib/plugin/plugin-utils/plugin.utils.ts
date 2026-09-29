@@ -87,7 +87,8 @@ export function parseTemplateModuleId(id: string): TemplateModuleRequest | undef
   const signals = new URLSearchParams(slice(id, queryIndex + 1)).get('signals');
   return {
     templatePath: slice(id, RESOLVED_TEMPLATE_MODULE_PREFIX.length, queryIndex),
-    signals: signals?.split(',') ?? []
+    // An empty list is encoded as `signals=`, which `split` would turn into `['']`
+    signals: signals ? signals.split(',') : []
   };
 }
 
