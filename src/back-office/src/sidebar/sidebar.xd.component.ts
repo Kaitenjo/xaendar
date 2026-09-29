@@ -18,6 +18,9 @@ export class SidebarComponent extends BaseWebComponent {
   @Property('Default value without binding')
   public accessor text!: InputSignal<string>;
 
+  @Property('Default value without binding')
+  public accessor text2!: InputSignal<string>;
+  
   @Property.required({ alias: 'collapsed' })
   public accessor inputCollapsed!: InputSignal<boolean>;
   

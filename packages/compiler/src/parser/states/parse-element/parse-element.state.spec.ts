@@ -28,6 +28,20 @@ describe('parseElement', () => {
     expect(node.dynamicBindings).toHaveLength(1);
   });
 
+  it('allows the same event to be bound more than once', () => {
+    const [node] = parse('<div @click="f()" @click="g()" @(cond(), @click="h()")></div>') as ElementNode[];
+    expect(node.events).toHaveLength(2);
+  });
+
+  it.each([
+    ['on the element', '<div title="a" title="{b}"></div>'],
+    ['on the element and in a dynamic binding', '<div title="a" @(cond(), title="b")></div>'],
+    ['in two dynamic bindings', '<div @(cond(), title="a") @(other(), title="b")></div>'],
+    ['in a nested dynamic binding', '<div @(cond(), title="a" @(other(), title="b"))></div>']
+  ])('throws when an attribute is bound more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Attribute "title" is bound more than once on <div>');
+  });
+
   it('skips children for which parseNode returns nothing', () => {
     const tokens: Token[] = [
       { type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } },

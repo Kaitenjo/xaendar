@@ -3,7 +3,7 @@
 @import { FormComponent } from '../form/form.xd.component.ts'
 
 <div class="shell">
-  <app-sidebar @(applyDinamicBinding(), text="{counter()}") collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  <app-sidebar @(applyDinamicBinding(), text="{counter().toString()}" @(applyDinamicBinding2(), text2="{counter2().toString()}")) collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
   
   <div class="shell__main">
     <app-topbar @menuToggle="onSidebarToggle()" />
@@ -16,6 +16,12 @@
         </button>
         <button @click="onTextToggle()">
           Increase Value
+        </button>
+        <button @click="onApplyDinamicBindingToggle2()">
+          Toggle dinamic binding 2
+        </button>
+        <button @click="onTextToggle2()">
+          Increase Value 2
         </button>
       </div>
     </main>

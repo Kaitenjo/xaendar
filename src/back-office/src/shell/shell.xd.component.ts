@@ -22,11 +22,23 @@ export class ShellComponent extends BaseWebComponent {
 
   public readonly counter = signal(1);
 
+  public readonly applyDinamicBinding2 = signal(true);
+
+  public readonly counter2 = signal(1);
+
   public onApplyDinamicBindingToggle(): void {
     this.applyDinamicBinding.update(value => !value);
   }
 
   public onTextToggle(): void {
     this.counter.update(value => value + 1);
+  }
+
+  public onApplyDinamicBindingToggle2(): void {
+    this.applyDinamicBinding2.update(value => !value);
+  }
+
+  public onTextToggle2(): void {
+    this.counter2.update(value => value + 1);
   }
 }

@@ -50,6 +50,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     }
   }
 
+  assertUniqueAttributes(tagName, attributes, dynamicBindings);
+
   const peekedTokenType = cursor.peek().type;
   switch (peekedTokenType) {
     // Consume TAG_OPEN_END if present: <div>
@@ -93,6 +95,38 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     children,
     dynamicBindings
   };
+}
+
+/**
+ * Ensures every attribute/property is bound at most once on an element,
+ * across the element itself and all of its (nested) dynamic bindings.
+ *
+ * A dynamic binding cannot share an attribute with the element or with
+ * another dynamic binding: when its condition turns false the runtime
+ * unbinds the attribute (removing it or restoring the property's default),
+ * which would clobber the value set by the other binding.
+ * Events are not checked, since an element may listen to the same event more than once.
+ *
+ * @param tagName - Tag name of the element, used in the error message.
+ * @param attributes - Attribute nodes to check.
+ * @param dynamicBindings - Dynamic bindings whose attributes are checked recursively.
+ * @param bound - Attribute names already bound on the element.
+ * @throws If an attribute is bound more than once.
+ */
+function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], dynamicBindings: DynamicBindingNode[], bound = new Set<string>()): void {
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, span } = attributes[i];
+    if (bound.has(name)) {
+      throw new Error(`Attribute "${name}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+
+    bound.add(name);
+  }
+
+  for (let i = 0; i < dynamicBindings.length; i++) {
+    const { attributes, dynamicBindings: nestedDynamicBindings } = dynamicBindings[i];
+    assertUniqueAttributes(tagName, attributes, nestedDynamicBindings, bound);
+  }
 }
 
 /**
