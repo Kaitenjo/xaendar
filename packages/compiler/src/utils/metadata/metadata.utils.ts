@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ComponentDeclaration, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { ClassDeclarationWithName, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
@@ -37,8 +37,8 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
   const declarations = getClassAndWebComponentDeclarations(sourceFile);
   for (let i = 0; i < declarations.length; i++) {
     const { klass, decorator } = declarations[i];
-    const { selectors, styleUrl, templateUrl } = extractMetadaFromDecorator(decorator);
-    if (!selectors?.length || !templateUrl) {
+    const { selector, styleUrl, templateUrl } = extractMetadaFromDecorator(decorator);
+    if (!selector || !templateUrl) {
       return;
     }
 
@@ -100,7 +100,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     metadatas.set(className, {
       type: 'component',
       className,
-      selectors,
+      selector,
       styleUrl,
       templateUrl,
       properties: mappedProperties,
@@ -180,15 +180,14 @@ function hasWebComponentDecorator(classDecl: ClassDeclaration): WebComponentDeco
 }
 
 /**
- * Extracts selector(s) from @WebComponent decorator arguments.
- * 
+ * Extracts the selector, template and style urls from @WebComponent decorator arguments.
+ *
  * @example
- * @WebComponent({ selector: 'my-button' })
- * @WebComponent({ selector: ['my-btn', 'button-el'] })
+ * @WebComponent({ selector: 'my-button', templateUrl: './my-button.xd.component.html' })
  */
-function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<ComponentMetadata, 'selectors' | 'templateUrl' | 'styleUrl'> {
+function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl'> {
   const retVal: ReturnType<typeof extractMetadaFromDecorator> = {
-    selectors: [],
+    selector: '',
     templateUrl: '',
     styleUrl: undefined,
   };
@@ -200,7 +199,7 @@ function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<Comp
     }
 
     const arg = args[0];
-    // Expect an object literal: { selector: '...' } or { selector: [...] }
+    // Expect an object literal: { selector: '...' }
     if (!arg || !isObjectLiteralExpression(arg)) {
       return retVal;
     }
@@ -210,7 +209,7 @@ function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<Comp
       if (isPropertyAssignment(prop) && isIdentifier(prop.name)) {
         switch (prop.name.text) {
           case 'selector':
-            retVal.selectors = extractStringOrStringArray(prop.initializer);
+            retVal.selector = isStringLiteral(prop.initializer) ? prop.initializer.text : '';
             break;
           case 'templateUrl':
             retVal.templateUrl = isStringLiteral(prop.initializer) ? prop.initializer.text : '';
@@ -226,17 +225,6 @@ function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<Comp
   } catch {
     return retVal;
   }
-}
-
-/**
- * Extracts a string or string array value from a TypeScript node.
- */
-function extractStringOrStringArray(node: Expression): string[] {
-  if (isStringLiteral(node)) {
-    return [node.text];
-  }
-
-  return isArrayLiteralExpression(node) ? node.elements?.filter(node => isStringLiteral(node)).map(node => node.text) : [];
 }
 
 /**

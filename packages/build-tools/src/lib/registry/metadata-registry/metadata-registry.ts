@@ -1,5 +1,6 @@
 import { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { MetadataEntry } from '../../types/metadata-entry';
+import type { SelectorOwner } from '../../types/selector-owner.type';
 
 /**
  * Entries idle for longer than this are reclaimed by the sweep (see `sweepIdleEntries`).
@@ -11,12 +12,19 @@ const IDLE_TTL_MS = 5 * 60_000;
 const SWEEP_INTERVAL_MS = 60_000;
 
 /**
- * Metadata registry storing component and directive metadata entries keyed by unique identifiers.
+ * Metadata registry storing component and directive metadata entries keyed by class name.
+ * The value is a map to support multiple component with the same ClassName across different files.
  * (e.g.)
  *   {
- *     "TopbarComponent": {
- *       metadata: { ... },
- *       lastAccessed: 1680000000000
+ *     "TopbarComponent": Map{
+ *       "/src/app/topbar/topbar.xd.component.ts": {
+ *         metadata: { ... },
+ *         lastAccessed: 1680000000000
+ *       },
+ *       "/src/app2/topbar/topbar.xd.component.ts": {
+ *         metadata: { ... },
+ *         lastAccessed: 1680000000000
+ *       }
  *     }
  *   }
  *
@@ -34,43 +42,68 @@ const metadatas = new Map<string, Map<string, MetadataEntry>>();
  */
 const filePathToMetadataKeys = new Map<string, Set<string>>();
 /**
+ * Maps each selector to the single component owning it: unlike class names, selectors must be
+ * unique, as a custom element name can be defined only once at runtime.
+ * Ownerships are not reclaimed by the idle sweep, otherwise a duplicated selector declared after
+ * the sweep of its first owner would go unnoticed.
+ * (e.g.)
+ *   {
+ *     "xd-topbar": { ownerFile: "/src/app/topbar/topbar.xd.component.ts", className: "TopbarComponent" }
+ *   }
+ */
+const selectorOwners = new Map<string, SelectorOwner>();
+/**
+ * Maps component file paths to the selectors they own, to release them when the file is
+ * re-transformed or deleted.
+ * (e.g.)
+ *   {
+ *     "/src/app/topbar/topbar.xd.component.ts": new Set(["xd-topbar"])
+ *   }
+ */
+const filePathToSelectors = new Map<string, Set<string>>();
+/**
  * Timer handle for the periodic idle sweep.
  */
 let sweepTimer: NodeJS.Timeout | undefined;
 
 /**
  * Registers a metadata mapping for a component or directive.
- * @param key - The unique identifier for the metadata mapping
+ * @param className - The class name of the component or directive
  * @param metadataMapping - The metadata object to register
  */
-export function registerMetadata(key: string, metadataMapping: ComponentOrDirectiveMetadata) {
+export function registerMetadata(className: string, metadataMapping: ComponentOrDirectiveMetadata) {
   const ownerFile = getOwnerFilePath(metadataMapping);
   if (!ownerFile) {
     return;
   }
 
-  metadatas.getOrInsert(key, new Map()).set(ownerFile, {
+  metadatas.getOrInsert(className, new Map()).set(ownerFile, {
     metadata: metadataMapping,
     lastAccessed: Date.now()
   });
 
-  filePathToMetadataKeys.getOrInsert(ownerFile, new Set()).add(key);
+  filePathToMetadataKeys.getOrInsert(ownerFile, new Set()).add(className);
 
   ensureSweepStarted();
 }
 
 /**
- * Retrieves a metadata mapping by its key.
- * @param key - The unique identifier of the metadata mapping
+ * Retrieves a metadata mapping by the class name or by one of the selectors of its component.
+ * @param classNameOrSelector - The class name, or a selector, of the component or directive
+ * @param ownerFile - The file declaring the class, ignored for selectors as they have a single owner
  * @returns The metadata object if found, otherwise undefined
  */
-export function getMetadata(key: string, ownerFile?: string): ComponentOrDirectiveMetadata | undefined {
-  const entries = metadatas.get(key);
+export function getMetadata(classNameOrSelector: string, ownerFile?: string): ComponentOrDirectiveMetadata | undefined {
+  const owner = selectorOwners.get(classNameOrSelector);
+  const className = owner?.className ?? classNameOrSelector;
+  const file = owner?.ownerFile ?? ownerFile;
+
+  const entries = metadatas.get(className);
   if (!entries?.size) {
     return;
   }
 
-  const entry = ownerFile ? entries.get(ownerFile) : (entries.size === 1 ? entries.values().next().value : undefined);
+  const entry = file ? entries.get(file) : (entries.size === 1 ? entries.values().next().value : undefined);
   if (!entry) {
     return;
   }
@@ -80,7 +113,47 @@ export function getMetadata(key: string, ownerFile?: string): ComponentOrDirecti
 }
 
 /**
- * Removes every metadata key previously registered from `filePath`, e.g. when
+ * Retrieves the component owning a selector.
+ * @param selector - The custom element selector
+ * @returns The owner of the selector, or undefined if no component registered it
+ */
+export function getSelectorOwner(selector: string): SelectorOwner | undefined {
+  return selectorOwners.get(selector);
+}
+
+/**
+ * Registers the component described by `metadataMapping` as the owner of its selector,
+ * replacing any previous owner: conflicts must be checked beforehand via {@link getSelectorOwner}.
+ * @param metadataMapping - The metadata of the component owning the selectors
+ * @param ownerFile - The absolute path of the file declaring the component.
+ */
+export function registerSelectors({ className, selector }: ComponentOrDirectiveMetadata, ownerFile: string): void {
+  releaseSelector(selector);
+  selectorOwners.set(selector, { ownerFile, className });
+  filePathToSelectors.getOrInsert(ownerFile, new Set()).add(selector);
+}
+
+/**
+ * Releases a selector from its owner, e.g. when the owner file no longer declares it.
+ * @param selector - The custom element selector
+ */
+export function releaseSelector(selector: string): void {
+  const owner = selectorOwners.get(selector);
+  if (!owner) {
+    return;
+  }
+
+  selectorOwners.delete(selector);
+
+  const selectors = filePathToSelectors.get(owner.ownerFile);
+  selectors?.delete(selector);
+  if (!selectors?.size) {
+    filePathToSelectors.delete(owner.ownerFile);
+  }
+}
+
+/**
+ * Removes every metadata key and selector previously registered from `filePath`, e.g. when
  * the file is re-transformed (stale className/selector keys from a prior
  * edit) or deleted.
  *
@@ -99,6 +172,15 @@ export function clearMetadataForFile(filePath: string): void {
 
     filePathToMetadataKeys.delete(filePath);
   }
+
+  const selectors = filePathToSelectors.get(filePath);
+  if (selectors) {
+    for (const selector of selectors) {
+      selectorOwners.delete(selector);
+    }
+
+    filePathToSelectors.delete(filePath);
+  }
 }
 
 /**
@@ -108,6 +190,8 @@ export function clearMetadataForFile(filePath: string): void {
 export function clearMetadataRegistry(): void {
   metadatas.clear();
   filePathToMetadataKeys.clear();
+  selectorOwners.clear();
+  filePathToSelectors.clear();
 
   if (sweepTimer) {
     clearInterval(sweepTimer);
@@ -134,6 +218,7 @@ function ensureSweepStarted(): void {
 /**
  * Reclaims entries that haven't been read or written for longer than
  * `IDLE_TTL_MS`, independent of whether their owner file is still valid.
+ * Selector ownerships are kept (see `selectorOwners`).
  */
 function sweepIdleEntries(): void {
   const now = Date.now();

@@ -1,7 +1,6 @@
 import type { ComponentMetadata, ComponentOrDirectiveMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:fs', () => ({
@@ -23,22 +22,31 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
 
 vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
   getMetadata: vi.fn(),
-  registerMetadata: vi.fn()
+  getSelectorOwner: vi.fn(),
+  registerMetadata: vi.fn(),
+  registerSelectors: vi.fn()
 }));
 
 import { extractComponentsMetadataFromSourceFile, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
-import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
-import { createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveModulePath, stripCssComments } from './plugin.utils';
+import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import { resolvePosixPath } from '../../utils/path/path.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveModulePath, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
-function createMetadata(selectors: string[]): ComponentOrDirectiveMetadata {
-  return { selectors } as unknown as ComponentOrDirectiveMetadata;
+function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
+  return {
+    className,
+    selector,
+    typescriptNodes: { klass: { getSourceFile: () => ({ fileName: ownerFile }) } }
+  } as unknown as ComponentOrDirectiveMetadata;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // clearAllMocks keeps the implementations: no selector must be owned unless a test says so
+  vi.mocked(getSelectorOwner).mockReset();
 });
 
 describe('extractImportedComponentPaths()', () => {
@@ -50,7 +58,13 @@ describe('extractImportedComponentPaths()', () => {
     const template = `@import { Button } from './button.xd.component';\n<my-button></my-button>`;
     const result = extractImportedComponentPaths(template, '/src/features/user');
 
-    expect(result).toEqual([resolve('/src/features/user', './button.xd.component')]);
+    expect(result).toEqual([resolvePosixPath('/src/features/user', './button.xd.component')]);
+  });
+
+  it('returns posix paths, matching the Vite ids used as registry keys', () => {
+    const template = `@import { Button } from './button.xd.component';`;
+
+    expect(extractImportedComponentPaths(template, '/src/features/user')[0]).not.toContain('\\');
   });
 
   it('resolves every @import path when the template declares multiple imports', () => {
@@ -62,8 +76,8 @@ describe('extractImportedComponentPaths()', () => {
     const result = extractImportedComponentPaths(template, '/src/features/user');
 
     expect(result).toEqual([
-      resolve('/src/features/user', './button.xd.component'),
-      resolve('/src/features/user', '../shared/input.xd.component')
+      resolvePosixPath('/src/features/user', './button.xd.component'),
+      resolvePosixPath('/src/features/user', '../shared/input.xd.component')
     ]);
   });
 });
@@ -431,7 +445,7 @@ describe('describeDiagnostic()', () => {
 });
 
 describe('resolveModulePath()', () => {
-  const resolvedPath = resolve('/src', './button');
+  const resolvedPath = resolvePosixPath('/src', './button');
 
   it('returns the resolved path unchanged when it already exists as-is', () => {
     vi.mocked(existsSync).mockImplementation((p) => p === resolvedPath);
@@ -460,11 +474,17 @@ describe('resolveModulePath()', () => {
   it('returns undefined for package (non-relative) import specifiers', () => {
     expect(resolveModulePath('/src', '@scope/pkg')).toBeUndefined();
   });
+
+  it('returns a posix path, matching the owner file keys of the metadata registry', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    expect(resolveModulePath('/src', './button')).not.toContain('\\');
+  });
 });
 
 describe('getMetadataOrExtract()', () => {
   it('returns cached metadata immediately when no path is provided and metadata is already registered', async () => {
-    const metadata = createMetadata(['my-el']);
+    const metadata = createMetadata('my-el');
     vi.mocked(getMetadata).mockReturnValueOnce(metadata);
 
     const result = await getMetadataOrExtract('Foo');
@@ -474,7 +494,7 @@ describe('getMetadataOrExtract()', () => {
   });
 
   it('falls back to the ownerless cache lookup when the owner-scoped lookup misses', async () => {
-    const metadata = createMetadata(['my-el']);
+    const metadata = createMetadata('my-el');
     vi.mocked(getMetadata).mockReturnValueOnce(undefined).mockReturnValueOnce(metadata);
 
     const result = await getMetadataOrExtract('Foo', '/src/foo.ts');
@@ -491,29 +511,64 @@ describe('getMetadataOrExtract()', () => {
   it('resolves a string path directly with node:path resolve semantics', async () => {
     vi.mocked(getMetadata).mockReturnValue(undefined);
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');
-    const metadata = createMetadata([]);
+    const metadata = createMetadata('my-el');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Foo', metadata as unknown as ComponentMetadata]]));
 
     const result = await getMetadataOrExtract('Foo', '/src/foo.ts');
 
     expect(result).toBe(metadata);
     expect(registerMetadata).toHaveBeenCalledWith('Foo', metadata);
+    expect(getMetadata).toHaveBeenCalledWith('Foo', resolvePosixPath('/src/foo.ts'));
+    expect(readFile).toHaveBeenCalledWith(expect.not.stringContaining('\\'), 'utf-8');
   });
 
-  it('resolves an [baseDir, modulePath] tuple via resolveModulePath and registers every selector', async () => {
+  it('resolves an [baseDir, modulePath] tuple via resolveModulePath and claims the selector', async () => {
     vi.mocked(getMetadata).mockReturnValue(undefined);
-    const resolvedPath = resolve('/src', './foo');
+    const resolvedPath = resolvePosixPath('/src', './foo');
     vi.mocked(existsSync).mockImplementation((p) => p === resolvedPath);
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');
-    const metadata = createMetadata(['my-foo', 'x-foo']);
+    const metadata = createMetadata('my-foo');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Foo', metadata as unknown as ComponentMetadata]]));
 
     const result = await getMetadataOrExtract('Foo', ['/src', './foo']);
 
     expect(result).toBe(metadata);
+    // The owner file must be posix to match the registry keys (TS source file names)
+    expect(getMetadata).toHaveBeenCalledWith('Foo', resolvedPath);
+    expect(getMetadata).toHaveBeenCalledWith('Foo', expect.not.stringContaining('\\'));
+    // Selectors are owned by a single component, in their own index: they aren't metadata keys
+    expect(registerMetadata).toHaveBeenCalledTimes(1);
     expect(registerMetadata).toHaveBeenCalledWith('Foo', metadata);
-    expect(registerMetadata).toHaveBeenCalledWith('my-foo', metadata);
-    expect(registerMetadata).toHaveBeenCalledWith('x-foo', metadata);
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+  });
+
+  it('extracts again the metadata of a selector reclaimed by the idle sweep from the file owning it', async () => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(getSelectorOwner).mockImplementation((selector) => selector === 'my-bar' ? { ownerFile: '/src/bar.ts', className: 'Bar' } : undefined);
+    vi.mocked(readFile).mockResolvedValue('export class Bar {}');
+    const metadata = createMetadata('my-bar', 'Bar', '/src/bar.ts');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Bar', metadata as unknown as ComponentMetadata]]));
+
+    const result = await getMetadataOrExtract('my-bar');
+
+    expect(result).toBe(metadata);
+    expect(readFile).toHaveBeenCalledWith('/src/bar.ts', 'utf-8');
+    expect(registerMetadata).toHaveBeenCalledWith('Bar', metadata);
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/bar.ts');
+  });
+
+  it('throws, registering nothing, when a selector of the extracted component is used by another component', async () => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(getSelectorOwner).mockImplementation((selector) => selector === 'my-foo' ? { ownerFile: '/src/other.ts', className: 'Other' } : undefined);
+    const metadata = createMetadata('my-foo');
+    vi.mocked(readFile).mockResolvedValue('export class Foo {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockImplementation(async (sourceFile) => sourceFile.fileName === '/src/other.ts'
+      ? new Map([['Other', createMetadata('my-foo', 'Other', '/src/other.ts') as unknown as ComponentMetadata]])
+      : new Map([['Foo', metadata as unknown as ComponentMetadata]]));
+
+    await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow('Selector "my-foo" of component "Foo" - /src/foo.ts is already used by component "Other" - /src/other.ts.');
+    expect(registerMetadata).not.toHaveBeenCalled();
+    expect(registerSelectors).not.toHaveBeenCalled();
   });
 
   it('throws when the extracted metadata map has no entry for the requested symbol', async () => {
@@ -530,5 +585,88 @@ describe('getMetadataOrExtract()', () => {
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(undefined);
 
     await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow('Metadata for symbol "Foo" not found.');
+  });
+});
+
+describe('claimSelectors()', () => {
+  const OTHER_OWNER = { ownerFile: '/src/other.ts', className: 'Other' };
+
+  function mockOtherFileMetadata(metadatas: Map<string, ComponentMetadata> | undefined) {
+    vi.mocked(readFile).mockResolvedValue('export class Other {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(metadatas);
+  }
+
+  it('registers the component as the owner of its selector when no other component owns it', async () => {
+    const metadata = createMetadata('my-foo');
+
+    expect(await claimSelectors(metadata)).toBeUndefined();
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('keeps the ownership of a selector already owned by the same component, without reading its file', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue({ ownerFile: '/src/foo.ts', className: 'Foo' });
+    const metadata = createMetadata('my-foo');
+
+    expect(await claimSelectors(metadata)).toBeUndefined();
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('rejects a component without a selector', async () => {
+    expect(await claimSelectors(createMetadata(''))).toBe('Component "Foo" - /src/foo.ts does not declare a selector.');
+    expect(registerSelectors).not.toHaveBeenCalled();
+  });
+
+  it('rejects a selector still declared by the component of another file owning it', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+    mockOtherFileMetadata(new Map([['Other', createMetadata('my-foo', 'Other', '/src/other.ts') as unknown as ComponentMetadata]]));
+
+    const result = await claimSelectors(createMetadata('my-foo'));
+
+    expect(result).toBe('Selector "my-foo" of component "Foo" - /src/foo.ts is already used by component "Other" - /src/other.ts. Custom element names must be unique.');
+    expect(readFile).toHaveBeenCalledWith('/src/other.ts', 'utf-8');
+    expect(registerSelectors).not.toHaveBeenCalled();
+  });
+
+  it('rejects a selector still declared by another component of the same file', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue({ ownerFile: '/src/foo.ts', className: 'Other' });
+    mockOtherFileMetadata(new Map([['Other', createMetadata('my-foo', 'Other') as unknown as ComponentMetadata]]));
+
+    const result = await claimSelectors(createMetadata('my-foo'));
+
+    expect(result).toBe('Selector "my-foo" of component "Foo" - /src/foo.ts is already used by component "Other" - /src/foo.ts. Custom element names must be unique.');
+    expect(registerSelectors).not.toHaveBeenCalled();
+  });
+
+  it('keeps the ownership when the metadata of the owner file cannot be extracted', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+    vi.mocked(readFile).mockResolvedValue('export class Other {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockRejectedValue('boom');
+
+    expect(await claimSelectors(createMetadata('my-foo'))).toContain('is already used by component "Other"');
+    expect(registerSelectors).not.toHaveBeenCalled();
+  });
+
+  it('replaces a stale ownership whose owner file does not exist anymore', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+    const metadata = createMetadata('my-foo');
+
+    expect(await claimSelectors(metadata)).toBeUndefined();
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+  });
+
+  it.each([
+    ['declares no component', undefined],
+    ['does not declare the owner class anymore', new Map<string, ComponentMetadata>()],
+    ['declares the owner class with another selector', new Map([['Other', createMetadata('x-other', 'Other', '/src/other.ts') as unknown as ComponentMetadata]])]
+  ])('replaces a stale ownership whose owner file %s', async (_description, metadatas) => {
+    vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+    mockOtherFileMetadata(metadatas);
+    const metadata = createMetadata('my-foo');
+
+    expect(await claimSelectors(metadata)).toBeUndefined();
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
   });
 });

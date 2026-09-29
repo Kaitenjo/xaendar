@@ -14,9 +14,9 @@ export type ComponentMetadata = {
    */
   className: string;
   /**
-   * HTML element selectors (tag names).
+   * HTML element selector (tag name), unique across every component: a custom element name can be defined only once.
    */
-  selectors: string[];
+  selector: string;
   /**
    * URL to the component's style file (CSS or similar).
    */

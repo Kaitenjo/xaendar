@@ -20,13 +20,13 @@ export class ShellComponent extends BaseWebComponent {
 
   public readonly applyDinamicBinding = signal(true);
 
-  public readonly text = signal('Override 1');
+  public readonly counter = signal(1);
 
   public onApplyDinamicBindingToggle(): void {
     this.applyDinamicBinding.update(value => !value);
   }
 
   public onTextToggle(): void {
-    this.text.update(value => value === 'Override 1' ? 'Override 2' : 'Override 1');
+    this.counter.update(value => value + 1);
   }
 }

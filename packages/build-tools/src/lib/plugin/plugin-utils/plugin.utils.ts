@@ -3,12 +3,13 @@ import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSour
 import type MagicString from 'magic-string';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
 import { RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
-import { getMetadata, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
+import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
+import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 
 /**
  * TODO: This could be eliminated if we find a way to extract the metadata informations
@@ -24,7 +25,7 @@ import type { TemplateModuleRequest } from '../../types/template-module-request.
  *
  * @param templateSource - The raw content of the `.xd.component.html` template.
  * @param templateDir - The directory containing the template file.
- * @returns The list of imported absolute paths (may be empty).
+ * @returns The list of imported absolute paths, in posix format (may be empty).
  */
 export function extractImportedComponentPaths(templateSource: string, templateDir: string): string[] {
   const importRegex = /@import\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
@@ -32,7 +33,7 @@ export function extractImportedComponentPaths(templateSource: string, templateDi
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(templateSource)) !== null) {
-    paths.push(resolve(templateDir, match[1]));
+    paths.push(resolvePosixPath(templateDir, match[1]));
   }
 
   return paths;
@@ -65,7 +66,7 @@ export function stripCssComments(css: string): string {
  * @returns The import specifier, resolved by the plugin `resolveId` hook.
  */
 export function createTemplateModuleSpecifier(templatePath: string, signals: string[]): string {
-  const path = templatePath.replace(/\\/g, '/');
+  const path = toPosixPath(templatePath);
   const encodedSignals = [...signals].sort().map(encodeURIComponent).join(',');
   return `${TEMPLATE_MODULE_PREFIX}${path}?signals=${encodedSignals}&lang.js`;
 }
@@ -120,7 +121,7 @@ export function generateTemplateModule(compiledFunctions: string): string {
  * @returns The import specifier, resolved by the plugin `resolveId` hook.
  */
 export function createStyleModuleSpecifier(stylePath: string): string {
-  const path = stylePath.replace(/\\/g, '/');
+  const path = toPosixPath(stylePath);
   return `${STYLE_MODULE_PREFIX}path=${encodeURIComponent(path)}&lang.js`;
 }
 
@@ -262,35 +263,72 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
 
 /**
  * Base implementation for getOrInsert Method of the plugin cache.
- * @param name The name of the component or directive to retrieve metadata for.
+ * @param classNameOrSelector The name of the component or directive to retrieve metadata for.
  * @param path Optional path(s) to the source file(s) containing the component or directive.
  * @returns The metadata for the specified component or directive.
  */
-export async function getMetadataOrExtract(name: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
-  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolve(path));
-  let metadata = getMetadata(name, resolvedPath) ?? getMetadata(name);
+export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
+  // Posix paths, to match the owner file keys of the metadata registry (TS source file names)
+  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolvePosixPath(path));
+  let metadata = getMetadata(classNameOrSelector, resolvedPath) ?? getMetadata(classNameOrSelector);
   if (metadata) {
     return metadata;
   }
 
-  if (!resolvedPath) {
-    throw new Error(`Unable to resolve module path for "${name}".`);
+  // The metadata of a selector reclaimed by the idle sweep is extracted again from the file owning it
+  const owner = getSelectorOwner(classNameOrSelector);
+  const className = owner?.className ?? classNameOrSelector;
+  const filePath = resolvedPath ?? owner?.ownerFile;
+  if (!filePath) {
+    throw new Error(`Unable to resolve module path for "${classNameOrSelector}".`);
   }
 
-  const sourceFile = createSourceFile(resolvedPath, await readFile(resolvedPath, 'utf-8'), ScriptTarget.Latest, true);
+  const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
   const metadatas = await extractComponentsMetadataFromSourceFile(sourceFile);
-  metadata = metadatas?.get(name);
+  metadata = metadatas?.get(className);
   if (!metadata) {
-    throw new Error(`Metadata for symbol "${name}" not found.`);
+    throw new Error(`Metadata for symbol "${classNameOrSelector}" not found.`);
+  }
+
+  const selectorConflict = await claimSelectors(metadata);
+  if (selectorConflict) {
+    throw new Error(selectorConflict);
   }
 
   // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!
-  registerMetadata(name, metadata);
-  for (let i = 0; i < metadata.selectors.length; i++) {
-    const selector = metadata.selectors[i];
-    registerMetadata(selector, metadata);
-  }
+  registerMetadata(className, metadata);
   return metadata;
+}
+
+/**
+ * Registers a component as the owner of its selector, unless it is already owned by another
+ * component: a custom element name can be defined only once at runtime, so two components
+ * sharing a selector would make the second definition throw.
+ *
+ * An ownership may be stale while the dev server is running (e.g. a selector moved from a file to
+ * another one transformed first), so a conflicting owner is checked against its file on disk and
+ * replaced when it no longer declares the selector.
+ *
+ * @param metadata - The metadata of the component claiming its selector.
+ * @returns The error message describing the conflict, or `undefined` if the selector has been claimed.
+ */
+export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Promise<string | undefined> {
+  const { className, selector } = metadata;
+  const ownerFile = metadata.typescriptNodes.klass.getSourceFile().fileName;
+
+  if (!selector) {
+    return `Component "${className}" - ${ownerFile} does not declare a selector.`;
+  }
+
+  const owner = getSelectorOwner(selector);
+  const ownedByAnotherComponent = owner && (owner.ownerFile !== ownerFile || owner.className !== className);
+  if (ownedByAnotherComponent && await isSelectorDeclaredBy(owner, selector)) {
+    return `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
+  }
+
+  // registerSelectors replaces a stale owner, releasing the selector from it
+  registerSelectors(metadata, ownerFile);
+  return undefined;
 }
 
 /**
@@ -299,12 +337,12 @@ export async function getMetadataOrExtract(name: string, path?: string | string[
  *
  * @param baseDir - The directory to resolve relative imports from
  * @param modulePath - The import module path
- * @returns The resolved file path, or undefined if not found
+ * @returns The resolved file path, in posix format, or undefined if not found
  */
 export function resolveModulePath(baseDir: string, modulePath: string): string | undefined {
   // Handle relative imports
   if (modulePath.startsWith('.')) {
-    const resolvedPath = resolve(baseDir, modulePath);
+    const resolvedPath = resolvePosixPath(baseDir, modulePath);
 
     // Try as-is (might already have extension)
     if (existsSync(resolvedPath)) {
@@ -324,6 +362,30 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
 
   // TODO: Handle package imports and tsconfig aliases
   return undefined;
+}
+
+/**
+ * Checks, reading its file from disk, whether a component still declares a selector.
+ *
+ * @param owner - The registered owner of the selector.
+ * @param selector - The custom element selector.
+ * @returns `false` if the owner file doesn't exist anymore, or the owner class doesn't declare the
+ *   selector anymore; `true` otherwise, also when the metadata can't be extracted, to keep the ownership.
+ */
+async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, selector: string): Promise<boolean> {
+  let source: string;
+  try {
+    source = await readFile(ownerFile, 'utf-8');
+  } catch {
+    return false;
+  }
+
+  try {
+    const metadatas = await extractComponentsMetadataFromSourceFile(createSourceFile(ownerFile, source, ScriptTarget.Latest, true));
+    return metadatas?.get(className)?.selector === selector;
+  } catch {
+    return true;
+  }
 }
 
 /**

@@ -38,6 +38,24 @@
       }
     },
     {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug xd start (back-office)",
+      "program": "${workspaceFolder}/packages/cli/bin/xd.mjs",
+      "args": ["start"],
+      "cwd": "${workspaceFolder}/src/back-office",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",

@@ -15,7 +15,7 @@ const processNode: ProcessNode = () => [{ text: 'child;' }];
 const metadata = (properties: Record<string, ComponentPropertyMetadata>, events: Record<string, string> = {}) => ({
   type: 'component',
   className: 'MyEl',
-  selectors: ['my-el'],
+  selector: 'my-el',
   properties: new Map(Object.entries(properties)),
   events: new Map(Object.entries(events).map(([name, type]) => [name, { type }]))
 }) as unknown as ComponentMetadata;

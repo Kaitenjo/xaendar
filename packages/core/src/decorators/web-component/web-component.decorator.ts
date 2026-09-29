@@ -5,7 +5,7 @@ import { WebComponentDecoratorParams } from '../../types/web-component/web-compo
 /**
  * Decorator that registers a class as a custom web component.
  *
- * Registers the component with the browser's Custom Elements registry under the given selector(s).
+ * Registers the component with the browser's Custom Elements registry under the given selector.
  *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
@@ -19,23 +19,6 @@ import { WebComponentDecoratorParams } from '../../types/web-component/web-compo
  */
 export function WebComponent<T extends BaseWebComponent>(options: WebComponentDecoratorParams): ClassDecorator<T> {
   return function (klass: Constructor<T>, _context: ClassDecoratorContext<Constructor<T>>): void {
-    setSelectors(klass, options.selector);
+    customElements.define(options.selector, klass);
   };
-}
-
-/**
- * Registers the component class in the browser's Custom Elements registry
- * under the given selector(s).
- *
- * @param klass - The web component class to register.
- * @param selectors - One or more custom element tag names to associate with the class.
- */
-function setSelectors<T extends BaseWebComponent>(klass: Constructor<T>, selectors: string | string[]): void {
-  if (typeof selectors === 'string') {
-    customElements.define(selectors, klass);
-  } else {
-    for (let i = 0; i < selectors.length; i++) {
-      customElements.define(selectors[i], klass)
-    }
-  } 
 }

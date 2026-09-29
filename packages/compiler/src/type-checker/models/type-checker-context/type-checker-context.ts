@@ -45,7 +45,7 @@ export class TypeCheckContext extends CompilerContext {
    * @returns The matching component metadata, if any.
    */
   public getImportBySelector(tagName: string): ComponentMetadata | undefined {
-    return this._imports.find((importValue): importValue is ComponentMetadata => importValue.type === 'component' && importValue.selectors.includes(tagName))
+    return this._imports.find((importValue): importValue is ComponentMetadata => importValue.type === 'component' && importValue.selector === tagName)
       ?? this.parent?.getImportBySelector(tagName);
   }
 }

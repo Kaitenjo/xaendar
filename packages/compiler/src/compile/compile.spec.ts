@@ -5,7 +5,7 @@ import { ASTNodeType } from '../parser/types/node.enum';
 import type { CompilerCache } from '../types/compiler-cache.type';
 import { compile } from './compile';
 
-const component = { type: 'component', selectors: ['a-b'], properties: new Map(), events: new Map() };
+const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };
 const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
 
 describe('compile', () => {

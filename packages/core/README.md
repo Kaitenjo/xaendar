@@ -95,17 +95,19 @@ Registers the class as a Custom Element.
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `selector` | `string \| string[]` | ✅ | The custom element tag name(s) |
+| `selector` | `string` | ✅ | The custom element tag name, unique across every component |
 | `templateUrl` | `string` | ✅ | Path to the HTML template |
 | `styleUrl` | `string` | — | Path to the component stylesheet |
 
 ```ts
 @WebComponent({ 
-  selector: ['x-card', 'xaendar-card'], 
+  selector: 'x-card', 
   templateUrl: './card.xd.component.html' 
 })
 class Card extends BaseWebComponent { }
 ```
+
+A custom element name can be defined only once: the build fails when two components declare the same selector.
 
 ---
 

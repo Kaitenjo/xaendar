@@ -1,6 +1,6 @@
 import type { ComponentMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
@@ -58,6 +58,7 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 }));
 
 vi.mock('../plugin-utils/plugin.utils', () => ({
+  claimSelectors: vi.fn(),
   createStyleModuleSpecifier: vi.fn(),
   createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
@@ -71,10 +72,11 @@ import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers 
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
-import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
+import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
-import { createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
+import { resolvePosixPath } from '../../utils/path/path.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
 const COMPONENT_PATH = '/src/foo/foo.xd.component.ts';
@@ -83,7 +85,7 @@ function createMetadata(overrides: Partial<ComponentMetadata> = {}): ComponentMe
   return {
     type: 'component',
     className: 'FooComponent',
-    selectors: ['foo-el'],
+    selector: 'foo-el',
     templateUrl: './foo.xd.component.html',
     properties: new Map(),
     events: new Map(),
@@ -129,6 +131,7 @@ function mockNoDiagnostics() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isValidCustomElementName).mockReturnValue(true);
+  vi.mocked(claimSelectors).mockResolvedValue(undefined);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
   vi.mocked(extractSignalMembers).mockReturnValue(['count']);
@@ -171,11 +174,11 @@ describe('createTransformHook()', () => {
     expect(result).toBe('original code');
   });
 
-  it('logs an error and returns null when a selector is not a valid custom element name', async () => {
+  it('logs an error and returns null when the selector is not a valid custom element name', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
-    const metadata = createMetadata({ selectors: ['valid-el', 'Invalid'] });
+    const metadata = createMetadata({ selector: 'Invalid' });
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(isValidCustomElementName).mockImplementation((selector: string) => selector === 'valid-el');
+    vi.mocked(isValidCustomElementName).mockReturnValue(false);
     const state = createState();
     const hook = createTransformHook(state);
 
@@ -183,6 +186,37 @@ describe('createTransformHook()', () => {
 
     expect(result).toBeNull();
     expect(state.logError).toHaveBeenCalledWith('', `Invalid custom element name "Invalid" in component ${COMPONENT_PATH}`);
+    expect(claimSelectors).not.toHaveBeenCalled();
+    expect(registerMetadata).not.toHaveBeenCalled();
+  });
+
+  it('logs an error and returns null when a selector is already used by another component, registering no metadata', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const metadata = createMetadata();
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
+    vi.mocked(claimSelectors).mockResolvedValue('selector conflict');
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(result).toBeNull();
+    expect(claimSelectors).toHaveBeenCalledWith(metadata);
+    expect(state.logError).toHaveBeenCalledWith('', 'selector conflict');
+    expect(registerMetadata).not.toHaveBeenCalled();
+    expect(compile).not.toHaveBeenCalled();
+  });
+
+  it('claims the selector and registers the metadata of each component', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const metadata = createMetadata();
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
+    const hook = createTransformHook(createState());
+
+    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(claimSelectors).toHaveBeenCalledWith(metadata);
+    expect(registerMetadata).toHaveBeenCalledWith('FooComponent', metadata);
   });
 
   it('warns and returns null when the template file cannot be found', async () => {
@@ -227,9 +261,11 @@ describe('createTransformHook()', () => {
 
     await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
-    const templatePath = resolve(dirname(COMPONENT_PATH), './foo.xd.component.html');
+    const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
     expect(ctx.addWatchFile).toHaveBeenCalledWith(templatePath);
     expect(registerTemplatePath).toHaveBeenCalledWith(templatePath, COMPONENT_PATH);
+    // Registry keys must be posix, to match the Vite ids received by watchChange
+    expect(registerTemplatePath).toHaveBeenCalledWith(expect.not.stringContaining('\\'), COMPONENT_PATH);
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/existing.xd.component.ts');
     expect(registerImport).toHaveBeenCalledWith('/src/foo/existing.xd.component.ts', COMPONENT_PATH);
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith('/src/foo/missing.xd.component.ts');
@@ -259,8 +295,10 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    const templatePath = resolve(dirname(COMPONENT_PATH), './foo.xd.component.html');
+    const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
     expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), cache: expect.any(Object) });
+    // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
   });
 
@@ -274,9 +312,11 @@ describe('createTransformHook()', () => {
 
     await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
-    const stylePath = resolve(dirname(COMPONENT_PATH), './foo.css');
+    const stylePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.css');
     expect(createStyleModuleSpecifier).toHaveBeenCalledWith(stylePath);
     expect(registerStyleDependency).toHaveBeenCalledWith(stylePath, COMPONENT_PATH);
+    // Registry keys must be posix, to match the Vite ids received by watchChange
+    expect(registerStyleDependency).toHaveBeenCalledWith(expect.not.stringContaining('\\'), COMPONENT_PATH);
     expect(state.host.readFile).not.toHaveBeenCalledWith(stylePath);
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith(stylePath);
     expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module');
@@ -346,7 +386,7 @@ describe('createTransformHook()', () => {
   it('processes every declared component sharing the same module imports of the file', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {} class BarComponent {}');
     const fooMetadata = createMetadata({ className: 'FooComponent' });
-    const barMetadata = createMetadata({ className: 'BarComponent', selectors: ['bar-el'], templateUrl: './bar.xd.component.html' });
+    const barMetadata = createMetadata({ className: 'BarComponent', selector: 'bar-el', templateUrl: './bar.xd.component.html' });
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([
       ['FooComponent', fooMetadata],
       ['BarComponent', barMetadata]

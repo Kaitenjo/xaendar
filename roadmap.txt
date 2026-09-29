@@ -17,3 +17,6 @@ L'ordine di import delle classi javascript dei web components sembra essere
 decisivo al bootstrapping perchè i decoratori di classe e proprieta vengono invocati
 al caricamento della classe nell'engine. Ma implementata una strategia di caricamento dei componenti
 in modo da rispettare le dipendenze fra di essi (non dovrebbero mai essere circular)
+
+Non vi è type checking sui signals usati dentro un dynamic binding, sia per la condizione, sia per 
+input che output (signals e funzioni)

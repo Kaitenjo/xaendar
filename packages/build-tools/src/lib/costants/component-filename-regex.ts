@@ -3,4 +3,7 @@
  */
 export const COMPONENT_TS_FILE_RE = /\.xd\.component\.ts$/;
 
+/**
+ * Matches any HTML file that follows the Xaendar component convention.
+ */
 export const COMPONENT_HTML_FILE_RE = /\.xd\.component\.html$/;

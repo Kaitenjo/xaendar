@@ -19,7 +19,7 @@ describe('TypeChecker', () => {
 
   it('resolves custom elements against the provided metadata', async () => {
     const template = '<my-el></my-el>';
-    const component = { type: 'component', selectors: ['my-el'], properties: new Map(), events: new Map() } as unknown as ComponentMetadata;
+    const component = { type: 'component', selector: 'my-el', properties: new Map(), events: new Map() } as unknown as ComponentMetadata;
 
     expect((await new TypeChecker(template, parse(template)).generate([component])).text).toBe('function typeCheck() {\n}');
   });

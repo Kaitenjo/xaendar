@@ -3,7 +3,7 @@ import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers,
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
@@ -12,7 +12,8 @@ import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
-import { createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
+import { resolvePosixPath } from '../../utils/path/path.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
@@ -46,20 +47,28 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
     const moduleImports = new Map<string, string>();
     for (const [className, metadata] of metadatas.entries()) {
+      const { selector, styleUrl, templateUrl } = metadata;
+      if (!isValidCustomElementName(selector)) {
+        state.logError('', `Invalid custom element name "${selector}" in component ${componentPath}`);
+        return null;
+      }
+
+      // A selector can be defined only once at runtime: it must not be shared with any other component
+      const selectorConflict = await claimSelectors(metadata);
+      if (selectorConflict) {
+        state.logError('', selectorConflict);
+        return null;
+      }
+
       // TODO className is not unique, we can't use it as a key for the metadata cache
       registerMetadata(className, metadata);
 
-      const { selectors, styleUrl, templateUrl } = metadata;
-      for (let i = 0; i < selectors.length; i++) {
-        const selector = selectors[i];
-        if (!isValidCustomElementName(selector)) {
-          state.logError('', `Invalid custom element name "${selector}" in component ${componentPath}`);
-          return null;
-        }
-      }
-
+      /*
+        componentPath is a posix path (Vite module id), but resolve() emits backslashes on Windows:
+        paths must stay posix to match the registry keys looked up from Vite ids and TS file names.
+      */
       const folder = dirname(componentPath);
-      const templatePath = resolve(folder, templateUrl);
+      const templatePath = resolvePosixPath(folder, templateUrl);
       if (!templatePath || !state.host.fileExists(templatePath)) {
         this.warn(`Could not find template at ${templatePath}`);
         return null;
@@ -83,7 +92,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       */
       let styleModuleSpecifier: string | undefined;
       if (styleUrl) {
-        const stylePath = resolve(folder, styleUrl);
+        const stylePath = resolvePosixPath(folder, styleUrl);
         registerStyleDependency(stylePath, componentPath);
         styleModuleSpecifier = createStyleModuleSpecifier(stylePath);
       }

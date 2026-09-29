@@ -1,7 +1,7 @@
-import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
+import { resolvePosixPath } from '../../utils/path/path.utils';
 
 vi.mock('@xaendar/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/compiler')>();
@@ -77,14 +77,14 @@ describe('createLoadHook()', () => {
   });
 
   it('watches the imported components that exist on disk', async () => {
-    const existing = resolve('/src/foo', './existing.xd.component.ts');
+    const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
     const template = '@import { A } from \'./existing.xd.component.ts\'\n@import { B } from \'./missing.xd.component.ts\'\n<a-b></a-b>';
     const ctx = createPluginContext();
 
     await load(createState({ [TEMPLATE_PATH]: template, [existing]: '' }), ctx, TEMPLATE_MODULE_ID);
 
     expect(ctx.addWatchFile).toHaveBeenCalledWith(existing);
-    expect(ctx.addWatchFile).not.toHaveBeenCalledWith(resolve('/src/foo', './missing.xd.component.ts'));
+    expect(ctx.addWatchFile).not.toHaveBeenCalledWith(resolvePosixPath('/src/foo', './missing.xd.component.ts'));
   });
 
   it('raises an error when the template cannot be read', async () => {

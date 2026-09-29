@@ -3,19 +3,21 @@
 @import { FormComponent } from '../form/form.xd.component.ts'
 
 <div class="shell">
-  <app-sidebar @(applyDinamicBinding(), text="{text()}") collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
-  <button @click="onApplyDinamicBindingToggle()">
-    Toggle dinamic binding
-  </button>
-  <button @click="onTextToggle()">
-    Toggle text
-  </button>
-
+  <app-sidebar @if(applyDinamicBinding(), text="{counter()}") collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  
   <div class="shell__main">
     <app-topbar @menuToggle="onSidebarToggle()" />
-
+    
     <main class="shell__content">
       <app-form />
+      <div style="display: flex; gap:.5rem;">
+        <button @click="onApplyDinamicBindingToggle()">
+          Toggle dinamic binding
+        </button>
+        <button @click="onTextToggle()">
+          Increase Value
+        </button>
+      </div>
     </main>
   </div>
 </div>

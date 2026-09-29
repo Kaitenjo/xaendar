@@ -8,13 +8,13 @@ const component = (body = '', decorator = '@WebComponent({ selector: \'my-el\', 
 
 describe('extractComponentsMetadataFromSourceFile', () => {
   describe('component declarations', () => {
-    it('extracts selectors, template and style urls', async () => {
-      const metadata = (await extract(component('', '@WebComponent({ selector: [\'a-b\', \'c-d\', 5], templateUrl: \'./t.xaendar\', styleUrl: \'./s.css\' })')))?.get('MyEl');
+    it('extracts selector, template and style urls', async () => {
+      const metadata = (await extract(component('', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t.xaendar\', styleUrl: \'./s.css\' })')))?.get('MyEl');
 
       expect(metadata).toMatchObject({
         type: 'component',
         className: 'MyEl',
-        selectors: ['a-b', 'c-d'],
+        selector: 'a-b',
         templateUrl: './t.xaendar',
         styleUrl: './s.css'
       });
@@ -53,6 +53,7 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       ['a non-object argument', '@WebComponent(\'x\')'],
       ['no selector', '@WebComponent({ templateUrl: \'./t\' })'],
       ['a non-literal selector', '@WebComponent({ selector: selector, templateUrl: \'./t\' })'],
+      ['an array of selectors', '@WebComponent({ selector: [\'a-b\', \'c-d\'], templateUrl: \'./t\' })'],
       ['no template url', '@WebComponent({ selector: \'a-b\' })'],
       ['a non-literal template url', '@WebComponent({ selector: \'a-b\', templateUrl: url })'],
       ['unsupported properties only', '@WebComponent({ \'selector\': \'a-b\', shorthand, other: 1, styleUrl: style })']
