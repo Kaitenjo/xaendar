@@ -138,7 +138,8 @@ describe('injectTemplate()', () => {
   function inject(source: string, first: boolean, className: string, cssContent?: string): string {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
-    injectTemplate(s, sourceFile, first, className, specifier, cssContent);
+    const renderImports = new Map<string, string>(first ? [] : [['virtual:xaendar-template:/other.html?signals=&lang.js', '__Other_render']]);
+    injectTemplate(s, sourceFile, renderImports, className, specifier, cssContent);
     return s.toString();
   }
 
@@ -180,7 +181,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
 
-    expect(() => injectTemplate(s, sourceFile, true, 'Foo', specifier, '.a { color: red; }')).toThrow();
+    expect(() => injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, '.a { color: red; }')).toThrow();
     expect(s.toString()).toBe(source);
   });
 
@@ -260,7 +261,7 @@ describe('injectTemplate()', () => {
     expect(result).not.toContain('_defineRender }');
   });
 
-  it('imports the shared template module once per component of the file', () => {
+  describe('with multiple components in the same file', () => {
     const source = [
       'class Foo {',
       '  static { _initClass(); }',
@@ -269,17 +270,43 @@ describe('injectTemplate()', () => {
       '  static { _initClass2(); }',
       '}'
     ].join('\n');
-    const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
-    const s = new MagicString(source);
 
-    injectTemplate(s, sourceFile, true, 'Foo', specifier);
-    injectTemplate(s, sourceFile, false, 'Bar', specifier);
-    const result = s.toString();
+    function injectBoth(fooSpecifier: string, barSpecifier: string): string {
+      const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
+      const s = new MagicString(source);
+      const renderImports = new Map<string, string>();
 
-    expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
-    expect(result).toContain(`import { render as __Bar_render } from ${JSON.stringify(specifier)};`);
-    expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
-    expect(result).toContain('static { _defineRender(this, __Bar_render); }\n\n  static { _initClass2(); }');
+      injectTemplate(s, sourceFile, renderImports, 'Foo', fooSpecifier);
+      injectTemplate(s, sourceFile, renderImports, 'Bar', barSpecifier);
+      return s.toString();
+    }
+
+    it('imports a template module shared by several components only once', () => {
+      const result = injectBoth(specifier, specifier);
+
+      expect(result.split(JSON.stringify(specifier)).length).toBe(2);
+      expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
+      expect(result).not.toContain('__Bar_render');
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass2(); }');
+    });
+
+    it('imports each distinct template module of the file', () => {
+      const barSpecifier = 'virtual:xaendar-template:/foo.html?signals=count&lang.js';
+      const result = injectBoth(specifier, barSpecifier);
+
+      expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
+      expect(result).toContain(`import { render as __Bar_render } from ${JSON.stringify(barSpecifier)};`);
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
+      expect(result).toContain('static { _defineRender(this, __Bar_render); }\n\n  static { _initClass2(); }');
+    });
+
+    it('prepends the required runtime imports only once', () => {
+      const result = injectBoth(specifier, specifier);
+
+      expect(result.startsWith('import { _defineRender } from \'@xaendar/core\';\n')).toBe(true);
+      expect(result.split('import { _defineRender }').length).toBe(2);
+    });
   });
 });
 

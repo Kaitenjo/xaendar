@@ -45,7 +45,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     const jsSourceFile = createSourceFile(componentPath, code, ScriptTarget.Latest, true, ScriptKind.JS);
     const magicString = new MagicString(code);
 
-    let first = true;
+    const renderImports = new Map<string, string>();
     for (const [className, metadata] of metadatas.entries()) {
       // TODO className is not unique, we can't use it as a key for the metadata cache
       registerMetadata(className, metadata);
@@ -112,8 +112,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       try {
-        injectTemplate(magicString, jsSourceFile, first, className, createTemplateModuleSpecifier(templatePath, signals), cssContent);
-        first = false;
+        injectTemplate(magicString, jsSourceFile, renderImports, className, createTemplateModuleSpecifier(templatePath, signals), cssContent);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return null;

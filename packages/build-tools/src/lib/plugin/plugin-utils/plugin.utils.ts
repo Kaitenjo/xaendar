@@ -114,7 +114,8 @@ export function generateTemplateModule(compiledFunctions: string): string {
  * The render function isn't generated inline: it is imported from the template
  * module identified by `templateModuleSpecifier`, shared by every component using
  * the same template, and registered along with the stylesheet via `_defineRender`
- * in a static block of the class.
+ * in a static block of the class. Components of the same file sharing the same
+ * template module share a single import of it too.
  *
  * All offsets are resolved against `sourceFile`, which must be parsed once
  * from the file's ORIGINAL (pre-injection) text and reused across every
@@ -129,7 +130,10 @@ export function generateTemplateModule(compiledFunctions: string): string {
  *   across every component declared in it.
  * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source,
  *   shared across every component declared in it.
- * @param first - Indicates if this is the first component of the file being processed.
+ * @param renderImports - The render functions already imported in the file, keyed by template
+ *   module specifier and mapped to their local binding. Must be created once per file, empty,
+ *   and shared across every component declared in it: the component finding it empty is the
+ *   first one of the file.
  * @param className - The name of the target class in this file.
  * @param templateModuleSpecifier - The import specifier of the compiled template module
  *   (see {@link createTemplateModuleSpecifier}).
@@ -138,7 +142,7 @@ export function generateTemplateModule(compiledFunctions: string): string {
  *   block isn't found — meaning the component file wasn't scaffolded
  *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectTemplate(s: MagicString, sourceFile: SourceFile, first: boolean, className: string, templateModuleSpecifier: string, cssContent?: string): void {
+export function injectTemplate(s: MagicString, sourceFile: SourceFile, renderImports: Map<string, string>, className: string, templateModuleSpecifier: string, cssContent?: string): void {
   const classDecl = findClassDeclarationByName(sourceFile, className);
   if (!classDecl) {
     throw `Could not find class "${className}" in the transpiled output.`;
@@ -154,8 +158,10 @@ export function injectTemplate(s: MagicString, sourceFile: SourceFile, first: bo
     calling babel's `_applyDecs` helper (falling back to the finalizer block when there's none).
   */
   const registrationBlock = classDecl.members.find(isApplyDecoratorsStaticBlock) ?? placeholderBlock;
+  const first = renderImports.size === 0;
   const styleSheetName = insertStyleSnippet(s, sourceFile, classDecl, className, cssContent);
-  insertRenderRegistration(s, sourceFile, registrationBlock, className, templateModuleSpecifier, styleSheetName);
+  const renderName = insertRenderImport(s, renderImports, className, templateModuleSpecifier);
+  insertRenderRegistration(s, sourceFile, registrationBlock, renderName, styleSheetName);
   if (first) {
     insertRequiredImports(s);
   }
@@ -257,11 +263,25 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
   return undefined;
 }
 
-function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, className: string, templateModuleSpecifier: string, styleSheetName?: string): void {
-  const renderName = `__${className}_render`;
+/**
+ * Imports the render function of the template module, unless another component of the file
+ * sharing the same template module has already imported it.
+ * @returns The local binding of the render function.
+ */
+function insertRenderImport(s: MagicString, renderImports: Map<string, string>, className: string, templateModuleSpecifier: string): string {
+  let renderName = renderImports.get(templateModuleSpecifier);
+  if (!renderName) {
+    renderName = `__${className}_render`;
+    renderImports.set(templateModuleSpecifier, renderName);
+    s.prepend(`import { render as ${renderName} } from ${JSON.stringify(templateModuleSpecifier)};\n`);
+  }
+
+  return renderName;
+}
+
+function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, renderName: string, styleSheetName?: string): void {
   const args = `this, ${renderName}${styleSheetName ? `, ${styleSheetName}` : ''}`;
 
-  s.prepend(`import { render as ${renderName} } from ${JSON.stringify(templateModuleSpecifier)};\n`);
   s.appendLeft(registrationBlock.getStart(sourceFile), `static { _defineRender(${args}); }\n\n  `);
 }
 
