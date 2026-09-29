@@ -1,14 +1,14 @@
-import type { _Context } from '../utils/context/context.util';
-import { _getRender } from '../utils/render-registry/render-registry.util';
+import type { _Context } from '../../utils/context/context.util';
+import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
- * Base class for all web components in the framework.
+ * Base class for all custom elements registered via `@WebComponent`.
  *
  * Extends `HTMLElement` with Shadow DOM support and the lifecycle hooks
  * required for signal-based rendering. Concrete component classes should
  * extend this class and be decorated with `@WebComponent`.
  */
-export class BaseWebComponent extends HTMLElement {
+export class CustomElement extends HTMLElement {
   /**
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.

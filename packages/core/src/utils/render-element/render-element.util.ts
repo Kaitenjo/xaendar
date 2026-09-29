@@ -1,6 +1,6 @@
 import type { Dictionary, NoArgsFunction } from '@xaendar/types';
 import { MATHML_NS, SVG_NS } from '../../costants';
-import { BaseWebComponent } from '../../models';
+import { CustomElement } from '../../models';
 import { InputSignal } from '../../signals';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
@@ -185,7 +185,7 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
  * @param newValue - The new value to set for the property.
  */
 function updateProperty(element: Element, name: string, newValue: unknown) {
-  const component = element as BaseWebComponent & Record<string, unknown> & { [name]: InputSignal<unknown> };
+  const component = element as CustomElement & Record<string, unknown> & { [name]: InputSignal<unknown> };
   const constructor = component.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
   name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
   const property = component[name];

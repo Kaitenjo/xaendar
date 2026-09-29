@@ -1,4 +1,4 @@
-import { BaseWebComponent, WebComponent } from '@xaendar/core';
+import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 @WebComponent({
@@ -6,7 +6,7 @@ import { signal } from '@xaendar/core/signals';
   styleUrl: './back-office-root.xd.component.css',
   templateUrl: './back-office-root.xd.component.html'
 })
-export class BackOfficeRootComponent extends BaseWebComponent {
+export class BackOfficeRootComponent extends CustomElement {
 
   public state = signal(true)
   

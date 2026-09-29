@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { BaseWebComponent } from '../models';
+import { CustomElement } from '../models';
 import type { Output } from '../types/event/output.type';
 import { Event } from './event.decorator';
 
@@ -10,13 +10,13 @@ function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?
   const context = {
     name,
     addInitializer: (fn: (this: unknown) => void) => initializers.push(fn)
-  } as unknown as ClassAccessorDecoratorContext<BaseWebComponent, Output<unknown>>;
+  } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
 
   const element = document.createElement('div');
   const listener = vi.fn();
   element.addEventListener('clicked', listener);
 
-  const decorated = Event<BaseWebComponent, ReturnType>(options)({} as  ClassAccessorDecoratorValue<Output<ReturnType>>, context);
+  const decorated = Event<CustomElement, ReturnType>(options)({} as  ClassAccessorDecoratorValue<Output<ReturnType>>, context);
   initializers.forEach(fn => fn.call(element));
 
   const emit = (decorated as unknown as { get(): Output<ReturnType> }).get().emit;

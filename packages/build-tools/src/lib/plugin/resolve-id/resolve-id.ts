@@ -31,7 +31,7 @@ import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
  *
  * @example
  * // Any other specifier is left to the other plugins
- * import { BaseWebComponent } from '@xaendar/core'; // → null
+ * import { CustomElement } from '@xaendar/core'; // → null
  */
 export function createResolveIdHook(): NonNullable<HookHandler<Plugin['resolveId']>> {
   return function resolveId(source) {

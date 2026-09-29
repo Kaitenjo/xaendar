@@ -1,1 +1,1 @@
-export * from './base-web-component';
+export * from './custom-element/custom-element';

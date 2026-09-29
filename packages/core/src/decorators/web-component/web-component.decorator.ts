@@ -1,5 +1,5 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
-import { BaseWebComponent } from '../../models/base-web-component';
+import { CustomElement } from '../../models/custom-element/custom-element';
 import { WebComponentDecoratorParams } from '../../types/web-component/web-component-decorator-params.type';
 
 /**
@@ -14,10 +14,10 @@ import { WebComponentDecoratorParams } from '../../types/web-component/web-compo
  * @example
  * ```ts
  * @WebComponent({ selector: 'my-button', templateUrl: './my-button.html' })
- * class MyButtonComponent extends BaseWebComponent {}
+ * class MyButtonComponent extends CustomElement {}
  * ```
  */
-export function WebComponent<T extends BaseWebComponent>(options: WebComponentDecoratorParams): ClassDecorator<T> {
+export function WebComponent<T extends CustomElement>(options: WebComponentDecoratorParams): ClassDecorator<T> {
   return function (klass: Constructor<T>, _context: ClassDecoratorContext<Constructor<T>>): void {
     customElements.define(options.selector, klass);
   };

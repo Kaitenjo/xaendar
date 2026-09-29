@@ -93,7 +93,7 @@ describe('generateComponent()', () => {
 
     const tsContent = vi.mocked(writeFileSync).mock.calls.find(([path]) => (path as string).endsWith('.xd.component.ts'))?.[1] as string;
 
-    expect(tsContent).toContain('export class MyButtonComponent extends BaseWebComponent');
+    expect(tsContent).toContain('export class MyButtonComponent extends CustomElement');
     expect(tsContent).toContain("styleUrl: './my-button.xd.component.scss'");
     expect(tsContent).toContain("selector: 'my-button'");
   });

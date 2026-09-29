@@ -1,4 +1,4 @@
-import { BaseWebComponent, WebComponent } from '@xaendar/core';
+import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 type UserRow = {
@@ -13,7 +13,7 @@ type UserRow = {
   styleUrl: './form.component.css',
   templateUrl: './form.xd.component.html',
 })
-export class FormComponent extends BaseWebComponent {
+export class FormComponent extends CustomElement {
 
   public readonly items = signal<UserRow[]>([
     { id: 1, name: 'Mario Rossi', email: 'mario.rossi@example.com', role: 'Admin' },

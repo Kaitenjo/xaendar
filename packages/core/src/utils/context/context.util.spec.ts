@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { BaseWebComponent } from '../../models/base-web-component';
+import type { CustomElement } from '../../models/custom-element/custom-element';
 import { _Context, createAnchor, mountNode } from './context.util';
 
 function createRoot(root: Record<string, unknown> = {}): _Context {
@@ -8,7 +8,7 @@ function createRoot(root: Record<string, unknown> = {}): _Context {
     createElement: (tagName: string) => document.createElement(tagName),
     get: () => undefined
   } as unknown as _Context;
-  return new _Context(root as unknown as BaseWebComponent, parent);
+  return new _Context(root as unknown as CustomElement, parent);
 }
 
 describe('_Context', () => {

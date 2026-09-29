@@ -23,7 +23,7 @@ npm install @xaendar/core
 
 | Primitive | Description |
 |-----------|-------------|
-| `BaseWebComponent` | Base class for every component — attaches a Shadow DOM and wires up lifecycle hooks |
+| `CustomElement` | Base class for every component — attaches a Shadow DOM and wires up lifecycle hooks |
 | `@WebComponent` | Class decorator that registers the element with the browser |
 | `@Property` | Accessor decorator that exposes a reactive `InputSignal` as an HTML attribute |
 | `@Event` | Accessor decorator that creates a typed `CustomEvent` emitter |
@@ -38,7 +38,7 @@ npm install @xaendar/core
 ### 1. Define a component
 
 ```ts
-import { BaseWebComponent, WebComponent, Property, Event } from '@xaendar/core';
+import { CustomElement, WebComponent, Property, Event } from '@xaendar/core';
 import type { InputSignal, Output } from '@xaendar/core';
 
 @WebComponent({
@@ -46,7 +46,7 @@ import type { InputSignal, Output } from '@xaendar/core';
   templateUrl: './my-button.template.html',
   styleUrl: './my-button.styles.css',   // optional
 })
-class MyButton extends BaseWebComponent {
+class MyButton extends CustomElement {
 
   /** Reactive label — set via HTML attribute or programmatically */
   @Property('Click me')
@@ -71,18 +71,18 @@ class MyButton extends BaseWebComponent {
 
 ---
 
-### 2. `BaseWebComponent`
+### 2. `CustomElement`
 
-All Xaendar components must extend `BaseWebComponent`. It:
+All Xaendar components must extend `CustomElement`. It:
 
 - Attaches a `ShadowRoot` in **open** mode on construction.
 - Implements `attributeChangedCallback` to propagate attribute changes into the corresponding `InputSignal`.
 - Implements `connectedCallback` / `disconnectedCallback` to manage the component lifecycle.
 
 ```ts
-import { BaseWebComponent } from '@xaendar/core';
+import { CustomElement } from '@xaendar/core';
 
-class MyComponent extends BaseWebComponent {
+class MyComponent extends CustomElement {
   // your component logic
 }
 ```
@@ -104,7 +104,7 @@ Registers the class as a Custom Element.
   selector: 'x-card', 
   templateUrl: './card.xd.component.html' 
 })
-class Card extends BaseWebComponent { }
+class Card extends CustomElement { }
 ```
 
 A custom element name can be defined only once: the build fails when two components declare the same selector.

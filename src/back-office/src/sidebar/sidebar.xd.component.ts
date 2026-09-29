@@ -1,4 +1,4 @@
-import { BaseWebComponent, Event, Output, Property, WebComponent } from '@xaendar/core';
+import { CustomElement, Event, Output, Property, WebComponent } from '@xaendar/core';
 import { effect, InputSignal, signal } from '@xaendar/core/signals';
 
 export type NavItem = {
@@ -13,7 +13,7 @@ export type NavItem = {
   styleUrl: './sidebar.component.css',
   templateUrl: './sidebar.xd.component.html',
 })
-export class SidebarComponent extends BaseWebComponent {
+export class SidebarComponent extends CustomElement {
   
   @Property('Default value without binding')
   public accessor text!: InputSignal<string>;

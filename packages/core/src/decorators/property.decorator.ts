@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { BaseWebComponent } from '../models/base-web-component';
+import { CustomElement } from '../models/custom-element/custom-element';
 import { input } from '../signals/input/input';
 import { InputSignal } from '../signals/types/input-signal.type';
 import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';
@@ -13,7 +13,7 @@ type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, Incom
 };
 
 function createPropertyDecorator<
-  Class extends BaseWebComponent,
+  Class extends CustomElement,
   Value extends InputSignal<ActualValue>,
   ActualValue = unknown,
   IncomingValue = ActualValue
@@ -85,7 +85,7 @@ function createPropertyDecorator<
  * ```
  */
 export function Property<
-  Class extends BaseWebComponent,
+  Class extends CustomElement,
   Value extends InputSignal<ActualValue>,
   ActualValue = Value extends InputSignal<infer U> ? U : unknown,
   IncomingValue = ActualValue
@@ -118,7 +118,7 @@ export function Property<
  * ```
  */
 Property.required = function required<
-  Class extends BaseWebComponent,
+  Class extends CustomElement,
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(

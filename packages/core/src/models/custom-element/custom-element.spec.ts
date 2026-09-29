@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { _defineRender } from '../utils/render-registry/render-registry.util';
-import { BaseWebComponent } from './base-web-component';
+import { _defineRender } from '../../utils/render-registry/render-registry.util';
+import { CustomElement } from './custom-element';
 
 type TestElement = HTMLElement & { context: unknown, connectedCallback(): void };
 
 let counter = 0;
 function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
   const name = `x-base-${counter++}`;
-  const klass = class extends BaseWebComponent { };
+  const klass = class extends CustomElement { };
   if (context) {
     _defineRender(klass, () => context as never, styleSheet);
   }
@@ -17,7 +17,7 @@ function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
   return document.createElement(name) as unknown as TestElement;
 }
 
-describe('BaseWebComponent', () => {
+describe('CustomElement', () => {
   it('attaches an open shadow root', () => {
     expect(create().shadowRoot?.mode).toBe('open');
   });

@@ -1,4 +1,4 @@
-import { BaseWebComponent, Event, Output, WebComponent } from "@xaendar/core";
+import { CustomElement, Event, Output, WebComponent } from "@xaendar/core";
 import { signal } from "@xaendar/core/signals";
 
 export type AppUser = {
@@ -12,7 +12,7 @@ export type AppUser = {
   styleUrl: './topbar.component.css',
   templateUrl: './topbar.xd.component.html'
 })
-export class TopbarComponent extends BaseWebComponent {
+export class TopbarComponent extends CustomElement {
   @Event() 
   public accessor menuToggle!: Output;
 

@@ -1,5 +1,5 @@
 import { Function, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
-import { BaseWebComponent } from '../../models/base-web-component';
+import { CustomElement } from '../../models/custom-element/custom-element';
 
 /**
  * Tracks identifier scope during run time template function execution
@@ -41,7 +41,7 @@ export class _Context {
    * @param _root - Web component reference used to resolve property and method bindings.
    */
   constructor(
-    private _root: BaseWebComponent,
+    private _root: CustomElement,
     private _parent: _Context,
   ) {
     this.createElement = this._parent.createElement;
@@ -84,7 +84,7 @@ export class _Context {
    */
   public getEventHandler(handler: string): VoidFunction {
     // We do not check if the property exists beacuse it'll be done by TCB
-    return (this._root[handler as keyof BaseWebComponent] as VoidFunction).bind(this._root)
+    return (this._root[handler as keyof CustomElement] as VoidFunction).bind(this._root)
   }
 
   /**

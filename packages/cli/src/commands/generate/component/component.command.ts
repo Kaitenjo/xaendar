@@ -71,14 +71,14 @@ export function generateComponent(name: string, path: string, force?: boolean, s
  */
 function tsTemplate(name: string, style: string): string {
   const className = toPascalCase(name);
-  return `import { BaseWebComponent, WebComponent } from '@xaendar/core';
+  return `import { CustomElement, WebComponent } from '@xaendar/core';
 
 @WebComponent({
   selector: '${name}',
   styleUrl: './${name}.xd.component.${style}',
   templateUrl: './${name}.xd.component.html'
 })
-export class ${className}Component extends BaseWebComponent {
+export class ${className}Component extends CustomElement {
 
 }`;
 }

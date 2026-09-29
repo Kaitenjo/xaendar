@@ -1,4 +1,4 @@
-import { BaseWebComponent, WebComponent } from '@xaendar/core';
+import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 
@@ -7,7 +7,7 @@ import { signal } from '@xaendar/core/signals';
   styleUrl: './shell.component.css',
   templateUrl: './shell.xd.component.html',
 })
-export class ShellComponent extends BaseWebComponent {
+export class ShellComponent extends CustomElement {
   public readonly sidebarCollapsed = signal(false);
 
   public onSidebarToggle(): void {

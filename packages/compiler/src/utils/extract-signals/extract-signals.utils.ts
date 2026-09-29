@@ -25,7 +25,7 @@ const DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
 
 /**
  * Parsed ancestor files, keyed by path. Components usually share the same
- * bases (at least `BaseWebComponent`), so each file is parsed once and
+ * bases (at least `CustomElement`), so each file is parsed once and
  * reparsed only when its modification time or size changes.
  */
 const sourceFileCache = new Map<string, CachedSourceFile>();

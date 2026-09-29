@@ -1,5 +1,5 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
-import { BaseWebComponent } from '../models/base-web-component';
+import { CustomElement } from '../models/custom-element/custom-element';
 import { EventOptions } from '../types/event/event-options.type';
 import { EventDecoratorReturnType } from '../types/event/event-return-type.type';
 import { Output } from '../types/event/output.type';
@@ -28,7 +28,7 @@ function isEventOptions(value: EventOptions | unknown): value is EventOptions {
  * ```
  */
 export function Event<
-  Class extends BaseWebComponent,
+  Class extends CustomElement,
   Data = void,
 >(options?: EventOptions): Function<Parameters<AccessorDecorator<Class, Output<Data>>>, EventDecoratorReturnType<Class, Output<Data>>> {
   return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): EventDecoratorReturnType<Class, Output<Data>> => {
