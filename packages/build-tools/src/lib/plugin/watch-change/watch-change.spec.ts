@@ -10,6 +10,10 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
+vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
+  clearBaseClassDependenciesForComponent: vi.fn()
+}));
+
 vi.mock('../../registry/import-registry/import-registry', () => ({
   clearImportToComponents: vi.fn(),
   clearComponentToImports: vi.fn(),
@@ -32,12 +36,18 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { PluginContext } from 'rolldown';
+import { clearBaseClassDependenciesForComponent } from '../../registry/base-class-registry/base-class-registry';
 import { clearComponentToImports, clearImportToComponents, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependency } from '../../registry/style-registry/style-registry';
 import { findComponentPathsForTemplate, removeComponentPath } from '../../registry/template-registry/template-registry';
 import { createWatchChangeHook, handleHtmlDelete, handleStyleDelete, handleTsDelete } from './watch-change';
 
+/**
+ * Builds a fresh `XaendarPluginState` with mocked `setLogger`/`logError`, for a test to assert on.
+ *
+ * @returns The mocked plugin state.
+ */
 function createState(): XaendarPluginState {
   return {
     host: {} as XaendarPluginState['host'],
@@ -63,6 +73,7 @@ describe('handleTsDelete()', () => {
     expect(removeRealFile).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(removeComponentPath).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearStyleDependenciesForComponent).toHaveBeenCalledWith('/src/foo.xd.component.ts');
+    expect(clearBaseClassDependenciesForComponent).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearMetadataForFile).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearImportToComponents).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearComponentToImports).toHaveBeenCalledWith('/src/foo.xd.component.ts');

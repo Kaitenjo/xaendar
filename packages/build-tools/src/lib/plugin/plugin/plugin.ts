@@ -3,6 +3,7 @@ import type { Logger, Plugin } from 'vite';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { createConfigureServerHook } from '../configure-server/configure-server';
+import { createHotUpdateHook } from '../hot-update/hot-update';
 import { createLoadHook } from '../load/load';
 import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
@@ -75,6 +76,7 @@ export function xaendarPlugin(): Plugin {
     load: createLoadHook(state),
     transform: createTransformHook(state),
     watchChange: createWatchChangeHook(state),
+    hotUpdate: createHotUpdateHook(),
     configureServer: createConfigureServerHook(state),
   };
 }

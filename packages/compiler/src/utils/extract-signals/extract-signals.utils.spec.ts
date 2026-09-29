@@ -1,15 +1,38 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { createSourceFile, forEachChild, isClassDeclaration, ScriptTarget } from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
-import { extractSignalMembers } from './extract-signals.utils';
+import { CompilerOptions, createSourceFile, forEachChild, isClassDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SignalMembers } from '../../types/signal-members/signal-members.type';
+import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
+import { clearSignalMembersCache, extractSignalMembers } from './extract-signals.utils';
 
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    readFileSync: vi.fn(actual.readFileSync)
+  };
+});
+
+/**
+ * Source of an import declaration binding `signal`/`computed` from the signals module.
+ */
 const SIGNALS_IMPORT = 'import { signal, computed } from \'@xaendar/core/signals\';\n';
+
+/**
+ * Source of a `.d.ts` file declaring a `Base` class with a signal-typed and a plain member.
+ */
 const BASE_DTS = 'import { Signal } from \'@xaendar/core/signals\';\nexport declare class Base { x: Signal<number>; y: string; }\n';
 
+/**
+ * Temporary directory holding the fixture files written by {@link extract}, created once for the whole suite.
+ */
 let root: string;
+
+/**
+ * Incrementing id used to give each {@link extract} call its own fixture sub-directory.
+ */
 let counter = 0;
 
 beforeAll(() => {
@@ -20,23 +43,45 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
+beforeEach(() => {
+  clearSignalMembersCache();
+  vi.mocked(readFileSync).mockClear();
+});
+
+/**
+ * Writes `content` to `file`, creating its parent directory if missing.
+ *
+ * @param file - Absolute path of the file to write.
+ * @param content - The file content.
+ */
 const write = (file: string, content: string): void => {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, content);
 };
 
+/**
+ * Converts a path to posix form, replacing backslashes with slashes.
+ *
+ * @param path - The path to convert.
+ * @returns The path in posix format.
+ */
 const posix = (path: string): string => path.replace(/\\/g, '/');
 
 /**
- * Runs the extraction over `source` placed in a fresh directory, returning the directory
- * so tests can add sibling files (base classes, node_modules packages, ...).
+ * Runs the extraction over `source` placed in a fresh directory, letting `prepare`
+ * add sibling files (base classes, node_modules packages, ...) to that directory.
+ *
+ * @param source - The TypeScript source declaring a `Cmp` class, extraction is run against it.
+ * @param prepare - Callback adding sibling fixture files to the fresh directory.
+ * @param compilerOptions - Optional factory of the compiler options to resolve modules with.
+ * @returns The extracted signal members and dependencies, plus the fixture directory used.
  */
-const setup = (source: string, prepare: (dir: string) => void = () => undefined): string[] => {
-  const dir = join(root, `case-${counter++}`);
+const extract = (source: string, prepare: (dir: string) => void = () => undefined, compilerOptions?: (dir: string) => CompilerOptions): SignalMembers & { dir: string } => {
+  const dir = posix(join(root, `case-${counter++}`));
   mkdirSync(dir, { recursive: true });
   prepare(dir);
 
-  const sourceFile = createSourceFile(join(dir, 'main.ts'), source.replaceAll('$DIR', posix(dir)), ScriptTarget.Latest, true);
+  const sourceFile = createSourceFile(`${dir}/main.ts`, source.replaceAll('$DIR', dir), ScriptTarget.Latest, true);
   let klass!: ClassDeclarationWithName;
   forEachChild(sourceFile, node => {
     if (isClassDeclaration(node) && node.name?.text === 'Cmp') {
@@ -44,8 +89,17 @@ const setup = (source: string, prepare: (dir: string) => void = () => undefined)
     }
   });
 
-  return extractSignalMembers(sourceFile, klass);
+  return { ...extractSignalMembers(sourceFile, klass, compilerOptions?.(dir)), dir };
 };
+
+/**
+ * Shorthand for {@link extract} when only the extracted member names are asserted on.
+ *
+ * @param source - The TypeScript source declaring a `Cmp` class, extraction is run against it.
+ * @param prepare - Callback adding sibling fixture files to the fresh directory.
+ * @returns The extracted signal member names.
+ */
+const setup = (source: string, prepare?: (dir: string) => void): readonly string[] => extract(source, prepare).members;
 
 describe('extractSignalMembers', () => {
   describe('own members', () => {
@@ -88,25 +142,38 @@ describe('extractSignalMembers', () => {
   });
 
   describe('inheritance', () => {
-    it('returns nothing inherited for classes without heritage, with implements only or with a non-identifier base', () => {
+    it('returns nothing inherited for classes without heritage, with implements only or with an unsupported base expression', () => {
       expect(setup(`${SIGNALS_IMPORT} class Cmp { a = signal(1); }`)).toEqual(['a']);
       expect(setup('class Cmp implements Foo {}')).toEqual([]);
       expect(setup('class Cmp extends mixin(Foo) {}')).toEqual([]);
+      expect(setup('class Cmp extends a.b.Base {}')).toEqual([]);
     });
 
-    it('ignores base classes that are not imported', () => {
-      expect(setup('class Base {}\nclass Cmp extends Base {}')).toEqual([]);
+    it('resolves base classes declared in the same file', () => {
+      expect(setup(`${SIGNALS_IMPORT}class Base { b = signal(1); }\nclass Cmp extends Base { own = signal(1); }`)).toEqual(['b', 'own']);
+      expect(setup(`${SIGNALS_IMPORT}import { Base } from './base';\nclass Middle extends Base { m = signal(1); }\nclass Cmp extends Middle {}`, dir => write(join(dir, 'base.d.ts'), BASE_DTS))).toEqual(['x', 'm']);
+    });
+
+    it('ignores base classes that are neither declared nor imported', () => {
+      expect(setup('class Cmp extends Base {}')).toEqual([]);
     });
 
     it('ignores a base class whose import specifier is not a string literal', () => {
       expect(setup('import { Base } from foo;\nclass Cmp extends Base {}')).toEqual([]);
     });
 
-    it('resolves named, default, namespace and unrelated imports when looking for the base class', () => {
-      const prepare = (dir: string) => write(join(dir, 'base.d.ts'), BASE_DTS);
+    it('resolves named, renamed, default and namespace imports when looking for the base class', () => {
+      const prepare = (dir: string) => {
+        write(join(dir, 'base.d.ts'), BASE_DTS);
+        write(join(dir, 'default-base.d.ts'), 'import { Signal } from \'@xaendar/core/signals\';\nexport default class Base { d: Signal<number>; }\n');
+      };
 
       expect(setup('import { Other, Base } from \'./base\';\nclass Cmp extends Base {}', prepare)).toEqual(['x']);
-      expect(setup('import Base from \'./base\';\nclass Cmp extends Base {}', prepare)).toEqual(['x']);
+      expect(setup('import { Base as Renamed } from \'./base\';\nclass Cmp extends Renamed {}', prepare)).toEqual(['x']);
+      expect(setup('import Base from \'./default-base\';\nclass Cmp extends Base {}', prepare)).toEqual(['d']);
+      expect(setup('import Base from \'./base\';\nclass Cmp extends Base {}', prepare)).toEqual([]);
+      expect(setup('import * as ns from \'./base\';\nclass Cmp extends ns.Base {}', prepare)).toEqual(['x']);
+      expect(setup('import * as ns from \'./base\';\nclass Cmp extends other.Base {}', prepare)).toEqual([]);
       expect(setup('import * as ns from \'./base\';\nimport { Other } from \'./base\';\nclass Cmp extends Base {}', prepare)).toEqual([]);
       expect(setup('import \'./base\';\nclass Cmp extends Base {}', prepare)).toEqual([]);
     });
@@ -114,6 +181,24 @@ describe('extractSignalMembers', () => {
     it('resolves relative and absolute specifiers, including directory index files', () => {
       expect(setup('import { Base } from \'./lib\';\nclass Cmp extends Base {}', dir => write(join(dir, 'lib', 'index.d.ts'), BASE_DTS))).toEqual(['x']);
       expect(setup('import { Base } from \'$DIR/base\';\nclass Cmp extends Base {}', dir => write(join(dir, 'base.d.ts'), BASE_DTS))).toEqual(['x']);
+    });
+
+    it('resolves base classes declared in project source files', () => {
+      const members = setup('import { Base } from \'./base\';\nclass Cmp extends Base {}', dir => {
+        write(join(dir, 'base.ts'), `${SIGNALS_IMPORT}export class Base { s = signal(1); c = computed(() => 1); plain = 1; }`);
+      });
+
+      expect(members).toEqual(['s', 'c']);
+    });
+
+    it('resolves base classes imported through a TypeScript path alias', () => {
+      const members = extract('import { Base } from \'@lib/base\';\nclass Cmp extends Base {}', dir => write(join(dir, 'lib', 'base.d.ts'), BASE_DTS), dir => ({
+        module: ModuleKind.ESNext,
+        moduleResolution: ModuleResolutionKind.Bundler,
+        paths: { '@lib/*': [`${dir}/lib/*`] }
+      })).members;
+
+      expect(members).toEqual(['x']);
     });
 
     it('collects members along the whole inheritance chain, own members last', () => {
@@ -138,13 +223,96 @@ describe('extractSignalMembers', () => {
       expect(setup('import { Base } from \'./missing\';\nclass Cmp extends Base {}')).toEqual([]);
       expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base {}', dir => mkdirSync(join(dir, 'base.d.ts')))).toEqual([]);
       expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base {}', dir => write(join(dir, 'base.d.ts'), 'export declare class Other {}'))).toEqual([]);
+
+      vi.mocked(readFileSync).mockImplementationOnce(() => {
+        throw new Error('EACCES');
+      });
+      expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base {}', dir => write(join(dir, 'base.d.ts'), BASE_DTS))).toEqual([]);
+    });
+  });
+
+  describe('re-exports', () => {
+    const extendsBaseFrom = (specifier: string, files: Record<string, string>) => setup(`import { Base } from '${specifier}';\nclass Cmp extends Base {}`, dir => {
+      Object.entries(files).forEach(([file, content]) => write(join(dir, file), content));
+    });
+
+    it('follows named re-exports, renamed or not', () => {
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'export { Base } from \'./base\';', 'base.d.ts': BASE_DTS })).toEqual(['x']);
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'export { Inner as Base } from \'./inner\';', 'inner.d.ts': BASE_DTS.replace('class Base', 'class Inner') })).toEqual(['x']);
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'export { Other } from \'./base\';', 'base.d.ts': BASE_DTS })).toEqual([]);
+    });
+
+    it('follows local exports of declared or imported classes', () => {
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'import { Inner } from \'./inner\';\nexport { Inner as Base };', 'inner.d.ts': BASE_DTS.replace('class Base', 'class Inner') })).toEqual(['x']);
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'import { Signal } from \'@xaendar/core/signals\';\ndeclare class Inner { i: Signal<number>; }\nexport { Inner as Base };' })).toEqual(['i']);
+    });
+
+    it('follows wildcard re-exports until the class is found', () => {
+      expect(extendsBaseFrom('./barrel', {
+        'barrel.d.ts': 'export * from \'./unrelated\';\nexport * as ns from \'./base\';\nexport * from \'./nested\';',
+        'unrelated.d.ts': 'export declare class Unrelated {}',
+        'nested.d.ts': 'export * from \'./base\';',
+        'base.d.ts': BASE_DTS
+      })).toEqual(['x']);
+      expect(extendsBaseFrom('./barrel', { 'barrel.d.ts': 'export * from \'./unrelated\';', 'unrelated.d.ts': 'export declare class Unrelated {}' })).toEqual([]);
+    });
+
+    it('stops on circular re-exports', () => {
+      expect(extendsBaseFrom('./a', { 'a.d.ts': 'export * from \'./b\';', 'b.d.ts': 'export * from \'./a\';' })).toEqual([]);
+    });
+
+    it('resolves default exports, which wildcard re-exports never forward', () => {
+      const extendsDefault = (files: Record<string, string>) => setup('import Base from \'./barrel\';\nclass Cmp extends Base {}', dir => {
+        Object.entries(files).forEach(([file, content]) => write(join(dir, file), content));
+      });
+      const inner = 'import { Signal } from \'@xaendar/core/signals\';\nexport declare class Inner { i: Signal<number>; }\nexport default Inner;';
+
+      expect(extendsDefault({ 'barrel.d.ts': 'export { default } from \'./inner\';', 'inner.d.ts': inner })).toEqual(['i']);
+      expect(extendsDefault({ 'barrel.d.ts': 'export * from \'./inner\';', 'inner.d.ts': inner })).toEqual([]);
+      expect(extendsDefault({ 'barrel.d.ts': 'declare const value: unknown;\nexport default value.x;' })).toEqual([]);
+      expect(extendsDefault({ 'barrel.d.ts': 'declare class Inner {}\nexport = Inner;' })).toEqual([]);
+    });
+  });
+
+  describe('dependencies and cache', () => {
+    it('reports every file read to resolve the inheritance chain, except the component file', () => {
+      const { members, dependencies, dir } = extract(`${SIGNALS_IMPORT}import { Base } from './barrel';\nclass Cmp extends Base {}`, dir => {
+        write(join(dir, 'barrel.d.ts'), 'export * from \'./base\';');
+        write(join(dir, 'base.d.ts'), BASE_DTS);
+      });
+
+      expect(members).toEqual(['x']);
+      expect(dependencies).toEqual([`${dir}/barrel.d.ts`, `${dir}/base.d.ts`]);
+      expect(extract('class Cmp {}').dependencies).toEqual([]);
+    });
+
+    it('parses an unchanged file only once, reparsing it when it changes or the cache is cleared', () => {
+      const dir = posix(join(root, `case-${counter++}`));
+      const basePath = `${dir}/base.d.ts`;
+      write(basePath, BASE_DTS);
+      const sourceFile = createSourceFile(`${dir}/main.ts`, 'import { Base } from \'./base\';\nclass Cmp extends Base {}', ScriptTarget.Latest, true);
+      const klass = sourceFile.statements[1] as unknown as ClassDeclarationWithName;
+      const baseReads = () => vi.mocked(readFileSync).mock.calls.filter(([path]) => path === basePath).length;
+
+      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x']);
+      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x']);
+      expect(baseReads()).toBe(1);
+
+      write(basePath, BASE_DTS.replace('y: string', 'y: Signal<string>'));
+      utimesSync(basePath, new Date(), new Date(Date.now() + 10_000));
+      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x', 'y']);
+      expect(baseReads()).toBe(2);
+
+      clearSignalMembersCache();
+      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x', 'y']);
+      expect(baseReads()).toBe(3);
     });
   });
 
   describe('package resolution', () => {
     const pkg = (name: string, packageJson: unknown, files: Record<string, string> = { 'index.d.ts': BASE_DTS }) => (dir: string) => {
       const packageDir = join(dir, 'node_modules', name);
-      write(join(packageDir, 'package.json'), typeof packageJson === 'string' ? packageJson : JSON.stringify(packageJson));
+      write(join(packageDir, 'package.json'), JSON.stringify(packageJson));
       Object.entries(files).forEach(([file, content]) => write(join(packageDir, file), content));
     };
     const extend = (name: string, prepare: (dir: string) => void) => setup(`import { Base } from '${name}';\nclass Cmp extends Base {}`, prepare);
@@ -160,22 +328,25 @@ describe('extractSignalMembers', () => {
       expect(extend('pkg-a', pkg('pkg-a', { exports: { types: './lib/types.d.ts' } }, file))).toEqual(['x']);
       expect(extend('pkg-b', pkg('pkg-b', { exports: { '.': { types: './lib/types.d.ts' } } }, file))).toEqual(['x']);
       expect(extend('pkg-c', pkg('pkg-c', { exports: { '.': { import: { types: './lib/types.d.ts' } } } }, file))).toEqual(['x']);
-      expect(extend('pkg-d', pkg('pkg-d', { exports: [{ default: './lib/main.js' }, { types: './lib/types.d.ts' }] }, file))).toEqual(['x']);
     });
 
-    it('falls back to index.d.ts when no types can be found through "exports"', () => {
-      expect(extend('pkg-e', pkg('pkg-e', { exports: './lib/main.js' }))).toEqual(['x']);
-      expect(extend('pkg-f', pkg('pkg-f', { exports: null }))).toEqual(['x']);
-      expect(extend('pkg-g', pkg('pkg-g', { exports: {} }))).toEqual(['x']);
-      expect(extend('pkg-h', pkg('pkg-h', { exports: [{ default: './lib/main.js' }] }))).toEqual(['x']);
-      expect(extend('pkg-i', pkg('pkg-i', { exports: { '.': { default: null } } }))).toEqual(['x']);
-      expect(extend('pkg-j', pkg('pkg-j', { types: 'missing.d.ts', exports: { types: './missing.d.ts' } }))).toEqual(['x']);
+    it('falls back to index.d.ts when the manifest declares neither types nor exports', () => {
+      expect(extend('pkg-e', pkg('pkg-e', {}))).toEqual(['x']);
     });
 
-    it('resolves nothing when the package, its manifest or its types are unavailable', () => {
+    it('resolves nothing when the package or its types are unavailable', () => {
       expect(extend('pkg-not-installed', () => undefined)).toEqual([]);
-      expect(extend('pkg-broken', pkg('pkg-broken', '{ not json'))).toEqual([]);
       expect(extend('pkg-empty', pkg('pkg-empty', {}, {}))).toEqual([]);
+    });
+
+    it('resolves base classes re-exported through a package barrel, as `@xaendar/core` does', () => {
+      const members = extend('pkg-barrel', pkg('pkg-barrel', { types: 'public-api.d.ts' }, {
+        'public-api.d.ts': 'export * from \'./directives\';',
+        'directives/index.d.ts': 'export * from \'./base\';',
+        'directives/base.d.ts': BASE_DTS
+      }));
+
+      expect(members).toEqual(['x']);
     });
   });
 });

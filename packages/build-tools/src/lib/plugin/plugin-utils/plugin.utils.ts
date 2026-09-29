@@ -65,7 +65,7 @@ export function stripCssComments(css: string): string {
  * @param signals - Signal members of the component class.
  * @returns The import specifier, resolved by the plugin `resolveId` hook.
  */
-export function createTemplateModuleSpecifier(templatePath: string, signals: string[]): string {
+export function createTemplateModuleSpecifier(templatePath: string, signals: readonly string[]): string {
   const path = toPosixPath(templatePath);
   const encodedSignals = [...signals].sort().map(encodeURIComponent).join(',');
   return `${TEMPLATE_MODULE_PREFIX}${path}?signals=${encodedSignals}&lang.js`;
@@ -266,6 +266,8 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  * @param classNameOrSelector The name of the component or directive to retrieve metadata for.
  * @param path Optional path(s) to the source file(s) containing the component or directive.
  * @returns The metadata for the specified component or directive.
+ * @throws {Error} If the file declaring the symbol can't be resolved, the symbol's metadata
+ *   can't be found in it, or its selector is already used by another component.
  */
 export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
   // Posix paths, to match the owner file keys of the metadata registry (TS source file names)

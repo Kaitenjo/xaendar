@@ -1,5 +1,5 @@
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers, TypeCheckResult } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers, SignalMembers, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -7,6 +7,7 @@ import { dirname } from 'node:path';
 import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
+import { clearBaseClassDependenciesForComponent, registerBaseClassDependency } from '../../registry/base-class-registry/base-class-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
@@ -15,6 +16,15 @@ import type { XaendarPluginState } from '../../types/plugin.types';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
+/**
+ * Vite plugin `transform` hook: for every Xaendar component declared in a `.xd.component.ts`
+ * file, resolves its template and style files, extracts its signal members, type-checks the
+ * template against the component class, and injects the render function/stylesheet imports and
+ * registration into the transpiled output.
+ *
+ * @param state - The shared plugin state (compiler host, project compiler options/file names, logger).
+ * @returns The `transform` hook handler.
+ */
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
     if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
@@ -35,6 +45,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     clearMetadataForFile(componentPath);
     clearComponentToImports(componentPath);
     clearStyleDependenciesForComponent(componentPath);
+    clearBaseClassDependenciesForComponent(componentPath);
     removeComponentPath(componentPath);
 
     /*
@@ -97,11 +108,11 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         styleModuleSpecifier = createStyleModuleSpecifier(stylePath);
       }
 
-      let signals: string[];
+      let signals: SignalMembers;
       let typecheckBody: TypeCheckResult;
 
       try {
-        signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass);
+        signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass, state.compilerOptions);
         /*
           Only the type-check is performed here, as it depends on the component class.
           The render function is compiled once per template in its own module (see the load hook).
@@ -118,8 +129,18 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         return null;
       }
 
+      /*
+        The signal members also depend on the classes the component inherits from: watching their files
+        re-runs the transform in build watch mode, while the registry lets the hotUpdate hook fully
+        invalidate the component in dev mode, where a statically imported file is only soft-invalidated.
+      */
+      for (const dependency of signals.dependencies) {
+        this.addWatchFile(dependency);
+        registerBaseClassDependency(dependency, componentPath);
+      }
+
       try {
-        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, signals), styleModuleSpecifier);
+        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, signals.members), styleModuleSpecifier);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return null;
@@ -156,6 +177,9 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
  * via `overwrite()`, keyed off offsets found by scanning the ORIGINAL
  * (pre-injection) `code`, so the inserted newline is properly reflected in
  * the final sourcemap instead of silently shifting every following line.
+ *
+ * @param s - The `MagicString` wrapping the whole component file.
+ * @param code - The ORIGINAL (pre-injection) source of the component file.
  */
 function fixDecoratorExport(s: MagicString, code: string): void {
   const regex = /^export\s+(@\w+[\s\S]*?)\s+(class\s)/gm;

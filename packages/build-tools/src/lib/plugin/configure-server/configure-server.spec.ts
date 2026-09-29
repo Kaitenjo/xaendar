@@ -9,6 +9,18 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
+vi.mock('@xaendar/compiler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@xaendar/compiler')>();
+  return {
+    ...actual,
+    clearSignalMembersCache: vi.fn()
+  };
+});
+
+vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
+  clearBaseClassRegistry: vi.fn()
+}));
+
 vi.mock('../../registry/import-registry/import-registry', () => ({
   clearImportRegistry: vi.fn()
 }));
@@ -25,7 +37,9 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   clearTemplateRegistry: vi.fn()
 }));
 
+import { clearSignalMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
+import { clearBaseClassRegistry } from '../../registry/base-class-registry/base-class-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
@@ -33,6 +47,11 @@ import { clearTemplateRegistry } from '../../registry/template-registry/template
 import { createConfigureServerHook } from './configure-server';
 import type { MinimalPluginContextWithoutEnvironment, ViteDevServer } from 'vite';
 
+/**
+ * Builds a fresh `XaendarPluginState` with mocked `setLogger`/`logError`, for a test to assert on.
+ *
+ * @returns The mocked plugin state.
+ */
 function createState(): XaendarPluginState {
   return {
     host: {} as XaendarPluginState['host'],
@@ -85,6 +104,8 @@ describe('createConfigureServerHook()', () => {
     expect(clearStyleRegistry).toHaveBeenCalledTimes(1);
     expect(clearImportRegistry).toHaveBeenCalledTimes(1);
     expect(clearMetadataRegistry).toHaveBeenCalledTimes(1);
+    expect(clearBaseClassRegistry).toHaveBeenCalledTimes(1);
+    expect(clearSignalMembersCache).toHaveBeenCalledTimes(1);
     expect(disposeLanguageService).toHaveBeenCalledTimes(1);
     expect(state.setLogger).toHaveBeenLastCalledWith(undefined);
   });

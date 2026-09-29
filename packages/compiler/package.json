@@ -11,7 +11,6 @@
   "dependencies": {
     "@xaendar/common": "0.12.0",
     "@xaendar/types": "0.12.0",
-    "typescript": "^6.0.3",
-    "type-fest": "^5.10.0"
+    "typescript": "^6.0.3"
   }
 }

@@ -37,6 +37,11 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
+vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
+  clearBaseClassDependenciesForComponent: vi.fn(),
+  registerBaseClassDependency: vi.fn()
+}));
+
 vi.mock('../../registry/import-registry/import-registry', () => ({
   clearComponentToImports: vi.fn(),
   registerImport: vi.fn()
@@ -71,6 +76,7 @@ import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
+import { clearBaseClassDependenciesForComponent, registerBaseClassDependency } from '../../registry/base-class-registry/base-class-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
@@ -79,8 +85,17 @@ import { resolvePosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
+/**
+ * Path of the component file the tests transform.
+ */
 const COMPONENT_PATH = '/src/foo/foo.xd.component.ts';
 
+/**
+ * Builds the metadata of the `FooComponent` fixture, with optional overrides.
+ *
+ * @param overrides - Fields to override on the default metadata.
+ * @returns The component metadata.
+ */
 function createMetadata(overrides: Partial<ComponentMetadata> = {}): ComponentMetadata {
   return {
     type: 'component',
@@ -94,6 +109,12 @@ function createMetadata(overrides: Partial<ComponentMetadata> = {}): ComponentMe
   };
 }
 
+/**
+ * Builds a fresh `XaendarPluginState` with a mocked compiler host, for a test to assert on.
+ *
+ * @param overrides - `fileExists`/`readFile` implementations for the mocked host.
+ * @returns The mocked plugin state.
+ */
 function createState(overrides: Partial<{ fileExists: (path: string) => boolean; readFile: (path: string) => string | undefined }> = {}): XaendarPluginState {
   const fileExists = overrides.fileExists ?? (() => true);
   const readFileFromHost = overrides.readFile ?? (() => 'template source');
@@ -110,6 +131,11 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
   };
 }
 
+/**
+ * Builds a mocked `transform` hook plugin context (`warn`/`addWatchFile`).
+ *
+ * @returns The mocked plugin context.
+ */
 function createPluginContext(): TransformPluginContext {
   return {
     warn: vi.fn(),
@@ -117,10 +143,18 @@ function createPluginContext(): TransformPluginContext {
   } as unknown as TransformPluginContext;
 }
 
+/**
+ * Mocks a successful `compile()` call resolving to a `TypeCheckResult`.
+ *
+ * @param typecheckBody - Fields to override on the default resolved result.
+ */
 function mockSuccessfulCompile(typecheckBody: Partial<TypeCheckResult> = {}) {
   vi.mocked(compile).mockResolvedValue({ mappingTable: new Map(), ...typecheckBody } as TypeCheckResult);
 }
 
+/**
+ * Mocks the shim/language service pair so that `getSemanticDiagnostics` reports no diagnostics.
+ */
 function mockNoDiagnostics() {
   vi.mocked(createShim).mockReturnValue({ path: '/virtual/foo.__typecheck__.ts', bodyLineOffset: 0 } as ReturnType<typeof createShim>);
   vi.mocked(getLanguageService).mockReturnValue({
@@ -134,7 +168,7 @@ beforeEach(() => {
   vi.mocked(claimSelectors).mockResolvedValue(undefined);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
-  vi.mocked(extractSignalMembers).mockReturnValue(['count']);
+  vi.mocked(extractSignalMembers).mockReturnValue({ members: ['count'], dependencies: [] });
   vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
   vi.mocked(createStyleModuleSpecifier).mockReturnValue('style-module');
   mockSuccessfulCompile();
@@ -245,6 +279,7 @@ describe('createTransformHook()', () => {
     expect(clearMetadataForFile).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(clearComponentToImports).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(clearStyleDependenciesForComponent).toHaveBeenCalledWith(COMPONENT_PATH);
+    expect(clearBaseClassDependenciesForComponent).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(removeComponentPath).toHaveBeenCalledWith(COMPONENT_PATH);
   });
 
@@ -300,6 +335,24 @@ describe('createTransformHook()', () => {
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
     expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
+  });
+
+  it('extracts the signal members with the project compiler options, watching and registering the base class files they depend on', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const metadata = createMetadata();
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
+    vi.mocked(extractSignalMembers).mockReturnValue({ members: ['count'], dependencies: ['/src/base.ts', '/node_modules/lib/index.d.ts'] });
+    const state = createState();
+    const hook = createTransformHook(state);
+    const ctx = createPluginContext();
+
+    await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
+
+    expect(extractSignalMembers).toHaveBeenCalledWith(expect.anything(), metadata.typescriptNodes.klass, state.compilerOptions);
+    expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/base.ts');
+    expect(ctx.addWatchFile).toHaveBeenCalledWith('/node_modules/lib/index.d.ts');
+    expect(registerBaseClassDependency).toHaveBeenCalledWith('/src/base.ts', COMPONENT_PATH);
+    expect(registerBaseClassDependency).toHaveBeenCalledWith('/node_modules/lib/index.d.ts', COMPONENT_PATH);
   });
 
   it('imports the style module of the styleUrl, leaving its compilation to the style module', async () => {
