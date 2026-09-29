@@ -8,21 +8,13 @@ Xaendar is a framework for building Web Components declaratively, using a templa
 
 This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/types`) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
 
-## Conventions
-
-- **Language:** TypeScript strict.
-- **Testing:** Vitest.
-- **Component docs:** Storybook (`.storybook/`, stories in `docs/stories/`).
-- **API docs:** generated into `docs/apis/`.
-- **Language-specific rules:** in `.claude/rules/` (`typescript.md`, `jsdoc.md`, `code-style.md`), loaded automatically for matching files.
-
 ## Commands
 
 ```bash
 npm run test              # run all vitest specs once
 npm run test:watch        # watch mode
 npm run test:coverage     # with coverage — 100% lines/functions/branches/statements is enforced (vitest.config.ts)
-npx vitest packages/core/src/utils/context.util.spec.ts   # run a single spec file
+npx vitest packages/core/src/utils/context/context.util.spec.ts   # run a single spec file
 npx vitest -t "name of test"                              # run tests matching a name
 
 npm run lint               # eslint .
@@ -62,27 +54,3 @@ common ───┼──►  compiler  ──►  language-core  ──►  lan
 
 vscode-client — standalone; launches language-server as an external process (no @xaendar/* package dependency)
 ```
-
-- **`types`** — shared public TS utility types (constructors, decorators, functions) used across every other package.
-- **`common`** — shared runtime utilities/models with no framework dependency (string/indent/tag utils, a `stack` model). Depended on by `signals`, `compiler`, `build-tools`, and `cli`.
-- **`signals`** — full implementation of the TC39 Signals proposal (`Signal.State`, `Signal.Computed`, `Signal.subtle.Watcher`, `effect()`), installed as the global `Signal` namespace via `loadSignals()`. This is the reactivity primitive everything else builds on. Depends on `common`/`types`.
-- **`core`** — runtime primitives for authoring components: `BaseWebComponent` (attaches Shadow DOM, wires `attributeChangedCallback`/`connectedCallback`/`disconnectedCallback`), the `@WebComponent`/`@Property`/`@Event` decorators, `InputSignal`, and template-runtime helpers (`_Context`, `mountNode`, `createAnchor` in `src/utils/context.util.ts`) that the *compiler-generated* render code calls into to mount/unmount nodes and manage nested scopes (e.g. `@for`/`@if` bodies). Uses stage-3 (`accessor`) decorators, not `experimentalDecorators`. Depends only on `signals`/`types` — **not** on `compiler`; the compiler-generated code targets `core`'s runtime shape but there is no build-time dependency edge between them.
-- **`compiler`** — turns a `.html`-like Xaendar template into a JS render-function body plus a type-check result. Four-stage pipeline, each stage in its own subfolder mirroring the same internal layout (`<stage>/<stage>/`, `models/`, `states/`, `types/`, `utils/`):
-  1. **`lexer`** tokenizes the raw template text.
-  2. **`parser`** turns tokens into an AST (`ASTNode`, `ASTNodeType`, node types like `ImportNode`).
-  3. **`type-checker`** builds a `TypeCheckResult` from the AST plus component/directive metadata (resolved from `@import` nodes via a caller-supplied `CompilerCache`).
-  4. **`generator`** emits the JS render function body from the AST.
-  The public entry point is `compile()` in `src/compile/compile.ts`, overloaded on `CompileOptions`: pass `baseDir` (+ optional `cache`) to get only a `TypeCheckResult` (for editor tooling), pass `signals` to get only compiled JS (module-level functions whose `render` entry point is invoked with the component bound as `this`), or pass both to get `{ javascript, typescript }` concurrently. Depends on `common`/`types` only.
-- **`build-tools`** — build-time plugins/registry (e.g. for wiring the compiler into a bundler) plus shared build models/constants. Depends on `common`, `compiler`, and `language-core`.
-- **`cli`** (`xaendar` CLI, via `commander`) — `new`, `generate`, `start` commands under `src/commands/`. Depends on `build-tools`/`common`.
-- **`language-core`** — base language-service layer built on `compiler`, exposing `language-service`, `compiler-options.utils`, and `shim.utils`; consumed by `language-server` and `build-tools`.
-- **`language-server`** — LSP server (`vscode-languageserver`) built on `compiler`/`language-core`/`types`, for editor diagnostics/completions on Xaendar templates.
-- **`vscode-client`** — the VS Code extension (`src/lib/extension.ts`) that launches `language-server` via `vscode-languageclient` as an external process; it has no `@xaendar/*` package dependency.
-
-### Template runtime model
-
-Compiled templates don't produce a virtual tree; they produce imperative JS that mounts real DOM nodes through `core`'s `_Context`/`mountNode`/`createAnchor` (`packages/core/src/utils/context.util.ts`). Each `_Context` is one lexical scope (root component, or a nested scope introduced by `@for`/`@if`), holds its own declared identifiers, owned DOM nodes, and cleanup callbacks, and can look up identifiers/event handlers in parent scopes via `_root`/`_parent`. `createAnchor` places a `Comment` node as a stable insertion point for structural directives, so dynamic content is always inserted via `insertBefore(node, anchor)` regardless of how sibling constructs update independently. Destroying a context (`unlisten()`) recursively disposes children, detaches listeners, and removes owned nodes — this is the mechanism that makes per-signal DOM updates surgical instead of requiring a virtual-DOM diff.
-
-### Testing
-
-Vitest specs live alongside source as `*.spec.ts` (`packages/**/*.spec.ts`), environment `node`. Coverage is enforced at 100% (lines/functions/branches/statements) over all of `packages/**/*.ts` excluding specs.
