@@ -1,4 +1,4 @@
-import type { BaseWebComponent } from '../../directives/base-web-component';
+import type { BaseWebComponent } from '../../models/base-web-component';
 import type { _Context } from '../context/context.util';
 
 /**

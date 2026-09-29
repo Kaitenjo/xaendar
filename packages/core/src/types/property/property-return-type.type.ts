@@ -1,5 +1,5 @@
 import { AccessorDecorator, Beautify } from '@xaendar/types';
-import { BaseWebComponent } from '../../directives/base-web-component';
+import { BaseWebComponent } from '../../models/base-web-component';
 
 /**
  * Represents the return type of a property decorator, ensuring it has a 'get' method and only 'get' method.

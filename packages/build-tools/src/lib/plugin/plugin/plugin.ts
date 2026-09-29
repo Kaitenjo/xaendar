@@ -66,7 +66,7 @@ export function xaendarPlugin(): Plugin {
     host,
     compilerOptions: tsConfig.options,
     projectFileNames: tsConfig.fileNames,
-    setLogger: (value) => logger = value,
+    setLogger: value => logger = value,
     logError
   };
 

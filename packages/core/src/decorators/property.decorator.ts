@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { BaseWebComponent } from '../directives/base-web-component';
+import { BaseWebComponent } from '../models/base-web-component';
 import { input } from '../signals/input/input';
 import { InputSignal } from '../signals/types/input-signal.type';
 import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';

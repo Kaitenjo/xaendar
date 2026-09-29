@@ -1,7 +1,7 @@
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { BaseWebComponent } from '../directives';
+import { BaseWebComponent } from '../models';
 import type { InputSignal } from '../signals/types/input-signal.type';
 import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../types/property-decorator-options.type';
 

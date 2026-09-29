@@ -1,5 +1,5 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
-import { BaseWebComponent } from '../../directives/base-web-component';
+import { BaseWebComponent } from '../../models/base-web-component';
 import { WebComponentDecoratorParams } from '../../types/web-component/web-component-decorator-params.type';
 
 /**

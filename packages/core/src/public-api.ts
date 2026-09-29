@@ -1,4 +1,4 @@
 export * from './decorators';
-export * from './directives';
+export * from './models';
 export * from './types';
 export * from './utils';

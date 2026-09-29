@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { Constructor } from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
-import { BaseWebComponent } from '../../directives/base-web-component';
+import { BaseWebComponent } from '../../models/base-web-component';
 import { WebComponent } from './web-component.decorator';
 
 function decorate(selector: string, klass: Constructor<BaseWebComponent>): void {

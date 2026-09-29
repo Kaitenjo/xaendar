@@ -1,5 +1,5 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
-import { BaseWebComponent } from '../directives/base-web-component';
+import { BaseWebComponent } from '../models/base-web-component';
 import { EventOptions } from '../types/event/event-options.type';
 import { EventDecoratorReturnType } from '../types/event/event-return-type.type';
 import { Output } from '../types/event/output.type';

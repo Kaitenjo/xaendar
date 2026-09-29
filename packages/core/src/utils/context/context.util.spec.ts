@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { BaseWebComponent } from '../../directives/base-web-component';
+import type { BaseWebComponent } from '../../models/base-web-component';
 import { _Context, createAnchor, mountNode } from './context.util';
 
 function createRoot(root: Record<string, unknown> = {}): _Context {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { BaseWebComponent } from '../directives';
+import { BaseWebComponent } from '../models';
 import type { Output } from '../types/event/output.type';
 import { Event } from './event.decorator';
 

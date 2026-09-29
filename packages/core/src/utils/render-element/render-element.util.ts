@@ -1,6 +1,6 @@
 import type { Dictionary, NoArgsFunction } from '@xaendar/types';
 import { MATHML_NS, SVG_NS } from '../../costants';
-import { BaseWebComponent } from '../../directives';
+import { BaseWebComponent } from '../../models';
 import { InputSignal } from '../../signals';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
