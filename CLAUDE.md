@@ -14,19 +14,7 @@ This is a monorepo of the framework's own client libraries, published as separat
 - **Testing:** Vitest.
 - **Component docs:** Storybook (`.storybook/`, stories in `docs/stories/`).
 - **API docs:** generated into `docs/apis/`.
-- **Strict mode:** respect `tsconfig.json` (strict enabled); explicitly type parameters and return values of public functions (`public-api.ts`).
-- **Type-only imports:** use `import type { ... }` for type-only imports, to keep the runtime/type boundary clear (not ESLint-enforced, but preferred).
-- **File names:** follow the existing `*.type.ts`, `*.model.ts`, `*.utils.ts`, `*.decorator.ts`, `*.spec.ts` convention used under `packages/*/src`.
-- **One file per folder:** a leaf source file `pippo.<suffix>.ts` (e.g. `pippo.model.ts`, `pippo.utils.ts`) lives in its own folder named after the identifier before the first dot (`pippo/pippo.<suffix>.ts`), and that folder holds only that file plus its `pippo.<suffix>.spec.ts` — no other unrelated loose files (nested sub-folders for further grouping are fine, e.g. `plugin/plugin-utils/plugin.utils.ts`). Entry/barrel files directly under a package's `src/` (`public-api.ts`, `index.ts`) are exempt. When adding a `*.spec.ts` for a source file that isn't already isolated this way, create the folder first and move the source file into it before adding the spec.
-- **Barrel files:** expose each package's public API only via `src/public-api.ts`; never import another package's internal files directly (use the `@xaendar/*` aliases defined in `tsconfig.json`).
-- **No implicit `any`:** prefer precise types or `unknown` + narrowing when the type isn't known upfront. If a cast is unavoidable, use `as unknown as <target-type>`.
-- **Unused vars/params:** prefix with `_` (e.g. `_event`) to satisfy `no-unused-vars` (warning, not error).
-- **Strings:** always single quotes (`'...'`), per ESLint's `quotes: single`.
-- **Null/undefined:** handle optionals explicitly; `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` are both off, so the compiler won't catch these for you — validate at runtime where it matters.
-- **Side-effect imports:** avoid undeclared side-effect-only imports (`noUncheckedSideEffectImports` is on).
-- **Immutability:** prefer `readonly` on properties/arrays that shouldn't be reassigned, especially in shared models under `packages/common/src/models`.
-- Don't indent function parameters vertically.
-- Every new `*.utils.ts`/`*.model.ts` file with executable logic needs an associated Vitest spec (`*.spec.ts`) — coverage must stay at 100%.
+- **Language-specific rules:** in `.claude/rules/` (`typescript.md`, `jsdoc.md`, `code-style.md`), loaded automatically for matching files.
 
 ## Commands
 
@@ -97,4 +85,4 @@ Compiled templates don't produce a virtual tree; they produce imperative JS that
 
 ### Testing
 
-Vitest specs live alongside source as `*.spec.ts` (`packages/**/*.spec.ts`), environment `node`. Coverage is enforced at 100% (lines/functions/branches/statements) over all of `packages/**/*.ts` excluding specs — every new `*.utils.ts`/`*.model.ts` needs an accompanying spec (see `AGENTS.md`).
+Vitest specs live alongside source as `*.spec.ts` (`packages/**/*.spec.ts`), environment `node`. Coverage is enforced at 100% (lines/functions/branches/statements) over all of `packages/**/*.ts` excluding specs.
