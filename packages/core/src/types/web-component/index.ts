@@ -1,1 +1,1 @@
-export * from './web-component-decorator-params.type';
+export * from './web-component-options.type';

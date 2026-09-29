@@ -1,5 +1,6 @@
-import { CustomElement, Event, Output, Property, WebComponent } from '@xaendar/core';
+import { CustomDirective, CustomElement, Directive, Event, Output, Property, WebComponent } from '@xaendar/core';
 import { effect, InputSignal, signal } from '@xaendar/core/signals';
+import { VoidFunction } from '@xaendar/types';
 
 export type NavItem = {
   label: string;
@@ -57,5 +58,20 @@ export class SidebarComponent extends CustomElement {
   
   public onClick(): void {
     this.input.update(value => value + value);
+  }
+}
+
+@Directive({ 
+  selector: 'app-sidebar' 
+})
+export class StyleDirective extends CustomDirective {
+  public readonly display = signal<('block' | 'inline' | 'none')>('block');
+  
+  public reactToChanges(): Array<VoidFunction> | undefined {
+    return [
+      effect(() => {
+        this.element.style.display = this.display();
+      })
+    ];
   }
 }

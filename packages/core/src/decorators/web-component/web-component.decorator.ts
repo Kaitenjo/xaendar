@@ -1,6 +1,6 @@
 import { ClassDecorator, Constructor } from '@xaendar/types';
 import { CustomElement } from '../../models/custom-element/custom-element';
-import { WebComponentDecoratorParams } from '../../types/web-component/web-component-decorator-params.type';
+import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
 
 /**
  * Decorator that registers a class as a custom web component.
@@ -17,7 +17,7 @@ import { WebComponentDecoratorParams } from '../../types/web-component/web-compo
  * class MyButtonComponent extends CustomElement {}
  * ```
  */
-export function WebComponent<T extends CustomElement>(options: WebComponentDecoratorParams): ClassDecorator<T> {
+export function WebComponent<T extends CustomElement>(options: WebComponentOptions): ClassDecorator<T> {
   return function (klass: Constructor<T>, _context: ClassDecoratorContext<Constructor<T>>): void {
     customElements.define(options.selector, klass);
   };
