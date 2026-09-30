@@ -42,8 +42,10 @@ const metadatas = new Map<string, Map<string, MetadataEntry>>();
  */
 const filePathToMetadataKeys = new Map<string, Set<string>>();
 /**
- * Maps each selector to the single component owning it: unlike class names, selectors must be
- * unique, as a custom element name can be defined only once at runtime.
+ * Maps each selector to the single component or directive owning it: unlike class names, selectors must be
+ * unique, as a custom element name, or a directive selector, can be defined only once at runtime.
+ * Directive selectors are keyed as they are applied in templates (`@@selector`, see {@link getSelectorKey}),
+ * so they never clash with custom element names.
  * Ownerships are not reclaimed by the idle sweep, otherwise a duplicated selector declared after
  * the sweep of its first owner would go unnoticed.
  * (e.g.)
@@ -122,15 +124,27 @@ export function getSelectorOwner(selector: string): SelectorOwner | undefined {
 }
 
 /**
- * Registers the component described by `metadataMapping` as the owner of its selector,
+ * Registers the component or directive described by `metadataMapping` as the owner of its selector,
  * replacing any previous owner: conflicts must be checked beforehand via {@link getSelectorOwner}.
- * @param metadataMapping - The metadata of the component owning the selectors
- * @param ownerFile - The absolute path of the file declaring the component.
+ * @param metadataMapping - The metadata of the component or directive owning the selectors
+ * @param ownerFile - The absolute path of the file declaring the component or directive.
  */
-export function registerSelectors({ className, selector }: ComponentOrDirectiveMetadata, ownerFile: string): void {
+export function registerSelectors(metadataMapping: ComponentOrDirectiveMetadata, ownerFile: string): void {
+  const selector = getSelectorKey(metadataMapping);
   releaseSelector(selector);
-  selectorOwners.set(selector, { ownerFile, className });
+  selectorOwners.set(selector, { ownerFile, className: metadataMapping.className });
   filePathToSelectors.getOrInsert(ownerFile, new Set()).add(selector);
+}
+
+/**
+ * Returns the key identifying the selector of a component or a directive in the registry:
+ * the custom element name for a component, the selector as applied in templates (`@@selector`)
+ * for a directive, so the two never clash.
+ * @param metadataMapping - The metadata of the component or directive
+ * @returns The registry key of the selector
+ */
+export function getSelectorKey({ type, selector }: ComponentOrDirectiveMetadata): string {
+  return type === 'directive' ? `@@${selector}` : selector;
 }
 
 /**

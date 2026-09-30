@@ -1,9 +1,9 @@
 import { COMMA, DOUBLE_QUOTE, LEFT_BRACE, LEFT_BRACKET, LPAREN, RIGHT_BRACE, RIGHT_BRACKET, RPAREN, SINGLE_QUOTE } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
-import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
  * Consumes an event parameter and reads until a ',' or ')'.
@@ -20,7 +20,7 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
   let parameterStart = cursor.currentChar.index + 1;
 
   const retVal: LexerTransitionFunctionReturnType = {
-    state: context.history.at(-1) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
+    state: resolveTagBodyState(context.history.at(-1)),
     tokens: []
   }
 

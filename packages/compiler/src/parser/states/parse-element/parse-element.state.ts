@@ -1,4 +1,4 @@
-import { NoArgsFunction } from '@xaendar/types';
+import type { Function, NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { TagOpenNameToken } from '../../../lexer/types/tokens/tag-open-name-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
@@ -6,20 +6,23 @@ import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import { AttributeNode } from '../../types/nodes/attribute-node.type';
 import { ConditionalBindingNode } from '../../types/nodes/conditional-binding-node.type';
+import { DirectiveNode } from '../../types/nodes/directive-node.type';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import { EventNode } from '../../types/nodes/event-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
+import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 
 /**
- * Parses a TAG_OPEN_NAME token and the subsequent attributes, events, and children
+ * Parses a TAG_OPEN_NAME token and the subsequent attributes, events, conditional bindings, directives and children
  * into an `ElementNode`. Handles both regular and self-closing tags.
  *
  * @param cursor - Parser cursor positioned at the TAG_OPEN_NAME token.
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The TAG_OPEN_NAME token containing the tag name.
  * @returns The parsed `ElementNode`.
+ * @throws If an attribute or a directive is bound more than once, or the element is not closed correctly.
  */
 export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: TagOpenNameToken): MaybeASTNodeWithSpan<ElementNode> {
   cursor.advance();
@@ -28,6 +31,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const attributes = new Array<AttributeNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
+  const directives = new Array<DirectiveNode>();
   let read = true;
 
   while (read) {
@@ -45,12 +49,17 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         conditionalBindings.push(parseConditionalBinding(cursor, parseNode, token));
         break;
 
+      case TokenType.DIRECTIVE:
+        directives.push(parseDirective(cursor, parseNode, token));
+        break;
+
       default:
         read = false;
     }
   }
 
-  assertUniqueAttributes(tagName, attributes, conditionalBindings);
+  assertUniqueAttributes(attributes, conditionalBindings, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  assertUniqueDirectives(tagName, directives, conditionalBindings);
 
   const peekedTokenType = cursor.peek().type;
   switch (peekedTokenType) {
@@ -68,7 +77,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         attributes,
         events,
         children: [],
-        conditionalBindings
+        conditionalBindings,
+        directives
       };
     
     default:
@@ -93,31 +103,32 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     attributes,
     events,
     children,
-    conditionalBindings
+    conditionalBindings,
+    directives
   };
 }
 
 /**
- * Ensures every attribute/property is bound at most once on an element,
- * across the element itself and all of its (nested) conditional bindings.
+ * Ensures every attribute/property is bound at most once on an element or on a directive,
+ * across the element (or the directive) itself and all of its (nested) conditional bindings.
  *
- * A conditional binding cannot share an attribute with the element or with
+ * A conditional binding cannot share an attribute with its owner or with
  * another conditional binding: when its condition turns false the runtime
  * unbinds the attribute (removing it or restoring the property's default),
  * which would clobber the value set by the other binding.
  * Events are not checked, since an element may listen to the same event more than once.
  *
- * @param tagName - Tag name of the element, used in the error message.
  * @param attributes - Attribute nodes to check.
  * @param conditionalBindings - Conditional bindings whose attributes are checked recursively.
- * @param bound - Attribute names already bound on the element.
+ * @param describeDuplicate - Builds the error message for an attribute bound more than once.
+ * @param bound - Attribute names already bound on the owner.
  * @throws If an attribute is bound more than once.
  */
-function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], conditionalBindings: ConditionalBindingNode[], bound = new Set<string>()): void {
+function assertUniqueAttributes(attributes: AttributeNode[], conditionalBindings: ConditionalBindingNode[], describeDuplicate: Function<[name: string], string>, bound = new Set<string>()): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, span } = attributes[i];
     if (bound.has(name)) {
-      throw new Error(`Attribute "${name}" is bound more than once on <${tagName}>`, { cause: span });
+      throw new Error(describeDuplicate(name), { cause: span });
     }
 
     bound.add(name);
@@ -125,7 +136,38 @@ function assertUniqueAttributes(tagName: string, attributes: AttributeNode[], co
 
   for (let i = 0; i < conditionalBindings.length; i++) {
     const { attributes, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
-    assertUniqueAttributes(tagName, attributes, nestedConditionalBindings, bound);
+    assertUniqueAttributes(attributes, nestedConditionalBindings, describeDuplicate, bound);
+  }
+}
+
+/**
+ * Ensures every directive is applied at most once on an element, across the element
+ * itself and all of its (nested) conditional bindings, and every directive property is
+ * bound at most once, across the directive itself and all of its (nested) conditional bindings.
+ *
+ * Directive properties don't clash with the element attributes, nor with the
+ * properties of other directives, since each directive binds its own instance.
+ *
+ * @param tagName - Tag name of the element, used in the error messages.
+ * @param directives - Directive nodes to check.
+ * @param conditionalBindings - Conditional bindings whose directives are checked recursively.
+ * @param applied - Selectors of the directives already applied on the element.
+ * @throws If a directive is applied more than once, or one of its properties is bound more than once.
+ */
+function assertUniqueDirectives(tagName: string, directives: DirectiveNode[], conditionalBindings: ConditionalBindingNode[], applied = new Set<string>()): void {
+  for (let i = 0; i < directives.length; i++) {
+    const { selector, attributes, conditionalBindings: directiveConditionalBindings, span } = directives[i];
+    if (applied.has(selector)) {
+      throw new Error(`Directive "${selector}" is applied more than once on <${tagName}>`, { cause: span });
+    }
+
+    applied.add(selector);
+    assertUniqueAttributes(attributes, directiveConditionalBindings, name => `Property "${name}" of directive "${selector}" is bound more than once on <${tagName}>`);
+  }
+
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { directives, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
+    assertUniqueDirectives(tagName, directives, nestedConditionalBindings, applied);
   }
 }
 

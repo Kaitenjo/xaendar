@@ -3,6 +3,7 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { Line } from '../../types/generated-line.type';
@@ -20,11 +21,17 @@ const metadata = (properties: Record<string, ComponentPropertyMetadata>, events:
   events: new Map(Object.entries(events).map(([name, type]) => [name, { type }]))
 }) as unknown as ComponentMetadata;
 
-const run = (template: string, component?: ComponentMetadata): Line[] => {
+const directiveMetadata = (properties: Record<string, ComponentPropertyMetadata>, events: Record<string, string> = {}) => ({
+  type: 'directive',
+  className: 'MyDirective',
+  selector: 'myDirective',
+  properties: new Map(Object.entries(properties)),
+  events: new Map(Object.entries(events).map(([name, type]) => [name, { type }]))
+}) as unknown as DirectiveMetadata;
+
+const run = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
   const context = new TypeCheckContext();
-  if (component) {
-    context.addImport(component);
-  }
+  context.addImport(...imports);
 
   return typeCheckElement(parse(template), processNode, context);
 };
@@ -139,6 +146,139 @@ describe('typeCheckElement', () => {
       const component = metadata({ title: new ComponentPropertyMetadata('title', 'string', { required: true }) });
       expect(() => run('<my-el @(cond, title="b")></my-el>', component)).toThrow('Required property "title" of <my-el> cannot be bound inside a conditional binding.');
     });
+  });
+});
+
+describe('typeCheckElement directives', () => {
+  const properties = {
+    display: new ComponentPropertyMetadata('display', '\'block\' | \'none\''),
+    visible: new ComponentPropertyMetadata('visible', 'boolean', { required: true })
+  };
+
+  it('type-checks directive properties and events on a native element', () => {
+    const directive = directiveMetadata(properties, { toggled: 'boolean' });
+    const lines = run('<div title="{name}" @@myDirective(display="block" visible="{isVisible()}" @toggled="f($event)")><span></span></div>', directive);
+
+    expect(text(lines)).toEqual([
+      'root.name;',
+      '{',
+      '  let x!: string;',
+      '  x satisfies \'block\' | \'none\';',
+      '}',
+      '{',
+      '  (root.isVisible()) satisfies boolean;',
+      '}',
+      '{',
+      '  let $event!: CustomEvent<boolean>;',
+      '  root.f($event);',
+      '}',
+      'child;'
+    ]);
+  });
+
+  it('type-checks the directives of a custom element after its own bindings', () => {
+    const component = metadata({ title: new ComponentPropertyMetadata('title', 'string') });
+    const directive = directiveMetadata({ display: properties.display });
+    const lines = run('<my-el title="{name}" @@myDirective(display="{mode}")></my-el>', component, directive);
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  (root.name) satisfies string;',
+      '}',
+      '{',
+      '  (root.mode) satisfies \'block\' | \'none\';',
+      '}'
+    ]);
+  });
+
+  it('accepts a directive declared without bindings', () => {
+    expect(text(run('<div @@myDirective></div>', directiveMetadata({})))).toEqual([]);
+  });
+
+  it('throws when the directive is not imported', () => {
+    expect(() => run('<div @@myDirective></div>')).toThrow('@@myDirective selector is not associated to any Directive imported in the template');
+  });
+
+  it('does not resolve a directive through a component sharing its selector', () => {
+    const component = { ...metadata({}), selector: 'myDirective' } as ComponentMetadata;
+    expect(() => run('<div @@myDirective></div>', component)).toThrow('@@myDirective selector is not associated to any Directive imported in the template');
+  });
+
+  it('throws for an unknown property', () => {
+    expect(() => run('<div @@myDirective(other="x")></div>', directiveMetadata({}))).toThrow('Unknown property "other" on @@myDirective (MyDirective has no @Property with this name).');
+  });
+
+  it('throws when required properties are missing', () => {
+    expect(() => run('<div @@myDirective(display="block")></div>', directiveMetadata(properties))).toThrow('@@myDirective on <div> is missing the following required properties:\n ● visible');
+  });
+
+  it('throws for an unknown event', () => {
+    expect(() => run('<div @@myDirective(@nope="f()")></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+  });
+
+  it('type-checks the conditional bindings of a directive as nested if blocks', () => {
+    const directive = directiveMetadata(properties, { toggled: 'void' });
+    const lines = run('<div @@myDirective(visible="{isVisible()}" @(cond(), display="{mode}" @(inner, @toggled="f()")))></div>', directive);
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  (root.isVisible()) satisfies boolean;',
+      '}',
+      'if (root.cond()) {',
+      '  {',
+      '    (root.mode) satisfies \'block\' | \'none\';',
+      '  }',
+      '  if (root.inner) {',
+      '    {',
+      '      root.f();',
+      '    }',
+      '  }',
+      '}'
+    ]);
+  });
+
+  it('throws for an unknown property inside a conditional binding of a directive', () => {
+    expect(() => run('<div @@myDirective(@(cond(), other="x"))></div>', directiveMetadata({}))).toThrow('Unknown property "other" on @@myDirective (MyDirective has no @Property with this name).');
+  });
+
+  it('throws for an unknown event inside a conditional binding of a directive', () => {
+    expect(() => run('<div @@myDirective(@(cond(), @nope="f()"))></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+  });
+
+  it('throws when a required property of a directive is bound inside a conditional binding', () => {
+    expect(() => run('<div @@myDirective(@(cond(), visible="{isVisible()}"))></div>', directiveMetadata(properties))).toThrow('Required property "visible" of @@myDirective cannot be bound inside a conditional binding.');
+  });
+
+  it('type-checks the directives applied inside a conditional binding of a native element', () => {
+    const lines = run('<div @(cond(), title="{name}" @@myDirective(display="{mode}"))></div>', directiveMetadata({ display: properties.display }));
+
+    expect(text(lines)).toEqual([
+      'if (root.cond()) {',
+      '  root.name;',
+      '  {',
+      '    (root.mode) satisfies \'block\' | \'none\';',
+      '  }',
+      '}'
+    ]);
+  });
+
+  it('type-checks the directives applied inside a conditional binding of a custom element', () => {
+    const component = metadata({ title: new ComponentPropertyMetadata('title', 'string') });
+    const lines = run('<my-el @(cond(), @(inner, @@myDirective(display="{mode}")))></my-el>', component, directiveMetadata({ display: properties.display }));
+
+    expect(text(lines)).toEqual([
+      'if (root.cond()) {',
+      '  if (root.inner) {',
+      '    {',
+      '      (root.mode) satisfies \'block\' | \'none\';',
+      '    }',
+      '  }',
+      '}'
+    ]);
+  });
+
+  it('throws when a directive applied inside a conditional binding is not imported', () => {
+    expect(() => run('<div @(cond(), @@myDirective)></div>')).toThrow('@@myDirective selector is not associated to any Directive imported in the template');
   });
 });
 

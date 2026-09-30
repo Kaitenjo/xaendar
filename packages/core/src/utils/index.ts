@@ -1,4 +1,5 @@
 export * from './context/context.util';
+export * from './directive-registry/directive-registry.util';
 export * from './for/for.util';
 export * from './if/if.util';
 export * from './render-element/render-element.util';

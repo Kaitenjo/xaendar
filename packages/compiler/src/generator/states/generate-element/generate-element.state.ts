@@ -1,6 +1,7 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
+import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
@@ -9,7 +10,10 @@ import { getElementIdentifier, resolveExpression } from '../../utils/generator/g
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
- * attaches event listeners, appends it to the parent, and recursively processes children.
+ * attaches event listeners, applies conditional bindings and directives, appends it to the parent,
+ * and recursively processes children.
+ *
+ * The directives are passed to `_renderElement` only when the element declares any.
  *
  * @param node - The `ElementNode` to process.
  * @param index - Variable name to use for the created DOM element.
@@ -23,6 +27,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const attributes = await mapAttributes(node.attributes, compilerContext, tagName);
   const events = mapEvents(node.events, compilerContext);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, compilerContext, tagName, isCustomElement);
+  const directives = await mapDirectives(node.directives, compilerContext);
   const nodeName = getElementIdentifier(node, parentNode, index);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
@@ -65,6 +70,16 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
       ...indent([
         '[',
         ...indent(conditionalBindings),
+        '],'
+      ]),
+    )
+    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} [],`;
+
+  directives.length
+    ? retVal.code.push(
+      ...indent([
+        '[',
+        ...indent(directives),
         ']'
       ]),
       ');'
@@ -96,11 +111,19 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 /**
  * Maps attribute nodes to their corresponding generated code lines.
  *
- * @param attributes - The attribute nodes to map onto the element.
+ * Attributes declared inside a conditional binding also get the `unbind` applied when the
+ * condition turns false: a property of a custom element or of a directive is reset to its
+ * default value, read from the metadata of its owner, any other attribute is removed.
+ *
+ * @param attributes - The attribute nodes to map onto the element or the directive.
  * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the attributes are bound to.
+ * @param isCustomElement - Whether the owner is a custom element. Left `undefined` when the attributes are not declared inside a conditional binding.
+ * @param isDirective - Whether the owner is a directive.
  * @returns Array of generated code strings, one per attribute.
+ * @throws If the metadata of a directive property bound inside a conditional binding can't be resolved.
  */
-async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, tagName: string, isCustomElement?: boolean): Promise<string[]> {
+async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, owner: string, isCustomElement?: boolean, isDirective = false): Promise<string[]> {
   const mappedAttributes = new Array<string>(); 
   for (let i = 0; i < attributes.length; i++) {
     const { name, value } = attributes[i];
@@ -128,7 +151,8 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
 
     const extra = new Array<string>();
     if (isCustomElement !== undefined) {
-      const metadata = await compilerContext.cache?.getOrInsert(tagName);
+      // Native elements have no metadata: their attributes are always removed
+      const metadata = isCustomElement || isDirective ? await compilerContext.cache?.getOrInsert(owner) : undefined;
       const propertyMetadata = metadata?.properties.get(name);
       if (propertyMetadata) {
         /*
@@ -140,6 +164,14 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
           extra.push('unbind: _setExpressionProperty,', `defaultValue: ${propertyMetadata.defaultValue}`);
         }
+      } else if (isDirective) {
+        /*
+          A directive has no underlying attribute to fall back to: every attribute bound to it
+          is one of its properties, so its metadata must always be available.
+
+          Unlike components, a non-recognized property cannot be applied as an attribute on the DOM element itself.
+        */
+        throw new Error(`Unable to resolve the metadata of property "${name}" of ${owner}`, { cause: attributes[i].span });
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;
         extra.push('unbind: _removeAttribute');
@@ -210,19 +242,33 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   return mappedEvents;
 }
 
-async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, tagName: string, isCustomElement: boolean = false): Promise<string[]> {
+/**
+ * Maps conditional binding nodes to the descriptors `_renderElement` applies while their condition holds:
+ * the condition, the attributes, the events, the nested conditional bindings and, for a conditional binding
+ * declared on an element, the directives.
+ *
+ * Conditional bindings without any binding are skipped.
+ *
+ * @param conditionalBindings - The conditional binding nodes to map.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the conditional bindings are declared in.
+ * @param isCustomElement - Whether the owner is a custom element.
+ * @param isDirective - Whether the owner is a directive.
+ * @returns Array of generated code lines, one descriptor per conditional binding.
+ */
+async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean = false, isDirective = false): Promise<string[]> {
   const mappedConditionalBindings = new Array<string>();
 
   for (let i = 0; i < conditionalBindings.length; i++) {
-    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
-    if (!attributes.length && !events.length && !nestedConditionalBindings.length) {
+    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings, directives } = conditionalBindings[i];
+    if (!attributes.length && !events.length && !nestedConditionalBindings.length && !directives.length) {
       continue;
     }
 
     const { expression } = resolveExpression(condition, compilerContext);
-    const mappedAttributes = await mapAttributes(attributes, compilerContext, tagName, isCustomElement);
+    const mappedAttributes = await mapAttributes(attributes, compilerContext, owner, isCustomElement, isDirective);
     const mappedEvents = mapEvents(events, compilerContext);
-    const mappedNestedConditionalBindings = await mapConditionalBindings(nestedConditionalBindings, compilerContext, tagName, isCustomElement);
+    const mappedNestedConditionalBindings = await mapConditionalBindings(nestedConditionalBindings, compilerContext, owner, isCustomElement, isDirective);
 
     const retVal = [
       '{',
@@ -269,15 +315,109 @@ async function mapConditionalBindings(conditionalBindings: ConditionalBindingNod
       )
       : retVal.push(
         ...indent([
-          'conditionalBindings: []'
+          'conditionalBindings: [],'
         ])
       );
 
-    retVal.push('}');
+    // A conditional binding declared inside a directive cannot apply other directives
+    if (!isDirective) {
+      const mappedDirectives = await mapDirectives(directives, compilerContext);
+      mappedDirectives.length
+        ? retVal.push(
+          ...indent([
+            'directives: [',
+            ...indent(mappedDirectives),
+            '],'
+          ])
+        )
+        : retVal.push(
+          ...indent([
+            'directives: [],'
+          ])
+        );
+    }
+
+    retVal.push('},');
     mappedConditionalBindings.push(...retVal);
   };
 
   return mappedConditionalBindings;
+}
+
+/**
+ * Maps directive nodes to the descriptors `_renderElement` applies to the element:
+ * the directive selector, its properties, its events and its conditional bindings.
+ *
+ * Properties bound directly in the directive are never unbound, since they live as long
+ * as the directive, so the directive metadata is only needed by its conditional bindings.
+ *
+ * @param directives - The directive nodes applied to the element.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @returns Array of generated code lines, one descriptor per directive.
+ */
+async function mapDirectives(directives: DirectiveNode[], compilerContext: CompilerContext): Promise<string[]> {
+  const mappedDirectives = new Array<string>();
+
+  for (let i = 0; i < directives.length; i++) {
+    const { selector, attributes, events, conditionalBindings } = directives[i];
+    const mappedAttributes = await mapAttributes(attributes, compilerContext, selector);
+    const mappedEvents = mapEvents(events, compilerContext);
+    const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, compilerContext, `@@${selector}`, false, true);
+
+    const retVal = [
+      '{',
+      ...indent([
+        `selector: '${selector}',`
+      ])
+    ];
+
+    attributes.length
+      ? retVal.push(
+        ...indent([
+          'attributes: [',
+          ...indent(mappedAttributes),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'attributes: [],'
+        ])
+      );
+
+    events.length
+      ? retVal.push(
+        ...indent([
+          'events: [',
+          ...indent(mappedEvents),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'events: [],'
+        ])
+      );
+
+    mappedConditionalBindings.length
+      ? retVal.push(
+        ...indent([
+          'conditionalBindings: [',
+          ...indent(mappedConditionalBindings),
+          ']'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'conditionalBindings: []'
+        ])
+      );
+
+    retVal.push('},');
+    mappedDirectives.push(...retVal);
+  }
+
+  return mappedDirectives;
 }
 
 function overrideCreateElement(tagName: string): string {

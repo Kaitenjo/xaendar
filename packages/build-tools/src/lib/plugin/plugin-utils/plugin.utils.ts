@@ -1,12 +1,12 @@
 import { slice } from '@xaendar/common';
-import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import type MagicString from 'magic-string';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
 import { RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
-import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
@@ -268,7 +268,7 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  * @param path Optional path(s) to the source file(s) containing the component or directive.
  * @returns The metadata for the specified component or directive.
  * @throws {Error} If the file declaring the symbol can't be resolved, the symbol's metadata
- *   can't be found in it, or its selector is already used by another component.
+ *   can't be found in it, or its selector is already used by another component or directive.
  */
 export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
   // Posix paths, to match the owner file keys of the metadata registry (TS source file names)
@@ -287,8 +287,7 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
   }
 
   const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
-  const metadatas = await extractComponentsMetadataFromSourceFile(sourceFile);
-  metadata = metadatas?.get(className);
+  metadata = await extractClassMetadata(sourceFile, className);
   if (!metadata) {
     throw new Error(`Metadata for symbol "${classNameOrSelector}" not found.`);
   }
@@ -304,29 +303,34 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
 }
 
 /**
- * Registers a component as the owner of its selector, unless it is already owned by another
- * component: a custom element name can be defined only once at runtime, so two components
- * sharing a selector would make the second definition throw.
+ * Registers a component or a directive as the owner of its selector, unless it is already owned by another
+ * one: a custom element name, or a directive selector, can be defined only once at runtime, so two components
+ * (or two directives) sharing a selector would make the second definition throw.
+ * Components and directives don't share selectors, since they are applied in different ways.
  *
  * An ownership may be stale while the dev server is running (e.g. a selector moved from a file to
  * another one transformed first), so a conflicting owner is checked against its file on disk and
  * replaced when it no longer declares the selector.
  *
- * @param metadata - The metadata of the component claiming its selector.
+ * @param metadata - The metadata of the component or directive claiming its selector.
  * @returns The error message describing the conflict, or `undefined` if the selector has been claimed.
  */
 export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Promise<string | undefined> {
-  const { className, selector } = metadata;
+  const { className, selector, type } = metadata;
   const ownerFile = metadata.typescriptNodes.klass.getSourceFile().fileName;
+  const kind = type === 'directive' ? 'Directive' : 'Component';
 
   if (!selector) {
-    return `Component "${className}" - ${ownerFile} does not declare a selector.`;
+    return `${kind} "${className}" - ${ownerFile} does not declare a selector.`;
   }
 
-  const owner = getSelectorOwner(selector);
-  const ownedByAnotherComponent = owner && (owner.ownerFile !== ownerFile || owner.className !== className);
-  if (ownedByAnotherComponent && await isSelectorDeclaredBy(owner, selector)) {
-    return `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
+  const selectorKey = getSelectorKey(metadata);
+  const owner = getSelectorOwner(selectorKey);
+  const ownedByAnotherClass = owner && (owner.ownerFile !== ownerFile || owner.className !== className);
+  if (ownedByAnotherClass && await isSelectorDeclaredBy(owner, selectorKey)) {
+    return type === 'directive'
+      ? `Selector "${selector}" of directive "${className}" - ${ownerFile} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.`
+      : `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
   }
 
   // registerSelectors replaces a stale owner, releasing the selector from it
@@ -368,14 +372,14 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
 }
 
 /**
- * Checks, reading its file from disk, whether a component still declares a selector.
+ * Checks, reading its file from disk, whether a component or a directive still declares a selector.
  *
  * @param owner - The registered owner of the selector.
- * @param selector - The custom element selector.
+ * @param selectorKey - The registry key of the selector (see `getSelectorKey`).
  * @returns `false` if the owner file doesn't exist anymore, or the owner class doesn't declare the
  *   selector anymore; `true` otherwise, also when the metadata can't be extracted, to keep the ownership.
  */
-async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, selector: string): Promise<boolean> {
+async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, selectorKey: string): Promise<boolean> {
   let source: string;
   try {
     source = await readFile(ownerFile, 'utf-8');
@@ -384,11 +388,23 @@ async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, sel
   }
 
   try {
-    const metadatas = await extractComponentsMetadataFromSourceFile(createSourceFile(ownerFile, source, ScriptTarget.Latest, true));
-    return metadatas?.get(className)?.selector === selector;
+    const metadata = await extractClassMetadata(createSourceFile(ownerFile, source, ScriptTarget.Latest, true), className);
+    return !!metadata && getSelectorKey(metadata) === selectorKey;
   } catch {
     return true;
   }
+}
+
+/**
+ * Extracts the metadata of a component or a directive declared in a source file.
+ *
+ * @param sourceFile - The source file declaring the class.
+ * @param className - The name of the component or directive class.
+ * @returns The metadata of the class, or `undefined` if the file doesn't declare a component or a directive with that name.
+ * @throws If the metadata of the class can't be extracted, e.g. two of its properties resolve to the same name.
+ */
+async function extractClassMetadata(sourceFile: SourceFile, className: string): Promise<ComponentOrDirectiveMetadata | undefined> {
+  return (await extractComponentsMetadataFromSourceFile(sourceFile))?.get(className) ?? (await extractDirectivesMetadataFromSourceFile(sourceFile))?.get(className);
 }
 
 /**

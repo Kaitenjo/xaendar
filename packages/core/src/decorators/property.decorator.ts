@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { CustomElement } from '../models/custom-element/custom-element';
+import type { BindingHost } from '../types/binding-host.type';
 import { input } from '../signals/input/input';
 import { InputSignal } from '../signals/types/input-signal.type';
 import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';
@@ -13,7 +13,7 @@ type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, Incom
 };
 
 function createPropertyDecorator<
-  Class extends CustomElement,
+  Class extends BindingHost,
   Value extends InputSignal<ActualValue>,
   ActualValue = unknown,
   IncomingValue = ActualValue
@@ -64,7 +64,7 @@ function createPropertyDecorator<
 }
 
 /**
- * Decorator that declares an optional input property on a web component.
+ * Decorator that declares an optional input property on a web component or a directive.
  *
  * Transforms the decorated accessor into a reactive {@link InputSignal}
  * bound to the corresponding HTML attribute. An optional default `value`
@@ -85,7 +85,7 @@ function createPropertyDecorator<
  * ```
  */
 export function Property<
-  Class extends CustomElement,
+  Class extends BindingHost,
   Value extends InputSignal<ActualValue>,
   ActualValue = Value extends InputSignal<infer U> ? U : unknown,
   IncomingValue = ActualValue
@@ -97,7 +97,7 @@ export function Property<
 }
 
 /**\
- * Decorator that declares a required input property on a web component.
+ * Decorator that declares a required input property on a web component or a directive.
  *
  * The consumer must explicitly supply the attribute value; no default is
  * accepted. If the attribute is absent, the signal value will be `undefined`
@@ -118,7 +118,7 @@ export function Property<
  * ```
  */
 Property.required = function required<
-  Class extends CustomElement,
+  Class extends BindingHost,
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(

@@ -1,7 +1,8 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
-import { ComponentDeclaration, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
-import { ClassDeclarationWithName, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
+import { ClassDeclaration, ClassElement, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, NodeArray, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
+import { DirectiveMetadata } from '../../types/directive-metadata.type';
+import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import { Span } from '../../types/span.type';
 
@@ -22,79 +23,30 @@ class ComponentPropertyMetadataWishSpan extends ComponentPropertyMetadata {
 }
 
 /**
+ * Class decorators identifying the classes metadata are extracted from.
+ */
+type ClassDecoratorNode = WebComponentDecorator | DirectiveDecorator;
+
+/**
  * Extracts component metadata from a source file by parsing decorators.
  * By default, it reads the source file and extracts metadata for the specified component class.
- * 
- * 
- * @param modulePath - The import module path (e.g., './button.component')
- * @param className - The exported symbol name to look for
- * @param baseDir - The directory context for resolving relative paths
- * @returns Component metadata if found, undefined otherwise
+ *
+ *
+ * @param sourceFile - The source file declaring the components.
+ * @returns The metadata of every component declared in the file, keyed by class name, or `undefined`
+ *   if the `@WebComponent` decorator of a component doesn't declare a literal selector and template url.
+ * @throws If two properties of a component resolve to the same name.
  */
 export async function extractComponentsMetadataFromSourceFile(sourceFile: SourceFile): Promise<Map<string, ComponentMetadata> | undefined> {
   const metadatas = new Map<string, ComponentMetadata>();
 
-  const declarations = getClassAndWebComponentDeclarations(sourceFile);
+  const declarations = getDecoratedClassDeclarations<WebComponentDecorator>(sourceFile, 'WebComponent');
   for (let i = 0; i < declarations.length; i++) {
     const { klass, decorator } = declarations[i];
     const { selector, styleUrl, templateUrl } = extractMetadaFromDecorator(decorator);
     if (!selector || !templateUrl) {
       return;
     }
-
-    // Extract properties and events
-    const properties = new Map<string, ComponentPropertyMetadataWishSpan>();
-    const events = new Map<string, ComponentEventMetadata>();
-    const members = klass.members;
-
-    for (let i = 0; i < members.length; i++) {
-      const member = members[i];
-      if (!isPropertyDeclaration(member)) {
-        continue;
-      }
-
-      // Look for decorators in modifiers (TypeScript stores them there)
-      const memberModifiers = member.modifiers ?? [];
-
-      let required = false;
-      const propDecorator = Array.from(memberModifiers).find((member): member is PropertyDecorator => {
-        const result = isPropertyDecorator(member);
-        required = !!result.required;
-        return result.decorator
-      });
-
-      if (propDecorator) {
-        const nameNode = getNameOfDeclaration(member);
-        if (nameNode && isIdentifier(nameNode)) {
-          const propName = nameNode.text;
-          const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required);
-          const actualPropName = metadata.alias ?? propName;
-          const conflictingProperty = properties.get(actualPropName);
-          if (!conflictingProperty) {
-            properties.set(actualPropName, metadata);
-          } else {
-            const { start, end } = conflictingProperty.span;
-            const { line, character } = sourceFile.getLineAndCharacterOfPosition(start);
-            const { fileName, text } = sourceFile;
-            throw `Failed to extract metadata from an imported component in the template - ${fileName}\n[Ln ${line + 1}, Col ${character + 1}] - A property identified by name ${actualPropName} was already defined\n ---> ${slice(text, start - character, end)}`;
-          }
-        }
-
-        continue;
-      }
-
-      const eventDecorator = Array.from(memberModifiers).find(member => isEventDecorator(member));
-      if (eventDecorator) {
-        const nameNode = getNameOfDeclaration(member);
-        const eventName = nameNode && isIdentifier(nameNode) ? nameNode.text : undefined;
-        if (eventName) {
-          events.set(eventName, extractEventMetadata(eventDecorator));
-        }
-      }
-    }
-
-    const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-    properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
 
     const className = klass.name.text;
     metadatas.set(className, {
@@ -103,8 +55,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       selector,
       styleUrl,
       templateUrl,
-      properties: mappedProperties,
-      events,
+      ...extractBindingsMetadata(klass.members, sourceFile, 'component'),
       typescriptNodes: declarations[i]
     });
   }
@@ -113,20 +64,120 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
 }
 
 /**
- * Finds a class declaration by name and returns it only when it is decorated as a Xaendar web component.
+ * Extracts directive metadata from a source file by parsing decorators.
+ *
+ * @param sourceFile - The source file declaring the directives.
+ * @returns The metadata of every directive declared in the file, keyed by class name, or `undefined`
+ *   if the `@Directive` decorator of a directive doesn't declare a literal selector.
+ * @throws If two properties of a directive resolve to the same name.
+ */
+export async function extractDirectivesMetadataFromSourceFile(sourceFile: SourceFile): Promise<Map<string, DirectiveMetadata> | undefined> {
+  const metadatas = new Map<string, DirectiveMetadata>();
+
+  const declarations = getDecoratedClassDeclarations<DirectiveDecorator>(sourceFile, 'Directive');
+  for (let i = 0; i < declarations.length; i++) {
+    const { klass, decorator } = declarations[i];
+    const { selector } = extractMetadaFromDecorator(decorator);
+    if (!selector) {
+      return;
+    }
+
+    const className = klass.name.text;
+    metadatas.set(className, {
+      type: 'directive',
+      className,
+      selector,
+      ...extractBindingsMetadata(klass.members, sourceFile, 'directive'),
+      typescriptNodes: declarations[i]
+    });
+  }
+
+  return metadatas;
+}
+
+/**
+ * Extracts the metadata of the `@Property` and `@Event` accessors declared by a component or a directive.
+ *
+ * @param members - The members of the class declaring the accessors.
+ * @param sourceFile - The source file declaring the class, used in the error messages.
+ * @param kind - Whether the class is a component or a directive, used in the error messages.
+ * @returns The properties, keyed by their alias or name, and the events, keyed by name.
+ * @throws If two properties resolve to the same name.
+ */
+function extractBindingsMetadata(members: NodeArray<ClassElement>, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type']): Pick<ComponentMetadata, 'properties' | 'events'> {
+  const properties = new Map<string, ComponentPropertyMetadataWishSpan>();
+  const events = new Map<string, ComponentEventMetadata>();
+
+  for (let i = 0; i < members.length; i++) {
+    const member = members[i];
+    if (!isPropertyDeclaration(member)) {
+      continue;
+    }
+
+    // Look for decorators in modifiers (TypeScript stores them there)
+    const memberModifiers = member.modifiers ?? [];
+
+    let required = false;
+    const propDecorator = Array.from(memberModifiers).find((member): member is PropertyDecorator => {
+      const result = isPropertyDecorator(member);
+      required = !!result.required;
+      return result.decorator
+    });
+
+    if (propDecorator) {
+      const nameNode = getNameOfDeclaration(member);
+      if (nameNode && isIdentifier(nameNode)) {
+        const propName = nameNode.text;
+        const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required);
+        const actualPropName = metadata.alias ?? propName;
+        const conflictingProperty = properties.get(actualPropName);
+        if (!conflictingProperty) {
+          properties.set(actualPropName, metadata);
+        } else {
+          const { start, end } = conflictingProperty.span;
+          const { line, character } = sourceFile.getLineAndCharacterOfPosition(start);
+          const { fileName, text } = sourceFile;
+          throw `Failed to extract metadata from an imported ${kind} in the template - ${fileName}\n[Ln ${line + 1}, Col ${character + 1}] - A property identified by name ${actualPropName} was already defined\n ---> ${slice(text, start - character, end)}`;
+        }
+      }
+
+      continue;
+    }
+
+    const eventDecorator = Array.from(memberModifiers).find(member => isEventDecorator(member));
+    if (eventDecorator) {
+      const nameNode = getNameOfDeclaration(member);
+      const eventName = nameNode && isIdentifier(nameNode) ? nameNode.text : undefined;
+      if (eventName) {
+        events.set(eventName, extractEventMetadata(eventDecorator));
+      }
+    }
+  }
+
+  const mappedProperties = new Map<string, ComponentPropertyMetadata>();
+  properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
+
+  return {
+    properties: mappedProperties,
+    events
+  };
+}
+
+/**
+ * Finds the named class declarations of a source file decorated with the given class decorator.
  *
  * @param sourceFile - TypeScript source file that contains the class declarations to inspect.
- * @param name - Class name to match.
- * @returns The matching class declaration and its `WebComponent` decorator, or `undefined` when no decorated class is found.
+ * @param decoratorName - Name of the class decorator to look for (e.g. `WebComponent`).
+ * @returns The matching class declarations, each with its decorator.
  */
-function getClassAndWebComponentDeclarations(sourceFile: SourceFile): ComponentDeclaration[] {
-  const found = new Array<ComponentDeclaration>();
+function getDecoratedClassDeclarations<D extends ClassDecoratorNode>(sourceFile: SourceFile, decoratorName: D['expression']['expression']['text']): { klass: ClassDeclarationWithName, decorator: D }[] {
+  const found = new Array<{ klass: ClassDeclarationWithName, decorator: D }>();
   const statements = sourceFile.statements;
 
   for (let i = 0; i < statements.length; i++) {
     const node = statements[i];
     if (classDeclarationHasName(node)) {
-      const decorator = hasWebComponentDecorator(node);
+      const decorator = findClassDecorator<D>(node, decoratorName);
       if (decorator) {
         found.push({ klass: node, decorator });
       }
@@ -136,26 +187,33 @@ function getClassAndWebComponentDeclarations(sourceFile: SourceFile): ComponentD
   return found;
 }
 
+/**
+ * Tells whether a statement is a class declaration with a name.
+ *
+ * @param node - The statement to inspect.
+ * @returns `true` if the statement declares a named class, `false` otherwise.
+ */
 function classDeclarationHasName(node: Statement): node is ClassDeclarationWithName {
   return isClassDeclaration(node) && !!node.name?.text;
 }
 
 /**
- * Checks whether a class declaration has a `WebComponent` decorator.
+ * Finds the call decorator with the given name applied to a class declaration.
  *
  * Supports both direct usage (`@WebComponent(...)`) and namespaced usage (`@xaendar.WebComponent(...)`).
  *
  * @param classDecl - Class declaration whose decorators should be inspected.
- * @returns The matching decorator node, or `undefined` when the class is not a web component.
+ * @param decoratorName - Name of the decorator to look for.
+ * @returns The matching decorator node, or `undefined` when the class is not decorated with it.
  */
-function hasWebComponentDecorator(classDecl: ClassDeclaration): WebComponentDecorator | undefined {
+function findClassDecorator<D extends ClassDecoratorNode>(classDecl: ClassDeclaration, decoratorName: D['expression']['expression']['text']): D | undefined {
   const decorators = getDecorators(classDecl);
   if (!decorators?.length) {
     return undefined;
   }
 
   let i = 0;
-  let found: WebComponentDecorator | undefined;
+  let found: D | undefined;
 
   while (i < decorators.length && !found) {
     const decorator = decorators[i];
@@ -167,9 +225,9 @@ function hasWebComponentDecorator(classDecl: ClassDeclaration): WebComponentDeco
     const callExpression = decorator.expression;
     // supports a namespaced usage too, e.g. @xaendar.WebComponent(...)
     const callee = isPropertyAccessExpression(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
-    const isWebComponent = (_decorator: Decorator): _decorator is WebComponentDecorator => isIdentifier(callee) && callee.text === 'WebComponent';
-    
-    if (isWebComponent(decorator)) {
+    const isSearchedDecorator = (_decorator: Decorator): _decorator is D => isIdentifier(callee) && callee.text === decoratorName;
+
+    if (isSearchedDecorator(decorator)) {
       found = decorator;
     }
 
@@ -180,12 +238,16 @@ function hasWebComponentDecorator(classDecl: ClassDeclaration): WebComponentDeco
 }
 
 /**
- * Extracts the selector, template and style urls from @WebComponent decorator arguments.
+ * Extracts the selector, template and style urls from @WebComponent or @Directive decorator arguments.
+ * Directives only declare a selector.
  *
  * @example
  * @WebComponent({ selector: 'my-button', templateUrl: './my-button.xd.component.html' })
+ *
+ * @param decorator - The decorator node to read the arguments from.
+ * @returns The literal values declared by the decorator, empty when missing or not literal.
  */
-function extractMetadaFromDecorator(decorator: WebComponentDecorator): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl'> {
+function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl'> {
   const retVal: ReturnType<typeof extractMetadaFromDecorator> = {
     selector: '',
     templateUrl: '',

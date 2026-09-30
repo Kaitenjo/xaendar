@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * A constructor function type that can accept any number of arguments and return an instance of any type.
  */

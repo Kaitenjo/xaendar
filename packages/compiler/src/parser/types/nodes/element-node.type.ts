@@ -2,6 +2,7 @@ import { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
 import { ConditionalBindingNode } from './conditional-binding-node.type';
+import { DirectiveNode } from './directive-node.type';
 import { EventNode } from './event-node.type';
 
 /**
@@ -32,4 +33,8 @@ export type ElementNode = ASTNodeWithSpan<{
    * Conditional binding nodes attached to this element.
    */
   conditionalBindings: ConditionalBindingNode[];
+  /**
+   * Directive nodes applied to this element.
+   */
+  directives: DirectiveNode[];
 }>

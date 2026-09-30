@@ -1,6 +1,7 @@
 import { CompilerContext } from '../../../generator/models/compiler-context/compiler-context.model';
 import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
+import { DirectiveMetadata } from '../../../types/directive-metadata.type';
 
 /**
  * Type checker context that manages imported component and directive metadata
@@ -47,5 +48,17 @@ export class TypeCheckContext extends CompilerContext {
   public getImportBySelector(tagName: string): ComponentMetadata | undefined {
     return this._imports.find((importValue): importValue is ComponentMetadata => importValue.type === 'component' && importValue.selector === tagName)
       ?? this.parent?.getImportBySelector(tagName);
+  }
+
+  /**
+   * Finds the directive registered for the given selector, looking in this
+   * scope first and then in the ancestor scopes.
+   *
+   * @param selector - The directive selector to look up.
+   * @returns The matching directive metadata, if any.
+   */
+  public getDirectiveBySelector(selector: string): DirectiveMetadata | undefined {
+    return this._imports.find((importValue): importValue is DirectiveMetadata => importValue.type === 'directive' && importValue.selector === selector)
+      ?? this.parent?.getDirectiveBySelector(selector);
   }
 }

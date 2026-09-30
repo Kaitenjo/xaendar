@@ -86,5 +86,13 @@ export enum LexerState {
   /**
    * Consuming the content inside a conditional binding started with `@(...`.
    */
-  CONDITIONAL_BINDING_BODY = 'conditional-binding-body'
+  CONDITIONAL_BINDING_BODY = 'conditional-binding-body',
+  /**
+   * Consuming a directive starting with `@@`.
+   */
+  DIRECTIVE = 'directive',
+  /**
+   * Consuming the bindings of a directive declared between `@@selector(` and `)`.
+   */
+  DIRECTIVE_BODY = 'directive-body'
 }

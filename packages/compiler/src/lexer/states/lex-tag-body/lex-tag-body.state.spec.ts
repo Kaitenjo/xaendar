@@ -19,6 +19,13 @@ describe('lexTagBody', () => {
     expect(cursor.peek()).toBe('b'.charCodeAt(0));
   });
 
+  it('transitions to DIRECTIVE and consumes "@@" for a directive', () => {
+    const cursor = new LexerCursor('@@myDirective(display="block")');
+    const result = lexTagBody(cursor, context);
+    expect(result).toEqual({ state: LexerState.DIRECTIVE });
+    expect(cursor.peek()).toBe('m'.charCodeAt(0));
+  });
+
   it('skips whitespace and keeps scanning', () => {
     const cursor = new LexerCursor('   class="a">');
     const result = lexTagBody(cursor, context);

@@ -1,6 +1,6 @@
 import { createSourceFile, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { extractComponentsMetadataFromSourceFile } from './metadata.utils';
+import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile } from './metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
@@ -135,5 +135,61 @@ describe('extractComponentsMetadataFromSourceFile', () => {
         untyped: { type: 'void' }
       });
     });
+  });
+});
+
+const extractDirectives = (code: string) => extractDirectivesMetadataFromSourceFile(sourceFileOf(code));
+const directive = (body = '', decorator = '@Directive({ selector: \'myDirective\' })') => `${decorator}\nclass MyDirective {\n${body}\n}`;
+
+describe('extractDirectivesMetadataFromSourceFile', () => {
+  it('extracts the selector, properties and events of a directive', async () => {
+    const metadata = (await extractDirectives(directive(`
+      @Property('block') accessor display!: InputSignal<'block' | 'none'>;
+      @Property.required({ alias: 'is-visible' }) accessor visible!: InputSignal<boolean>;
+      @Event() accessor toggled!: Output<boolean>;
+    `)))?.get('MyDirective');
+
+    expect(metadata).toMatchObject({
+      type: 'directive',
+      className: 'MyDirective',
+      selector: 'myDirective'
+    });
+    expect(metadata).not.toHaveProperty('templateUrl');
+    expect(metadata).not.toHaveProperty('styleUrl');
+    expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: '\'block\' | \'none\'', required: false, defaultValue: '\'block\'' });
+    expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: 'boolean', required: true });
+    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: 'boolean' } });
+    expect(metadata?.typescriptNodes.klass.name.text).toBe('MyDirective');
+  });
+
+  it('ignores components and non-directives', async () => {
+    const result = await extractDirectives(`
+      @WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })
+      class Component {}
+      class Plain {}
+      @xaendar.Directive({ selector: 'namespaced' })
+      class Namespaced {}
+    `);
+
+    expect([...result!.keys()]).toEqual(['Namespaced']);
+  });
+
+  it('is ignored by the component extraction', async () => {
+    expect((await extract(directive()))?.size).toBe(0);
+  });
+
+  it.each([
+    ['no arguments', '@Directive()'],
+    ['no selector', '@Directive({})'],
+    ['a non-literal selector', '@Directive({ selector: selector })']
+  ])('returns undefined when the decorator has %s', async (_name, decorator) => {
+    expect(await extractDirectives(directive('', decorator))).toBeUndefined();
+  });
+
+  it('throws when two properties resolve to the same name', async () => {
+    await expect(extractDirectives(directive(`
+      @Property('x', { alias: 'b' }) accessor a!: string;
+      @Property() accessor b!: string;
+    `))).rejects.toContain('Failed to extract metadata from an imported directive in the template');
   });
 });

@@ -1,14 +1,17 @@
-import type { Dictionary, NoArgsFunction } from '@xaendar/types';
-import { MATHML_NS, SVG_NS } from '../../costants';
-import { CustomElement } from '../../models';
-import { InputSignal } from '../../signals';
+import type { Dictionary, NoArgsFunction, VoidFunction } from '@xaendar/types';
+import { DIRECTIVE_CONNECT, MATHML_NS, SVG_NS } from '../../costants';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
+import { InputSignal } from '../../signals/types/input-signal.type';
+import { untracked } from '../../signals/untracked';
 import type { RenderElementConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import { _Context, mountNode } from '../context/context.util';
+import { _getDirective } from '../directive-registry/directive-registry.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -26,14 +29,20 @@ import { _Context, mountNode } from '../context/context.util';
  * @param attributes - List of attribute descriptors to apply to the element.
  * @param events - List of event listener descriptors to attach to the element.
  * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
+ * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
  * @returns The newly created HTML element.
  */
-export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[]): Element {
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[]): Element {
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
   bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
-  bindConditionalBindings(element, context, conditionalBindings);
+  bindConditionalBindings(context, conditionalBindings, (conditionalBindingContext, conditionalBinding) => {
+    bindAttributes(element, conditionalBindingContext, conditionalBinding.attributes);
+    bindEvents(element, conditionalBindingContext, conditionalBinding.events);
+    bindDirectives(element, conditionalBindingContext, conditionalBinding.directives);
+  });
+  bindDirectives(element, context, directives);
   return element;
 }
 
@@ -68,24 +77,86 @@ function bindEvents(element: Element, context: _Context, events: RenderElementEv
 }
 
 /**
- * Binds a list of conditional bindings to an HTML element, creating child contexts for each binding and applying attributes, events, and nested conditional bindings conditionally.
- * @param element - The element to bind the conditional bindings to.
+ * Binds a list of directive properties to a directive. A property declaring an `unbind`
+ * is reset to its default value when the context is destroyed.
+ * @param directive - The directive to bind the properties to.
  * @param context - The current template execution scope.
- * @param conditionalBindings - The list of conditional bindings to bind to the element.
+ * @param properties - The list of properties to bind to the directive.
  */
-function bindConditionalBindings(element: Element, context: _Context, conditionalBindings: RenderElementConditionalBinding[]): void {
+function bindDirectiveProperties(directive: CustomDirective, context: _Context, properties: RenderElementDirective['attributes']): void {
+  for (let i = 0; i < properties.length; i++) {
+    const { name, value, setter, unbind, defaultValue } = properties[i];
+    setter(context, directive, name, value);
+    unbind && context.listen(() => unbind(context, directive, name, () => defaultValue));
+  }
+}
+
+/**
+ * Binds a list of conditional bindings, creating a child context for each of them: `bind` applies
+ * the bindings of a conditional binding in its child context when its condition turns true, and the
+ * child context is destroyed, unbinding them, when it turns false. Nested conditional bindings are
+ * bound the same way while the enclosing one is applied.
+ *
+ * Only the condition is tracked: a condition evaluated again without changing its outcome, or a
+ * signal read while binding, never binds twice.
+ * @param context - The current template execution scope.
+ * @param conditionalBindings - The list of conditional bindings to bind.
+ * @param bind - Applies the bindings of a conditional binding, registering their cleanup in the given context.
+ */
+function bindConditionalBindings<ConditionalBinding extends { condition: NoArgsFunction<boolean>, conditionalBindings: ConditionalBinding[] }>(context: _Context, conditionalBindings: ConditionalBinding[], bind: VoidFunction<[context: _Context, conditionalBinding: ConditionalBinding]>): void {
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBindingContext = context.addChild();
-    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings } = conditionalBindings[i];
+    const conditionalBinding = conditionalBindings[i];
+    let bound = false;
+
     context.listen(effect(() => {
-      if (condition()) {
-        bindAttributes(element, conditionalBindingContext, attributes);
-        bindEvents(element, conditionalBindingContext, events);
-        bindConditionalBindings(element, conditionalBindingContext, nestedConditionalBindings);
-      } else {
-        conditionalBindingContext.unlisten();
+      const active = !!conditionalBinding.condition();
+      if (active === bound) {
+        return;
       }
+
+      bound = active;
+      untracked(() => {
+        if (active) {
+          bind(conditionalBindingContext, conditionalBinding);
+          bindConditionalBindings(conditionalBindingContext, conditionalBinding.conditionalBindings, bind);
+        } else {
+          conditionalBindingContext.unlisten();
+        }
+      });
     }));
+  }
+}
+
+/**
+ * Applies a list of directives to an HTML element: each directive is instantiated,
+ * its properties are bound and its events listened to on the element, directly or
+ * through its conditional bindings, then it is started.
+ * The directive is disposed when the context is destroyed.
+ * @param element - The element to apply the directives to.
+ * @param context - The current template execution scope.
+ * @param directives - The list of directives to apply to the element.
+ * @throws When no directive is registered for a selector.
+ */
+function bindDirectives(element: Element, context: _Context, directives: RenderElementDirective[]): void {
+  for (let i = 0; i < directives.length; i++) {
+    const { selector, attributes, events, conditionalBindings } = directives[i];
+    const Directive = _getDirective(selector);
+    if (!Directive) {
+      throw new Error(`No directive registered for selector "${selector}"`);
+    }
+
+    // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
+    const directive = new Directive(element as HTMLElement);
+    bindDirectiveProperties(directive, context, attributes);
+    bindEvents(element, context, events);
+    bindConditionalBindings(context, conditionalBindings, (conditionalBindingContext, conditionalBinding) => {
+      bindDirectiveProperties(directive, conditionalBindingContext, conditionalBinding.attributes);
+      bindEvents(element, conditionalBindingContext, conditionalBinding.events);
+    });
+
+    directive[DIRECTIVE_CONNECT]();
+    context.listen(() => directive[Symbol.dispose]());
   }
 }
 
@@ -124,12 +195,12 @@ export function _createMATHMLElement(tagName: string): MathMLElement {
  * E.g., `<div id="example"></div>`.
  *
  * @param _context - The current template execution scope.
- * @param element - The element to set the attribute on.
+ * @param target - The element to set the attribute on, or the directive to set the property on.
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setProperty(_context: _Context, element: Element, name: string, value: string): void {
-  updateProperty(element, name, value);
+export function _setProperty(_context: _Context, target: Element | CustomDirective, name: string, value: string): void {
+  updateProperty(target, name, value);
 }
 
 /**
@@ -144,12 +215,12 @@ export function _setProperty(_context: _Context, element: Element, name: string,
  *       `<div maxlength="{ 1 + 3 }"></div>`.
  * 
  * @param _context - The current template execution scope.
- * @param element - The element to set the attribute on.
+ * @param target - The element to set the attribute on, or the directive to set the property on.
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setExpressionProperty(_context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
-  updateProperty(element, name, value());
+export function _setExpressionProperty(_context: _Context, target: Element | CustomDirective, name: string, value: NoArgsFunction<unknown>): void {
+  updateProperty(target, name, value());
 }
 
 /**
@@ -159,12 +230,12 @@ export function _setExpressionProperty(_context: _Context, element: Element, nam
  * E.g., `<div id={ mySignal() }></div>`.
  *
  * @param _context - The current template execution scope.
- * @param element - The element to set the attribute on.
+ * @param target - The element to set the attribute on, or the directive to set the property on.
  * @param name - The name of the attribute.
  * @param value - A function that returns the attribute value.
  */
-export function _setReactiveProperty(context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
-  context.listen(effect(() => updateProperty(element, name, value())));
+export function _setReactiveProperty(context: _Context, target: Element | CustomDirective, name: string, value: NoArgsFunction<unknown>): void {
+  context.listen(effect(() => updateProperty(target, name, value())));
 }
 
 /**
@@ -179,15 +250,25 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
 }
 
 /**
- * Updates a property on an HTML element, ensuring it is an InputSignal and setting its value.
- * @param element - The HTML element whose property is being updated.
- * @param name - The name of the property to update.
+ * Updates a property on an HTML element or on a directive: when the property is an InputSignal its value is set,
+ * otherwise the value is set as an attribute of the element.
+ * @param target - The HTML element or the directive whose property is being updated.
+ * @param name - The name, or the alias, of the property to update.
  * @param newValue - The new value to set for the property.
+ * @throws When the target is a directive not declaring the property.
  */
-function updateProperty(element: Element, name: string, newValue: unknown) {
-  const component = element as CustomElement & Record<string, unknown> & { [name]: InputSignal<unknown> };
-  const constructor = component.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
+function updateProperty(target: Element | CustomDirective, name: string, newValue: unknown): void {
+  const componentOrDirective = target as unknown as Record<string, unknown> & { [name]: string | InputSignal };
+  const constructor = target.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
   name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
-  const property = component[name];
-  property && isInputSignal(property) ? property.set(newValue, INPUT_SIGNAL_SET_SYMBOL) : component.setAttribute(name, String(newValue));
+  const property = componentOrDirective[name];
+  
+  if (property && isInputSignal(property)) {
+    property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
+  } else if (target instanceof CustomDirective) {
+    target instanceof CustomDirective 
+    throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
+  } else {
+    target.setAttribute(name, String(newValue));
+  }
 }

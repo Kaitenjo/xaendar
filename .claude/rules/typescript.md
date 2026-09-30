@@ -10,6 +10,7 @@ paths:
 - Respect `tsconfig.json` (strict). Explicitly type parameters and return values of public functions (`public-api.ts`).
 - No implicit `any`: use precise types or `unknown` + narrowing. Unavoidable casts go through `as unknown as <T>`.
 - Handle optionals explicitly: `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` are off, so validate at runtime where it matters.
+- Derive a type from the ones it depends on (`Pick`, `Omit`, `Exclude`, `Extract`, `Parameters`, `ReturnType`, etc..., mapped types, indexed access such as `Type['member']`, ...) instead of redefining it from scratch: when the source type changes, the derived one follows. Declare a new standalone type only for members that exist nowhere else.
 - Prefer `readonly` on properties/arrays that shouldn't be reassigned, especially in shared models under `packages/common/src/models`.
 
 ## Imports

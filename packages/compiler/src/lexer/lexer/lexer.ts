@@ -5,6 +5,8 @@ import { Span } from '../../types/span.type';
 import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-value.state';
 import { lexAttribute } from '../states/lex-attribute/lex-attribute.state';
 import { lexCaseFlowControlCondition } from '../states/lex-case-flow-control-condition/lex-case-flow-control-condition.state';
+import { lexDirectiveBody } from '../states/lex-directive-body/lex-directive-body.state';
+import { lexDirective } from '../states/lex-directive/lex-directive.state';
 import { lexDefaultFlowControlCondition } from '../states/lex-default-flow-control-condition/lex-default-flow-control-condition.state';
 import { lexConditionalBindingBody } from '../states/lex-conditional-binding-body/lex-conditional-binding-body.state';
 import { lexConditionalBindingStart } from '../states/lex-conditional-binding-start/lex-conditional-binding-start.state';
@@ -76,7 +78,9 @@ export class Lexer {
     [LexerState.IMPORT]: lexImport,
     [LexerState.IMPORT_PATH]: lexImportPath,
     [LexerState.CONDITIONAL_BINDING_START]: lexConditionalBindingStart,
-    [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody
+    [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody,
+    [LexerState.DIRECTIVE]: lexDirective,
+    [LexerState.DIRECTIVE_BODY]: lexDirectiveBody
   }
 
   /**

@@ -1,4 +1,4 @@
-import type { ComponentMetadata, ComponentOrDirectiveMetadata, TypeCheckResult } from '@xaendar/compiler';
+import type { ComponentMetadata, ComponentOrDirectiveMetadata, DirectiveMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,18 +16,21 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
   return {
     ...actual,
     extractComponentsMetadataFromSourceFile: vi.fn(),
+    extractDirectivesMetadataFromSourceFile: vi.fn(),
     resolveTemplateSpan: vi.fn()
   };
 });
 
-vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
+vi.mock('../../registry/metadata-registry/metadata-registry', async (importOriginal) => ({
   getMetadata: vi.fn(),
+  // Pure function: the real implementation keys the selectors
+  getSelectorKey: (await importOriginal<typeof import('../../registry/metadata-registry/metadata-registry')>()).getSelectorKey,
   getSelectorOwner: vi.fn(),
   registerMetadata: vi.fn(),
   registerSelectors: vi.fn()
 }));
 
-import { extractComponentsMetadataFromSourceFile, resolveTemplateSpan } from '@xaendar/compiler';
+import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
@@ -41,6 +44,13 @@ function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/f
     selector,
     typescriptNodes: { klass: { getSourceFile: () => ({ fileName: ownerFile }) } }
   } as unknown as ComponentOrDirectiveMetadata;
+}
+
+function createDirectiveMetadata(selector: string, className = 'FooDirective', ownerFile = '/src/foo.ts'): DirectiveMetadata {
+  return {
+    ...createMetadata(selector, className, ownerFile),
+    type: 'directive'
+  } as DirectiveMetadata;
 }
 
 beforeEach(() => {
@@ -571,6 +581,20 @@ describe('getMetadataOrExtract()', () => {
     expect(registerSelectors).not.toHaveBeenCalled();
   });
 
+  it('extracts the metadata of a directive when the file declares no component with the requested name', async () => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(readFile).mockResolvedValue('export class FooDirective {}');
+    const metadata = createDirectiveMetadata('myFoo');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
+    vi.mocked(extractDirectivesMetadataFromSourceFile).mockResolvedValue(new Map([['FooDirective', metadata]]));
+
+    const result = await getMetadataOrExtract('FooDirective', '/src/foo.ts');
+
+    expect(result).toBe(metadata);
+    expect(registerMetadata).toHaveBeenCalledWith('FooDirective', metadata);
+    expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+  });
+
   it('throws when the extracted metadata map has no entry for the requested symbol', async () => {
     vi.mocked(getMetadata).mockReturnValue(undefined);
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');
@@ -668,5 +692,41 @@ describe('claimSelectors()', () => {
 
     expect(await claimSelectors(metadata)).toBeUndefined();
     expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+  });
+
+  describe('directives', () => {
+    it('looks up the owner of a directive selector by its template syntax', async () => {
+      const metadata = createDirectiveMetadata('my-foo');
+
+      expect(await claimSelectors(metadata)).toBeUndefined();
+      expect(getSelectorOwner).toHaveBeenCalledWith('@@my-foo');
+      expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+    });
+
+    it('rejects a directive without a selector', async () => {
+      expect(await claimSelectors(createDirectiveMetadata(''))).toBe('Directive "FooDirective" - /src/foo.ts does not declare a selector.');
+      expect(registerSelectors).not.toHaveBeenCalled();
+    });
+
+    it('rejects a selector still declared by the directive of another file owning it', async () => {
+      vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+      vi.mocked(readFile).mockResolvedValue('export class Other {}');
+      vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
+      vi.mocked(extractDirectivesMetadataFromSourceFile).mockResolvedValue(new Map([['Other', createDirectiveMetadata('myFoo', 'Other', '/src/other.ts')]]));
+
+      const result = await claimSelectors(createDirectiveMetadata('myFoo'));
+
+      expect(result).toBe('Selector "myFoo" of directive "FooDirective" - /src/foo.ts is already used by directive "Other" - /src/other.ts. Directive selectors must be unique.');
+      expect(registerSelectors).not.toHaveBeenCalled();
+    });
+
+    it('replaces an ownership whose owner class became a component with the same selector', async () => {
+      vi.mocked(getSelectorOwner).mockReturnValue(OTHER_OWNER);
+      mockOtherFileMetadata(new Map([['Other', createMetadata('myFoo', 'Other', '/src/other.ts') as unknown as ComponentMetadata]]));
+      const metadata = createDirectiveMetadata('myFoo');
+
+      expect(await claimSelectors(metadata)).toBeUndefined();
+      expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
+    });
   });
 });

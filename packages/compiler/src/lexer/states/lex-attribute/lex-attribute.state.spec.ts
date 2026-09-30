@@ -7,7 +7,11 @@ import { lexAttribute } from './lex-attribute.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.TAG_BODY, LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE],
+  history: [LexerState.TAG_OPEN_NAME, LexerState.CONDITIONAL_BINDING_START],
+  tokens: []
+};
+const directiveContext: LexerTransitionFunctionContext = {
+  history: [LexerState.TAG_OPEN_NAME, LexerState.DIRECTIVE],
   tokens: []
 };
 
@@ -44,6 +48,32 @@ describe('lexAttribute', () => {
   it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding (> terminator)', () => {
     const cursor = new LexerCursor('disabled>');
     expect(lexAttribute(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
+  });
+
+  it('transitions to DIRECTIVE_BODY when nested inside a directive', () => {
+    const cursor = new LexerCursor('disabled ');
+    expect(lexAttribute(cursor, directiveContext).state).toBe(LexerState.DIRECTIVE_BODY);
+  });
+
+  it('stops before the ) closing a conditional binding', () => {
+    const cursor = new LexerCursor('disabled)');
+    expect(lexAttribute(cursor, conditionalBindingContext)).toEqual({
+      state: LexerState.CONDITIONAL_BINDING_BODY,
+      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
+    });
+    expect(cursor.peek()).toBe(')'.charCodeAt(0));
+  });
+
+  it('stops before the ) closing a directive', () => {
+    const cursor = new LexerCursor('disabled)');
+    expect(lexAttribute(cursor, directiveContext)).toEqual({
+      state: LexerState.DIRECTIVE_BODY,
+      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
+    });
+  });
+
+  it('throws on ) outside of conditional bindings and directives', () => {
+    expect(() => lexAttribute(new LexerCursor('a)b>'), context)).toThrow('Unexpected \')\': there is no conditional binding or directive to close');
   });
 
   it('starts an attribute value after = and consumes the opening quote', () => {

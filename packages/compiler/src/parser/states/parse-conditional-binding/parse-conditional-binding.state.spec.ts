@@ -16,6 +16,18 @@ describe('parseConditionalBinding', () => {
     expect(binding.attributes).toHaveLength(1);
     expect(binding.events).toHaveLength(1);
     expect(binding.conditionalBindings).toHaveLength(1);
+    expect(binding.directives).toEqual([]);
+  });
+
+  it('parses the directives applied inside a conditional binding', () => {
+    const [node] = parse('<div @(cond(), title="x" @@first @@second(display="block") @(inner(), @@third))></div>');
+    const [binding] = node.conditionalBindings;
+
+    expect(node.directives).toEqual([]);
+    expect(binding.attributes.map(({ name }) => name)).toEqual(['title']);
+    expect(binding.directives.map(({ selector }) => selector)).toEqual(['first', 'second']);
+    expect(binding.directives[1].attributes.map(({ name }) => name)).toEqual(['display']);
+    expect(binding.conditionalBindings[0].directives.map(({ selector }) => selector)).toEqual(['third']);
   });
 
   it('throws on an unexpected token inside the binding', () => {

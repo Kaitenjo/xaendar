@@ -20,13 +20,17 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
   while (read) {
     switch (cursor.peek()) {
       case AT_SIGN:
-        const conditionalBinding = cursor.peekMatch('@(');
         let state = LexerState.EVENT;
-        if (conditionalBinding) {
+        if (cursor.peekMatch('@(')) {
           state = LexerState.CONDITIONAL_BINDING_START;
           // Consume `@(`.
           cursor.advance(2);
+        } else if (cursor.peekMatch('@@')) {
+          state = LexerState.DIRECTIVE;
+          // Consume `@@`.
+          cursor.advance(2);
         }
+
         retVal = {
           state
         }

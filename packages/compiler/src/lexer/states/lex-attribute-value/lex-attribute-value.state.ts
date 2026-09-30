@@ -1,9 +1,9 @@
 import { DOUBLE_QUOTE } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
-import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
  * Consumes a quoted attribute value `"..."`, collecting characters until
@@ -27,7 +27,7 @@ export function lexAttributeValue(cursor: LexerCursor, context: LexerTransitionF
 
         retVal = {
           // Last state is the attribute, so we need to look two steps back in the history to determine the correct next state.
-          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
+          state: resolveTagBodyState(context.history.at(-2)),
           tokens: [{
             type: TokenType.ATTRIBUTE_VALUE,
             parts: [value]

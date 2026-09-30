@@ -4,6 +4,7 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
  * Consumes the handler side of a DOM event binding after `=`.
@@ -34,7 +35,7 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
 
         if (cursor.peekMatch(')"')) {
           cursor.advance(2);
-          state = context.history.at(-1) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY;
+          state = resolveTagBodyState(context.history.at(-1));
         }
 
         retVal = {

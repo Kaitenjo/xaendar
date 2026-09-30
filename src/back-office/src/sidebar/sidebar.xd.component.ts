@@ -62,10 +62,11 @@ export class SidebarComponent extends CustomElement {
 }
 
 @Directive({ 
-  selector: 'app-sidebar' 
+  selector: 'pippo' 
 })
 export class StyleDirective extends CustomDirective {
-  public readonly display = signal<('block' | 'inline' | 'none')>('block');
+  @Property.required()
+  public accessor display!: InputSignal<string>;
   
   public reactToChanges(): Array<VoidFunction> | undefined {
     return [

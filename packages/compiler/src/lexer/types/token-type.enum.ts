@@ -107,6 +107,14 @@ export enum TokenType {
    */
   CONDITIONAL_BINDING_CLOSE,
   /**
+   * A directive, e.g. `@@myDirective` in `<div @@myDirective(display="block") />`.
+   */
+  DIRECTIVE,
+  /**
+   * The end of a directive, e.g. `")"` in `<div @@myDirective(display="block") />`.
+   */
+  DIRECTIVE_CLOSE,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

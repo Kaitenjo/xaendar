@@ -1,6 +1,6 @@
 import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearMetadataForFile, clearMetadataRegistry, getMetadata, getSelectorOwner, registerMetadata, registerSelectors, releaseSelector } from './metadata-registry';
+import { clearMetadataForFile, clearMetadataRegistry, getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors, releaseSelector } from './metadata-registry';
 
 const FOO_PATH = '/src/foo/foo.xd.component.ts';
 const BAR_PATH = '/src/bar/bar.xd.component.ts';
@@ -97,6 +97,28 @@ describe('registerSelectors() / getSelectorOwner()', () => {
     clearMetadataForFile(FOO_PATH);
 
     expect(getSelectorOwner('x-shared')).toEqual({ ownerFile: BAR_PATH, className: 'BarComponent' });
+  });
+});
+
+describe('getSelectorKey()', () => {
+  it('keys a component selector as the custom element name', () => {
+    expect(getSelectorKey({ ...createMetadata('FooComponent', 'x-foo', FOO_PATH), type: 'component' } as ComponentOrDirectiveMetadata)).toBe('x-foo');
+  });
+
+  it('keys a directive selector as it is applied in templates', () => {
+    expect(getSelectorKey({ ...createMetadata('FooDirective', 'x-foo', FOO_PATH), type: 'directive' } as ComponentOrDirectiveMetadata)).toBe('@@x-foo');
+  });
+});
+
+describe('registerSelectors() with directives', () => {
+  it('keeps a directive and a component sharing a selector apart', () => {
+    const component = { ...createMetadata('FooComponent', 'x-foo', FOO_PATH), type: 'component' } as ComponentOrDirectiveMetadata;
+    const directive = { ...createMetadata('FooDirective', 'x-foo', BAR_PATH), type: 'directive' } as ComponentOrDirectiveMetadata;
+    registerSelectors(component, FOO_PATH);
+    registerSelectors(directive, BAR_PATH);
+
+    expect(getSelectorOwner('x-foo')).toEqual({ ownerFile: FOO_PATH, className: 'FooComponent' });
+    expect(getSelectorOwner('@@x-foo')).toEqual({ ownerFile: BAR_PATH, className: 'FooDirective' });
   });
 });
 

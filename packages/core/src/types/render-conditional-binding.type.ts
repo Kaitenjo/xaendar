@@ -1,5 +1,6 @@
 import { NoArgsFunction } from '@xaendar/types'
 import type { RenderElementAttribute } from './render-element-attribute.type'
+import type { RenderElementDirective } from './render-element-directive.type'
 import type { RenderElementEvent } from './render-element-event.type'
 
 /**
@@ -21,5 +22,9 @@ export type RenderElementConditionalBinding = {
   /**
    * The list of nested conditional bindings to be applied to the element when the parent conditional binding is applied.
    */
-  conditionalBindings: RenderElementConditionalBinding[]
+  conditionalBindings: RenderElementConditionalBinding[],
+  /**
+   * The list of directives to be applied to the element while the conditional binding is applied.
+   */
+  directives: RenderElementDirective[]
 }

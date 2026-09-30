@@ -1,9 +1,10 @@
-import { DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, SINGLE_QUOTE, SLASH, SPACE } from '../../../costants/chars.constants';
+import { DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
  * Consumes an attribute name and optional value from the current position,
@@ -13,6 +14,7 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
  * @param cursor - The lexer cursor positioned at the start of the attribute.
  * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
+ * @throws If the attribute name is malformed, or a `)` is found outside of a conditional binding or a directive.
  */
 export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -30,7 +32,7 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         cursor.advance();
         read = false;
         retVal = {
-          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
+          state: resolveTagBodyState(context.history.at(-1)),
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]
@@ -49,7 +51,33 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
       case SLASH:
         read = false;
         retVal = {
-          state: context.history.at(-2) === LexerState.CONDITIONAL_BINDING_START ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TAG_BODY,
+          state: resolveTagBodyState(context.history.at(-1)),
+          tokens: [{
+            type: TokenType.ATTRIBUTE,
+            parts: [attribute]
+          }]
+        }
+        break;
+
+      /*
+        Cover cases where the attribute name is immediately followed by the ')'
+        closing a conditional binding or a directive, without a separating space.
+        The ')' is left to the body state, which closes the construct.
+        Ex:
+        <input @(isDisabled(), disabled) />
+        <input @@myDirective(disabled) />
+
+        Outside of these constructs there is nothing for ')' to close.
+      */
+      case RPAREN:
+        const state = resolveTagBodyState(context.history.at(-1));
+        if (state === LexerState.TAG_BODY) {
+          throw new Error('Unexpected \')\': there is no conditional binding or directive to close');
+        }
+
+        read = false;
+        retVal = {
+          state,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]

@@ -27,6 +27,83 @@ describe('Lexer', () => {
     ]);
   });
 
+  it('tokenizes directives with and without bindings', () => {
+    const tokens = new Lexer('<div @@first @@second(display="{display()}" disabled @change="onChange($event)") class="a"></div>').tokenize();
+    expect(tokens.map(t => t.type)).toEqual([
+      TokenType.TAG_OPEN_NAME,
+      TokenType.DIRECTIVE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.DIRECTIVE,
+      TokenType.ATTRIBUTE,
+      TokenType.INTERPOLATION_EXPRESSION,
+      TokenType.ATTRIBUTE,
+      TokenType.EVENT,
+      TokenType.EVENT_HANDLER,
+      TokenType.EVENT_PARAMETER,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.TAG_OPEN_END,
+      TokenType.TAG_CLOSE_NAME
+    ]);
+  });
+
+  it('tokenizes a directive declared inside a conditional binding', () => {
+    const tokens = new Lexer('<div @(cond(), @@first @@second(display="block") @@third) class="a"></div>').tokenize();
+    expect(tokens.map(t => t.type)).toEqual([
+      TokenType.TAG_OPEN_NAME,
+      TokenType.CONDITIONAL_BINDING,
+      TokenType.DIRECTIVE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.DIRECTIVE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.DIRECTIVE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.CONDITIONAL_BINDING_CLOSE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.TAG_OPEN_END,
+      TokenType.TAG_CLOSE_NAME
+    ]);
+  });
+
+  it('tokenizes a conditional binding declared inside a directive', () => {
+    const tokens = new Lexer('<div @@myDirective(display="block" @(cond(), position="{position()}" disabled @(inner(), @change="onChange()")) label="x") class="a"></div>').tokenize();
+    expect(tokens.map(t => t.type)).toEqual([
+      TokenType.TAG_OPEN_NAME,
+      TokenType.DIRECTIVE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.CONDITIONAL_BINDING,
+      TokenType.ATTRIBUTE,
+      TokenType.INTERPOLATION_EXPRESSION,
+      TokenType.ATTRIBUTE,
+      TokenType.CONDITIONAL_BINDING,
+      TokenType.EVENT,
+      TokenType.EVENT_HANDLER,
+      TokenType.CONDITIONAL_BINDING_CLOSE,
+      TokenType.CONDITIONAL_BINDING_CLOSE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.TAG_OPEN_END,
+      TokenType.TAG_CLOSE_NAME
+    ]);
+  });
+
+  it('throws for a directive declared inside another directive, even through a conditional binding', () => {
+    expect(() => new Lexer('<div @@first(@@second)></div>').tokenize()).toThrow('Directives cannot be declared inside another directive');
+    expect(() => new Lexer('<div @@first(@(cond(), @@second))></div>').tokenize()).toThrow('Directives cannot be declared inside another directive');
+  });
+
+  it('throws for a ) with nothing to close', () => {
+    expect(() => new Lexer('<div class) id="a"></div>').tokenize()).toThrow('there is no conditional binding or directive to close');
+  });
+
   it('formats a thrown Error with position and source context', () => {
     let caught: unknown;
     try {

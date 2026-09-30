@@ -22,6 +22,22 @@ describe('TypeCheckContext', () => {
     expect(new TypeCheckContext().getImportBySelector('my-a')).toBeUndefined();
   });
 
+  it('finds an imported directive by its selector, ignoring components', () => {
+    const context = new TypeCheckContext();
+    context.addImport(component, directive);
+
+    expect(context.getDirectiveBySelector('my-a')).toBe(directive);
+    expect(context.getDirectiveBySelector('my-c')).toBeUndefined();
+    expect(new TypeCheckContext().getDirectiveBySelector('my-a')).toBeUndefined();
+  });
+
+  it('inherits the directives of its ancestor scopes', () => {
+    const root = new TypeCheckContext();
+    root.addImport(directive);
+
+    expect(new TypeCheckContext(new TypeCheckContext(root)).getDirectiveBySelector('my-a')).toBe(directive);
+  });
+
   it('inherits the imports of its ancestor scopes', () => {
     const root = new TypeCheckContext();
     root.addImport(component);

@@ -53,5 +53,9 @@ export enum ASTNodeType {
   /**
    * A conditional binding node representing a conditionally evaluated expression or content.
    */
-  ConditionalBinding
+  ConditionalBinding,
+  /**
+   * A directive applied to an HTML element.
+   */
+  Directive
 }

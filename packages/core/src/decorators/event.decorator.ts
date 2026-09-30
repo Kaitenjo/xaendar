@@ -1,5 +1,5 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
-import { CustomElement } from '../models/custom-element/custom-element';
+import type { BindingHost } from '../types/binding-host.type';
 import { EventOptions } from '../types/event/event-options.type';
 import { EventDecoratorReturnType } from '../types/event/event-return-type.type';
 import { Output } from '../types/event/output.type';
@@ -9,10 +9,10 @@ function isEventOptions(value: EventOptions | unknown): value is EventOptions {
 }
 
 /**
- * Decorator that declares a custom event output on a web component.
+ * Decorator that declares a custom event output on a web component or a directive.
  *
  * Transforms the decorated accessor into an {@link Output} object whose
- * `emit` method dispatches a `CustomEvent` on the host element. The event
+ * `emit` method dispatches a `CustomEvent` on the host element (for a directive, the element it is applied to). The event
  * name is derived from the accessor name, and the provided `options`
  * (bubbles, cancelable, composed) are used as defaults that can be
  * overridden per-emission.
@@ -28,7 +28,7 @@ function isEventOptions(value: EventOptions | unknown): value is EventOptions {
  * ```
  */
 export function Event<
-  Class extends CustomElement,
+  Class extends BindingHost,
   Data = void,
 >(options?: EventOptions): Function<Parameters<AccessorDecorator<Class, Output<Data>>>, EventDecoratorReturnType<Class, Output<Data>>> {
   return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): EventDecoratorReturnType<Class, Output<Data>> => {

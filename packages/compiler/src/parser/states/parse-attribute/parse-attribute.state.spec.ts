@@ -17,7 +17,13 @@ describe('parseAttribute', () => {
   it.each([
     ['another attribute', { type: TokenType.ATTRIBUTE, parts: ['x'], span: { start: 9, end: 10 } } as Token],
     ['a closing tag name', { type: TokenType.TAG_CLOSE_NAME, parts: ['div'], span: { start: 9, end: 12 } } as Token],
-    ['an event', { type: TokenType.EVENT, parts: ['click'], span: { start: 9, end: 14 } } as Token]
+    ['an event', { type: TokenType.EVENT, parts: ['click'], span: { start: 9, end: 14 } } as Token],
+    ['the end of the opening tag', { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 9, end: 10 } } as Token],
+    ['the end of a self-closing tag', { type: TokenType.TAG_SELF_CLOSE, parts: [], span: { start: 9, end: 11 } } as Token],
+    ['a conditional binding', { type: TokenType.CONDITIONAL_BINDING, parts: ['cond()'], span: { start: 9, end: 17 } } as Token],
+    ['the end of a conditional binding', { type: TokenType.CONDITIONAL_BINDING_CLOSE, span: { start: 9, end: 10 } } as Token],
+    ['a directive', { type: TokenType.DIRECTIVE, parts: ['myDirective'], span: { start: 9, end: 22 } } as Token],
+    ['the end of a directive', { type: TokenType.DIRECTIVE_CLOSE, span: { start: 9, end: 10 } } as Token]
   ])('treats an attribute followed by %s as a boolean attribute', (_name, next) => {
     expect(run(next)).toEqual({
       type: ASTNodeType.Attribute,
@@ -45,6 +51,6 @@ describe('parseAttribute', () => {
   });
 
   it('throws when the attribute is followed by an unrelated token', () => {
-    expect(() => run({ type: TokenType.TAG_OPEN_END, parts: [], span: { start: 9, end: 10 } })).toThrow('Attribute value missing for disabled');
+    expect(() => run({ type: TokenType.TEXT, parts: ['x'], span: { start: 9, end: 10 } })).toThrow('Attribute value missing for disabled');
   });
 });

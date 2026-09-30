@@ -1,3 +1,4 @@
+import { Beautify } from '@xaendar/types';
 import { InputSignal } from '../types/input-signal.type';
 
 /**
@@ -21,6 +22,6 @@ export const INPUT_SIGNAL_INSTANCE_SYMBOL = Symbol('InputSignalInstance');
  * @param instance - The value to inspect.
  * @returns `true` if `instance` is an `InputSignal`, `false` otherwise.
  */
-export function isInputSignal(instance: unknown): instance is InputSignal & { set: (newValue: unknown, symbol: symbol) => void } {
+export function isInputSignal(instance: unknown): instance is Beautify<InputSignal & { set: (newValue: unknown, symbol: symbol) => void }> {
   return typeof instance === 'function' && INPUT_SIGNAL_INSTANCE_SYMBOL in instance;
 }
