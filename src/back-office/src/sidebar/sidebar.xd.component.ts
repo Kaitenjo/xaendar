@@ -70,9 +70,7 @@ export class StyleDirective extends CustomDirective {
   
   public reactToChanges(): Array<VoidFunction> | undefined {
     return [
-      effect(() => {
-        this.element.style.display = this.display();
-      })
+      effect(() => this.element.style.display = this.display())
     ];
   }
 }

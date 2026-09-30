@@ -1,5 +1,5 @@
 import { VoidFunction } from '@xaendar/types';
-import { DIRECTIVE_CONNECT } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
 
 /**
  * Class that all directives registered via `@Directive` must extend.
@@ -9,11 +9,6 @@ import { DIRECTIVE_CONNECT } from '../../costants';
  * inputs and only then starts them (see {@link reactToChanges}).
  */
 export abstract class CustomDirective {
-  /**
-   * Disposes of the directive by calling all unlisten functions.
-   */
-  [Symbol.dispose] = this._onDisconnectedCallback;
-
   /**
    * Array of functions to unlisten from events or other subscriptions.
    */
@@ -60,7 +55,7 @@ export abstract class CustomDirective {
    * Called when the directive is disconnected from the DOM.
    * Invokes all unlisten functions to clean up resources.
    */
-  private _onDisconnectedCallback(): void {
+  public [DIRECTIVE_DISCONNECT](): void {
     this.unlistenFns.forEach(fn => fn());
   }
 }

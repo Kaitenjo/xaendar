@@ -1,5 +1,5 @@
 import type { Dictionary, NoArgsFunction, VoidFunction } from '@xaendar/types';
-import { DIRECTIVE_CONNECT, MATHML_NS, SVG_NS } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
@@ -175,7 +175,7 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     });
 
     directive[DIRECTIVE_CONNECT]();
-    context.listen(() => directive[Symbol.dispose]());
+    context.listen(() => directive[DIRECTIVE_DISCONNECT]());
   }
 }
 

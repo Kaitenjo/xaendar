@@ -1,4 +1,4 @@
-@import {StyleDirective} from './sidebar.xd.component.ts'
+@import { StyleDirective } from './sidebar.xd.component.ts'
 
 <aside class="{ collapsed() ? 'sidebar sidebar--collapsed' : 'sidebar' }">
   <div class="sidebar__brand">
@@ -22,7 +22,11 @@
 
   <nav class="sidebar__nav">
     @for (item of navItems(); track item.route) {
-      <a @@pippo(display="block") class="{ collapsed() ? 'sidebar__link sidebar__link--collapsed' : 'sidebar__link' }" title="{item.label}">
+      <a 
+        @if (!collapsed()) {
+          @@pippo(display="block") 
+        }
+        class="{ collapsed() ? 'sidebar__link sidebar__link--collapsed' : 'sidebar__link' }" title="{item.label}">
         <span class="sidebar__icon">
           @switch (item.icon) {
             @case ('grid') {

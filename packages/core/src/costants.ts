@@ -15,3 +15,8 @@ export const MATHML_NS = 'http://www.w3.org/1998/Math/MathML';
  * once its inputs have been bound (see `CustomDirective`).
  */
 export const DIRECTIVE_CONNECT = Symbol('DirectiveConnect');
+/**
+ * Key of the internal method the template runtime invokes to disconnect a directive,
+ * typically when its host element is removed from the DOM.
+ */
+export const DIRECTIVE_DISCONNECT = Symbol('DirectiveDisconnect');
