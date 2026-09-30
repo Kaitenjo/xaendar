@@ -20,8 +20,13 @@ describe('parseAttribute', () => {
     ['an event', { type: TokenType.EVENT, parts: ['click'], span: { start: 9, end: 14 } } as Token],
     ['the end of the opening tag', { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 9, end: 10 } } as Token],
     ['the end of a self-closing tag', { type: TokenType.TAG_SELF_CLOSE, parts: [], span: { start: 9, end: 11 } } as Token],
-    ['a conditional binding', { type: TokenType.CONDITIONAL_BINDING, parts: ['cond()'], span: { start: 9, end: 17 } } as Token],
-    ['the end of a conditional binding', { type: TokenType.CONDITIONAL_BINDING_CLOSE, span: { start: 9, end: 10 } } as Token],
+    ['an @if', { type: TokenType.IF, span: { start: 9, end: 12 } } as Token],
+    ['an @else if', { type: TokenType.ELSE_IF, span: { start: 9, end: 17 } } as Token],
+    ['an @else', { type: TokenType.ELSE, span: { start: 9, end: 14 } } as Token],
+    ['a @switch', { type: TokenType.SWITCH, span: { start: 9, end: 16 } } as Token],
+    ['a @case', { type: TokenType.CASE, span: { start: 9, end: 14 } } as Token],
+    ['a @default', { type: TokenType.DEFAULT, span: { start: 9, end: 17 } } as Token],
+    ['the end of a block of a conditional binding', { type: TokenType.BLOCK_CLOSE, span: { start: 9, end: 10 } } as Token],
     ['a directive', { type: TokenType.DIRECTIVE, parts: ['myDirective'], span: { start: 9, end: 22 } } as Token],
     ['the end of a directive', { type: TokenType.DIRECTIVE_CLOSE, span: { start: 9, end: 10 } } as Token]
   ])('treats an attribute followed by %s as a boolean attribute', (_name, next) => {

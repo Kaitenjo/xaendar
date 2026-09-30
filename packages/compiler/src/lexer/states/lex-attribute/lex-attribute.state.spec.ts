@@ -7,7 +7,7 @@ import { lexAttribute } from './lex-attribute.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.TAG_OPEN_NAME, LexerState.CONDITIONAL_BINDING_START],
+  history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK],
   tokens: []
 };
 const directiveContext: LexerTransitionFunctionContext = {
@@ -22,6 +22,19 @@ describe('lexAttribute', () => {
       state: LexerState.TAG_BODY,
       tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
     });
+  });
+
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('emits a value-less attribute terminated by %s, consuming it', (_description, whitespace) => {
+    const cursor = new LexerCursor(`disabled${whitespace}class="x">`);
+    expect(lexAttribute(cursor, context)).toEqual({
+      state: LexerState.TAG_BODY,
+      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
+    });
+    expect(cursor.peek()).toBe('c'.charCodeAt(0));
   });
 
   it('emits a value-less attribute terminated directly by >', () => {
@@ -55,13 +68,13 @@ describe('lexAttribute', () => {
     expect(lexAttribute(cursor, directiveContext).state).toBe(LexerState.DIRECTIVE_BODY);
   });
 
-  it('stops before the ) closing a conditional binding', () => {
-    const cursor = new LexerCursor('disabled)');
+  it('stops before the } closing a block of a conditional binding', () => {
+    const cursor = new LexerCursor('disabled}');
     expect(lexAttribute(cursor, conditionalBindingContext)).toEqual({
       state: LexerState.CONDITIONAL_BINDING_BODY,
       tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
     });
-    expect(cursor.peek()).toBe(')'.charCodeAt(0));
+    expect(cursor.peek()).toBe('}'.charCodeAt(0));
   });
 
   it('stops before the ) closing a directive', () => {
@@ -70,10 +83,21 @@ describe('lexAttribute', () => {
       state: LexerState.DIRECTIVE_BODY,
       tokens: [{ type: TokenType.ATTRIBUTE, parts: ['disabled'] }]
     });
+    expect(cursor.peek()).toBe(')'.charCodeAt(0));
   });
 
-  it('throws on ) outside of conditional bindings and directives', () => {
-    expect(() => lexAttribute(new LexerCursor('a)b>'), context)).toThrow('Unexpected \')\': there is no conditional binding or directive to close');
+  it.each([
+    ['in the tag body', context],
+    ['in a block of a conditional binding', conditionalBindingContext]
+  ])('throws on ) outside of a directive, %s', (_description, outerContext) => {
+    expect(() => lexAttribute(new LexerCursor('a)b>'), outerContext)).toThrow('Unexpected \')\': there is no directive to close');
+  });
+
+  it.each([
+    ['in the tag body', context],
+    ['in a directive', directiveContext]
+  ])('throws on } outside of a conditional binding, %s', (_description, outerContext) => {
+    expect(() => lexAttribute(new LexerCursor('a}b>'), outerContext)).toThrow('Unexpected \'}\': there is no conditional binding to close');
   });
 
   it('starts an attribute value after = and consumes the opening quote', () => {

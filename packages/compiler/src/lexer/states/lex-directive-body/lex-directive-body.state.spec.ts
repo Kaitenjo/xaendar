@@ -17,15 +17,35 @@ describe('lexDirectiveBody', () => {
     expect(() => lexDirectiveBody(new LexerCursor('@@other)'), context)).toThrow('Directives cannot be declared inside another directive');
   });
 
-  it('transitions to CONDITIONAL_BINDING_START and consumes "@(" for a conditional binding', () => {
-    const cursor = new LexerCursor('@(condition, a="b"))');
-    expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.CONDITIONAL_BINDING_START });
-    expect(cursor.peek()).toBe('c'.charCodeAt(0));
+  it('transitions to FLOW_CONTROL, leaving the keyword to it, for a conditional binding', () => {
+    const cursor = new LexerCursor('@if (condition) { a="b" })');
+    expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.FLOW_CONTROL });
+    expect(cursor.peek()).toBe('@'.charCodeAt(0));
   });
 
   it('skips whitespace between bindings', () => {
     const cursor = new LexerCursor('   display="block")');
     expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.ATTRIBUTE });
+  });
+
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r'],
+    ['a line break followed by an indentation', '\r\n\t  ']
+  ])('skips %s between bindings, so that a directive can span multiple lines', (_description, whitespace) => {
+    const cursor = new LexerCursor(`${whitespace}display="block")`);
+    expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.ATTRIBUTE });
+    expect(cursor.peek()).toBe('d'.charCodeAt(0));
+  });
+
+  it('closes a directive whose ) is on its own line', () => {
+    const cursor = new LexerCursor('\n)');
+    expect(lexDirectiveBody(cursor, context)).toEqual({
+      state: LexerState.TAG_BODY,
+      tokens: [{ type: TokenType.DIRECTIVE_CLOSE }],
+      popState: true
+    });
   });
 
   it('closes the directive and returns to TAG_BODY', () => {
@@ -38,7 +58,7 @@ describe('lexDirectiveBody', () => {
   });
 
   it('closes a directive declared inside a conditional binding and returns to CONDITIONAL_BINDING_BODY', () => {
-    const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.CONDITIONAL_BINDING_START, LexerState.DIRECTIVE], tokens: [] };
+    const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK, LexerState.DIRECTIVE], tokens: [] };
     expect(lexDirectiveBody(new LexerCursor(')'), conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 

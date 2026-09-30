@@ -7,7 +7,7 @@ import { lexEventParameter } from './lex-event-parameter.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.CONDITIONAL_BINDING_START],
+  history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK],
   tokens: []
 };
 

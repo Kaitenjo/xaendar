@@ -53,10 +53,51 @@ describe('_switch', () => {
     expect(text(parent)).toEqual(['default']);
   });
 
-  it('renders nothing when there is no match and no default', () => {
+  it.each([
+    ['a single case', 1],
+    ['two cases', 2],
+    ['three cases', 3]
+  ])('renders nothing when there is no match and no default, with %s', (_description, cases) => {
     const parent = document.createElement('div');
-    _switch(parent, createRoot(), null, () => 9, blocks.slice(0, 2).concat([{ condition: [5], block: block('five') }]));
+    const onlyCases = [blocks[0], blocks[1], { condition: [5], block: block('five') }];
+    _switch(parent, createRoot(), null, () => 9, onlyCases.slice(0, cases));
     expect(text(parent)).toEqual([]);
+  });
+
+  it('renders nothing, but its anchor, when it declares no branch', () => {
+    const parent = document.createElement('div');
+    _switch(parent, createRoot(), null, () => 9, []);
+    expect(Array.from(parent.childNodes).map(node => node.nodeType)).toEqual([Node.COMMENT_NODE]);
+  });
+
+  it('renders the second of two cases when it matches', () => {
+    const parent = document.createElement('div');
+    _switch(parent, createRoot(), null, () => 2, blocks.slice(0, 2));
+    expect(text(parent)).toEqual(['two-three']);
+  });
+
+  it('destroys the active case when none of two cases matches anymore', async () => {
+    const parent = document.createElement('div');
+    const value = signal(2);
+    _switch(parent, createRoot(), null, () => value(), blocks.slice(0, 2));
+    expect(text(parent)).toEqual(['two-three']);
+
+    value.set(9);
+    await flush();
+
+    expect(text(parent)).toEqual([]);
+  });
+
+  it('renders the default when it is the only branch', () => {
+    const parent = document.createElement('div');
+    _switch(parent, createRoot(), null, () => 9, blocks.slice(2));
+    expect(text(parent)).toEqual(['default']);
+  });
+
+  it('renders the default following a single case when the case does not match', () => {
+    const parent = document.createElement('div');
+    _switch(parent, createRoot(), null, () => 9, [blocks[0], blocks[2]]);
+    expect(text(parent)).toEqual(['default']);
   });
 
   it('switches case reactively', async () => {

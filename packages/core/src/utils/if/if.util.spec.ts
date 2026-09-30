@@ -106,6 +106,66 @@ describe('_if', () => {
     });
   });
 
+  describe('if / else if', () => {
+    it('renders the if branch when its condition is true', () => {
+      const parent = document.createElement('div');
+      _if(parent, createRoot(), null, [branch('a', () => true), branch('b', () => true)]);
+      expect(text(parent)).toEqual(['a']);
+    });
+
+    it('renders the else if branch when only its condition is true', () => {
+      const parent = document.createElement('div');
+      _if(parent, createRoot(), null, [branch('a', () => false), branch('b', () => true)]);
+      expect(text(parent)).toEqual(['b']);
+    });
+
+    it('renders nothing when no condition is true, since the second branch is not an else', () => {
+      const parent = document.createElement('div');
+      const b = branch('b', () => false);
+      _if(parent, createRoot(), null, [branch('a', () => false), b]);
+
+      expect(text(parent)).toEqual([]);
+      expect(b.block).not.toHaveBeenCalled();
+    });
+
+    it('destroys the active branch when no condition is true anymore', async () => {
+      const parent = document.createElement('div');
+      const value = signal(2);
+      const b = branch('b', () => value() === 2);
+      _if(parent, createRoot(), null, [branch('a', () => value() === 1), b]);
+      expect(text(parent)).toEqual(['b']);
+
+      value.set(9);
+      await flush();
+      expect(text(parent)).toEqual([]);
+
+      value.set(2);
+      await flush();
+      expect(text(parent)).toEqual(['b']);
+      expect(b.block).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('branches without a condition', () => {
+    it('renders a single branch without a condition', () => {
+      const parent = document.createElement('div');
+      _if(parent, createRoot(), null, [branch('a')]);
+      expect(text(parent)).toEqual(['a']);
+    });
+
+    it.each([
+      ['a branch with a condition', () => true],
+      ['another branch without a condition', undefined]
+    ])('renders a branch without a condition even when it is followed by %s', (_description, condition) => {
+      const parent = document.createElement('div');
+      const b = branch('b', condition);
+      _if(parent, createRoot(), null, [branch('a'), b]);
+
+      expect(text(parent)).toEqual(['a']);
+      expect(b.block).not.toHaveBeenCalled();
+    });
+  });
+
   describe('if / else if / else', () => {
     const blocks = (value: () => number) => [
       branch('a', () => value() === 1),

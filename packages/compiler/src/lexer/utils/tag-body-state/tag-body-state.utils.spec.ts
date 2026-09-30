@@ -3,8 +3,8 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { resolveTagBodyState } from './tag-body-state.utils';
 
 describe('resolveTagBodyState', () => {
-  it('resumes a conditional binding body', () => {
-    expect(resolveTagBodyState(LexerState.CONDITIONAL_BINDING_START)).toBe(LexerState.CONDITIONAL_BINDING_BODY);
+  it('resumes the body of a conditional binding block', () => {
+    expect(resolveTagBodyState(LexerState.FLOW_CONTROL_BLOCK)).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
   it('resumes a directive body', () => {

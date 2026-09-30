@@ -6,7 +6,7 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { lexDirective } from './lex-directive.state';
 
 const context: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME], tokens: [] };
-const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.CONDITIONAL_BINDING_START], tokens: [] };
+const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK], tokens: [] };
 
 /**
  * Creates a cursor positioned right after the `@@` of the given input, as the tag body leaves it.
@@ -40,6 +40,22 @@ describe('lexDirective', () => {
     expect(cursor.peek()).toBe(' '.charCodeAt(0));
   });
 
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('emits the directive and its closure when declared without bindings and followed by %s', (_description, whitespace) => {
+    const cursor = afterAtSigns(`@@myDirective${whitespace}class="a"`);
+    expect(lexDirective(cursor, context)).toEqual({
+      state: LexerState.TAG_BODY,
+      tokens: [
+        { type: TokenType.DIRECTIVE, parts: ['myDirective'] },
+        { type: TokenType.DIRECTIVE_CLOSE }
+      ]
+    });
+    expect(cursor.peek()).toBe(whitespace.charCodeAt(0));
+  });
+
   it('emits the directive and its closure when declared without bindings and followed by >', () => {
     const cursor = afterAtSigns('@@myDirective>');
     expect(lexDirective(cursor, context).tokens?.map(token => token.type)).toEqual([TokenType.DIRECTIVE, TokenType.DIRECTIVE_CLOSE]);
@@ -51,12 +67,12 @@ describe('lexDirective', () => {
   });
 
   it('goes back to CONDITIONAL_BINDING_BODY when declared without bindings inside a conditional binding', () => {
-    const cursor = afterAtSigns('@@myDirective class="a")');
+    const cursor = afterAtSigns('@@myDirective class="a" }');
     expect(lexDirective(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 
-  it('leaves the ) closing the conditional binding it is declared in to the conditional binding body', () => {
-    const cursor = afterAtSigns('@@myDirective)');
+  it('leaves the } closing the block of the conditional binding it is declared in to the conditional binding body', () => {
+    const cursor = afterAtSigns('@@myDirective}');
     expect(lexDirective(cursor, conditionalBindingContext)).toEqual({
       state: LexerState.CONDITIONAL_BINDING_BODY,
       tokens: [
@@ -64,11 +80,18 @@ describe('lexDirective', () => {
         { type: TokenType.DIRECTIVE_CLOSE }
       ]
     });
-    expect(cursor.peek()).toBe(')'.charCodeAt(0));
+    expect(cursor.peek()).toBe('}'.charCodeAt(0));
   });
 
-  it('throws on ) outside of a conditional binding', () => {
-    expect(() => lexDirective(afterAtSigns('@@myDirective)'), context)).toThrow('Unexpected \')\': there is no conditional binding or directive to close');
+  it('throws on } outside of a conditional binding', () => {
+    expect(() => lexDirective(afterAtSigns('@@myDirective}'), context)).toThrow('Unexpected \'}\': there is no conditional binding to close');
+  });
+
+  it.each([
+    ['in the tag body', context],
+    ['in a block of a conditional binding', conditionalBindingContext]
+  ])('throws on ), which has no directive to close, %s', (_description, outerContext) => {
+    expect(() => lexDirective(afterAtSigns('@@myDirective)'), outerContext)).toThrow('Unexpected \')\': there is no directive to close');
   });
 
   it('throws when the selector is empty', () => {

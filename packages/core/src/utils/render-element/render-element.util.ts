@@ -6,7 +6,7 @@ import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { InputSignal } from '../../signals/types/input-signal.type';
 import { untracked } from '../../signals/untracked';
-import type { RenderElementConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { RenderConditionalBinding, RenderElementConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
@@ -37,10 +37,10 @@ export function _renderElement(parentNode: Element, context: _Context, anchor: C
   mountNode(element, parentNode, context, anchor)
   bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
-  bindConditionalBindings(context, conditionalBindings, (conditionalBindingContext, conditionalBinding) => {
-    bindAttributes(element, conditionalBindingContext, conditionalBinding.attributes);
-    bindEvents(element, conditionalBindingContext, conditionalBinding.events);
-    bindDirectives(element, conditionalBindingContext, conditionalBinding.directives);
+  bindConditionalBindings(context, conditionalBindings, (branchContext, branch) => {
+    bindAttributes(element, branchContext, branch.attributes);
+    bindEvents(element, branchContext, branch.events);
+    bindDirectives(element, branchContext, branch.directives);
   });
   bindDirectives(element, context, directives);
   return element;
@@ -93,39 +93,58 @@ function bindDirectiveProperties(directive: CustomDirective, context: _Context, 
 
 /**
  * Binds a list of conditional bindings, creating a child context for each of them: `bind` applies
- * the bindings of a conditional binding in its child context when its condition turns true, and the
- * child context is destroyed, unbinding them, when it turns false. Nested conditional bindings are
- * bound the same way while the enclosing one is applied.
+ * the bindings of the selected branch of a conditional binding in its child context, which is destroyed,
+ * unbinding them, as soon as another branch, or none, is selected. The conditional bindings nested in a
+ * branch are bound the same way while the branch is selected.
  *
- * Only the condition is tracked: a condition evaluated again without changing its outcome, or a
- * signal read while binding, never binds twice.
+ * Only the selection of the branch is tracked: a selection evaluated again without changing its outcome,
+ * or a signal read while binding, never binds twice.
  * @param context - The current template execution scope.
  * @param conditionalBindings - The list of conditional bindings to bind.
- * @param bind - Applies the bindings of a conditional binding, registering their cleanup in the given context.
+ * @param bind - Applies the bindings of a branch, registering their cleanup in the given context.
  */
-function bindConditionalBindings<ConditionalBinding extends { condition: NoArgsFunction<boolean>, conditionalBindings: ConditionalBinding[] }>(context: _Context, conditionalBindings: ConditionalBinding[], bind: VoidFunction<[context: _Context, conditionalBinding: ConditionalBinding]>): void {
+function bindConditionalBindings<Bindings extends { conditionalBindings: RenderConditionalBinding<Bindings>[] }>(context: _Context, conditionalBindings: RenderConditionalBinding<Bindings>[], bind: VoidFunction<[context: _Context, branch: Bindings]>): void {
   for (let i = 0; i < conditionalBindings.length; i++) {
-    const conditionalBindingContext = context.addChild();
+    const branchContext = context.addChild();
     const conditionalBinding = conditionalBindings[i];
-    let bound = false;
+    let bound: Bindings | undefined;
 
     context.listen(effect(() => {
-      const active = !!conditionalBinding.condition();
-      if (active === bound) {
+      const selected = selectBranch(conditionalBinding);
+      if (selected === bound) {
         return;
       }
 
-      bound = active;
+      bound = selected;
       untracked(() => {
-        if (active) {
-          bind(conditionalBindingContext, conditionalBinding);
-          bindConditionalBindings(conditionalBindingContext, conditionalBinding.conditionalBindings, bind);
-        } else {
-          conditionalBindingContext.unlisten();
+        // The branch bound so far, if any, is unbound before the selected one is bound
+        branchContext.unlisten();
+
+        if (selected) {
+          bind(branchContext, selected);
+          bindConditionalBindings(branchContext, selected.conditionalBindings, bind);
         }
       });
     }));
   }
+}
+
+/**
+ * Selects the branch of a conditional binding to apply: the first one, in declaration order, whose condition holds.
+ * The condition of a `@switch` branch holds when one of its values is strictly equal to the value of the
+ * expression, while a branch without condition (`@else`, `@default`) always holds.
+ *
+ * The conditions following the one of the selected branch are not evaluated, so the signals they read are not tracked.
+ * @param conditionalBinding - The conditional binding to select the branch of.
+ * @returns The selected branch, or `undefined` when no condition holds.
+ */
+function selectBranch<Bindings>(conditionalBinding: RenderConditionalBinding<Bindings>): Bindings | undefined {
+  if (conditionalBinding.expression) {
+    const value = conditionalBinding.expression();
+    return conditionalBinding.branches.find(({ condition }) => !condition || condition.some(candidate => candidate === value));
+  }
+
+  return conditionalBinding.branches.find(({ condition }) => !condition || condition());
 }
 
 /**
@@ -150,9 +169,9 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     const directive = new Directive(element as HTMLElement);
     bindDirectiveProperties(directive, context, attributes);
     bindEvents(element, context, events);
-    bindConditionalBindings(context, conditionalBindings, (conditionalBindingContext, conditionalBinding) => {
-      bindDirectiveProperties(directive, conditionalBindingContext, conditionalBinding.attributes);
-      bindEvents(element, conditionalBindingContext, conditionalBinding.events);
+    bindConditionalBindings(context, conditionalBindings, (branchContext, branch) => {
+      bindDirectiveProperties(directive, branchContext, branch.attributes);
+      bindEvents(element, branchContext, branch.events);
     });
 
     directive[DIRECTIVE_CONNECT]();

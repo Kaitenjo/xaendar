@@ -18,6 +18,21 @@ describe('lexTagOpenName', () => {
     });
   });
 
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('reads a tag name terminated by %s, leaving it to the tag body', (_description, whitespace) => {
+    const cursor = new LexerCursor(`<div${whitespace}class="a">`);
+    const result = lexTagOpenName(cursor, context);
+    expect(result).toEqual({
+      state: LexerState.TAG_BODY,
+      tokens: [{ type: TokenType.TAG_OPEN_NAME, parts: ['div'] }],
+      pushState: true
+    });
+    expect(cursor.peek()).toBe(whitespace.charCodeAt(0));
+  });
+
   it('reads a tag name terminated by a slash', () => {
     const cursor = new LexerCursor('<br/>');
     const result = lexTagOpenName(cursor, context);
@@ -32,6 +47,12 @@ describe('lexTagOpenName', () => {
 
   it('skips whitespace between < and the tag name', () => {
     const cursor = new LexerCursor('<   div>');
+    const result = lexTagOpenName(cursor, context);
+    expect(result.tokens?.[0]).toEqual({ type: TokenType.TAG_OPEN_NAME, parts: ['div'] });
+  });
+
+  it('skips tabs and line breaks between < and the tag name', () => {
+    const cursor = new LexerCursor('<\r\n\tdiv>');
     const result = lexTagOpenName(cursor, context);
     expect(result.tokens?.[0]).toEqual({ type: TokenType.TAG_OPEN_NAME, parts: ['div'] });
   });

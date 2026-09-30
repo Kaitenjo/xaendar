@@ -4,7 +4,7 @@ import { LexerState } from '../../types/lexer-state.enum';
  * Resolves the state lexing the bindings of a tag once a binding has been consumed.
  *
  * Bindings can be declared directly in the tag body or inside a construct opened in it,
- * i.e. a conditional binding `@(condition, ...)` or a directive `@@selector(...)`: the lexer
+ * i.e. a block of a conditional binding `@if (condition) { ... }` or a directive `@@selector(...)`: the lexer
  * pushes the state opening the construct onto the state stack, so the state at the position
  * the caller knows to hold it identifies where the lexing has to resume.
  *
@@ -13,7 +13,7 @@ import { LexerState } from '../../types/lexer-state.enum';
  */
 export function resolveTagBodyState(openingState: LexerState | undefined): LexerState {
   switch (openingState) {
-    case LexerState.CONDITIONAL_BINDING_START:
+    case LexerState.FLOW_CONTROL_BLOCK:
       return LexerState.CONDITIONAL_BINDING_BODY;
 
     case LexerState.DIRECTIVE:

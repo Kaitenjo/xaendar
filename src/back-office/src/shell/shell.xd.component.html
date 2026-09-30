@@ -3,7 +3,7 @@
 @import { FormComponent } from '../form/form.xd.component.ts'
 
 <div class="shell">
-  <app-sidebar @(applyDinamicBinding(), text="{counter().toString()}" @(applyDinamicBinding2(), text2="{counter2().toString()}")) collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  <app-sidebar @if (applyDinamicBinding()) { text="{counter().toString()}" @if (applyDinamicBinding2()) { text2="{counter2().toString()}" } } collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
   
   <div class="shell__main">
     <app-topbar @menuToggle="onSidebarToggle()" />

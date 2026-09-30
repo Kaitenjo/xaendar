@@ -1,4 +1,4 @@
-import { GREATER_THEN, SLASH, SPACE } from '../../../costants/chars.constants';
+import { CR, GREATER_THEN, LF, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -6,7 +6,7 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 
 /**
- * Consumes an opening tag name after `<`, reading until a space, `/`, or `>` is found.
+ * Consumes an opening tag name after `<`, reading until a whitespace, `/`, or `>` is found.
  * Emits a TAG_OPEN_NAME token with the tag name and transitions to TAG_BODY.
  *
  * @param cursor - The lexer cursor positioned at the `<` character.
@@ -29,13 +29,16 @@ export function lexTagOpenName(cursor: LexerCursor, _context: LexerTransitionFun
 
   /*
     Keep read input until:
-    - Space: <span 
+    - Space, tab or line break (a tag can span multiple lines): <span
     - GT: <span>
     - Slash (Self Closing tag) <span / or <span/
   */
   while (read) {
     switch (cursor.peek()) {
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
       case SLASH:
       case GREATER_THEN:
         if (!tagName) {

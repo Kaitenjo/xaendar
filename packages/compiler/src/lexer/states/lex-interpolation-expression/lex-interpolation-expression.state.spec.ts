@@ -30,7 +30,7 @@ describe('lexInterpolationExpression', () => {
 
   it('restores CONDITIONAL_BINDING_BODY for an ATTRIBUTE interpolation nested in a conditional binding', () => {
     const cursor = new LexerCursor('value}"');
-    const context: LexerTransitionFunctionContext = { history: [LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE], tokens: [] };
+    const context: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK, LexerState.ATTRIBUTE], tokens: [] };
     expect(lexInterpolationExpression(cursor, context).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 

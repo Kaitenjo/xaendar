@@ -29,7 +29,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     const caseKey = caseNode.condition ? getBlockIdentifier('case', parentNode, `${index}_${i}`) : getBlockIdentifier('default', parentNode, index);
 
     retVal.functionsToProcess!.set(caseKey, {
-      fn: { node: caseNode, parentNode: caseKey, context: caseContext },
+      fn: { node: caseNode, parentNode: caseKey, context: caseContext, anchor: 'anchor' },
       args: [caseKey, 'parentContext', 'anchor']
     });
 

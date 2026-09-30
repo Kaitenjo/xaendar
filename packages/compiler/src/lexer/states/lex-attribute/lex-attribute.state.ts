@@ -1,4 +1,4 @@
-import { DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE } from '../../../costants/chars.constants';
+import { CR, DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, LF, RIGHT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -8,13 +8,13 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
 
 /**
  * Consumes an attribute name and optional value from the current position,
- * transitioning back to TAG_BODY when a space, `/`, or `>` is encountered.
+ * transitioning back to TAG_BODY when a whitespace, `/`, or `>` is encountered.
  * If the attribute value is an interpolation, pushes the INTERPOLATION state.
  *
  * @param cursor - The lexer cursor positioned at the start of the attribute.
  * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
- * @throws If the attribute name is malformed, or a `)` is found outside of a conditional binding or a directive.
+ * @throws If the attribute name is malformed, a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
  */
 export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -27,8 +27,14 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         Cover the cases where the attribute is applied without any value
         Ex:
         <input disabled />
+
+        A tag can span multiple lines, so the attribute name can also be followed
+        by a tab or a line break instead of a space.
       */
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
         cursor.advance();
         read = false;
         retVal = {
@@ -61,23 +67,45 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
 
       /*
         Cover cases where the attribute name is immediately followed by the ')'
-        closing a conditional binding or a directive, without a separating space.
-        The ')' is left to the body state, which closes the construct.
+        closing a directive, without a separating space.
+        The ')' is left to the directive body, which closes the directive.
         Ex:
-        <input @(isDisabled(), disabled) />
         <input @@myDirective(disabled) />
 
-        Outside of these constructs there is nothing for ')' to close.
+        Outside of a directive there is nothing for ')' to close.
       */
       case RPAREN:
-        const state = resolveTagBodyState(context.history.at(-1));
-        if (state === LexerState.TAG_BODY) {
-          throw new Error('Unexpected \')\': there is no conditional binding or directive to close');
+        if (resolveTagBodyState(context.history.at(-1)) !== LexerState.DIRECTIVE_BODY) {
+          throw new Error('Unexpected \')\': there is no directive to close');
         }
 
         read = false;
         retVal = {
-          state,
+          state: LexerState.DIRECTIVE_BODY,
+          tokens: [{
+            type: TokenType.ATTRIBUTE,
+            parts: [attribute]
+          }]
+        }
+        break;
+
+      /*
+        Cover cases where the attribute name is immediately followed by the '}'
+        closing a block of a conditional binding, without a separating space.
+        The '}' is left to the conditional binding body, which closes the block.
+        Ex:
+        <input @if (isDisabled()) { disabled} />
+
+        Outside of a conditional binding there is nothing for '}' to close.
+      */
+      case RIGHT_BRACE:
+        if (resolveTagBodyState(context.history.at(-1)) !== LexerState.CONDITIONAL_BINDING_BODY) {
+          throw new Error('Unexpected \'}\': there is no conditional binding to close');
+        }
+
+        read = false;
+        retVal = {
+          state: LexerState.CONDITIONAL_BINDING_BODY,
           tokens: [{
             type: TokenType.ATTRIBUTE,
             parts: [attribute]

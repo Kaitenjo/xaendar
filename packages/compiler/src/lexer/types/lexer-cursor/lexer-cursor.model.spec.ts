@@ -131,8 +131,18 @@ describe('LexerCursor', () => {
   });
 
   describe('skipSpaces', () => {
-    it('skips spaces, line feeds and carriage returns', () => {
-      const cursor = new LexerCursor(' \n\r x');
+    it('skips spaces, tabs, line feeds and carriage returns', () => {
+      const cursor = new LexerCursor(' \t\n\r x');
+      cursor.skipSpaces();
+      expect(cursor.peek()).toBe('x'.charCodeAt(0));
+    });
+
+    it.each([
+      ['a tab', '\t'],
+      ['a line feed', '\n'],
+      ['a carriage return', '\r']
+    ])('skips %s on its own', (_description, whitespace) => {
+      const cursor = new LexerCursor(`${whitespace}x`);
       cursor.skipSpaces();
       expect(cursor.peek()).toBe('x'.charCodeAt(0));
     });

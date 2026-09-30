@@ -1,4 +1,4 @@
-import { GREATER_THEN, SPACE } from '../../../costants/chars.constants';
+import { CR, GREATER_THEN, LF, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -44,7 +44,11 @@ export function lexTagClose(cursor: LexerCursor, _context: LexerTransitionFuncti
         read = false;
         break;
 
+      // Tabs and line breaks are no more part of the name than spaces are
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
         throw 'Tag close name cannot contain spaces';
 
       default:

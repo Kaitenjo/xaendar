@@ -6,7 +6,7 @@ import type { EventNode } from './event-node.type';
 
 /**
  * AST node representing a directive applied to an element,
- * e.g. `@@myDirective(display="block" @change="onChange($event)" @(condition, position="top"))`.
+ * e.g. `@@myDirective(display="block" @change="onChange($event)" @if (condition) { position="top" })`.
  */
 export type DirectiveNode = ASTNodeWithSpan<{
   /**
@@ -26,7 +26,7 @@ export type DirectiveNode = ASTNodeWithSpan<{
    */
   events: EventNode[];
   /**
-   * Conditional binding nodes binding the directive properties and events only while their condition holds.
+   * Conditional binding nodes binding the directive properties and events only while one of their branches is selected.
    */
   conditionalBindings: ConditionalBindingNode[];
 }>

@@ -1,6 +1,6 @@
 import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
-import { CR, EOF, LF, SPACE } from '../../../costants/chars.constants';
+import { CR, EOF, LF, SPACE, TAB } from '../../../costants/chars.constants';
 import { COMMENT_START } from '../../../costants/comment.costants';
 import { Cursor } from '../../../models/cursor/cursor';
 import { CurrentChar } from '../current-char.type';
@@ -170,10 +170,10 @@ export class LexerCursor extends Cursor {
   }
 
   /**
-   * Skips all consecutive space characters from the current position.
+   * Skips all consecutive whitespace characters (spaces, tabs and line breaks) from the current position.
    */
   public skipSpaces(): void {
-    while (this.peek() === SPACE || this.peek() === LF || this.peek() === CR) {
+    while (this.peek() === SPACE || this.peek() === TAB || this.peek() === LF || this.peek() === CR) {
       this.advance();
     }
   }

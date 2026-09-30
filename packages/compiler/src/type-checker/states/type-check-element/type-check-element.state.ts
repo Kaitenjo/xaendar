@@ -1,10 +1,14 @@
 // states/type-check-element.state.ts
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
+import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { EventNode } from '../../../parser/types/nodes/event-node.type';
+import type { IfBindingNode } from '../../../parser/types/nodes/if-binding-node.type';
+import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
 import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import type { DirectiveMetadata } from '../../../types/directive-metadata.type';
@@ -55,35 +59,33 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
  * Type-checks the bindings of a custom element against its component metadata:
  * attributes, events and conditional bindings.
  *
- * Required properties must be bound directly on the element, since a
- * property bound inside a conditional binding is only set when its condition
- * holds.
+ * Required properties must always be bound: directly on the element, or by a
+ * conditional binding that binds them whatever branch is selected, since a
+ * property bound inside a conditional binding is only set while its branch
+ * is the selected one (see {@link getAlwaysBoundAttributes}).
  *
  * @param node - The custom element node.
  * @param metadata - Metadata of the component registered for the element's selector.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If a required property is missing, is bound inside a conditional binding, or an event is unknown.
+ * @throws If a required property is missing, is bound inside a conditional binding that may not bind it, or an event is unknown.
  */
 function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetadata, context: TypeCheckContext): Line[] {
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
+  const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
 
   /*
-    Checked before the missing required properties, so that a required property
-    bound only inside a conditional binding gets the more specific error.
+    Checked before the missing required properties, so that a required property bound
+    inside a conditional binding that may not bind it gets the more specific error.
   */
-  const conditionalBindingLines = typeCheckConditionalBindings(node.conditionalBindings, context, binding => {
-    for (const { name, span } of binding.attributes) {
-      if (metadata.properties.get(name)?.required) {
-        throw new Error(`Required property "${name}" of <${node.tagName}> cannot be bound inside a conditional binding.`, { cause: span });
-      }
-    }
+  const conditionalBindingLines = typeCheckConditionalBindings(node.conditionalBindings, context, branch => {
+    assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, `<${node.tagName}>`, alwaysBoundAttributes);
 
     return [
-      ...typeCheckComponentAttributes(binding.attributes, metadata, context),
-      ...typeCheckComponentEvents(binding.events, `<${node.tagName}>`, metadata, context),
-      ...typeCheckDirectives(binding.directives, node.tagName, context)
+      ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+      ...typeCheckComponentEvents(branch.events, `<${node.tagName}>`, metadata, context),
+      ...typeCheckDirectives(branch.directives, node.tagName, context)
     ];
   });
 
@@ -91,6 +93,8 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
     const { name } = node.attributes[i];
     requiredProperties.delete(name);
   }
+
+  alwaysBoundAttributes.forEach(name => requiredProperties.delete(name));
 
   if (requiredProperties.size) {
     throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
@@ -107,15 +111,17 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
  *
  * Every attribute declared in a directive must match one of its properties,
  * since a directive has no underlying element attribute to fall back to, and
- * every required property must be bound directly in the directive, since a
- * property bound inside a conditional binding is only set when its condition
- * holds. Values and events are then checked exactly like the ones of a component.
+ * every required property must always be bound: directly in the directive, or by
+ * a conditional binding that binds it whatever branch is selected, since a
+ * property bound inside a conditional binding is only set while its branch
+ * is the selected one (see {@link getAlwaysBoundAttributes}). Values and events
+ * are then checked exactly like the ones of a component.
  *
  * @param directives - The directive nodes applied to the element.
  * @param tagName - Tag name of the element, used in error messages.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If a directive is not imported, binds an unknown property or event, misses a required property or binds it inside a conditional binding.
+ * @throws If a directive is not imported, binds an unknown property or event, misses a required property or binds it inside a conditional binding that may not bind it.
  */
 function typeCheckDirectives(directives: DirectiveNode[], tagName: string, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
@@ -128,23 +134,19 @@ function typeCheckDirectives(directives: DirectiveNode[], tagName: string, conte
     }
 
     assertDirectiveProperties(attributes, metadata);
+    const alwaysBoundAttributes = getAlwaysBoundAttributes(conditionalBindings);
 
     /*
-      Checked before the missing required properties, so that a required property
-      bound only inside a conditional binding gets the more specific error.
+      Checked before the missing required properties, so that a required property bound
+      inside a conditional binding that may not bind it gets the more specific error.
     */
-    const conditionalBindingLines = typeCheckConditionalBindings(conditionalBindings, context, binding => {
-      assertDirectiveProperties(binding.attributes, metadata);
-
-      for (const { name, span } of binding.attributes) {
-        if (metadata.properties.get(name)?.required) {
-          throw new Error(`Required property "${name}" of @@${selector} cannot be bound inside a conditional binding.`, { cause: span });
-        }
-      }
+    const conditionalBindingLines = typeCheckConditionalBindings(conditionalBindings, context, branch => {
+      assertDirectiveProperties(branch.attributes, metadata);
+      assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, `@@${selector}`, alwaysBoundAttributes);
 
       return [
-        ...typeCheckComponentAttributes(binding.attributes, metadata, context),
-        ...typeCheckComponentEvents(binding.events, `@@${selector}`, metadata, context)
+        ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+        ...typeCheckComponentEvents(branch.events, `@@${selector}`, metadata, context)
       ];
     });
 
@@ -152,6 +154,8 @@ function typeCheckDirectives(directives: DirectiveNode[], tagName: string, conte
     for (let j = 0; j < attributes.length; j++) {
       requiredProperties.delete(attributes[j].name);
     }
+
+    alwaysBoundAttributes.forEach(name => requiredProperties.delete(name));
 
     if (requiredProperties.size) {
       throw new Error(`@@${selector} on <${tagName}> is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: span });
@@ -181,6 +185,62 @@ function assertDirectiveProperties(attributes: AttributeNode[], metadata: Direct
       throw new Error(`Unknown property "${name}" on @@${metadata.selector} (${metadata.className} has no @Property with this name).`, { cause: span });
     }
   }
+}
+
+/**
+ * Ensures the required properties bound in a branch of a conditional binding are bound whatever branch
+ * is selected: a required property the selected branch doesn't bind, or bound by a conditional binding
+ * that may select no branch at all, would be left without a value.
+ *
+ * @param attributes - The attribute nodes bound in the branch.
+ * @param metadata - Metadata of the component or directive the attributes are bound to.
+ * @param owner - The element (`<tag-name>`) or the directive (`@@selector`) the attributes are bound to, used in error messages.
+ * @param alwaysBoundAttributes - Names of the attributes the conditional bindings of the owner bind whatever branch is selected.
+ * @throws If a required property is bound in the branch without being bound whatever branch is selected.
+ */
+function assertRequiredPropertiesAlwaysBound(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, owner: string, alwaysBoundAttributes: ReadonlySet<string>): void {
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, span } = attributes[i];
+    if (metadata.properties.get(name)?.required && !alwaysBoundAttributes.has(name)) {
+      throw new Error(`Required property "${name}" of ${owner} must always be bound: bind it in every branch of its conditional binding, including an @else or @default one, or outside of it.`, { cause: span });
+    }
+  }
+}
+
+/**
+ * Collects the names of the attributes a list of conditional bindings binds whatever branch is selected.
+ *
+ * A conditional binding always binds an attribute when it always selects a branch, i.e. it ends with an
+ * `@else` or a `@default` branch, and each of its branches binds the attribute: directly, or through the
+ * conditional bindings nested in the branch, which must in turn always bind it.
+ *
+ * @param conditionalBindings - The conditional bindings declared on an element, in a directive or in a branch.
+ * @returns The names of the attributes bound whatever branch is selected.
+ */
+function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[]): Set<string> {
+  const alwaysBoundAttributes = new Set<string>();
+
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { branches } = conditionalBindings[i];
+
+    // Without an `@else` or a `@default` branch closing it, a conditional binding may select no branch at all
+    if (branches.at(-1)?.condition !== null) {
+      continue;
+    }
+
+    const [first, ...others] = branches.map(branch => new Set([
+      ...branch.attributes.map(({ name }) => name),
+      ...getAlwaysBoundAttributes(branch.conditionalBindings)
+    ]));
+
+    first.forEach(name => {
+      if (others.every(boundInBranch => boundInBranch.has(name))) {
+        alwaysBoundAttributes.add(name);
+      }
+    });
+  }
+
+  return alwaysBoundAttributes;
 }
 
 /**
@@ -275,10 +335,10 @@ function typeCheckNativeBindings(node: ElementNode, context: TypeCheckContext): 
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
     ...typeCheckNativeEvents(node.events, context),
-    ...typeCheckConditionalBindings(node.conditionalBindings, context, binding => [
-      ...typeCheckNativeAttributes(binding.attributes, context),
-      ...typeCheckNativeEvents(binding.events, context),
-      ...typeCheckDirectives(binding.directives, node.tagName, context)
+    ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
+      ...typeCheckNativeAttributes(branch.attributes, context),
+      ...typeCheckNativeEvents(branch.events, context),
+      ...typeCheckDirectives(branch.directives, node.tagName, context)
     ])
   ];
 }
@@ -331,32 +391,94 @@ function typeCheckNativeEvents(events: EventNode[], context: TypeCheckContext): 
 }
 
 /**
- * Type-checks conditional bindings as real, nested TypeScript `if` blocks: the
- * condition is checked like an `@if` condition (and narrows inside the
- * block), while the bound attributes/events/directives are checked by `bindings`,
+ * Type-checks conditional bindings as real, nested TypeScript control flow, exactly like the `@if`
+ * and `@switch` blocks declared in the template content: an `@if` chain becomes an `if` / `else if` / `else`
+ * chain and a `@switch` a `switch` statement. Conditions and expressions are therefore checked (and narrow
+ * inside their block), while the bound attributes/events/directives of each branch are checked by `bindings`,
  * exactly as if they were declared directly on the element or on the directive.
  *
  * @param conditionalBindings - The conditional bindings to type-check.
  * @param context - Current type-check scope.
- * @param bindings - Emits the type-check lines for a single binding's attributes, events and directives.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
  * @returns The generated type-check lines.
  */
-function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNode[], context: TypeCheckContext, bindings: (binding: ConditionalBindingNode) => Line[]): Line[] {
+function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNode[], context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
   const lines = new Array<Line>();
+  // The bindings of a branch are followed by the conditional bindings nested in it
+  const typeCheckBranch = (branch: ConditionalBindingBranchNode): Line[] => indentLines([
+    ...bindings(branch),
+    ...typeCheckConditionalBindings(branch.conditionalBindings, context, bindings)
+  ]);
 
   for (let i = 0; i < conditionalBindings.length; i++) {
-    const binding = conditionalBindings[i];
-    const condition = resolveExpression(binding.condition, context, { resolver: 'root' });
+    const conditionalBinding = conditionalBindings[i];
+    lines.push(...(conditionalBinding.type === ASTNodeType.SwitchBinding
+      ? typeCheckSwitchBinding(conditionalBinding, context, typeCheckBranch)
+      : typeCheckIfBinding(conditionalBinding, context, typeCheckBranch)
+    ));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks an `@if` conditional binding as a real TypeScript `if` / `else if` / `else` chain,
+ * which gives each branch the negated narrowing of every condition preceding it.
+ *
+ * @param node - The `@if` conditional binding to type-check.
+ * @param context - Current type-check scope.
+ * @param typeCheckBranch - Emits the type-check lines for the content of a branch.
+ * @returns The generated type-check lines.
+ */
+function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, typeCheckBranch: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  const lines = new Array<Line>();
+  const { branches } = node;
+
+  for (let i = 0; i < branches.length; i++) {
+    const branch = branches[i];
+    const { condition, span } = branch;
 
     lines.push(
-      line('if (', mapped(condition.expression, binding.span), ') {'),
-      ...indentLines([
-        ...bindings(binding),
-        ...typeCheckConditionalBindings(binding.conditionalBindings, context, bindings)
-      ]),
+      // Only the first branch opens the chain, only the `@else` one has no condition
+      condition
+        ? line(i ? 'else if (' : 'if (', mapped(resolveExpression(condition, context, { resolver: 'root' }).expression, span), ') {')
+        : plain('else {'),
+      ...typeCheckBranch(branch),
       plain('}')
     );
   }
+
+  return lines;
+}
+
+/**
+ * Type-checks a `@switch` conditional binding as a real TypeScript `switch` statement, which validates
+ * each `@case` value against the type of the expression and narrows the expression inside each branch.
+ *
+ * The `@case`s sharing a branch are emitted as stacked `case` labels sharing the same body.
+ *
+ * @param node - The `@switch` conditional binding to type-check.
+ * @param context - Current type-check scope.
+ * @param typeCheckBranch - Emits the type-check lines for the content of a branch.
+ * @returns The generated type-check lines.
+ */
+function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, typeCheckBranch: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  const { expression } = resolveExpression(node.expression, context, { resolver: 'root' });
+  const lines = [line('switch (', mapped(expression, node.span), ') {')];
+
+  const { branches } = node;
+  for (let i = 0; i < branches.length; i++) {
+    const branch = branches[i];
+    const labels = branch.condition?.map(condition => plain(`case ${condition}:`)) ?? [plain('default:')];
+
+    lines.push(...indentLines([
+      ...labels,
+      ...typeCheckBranch(branch),
+      ...indentLines([plain('break;')])
+    ]));
+  }
+
+  lines.push(plain('}'));
 
   return lines;
 }

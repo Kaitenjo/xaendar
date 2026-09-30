@@ -99,14 +99,6 @@ export enum TokenType {
    */
   IMPORT_PATH,
   /**
-   * A conditional binding, e.g. `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
-   */
-  CONDITIONAL_BINDING,
-  /**
-   * The closing part of a conditional binding, e.g. `")"` in `<div @(bindPlaceholder(), placeholder="{placeholder()}") />`.
-   */
-  CONDITIONAL_BINDING_CLOSE,
-  /**
    * A directive, e.g. `@@myDirective` in `<div @@myDirective(display="block") />`.
    */
   DIRECTIVE,

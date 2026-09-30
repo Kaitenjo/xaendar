@@ -22,4 +22,20 @@ describe('generateSwitch', () => {
     expect(code.at(-1)).toBe('])');
     expect([...functionsToProcess?.keys() ?? []]).toEqual(['case0_0', 'case0_1', 'default0']);
   });
+
+  it('renders the content of every branch before the anchor its function receives', async () => {
+    const template = '@switch (x) { @case (1) { <a></a> } @default { <c></c> } }';
+    const { functionsToProcess } = await generateSwitch(parse(template), 'root', '0', new CompilerContext(), null);
+
+    expect([...functionsToProcess?.values() ?? []].map(({ fn, args }) => [fn.anchor, args])).toEqual([
+      ['anchor', ['case0_0', 'parentContext', 'anchor']],
+      ['anchor', ['default0', 'parentContext', 'anchor']]
+    ]);
+  });
+
+  it('forwards the anchor it is rendered before to the runtime', async () => {
+    const { code } = await generateSwitch(parse('@switch (x) { @case (1) { <a></a> } }'), 'if0', '0', new CompilerContext(), 'anchor');
+
+    expect(code[0]).toBe('_switch(if0, context, anchor, () => this.x, [');
+  });
 });

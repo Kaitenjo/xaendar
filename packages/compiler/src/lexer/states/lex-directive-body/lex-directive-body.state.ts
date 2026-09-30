@@ -1,14 +1,15 @@
-import { AT_SIGN, GREATER_THEN, RPAREN, SLASH, SPACE } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { isConditionalBindingKeyword } from '../../utils/conditional-binding/conditional-binding.utils';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
  * Lexes the bindings of a directive declared between `@@selector(` and `)`:
- * properties are lexed as attributes, events as event bindings and `@(` opens a
+ * properties are lexed as attributes, events as event bindings and `@if`/`@switch` open a
  * conditional binding, while `)` closes the directive and resumes the state the
  * directive was declared in.
  *
@@ -29,10 +30,9 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
         }
 
         let state = LexerState.EVENT;
-        if (cursor.peekMatch('@(')) {
-          state = LexerState.CONDITIONAL_BINDING_START;
-          // Consume `@(`.
-          cursor.advance(2);
+        if (isConditionalBindingKeyword(cursor)) {
+          // The keyword is consumed by the flow-control state.
+          state = LexerState.FLOW_CONTROL;
         }
 
         retVal = {
@@ -41,7 +41,11 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
         read = false;
         break;
 
+      // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
         cursor.skipSpaces();
         break;
 

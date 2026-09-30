@@ -1,5 +1,7 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
+import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
@@ -111,9 +113,10 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 /**
  * Maps attribute nodes to their corresponding generated code lines.
  *
- * Attributes declared inside a conditional binding also get the `unbind` applied when the
- * condition turns false: a property of a custom element or of a directive is reset to its
- * default value, read from the metadata of its owner, any other attribute is removed.
+ * Attributes declared inside a conditional binding also get the `unbind` applied when their
+ * branch is no longer the selected one: a property of a custom element or of a directive is reset
+ * to its default value, read from the metadata of its owner, any other attribute is removed.
+ * A required property gets no `unbind`, since the branch selected next binds it again.
  *
  * @param attributes - The attribute nodes to map onto the element or the directive.
  * @param compilerContext - Current render scope context, used to resolve identifier references.
@@ -156,9 +159,9 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
       const propertyMetadata = metadata?.properties.get(name);
       if (propertyMetadata) {
         /*
-          Teorically this control should not be necessary due to the typechecker checking
-          if a conditional binding has a required attribute or not. Required attributes cannot be used with conditional bindings
-          If typechecker is not correctly working this if prevents to generate code for required attributes
+          A required property has no default value to be reset to, and it doesn't need one: the typechecker
+          accepts it inside a conditional binding only when every branch binds it, up to an `@else` or a
+          `@default` one, so the branch selected next always binds it again.
         */
         if (!propertyMetadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
@@ -243,11 +246,10 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
 }
 
 /**
- * Maps conditional binding nodes to the descriptors `_renderElement` applies while their condition holds:
- * the condition, the attributes, the events, the nested conditional bindings and, for a conditional binding
- * declared on an element, the directives.
+ * Maps conditional binding nodes to the descriptors `_renderElement` binds: the branches of the conditional
+ * binding and, for a `@switch`, the expression whose value selects the branch to apply.
  *
- * Conditional bindings without any binding are skipped.
+ * Conditional bindings whose branches declare no binding at all are skipped.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
  * @param compilerContext - Current render scope context, used to resolve identifier references.
@@ -260,88 +262,155 @@ async function mapConditionalBindings(conditionalBindings: ConditionalBindingNod
   const mappedConditionalBindings = new Array<string>();
 
   for (let i = 0; i < conditionalBindings.length; i++) {
-    const { condition, attributes, events, conditionalBindings: nestedConditionalBindings, directives } = conditionalBindings[i];
-    if (!attributes.length && !events.length && !nestedConditionalBindings.length && !directives.length) {
+    const conditionalBinding = conditionalBindings[i];
+    const { branches } = conditionalBinding;
+    if (branches.every(isEmptyBranch)) {
       continue;
     }
 
-    const { expression } = resolveExpression(condition, compilerContext);
-    const mappedAttributes = await mapAttributes(attributes, compilerContext, owner, isCustomElement, isDirective);
-    const mappedEvents = mapEvents(events, compilerContext);
-    const mappedNestedConditionalBindings = await mapConditionalBindings(nestedConditionalBindings, compilerContext, owner, isCustomElement, isDirective);
-
-    const retVal = [
-      '{',
-      ...indent([
-        `condition: () => ${expression},`
-      ])
-    ];
-
-    attributes.length
-      ? retVal.push(
-        ...indent([
-          'attributes: [',
-          ...indent(mappedAttributes),
-          '],'
-        ])
-      )
-      : retVal.push(
-        ...indent([
-          'attributes: [],'
-        ])
-      );
-
-    events.length
-      ? retVal.push(
-        ...indent([
-          'events: [',
-          ...indent(mappedEvents),
-          '],'
-        ])
-      )
-      : retVal.push(
-        ...indent([
-          'events: [],'
-        ])
-      );
-
-    mappedNestedConditionalBindings.length
-      ? retVal.push(
-        ...indent([
-          'conditionalBindings: [',
-          ...indent(mappedNestedConditionalBindings),
-          '],'
-        ])
-      )
-      : retVal.push(
-        ...indent([
-          'conditionalBindings: [],'
-        ])
-      );
-
-    // A conditional binding declared inside a directive cannot apply other directives
-    if (!isDirective) {
-      const mappedDirectives = await mapDirectives(directives, compilerContext);
-      mappedDirectives.length
-        ? retVal.push(
-          ...indent([
-            'directives: [',
-            ...indent(mappedDirectives),
-            '],'
-          ])
-        )
-        : retVal.push(
-          ...indent([
-            'directives: [],'
-          ])
-        );
+    const mappedBranches = new Array<string>();
+    for (let j = 0; j < branches.length; j++) {
+      mappedBranches.push(...await mapBranch(branches[j], mapCondition(conditionalBinding, j, compilerContext), compilerContext, owner, isCustomElement, isDirective));
     }
 
-    retVal.push('},');
+    const retVal = ['{'];
+
+    if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
+      retVal.push(indent(`expression: () => ${resolveExpression(conditionalBinding.expression, compilerContext).expression},`));
+    }
+
+    retVal.push(
+      ...indent([
+        'branches: [',
+        ...indent(mappedBranches),
+        ']'
+      ]),
+      '},'
+    );
     mappedConditionalBindings.push(...retVal);
   };
 
   return mappedConditionalBindings;
+}
+
+/**
+ * Tells whether a branch of a conditional binding declares no binding at all.
+ *
+ * @param branch - The branch to check.
+ * @returns `true` if the branch has nothing to apply, `false` otherwise.
+ */
+function isEmptyBranch({ attributes, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
+  return !attributes.length && !events.length && !conditionalBindings.length && !directives.length;
+}
+
+/**
+ * Maps what selects a branch of a conditional binding: the condition of an `@if` or `@else if` branch,
+ * resolved against the current scope, or the values of the `@case`s of a `@switch` branch, emitted as declared.
+ *
+ * A branch selected when no other one is has no condition to evaluate:
+ * an `@else` branch doesn't declare the condition at all, a `@default` one declares a `null` one.
+ *
+ * @param conditionalBinding - The conditional binding node the branch belongs to.
+ * @param index - The index of the branch among the ones of the conditional binding.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @returns The generated code lines declaring the condition of the branch, if any.
+ */
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, compilerContext: CompilerContext): string[] {
+  if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
+    const { condition } = conditionalBinding.branches[index];
+    return [`condition: ${condition ? `[${condition.join(', ')}]` : 'null'},`];
+  }
+
+  const { condition } = conditionalBinding.branches[index];
+  return condition ? [`condition: () => ${resolveExpression(condition, compilerContext).expression},`] : [];
+}
+
+/**
+ * Maps a branch of a conditional binding to the descriptor of the bindings `_renderElement` applies while
+ * the branch is selected: the attributes, the events, the nested conditional bindings and, for a conditional
+ * binding declared on an element, the directives.
+ *
+ * @param branch - The branch node to map.
+ * @param condition - The generated code lines declaring the condition of the branch, if any.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the branch is declared in.
+ * @param isCustomElement - Whether the owner is a custom element.
+ * @param isDirective - Whether the owner is a directive.
+ * @returns Array of generated code lines describing the branch.
+ */
+async function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean, isDirective: boolean): Promise<string[]> {
+  const { attributes, events, conditionalBindings, directives } = branch;
+  const mappedAttributes = await mapAttributes(attributes, compilerContext, owner, isCustomElement, isDirective);
+  const mappedEvents = mapEvents(events, compilerContext);
+  const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, compilerContext, owner, isCustomElement, isDirective);
+
+  const retVal = [
+    '{',
+    ...indent(condition)
+  ];
+
+  attributes.length
+    ? retVal.push(
+      ...indent([
+        'attributes: [',
+        ...indent(mappedAttributes),
+        '],'
+      ])
+    )
+    : retVal.push(
+      ...indent([
+        'attributes: [],'
+      ])
+    );
+
+  events.length
+    ? retVal.push(
+      ...indent([
+        'events: [',
+        ...indent(mappedEvents),
+        '],'
+      ])
+    )
+    : retVal.push(
+      ...indent([
+        'events: [],'
+      ])
+    );
+
+  mappedConditionalBindings.length
+    ? retVal.push(
+      ...indent([
+        'conditionalBindings: [',
+        ...indent(mappedConditionalBindings),
+        '],'
+      ])
+    )
+    : retVal.push(
+      ...indent([
+        'conditionalBindings: [],'
+      ])
+    );
+
+  // A conditional binding declared inside a directive cannot apply other directives
+  if (!isDirective) {
+    const mappedDirectives = await mapDirectives(directives, compilerContext);
+    mappedDirectives.length
+      ? retVal.push(
+        ...indent([
+          'directives: [',
+          ...indent(mappedDirectives),
+          '],'
+        ])
+      )
+      : retVal.push(
+        ...indent([
+          'directives: [],'
+        ])
+      );
+  }
+
+  retVal.push('},');
+  return retVal;
 }
 
 /**

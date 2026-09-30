@@ -43,17 +43,21 @@ describe('parseDirective', () => {
   });
 
   it('parses the conditional bindings of a directive', () => {
-    const [node] = parse('<div @@myDirective(display="block" @(cond(), position="top" @change="onChange()" @(inner(), label="x")))></div>');
+    const [node] = parse('<div @@myDirective(display="block" @if (cond()) { position="top" @change="onChange()" @if (inner()) { label="x" } } @else { position="bottom" } @switch (mode()) { @case (1) { size="s" } })></div>');
     const [directive] = node.directives;
-    const [binding] = directive.conditionalBindings;
+    const [binding, switchBinding] = directive.conditionalBindings;
+    const [branch, elseBranch] = binding.branches;
 
     expect(node.conditionalBindings).toEqual([]);
     expect(directive.attributes.map(({ name }) => name)).toEqual(['display']);
-    expect(binding.condition.getText()).toBe('cond()');
-    expect(binding.attributes.map(({ name }) => name)).toEqual(['position']);
-    expect(binding.events.map(({ name }) => name)).toEqual(['change']);
-    expect(binding.directives).toEqual([]);
-    expect(binding.conditionalBindings[0].attributes.map(({ name }) => name)).toEqual(['label']);
+    expect(directive.conditionalBindings.map(({ type }) => type)).toEqual([ASTNodeType.IfBinding, ASTNodeType.SwitchBinding]);
+    expect(branch.attributes.map(({ name }) => name)).toEqual(['position']);
+    expect(branch.events.map(({ name }) => name)).toEqual(['change']);
+    expect(branch.directives).toEqual([]);
+    expect(branch.conditionalBindings[0].branches[0].attributes.map(({ name }) => name)).toEqual(['label']);
+    expect(elseBranch.condition).toBeNull();
+    expect(elseBranch.attributes.map(({ name }) => name)).toEqual(['position']);
+    expect(switchBinding.branches[0].attributes.map(({ name }) => name)).toEqual(['size']);
   });
 
   it('throws on an unexpected token inside the directive', () => {

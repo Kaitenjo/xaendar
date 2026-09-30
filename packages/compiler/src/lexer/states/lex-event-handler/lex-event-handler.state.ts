@@ -1,4 +1,4 @@
-import { LPAREN, SPACE } from '../../../costants/chars.constants';
+import { CR, LF, LPAREN, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -21,7 +21,11 @@ export function lexEventHandler(cursor: LexerCursor, context: LexerTransitionFun
 
   while (read) {
     switch (cursor.peek()) {
+      // Tabs and line breaks are no more part of the name than spaces are
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
         throw 'No spaces are allowed in event handler name';
         
       case LPAREN:

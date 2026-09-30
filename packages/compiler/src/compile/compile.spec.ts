@@ -33,6 +33,18 @@ describe('compile', () => {
     expect(result).toMatchObject({ javascript: expect.stringContaining('() => this.count'), typescript: { text: expect.stringContaining('root.count;') } });
   });
 
+  it('compiles a tag spanning multiple lines exactly like the same tag on a single line', async () => {
+    const lines = ['<div', 'class="a"', 'title="{name}"', '@click="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
+    const compileBoth = (template: string) => compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
+    const singleLine = await compileBoth(lines.join(' '));
+    const multiLine = await compileBoth(lines.join('\r\n\t'));
+
+    expect(multiLine.javascript).toBe(singleLine.javascript);
+    expect(multiLine.typescript.text).toBe(singleLine.typescript.text);
+    expect(multiLine.javascript).toContain('name: \'class\',');
+    expect(multiLine.typescript.text).toContain('if (root.dark) {');
+  });
+
   it('resolves default imports through their local name and skips namespace imports', async () => {
     const importNode = {
       type: ASTNodeType.Import,

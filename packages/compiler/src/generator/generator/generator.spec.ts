@@ -43,6 +43,17 @@ describe('Generator', () => {
     expect(code).not.toMatch(/this\.(render|div0Children|if1|for2)\b/);
   });
 
+  it('renders the content of every flow-control block before the anchor of the block', async () => {
+    const code = await generate('@if (a) { <i></i> }@switch (m) { @case (1) { <b></b> } @default { <u></u>@if (n) { <s></s> } } }@for (i of items; track i) { <li></li> }<p></p>');
+
+    expect(code).toContain('_renderElement(if0, context, anchor, \'i\',');
+    expect(code).toContain('_renderElement(case1_0, context, anchor, \'b\',');
+    expect(code).toContain('_renderElement(default1, context, anchor, \'u\',');
+    expect(code).toContain('_if(default1, context, anchor, [');
+    expect(code).toContain('_renderElement(for2, context, anchor, \'li\',');
+    expect(code).toContain('_renderElement(root, context, null, \'p\',');
+  });
+
   it('skips nodes that generate no code', async () => {
     const code = await generate('@import { A } from \'./a\'\n<div>@import { B } from \'./b\'<span></span></div>');
     expect(code).not.toContain('import');
@@ -60,7 +71,7 @@ describe('Generator', () => {
   });
 
   it('forwards the compiler cache to the context', async () => {
-    const template = '<my-el @(cond(), title="x")></my-el>';
+    const template = '<my-el @if (cond()) { title="x" }></my-el>';
     const cache = { getOrInsert: async () => ({ properties: new Map() }) as never, set: () => undefined };
     const code = await new Generator(template, parse(template), cache).generate([]);
 

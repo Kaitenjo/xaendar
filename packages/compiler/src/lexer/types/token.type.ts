@@ -9,8 +9,6 @@ import { ConditionToken } from './tokens/condition-token.type';
 import { DefaultToken } from './tokens/default-token.type';
 import { DirectiveCloseToken } from './tokens/directive-close-token.type';
 import { DirectiveToken } from './tokens/directive-token.type';
-import { ConditionalBindingCloseToken } from './tokens/conditional-binding-close-token.type';
-import { ConditionalBindingToken } from './tokens/conditional-binding-token.type';
 import { ElseIfToken } from './tokens/else-if-token.type';
 import { ElseToken } from './tokens/else-token.type';
 import { EOFToken } from './tokens/eof-token.type';
@@ -58,8 +56,6 @@ export type Token =
   | BlockCloseToken
   | ImportToken
   | ImportPathToken
-  | ConditionalBindingToken
-  | ConditionalBindingCloseToken
   | DirectiveToken
   | DirectiveCloseToken
   | EOFToken;
@@ -89,8 +85,6 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<BlockCloseToken>
   | MaybeTokenWithSpan<ImportToken>
   | MaybeTokenWithSpan<ImportPathToken>
-  | MaybeTokenWithSpan<ConditionalBindingToken>
-  | MaybeTokenWithSpan<ConditionalBindingCloseToken>
   | MaybeTokenWithSpan<DirectiveToken>
   | MaybeTokenWithSpan<DirectiveCloseToken>;
 

@@ -1,4 +1,4 @@
-import { DOUBLE_QUOTE, EQUAL_THEN, SPACE } from '../../../costants/chars.constants';
+import { CR, DOUBLE_QUOTE, EQUAL_THEN, LF, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -24,7 +24,11 @@ export function lexEvent(cursor: LexerCursor, _context: LexerTransitionFunctionC
 
   while (read) {
     switch (cursor.peek()) {
+      // Tabs and line breaks are no more part of the name than spaces are
       case SPACE:
+      case TAB:
+      case LF:
+      case CR:
         throw 'No spaces are allowed in event name';
 
       case EQUAL_THEN:

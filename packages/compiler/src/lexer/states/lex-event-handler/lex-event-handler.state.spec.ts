@@ -7,7 +7,7 @@ import { lexEventHandler } from './lex-event-handler.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.CONDITIONAL_BINDING_START],
+  history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK],
   tokens: []
 };
 
@@ -35,6 +35,15 @@ describe('lexEventHandler', () => {
 
   it('throws on a space inside the handler name', () => {
     const cursor = new LexerCursor('on Click()"');
+    expect(() => lexEventHandler(cursor, context)).toThrow('No spaces are allowed in event handler name');
+  });
+
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('throws on %s following the handler name, rather than reading it as part of the name', (_description, whitespace) => {
+    const cursor = new LexerCursor(`onClick${whitespace}()"`);
     expect(() => lexEventHandler(cursor, context)).toThrow('No spaces are allowed in event handler name');
   });
 

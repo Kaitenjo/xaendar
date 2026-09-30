@@ -51,9 +51,17 @@ export enum ASTNodeType {
    */
   Import,
   /**
-   * A conditional binding node representing a conditionally evaluated expression or content.
+   * A conditional binding declared as an `@if` chain among the bindings of an element or of a directive.
    */
-  ConditionalBinding,
+  IfBinding,
+  /**
+   * A conditional binding declared as a `@switch` among the bindings of an element or of a directive.
+   */
+  SwitchBinding,
+  /**
+   * A branch of a conditional binding: the bindings declared in an `@if`, `@else if`, `@else`, `@case` or `@default` block.
+   */
+  ConditionalBindingBranch,
   /**
    * A directive applied to an HTML element.
    */

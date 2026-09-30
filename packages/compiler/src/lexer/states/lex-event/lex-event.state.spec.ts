@@ -21,6 +21,15 @@ describe('lexEvent', () => {
     expect(() => lexEvent(cursor, context)).toThrow('No spaces are allowed in event name');
   });
 
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('throws on %s following the event name, rather than reading it as part of the name', (_description, whitespace) => {
+    const cursor = new LexerCursor(`@click${whitespace}="onClick"`);
+    expect(() => lexEvent(cursor, context)).toThrow('No spaces are allowed in event name');
+  });
+
   it('throws when the event name is empty', () => {
     const cursor = new LexerCursor('@="onClick"');
     expect(() => lexEvent(cursor, context)).toThrow('Event name cannot be empty');

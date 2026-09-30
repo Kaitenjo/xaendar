@@ -1,13 +1,12 @@
 import type { _removeAttribute } from '../utils';
-import type { RenderElementConditionalBinding } from './render-conditional-binding.type';
+import type { RenderConditionalBinding } from './render-conditional-binding.type';
 import type { RenderElementAttribute } from './render-element-attribute.type';
+import type { RenderElementEvent } from './render-element-event.type';
 
 /**
  * Describes a single directive to be applied to a rendered element, e.g. `<div @@selector(name="value" @event="handler()") />`.
- *
- * The events are the ones of a conditional binding: they are listened to on the element the directive is applied to.
  */
-export type RenderElementDirective = Pick<RenderElementConditionalBinding, 'events'> & {
+export type RenderElementDirective = {
   /**
    * The selector the directive is registered with.
    */
@@ -18,8 +17,12 @@ export type RenderElementDirective = Pick<RenderElementConditionalBinding, 'even
    */
   attributes: Exclude<RenderElementAttribute, { unbind: typeof _removeAttribute }>[],
   /**
-   * The list of conditional bindings binding the directive properties and events only while their condition holds:
-   * the conditional bindings of an element, bound to the directive properties and unable to apply further directives.
+   * The list of event listeners to be attached: the events of a directive are listened to on the element the directive is applied to.
    */
-  conditionalBindings: (Omit<RenderElementConditionalBinding, 'attributes' | 'conditionalBindings' | 'directives'> & Pick<RenderElementDirective, 'attributes' | 'conditionalBindings'>)[]
+  events: RenderElementEvent[],
+  /**
+   * The list of conditional bindings binding the directive properties and events only while one of their branches is selected:
+   * a branch holds the same bindings the directive does, so it is unable to apply further directives.
+   */
+  conditionalBindings: RenderConditionalBinding<Pick<RenderElementDirective, 'attributes' | 'events' | 'conditionalBindings'>>[]
 }

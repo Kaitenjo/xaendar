@@ -23,11 +23,15 @@ type State = {
 /**
  * Creates a reactive conditional structure from a list of branches.
  *
- * Depending on the number of branches provided, the appropriate evaluation strategy
+ * Depending on the branches provided, the appropriate evaluation strategy
  * is selected:
- * - 1 branch  → simple `if` (see {@link handleIf});
- * - 2 branches → `if` / `else` (see {@link handleIfElse});
- * - 3+ branches → `if` / `else if` / ... / `else` (see {@link handleIfElseIf}).
+ * - a single branch with a condition → simple `if` (see {@link handleIf});
+ * - a branch with a condition followed by one without → `if` / `else` (see {@link handleIfElse});
+ * - any other chain → `if` / `else if` / ... / `else` (see {@link handleIfElseIf}).
+ *
+ * The strategy depends on the conditions of the branches and not only on their number:
+ * two branches are an `if` / `else if` when both of them declare a condition, and a
+ * single branch may have none (e.g. a `@switch` declaring only its `@default`).
  *
  * The evaluation is wrapped in an {@link effect}, so it is automatically re-executed
  * whenever any signal read by the conditions changes. On each re-execution, the current
@@ -41,20 +45,16 @@ type State = {
 export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, blocks: Block[]): void {
   const anchor = createAnchor('if', parentNode, parentContext, referenceNode);
   
+  const [first, second] = blocks;
   let state: State | undefined;
   let fn: (state: State | undefined) => State | undefined;
 
-  switch (blocks.length) {
-    case 1:
-      fn = (state: State | undefined) => handleIf(parentNode, parentContext, blocks[0], state, anchor);
-      break;
-
-    case 2:
-      fn = (state: State | undefined) => handleIfElse(parentNode, parentContext, blocks[0], blocks[1], state, anchor);
-      break;
-
-    default:
-      fn = (state: State | undefined) => handleIfElseIf(parentNode, parentContext, blocks, state, anchor);
+  if (blocks.length === 1 && first.condition) {
+    fn = (state: State | undefined) => handleIf(parentNode, parentContext, first, state, anchor);
+  } else if (blocks.length === 2 && first.condition && !second.condition) {
+    fn = (state: State | undefined) => handleIfElse(parentNode, parentContext, first, second, state, anchor);
+  } else {
+    fn = (state: State | undefined) => handleIfElseIf(parentNode, parentContext, blocks, state, anchor);
   }
 
   const unlistener = effect(() => state = fn(state));
@@ -62,7 +62,7 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
 }
 
 /**
- * Handles the simple `if` case (a single branch, no `else`).
+ * Handles the simple `if` case (a single branch with a condition, no `else`).
  *
  * If the condition is true, the branch is activated (state `0`); otherwise, any
  * previously active branch is deactivated by resetting the state to `null` and
@@ -90,7 +90,7 @@ function handleIf(
 }
 
 /**
- * Handles the `if` / `else` case (exactly two branches).
+ * Handles the `if` / `else` case (exactly two branches, only the first one with a condition).
  *
  * If the `if` condition is true, the first branch is activated (state `0`); otherwise,
  * the `else` branch is activated (state `1`).
@@ -117,7 +117,8 @@ function handleIfElse(
 }
 
 /**
- * Handles the general case of an `if` / `else if` / ... / `else` chain (three or more branches).
+ * Handles the general case of an `if` / `else if` / ... / `else` chain: any number of branches,
+ * each one with or without a condition (e.g. an `if` / `else if` with no `else`).
  *
  * Iterates through the branches in order and activates the first one whose condition is
  * true; a branch without a condition is always considered valid and acts as the final

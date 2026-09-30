@@ -1,5 +1,3 @@
-import { Beautify } from '@xaendar/types';
-
 /**
  * A reactive value sourced from outside the component (e.g. an attribute).
  *
@@ -11,11 +9,11 @@ import { Beautify } from '@xaendar/types';
  * @template ActualValue - The internal type stored by the signal. Defaults to `unknown`.
  * @template IncomingValue - The raw type received from outside. Defaults to `ActualValue`.
  */
-export type InputSignal<ActualValue = unknown> = Beautify<Omit<Signal.State<ActualValue>, 'set'> & {
+export type InputSignal<ActualValue = unknown> = Omit<Signal.State<ActualValue>, 'set'> & {
   /**
    * Reads the current value of the input signal.
    *
    * @returns The current value of type `ActualValue`.
    */
   (): ActualValue;
-}>;
+};

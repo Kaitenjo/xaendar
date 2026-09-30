@@ -1,10 +1,11 @@
 import type { NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import type { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
-import type { ConditionalBindingToken } from '../../../lexer/types/tokens/conditional-binding-token.type';
 import type { DirectiveCloseToken } from '../../../lexer/types/tokens/directive-close-token.type';
 import type { DirectiveToken } from '../../../lexer/types/tokens/directive-token.type';
 import type { EventToken } from '../../../lexer/types/tokens/event-token.type';
+import type { IfToken } from '../../../lexer/types/tokens/if-token.type';
+import type { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import type { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
@@ -36,7 +37,7 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
   let read = true;
 
   while (read) {
-    const token = cursor.peek<AttributeToken | EventToken | ConditionalBindingToken | DirectiveCloseToken>();
+    const token = cursor.peek<AttributeToken | EventToken | IfToken | SwitchToken | DirectiveCloseToken>();
     switch (token.type) {
       case TokenType.ATTRIBUTE:
         attributes.push(parseAttribute(cursor, parseNode, token));
@@ -46,7 +47,8 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
         events.push(parseEvent(cursor, parseNode, token));
         break;
 
-      case TokenType.CONDITIONAL_BINDING:
+      case TokenType.IF:
+      case TokenType.SWITCH:
         conditionalBindings.push(parseConditionalBinding(cursor, parseNode, token));
         break;
 

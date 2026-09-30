@@ -7,7 +7,7 @@ import { lexAttributeValue } from './lex-attribute-value.state';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = {
-  history: [LexerState.TAG_BODY, LexerState.CONDITIONAL_BINDING_START, LexerState.ATTRIBUTE],
+  history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK, LexerState.ATTRIBUTE],
   tokens: []
 };
 
@@ -22,7 +22,7 @@ describe('lexAttributeValue', () => {
   });
 
   it('transitions to CONDITIONAL_BINDING_BODY when nested inside a conditional binding', () => {
-    const cursor = new LexerCursor('foo")');
+    const cursor = new LexerCursor('foo" }');
     expect(lexAttributeValue(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
   });
 });

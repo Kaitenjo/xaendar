@@ -2,13 +2,18 @@ import { NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
 import { AttributeValueToken } from '../../../lexer/types/tokens/attribute-value-token.type';
-import { ConditionalBindingCloseToken } from '../../../lexer/types/tokens/conditional-binding-close-token.type';
-import { ConditionalBindingToken } from '../../../lexer/types/tokens/conditional-binding-token.type';
+import { BlockCloseToken } from '../../../lexer/types/tokens/block-close-token.type';
+import { CaseToken } from '../../../lexer/types/tokens/case-token.type';
+import { DefaultToken } from '../../../lexer/types/tokens/default-token.type';
 import { DirectiveCloseToken } from '../../../lexer/types/tokens/directive-close-token.type';
 import { DirectiveToken } from '../../../lexer/types/tokens/directive-token.type';
+import { ElseIfToken } from '../../../lexer/types/tokens/else-if-token.type';
+import { ElseToken } from '../../../lexer/types/tokens/else-token.type';
 import { EventToken } from '../../../lexer/types/tokens/event-token.type';
+import { IfToken } from '../../../lexer/types/tokens/if-token.type';
 import { InterpolationExpressionToken } from '../../../lexer/types/tokens/interpolation-expression-token.type';
 import { InterpolationLiteralToken } from '../../../lexer/types/tokens/interpolation-literal-token.type';
+import { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
 import { TagCloseNameToken } from '../../../lexer/types/tokens/tag-close-name-token.type';
 import { TagCloseToken } from '../../../lexer/types/tokens/tag-close-token.type';
 import { TagSelfCloseToken } from '../../../lexer/types/tokens/tag-self-close-token.type';
@@ -45,8 +50,13 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     | InterpolationLiteralToken
     | TagCloseToken
     | TagSelfCloseToken
-    | ConditionalBindingToken
-    | ConditionalBindingCloseToken
+    | IfToken
+    | ElseIfToken
+    | ElseToken
+    | SwitchToken
+    | CaseToken
+    | DefaultToken
+    | BlockCloseToken
     | DirectiveToken
     | DirectiveCloseToken
   >();
@@ -95,7 +105,11 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
 
 /**
  * Tells whether the token following an attribute makes it a boolean attribute (declared without value),
- * i.e. it is another binding, the start or the end of a conditional binding or a directive, or the end of the tag.
+ * i.e. it is another binding, a flow-control keyword or the end of a block of a conditional binding,
+ * the start or the end of a directive, or the end of the tag.
+ *
+ * A flow-control keyword makes the attribute a boolean one even when it is misplaced,
+ * so that it is reported by the state parsing the construct the attribute is declared in.
  *
  * @param type - The type of the token following the attribute.
  * @returns `true` if the attribute has no value, `false` otherwise.
@@ -107,8 +121,13 @@ function isBooleanAttributeSuccessor(type: TokenType): boolean {
     case TokenType.EVENT:
     case TokenType.TAG_OPEN_END:
     case TokenType.TAG_SELF_CLOSE:
-    case TokenType.CONDITIONAL_BINDING:
-    case TokenType.CONDITIONAL_BINDING_CLOSE:
+    case TokenType.IF:
+    case TokenType.ELSE_IF:
+    case TokenType.ELSE:
+    case TokenType.SWITCH:
+    case TokenType.CASE:
+    case TokenType.DEFAULT:
+    case TokenType.BLOCK_CLOSE:
     case TokenType.DIRECTIVE:
     case TokenType.DIRECTIVE_CLOSE:
       return true;

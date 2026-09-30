@@ -33,4 +33,13 @@ describe('lexTagClose', () => {
     const cursor = new LexerCursor('</di v>');
     expect(() => lexTagClose(cursor, context)).toThrow('Tag close name cannot contain spaces');
   });
+
+  it.each([
+    ['a tab', '\t'],
+    ['a line feed', '\n'],
+    ['a carriage return', '\r']
+  ])('throws when the closing tag name is followed by %s, rather than reading it as part of the name', (_description, whitespace) => {
+    const cursor = new LexerCursor(`</div${whitespace}>`);
+    expect(() => lexTagClose(cursor, context)).toThrow('Tag close name cannot contain spaces');
+  });
 });

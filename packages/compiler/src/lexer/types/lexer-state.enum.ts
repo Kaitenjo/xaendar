@@ -39,7 +39,8 @@ export enum LexerState {
    */
   EVENT_PARAMETER = 'parameter',
   /**
-   * Dispatching a flow-control keyword (@if, @for, @switch, etc.).
+   * Dispatching a flow-control keyword (@if, @for, @switch, etc.), declared either
+   * in the template content or, as a conditional binding, among the bindings of a tag.
    */
   FLOW_CONTROL = 'flow-control',
   /**
@@ -80,11 +81,8 @@ export enum LexerState {
    */
   IMPORT_PATH = 'import-path',
   /**
-   * Consuming a conditional binding start starting with `@(...`.
-   */
-  CONDITIONAL_BINDING_START = 'conditional-binding-start',
-  /**
-   * Consuming the content inside a conditional binding started with `@(...`.
+   * Consuming the bindings declared in a block of a conditional binding, between `{` and `}`,
+   * e.g. `title="x"` in `<div @if (condition) { title="x" } />`.
    */
   CONDITIONAL_BINDING_BODY = 'conditional-binding-body',
   /**

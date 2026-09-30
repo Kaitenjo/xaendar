@@ -85,24 +85,62 @@ describe('generateElement', () => {
   });
 
   describe('conditional bindings', () => {
-    it('skips bindings without content', async () => {
-      const { code } = await run('<div @(cond(),)></div>');
+    it('skips the conditional bindings whose branches declare no binding', async () => {
+      const { code } = await run('<div @if (cond()) { } @else { } @switch (mode()) { @case (1) { } } @switch (mode()) { }></div>');
       expect(code).toEqual(['const div0 = _renderElement(root, context, null, \'div\', [], [], [], []);']);
     });
 
+    it('keeps the branches declaring no binding of a conditional binding declaring some', async () => {
+      const { code } = await run('<div @if (cond()) { } @else { title="x" }></div>');
+
+      expect(code).toEqual([
+        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          attributes: [],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], []);'
+      ]);
+      expectValidJavascript(code);
+    });
+
     it('generates attributes, events and nested bindings', async () => {
-      const { code } = await run('<div @(cond(), title="x" @click="f()" @(inner(), id="y"))></div>');
+      const { code } = await run('<div @if (cond()) { title="x" @click="f()" @if (inner()) { id="y" } }></div>');
       const output = code.join('\n');
 
+      expect(output).toContain('branches: [');
       expect(output).toContain('condition: () => this.cond(),');
+      expect(output).toContain('condition: () => this.inner(),');
       expect(output).toContain('attributes: [');
       expect(output).toContain('events: [');
       expect(output).toContain('conditionalBindings: [');
       expect(output).toContain('unbind: _removeAttribute');
+      expectValidJavascript(code);
     });
 
     it('generates empty attribute, event and nested lists when absent', async () => {
-      const { code } = await run('<div @(cond(), @(inner(), id="y"))></div>');
+      const { code } = await run('<div @if (cond()) { @if (inner()) { id="y" } }></div>');
       const output = code.join('\n');
 
       expect(output).toContain('attributes: [],');
@@ -112,61 +150,180 @@ describe('generateElement', () => {
       expectValidJavascript(code);
     });
 
-    it('does not query the metadata of a native element', async () => {
-      const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, set: () => undefined };
-      const { code } = await run('<div @(cond(), title="x")></div>', context);
-
-      expect(code.join('\n')).toContain('unbind: _removeAttribute');
-    });
-
-    it('generates the directives applied inside a conditional binding', async () => {
-      const { code } = await run('<div @(cond(), title="x" @@first @(inner(), @@second(display="block")))></div>');
+    it('generates the branches of an @if chain in declaration order, the @else one having no condition', async () => {
+      const { code } = await run('<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>');
 
       expect(code).toEqual([
         'const div0 = _renderElement(root, context, null, \'div\', [], [],',
         '  [',
         '    {',
-        '      condition: () => this.cond(),',
-        '      attributes: [',
+        '      branches: [',
         '        {',
-        '          name: \'title\',',
-        '          value: \'x\',',
-        '          setter: _setProperty,',
-        '          unbind: _removeAttribute',
-        '        },',
-        '      ],',
-        '      events: [],',
-        '      conditionalBindings: [',
-        '        {',
-        '          condition: () => this.inner(),',
-        '          attributes: [],',
+        '          condition: () => this.a(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
         '          events: [],',
         '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          condition: () => this.b(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'y\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'z\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], []);'
+      ]);
+      expectValidJavascript(code);
+    });
+
+    it('generates the expression of a @switch and the values of its branches, the @default one having none', async () => {
+      const context = new CompilerContext();
+      context.addSignalClassField('mode');
+      const { code } = await run('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @default { id="y" } }></div>', context);
+
+      expect(code).toEqual([
+        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '  [',
+        '    {',
+        '      expression: () => this.mode(),',
+        '      branches: [',
+        '        {',
+        '          condition: [\'a\', \'b\'],',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          condition: null,',
+        '          attributes: [',
+        '            {',
+        '              name: \'id\',',
+        '              value: \'y\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], []);'
+      ]);
+      expectValidJavascript(code);
+    });
+
+    it('resolves the conditions and the expressions against the current scope', async () => {
+      const context = new CompilerContext(undefined, ['item']);
+      const { code } = await run('<div @if (item.active) { title="x" } @switch (item.kind) { @case (1) { id="y" } }></div>', context);
+      const output = code.join('\n');
+
+      expect(output).toContain('condition: () => context.get(\'item\').active,');
+      expect(output).toContain('expression: () => context.get(\'item\').kind,');
+    });
+
+    it('does not query the metadata of a native element', async () => {
+      const context = new CompilerContext();
+      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, set: () => undefined };
+      const { code } = await run('<div @if (cond()) { title="x" }></div>', context);
+
+      expect(code.join('\n')).toContain('unbind: _removeAttribute');
+    });
+
+    it('generates the directives applied inside a conditional binding', async () => {
+      const { code } = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>');
+
+      expect(code).toEqual([
+        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [',
+        '            {',
+        '              branches: [',
+        '                {',
+        '                  condition: () => this.inner(),',
+        '                  attributes: [],',
+        '                  events: [],',
+        '                  conditionalBindings: [],',
+        '                  directives: [',
+        '                    {',
+        '                      selector: \'second\',',
+        '                      attributes: [',
+        '                        {',
+        '                          name: \'display\',',
+        '                          value: \'block\',',
+        '                          setter: _setProperty',
+        '                        },',
+        '                      ],',
+        '                      events: [],',
+        '                      conditionalBindings: []',
+        '                    },',
+        '                  ],',
+        '                },',
+        '              ]',
+        '            },',
+        '          ],',
         '          directives: [',
         '            {',
-        '              selector: \'second\',',
-        '              attributes: [',
-        '                {',
-        '                  name: \'display\',',
-        '                  value: \'block\',',
-        '                  setter: _setProperty',
-        '                },',
-        '              ],',
+        '              selector: \'first\',',
+        '              attributes: [],',
         '              events: [],',
         '              conditionalBindings: []',
         '            },',
         '          ],',
         '        },',
-        '      ],',
-        '      directives: [',
-        '        {',
-        '          selector: \'first\',',
-        '          attributes: [],',
-        '          events: [],',
-        '          conditionalBindings: []',
-        '        },',
-        '      ],',
+        '      ]',
         '    },',
         '  ], []);'
       ]);
@@ -176,25 +333,70 @@ describe('generateElement', () => {
     it('uses the component metadata to describe known optional properties', async () => {
       const context = new CompilerContext();
       context.cache = cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: false, defaultValue: '\'d\'' }) });
-      const { code } = await run('<my-el @(cond(), title="x")></my-el>', context);
+      const { code } = await run('<my-el @if (cond()) { title="x" } @else { title="y" }></my-el>', context);
       const output = code.join('\n');
 
-      expect(output).toContain('unbind: _setExpressionProperty,');
-      expect(output).toContain('defaultValue: \'d\'');
+      expect(output.match(/unbind: _setExpressionProperty,/g)).toHaveLength(2);
+      expect(output.match(/defaultValue: 'd'/g)).toHaveLength(2);
     });
 
     it('separates the descriptors of several conditional bindings', async () => {
-      const { code } = await run('<div @(first(), title="x") @(second(), id="y")></div>');
+      const { code } = await run('<div @if (first()) { title="x" } @if (second()) { id="y" } @switch (mode()) { @case (1) { lang="z" } }></div>');
 
+      expect(code.filter(line => line.trim() === 'branches: [')).toHaveLength(3);
       expectValidJavascript(code);
     });
 
-    it('does not add unbind information for required properties', async () => {
+    it('does not add unbind information for required properties, which the branch selected next binds again', async () => {
       const context = new CompilerContext();
-      context.cache = cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: true }) });
-      const { code } = await run('<my-el @(cond(), title="x")></my-el>', context);
+      context.cache = cacheWith({
+        title: new ComponentPropertyMetadata('title', 'string', { required: true }),
+        label: new ComponentPropertyMetadata('label', 'string', { required: false, defaultValue: '\'d\'' })
+      });
+      const { code } = await run('<my-el @if (cond()) { title="x" label="l" } @else { title="y" }></my-el>', context);
 
-      expect(code.join('\n')).not.toContain('unbind');
+      expect(code).toEqual([
+        'const my_el0 = _renderElement(root, context, null, \'my-el\', [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty',
+        '            },',
+        '            {',
+        '              name: \'label\',',
+        '              value: \'l\',',
+        '              setter: _setProperty,',
+        '              unbind: _setExpressionProperty,',
+        '              defaultValue: \'d\'',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'y\',',
+        '              setter: _setProperty',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], []);'
+      ]);
+      expectValidJavascript(code);
     });
   });
 
@@ -232,9 +434,9 @@ describe('generateElement', () => {
         },
         set: () => undefined
       };
-      const { code } = await run('<div @@myDirective(label="x" @(cond(), display="{mode()}" @toggled="onToggled()" @(inner(), title="z")))></div>', context);
+      const { code } = await run('<div @@myDirective(label="x" @if (cond()) { display="{mode()}" @toggled="onToggled()" @if (inner()) { title="z" } } @else { display="none" })></div>', context);
 
-      expect(selectors).toEqual(['@@myDirective', '@@myDirective']);
+      expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective']);
       expect(code).toEqual([
         'const div0 = _renderElement(root, context, null, \'div\', [], [], [],',
         '  [',
@@ -250,39 +452,60 @@ describe('generateElement', () => {
         '      events: [],',
         '      conditionalBindings: [',
         '        {',
-        '          condition: () => this.cond(),',
-        '          attributes: [',
+        '          branches: [',
         '            {',
-        '              name: \'display\',',
-        '              value: () => this.mode(), ',
-        '              setter: _setReactiveProperty,',
-        '              unbind: _setExpressionProperty,',
-        '              defaultValue: \'d\'',
-        '            },',
-        '          ],',
-        '          events: [',
-        '            {',
-        '              name: \'toggled\',',
-        '              handler: \'onToggled\',',
-        '              parameters: []',
-        '            },',
-        '          ],',
-        '          conditionalBindings: [',
-        '            {',
-        '              condition: () => this.inner(),',
+        '              condition: () => this.cond(),',
         '              attributes: [',
         '                {',
-        '                  name: \'title\',',
-        '                  value: \'z\',',
+        '                  name: \'display\',',
+        '                  value: () => this.mode(), ',
+        '                  setter: _setReactiveProperty,',
+        '                  unbind: _setExpressionProperty,',
+        '                  defaultValue: \'d\'',
+        '                },',
+        '              ],',
+        '              events: [',
+        '                {',
+        '                  name: \'toggled\',',
+        '                  handler: \'onToggled\',',
+        '                  parameters: []',
+        '                },',
+        '              ],',
+        '              conditionalBindings: [',
+        '                {',
+        '                  branches: [',
+        '                    {',
+        '                      condition: () => this.inner(),',
+        '                      attributes: [',
+        '                        {',
+        '                          name: \'title\',',
+        '                          value: \'z\',',
+        '                          setter: _setProperty,',
+        '                          unbind: _setExpressionProperty,',
+        '                          defaultValue: \'t\'',
+        '                        },',
+        '                      ],',
+        '                      events: [],',
+        '                      conditionalBindings: [],',
+        '                    },',
+        '                  ]',
+        '                },',
+        '              ],',
+        '            },',
+        '            {',
+        '              attributes: [',
+        '                {',
+        '                  name: \'display\',',
+        '                  value: \'none\',',
         '                  setter: _setProperty,',
         '                  unbind: _setExpressionProperty,',
-        '                  defaultValue: \'t\'',
+        '                  defaultValue: \'d\'',
         '                },',
         '              ],',
         '              events: [],',
         '              conditionalBindings: [],',
         '            },',
-        '          ],',
+        '          ]',
         '        },',
         '      ]',
         '    },',
@@ -292,15 +515,28 @@ describe('generateElement', () => {
       expectValidJavascript(code);
     });
 
+    it('generates the expression and the branches of a @switch declared in a directive', async () => {
+      const context = new CompilerContext();
+      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' }) });
+      const { code } = await run('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { @toggled="onToggled()" } })></div>', context);
+      const output = code.join('\n');
+
+      expect(output).toContain('expression: () => this.mode(),');
+      expect(output).toContain('condition: [1],');
+      expect(output).toContain('condition: null,');
+      expect(output).not.toContain('directives:');
+      expectValidJavascript(code);
+    });
+
     it('throws when the metadata of a directive property bound inside a conditional binding is not available', async () => {
-      await expect(run('<div @@myDirective(@(cond(), display="block"))></div>')).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
+      await expect(run('<div @@myDirective(@if (cond()) { display="block" })></div>')).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
     });
 
     it('throws when the directive metadata does not declare a property bound inside a conditional binding', async () => {
       const context = new CompilerContext();
       context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string') });
 
-      await expect(run('<div @@myDirective(@(cond(), other="x"))></div>', context)).rejects.toThrow('Unable to resolve the metadata of property "other" of @@myDirective');
+      await expect(run('<div @@myDirective(@if (cond()) { other="x" })></div>', context)).rejects.toThrow('Unable to resolve the metadata of property "other" of @@myDirective');
     });
 
     it('generates the properties and events of a directive, without unbind information', async () => {
@@ -320,7 +556,7 @@ describe('generateElement', () => {
     });
 
     it('passes the directives after the conditional bindings', async () => {
-      const { code } = await run('<div class="a" @(cond(), title="x") @@first @@second(display="block")></div>');
+      const { code } = await run('<div class="a" @if (cond()) { title="x" } @@first @@second(display="block")></div>');
       const output = code.join('\n');
 
       expect(output.indexOf('condition: () => this.cond(),')).toBeLessThan(output.indexOf('selector: \'first\','));
