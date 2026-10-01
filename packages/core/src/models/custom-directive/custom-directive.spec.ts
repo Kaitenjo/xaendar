@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { DIRECTIVE_CONNECT } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
 import { CustomDirective } from './custom-directive';
 
 class TestDirective extends CustomDirective {
@@ -32,7 +32,7 @@ describe('CustomDirective', () => {
     directive[DIRECTIVE_CONNECT]();
 
     expect(unlisten).not.toHaveBeenCalled();
-    directive[Symbol.dispose]();
+    directive[DIRECTIVE_DISCONNECT]();
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
@@ -40,7 +40,7 @@ describe('CustomDirective', () => {
     const directive = new TestDirective(document.createElement('div'));
     directive[DIRECTIVE_CONNECT]();
 
-    expect(() => directive[Symbol.dispose]()).not.toThrow();
+    expect(() => directive[DIRECTIVE_DISCONNECT]()).not.toThrow();
   });
 
   it('dispatches events on the element it is applied to', () => {

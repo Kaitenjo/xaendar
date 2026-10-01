@@ -45,14 +45,14 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks expression attributes and event handlers', () => {
-      const lines = run('<div title="{name}" @click="f($event, b)"></div>');
+      const lines = run('<div title="{name}" (click)="f($event, b)"></div>');
 
       expect(text(lines)).toEqual(['root.name;', 'root.f($event, root.b);']);
       expect(lines.every(l => l.mappings?.length)).toBe(true);
     });
 
     it('type-checks conditional bindings as nested if blocks', () => {
-      const lines = run('<div @if (cond()) { title="{name}" @click="f($event)" @if (inner) { id="{b}" } }></div>');
+      const lines = run('<div @if (cond()) { title="{name}" (click)="f($event)" @if (inner) { id="{b}" } }></div>');
 
       expect(text(lines)).toEqual([
         'if (root.cond()) {',
@@ -67,7 +67,7 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks an @if chain as an if / else if / else chain, mapping each condition to its branch', () => {
-      const template = '<div @if (a()) { title="{x}" } @else if (b) { title="{y}" } @else { @click="f()" }></div>';
+      const template = '<div @if (a()) { title="{x}" } @else if (b) { title="{y}" } @else { (click)="f()" }></div>';
       const lines = run(template);
 
       expect(text(lines)).toEqual([
@@ -135,7 +135,7 @@ describe('typeCheckElement', () => {
 
     it('type-checks events with and without a payload', () => {
       const component = metadata(properties, { done: 'number', ping: 'void' });
-      const output = text(run('<my-el title="a" label="b" @done="f($event)" @ping="g()"></my-el>', component)).join('\n');
+      const output = text(run('<my-el title="a" label="b" (done)="f($event)" (ping)="g()"></my-el>', component)).join('\n');
 
       expect(output).toContain('let $event!: CustomEvent<number>;');
       expect(output).toContain('root.f($event);');
@@ -158,12 +158,12 @@ describe('typeCheckElement', () => {
     });
 
     it('throws for an unknown event', () => {
-      expect(() => run('<my-el @nope="f()"></my-el>', metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
+      expect(() => run('<my-el (nope)="f()"></my-el>', metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
     });
 
     it('type-checks inputs and outputs inside conditional bindings', () => {
       const component = metadata(properties, { done: 'number' });
-      const lines = run('<my-el @if (cond) { title="{name}" @done="f($event)" @if (inner) { label="x" } } @else { label="{other}" }></my-el>', component);
+      const lines = run('<my-el @if (cond) { title="{name}" (done)="f($event)" @if (inner) { label="x" } } @else { label="{other}" }></my-el>', component);
 
       expect(text(lines)).toEqual([
         'if (root.cond) {',
@@ -191,7 +191,7 @@ describe('typeCheckElement', () => {
 
     it('type-checks inputs and outputs inside the branches of a @switch', () => {
       const component = metadata(properties, { done: 'void' });
-      const lines = run('<my-el @switch (mode) { @case (1) { title="{name}" } @default { @done="f()" } }></my-el>', component);
+      const lines = run('<my-el @switch (mode) { @case (1) { title="{name}" } @default { (done)="f()" } }></my-el>', component);
 
       expect(text(lines)).toEqual([
         'switch (root.mode) {',
@@ -210,9 +210,9 @@ describe('typeCheckElement', () => {
     });
 
     it.each([
-      ['an @if branch', '<my-el @if (cond) { @nope="f()" }></my-el>'],
-      ['an @else branch', '<my-el @if (cond) { } @else { @nope="f()" }></my-el>'],
-      ['a @switch branch', '<my-el @switch (mode) { @case (1) { @nope="f()" } }></my-el>']
+      ['an @if branch', '<my-el @if (cond) { (nope)="f()" }></my-el>'],
+      ['an @else branch', '<my-el @if (cond) { } @else { (nope)="f()" }></my-el>'],
+      ['a @switch branch', '<my-el @switch (mode) { @case (1) { (nope)="f()" } }></my-el>']
     ])('throws for an unknown event inside %s', (_description, template) => {
       expect(() => run(template, metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
     });
@@ -231,7 +231,7 @@ describe('typeCheckElement', () => {
         ['the only branch of a @switch, its @default', '<my-el @switch (mode) { @default { title="b" } }></my-el>'],
         ['a conditional binding nested in a branch, which always binds it in turn', '<my-el @if (a) { @if (b) { title="b" } @else { title="c" } } @else { title="d" }></my-el>'],
         ['conditional bindings nested in every branch, which always bind it in turn', '<my-el @if (a) { @switch (mode) { @default { title="b" } } } @else { @if (b) { title="c" } @else { title="d" } }></my-el>'],
-        ['every branch, next to other bindings', '<my-el @if (cond) { title="b" label="x" @done="f()" } @else { title="c" }></my-el>'],
+        ['every branch, next to other bindings', '<my-el @if (cond) { title="b" label="x" (done)="f()" } @else { title="c" }></my-el>'],
         ['every branch of the second conditional binding', '<my-el @if (cond) { label="x" } @if (other) { title="b" } @else { title="c" }></my-el>']
       ])('accepts a required property bound in %s', (_description, template) => {
         expect(() => run(template, component)).not.toThrow();
@@ -313,7 +313,7 @@ describe('typeCheckElement directives', () => {
 
   it('type-checks directive properties and events on a native element', () => {
     const directive = directiveMetadata(properties, { toggled: 'boolean' });
-    const lines = run('<div title="{name}" @@myDirective(display="block" visible="{isVisible()}" @toggled="f($event)")><span></span></div>', directive);
+    const lines = run('<div title="{name}" @@myDirective(display="block" visible="{isVisible()}" (toggled)="f($event)")><span></span></div>', directive);
 
     expect(text(lines)).toEqual([
       'root.name;',
@@ -369,12 +369,12 @@ describe('typeCheckElement directives', () => {
   });
 
   it('throws for an unknown event', () => {
-    expect(() => run('<div @@myDirective(@nope="f()")></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+    expect(() => run('<div @@myDirective((nope)="f()")></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
   });
 
   it('type-checks the conditional bindings of a directive as nested if blocks', () => {
     const directive = directiveMetadata(properties, { toggled: 'void' });
-    const lines = run('<div @@myDirective(visible="{isVisible()}" @if (cond()) { display="{mode}" @if (inner) { @toggled="f()" } } @else { display="none" })></div>', directive);
+    const lines = run('<div @@myDirective(visible="{isVisible()}" @if (cond()) { display="{mode}" @if (inner) { (toggled)="f()" } } @else { display="none" })></div>', directive);
 
     expect(text(lines)).toEqual([
       '{',
@@ -401,7 +401,7 @@ describe('typeCheckElement directives', () => {
 
   it('type-checks a @switch declared in a directive as a switch statement', () => {
     const directive = directiveMetadata({ display: properties.display }, { toggled: 'void' });
-    const lines = run('<div @@myDirective(@switch (kind) { @case (1) { display="{mode}" } @default { @toggled="f()" } })></div>', directive);
+    const lines = run('<div @@myDirective(@switch (kind) { @case (1) { display="{mode}" } @default { (toggled)="f()" } })></div>', directive);
 
     expect(text(lines)).toEqual([
       'switch (root.kind) {',
@@ -428,7 +428,7 @@ describe('typeCheckElement directives', () => {
   });
 
   it('throws for an unknown event inside a conditional binding of a directive', () => {
-    expect(() => run('<div @@myDirective(@if (cond()) { @nope="f()" })></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+    expect(() => run('<div @@myDirective(@if (cond()) { (nope)="f()" })></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
   });
 
   describe('required properties bound inside conditional bindings', () => {

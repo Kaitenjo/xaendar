@@ -1,4 +1,4 @@
-import { CR, DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, LF, RIGHT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { CR, DOUBLE_QUOTE, EQUAL_THEN, GREATER_THEN, LEFT_BRACE, LF, LPAREN, RIGHT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -14,7 +14,7 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor positioned at the start of the attribute.
  * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
- * @throws If the attribute name is malformed, a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
+ * @throws If the attribute name is malformed or contains `(`, a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
  */
 export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -112,6 +112,15 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
           }]
         }
         break;
+
+      /*
+        '(' opens an event binding, so it cannot be part of an attribute name:
+        it means the separating space before the event binding is missing.
+        Ex:
+        <input disabled(input)="onInput()" />
+      */
+      case LPAREN:
+        throw new Error('Unexpected \'(\' in attribute name: event bindings must be separated from the previous binding by a space');
 
       case EQUAL_THEN:
         /*

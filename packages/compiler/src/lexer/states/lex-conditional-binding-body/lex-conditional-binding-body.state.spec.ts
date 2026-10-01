@@ -19,8 +19,12 @@ const directiveConditionalBindingContext: LexerTransitionFunctionContext = {
 };
 
 describe('lexConditionalBindingBody', () => {
-  it('transitions to EVENT for a plain @ binding', () => {
-    const cursor = new LexerCursor('@click="onClick()" }');
+  it('throws when @ starts neither a conditional binding nor a directive', () => {
+    expect(() => lexConditionalBindingBody(new LexerCursor('@click="onClick()" }'), context)).toThrow('events are bound with (eventName)="handler()"');
+  });
+
+  it('transitions to EVENT for a ( binding', () => {
+    const cursor = new LexerCursor('(click)="onClick()" }');
     expect(lexConditionalBindingBody(cursor, context)).toEqual({ state: LexerState.EVENT });
   });
 

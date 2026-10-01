@@ -22,7 +22,7 @@ describe('parseElement', () => {
   });
 
   it('parses attributes, events and conditional bindings', () => {
-    const [node] = parse('<div class="a" @click="f()" @if (cond()) { title="x" } @switch (mode()) { @case (1) { id="y" } }></div>') as ElementNode[];
+    const [node] = parse('<div class="a" (click)="f()" @if (cond()) { title="x" } @switch (mode()) { @case (1) { id="y" } }></div>') as ElementNode[];
     expect(node.attributes).toHaveLength(1);
     expect(node.events).toHaveLength(1);
     expect(node.conditionalBindings.map(({ type }) => type)).toEqual([ASTNodeType.IfBinding, ASTNodeType.SwitchBinding]);
@@ -76,7 +76,7 @@ describe('parseElement', () => {
   });
 
   it('allows the same event to be bound more than once', () => {
-    const [node] = parse('<div @click="f()" @click="g()" @if (cond()) { @click="h()" }></div>') as ElementNode[];
+    const [node] = parse('<div (click)="f()" (click)="g()" @if (cond()) { (click)="h()" }></div>') as ElementNode[];
     expect(node.events).toHaveLength(2);
   });
 

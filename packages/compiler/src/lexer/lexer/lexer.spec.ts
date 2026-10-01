@@ -15,7 +15,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes an attribute and an event binding', () => {
-    const tokens = new Lexer('<button class="a" @click="onClick()"></button>').tokenize();
+    const tokens = new Lexer('<button class="a" (click)="onClick()"></button>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.ATTRIBUTE,
@@ -28,7 +28,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes directives with and without bindings', () => {
-    const tokens = new Lexer('<div @@first @@second(display="{display()}" disabled @change="onChange($event)") class="a"></div>').tokenize();
+    const tokens = new Lexer('<div @@first @@second(display="{display()}" disabled (change)="onChange($event)") class="a"></div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.DIRECTIVE,
@@ -49,7 +49,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes an if / else if / else conditional binding', () => {
-    const tokens = new Lexer('<div @if (a()) { title="x" } @else if (b(1, 2)) { title="{y()}" @click="onClick()" } @else { disabled} class="a"></div>').tokenize();
+    const tokens = new Lexer('<div @if (a()) { title="x" } @else if (b(1, 2)) { title="{y()}" (click)="onClick()" } @else { disabled} class="a"></div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.IF,
@@ -150,7 +150,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes a conditional binding declared inside a directive', () => {
-    const tokens = new Lexer('<div @@myDirective(display="block" @if (cond()) { position="{position()}" disabled @if (inner()) { @change="onChange()" } } label="x") class="a"></div>').tokenize();
+    const tokens = new Lexer('<div @@myDirective(display="block" @if (cond()) { position="{position()}" disabled @if (inner()) { (change)="onChange()" } } label="x") class="a"></div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.DIRECTIVE,
@@ -200,7 +200,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes an event sharing its name with a flow-control keyword as an event', () => {
-    const tokens = new Lexer('<div @switch="onSwitch()" @default="onDefault()"></div>').tokenize();
+    const tokens = new Lexer('<div (switch)="onSwitch()" (default)="onDefault()"></div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.EVENT,
@@ -242,11 +242,11 @@ describe('Lexer', () => {
       '<app-sidebar',
       'collapsed',
       'title="{title()}"',
-      '@collapsedChange="onCollapse($event, 1)"',
+      '(collapsedChange)="onCollapse($event, 1)"',
       '@@tooltip',
       '@@popover(',
       'text="a"',
-      '@shown="onShown()"',
+      '(shown)="onShown()"',
       ')',
       '@if (dark()) {',
       'class="dark"',
@@ -283,10 +283,10 @@ describe('Lexer', () => {
     });
 
     it('does not include the line breaks between the bindings in the span of their tokens', () => {
-      const template = '<div\r\n\tclass="a"\r\n\t@click="f()"\r\n>\r\n</div>';
+      const template = '<div\r\n\tclass="a"\r\n\t(click)="f()"\r\n>\r\n</div>';
       const tokens = new Lexer(template).tokenize();
 
-      expect(tokens.map(token => 'span' in token && template.slice(token.span.start, token.span.end))).toEqual(['<div', 'class="', 'a"', '@click="', 'f()"', '>', '</div>']);
+      expect(tokens.map(token => 'span' in token && template.slice(token.span.start, token.span.end))).toEqual(['<div', 'class="', 'a"', '(click)="', 'f()"', '>', '</div>']);
     });
 
     it('keeps the line breaks declared inside an attribute value', () => {
@@ -296,10 +296,10 @@ describe('Lexer', () => {
     });
 
     it.each([
-      ['an event name', '<div @click\n="f()"></div>', 'No spaces are allowed in event name'],
-      ['an event handler name', '<div @click="f\n()"></div>', 'No spaces are allowed in event handler name'],
+      ['an event name', '<div (click\n)="f()"></div>', 'No spaces are allowed in event name'],
+      ['an event handler name', '<div (click)="f\n()"></div>', 'No spaces are allowed in event handler name'],
       ['a closing tag name', '<div></div\n>', 'Tag close name cannot contain spaces'],
-      ['a directive selector and its bindings', '<div @@myDirective\n(display="block")></div>', 'there is no directive to close']
+      ['a directive selector and its bindings', '<div @@myDirective\n(display="block")></div>', 'directive bindings must immediately follow the selector, without spaces']
     ])('rejects a line break following %s exactly like a space', (_description, template, error) => {
       expect(() => new Lexer(template).tokenize()).toThrow(error);
       expect(() => new Lexer(template.replace('\n', ' ')).tokenize()).toThrow(error);
@@ -322,7 +322,7 @@ describe('Lexer', () => {
   it('formats a thrown string error consumed after several characters', () => {
     let caught: unknown;
     try {
-      new Lexer('<button @click="onClick foo()"></button>').tokenize();
+      new Lexer('<button (click)="onClick foo()"></button>').tokenize();
     } catch (err) {
       caught = err;
     }
@@ -334,7 +334,7 @@ describe('Lexer', () => {
   it('stops the backward neighbourhood scan at a line break', () => {
     let caught: unknown;
     try {
-      new Lexer('<div>\n<button @click="onClick foo()"></button>').tokenize();
+      new Lexer('<div>\n<button (click)="onClick foo()"></button>').tokenize();
     } catch (err) {
       caught = err;
     }
@@ -358,7 +358,7 @@ describe('Lexer', () => {
   it('stops the forward neighbourhood scan at a line break', () => {
     let caught: unknown;
     try {
-      new Lexer('<button @click="onClick foo()"></button>\nmore text after the error').tokenize();
+      new Lexer('<button (click)="onClick foo()"></button>\nmore text after the error').tokenize();
     } catch (err) {
       caught = err;
     }

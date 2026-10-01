@@ -4,7 +4,7 @@ import type { RenderElementAttribute } from './render-element-attribute.type';
 import type { RenderElementEvent } from './render-element-event.type';
 
 /**
- * Describes a single directive to be applied to a rendered element, e.g. `<div @@selector(name="value" @event="handler()") />`.
+ * Describes a single directive to be applied to a rendered element, e.g. `<div @@selector(name="value" (event)="handler()") />`.
  */
 export type RenderElementDirective = {
   /**

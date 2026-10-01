@@ -6,7 +6,7 @@ import type { EventNode } from './event-node.type';
 
 /**
  * AST node representing a directive applied to an element,
- * e.g. `@@myDirective(display="block" @change="onChange($event)" @if (condition) { position="top" })`.
+ * e.g. `@@myDirective(display="block" (change)="onChange($event)" @if (condition) { position="top" })`.
  */
 export type DirectiveNode = ASTNodeWithSpan<{
   /**

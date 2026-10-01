@@ -5,7 +5,7 @@ import type { ConditionalBindingBranchNode } from './conditional-binding-branch-
 
 /**
  * AST node representing a conditional binding declared as an `@if` chain,
- * e.g. `@if (condition) { name="value" } @else if (other) { @event="handler()" } @else { @@directive }`.
+ * e.g. `@if (condition) { name="value" } @else if (other) { (event)="handler()" } @else { @@directive }`.
  */
 export type IfBindingNode = ASTNodeWithSpan<{
   /**

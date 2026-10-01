@@ -17,12 +17,12 @@ const run = (template: string) => runTokens(new Lexer(template).tokenize().slice
 
 describe('parseEvent', () => {
   it('parses an event without parameters', () => {
-    const node = run('<div @click="onClick()"></div>');
+    const node = run('<div (click)="onClick()"></div>');
     expect(node).toMatchObject({ type: ASTNodeType.Event, name: 'click', handler: 'onClick', parameters: [] });
   });
 
   it('parses an event with parameters', () => {
-    const node = run('<div @click="onClick(a, b + 1)"></div>');
+    const node = run('<div (click)="onClick(a, b + 1)"></div>');
     expect(node.parameters.map(p => p.getText())).toEqual(['a', 'b + 1']);
   });
 

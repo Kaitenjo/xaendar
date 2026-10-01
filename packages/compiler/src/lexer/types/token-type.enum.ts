@@ -31,11 +31,11 @@ export enum TokenType {
    */
   ATTRIBUTE_VALUE,
   /**
-    * A DOM event name declared in a binding like `@eventName=handler`.
+    * A DOM event name declared in a binding like `(eventName)="handler()"`.
    */
   EVENT,
   /**
-   * The event handler name declared in a binding like `@eventName=handler`.
+   * The event handler name declared in a binding like `(eventName)="handler()"`.
    */
   EVENT_HANDLER,
   /**

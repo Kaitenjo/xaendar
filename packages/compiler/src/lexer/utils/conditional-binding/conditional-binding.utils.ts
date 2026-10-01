@@ -2,7 +2,7 @@ import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 
 /**
  * Matches the flow-control keywords a conditional binding is declared with among the bindings of a tag.
- * The trailing space tells a keyword apart from an event sharing its name, e.g. `@switch="onSwitch()"`.
+ * The trailing space tells a keyword apart from a longer word sharing its prefix, e.g. `@iffy`.
  */
 const KEYWORD = /^@(?:if|else|switch|case|default) /;
 /**
@@ -12,7 +12,7 @@ const LONGEST_KEYWORD_LENGTH = '@default '.length;
 
 /**
  * Tells whether the `@` the cursor is positioned on starts a flow-control keyword of a conditional binding,
- * i.e. `@if`, `@else if`, `@else`, `@switch`, `@case` or `@default`, rather than an event binding or a directive.
+ * i.e. `@if`, `@else if`, `@else`, `@switch`, `@case` or `@default`, rather than a directive or a misplaced `@`.
  *
  * The keywords are recognised wherever a binding can be declared: it is up to the parser to reject the misplaced ones.
  *

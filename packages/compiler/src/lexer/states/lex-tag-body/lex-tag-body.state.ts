@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
@@ -7,13 +7,14 @@ import { isConditionalBindingKeyword } from '../../utils/conditional-binding/con
 
 /**
  * Scans the body of an open tag to determine what comes next:
- * a conditional binding (`@if`, `@switch`), a directive (`@@`), an event binding (`@`),
+ * a conditional binding (`@if`, `@switch`), a directive (`@@`), an event binding (`(`),
  * an attribute, the end of the tag (`>` or `/`), or whitespace.
  * Transitions to the appropriate state without emitting any tokens.
  *
  * @param cursor - The lexer cursor positioned inside a tag body.
  * @param _context - Unused lexer context.
  * @returns Transition result with the next state and no tokens.
+ * @throws If a `@` starts neither a conditional binding nor a directive.
  */
 export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -22,7 +23,7 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
   while (read) {
     switch (cursor.peek()) {
       case AT_SIGN:
-        let state = LexerState.EVENT;
+        let state: LexerState;
         if (isConditionalBindingKeyword(cursor)) {
           // The keyword is consumed by the flow-control state.
           state = LexerState.FLOW_CONTROL;
@@ -30,6 +31,8 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
           state = LexerState.DIRECTIVE;
           // Consume `@@`.
           cursor.advance(2);
+        } else {
+          throw '\'@\' must start a conditional binding (@if, @else, @switch, @case, @default) or a directive (@@selector): events are bound with (eventName)="handler()"';
         }
 
         retVal = {
@@ -51,6 +54,13 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
         retVal = {
           state: LexerState.TAG_OPEN_END,
           popState: true
+        }
+        read = false;
+        break;
+
+      case LPAREN:
+        retVal = {
+          state: LexerState.EVENT
         }
         read = false;
         break;

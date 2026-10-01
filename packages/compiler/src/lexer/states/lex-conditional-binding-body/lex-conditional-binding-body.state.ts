@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, RIGHT_BRACE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RIGHT_BRACE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -27,7 +27,7 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
   while (read) {
     switch (cursor.peek()) {
       case AT_SIGN:
-        let state = LexerState.EVENT;
+        let state: LexerState;
         if (isConditionalBindingKeyword(cursor)) {
           // The keyword is consumed by the flow-control state.
           state = LexerState.FLOW_CONTROL;
@@ -43,6 +43,8 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
           state = LexerState.DIRECTIVE;
           // Consume `@@`.
           cursor.advance(2);
+        } else {
+          throw '\'@\' must start a conditional binding (@if, @else, @switch, @case, @default) or a directive (@@selector): events are bound with (eventName)="handler()"';
         }
 
         retVal = {
@@ -72,6 +74,13 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
             type: TokenType.BLOCK_CLOSE
           }],
           popState: true
+        };
+        read = false;
+        break;
+
+      case LPAREN:
+        retVal = {
+          state: LexerState.EVENT
         };
         read = false;
         break;

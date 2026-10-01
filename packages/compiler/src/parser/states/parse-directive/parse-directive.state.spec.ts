@@ -23,7 +23,7 @@ describe('parseDirective', () => {
   });
 
   it('parses the attributes and the events of a directive', () => {
-    const [node] = parse('<div @@myDirective(display="block" visible="{visible()}" disabled @change="onChange($event)")></div>');
+    const [node] = parse('<div @@myDirective(display="block" visible="{visible()}" disabled (change)="onChange($event)")></div>');
     const [directive] = node.directives;
 
     expect(directive.selector).toBe('myDirective');
@@ -31,11 +31,11 @@ describe('parseDirective', () => {
     expect(directive.attributes[0].value).toBe('block');
     expect(directive.attributes[2].value).toBe('true');
     expect(directive.events.map(({ name, handler }) => [name, handler])).toEqual([['change', 'onChange']]);
-    expect(directive.span).toEqual({ start: 7, end: 93 });
+    expect(directive.span).toEqual({ start: 7, end: 94 });
   });
 
   it('keeps the directive bindings apart from the element ones', () => {
-    const [node] = parse('<div class="a" @@myDirective(display="block") @click="onClick()"></div>');
+    const [node] = parse('<div class="a" @@myDirective(display="block") (click)="onClick()"></div>');
 
     expect(node.attributes.map(({ name }) => name)).toEqual(['class']);
     expect(node.events.map(({ name }) => name)).toEqual(['click']);
@@ -43,7 +43,7 @@ describe('parseDirective', () => {
   });
 
   it('parses the conditional bindings of a directive', () => {
-    const [node] = parse('<div @@myDirective(display="block" @if (cond()) { position="top" @change="onChange()" @if (inner()) { label="x" } } @else { position="bottom" } @switch (mode()) { @case (1) { size="s" } })></div>');
+    const [node] = parse('<div @@myDirective(display="block" @if (cond()) { position="top" (change)="onChange()" @if (inner()) { label="x" } } @else { position="bottom" } @switch (mode()) { @case (1) { size="s" } })></div>');
     const [directive] = node.directives;
     const [binding, switchBinding] = directive.conditionalBindings;
     const [branch, elseBranch] = binding.branches;

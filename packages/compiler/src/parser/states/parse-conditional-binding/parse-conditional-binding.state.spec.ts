@@ -21,7 +21,7 @@ const text: Token = { type: TokenType.TEXT, parts: ['x'], span: { start: 24, end
 describe('parseConditionalBinding', () => {
   describe('@if', () => {
     it('parses the attributes, events and nested conditional bindings of a branch', () => {
-      const [node] = parse('<div @if (cond()) { title="x" @click="f()" @if (inner()) { id="y" } }></div>');
+      const [node] = parse('<div @if (cond()) { title="x" (click)="f()" @if (inner()) { id="y" } }></div>');
       const [binding] = node.conditionalBindings as IfBindingNode[];
       const [branch] = binding.branches;
 
@@ -84,7 +84,7 @@ describe('parseConditionalBinding', () => {
 
   describe('@switch', () => {
     it('parses the @case branches, the ones sharing a block and the @default one', () => {
-      const [node] = parse('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @case (1) { title="y" @click="f()" } @default { @if (inner()) { id="z" } } }></div>');
+      const [node] = parse('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @case (1) { title="y" (click)="f()" } @default { @if (inner()) { id="z" } } }></div>');
       const [binding] = node.conditionalBindings as SwitchBindingNode[];
 
       expect(binding.type).toBe(ASTNodeType.SwitchBinding);

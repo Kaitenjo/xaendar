@@ -5,7 +5,7 @@ import type { ConditionalBindingBranchNode } from './conditional-binding-branch-
 
 /**
  * AST node representing a conditional binding declared as a `@switch`,
- * e.g. `@switch (expression) { @case ('a') @case ('b') { name="value" } @default { @event="handler()" } }`.
+ * e.g. `@switch (expression) { @case ('a') @case ('b') { name="value" } @default { (event)="handler()" } }`.
  */
 export type SwitchBindingNode = ASTNodeWithSpan<{
   /**

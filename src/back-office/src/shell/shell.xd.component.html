@@ -3,24 +3,40 @@
 @import { FormComponent } from '../form/form.xd.component.ts'
 
 <div class="shell">
-  <app-sidebar @if (applyDinamicBinding()) { text="{counter().toString()}" @if (applyDinamicBinding2()) { text2="{counter2().toString()}" } } collapsed="{sidebarCollapsed()}" @collapsedChange="onCollapseChange($event)" />
+  <app-sidebar
+    @@my-directive(myProperty="myValue" (directiveEvent)="eventHandler()")
+
+    @if (cond()) {
+      @@my-conditionalDirective
+    }
+
+    @if (applyDinamicBinding()) { 
+      text="{counter().toString()}"
+
+      @if (applyDinamicBinding2()) { 
+        text2="{counter2().toString()}" 
+      } 
+    } 
+    collapsed="{sidebarCollapsed()}" 
+    (collapsedChange)="onCollapseChange($event)" 
+  />
   
   <div class="shell__main">
-    <app-topbar @menuToggle="onSidebarToggle()" />
+    <app-topbar (menuToggle)="onSidebarToggle()" />
     
     <main class="shell__content">
       <app-form />
       <div style="display: flex; gap:.5rem;">
-        <button @click="onApplyDinamicBindingToggle()">
+        <button (click)="onApplyDinamicBindingToggle()">
           Toggle dinamic binding
         </button>
-        <button @click="onTextToggle()">
+        <button (click)="onTextToggle()">
           Increase Value
         </button>
-        <button @click="onApplyDinamicBindingToggle2()">
+        <button (click)="onApplyDinamicBindingToggle2()">
           Toggle dinamic binding 2
         </button>
-        <button @click="onTextToggle2()">
+        <button (click)="onTextToggle2()">
           Increase Value 2
         </button>
       </div>

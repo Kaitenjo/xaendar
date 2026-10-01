@@ -27,7 +27,7 @@ export enum LexerState {
    */
   ATTRIBUTE = 'attribute',
   /**
-   * Consuming a DOM event binding starting with `@`.
+   * Consuming a DOM event binding starting with `(`.
    */
   EVENT = 'event',
   /**

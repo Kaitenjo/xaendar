@@ -1,9 +1,9 @@
 <div class="table-container">
   <div class="toolbar">
-    <button class="btn btn-primary" @click="addRandomRow()">
+    <button class="btn btn-primary" (click)="addRandomRow()">
       ➕ Aggiungi riga (posizione casuale)
     </button>
-    <button class="btn btn-secondary" @click="addRowAtEnd()">
+    <button class="btn btn-secondary" (click)="addRowAtEnd()">
       ⬇️ Aggiungi riga in coda
     </button>
   </div>
@@ -27,7 +27,7 @@
             <td>{ row.email }</td>
             <td>{ row.role }</td>
             <td>
-              <button class="btn btn-danger" @click="deleteRow(row.id)">
+              <button class="btn btn-danger" (click)="deleteRow(row.id)">
                 🗑️ Elimina
               </button>
             </td>

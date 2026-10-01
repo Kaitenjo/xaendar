@@ -9,7 +9,7 @@ import { TokenWithOptionalSpan } from '../../types/token.type.js';
 
 /**
  * Consumes plain text content, accumulating characters until a structural boundary
- * is reached: `<` (tag open/close), `{` (interpolation), `@` (flow-control or event),
+ * is reached: `<` (tag open/close), `{` (interpolation), `@` (flow-control),
  * or `}` (block close). Emits a TEXT token if non-blank text was accumulated.
  *
  * @param cursor - The lexer cursor positioned at the start of text content.

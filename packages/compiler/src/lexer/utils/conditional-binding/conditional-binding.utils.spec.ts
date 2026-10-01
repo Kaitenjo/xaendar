@@ -15,9 +15,7 @@ describe('isConditionalBindingKeyword', () => {
   });
 
   it.each([
-    ['an event', '@click="onClick()"'],
-    ['an event sharing its name with a keyword', '@switch="onSwitch()"'],
-    ['an event whose name starts with a keyword', '@iffy="onIffy()"'],
+    ['a word starting with a keyword', '@iffy="x"'],
     ['a directive', '@@myDirective(display="block")'],
     ['a keyword declared outside of a tag only', '@for (item of items; track item) { }'],
     ['a keyword not followed by a space', '@if(cond()) { }']
@@ -32,6 +30,6 @@ describe('isConditionalBindingKeyword', () => {
   });
 
   it('does not fail when the input ends before the longest keyword could', () => {
-    expect(isConditionalBindingKeyword(new LexerCursor('@a="b()"'))).toBe(false);
+    expect(isConditionalBindingKeyword(new LexerCursor('@a'))).toBe(false);
   });
 });

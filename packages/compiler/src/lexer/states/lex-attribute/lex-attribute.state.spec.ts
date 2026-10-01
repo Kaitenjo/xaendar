@@ -100,6 +100,14 @@ describe('lexAttribute', () => {
     expect(() => lexAttribute(new LexerCursor('a}b>'), outerContext)).toThrow('Unexpected \'}\': there is no conditional binding to close');
   });
 
+  it.each([
+    ['in the tag body', context],
+    ['in a directive', directiveContext],
+    ['in a block of a conditional binding', conditionalBindingContext]
+  ])('throws on ( inside the attribute name, %s, i.e. an event binding not separated by a space', (_description, outerContext) => {
+    expect(() => lexAttribute(new LexerCursor('disabled(input)="f()">'), outerContext)).toThrow('Unexpected \'(\' in attribute name');
+  });
+
   it('starts an attribute value after = and consumes the opening quote', () => {
     const cursor = new LexerCursor('class="foo">');
     expect(lexAttribute(cursor, context)).toEqual({

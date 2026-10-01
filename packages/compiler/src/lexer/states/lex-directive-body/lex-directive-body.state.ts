@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -16,7 +16,7 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor pointing to the current position in the directive body.
  * @param context - The lexer context, whose history tells where the directive was declared.
  * @returns An object containing the next lexer state and the tokens produced.
- * @throws If a directive is declared inside the directive, or the tag ends before `)`.
+ * @throws If a directive is declared inside the directive, a `@` does not start a conditional binding, or the tag ends before `)`.
  */
 export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -29,14 +29,12 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
           throw 'Directives cannot be declared inside another directive';
         }
 
-        let state = LexerState.EVENT;
-        if (isConditionalBindingKeyword(cursor)) {
-          // The keyword is consumed by the flow-control state.
-          state = LexerState.FLOW_CONTROL;
+        if (!isConditionalBindingKeyword(cursor)) {
+          throw '\'@\' must start a conditional binding (@if, @else, @switch, @case, @default): events are bound with (eventName)="handler()"';
         }
 
         retVal = {
-          state
+          state: LexerState.FLOW_CONTROL
         };
         read = false;
         break;
@@ -61,6 +59,13 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
             type: TokenType.DIRECTIVE_CLOSE
           }],
           popState: true
+        };
+        read = false;
+        break;
+
+      case LPAREN:
+        retVal = {
+          state: LexerState.EVENT
         };
         read = false;
         break;

@@ -9,8 +9,12 @@ const context: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_
 
 describe('lexDirectiveBody', () => {
   it('transitions to EVENT for an event binding', () => {
-    const cursor = new LexerCursor('@change="onChange()")');
+    const cursor = new LexerCursor('(change)="onChange()")');
     expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.EVENT });
+  });
+
+  it('throws when @ does not start a conditional binding', () => {
+    expect(() => lexDirectiveBody(new LexerCursor('@change="onChange()")'), context)).toThrow('events are bound with (eventName)="handler()"');
   });
 
   it('throws for a nested directive', () => {

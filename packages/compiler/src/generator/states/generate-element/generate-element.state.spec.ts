@@ -47,7 +47,7 @@ describe('generateElement', () => {
   });
 
   it('generates events with and without parameters', async () => {
-    const { code } = await run('<div @click="f($event, a, $event)" @focus="g()"></div>');
+    const { code } = await run('<div (click)="f($event, a, $event)" (focus)="g()"></div>');
     const output = code.join('\n');
 
     expect(output).toContain('($event) => $event,');
@@ -59,7 +59,7 @@ describe('generateElement', () => {
 
   it('does not leak $event into the context after generating events', async () => {
     const context = new CompilerContext();
-    await run('<div @click="f($event)"></div>', context);
+    await run('<div (click)="f($event)"></div>', context);
 
     expect(context.hasUnresolvableIdentifier('$event')).toBe(false);
     expect(() => context.addUnresolvableIdentifier('$event')).not.toThrow();
@@ -126,7 +126,7 @@ describe('generateElement', () => {
     });
 
     it('generates attributes, events and nested bindings', async () => {
-      const { code } = await run('<div @if (cond()) { title="x" @click="f()" @if (inner()) { id="y" } }></div>');
+      const { code } = await run('<div @if (cond()) { title="x" (click)="f()" @if (inner()) { id="y" } }></div>');
       const output = code.join('\n');
 
       expect(output).toContain('branches: [');
@@ -434,7 +434,7 @@ describe('generateElement', () => {
         },
         set: () => undefined
       };
-      const { code } = await run('<div @@myDirective(label="x" @if (cond()) { display="{mode()}" @toggled="onToggled()" @if (inner()) { title="z" } } @else { display="none" })></div>', context);
+      const { code } = await run('<div @@myDirective(label="x" @if (cond()) { display="{mode()}" (toggled)="onToggled()" @if (inner()) { title="z" } } @else { display="none" })></div>', context);
 
       expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective']);
       expect(code).toEqual([
@@ -518,7 +518,7 @@ describe('generateElement', () => {
     it('generates the expression and the branches of a @switch declared in a directive', async () => {
       const context = new CompilerContext();
       context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' }) });
-      const { code } = await run('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { @toggled="onToggled()" } })></div>', context);
+      const { code } = await run('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { (toggled)="onToggled()" } })></div>', context);
       const output = code.join('\n');
 
       expect(output).toContain('expression: () => this.mode(),');
@@ -543,7 +543,7 @@ describe('generateElement', () => {
       const context = new CompilerContext();
       context.addSignalClassField('mode');
       context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' }) });
-      const { code } = await run('<my-el @@myDirective(display="block" mode="{mode}" @toggled="onToggled($event)")></my-el>', context);
+      const { code } = await run('<my-el @@myDirective(display="block" mode="{mode}" (toggled)="onToggled($event)")></my-el>', context);
       const output = code.join('\n');
 
       expect(output).toContain('selector: \'myDirective\',');
