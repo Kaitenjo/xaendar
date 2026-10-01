@@ -1,33 +1,61 @@
 import { VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
+import { _collectEffects } from '../../utils/effect-scope/effect-scope.util';
 
 /**
  * Class that all directives registered via `@Directive` must extend.
  *
  * Holds the element the directive is applied to.
  * Directives are instantiated by the template runtime, which binds their
- * inputs and only then starts them (see {@link reactToChanges}).
+ * inputs and only then starts them (see {@link onInit}).
  */
-export abstract class CustomDirective {
+export abstract class Directive {
   /**
    * Array of functions to unlisten from events or other subscriptions.
    */
-  private readonly unlistenFns = new Array<VoidFunction>();
+  protected readonly unlistenFns = new Array<VoidFunction>();
 
+}
+
+export abstract class CustomDirective extends Directive {
   /**
    * @param element The element the directive is applied to.
    */
-  constructor(protected readonly element: HTMLElement) { }
+  constructor(protected readonly element: HTMLElement) {
+    super();
+  }
 
   /**
-   * Method to define effects that should react to
-   * changes in the directive's inputs.
-   *
-   * Invoked by the template runtime once the directive inputs have been bound,
-   * so the directive fields are initialized and the effects read the bound
-   * values since their first run.
+   * Optional lifecycle hook, see {@link OnInit}.
    */
-  abstract reactToChanges(): Array<VoidFunction> | undefined;
+  public onInit?(): Array<VoidFunction> | void;
+
+  /**
+   * Optional lifecycle hook, see {@link OnDestroy}.
+   */
+  public onDestroy?(): void;
+
+  /**
+   * Starts the directive, invoked by the template runtime once its inputs have been bound.
+   * Invokes `onInit`, if declared, and keeps the cleanup functions it returns,
+   * along with the disposers of the effects it creates synchronously.
+   */
+  public [DIRECTIVE_CONNECT](): void {
+    const { result: unlistenFns, disposers } = _collectEffects(() => this.onInit?.());
+    this.unlistenFns.push(...disposers, ...(unlistenFns ?? []));
+  }
+
+  /**
+   * Disconnects the directive, invoked by the template runtime when its context is destroyed.
+   * Runs the cleanup functions returned by `onInit`, then invokes `onDestroy`, if declared.
+   */
+  public [DIRECTIVE_DISCONNECT](): void {
+    for (let i = 0; i < this.unlistenFns.length; i++) {
+      this.unlistenFns[i]();
+    }
+
+    this.onDestroy?.();
+  }
 
   /**
    * Dispatches an event on the element the directive is applied to.
@@ -38,24 +66,5 @@ export abstract class CustomDirective {
    */
   public dispatchEvent(event: Event): boolean {
     return this.element.dispatchEvent(event);
-  }
-
-  /**
-   * Starts the directive by collecting the unlisten functions returned by {@link reactToChanges}.
-   * Invoked by the template runtime only.
-   */
-  public [DIRECTIVE_CONNECT](): void {
-    const unlistenFns = this.reactToChanges();
-    if (unlistenFns) {
-      this.unlistenFns.push(...unlistenFns);
-    }
-  }
-
-  /**
-   * Called when the directive is disconnected from the DOM.
-   * Invokes all unlisten functions to clean up resources.
-   */
-  public [DIRECTIVE_DISCONNECT](): void {
-    this.unlistenFns.forEach(fn => fn());
   }
 }

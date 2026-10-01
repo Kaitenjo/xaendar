@@ -289,12 +289,12 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
   const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
   metadata = await extractClassMetadata(sourceFile, className);
   if (!metadata) {
-    throw new Error(`Metadata for symbol "${classNameOrSelector}" not found.`);
+    throw `Class "${classNameOrSelector}" was not found in the import from ${path?.at(-1) ?? filePath}`;
   }
 
   const selectorConflict = await claimSelectors(metadata);
   if (selectorConflict) {
-    throw new Error(selectorConflict);
+    throw selectorConflict;
   }
 
   // Definire un criterio per il quale si cacha oppure no, non possiamo cachare tutto, troppa memoria!!!

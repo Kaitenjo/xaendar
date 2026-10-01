@@ -32,7 +32,30 @@ import { _getDirective } from '../directive-registry/directive-registry.util';
  * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
  * @returns The newly created HTML element.
  */
-export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[]): Element {
+export function _renderElement(
+  parentNode: Element,
+  context: _Context,
+  anchor: Comment | null,
+  tagName: string,
+  attributes: RenderElementAttribute[],
+  events: RenderElementEvent[],
+  conditionalBindings: RenderElementConditionalBinding[],
+  directives: RenderElementDirective[],
+  // structuralDirectives: RenderElementStructuralDirective[]
+): Element {
+  // const structuralDirectivesIstances = new Array<CustomDirective>;
+
+  // for (let i = 0; i < structuralDirectives.length; i++) {
+  //   const { selector } = structuralDirectives[i];
+  //   const Directive = _getDirective(selector);
+  //   if (!Directive) {
+  //     throw new Error(`No directive registered for selector "${selector}"`);
+  //   }
+  //   structuralDirectivesIstances
+  // }
+
+  // effect(() => {
+  // })
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
   bindAttributes(element, context, attributes);
@@ -281,11 +304,11 @@ function updateProperty(target: Element | CustomDirective, name: string, newValu
   const constructor = target.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
   name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
   const property = componentOrDirective[name];
-  
+
   if (property && isInputSignal(property)) {
     property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
   } else if (target instanceof CustomDirective) {
-    target instanceof CustomDirective 
+    target instanceof CustomDirective
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   } else {
     target.setAttribute(name, String(newValue));

@@ -46,7 +46,7 @@ class LabelDirective extends CustomDirective {
   public readonly seen = new Array<string>();
   public readonly unlisten = vi.fn();
 
-  public reactToChanges(): Array<() => void> {
+  public onInit(): Array<() => void> {
     return [effect(() => { this.seen.push(this.label()); }), this.unlisten];
   }
 
@@ -70,7 +70,7 @@ class TrackingDirective extends CustomDirective {
   public static readonly instances = new Array<TrackingDirective>();
   public static readonly source = signal(0);
 
-  public reactToChanges(): undefined {
+  public onInit(): undefined {
     TrackingDirective.source();
     TrackingDirective.instances.push(this);
   }

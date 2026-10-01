@@ -1,5 +1,6 @@
 import { EffectOptions } from '@xaendar/signals';
 import { NoArgsVoidFunction } from '@xaendar/types';
+import { _registerEffect, _runOutsideEffectScope } from '../../utils/effect-scope/effect-scope.util';
 
 /**
  * Runs a side-effectful function and automatically re-runs it whenever any
@@ -32,6 +33,12 @@ import { NoArgsVoidFunction } from '@xaendar/types';
  * count.set(3); // silent
  * ```
  *
+ * Effects created synchronously inside the `onInit` hook of a component or a directive
+ * are disposed automatically when it is destroyed: there is no need to keep the disposer.
+ * The disposer returned in that case can still be called manually, and more than once.
+ * Effects created anywhere else (constructor, after an `await`, in a listener, ...)
+ * must be disposed manually.
+ *
  * @param fn - The side-effectful function to run. Any Signal read inside it
  *   is tracked as a dependency.
  * @returns A disposer function that, when called, permanently stops the effect.
@@ -43,7 +50,7 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
    * The Computed always returns `undefined` — we only care about the
    * side-effects and the tracked sources, not the value.
    */
-  const computed = new Signal.Computed<void>(() => fn());
+  const computed = new Signal.Computed<void>(() => _runOutsideEffectScope(fn));
 
   let needsEnqueue = true;
 
@@ -82,8 +89,8 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
    * (Watcher → Computed → all sources), preventing any further
    * notifications and allowing GC.
    */
-  return () => {
+  return _registerEffect(() => {
     options?.onCleanup?.();
     watcher.unwatch(computed)
-  };
+  });
 }

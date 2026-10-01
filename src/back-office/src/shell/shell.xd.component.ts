@@ -18,6 +18,8 @@ export class ShellComponent extends CustomElement {
     this.sidebarCollapsed.set(event.detail);
   }
 
+  public readonly enableDrag = signal(true);
+
   public readonly applyDinamicBinding = signal(true);
 
   public readonly counter = signal(1);
@@ -40,5 +42,9 @@ export class ShellComponent extends CustomElement {
 
   public onTextToggle2(): void {
     this.counter2.update(value => value + 1);
+  }
+
+  public onDragToggle(): void {
+    this.enableDrag.update(value => !value);
   }
 }

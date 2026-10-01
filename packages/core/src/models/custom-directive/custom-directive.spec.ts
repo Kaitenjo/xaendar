@@ -1,12 +1,16 @@
 // @vitest-environment happy-dom
+import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
+import { effect } from '../../signals/effect/effect';
 import { CustomDirective } from './custom-directive';
+
+loadSignals();
 
 class TestDirective extends CustomDirective {
   public readonly reactToChangesSpy = vi.fn<() => Array<() => void> | undefined>();
 
-  public reactToChanges(): Array<() => void> | undefined {
+  public onInit(): Array<() => void> | undefined {
     return this.reactToChangesSpy();
   }
 }
@@ -41,6 +45,30 @@ describe('CustomDirective', () => {
     directive[DIRECTIVE_CONNECT]();
 
     expect(() => directive[DIRECTIVE_DISCONNECT]()).not.toThrow();
+  });
+
+  it('disposes on disconnection the effects created in onInit', () => {
+    const onCleanup = vi.fn();
+    const directive = new TestDirective(document.createElement('div'));
+    directive.reactToChangesSpy.mockImplementation(() => {
+      effect(() => undefined, { onCleanup });
+      return undefined;
+    });
+    directive[DIRECTIVE_CONNECT]();
+
+    expect(onCleanup).not.toHaveBeenCalled();
+    directive[DIRECTIVE_DISCONNECT]();
+    expect(onCleanup).toHaveBeenCalledOnce();
+  });
+
+  it('does not fail when an effect created in onInit is also returned for cleanup', () => {
+    const onCleanup = vi.fn();
+    const directive = new TestDirective(document.createElement('div'));
+    directive.reactToChangesSpy.mockImplementation(() => [effect(() => undefined, { onCleanup })]);
+    directive[DIRECTIVE_CONNECT]();
+
+    expect(() => directive[DIRECTIVE_DISCONNECT]()).not.toThrow();
+    expect(onCleanup).toHaveBeenCalledOnce();
   });
 
   it('dispatches events on the element it is applied to', () => {

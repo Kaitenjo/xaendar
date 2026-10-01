@@ -5,7 +5,7 @@ import { _getDirective } from '../../utils/directive-registry/directive-registry
 import { Directive } from './directive.decorator';
 
 class TestDirective extends CustomDirective {
-  public reactToChanges(): undefined {
+  public onInit(): undefined {
     return;
   }
 }

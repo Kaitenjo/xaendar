@@ -3,13 +3,13 @@ import { CustomDirective } from '../../models/custom-directive/custom-directive'
 import { _defineDirective, _getDirective } from './directive-registry.util';
 
 class FirstDirective extends CustomDirective {
-  public reactToChanges(): undefined {
+  public onInit(): undefined {
     return;
   }
 }
 
 class SecondDirective extends CustomDirective {
-  public reactToChanges(): undefined {
+  public onInit(): undefined {
     return;
   }
 }

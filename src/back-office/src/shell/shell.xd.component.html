@@ -4,19 +4,14 @@
 
 <div class="shell">
   <app-sidebar
-    @@my-directive(myProperty="myValue" (directiveEvent)="eventHandler()")
-
-    @if (cond()) {
-      @@my-conditionalDirective
-    }
-
     @if (applyDinamicBinding()) { 
       text="{counter().toString()}"
 
       @if (applyDinamicBinding2()) { 
         text2="{counter2().toString()}" 
       } 
-    } 
+    }
+    enableDrag="{enableDrag()}"
     collapsed="{sidebarCollapsed()}" 
     (collapsedChange)="onCollapseChange($event)" 
   />
@@ -27,6 +22,9 @@
     <main class="shell__content">
       <app-form />
       <div style="display: flex; gap:.5rem;">
+        <button (click)="onDragToggle()">
+          Toggle dinamic binding
+        </button>
         <button (click)="onApplyDinamicBindingToggle()">
           Toggle dinamic binding
         </button>

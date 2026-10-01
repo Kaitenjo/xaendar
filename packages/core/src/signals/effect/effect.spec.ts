@@ -1,5 +1,6 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
+import { _collectEffects } from '../../utils/effect-scope/effect-scope.util';
 import { effect } from './effect';
 
 loadSignals();
@@ -247,6 +248,52 @@ describe('effect', () => {
       const dispose = effect(() => {});
       dispose();
       expect(() => dispose()).toThrow();
+    });
+  });
+
+  describe('effect scope', () => {
+    it('registers the effects created inside a scope and disposes them with it', async () => {
+      const state = new Signal.State(0);
+      const spy = vi.fn();
+
+      const { disposers } = _collectEffects(() => effect(() => { spy(state.get()); }));
+      expect(disposers).toHaveLength(1);
+
+      disposers[0]();
+      state.set(1);
+      await flushMicrotasks();
+
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns a disposer that can be called multiple times inside a scope', () => {
+      const { result: dispose } = _collectEffects(() => effect(() => {}));
+
+      dispose();
+      expect(() => dispose()).not.toThrow();
+    });
+
+    it('does not register the effects created outside of a scope', () => {
+      const { disposers } = _collectEffects(() => undefined);
+      effect(() => {});
+
+      expect(disposers).toHaveLength(0);
+    });
+
+    it('does not register the effects nested in an effect, neither on the first run nor on the next ones', async () => {
+      const state = new Signal.State(0);
+
+      const { disposers } = _collectEffects(() => {
+        effect(() => {
+          state.get();
+          effect(() => {});
+        });
+      });
+
+      state.set(1);
+      await flushMicrotasks();
+
+      expect(disposers).toHaveLength(1);
     });
   });
 });
