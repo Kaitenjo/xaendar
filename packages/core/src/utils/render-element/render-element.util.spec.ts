@@ -22,6 +22,7 @@ const {
 const { signal } = await import('../../signals');
 const { effect } = await import('../../signals/effect/effect');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
+const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
@@ -77,6 +78,48 @@ class TrackingDirective extends CustomDirective {
 }
 
 _defineDirective('tracking', TrackingDirective);
+
+/**
+ * Structural directive rendering the element while its `visible` input holds.
+ */
+class VisibleDirective extends StructuralDirective {
+  public static readonly instances = new Array<VisibleDirective>();
+
+  public readonly visible = input<boolean>(true);
+  public readonly evaluations = vi.fn();
+
+  constructor() {
+    super();
+    VisibleDirective.instances.push(this);
+  }
+
+  public shouldRender(): boolean | Promise<boolean> {
+    this.evaluations();
+    return this.visible();
+  }
+}
+
+/**
+ * Structural directive whose outcome is a promise settled by the test through `deferred`, created after reading its `visible` input.
+ */
+class AsyncVisibleDirective extends VisibleDirective {
+  public deferred!: PromiseWithResolvers<boolean>;
+
+  public override shouldRender(): Promise<boolean> {
+    this.evaluations();
+    this.visible();
+    this.deferred = Promise.withResolvers<boolean>();
+    return this.deferred.promise;
+  }
+}
+
+_defineDirective('visible', VisibleDirective);
+_defineDirective('asyncVisible', AsyncVisibleDirective);
+
+/**
+ * Lets every pending microtask run, including the ones queued by other microtasks, e.g. a settled promise writing a flag.
+ */
+const settle = () => new Promise<void>(resolve => setTimeout(resolve));
 
 describe('element factories', () => {
   it('creates an HTML element', () => {
@@ -181,6 +224,18 @@ describe('property setters', () => {
       const directive = new LabelDirective(document.createElement('div'));
 
       expect(() => _setProperty(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
+    });
+
+    it('sets the value of an input signal of a structural directive', () => {
+      const directive = new VisibleDirective();
+
+      _setExpressionProperty(createRoot(), directive, 'visible', () => false);
+
+      expect(directive.visible()).toBe(false);
+    });
+
+    it('throws when a structural directive does not declare the property', () => {
+      expect(() => _setProperty(createRoot(), new VisibleDirective(), 'missing', 'value')).toThrow('VisibleDirective does not declare a property named "missing"');
     });
 
     it('falls back to the attribute for properties that are not input signals', () => {
@@ -846,6 +901,398 @@ describe('_renderElement', () => {
 
     it('throws when no directive is registered for the selector', () => {
       expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: 'missing' })] })).toThrow('No directive registered for selector "missing"');
+    });
+
+    it('throws when the directive registered for the selector is a structural directive', () => {
+      expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: 'visible' })] })).toThrow('Directive VisibleDirective registered for selector "visible" is not a CustomDirective');
+    });
+  });
+
+  describe('structural directives', () => {
+    type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context>;
+
+    const renderStructural = (
+      parent: Element,
+      context: InstanceType<typeof _Context>,
+      { structuralDirectives = [], structuralConditionalBindings = [], children, anchor = null }: { structuralDirectives?: unknown[], structuralConditionalBindings?: unknown[], children?: Children, anchor?: Comment | null } = {}
+    ) => _renderElement(parent, context, anchor, 'div', [{ name: 'id', value: 'target', setter: _setProperty }] as never, [], [], [], structuralDirectives as never, structuralConditionalBindings as never, children);
+    const structural = (selector = 'visible', attributes: unknown[] = []) => ({ selector, attributes });
+    const visible = (value: () => boolean) => ({ name: 'visible', value, setter: _setReactiveProperty });
+    const branch = (overrides: Record<string, unknown> = {}) => ({ structuralDirectives: [], conditionalBindings: [], ...overrides });
+    const target = (parent: Element) => parent.querySelector('#target');
+    const lastInstance = () => VisibleDirective.instances.at(-1)!;
+
+    it('renders the element, before an anchor, while its structural directive returns true', () => {
+      const parent = document.createElement('section');
+      const result = renderStructural(parent, createRoot(), { structuralDirectives: [structural()] });
+
+      expect(result).toBeUndefined();
+      expect(parent.childNodes).toHaveLength(2);
+      expect(parent.firstChild).toBe(target(parent));
+      expect(parent.lastChild!.nodeType).toBe(Node.COMMENT_NODE);
+      expect(parent.lastChild!.textContent).toBe('structural');
+    });
+
+    it('does not render the element while its structural directive returns false', () => {
+      const parent = document.createElement('section');
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => false)])] });
+
+      expect(target(parent)).toBeNull();
+      expect(parent.childNodes).toHaveLength(1);
+    });
+
+    it('binds the properties of a structural directive before evaluating it', () => {
+      const context = createRoot();
+      const createElement = vi.spyOn(context, 'createElement');
+      renderStructural(document.createElement('section'), context, {
+        structuralDirectives: [structural('visible', [{ name: 'visible', value: () => false, setter: _setExpressionProperty }])]
+      });
+
+      expect(lastInstance().evaluations).toHaveBeenCalledOnce();
+      expect(createElement).not.toHaveBeenCalled();
+    });
+
+    it('keeps the position given by the anchor the element is rendered before', async () => {
+      const shown = signal(true);
+      const parent = document.createElement('section');
+      const sibling = parent.appendChild(document.createComment('sibling'));
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])], anchor: sibling });
+
+      shown.set(false);
+      await settle();
+      parent.insertBefore(document.createElement('span'), sibling);
+      shown.set(true);
+      await settle();
+
+      expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['DIV', '#comment', 'SPAN', '#comment']);
+    });
+
+    it('creates and destroys the element as the outcome of its structural directive changes', async () => {
+      const shown = signal(false);
+      const parent = document.createElement('section');
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])] });
+      expect(target(parent)).toBeNull();
+
+      shown.set(true);
+      await settle();
+      const element = target(parent);
+      expect(element).not.toBeNull();
+
+      shown.set(false);
+      await settle();
+      expect(target(parent)).toBeNull();
+
+      shown.set(true);
+      await settle();
+      expect(target(parent)).not.toBeNull();
+      expect(target(parent)).not.toBe(element);
+    });
+
+    it('does not render the element again when the outcome is evaluated again without changing', async () => {
+      const count = signal(1);
+      const parent = document.createElement('section');
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => count() > 0)])] });
+      const element = target(parent);
+
+      count.set(2);
+      await settle();
+
+      expect(target(parent)).toBe(element);
+    });
+
+    it('creates the element through the factory of the context it is rendered in', async () => {
+      const shown = signal(true);
+      const context = createRoot();
+      context.createElement = _createSVGElement;
+      const parent = document.createElement('section');
+      renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])] });
+      context.createElement = _createElement;
+
+      shown.set(false);
+      await settle();
+      shown.set(true);
+      await settle();
+
+      expect(target(parent)!.namespaceURI).toBe(SVG_NS);
+    });
+
+    it('renders the children each time the element is created, destroying them together with the element', async () => {
+      const shown = signal(true);
+      const unlisten = vi.fn();
+      const children = vi.fn<Children>((element, parentContext) => {
+        element.appendChild(document.createElement('span'));
+        const childrenContext = new _Context({} as never, parentContext);
+        childrenContext.addUnlistener(unlisten);
+        return childrenContext;
+      });
+      const parent = document.createElement('section');
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])], children });
+
+      expect(children).toHaveBeenCalledExactlyOnceWith(target(parent), expect.any(_Context));
+      expect(parent.querySelector('#target > span')).not.toBeNull();
+
+      shown.set(false);
+      await settle();
+      expect(unlisten).toHaveBeenCalledOnce();
+
+      shown.set(true);
+      await settle();
+      expect(children).toHaveBeenCalledTimes(2);
+      expect(parent.querySelector('#target > span')).not.toBeNull();
+    });
+
+    it('renders the element only while every structural directive returns true', async () => {
+      const first = signal(true);
+      const second = signal(false);
+      const parent = document.createElement('section');
+      renderStructural(parent, createRoot(), {
+        structuralDirectives: [structural('visible', [visible(() => first())]), structural('visible', [visible(() => second())])]
+      });
+      expect(target(parent)).toBeNull();
+
+      second.set(true);
+      await settle();
+      expect(target(parent)).not.toBeNull();
+
+      first.set(false);
+      await settle();
+      expect(target(parent)).toBeNull();
+    });
+
+    describe('conditional structural directives', () => {
+      it('renders the element while no structural directive is applied', () => {
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), {
+          structuralConditionalBindings: [{
+            branches: [branch({ condition: () => false, structuralDirectives: [structural('visible', [visible(() => false)])] })]
+          }]
+        });
+
+        expect(target(parent)).not.toBeNull();
+      });
+
+      it('creates the element when the structural directive returning false is destroyed, and destroys it when the directive is created again', async () => {
+        const enabled = signal(true);
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), {
+          structuralDirectives: [structural(), structural()],
+          structuralConditionalBindings: [{
+            branches: [branch({ condition: () => enabled(), structuralDirectives: [structural('visible', [visible(() => false)])] })]
+          }]
+        });
+        expect(target(parent)).toBeNull();
+
+        enabled.set(false);
+        await settle();
+        expect(target(parent)).not.toBeNull();
+
+        enabled.set(true);
+        await settle();
+        expect(target(parent)).toBeNull();
+      });
+
+      it('applies the structural directives of the selected branch of a @switch', async () => {
+        const mode = signal('hidden');
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), {
+          structuralConditionalBindings: [{
+            expression: () => mode(),
+            branches: [
+              branch({ condition: ['hidden'], structuralDirectives: [structural('visible', [visible(() => false)])] }),
+              branch({ condition: null })
+            ]
+          }]
+        });
+        expect(target(parent)).toBeNull();
+
+        mode.set('shown');
+        await settle();
+        expect(target(parent)).not.toBeNull();
+      });
+
+      it('applies the structural directives of nested conditional bindings', async () => {
+        const outer = signal(true);
+        const inner = signal(false);
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), {
+          structuralConditionalBindings: [{
+            branches: [branch({
+              condition: () => outer(),
+              conditionalBindings: [{
+                branches: [branch({ condition: () => inner(), structuralDirectives: [structural('visible', [visible(() => false)])] })]
+              }]
+            })]
+          }]
+        });
+        expect(target(parent)).not.toBeNull();
+
+        inner.set(true);
+        await settle();
+        expect(target(parent)).toBeNull();
+
+        outer.set(false);
+        await settle();
+        expect(target(parent)).not.toBeNull();
+      });
+
+      it('never creates the element because of an intermediate state while a branch is selected in place of another', async () => {
+        const first = signal(true);
+        const hidden = signal(true);
+        const context = createRoot();
+        const createElement = vi.spyOn(context, 'createElement');
+        renderStructural(document.createElement('section'), context, {
+          structuralConditionalBindings: [{
+            branches: [
+              branch({ condition: () => first(), structuralDirectives: [structural('visible', [visible(() => false)])] }),
+              branch({ structuralDirectives: [structural('visible', [visible(() => !hidden())]), structural()] })
+            ]
+          }]
+        });
+
+        first.set(false);
+        await settle();
+        first.set(true);
+        await settle();
+        expect(createElement).not.toHaveBeenCalled();
+
+        first.set(false);
+        hidden.set(false);
+        await settle();
+        expect(createElement).toHaveBeenCalledOnce();
+      });
+
+      it('never creates the element because of an intermediate state while different conditional bindings swap their structural directives', async () => {
+        const swapped = signal(false);
+        const context = createRoot();
+        const createElement = vi.spyOn(context, 'createElement');
+        renderStructural(document.createElement('section'), context, {
+          structuralConditionalBindings: [
+            { branches: [branch({ condition: () => swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] })] },
+            { branches: [branch({ condition: () => !swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] })] }
+          ]
+        });
+
+        swapped.set(true);
+        await settle();
+        swapped.set(false);
+        await settle();
+
+        expect(createElement).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('asynchronous outcome', () => {
+      it('renders the element once the outcome resolves to true', async () => {
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), { structuralDirectives: [structural('asyncVisible')] });
+        expect(target(parent)).toBeNull();
+
+        (lastInstance() as AsyncVisibleDirective).deferred.resolve(true);
+        await settle();
+
+        expect(target(parent)).not.toBeNull();
+      });
+
+      it('does not render the element when the outcome resolves to false', async () => {
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), { structuralDirectives: [structural(), structural('asyncVisible')] });
+
+        (lastInstance() as AsyncVisibleDirective).deferred.resolve(false);
+        await settle();
+
+        expect(target(parent)).toBeNull();
+      });
+
+      it('keeps the element rendered while the outcome of a structural directive applied later is pending', async () => {
+        const enabled = signal(false);
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), {
+          structuralConditionalBindings: [{
+            branches: [branch({ condition: () => enabled(), structuralDirectives: [structural('asyncVisible')] })]
+          }]
+        });
+        const element = target(parent);
+
+        enabled.set(true);
+        await settle();
+        expect(target(parent)).toBe(element);
+
+        (lastInstance() as AsyncVisibleDirective).deferred.resolve(false);
+        await settle();
+        expect(target(parent)).toBeNull();
+      });
+
+      it('keeps the previous outcome while the one of a new evaluation is pending', async () => {
+        const trigger = signal(true);
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), { structuralDirectives: [structural('asyncVisible', [visible(() => trigger())])] });
+        const instance = lastInstance() as AsyncVisibleDirective;
+        instance.deferred.resolve(true);
+        await settle();
+        const element = target(parent);
+
+        trigger.set(false);
+        await settle();
+        expect(instance.evaluations).toHaveBeenCalledTimes(2);
+        expect(target(parent)).toBe(element);
+
+        instance.deferred.resolve(false);
+        await settle();
+        expect(target(parent)).toBeNull();
+      });
+
+      it('discards an outcome settling after a newer evaluation started', async () => {
+        const trigger = signal(true);
+        const parent = document.createElement('section');
+        renderStructural(parent, createRoot(), { structuralDirectives: [structural('asyncVisible', [visible(() => trigger())])] });
+        const instance = lastInstance() as AsyncVisibleDirective;
+        const outdated = instance.deferred;
+
+        trigger.set(false);
+        await settle();
+        outdated.resolve(true);
+        await settle();
+        expect(target(parent)).toBeNull();
+
+        instance.deferred.resolve(true);
+        await settle();
+        expect(target(parent)).not.toBeNull();
+      });
+
+      it('discards an outcome settling after the context is destroyed', async () => {
+        const context = createRoot();
+        const parent = document.createElement('section');
+        renderStructural(parent, context, { structuralDirectives: [structural('asyncVisible')] });
+
+        context.clear();
+        (lastInstance() as AsyncVisibleDirective).deferred.resolve(true);
+        await settle();
+
+        expect(parent.childNodes).toHaveLength(0);
+      });
+    });
+
+    it('removes the element and stops evaluating the structural directives once the context is destroyed', async () => {
+      const shown = signal(true);
+      const context = createRoot();
+      const parent = document.createElement('section');
+      renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])] });
+      const instance = lastInstance();
+
+      context.clear();
+      shown.set(false);
+      await settle();
+
+      expect(parent.childNodes).toHaveLength(0);
+      expect(instance.evaluations).toHaveBeenCalledOnce();
+    });
+
+    it('throws when no directive is registered for a structural selector', () => {
+      expect(() => renderStructural(document.createElement('section'), createRoot(), { structuralDirectives: [structural('missing')] })).toThrow('No directive registered for selector "missing"');
+    });
+
+    it('throws when the directive registered for a structural selector is not a structural directive', () => {
+      expect(() => renderStructural(document.createElement('section'), createRoot(), { structuralDirectives: [structural('label')] })).toThrow('Directive LabelDirective registered for selector "label" is not a StructuralDirective');
     });
   });
 });

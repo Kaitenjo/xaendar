@@ -1,17 +1,48 @@
-import type { Dictionary, NoArgsFunction, VoidFunction } from '@xaendar/types';
+import type { AbstractConstructor, Constructor, Dictionary, Function, NoArgsFunction, VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { StructuralDirective } from '../../models/structural-directive/structural-directive';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
+import { signal } from '../../signals/signal/signal';
 import { InputSignal } from '../../signals/types/input-signal.type';
+import type { Signal as SignalType } from '../../signals/types/signal.type';
 import { untracked } from '../../signals/untracked';
-import type { RenderConditionalBinding, RenderElementConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { BindingHost } from '../../types/binding-host.type';
+import type { RenderConditionalBinding, RenderElementConditionalBinding, RenderElementStructuralConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
-import { _Context, mountNode } from '../context/context.util';
+import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
+import { _Context, createAnchor, mountNode } from '../context/context.util';
 import { _getDirective } from '../directive-registry/directive-registry.util';
+
+/**
+ * Renders the children of an element, as the compiler-generated render code does: it receives the element
+ * and the context owning it, and returns the context it creates for the children.
+ */
+type RenderChildren = Function<[element: Element, parentContext: _Context], _Context>;
+
+/**
+ * The flag a structural directive writes its outcome into: whether the element it is applied to has to be rendered,
+ * or `undefined` until the directive returns its first outcome, when it is asynchronous.
+ */
+type StructuralFlag = SignalType<boolean | undefined>;
+
+/**
+ * Collects the flags of the structural directives applied to an element.
+ */
+type StructuralFlags = {
+  /**
+   * Registers the flag of a structural directive applied to the element.
+   */
+  add: VoidFunction<[flag: StructuralFlag]>,
+  /**
+   * Unregisters the flag of a structural directive no longer applied to the element.
+   */
+  remove: VoidFunction<[flag: StructuralFlag]>
+};
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -25,37 +56,70 @@ import { _getDirective } from '../directive-registry/directive-registry.util';
  *
  * @param parentNode - The parent HTML element to append the new element to.
  * @param context - The current template execution scope.
+ * @param anchor - The node to insert the element before, or `null` to append it.
  * @param tagName - The HTML tag name of the element to create.
  * @param attributes - List of attribute descriptors to apply to the element.
  * @param events - List of event listener descriptors to attach to the element.
  * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
  * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
  * @returns The newly created HTML element.
+ * @throws When no custom directive is registered for the selector of a directive.
  */
-export function _renderElement(
-  parentNode: Element,
-  context: _Context,
-  anchor: Comment | null,
-  tagName: string,
-  attributes: RenderElementAttribute[],
-  events: RenderElementEvent[],
-  conditionalBindings: RenderElementConditionalBinding[],
-  directives: RenderElementDirective[],
-  // structuralDirectives: RenderElementStructuralDirective[]
-): Element {
-  // const structuralDirectivesIstances = new Array<CustomDirective>;
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[]): Element;
+/**
+ * Renders an element, along with its children, only while every structural directive applied to it allows it:
+ * the condition of the rendering is the AND of the outcomes of the structural directives currently applied, either
+ * directly or through the selected branch of a conditional binding. While none is applied the element is rendered.
+ *
+ * Each structural directive evaluates {@link StructuralDirective.shouldRender} inside its own effect, writing the outcome
+ * into its flag; an effect registered in the current context reads the flags and, when the AND changes, renders the element
+ * in a child context or destroys it by clearing that context. The structural directives, and the conditional bindings
+ * applying them, live in the current context, so they outlive the element they create and destroy.
+ *
+ * An asynchronous outcome is written once it settles: until then, the flag keeps its previous value, and a flag still
+ * without any outcome neither renders nor destroys the element. The element is inserted before an anchor placed where
+ * it belongs, so it keeps its position among its siblings however many times it is created again.
+ *
+ * @param parentNode - The parent HTML element to append the new element to.
+ * @param context - The current template execution scope.
+ * @param anchor - The node to insert the element before, or `null` to append it.
+ * @param tagName - The HTML tag name of the element to create.
+ * @param attributes - List of attribute descriptors to apply to the element.
+ * @param events - List of event listener descriptors to attach to the element.
+ * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
+ * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
+ * @param structuralDirectives - List of structural directive descriptors deciding whether the element is rendered.
+ * @param structuralConditionalBindings - List of conditional binding descriptors applying structural directives to the element.
+ * @param children - Renders the children of the element, each time the element is created.
+ * @throws When no directive of the expected kind is registered for the selector of a directive.
+ */
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], structuralDirectives: RenderElementStructuralDirective[], structuralConditionalBindings: RenderElementStructuralConditionalBinding[], children?: RenderChildren): void;
+export function _renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], structuralDirectives: RenderElementStructuralDirective[] = [], structuralConditionalBindings: RenderElementStructuralConditionalBinding[] = [], children?: RenderChildren): Element | void {
+  if (!structuralDirectives.length && !structuralConditionalBindings.length) {
+    return renderElement(parentNode, context, anchor, tagName, attributes, events, conditionalBindings, directives);
+  }
 
-  // for (let i = 0; i < structuralDirectives.length; i++) {
-  //   const { selector } = structuralDirectives[i];
-  //   const Directive = _getDirective(selector);
-  //   if (!Directive) {
-  //     throw new Error(`No directive registered for selector "${selector}"`);
-  //   }
-  //   structuralDirectivesIstances
-  // }
+  renderStructuralElement(parentNode, context, anchor, structuralDirectives, structuralConditionalBindings, (elementContext, elementAnchor) => {
+    const element = renderElement(parentNode, elementContext, elementAnchor, tagName, attributes, events, conditionalBindings, directives);
+    children && elementContext.addChild(children(element, elementContext));
+  });
+}
 
-  // effect(() => {
-  // })
+/**
+ * Creates a DOM element, applies its bindings and its directives, and mounts it, see {@link _renderElement}.
+ *
+ * @param parentNode - The parent HTML element to append the new element to.
+ * @param context - The current template execution scope.
+ * @param anchor - The node to insert the element before, or `null` to append it.
+ * @param tagName - The HTML tag name of the element to create.
+ * @param attributes - List of attribute descriptors to apply to the element.
+ * @param events - List of event listener descriptors to attach to the element.
+ * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
+ * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
+ * @returns The newly created HTML element.
+ * @throws When no custom directive is registered for the selector of a directive.
+ */
+function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[]): Element {
   const element = context.createElement(tagName);
   mountNode(element, parentNode, context, anchor)
   bindAttributes(element, context, attributes);
@@ -106,7 +170,7 @@ function bindEvents(element: Element, context: _Context, events: RenderElementEv
  * @param context - The current template execution scope.
  * @param properties - The list of properties to bind to the directive.
  */
-function bindDirectiveProperties(directive: CustomDirective, context: _Context, properties: RenderElementDirective['attributes']): void {
+function bindDirectiveProperties(directive: CustomDirective | StructuralDirective, context: _Context, properties: RenderElementDirective['attributes']): void {
   for (let i = 0; i < properties.length; i++) {
     const { name, value, setter, unbind, defaultValue } = properties[i];
     setter(context, directive, name, value);
@@ -178,15 +242,12 @@ function selectBranch<Bindings>(conditionalBinding: RenderConditionalBinding<Bin
  * @param element - The element to apply the directives to.
  * @param context - The current template execution scope.
  * @param directives - The list of directives to apply to the element.
- * @throws When no directive is registered for a selector.
+ * @throws When no custom directive is registered for a selector.
  */
 function bindDirectives(element: Element, context: _Context, directives: RenderElementDirective[]): void {
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes, events, conditionalBindings } = directives[i];
-    const Directive = _getDirective(selector);
-    if (!Directive) {
-      throw new Error(`No directive registered for selector "${selector}"`);
-    }
+    const Directive = resolveDirective(selector, CustomDirective);
 
     // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
     const directive = new Directive(element as HTMLElement);
@@ -200,6 +261,125 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     directive[DIRECTIVE_CONNECT]();
     context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
   }
+}
+
+/**
+ * Renders an element only while every structural directive applied to it allows it, see {@link _renderElement}.
+ *
+ * Places an anchor where the element belongs and a child context the element is rendered in, then applies the
+ * structural directives, either directly or through conditional bindings, collecting their flags. Finally registers
+ * in the context the effect reading the flags: since it is created after the flags of the structural directives applied
+ * from the start, the element is rendered, if it has to be, synchronously. Then, being an effect, it reacts once to all
+ * the changes made at the same time, e.g. when a branch is selected in place of another, so the element is never
+ * created or destroyed by an intermediate state.
+ * @param parentNode - The parent HTML element the element is rendered into.
+ * @param context - The current template execution scope, owning the structural directives.
+ * @param anchor - The node to insert the element before, or `null` to append it.
+ * @param structuralDirectives - The list of structural directives applied to the element.
+ * @param structuralConditionalBindings - The list of conditional bindings applying structural directives to the element.
+ * @param render - Renders the element, along with its children, in the given context and before the given anchor.
+ * @throws When no structural directive is registered for a selector.
+ */
+function renderStructuralElement(parentNode: Element, context: _Context, anchor: Comment | null, structuralDirectives: RenderElementStructuralDirective[], structuralConditionalBindings: RenderElementStructuralConditionalBinding[], render: VoidFunction<[context: _Context, anchor: Comment]>): void {
+  const elementAnchor = createAnchor('structural', parentNode, context, anchor);
+  const elementContext = context.addChild();
+  /*
+    The list is kept aside so that adding or removing a flag never reads the signal: it may happen while another effect runs,
+    e.g. the one of an `@if` block clearing the context the element lives in, which would otherwise track it.
+  */
+  let active = new Array<StructuralFlag>();
+  const flags = signal(active);
+  const collector: StructuralFlags = {
+    add: flag => {
+      active = [...active, flag];
+      flags.set(active);
+    },
+    remove: flag => {
+      active = active.filter(item => item !== flag);
+      flags.set(active);
+    }
+  };
+
+  bindStructuralDirectives(context, structuralDirectives, collector);
+  bindConditionalBindings(context, structuralConditionalBindings, (branchContext, branch) => bindStructuralDirectives(branchContext, branch.structuralDirectives, collector));
+
+  let rendered = false;
+  context.addUnlistener(effect(() => {
+    const values = flags().map(flag => flag());
+    // A flag without any outcome yet neither renders nor destroys the element, unless another flag destroys it anyway
+    const shouldRender = values.includes(false) ? false : (values.includes(undefined) ? rendered : true);
+    if (shouldRender === rendered) {
+      return;
+    }
+
+    rendered = shouldRender;
+    untracked(() => {
+      elementContext.clear();
+      shouldRender && render(elementContext, elementAnchor);
+    });
+  }));
+}
+
+/**
+ * Applies a list of structural directives: each directive is instantiated and its properties are bound, then its
+ * `shouldRender` is evaluated inside an effect writing the outcome into the flag the directive registers in `flags`.
+ * When the context is destroyed the effect is disposed and the flag unregistered.
+ *
+ * A synchronous outcome is written as soon as it is evaluated, an asynchronous one once it settles, unless the directive
+ * was evaluated again, or the context destroyed, in the meantime: until then the flag keeps its previous value, which is
+ * `undefined` before the first outcome. A rejected outcome leaves the flag as it is.
+ * @param context - The current template execution scope.
+ * @param structuralDirectives - The list of structural directives to apply.
+ * @param flags - Collects the flags of the structural directives applied to the element.
+ * @throws When no structural directive is registered for a selector.
+ */
+function bindStructuralDirectives(context: _Context, structuralDirectives: RenderElementStructuralDirective[], flags: StructuralFlags): void {
+  for (let i = 0; i < structuralDirectives.length; i++) {
+    const { selector, attributes } = structuralDirectives[i];
+    const Directive = resolveDirective(selector, StructuralDirective);
+    const directive = new Directive();
+    const flag: StructuralFlag = signal<boolean | undefined>(undefined);
+    // Identifies the latest evaluation, so that the outcome of an outdated asynchronous one is discarded
+    let evaluation = 0;
+
+    bindDirectiveProperties(directive, context, attributes);
+    flags.add(flag);
+    const dispose = effect(() => {
+      const current = ++evaluation;
+      const outcome = directive.shouldRender();
+      if (typeof outcome === 'boolean') {
+        flag.set(outcome);
+      } else {
+        outcome.then(value => current === evaluation && flag.set(value));
+      }
+    });
+
+    context.addUnlistener(() => {
+      evaluation++;
+      dispose();
+      flags.remove(flag);
+    });
+  }
+}
+
+/**
+ * Retrieves the directive class registered for a selector, ensuring it is of the expected kind.
+ * @param selector - The selector identifying the directive in templates.
+ * @param kind - The base class the directive is expected to extend.
+ * @returns The directive class registered for the selector.
+ * @throws When no directive is registered for the selector, or when it does not extend `kind`.
+ */
+function resolveDirective<T extends CustomDirective | StructuralDirective>(selector: string, kind: AbstractConstructor<T>): Constructor<T> {
+  const Directive = _getDirective(selector);
+  if (!Directive) {
+    throw new Error(`No directive registered for selector "${selector}"`);
+  }
+
+  if (!(Directive.prototype instanceof kind)) {
+    throw new Error(`Directive ${Directive.name} registered for selector "${selector}" is not a ${kind.name}`);
+  }
+
+  return Directive as Constructor<T>;
 }
 
 /**
@@ -241,7 +421,7 @@ export function _createMATHMLElement(tagName: string): MathMLElement {
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setProperty(_context: _Context, target: Element | CustomDirective, name: string, value: string): void {
+export function _setProperty(_context: _Context, target: Element | BindingHost, name: string, value: string): void {
   updateProperty(target, name, value);
 }
 
@@ -261,7 +441,7 @@ export function _setProperty(_context: _Context, target: Element | CustomDirecti
  * @param name - The name of the attribute.
  * @param value - The default value to set for the attribute.
  */
-export function _setExpressionProperty(_context: _Context, target: Element | CustomDirective, name: string, value: NoArgsFunction<unknown>): void {
+export function _setExpressionProperty(_context: _Context, target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
   updateProperty(target, name, value());
 }
 
@@ -276,7 +456,7 @@ export function _setExpressionProperty(_context: _Context, target: Element | Cus
  * @param name - The name of the attribute.
  * @param value - A function that returns the attribute value.
  */
-export function _setReactiveProperty(context: _Context, target: Element | CustomDirective, name: string, value: NoArgsFunction<unknown>): void {
+export function _setReactiveProperty(context: _Context, target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
   context.addUnlistener(effect(() => updateProperty(target, name, value())));
 }
 
@@ -299,7 +479,7 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
  * @param newValue - The new value to set for the property.
  * @throws When the target is a directive not declaring the property.
  */
-function updateProperty(target: Element | CustomDirective, name: string, newValue: unknown): void {
+function updateProperty(target: Element | BindingHost, name: string, newValue: unknown): void {
   const componentOrDirective = target as unknown as Record<string, unknown> & { [name]: string | InputSignal };
   const constructor = target.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
   name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
@@ -307,8 +487,7 @@ function updateProperty(target: Element | CustomDirective, name: string, newValu
 
   if (property && isInputSignal(property)) {
     property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
-  } else if (target instanceof CustomDirective) {
-    target instanceof CustomDirective
+  } else if (target instanceof CustomDirective || target instanceof StructuralDirective) {
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   } else {
     target.setAttribute(name, String(newValue));

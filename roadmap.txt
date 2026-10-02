@@ -7,3 +7,40 @@ L'ordine di import delle classi javascript dei web components sembra essere
 decisivo al bootstrapping perchè i decoratori di classe e proprieta vengono invocati
 al caricamento della classe nell'engine. Ma implementata una strategia di caricamento dei componenti
 in modo da rispettare le dipendenze fra di essi (non dovrebbero mai essere circular)
+
+Ho implementato in @xaendar/core le direttive strutturali come da piano. Tutti i nuovi test passano, la coverage di core è al 100%, typecheck e lint non danno errori (restano i 4 warning di prima). Il compilatore non è stato toccato, quindi nessun template genera ancora direttive strutturali.
+
+Come funziona (render-element.util.ts)
+
+_renderElement ha tre parametri opzionali in più: structuralDirectives, structuralConditionalBindings e children. Senza direttive strutturali si comporta come prima e restituisce l'elemento.
+Ogni direttiva strutturale ha la sua effect, che chiama shouldRender() e scrive il risultato in un flag. I flag delle direttive attive stanno in una lista.
+Un'altra effect (il "gate"), registrata nel contesto, legge tutti i flag e calcola l'AND:
+un flag false → l'elemento viene distrutto;
+tutti true, o nessuna direttiva attiva → l'elemento viene creato;
+qualche promise ancora pendente e nessun false → l'elemento resta com'è.
+Le direttive condizionali riusano bindConditionalBindings così com'è. I loro contesti stanno nel contesto esterno, quindi sopravvivono quando l'elemento viene distrutto.
+Il gate è una effect, quindi le modifiche fatte insieme vengono valutate una volta sola. Durante un cambio di ramo l'elemento non viene mai creato o distrutto per uno stato intermedio.
+Il contesto dei figli viene registrato, così le loro effect vengono rilasciate quando l'elemento sparisce.
+Altre modifiche
+
+StructuralDirective: è rimasta com'era, con solo shouldRender, ed è esportata da models/index.ts. Ho eliminato la cartella vuota base-directive.
+@Property sì, @Event no: BindingHost ora include StructuralDirective. Ho aggiunto il tipo EventHost = Exclude<BindingHost, StructuralDirective>, usato da @Event: messo su una direttiva strutturale, non compila.
+Tipi di direttiva: il registry e @Directive accettano entrambi i tipi. Una direttiva strutturale usata come custom, o viceversa, lancia un errore chiaro.
+Pulizia:
+createAnchor ora accetta un Element;
+ho tolto la riga senza effetto target instanceof CustomDirective in updateProperty.
+Test: in tutto il repo falliscono 19 test, nessuno legato a questo lavoro.
+
+17 in core: gli stessi di prima, tutti nei punti in cui il tuo refactor è ancora a metà (vecchia API di onInit, CustomDirective.element mai assegnato). Non li ho modificati.
+2 in build-tools: messaggi d'errore disallineati in plugin.utils.spec.ts. È un package che non ho toccato e che non dipende da core.
+I nuovi test coprono anche il tuo scenario: tre direttive, due true e una false dentro un @if. Deselezionando il ramo l'elemento viene creato, riselezionandolo viene distrutto.
+
+Da sapere
+
+Tempi: dopo una modifica a un signal servono alcune microtask (proprietà → direttiva → gate) prima che l'elemento cambi. Avviene comunque prima del frame successivo; per questo i nuovi test usano settle() invece di flush().
+Promise rifiutate: se la promise di shouldRender viene rifiutata, il flag resta com'è e l'errore compare come unhandled rejection.
+Lavoro sul compilatore ancora da fare (dettagli nel piano):
+un metadato structural ricavato da extends StructuralDirective;
+la divisione delle direttive in liste separate nel generatore, con la callback children;
+il rifiuto degli eventi sulle strutturali nel type-checker;
+la registrazione del contesto dei figli anche nel percorso normale: oggi le loro effect non vengono mai rilasciate.

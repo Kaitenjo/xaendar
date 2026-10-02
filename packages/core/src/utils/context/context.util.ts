@@ -235,7 +235,7 @@ export function mountNode(node: Node, parentNode: Element, context: _Context, re
  * @returns The created Comment node, to be used as the reference point for future
  *   insertions of dynamic content via `insertBefore(node, anchor)`.
  */
-export function createAnchor(label: string, parentNode: HTMLElement, context: _Context, referenceNode: Comment | null = null): Comment {
+export function createAnchor(label: string, parentNode: Element, context: _Context, referenceNode: Comment | null = null): Comment {
   const anchor = document.createComment(label);
   mountNode(anchor, parentNode, context, referenceNode);
   return anchor;
