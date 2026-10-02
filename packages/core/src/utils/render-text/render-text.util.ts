@@ -16,7 +16,7 @@ import { _Context, mountNode } from '../context/context.util';
 export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<string>, referenceNode: Comment | null): void {
   const node = document.createTextNode(textFn());
   mountNode(node, parentNode, context, referenceNode);
-  context.listen(effect(() => node.textContent = textFn()));
+  context.addUnlistener(effect(() => node.textContent = textFn()));
 }
 
 /**

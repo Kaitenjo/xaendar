@@ -1,34 +1,55 @@
-import { VoidFunction } from '@xaendar/types';
+import { NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
-import { _collectEffects } from '../../utils/effect-scope/effect-scope.util';
+import { effect } from '../../signals/effect/effect';
+import { EffectOptions } from '../../signals/types/effect-options.type';
 
 /**
- * Class that all directives registered via `@Directive` must extend.
+ * Base class for custom directives: behaviors applied to an existing HTML element
+ * from a template, without owning its content.
  *
- * Holds the element the directive is applied to.
- * Directives are instantiated by the template runtime, which binds their
- * inputs and only then starts them (see {@link onInit}).
+ * The template runtime starts the directive via `DIRECTIVE_CONNECT` once its inputs
+ * have been bound and tears it down via `DIRECTIVE_DISCONNECT` when its context is
+ * destroyed. Subclasses may declare the optional `onInit` hook (whose returned
+ * cleanup functions are run on disconnection) and `onDestroy`.
+ * Effects created via {@link CustomDirective.effect} are disposed automatically
+ * on disconnection.
  */
-export abstract class Directive {
+export abstract class CustomDirective {
   /**
-   * Array of functions to unlisten from events or other subscriptions.
+   * Cleanup functions invoked on disconnection: the ones returned by `onInit`
+   * and the disposers of the effects created via {@link effect}.
    */
-  protected readonly unlistenFns = new Array<VoidFunction>();
+  private _unlistenFns = new Array<VoidFunction>();
 
-}
-
-export abstract class CustomDirective extends Directive {
   /**
-   * @param element The element the directive is applied to.
+   * Reference to the HTML Element the directive is applied
    */
-  constructor(protected readonly element: HTMLElement) {
-    super();
+  private element!: HTMLElement
+
+  /**
+   * Starts the directive, invoked by the template runtime once its inputs have been bound.
+   * Invokes `onInit`, if declared, and keeps the cleanup functions it returns.
+   */
+  public [DIRECTIVE_CONNECT](): void {
+    this.onInit?.();
+  }
+
+  /**
+   * Disconnects the directive, invoked by the template runtime when its context is destroyed.
+   * Runs the cleanup functions returned by `onInit` and disposes the effects created
+   * via {@link effect}, then invokes `onDestroy`, if declared.
+   */
+  public [DIRECTIVE_DISCONNECT](): void {
+    this.onDestroy?.();
+    for (let i = 0; i < this._unlistenFns.length; i++) {
+      this._unlistenFns[i]();
+    }
   }
 
   /**
    * Optional lifecycle hook, see {@link OnInit}.
    */
-  public onInit?(): Array<VoidFunction> | void;
+  public onInit?(): void;
 
   /**
    * Optional lifecycle hook, see {@link OnDestroy}.
@@ -36,25 +57,25 @@ export abstract class CustomDirective extends Directive {
   public onDestroy?(): void;
 
   /**
-   * Starts the directive, invoked by the template runtime once its inputs have been bound.
-   * Invokes `onInit`, if declared, and keeps the cleanup functions it returns,
-   * along with the disposers of the effects it creates synchronously.
+   * Creates a signal effect bound to the lifecycle of this directive:
+   * it is disposed automatically when the directive is disconnected.
+   *
+   * @param fn - The side-effectful function to run. Any Signal read inside it
+   *   is tracked as a dependency.
+   * @param options - Optional settings forwarded to the underlying effect.
+   * @returns A function that disposes the effect ahead of the disconnection
    */
-  public [DIRECTIVE_CONNECT](): void {
-    const { result: unlistenFns, disposers } = _collectEffects(() => this.onInit?.());
-    this.unlistenFns.push(...disposers, ...(unlistenFns ?? []));
-  }
+  public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
+    const dispose = effect(fn, options);
+    this._unlistenFns.push(dispose);
 
-  /**
-   * Disconnects the directive, invoked by the template runtime when its context is destroyed.
-   * Runs the cleanup functions returned by `onInit`, then invokes `onDestroy`, if declared.
-   */
-  public [DIRECTIVE_DISCONNECT](): void {
-    for (let i = 0; i < this.unlistenFns.length; i++) {
-      this.unlistenFns[i]();
-    }
-
-    this.onDestroy?.();
+    return () => {
+      const index = this._unlistenFns.indexOf(dispose);
+      if (index !== -1) {
+        this._unlistenFns.splice(index, 1);
+        dispose();
+      }
+    };
   }
 
   /**

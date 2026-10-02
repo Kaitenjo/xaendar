@@ -239,7 +239,7 @@ describe('_if', () => {
     const a = branch('a', () => show());
     _if(parent, context, null, [a]);
 
-    context.unlisten();
+    context.clear();
     show.set(false);
     show.set(true);
     await flush();

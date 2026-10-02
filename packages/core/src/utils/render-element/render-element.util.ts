@@ -79,7 +79,7 @@ function bindAttributes(element: Element, context: _Context, attributes: RenderE
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter, unbind, defaultValue } = attributes[i];
     setter(context, element, name, value);
-    unbind && context.listen(() => unbind(context, element, name, () => defaultValue));
+    unbind && context.addUnlistener(() => unbind(context, element, name, () => defaultValue));
   }
 }
 
@@ -95,7 +95,7 @@ function bindEvents(element: Element, context: _Context, events: RenderElementEv
     const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
     const name = event.name;
     element.addEventListener(name, handler);
-    context.listen(() => element.removeEventListener(name, handler));
+    context.addUnlistener(() => element.removeEventListener(name, handler));
   }
 }
 
@@ -110,7 +110,7 @@ function bindDirectiveProperties(directive: CustomDirective, context: _Context, 
   for (let i = 0; i < properties.length; i++) {
     const { name, value, setter, unbind, defaultValue } = properties[i];
     setter(context, directive, name, value);
-    unbind && context.listen(() => unbind(context, directive, name, () => defaultValue));
+    unbind && context.addUnlistener(() => unbind(context, directive, name, () => defaultValue));
   }
 }
 
@@ -132,7 +132,7 @@ function bindConditionalBindings<Bindings extends { conditionalBindings: RenderC
     const conditionalBinding = conditionalBindings[i];
     let bound: Bindings | undefined;
 
-    context.listen(effect(() => {
+    context.addUnlistener(effect(() => {
       const selected = selectBranch(conditionalBinding);
       if (selected === bound) {
         return;
@@ -141,7 +141,7 @@ function bindConditionalBindings<Bindings extends { conditionalBindings: RenderC
       bound = selected;
       untracked(() => {
         // The branch bound so far, if any, is unbound before the selected one is bound
-        branchContext.unlisten();
+        branchContext.clear();
 
         if (selected) {
           bind(branchContext, selected);
@@ -198,7 +198,7 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     });
 
     directive[DIRECTIVE_CONNECT]();
-    context.listen(() => directive[DIRECTIVE_DISCONNECT]());
+    context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
   }
 }
 
@@ -277,7 +277,7 @@ export function _setExpressionProperty(_context: _Context, target: Element | Cus
  * @param value - A function that returns the attribute value.
  */
 export function _setReactiveProperty(context: _Context, target: Element | CustomDirective, name: string, value: NoArgsFunction<unknown>): void {
-  context.listen(effect(() => updateProperty(target, name, value())));
+  context.addUnlistener(effect(() => updateProperty(target, name, value())));
 }
 
 /**

@@ -40,7 +40,7 @@ describe('_renderText', () => {
     const name = signal('a');
     _renderText(parent, context, () => name(), null);
 
-    context.unlisten();
+    context.clear();
     name.set('b');
     await flush();
 
@@ -70,7 +70,7 @@ describe('_renderLiteralText', () => {
     const context = createRoot();
     _renderLiteralText(parent, context, 'static', null);
 
-    context.unlisten();
+    context.clear();
 
     expect(parent.textContent).toBe('');
   });

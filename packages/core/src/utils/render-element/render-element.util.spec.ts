@@ -123,7 +123,7 @@ describe('property setters', () => {
     const title = signal('a');
     _setReactiveProperty(context, element, 'title', () => title());
 
-    context.unlisten();
+    context.clear();
     title.set('b');
     await flush();
 
@@ -218,7 +218,7 @@ describe('_renderElement', () => {
     const context = createRoot();
     render(parent, context);
 
-    context.unlisten();
+    context.clear();
 
     expect(parent.childNodes.length).toBe(0);
   });
@@ -240,7 +240,7 @@ describe('_renderElement', () => {
         attributes: [{ name: 'title', value: 'hi', setter: _setProperty, unbind: _removeAttribute }]
       });
 
-      context.unlisten();
+      context.clear();
 
       expect(element.hasAttribute('title')).toBe(false);
     });
@@ -252,7 +252,7 @@ describe('_renderElement', () => {
       });
       expect(element.getAttribute('title')).toBe('hi');
 
-      context.unlisten();
+      context.clear();
 
       expect(element.getAttribute('title')).toBe('default');
     });
@@ -277,7 +277,7 @@ describe('_renderElement', () => {
         events: [{ name: 'click', handler: 'onClick', parameters: [] }]
       });
 
-      context.unlisten();
+      context.clear();
       element.dispatchEvent(new Event('click'));
 
       expect(onClick).not.toHaveBeenCalled();
@@ -677,7 +677,7 @@ describe('_renderElement', () => {
         )]
       });
 
-      context.unlisten();
+      context.clear();
       enabled.set(true);
       await flush();
 
@@ -735,7 +735,7 @@ describe('_renderElement', () => {
       const instance = lastInstance();
       expect(instance.unlisten).not.toHaveBeenCalled();
 
-      context.unlisten();
+      context.clear();
 
       expect(instance.unlisten).toHaveBeenCalledOnce();
     });

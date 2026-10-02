@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { loadSignals } from '@xaendar/signals';
+import { EffectOptions, loadSignals } from '@xaendar/signals';
+import { NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { effect } from '../../signals/effect/effect';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
@@ -7,7 +8,13 @@ import { CustomElement } from './custom-element';
 
 loadSignals();
 
-type TestElement = HTMLElement & { context: unknown, connectedCallback(): void };
+const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
+
+type TestElement = HTMLElement & {
+  context: unknown,
+  connectedCallback(): void,
+  effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction
+};
 
 let counter = 0;
 function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
@@ -19,6 +26,24 @@ function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
 
   customElements.define(name, klass);
   return document.createElement(name) as unknown as TestElement;
+}
+
+/**
+ * Builds a connectable element with the given lifecycle hooks, whose render function
+ * returns a context that only records when it is cleared.
+ */
+function createWithHooks(hooks: { onInit?: (element: TestElement) => Array<() => void> | void, onDestroy?: () => void }) {
+  const context = { clear: vi.fn() };
+  const render = vi.fn(() => context as never);
+  const name = `x-base-${counter++}`;
+  const klass = class extends CustomElement {
+    public onInit = hooks.onInit && (() => hooks.onInit!(this as unknown as TestElement));
+    public onDestroy = hooks.onDestroy;
+  };
+  _defineRender(klass, render);
+  customElements.define(name, klass);
+
+  return { element: document.createElement(name) as unknown as TestElement, context, render };
 }
 
 describe('CustomElement', () => {
@@ -33,7 +58,7 @@ describe('CustomElement', () => {
   });
 
   it('renders on connection', () => {
-    const context = { listen: vi.fn(), unlisten: vi.fn() };
+    const context = { clear: vi.fn() };
     const element = create(context);
 
     document.body.appendChild(element);
@@ -45,7 +70,7 @@ describe('CustomElement', () => {
 
   it('adopts the registered stylesheet on connection', () => {
     const styleSheet = new CSSStyleSheet();
-    const element = create({ listen: vi.fn(), unlisten: vi.fn() }, styleSheet);
+    const element = create({ clear: vi.fn() }, styleSheet);
 
     document.body.appendChild(element);
 
@@ -53,53 +78,127 @@ describe('CustomElement', () => {
     element.remove();
   });
 
-  it('unlistens the context on disconnection', () => {
-    const context = { listen: vi.fn(), unlisten: vi.fn() };
+  it('clears the context on disconnection', () => {
+    const context = { clear: vi.fn() };
     const element = create(context);
 
     document.body.appendChild(element);
     element.remove();
 
-    expect(context.unlisten).toHaveBeenCalledOnce();
+    expect(context.clear).toHaveBeenCalledOnce();
   });
 
   describe('onInit', () => {
-    /**
-     * Builds a connectable element whose context really stores what is passed to `listen`
-     * and runs it on `unlisten`, with the given `onInit`.
-     */
-    function createWithOnInit(onInit: () => Array<() => void> | void) {
-      const listened = new Array<() => void>();
-      const context = {
-        listen: vi.fn((...fns: Array<() => void>) => listened.push(...fns)),
-        unlisten: vi.fn(() => listened.splice(0).forEach(fn => fn()))
-      };
-      const name = `x-base-${counter++}`;
-      const klass = class extends CustomElement {
-        public onInit = onInit;
-      };
-      _defineRender(klass, () => context as never);
-      customElements.define(name, klass);
-
-      return { element: document.createElement(name), context };
-    }
-
-    it('listens to the unlisten functions returned by onInit', () => {
-      const unlisten = vi.fn();
-      const { element, context } = createWithOnInit(() => [unlisten]);
+    it('is invoked before the render', () => {
+      const calls = new Array<string>();
+      const { element, render } = createWithHooks({ onInit: () => { calls.push('onInit'); } });
+      render.mockImplementation(() => {
+        calls.push('render');
+        return { clear: vi.fn() } as never;
+      });
 
       document.body.appendChild(element);
-      expect(context.listen).toHaveBeenCalledWith(unlisten);
+
+      expect(calls).toEqual(['onInit', 'render']);
+      element.remove();
+    });
+
+    it('invokes the unlisten functions it returns on disconnection', () => {
+      const unlisten = vi.fn();
+      const { element } = createWithHooks({ onInit: () => [unlisten] });
+
+      document.body.appendChild(element);
       expect(unlisten).not.toHaveBeenCalled();
 
       element.remove();
       expect(unlisten).toHaveBeenCalledOnce();
     });
 
-    it('disposes on disconnection the effects created in onInit', () => {
+    it('invokes the unlisten functions of each connection only once', () => {
+      const unlistenFns = [vi.fn(), vi.fn()];
+      let connection = 0;
+      const { element } = createWithHooks({ onInit: () => [unlistenFns[connection++]] });
+
+      document.body.appendChild(element);
+      element.remove();
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(unlistenFns[0]).toHaveBeenCalledOnce();
+      expect(unlistenFns[1]).toHaveBeenCalledOnce();
+    });
+
+    it('does not dispose on disconnection the effects created via the standalone effect function', () => {
       const onCleanup = vi.fn();
-      const { element } = createWithOnInit(() => {
-        effect(() => undefined, { onCleanup });
+      const { element } = createWithHooks({
+        onInit: () => {
+          effect(() => undefined, { onCleanup });
+        }
+      });
+
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(onCleanup).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onDestroy', () => {
+    it('is invoked on disconnection, before the cleanups and the context clear', () => {
+      const calls = new Array<string>();
+      const { element, context } = createWithHooks({
+        onInit: () => [() => calls.push('unlisten')],
+        onDestroy: () => calls.push('onDestroy')
+      });
+      context.clear.mockImplementation(() => calls.push('clear'));
+
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(calls).toEqual(['onDestroy', 'unlisten', 'clear']);
+    });
+  });
+
+  describe('effect', () => {
+    it('can be created in onInit, before the first render', async () => {
+      const state = new Signal.State(0);
+      const spy = vi.fn();
+      const { element } = createWithHooks({
+        onInit: element => {
+          element.effect(() => spy(state.get()));
+        }
+      });
+
+      expect(() => document.body.appendChild(element)).not.toThrow();
+      expect(spy).toHaveBeenCalledExactlyOnceWith(0);
+
+      state.set(1);
+      await flush();
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenLastCalledWith(1);
+      element.remove();
+    });
+
+    it('forwards the options to the underlying effect', () => {
+      const onBeforeRun = vi.fn();
+      const onAfterRun = vi.fn();
+      const { element } = createWithHooks({});
+
+      element.effect(() => undefined, { onBeforeRun, onAfterRun });
+
+      expect(onBeforeRun).toHaveBeenCalledOnce();
+      expect(onAfterRun).toHaveBeenCalledOnce();
+    });
+
+    it('is disposed on disconnection', async () => {
+      const state = new Signal.State(0);
+      const spy = vi.fn();
+      const onCleanup = vi.fn();
+      const { element } = createWithHooks({
+        onInit: element => {
+          element.effect(() => spy(state.get()), { onCleanup });
+        }
       });
 
       document.body.appendChild(element);
@@ -107,24 +206,18 @@ describe('CustomElement', () => {
 
       element.remove();
       expect(onCleanup).toHaveBeenCalledOnce();
-    });
 
-    it('does not fail when an effect created in onInit is also returned for cleanup', () => {
-      const onCleanup = vi.fn();
-      const { element } = createWithOnInit(() => [effect(() => undefined, { onCleanup })]);
-
-      document.body.appendChild(element);
-
-      expect(() => element.remove()).not.toThrow();
-      expect(onCleanup).toHaveBeenCalledOnce();
+      state.set(1);
+      await flush();
+      expect(spy).toHaveBeenCalledOnce();
     });
 
     it('creates new effects and disposes the old ones when it is connected again', () => {
       const onCleanup = vi.fn();
-      const onInit = vi.fn(() => {
-        effect(() => undefined, { onCleanup });
+      const onInit = vi.fn((element: TestElement) => {
+        element.effect(() => undefined, { onCleanup });
       });
-      const { element } = createWithOnInit(onInit);
+      const { element } = createWithHooks({ onInit });
 
       document.body.appendChild(element);
       element.remove();
@@ -137,15 +230,56 @@ describe('CustomElement', () => {
       expect(onCleanup).toHaveBeenCalledTimes(2);
     });
 
-    it('does not dispose the effects created outside of onInit', () => {
+    it('returns a disposer that stops the effect ahead of the disconnection', async () => {
+      const state = new Signal.State(0);
+      const spy = vi.fn();
       const onCleanup = vi.fn();
-      const { element } = createWithOnInit(() => undefined);
-      effect(() => undefined, { onCleanup });
-
+      const { element } = createWithHooks({});
       document.body.appendChild(element);
+
+      const dispose = element.effect(() => spy(state.get()), { onCleanup });
+      dispose();
+      state.set(1);
+      await flush();
+
+      expect(spy).toHaveBeenCalledOnce();
+      expect(onCleanup).toHaveBeenCalledOnce();
+      element.remove();
+    });
+
+    it('does not dispose the effect twice when the disposer is called before the disconnection', () => {
+      const onCleanup = vi.fn();
+      const { element } = createWithHooks({});
+      document.body.appendChild(element);
+
+      const dispose = element.effect(() => undefined, { onCleanup });
+      dispose();
+      dispose();
       element.remove();
 
-      expect(onCleanup).not.toHaveBeenCalled();
+      expect(onCleanup).toHaveBeenCalledOnce();
+    });
+
+    it('does not dispose the effect twice when the disposer is called after the disconnection', () => {
+      const onCleanup = vi.fn();
+      const { element } = createWithHooks({});
+      document.body.appendChild(element);
+
+      const dispose = element.effect(() => undefined, { onCleanup });
+      element.remove();
+
+      expect(() => dispose()).not.toThrow();
+      expect(onCleanup).toHaveBeenCalledOnce();
+    });
+
+    it('does not dispose the effect twice when its disposer is also returned by onInit', () => {
+      const onCleanup = vi.fn();
+      const { element } = createWithHooks({ onInit: element => [element.effect(() => undefined, { onCleanup })] });
+
+      document.body.appendChild(element);
+
+      expect(() => element.remove()).not.toThrow();
+      expect(onCleanup).toHaveBeenCalledOnce();
     });
   });
 });

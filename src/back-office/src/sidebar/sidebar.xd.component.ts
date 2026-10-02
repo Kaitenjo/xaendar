@@ -1,6 +1,5 @@
 import { CustomDirective, CustomElement, Directive, Event, Output, Property, WebComponent } from '@xaendar/core';
-import { effect, InputSignal, signal } from '@xaendar/core/signals';
-import { Function, VoidFunction } from '@xaendar/types';
+import { InputSignal, signal } from '@xaendar/core/signals';
 
 export type NavItem = {
   label: string;
@@ -42,86 +41,70 @@ export class SidebarComponent extends CustomElement {
 
   public readonly collapsed = signal(false);
 
-  constructor() {
-    super();
-    effect(() => this.collapsed.set(this.inputCollapsed()));
-  }
-
   public toggle(): void {
     this.collapsed.update(value => !value);
     this.collapsedChange.emit(this.collapsed());
   }
-
+  
   public transform(input: string): string {
     return input.toUpperCase();
   }
-
+  
   input = signal('Test');
-
-  public onInit() {
-    return;
+  
+  public onInit(): void {
+    this.effect(() => this.collapsed.set(this.inputCollapsed()));
   }
-
+  
   public onClick(): void {
     this.input.update(value => value + value);
   }
 }
 
-// @Directive({
-//   selector: 'dragDirective'
-// })
-// export class DragDirective extends CustomDirective {
+@Directive({
+  selector: 'dragDirective'
+})
+export class DragDirective extends CustomDirective {
 
-//   private _startMouseX = 0;
-//   private _startMouseY = 0;
-//   private _startTop = 0;
-//   private _startLeft = 0;
+  private _startMouseX = 0;
+  private _startMouseY = 0;
+  private _startTop = 0;
+  private _startLeft = 0;
 
-//   public bindings: Record<string, Function> = {};
+  public bindings = {
+    dragStart: this._onDragStart.bind(this),
+    onDrag: this._onDrag.bind(this)
+  };
 
-//   public onInit(): Array<VoidFunction> | void {
-//     const onDragStart = this._onDragStart.bind(this);
-//     const onDrag = this._onDrag.bind(this);
+  public onInit(): void {
+    this.element.style.position = 'relative';
+    this.element.setAttribute('draggable', 'true');
+    this.element.addEventListener('dragstart', this.bindings.dragStart);
+    this.element.addEventListener('drag', this.bindings.onDrag);
+  }
 
-//     this.element.style.position = 'relative';
-//     this.element.setAttribute('draggable', 'true');
-//     this.element.addEventListener('dragstart', onDragStart);
-//     this.element.addEventListener('drag', onDrag);
+  private _onDragStart(event: DragEvent) {
+    this._startMouseX = event.clientX;
+    this._startMouseY = event.clientY;
+    this._startTop = parseFloat(this.element.style.top) || 0;
+    this._startLeft = parseFloat(this.element.style.left) || 0;
+  }
 
-//     return [
-//       () => this.element.removeAttribute('draggable'),
-//       () => this.element.removeEventListener('dragstart', onDragStart),
-//       () => this.element.removeEventListener('drag', onDrag),
-//       this._resetPosition.bind(this)
-//     ]
-//   }
+  private _onDrag(event: DragEvent) {
+    // L'ultimo evento drag arriva con coordinate (0, 0): va ignorato
+    if (event.clientX === 0 && event.clientY === 0) {
+      return;
+    }
 
-//   private _onDragStart(event: DragEvent) {
-//     this._startMouseX = event.clientX;
-//     this._startMouseY = event.clientY;
-//     this._startTop = parseFloat(this.element.style.top) || 0;
-//     this._startLeft = parseFloat(this.element.style.left) || 0;
-//   }
+    this.element.style.top = `${this._startTop + event.clientY - this._startMouseY}px`;
+    this.element.style.left = `${this._startLeft + event.clientX - this._startMouseX}px`;
+  }
 
-//   private _onDrag(event: DragEvent) {
-//     // L'ultimo evento drag arriva con coordinate (0, 0): va ignorato
-//     if (event.clientX === 0 && event.clientY === 0) {
-//       return;
-//     }
-
-//     this.element.style.top = `${this._startTop + event.clientY - this._startMouseY}px`;
-//     this.element.style.left = `${this._startLeft + event.clientX - this._startMouseX}px`;
-//   }
-
-//   private _resetPosition(): void {
-//     this.element.style.top = '';
-//     this.element.style.left = '';
-//   }
-
-//   public onDestroy(): void {
-//     this.element.removeAttribute('draggable'),
-//     this.element.removeEventListener('dragstart', onDragStart),
-//     this.element.removeEventListener('drag', onDrag),
-//     this._resetPosition.bind(this)
-//   }
-// }
+  public onDestroy(): void {
+    this.element.removeAttribute('draggable');
+    this.element.removeEventListener('dragstart', this.bindings.dragStart);
+    this.element.removeEventListener('drag', this.bindings.onDrag);
+    this.element.style.top = '';
+    this.element.style.left = '';
+  }
+}

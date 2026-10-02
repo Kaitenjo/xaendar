@@ -58,7 +58,7 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
   }
 
   const unlistener = effect(() => state = fn(state));
-  parentContext.listen(unlistener);
+  parentContext.addUnlistener(unlistener);
 }
 
 /**
@@ -181,7 +181,7 @@ function checkAndUpdateState(
   }
 
   if (state) {
-    state.context.unlisten();
+    state.context.clear();
     parentContext.removeChild(state.context);
   }
 
@@ -207,7 +207,7 @@ function checkAndUpdateState(
  */
 function teardown(parentContext: _Context, state: State | undefined): void {
   if (state) {
-    state.context.unlisten();
+    state.context.clear();
     parentContext.removeChild(state.context);
   }
 }

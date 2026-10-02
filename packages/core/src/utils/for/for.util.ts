@@ -40,7 +40,7 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
 
       for (const [key, entry] of entries) {
         if (!newKeySet.has(key)) {
-          entry.context.unlisten();
+          entry.context.clear();
           parentContext.removeChild(entry.context);
         }
       }
@@ -78,7 +78,7 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
     });
   });
 
-  parentContext.listen(unlistener);
+  parentContext.addUnlistener(unlistener);
 }
 
 /**

@@ -1,5 +1,7 @@
+import { NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
+import { effect } from '../../signals/effect/effect';
+import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../utils/context/context.util';
-import { _collectEffects } from '../../utils/effect-scope/effect-scope.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
@@ -14,22 +16,20 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  protected context!: _Context;
-
+  private _context!: _Context;
   /**
    * The root of the Web Component, where the content is rendered
    */
-  private readonly _root: ShadowRoot;
-
-  constructor() {
-    super();
-    this._root = this.attachShadow({ mode: 'open' });
-  }
+  private readonly _root = this.attachShadow({ mode: 'open' });
+  /**
+   * Disposers of the effects created via {@link effect}, invoked on disconnection.
+   */
+  private readonly _unlistenFns = new Array<VoidFunction>();
 
   /**
    * Optional lifecycle hook, see {@link OnInit}.
    */
-  public onInit?(): Array<VoidFunction> | void;
+  public onInit?(): void;
 
   /**
    * Optional lifecycle hook, see {@link OnDestroy}.
@@ -37,14 +37,35 @@ export class CustomElement extends HTMLElement {
   public onDestroy?(): void;
 
   /**
+   * Creates a signal effect bound to the lifecycle of this component:
+   * it is disposed automatically when the component is disconnected.
+   * It can be called at any time, even in `onInit` before the first render.
+   *
+   * @param fn - The side-effectful function to run. Any Signal read inside it
+   *   is tracked as a dependency.
+   * @param options - Optional settings forwarded to the underlying effect.
+   * @returns A function that disposes the effect ahead of the disconnection.
+   */
+  public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
+    const dispose = effect(fn, options);
+    this._unlistenFns.push(dispose);
+
+    return () => {
+      const index = this._unlistenFns.indexOf(dispose);
+      if (index !== -1) {
+        this._unlistenFns.splice(index, 1);
+        dispose();
+      }
+    };
+  }
+
+  /**
    * Called by the browser engine each time the element is inserted into the DOM.
    *
    * Adopts the stylesheet registered for this component class (see `_defineRender`), if any,
-   * then triggers the initial render by invoking the compiler-generated render
+   * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree and sets up
-   * reactive signal subscriptions. Then invokes `onInit`, if declared: the effects it creates
-   * synchronously are disposed automatically on disconnection, along with the cleanup
-   * functions it returns.
+   * reactive signal subscriptions.
    *
    * @throws When no render function is registered for this component class.
    */
@@ -59,21 +80,23 @@ export class CustomElement extends HTMLElement {
       this._root.adoptedStyleSheets = [styleSheet];
     }
 
-    this.context = render.call(this);
-
-    const { result: unlistenFns, disposers } = _collectEffects(() => this.onInit?.());
-    this.context.listen(...disposers, ...(unlistenFns ?? []));
+    this.onInit?.();
+    this._context = render.call(this);
   }
 
   /**
    * Called by the browser engine each time the element is removed from the DOM.
    *
-   * Invokes `context.unlisten()` to dispose all active signal subscriptions,
-   * detach event listeners, and remove tracked DOM nodes so the component
-   * can be cleanly re-rendered if it is re-inserted.
+   * Invokes `onDestroy`, if declared, and disposes the effects created via {@link effect}.
+   * Then invokes `context.clear()`
+   * to dispose all active signal subscriptions, detach event listeners, and remove
+   * tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted.
    */
   private disconnectedCallback(): void {
     this.onDestroy?.();
-    this.context.unlisten();
+    for (let i = 0; i < this._unlistenFns.length; i++) {
+      this._unlistenFns[i]();
+    }
+    this._context.clear();
   }
 }

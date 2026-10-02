@@ -126,7 +126,7 @@ describe('_for', () => {
   it('stops reacting and cleans up when the parent context is destroyed', async () => {
     const { parent, context, forFn, change } = setup(['a']);
 
-    context.unlisten();
+    context.clear();
     await change(['a', 'b']);
 
     expect(parent.childNodes.length).toBe(0);

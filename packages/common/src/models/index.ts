@@ -1,1 +1,2 @@
-export * from './stack/stack.model';
+export * from './array/array';
+export * from './stack/stack';

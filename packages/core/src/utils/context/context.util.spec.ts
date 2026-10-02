@@ -84,12 +84,12 @@ describe('_Context', () => {
     it('removes a child from the beginning, the middle and the end', () => {
       const root = createRoot();
       const [a, b, c, d] = [root.addChild(), root.addChild(), root.addChild(), root.addChild()];
-      const spies = [a, b, c, d].map(child => vi.spyOn(child, 'unlisten'));
+      const spies = [a, b, c, d].map(child => vi.spyOn(child, 'clear'));
 
       root.removeChild(a);
       root.removeChild(c);
       root.removeChild(d);
-      root.unlisten();
+      root.clear();
 
       expect(spies.map(spy => spy.mock.calls.length)).toEqual([0, 1, 0, 0]);
     });
@@ -99,12 +99,12 @@ describe('_Context', () => {
     it('ignores a context that is not a child', () => {
       const root = createRoot();
       const child = root.addChild();
-      const childUnlisten = vi.spyOn(child, 'unlisten');
+      const childClear = vi.spyOn(child, 'clear');
 
       root.removeChild(createRoot());
-      root.unlisten();
+      root.clear();
 
-      expect(childUnlisten).toHaveBeenCalledOnce();
+      expect(childClear).toHaveBeenCalledOnce();
     });
   });
 
@@ -123,28 +123,44 @@ describe('_Context', () => {
     });
   });
 
-  describe('unlisten', () => {
+  describe('removeUnlistener', () => {
+    it('does not run the removed cleanups on clear, but keeps the others', () => {
+      const root = createRoot();
+      const [first, second, third] = [vi.fn(), vi.fn(), vi.fn()];
+      root.addUnlistener(first, second, third);
+
+      root.removeUnlistener(first, third);
+      root.removeUnlistener(vi.fn());
+      root.clear();
+
+      expect(first).not.toHaveBeenCalled();
+      expect(second).toHaveBeenCalledOnce();
+      expect(third).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('clear', () => {
     it('runs the registered cleanups, destroys the children and clears the state', () => {
       const root = createRoot();
       const child = root.addChild();
-      const childUnlisten = vi.spyOn(child, 'unlisten');
+      const childClear = vi.spyOn(child, 'clear');
       const first = vi.fn();
       const second = vi.fn();
-      root.listen(first, second);
+      root.addUnlistener(first, second);
       root.addIdentifier('name', 1);
       root.addNode(document.createElement('div'));
 
-      root.unlisten();
+      root.clear();
 
       expect(first).toHaveBeenCalledOnce();
       expect(second).toHaveBeenCalledOnce();
-      expect(childUnlisten).toHaveBeenCalledOnce();
+      expect(childClear).toHaveBeenCalledOnce();
       expect(root.getNodes()).toEqual([]);
       expect(root.get('name')).toBeUndefined();
 
-      root.unlisten();
+      root.clear();
       expect(first).toHaveBeenCalledOnce();
-      expect(childUnlisten).toHaveBeenCalledOnce();
+      expect(childClear).toHaveBeenCalledOnce();
     });
   });
 });
@@ -184,7 +200,7 @@ describe('mountNode', () => {
     const node = document.createElement('p');
     mountNode(node, parent, context);
 
-    context.unlisten();
+    context.clear();
 
     expect(node.parentNode).toBeNull();
     expect(context.getNodes()).toEqual([]);
@@ -198,7 +214,7 @@ describe('mountNode', () => {
     mountNode(node, parent, context);
     other.appendChild(node);
 
-    context.unlisten();
+    context.clear();
 
     expect(node.parentNode).toBe(other);
   });
