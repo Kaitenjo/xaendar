@@ -35,7 +35,7 @@ describe('Generator', () => {
     const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i) { <li></li> }');
 
     expect(code).toContain('function div0Children(div0, parentContext, anchor) {');
-    expect(code).toContain('div0Children.call(this, div0, context);');
+    expect(code).toContain('(div0, parentContext) => div0Children.call(this, div0, parentContext)');
     expect(code).toContain('function if1(if1, parentContext, anchor) {');
     expect(code).toContain('block: if1.bind(this)');
     expect(code).toContain('function for2(for2, parentContext, items2, i2, anchor) {');

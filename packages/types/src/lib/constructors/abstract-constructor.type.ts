@@ -5,4 +5,6 @@
 export type AbstractConstructor<
   T extends object = object,
   Statics extends Record<string, unknown> | undefined = undefined
-> = (abstract new (...args: any[]) => T) & (Statics extends undefined ? object : Statics);
+> = (abstract new (...args: any[]) => T) & (Statics extends undefined ? object : Statics) & {
+  prototype: T
+};

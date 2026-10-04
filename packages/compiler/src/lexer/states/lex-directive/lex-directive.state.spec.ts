@@ -3,7 +3,7 @@ import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
-import { lexDirective } from './lex-directive.state';
+import { lexDirective, lexStructuralDirective } from './lex-directive.state';
 
 const context: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME], tokens: [] };
 const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK], tokens: [] };
@@ -104,5 +104,51 @@ describe('lexDirective', () => {
 
   it('throws when the bindings are not declared between parentheses', () => {
     expect(() => lexDirective(afterAtSigns('@@myDirective="block"'), context)).toThrow('Directive bindings must be declared between parentheses');
+  });
+});
+
+describe('lexStructuralDirective', () => {
+  /**
+   * Creates a cursor positioned right after the `*` of the given input, as the tag body leaves it.
+   */
+  function afterStar(input: string): LexerCursor {
+    const cursor = new LexerCursor(input);
+    cursor.advance();
+    return cursor;
+  }
+
+  it('emits the structural directive and opens its body on (', () => {
+    const cursor = afterStar('*hasRole(role="admin")');
+    expect(lexStructuralDirective(cursor, context)).toEqual({
+      state: LexerState.DIRECTIVE_BODY,
+      tokens: [{ type: TokenType.STRUCTURAL_DIRECTIVE, parts: ['hasRole'] }],
+      pushState: true
+    });
+    expect(cursor.peek()).toBe('r'.charCodeAt(0));
+  });
+
+  it('emits the structural directive and its closure when declared without bindings', () => {
+    const cursor = afterStar('*hasRole class="a"');
+    expect(lexStructuralDirective(cursor, context)).toEqual({
+      state: LexerState.TAG_BODY,
+      tokens: [
+        { type: TokenType.STRUCTURAL_DIRECTIVE, parts: ['hasRole'] },
+        { type: TokenType.DIRECTIVE_CLOSE }
+      ]
+    });
+  });
+
+  it('leaves the } closing the block of the conditional binding it is declared in to the conditional binding body', () => {
+    const cursor = afterStar('*hasRole}');
+    expect(lexStructuralDirective(cursor, conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
+    expect(cursor.peek()).toBe('}'.charCodeAt(0));
+  });
+
+  it('throws when the selector is empty', () => {
+    expect(() => lexStructuralDirective(afterStar('* class="a"'), context)).toThrow('Directive selector cannot be empty');
+  });
+
+  it('throws when the bindings are not declared between parentheses', () => {
+    expect(() => lexStructuralDirective(afterStar('*hasRole="admin"'), context)).toThrow('Structural directive bindings must be declared between parentheses, e.g. *selector(name="value")');
   });
 });

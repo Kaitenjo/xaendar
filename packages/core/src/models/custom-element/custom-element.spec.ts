@@ -11,7 +11,7 @@ loadSignals();
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 type TestElement = HTMLElement & {
-  context: unknown,
+  _context: unknown,
   connectedCallback(): void,
   effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction
 };
@@ -32,12 +32,13 @@ function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
  * Builds a connectable element with the given lifecycle hooks, whose render function
  * returns a context that only records when it is cleared.
  */
-function createWithHooks(hooks: { onInit?: (element: TestElement) => Array<() => void> | void, onDestroy?: () => void }) {
+function createWithHooks(hooks: { onInit?: (element: TestElement) => void, afterRender?: () => void, onDestroy?: () => void }) {
   const context = { clear: vi.fn() };
   const render = vi.fn(() => context as never);
   const name = `x-base-${counter++}`;
   const klass = class extends CustomElement {
     public onInit = hooks.onInit && (() => hooks.onInit!(this as unknown as TestElement));
+    public afterRender = hooks.afterRender;
     public onDestroy = hooks.onDestroy;
   };
   _defineRender(klass, render);
@@ -63,7 +64,7 @@ describe('CustomElement', () => {
 
     document.body.appendChild(element);
 
-    expect(element.context).toBe(context);
+    expect(element._context).toBe(context);
     expect(element.shadowRoot?.adoptedStyleSheets).toEqual([]);
     element.remove();
   });
@@ -103,31 +104,6 @@ describe('CustomElement', () => {
       element.remove();
     });
 
-    it('invokes the unlisten functions it returns on disconnection', () => {
-      const unlisten = vi.fn();
-      const { element } = createWithHooks({ onInit: () => [unlisten] });
-
-      document.body.appendChild(element);
-      expect(unlisten).not.toHaveBeenCalled();
-
-      element.remove();
-      expect(unlisten).toHaveBeenCalledOnce();
-    });
-
-    it('invokes the unlisten functions of each connection only once', () => {
-      const unlistenFns = [vi.fn(), vi.fn()];
-      let connection = 0;
-      const { element } = createWithHooks({ onInit: () => [unlistenFns[connection++]] });
-
-      document.body.appendChild(element);
-      element.remove();
-      document.body.appendChild(element);
-      element.remove();
-
-      expect(unlistenFns[0]).toHaveBeenCalledOnce();
-      expect(unlistenFns[1]).toHaveBeenCalledOnce();
-    });
-
     it('does not dispose on disconnection the effects created via the standalone effect function', () => {
       const onCleanup = vi.fn();
       const { element } = createWithHooks({
@@ -143,11 +119,32 @@ describe('CustomElement', () => {
     });
   });
 
+  describe('afterRender', () => {
+    it('is invoked after the render', () => {
+      const calls = new Array<string>();
+      const { element, render } = createWithHooks({
+        onInit: () => { calls.push('onInit'); },
+        afterRender: () => { calls.push('afterRender'); }
+      });
+      render.mockImplementation(() => {
+        calls.push('render');
+        return { clear: vi.fn() } as never;
+      });
+
+      document.body.appendChild(element);
+
+      expect(calls).toEqual(['onInit', 'render', 'afterRender']);
+      element.remove();
+    });
+  });
+
   describe('onDestroy', () => {
-    it('is invoked on disconnection, before the cleanups and the context clear', () => {
+    it('is invoked on disconnection, before disposing the effects and clearing the context', () => {
       const calls = new Array<string>();
       const { element, context } = createWithHooks({
-        onInit: () => [() => calls.push('unlisten')],
+        onInit: element => {
+          element.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
+        },
         onDestroy: () => calls.push('onDestroy')
       });
       context.clear.mockImplementation(() => calls.push('clear'));
@@ -155,7 +152,7 @@ describe('CustomElement', () => {
       document.body.appendChild(element);
       element.remove();
 
-      expect(calls).toEqual(['onDestroy', 'unlisten', 'clear']);
+      expect(calls).toEqual(['onDestroy', 'dispose', 'clear']);
     });
   });
 
@@ -269,16 +266,6 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(() => dispose()).not.toThrow();
-      expect(onCleanup).toHaveBeenCalledOnce();
-    });
-
-    it('does not dispose the effect twice when its disposer is also returned by onInit', () => {
-      const onCleanup = vi.fn();
-      const { element } = createWithHooks({ onInit: element => [element.effect(() => undefined, { onCleanup })] });
-
-      document.body.appendChild(element);
-
-      expect(() => element.remove()).not.toThrow();
       expect(onCleanup).toHaveBeenCalledOnce();
     });
   });

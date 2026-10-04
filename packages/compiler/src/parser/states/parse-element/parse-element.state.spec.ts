@@ -107,6 +107,40 @@ describe('parseElement', () => {
     expect(() => parse('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { display="none" } })></div>')).not.toThrow();
   });
 
+  describe('structural directives', () => {
+    it('parses structural directives, keeping them apart from the directives', () => {
+      const [node] = parse('<div *first @@myDirective *second(role="admin")></div>') as ElementNode[];
+      expect(node.structuralDirectives.map(({ selector }) => selector)).toEqual(['first', 'second']);
+      expect(node.directives.map(({ selector }) => selector)).toEqual(['myDirective']);
+    });
+
+    it('parses the structural directives of a self-closing element', () => {
+      const [node] = parse('<input *hasRole />') as ElementNode[];
+      expect(node.structuralDirectives).toHaveLength(1);
+    });
+
+    it.each([
+      ['on the element', '<div *hasRole *hasRole(role="admin")></div>'],
+      ['on the element and inside a conditional binding', '<div *hasRole @if (cond()) { *hasRole }></div>'],
+      ['inside two conditional bindings', '<div @if (first()) { *hasRole } @if (second()) { *hasRole }></div>'],
+      ['inside a nested conditional binding', '<div @if (first()) { *hasRole @if (second()) { *hasRole } }></div>']
+    ])('throws when a structural directive is applied more than once %s', (_description, template) => {
+      expect(() => parse(template)).toThrow('Structural directive "hasRole" is applied more than once on <div>');
+    });
+
+    it('throws when a structural directive property is bound more than once', () => {
+      expect(() => parse('<div *hasRole(role="admin" role="{other()}")></div>')).toThrow('Property "role" of structural directive "hasRole" is bound more than once on <div>');
+    });
+
+    it('allows a structural directive to be applied in every branch of a conditional binding', () => {
+      expect(() => parse('<div @if (a()) { *hasRole(role="admin") } @else { *hasRole(role="user") }></div>')).not.toThrow();
+    });
+
+    it('allows a structural directive to share its selector with a directive applied to the same element', () => {
+      expect(() => parse('<div @@shared *shared></div>')).not.toThrow();
+    });
+  });
+
   it('throws on a flow-control keyword not belonging to a conditional binding', () => {
     expect(() => parse('<div @else { title="x" }></div>')).toThrow('Unexpected token ELSE');
     expect(() => parse('<div @if (cond()) { title="x" } id="y" @else { title="z" }></div>')).toThrow('Unexpected token ELSE');

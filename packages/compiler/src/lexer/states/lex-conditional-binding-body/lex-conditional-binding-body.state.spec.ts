@@ -48,6 +48,16 @@ describe('lexConditionalBindingBody', () => {
     expect(() => lexConditionalBindingBody(new LexerCursor('@@other }'), directiveConditionalBindingContext)).toThrow('Directives cannot be declared inside another directive');
   });
 
+  it('transitions to STRUCTURAL_DIRECTIVE and consumes "*" for a structural directive applied inside the conditional binding', () => {
+    const cursor = new LexerCursor('*hasRole }');
+    expect(lexConditionalBindingBody(cursor, context)).toEqual({ state: LexerState.STRUCTURAL_DIRECTIVE });
+    expect(cursor.peek()).toBe('h'.charCodeAt(0));
+  });
+
+  it('throws for a structural directive declared in a conditional binding belonging to a directive', () => {
+    expect(() => lexConditionalBindingBody(new LexerCursor('*hasRole }'), directiveConditionalBindingContext)).toThrow('Directives cannot be declared inside another directive');
+  });
+
   it('skips whitespace between bindings', () => {
     const cursor = new LexerCursor('   placeholder="{value}" }');
     expect(lexConditionalBindingBody(cursor, context)).toEqual({ state: LexerState.ATTRIBUTE });

@@ -2,6 +2,7 @@ import { CompilerContext } from '../../../generator/models/compiler-context/comp
 import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
+import type { ElementEventMap } from '../../types/element-event-map.type';
 
 /**
  * Type checker context that manages imported component and directive metadata
@@ -20,6 +21,18 @@ export class TypeCheckContext extends CompilerContext {
   private readonly _imports = new Array<ComponentOrDirectiveMetadata>;
 
   /**
+   * Creates a new type checker scope.
+   *
+   * @param parent - Optional enclosing scope; its imports are visible from this scope.
+   * @param identifiers - Named identifier bindings declared in this scope.
+   * @param _eventMap - Event map of the elements declared in this scope, when it differs from the one of the
+   *   enclosing scope, i.e. for the children of an `<svg>` or a `<math>` element.
+   */
+  constructor(parent?: TypeCheckContext, identifiers?: ConstructorParameters<typeof CompilerContext>[1], private readonly _eventMap?: ElementEventMap) {
+    super(parent, identifiers);
+  }
+  
+  /**
    * Adds a new component or directive import to the type checker context.
    *
    * @param value - The component or directive import metadata to be added
@@ -28,14 +41,15 @@ export class TypeCheckContext extends CompilerContext {
     this._imports.push(...value);
   }
 
+
   /**
-   * Creates a new type checker scope.
+   * Returns the event map of the elements declared in this scope, looking in this
+   * scope first and then in the ancestor scopes.
    *
-   * @param parent - Optional enclosing scope; its imports are visible from this scope.
-   * @param identifiers - Named identifier bindings declared in this scope.
+   * @returns The event map of the closest scope declaring one, `HTMLElementEventMap` if none does.
    */
-  constructor(parent?: TypeCheckContext, identifiers?: ConstructorParameters<typeof CompilerContext>[1]) {
-    super(parent, identifiers);
+  public get eventMap(): ElementEventMap {
+    return this._eventMap ?? this.parent?._eventMap ?? 'HTMLElementEventMap';
   }
 
   /**

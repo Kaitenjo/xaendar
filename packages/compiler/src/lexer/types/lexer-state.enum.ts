@@ -92,5 +92,10 @@ export enum LexerState {
   /**
    * Consuming the bindings of a directive declared between `@@selector(` and `)`.
    */
-  DIRECTIVE_BODY = 'directive-body'
+  DIRECTIVE_BODY = 'directive-body',
+  /**
+   * Consuming a structural directive starting with `*`. Its bindings, declared between `*selector(` and `)`,
+   * are consumed by the DIRECTIVE_BODY state.
+   */
+  STRUCTURAL_DIRECTIVE = 'structural-directive'
 }

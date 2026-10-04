@@ -10,13 +10,15 @@ import { ConditionalBindingNode } from '../../types/nodes/conditional-binding-no
 import { DirectiveNode } from '../../types/nodes/directive-node.type';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import { EventNode } from '../../types/nodes/event-node.type';
+import { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
+import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
 
 /**
- * Parses a TAG_OPEN_NAME token and the subsequent attributes, events, conditional bindings, directives and children
+ * Parses a TAG_OPEN_NAME token and the subsequent attributes, events, conditional bindings, directives, structural directives and children
  * into an `ElementNode`. Handles both regular and self-closing tags.
  *
  * @param cursor - Parser cursor positioned at the TAG_OPEN_NAME token.
@@ -33,6 +35,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
+  const structuralDirectives = new Array<StructuralDirectiveNode>();
   let read = true;
 
   while (read) {
@@ -55,13 +58,18 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         directives.push(parseDirective(cursor, parseNode, token));
         break;
 
+      case TokenType.STRUCTURAL_DIRECTIVE:
+        structuralDirectives.push(parseStructuralDirective(cursor, parseNode, token));
+        break;
+
       default:
         read = false;
     }
   }
 
   assertUniqueAttributes(attributes, conditionalBindings, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
-  assertUniqueDirectives(tagName, directives, conditionalBindings);
+  assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
+  assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, branch => branch.structuralDirectives);
 
   const peekedTokenType = cursor.peek().type;
   switch (peekedTokenType) {
@@ -80,7 +88,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         events,
         children: [],
         conditionalBindings,
-        directives
+        directives,
+        structuralDirectives
       };
     
     default:
@@ -106,7 +115,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     events,
     children,
     conditionalBindings,
-    directives
+    directives,
+    structuralDirectives
   };
 }
 
@@ -142,31 +152,39 @@ function assertUniqueAttributes(attributes: AttributeNode[], conditionalBindings
 }
 
 /**
- * Ensures every directive is applied at most once at a time on an element, across the element
+ * Ensures every directive (or structural directive) is applied at most once at a time on an element, across the element
  * itself and all of its (nested) conditional bindings, and every directive property is
  * bound at most once at a time, across the directive itself and all of its (nested) conditional bindings.
  *
  * Directive properties don't clash with the element attributes, nor with the
  * properties of other directives, since each directive binds its own instance.
+ * Directives and structural directives are checked separately, each kind through its own call.
  *
  * @param tagName - Tag name of the element, used in the error messages.
  * @param directives - Directive nodes to check.
  * @param conditionalBindings - Conditional bindings whose directives are checked recursively.
+ * @param getDirectives - Returns the directives of the kind being checked applied by a branch of a conditional binding.
  * @param applied - Selectors of the directives already applied on the element.
  * @throws If a directive is applied more than once, or one of its properties is bound more than once.
  */
-function assertUniqueDirectives(tagName: string, directives: DirectiveNode[], conditionalBindings: ConditionalBindingNode[], applied = new Set<string>()): void {
+function assertUniqueDirectives(tagName: string, directives: (DirectiveNode | StructuralDirectiveNode)[], conditionalBindings: ConditionalBindingNode[], getDirectives: Function<[branch: ConditionalBindingBranchNode], (DirectiveNode | StructuralDirectiveNode)[]>, applied = new Set<string>()): void {
   for (let i = 0; i < directives.length; i++) {
-    const { selector, attributes, conditionalBindings: directiveConditionalBindings, span } = directives[i];
+    const directive = directives[i];
+    const { selector, attributes, span, type } = directive;
+    const [kind, property] = type === ASTNodeType.Directive
+      ? ['Directive', 'directive']
+      : ['Structural directive', 'structural directive'];
+
     if (applied.has(selector)) {
-      throw new Error(`Directive "${selector}" is applied more than once on <${tagName}>`, { cause: span });
+      throw new Error(`${kind} "${selector}" is applied more than once on <${tagName}>`, { cause: span });
     }
 
     applied.add(selector);
-    assertUniqueAttributes(attributes, directiveConditionalBindings, name => `Property "${name}" of directive "${selector}" is bound more than once on <${tagName}>`);
+    // A structural directive declares no conditional binding of its own
+    assertUniqueAttributes(attributes, type === ASTNodeType.Directive ? directive.conditionalBindings : [], name => `Property "${name}" of ${property} "${selector}" is bound more than once on <${tagName}>`);
   }
 
-  assertUniqueInBranches(conditionalBindings, applied, (branch, appliedInBranch) => assertUniqueDirectives(tagName, branch.directives, branch.conditionalBindings, appliedInBranch));
+  assertUniqueInBranches(conditionalBindings, applied, (branch, appliedInBranch) => assertUniqueDirectives(tagName, getDirectives(branch), branch.conditionalBindings, getDirectives, appliedInBranch));
 }
 
 /**

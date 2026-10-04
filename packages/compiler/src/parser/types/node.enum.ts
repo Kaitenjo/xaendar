@@ -65,5 +65,9 @@ export enum ASTNodeType {
   /**
    * A directive applied to an HTML element.
    */
-  Directive
+  Directive,
+  /**
+   * A structural directive deciding whether an HTML element is rendered.
+   */
+  StructuralDirective
 }

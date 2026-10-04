@@ -1,43 +1,193 @@
 @import { SidebarComponent } from '../sidebar/sidebar.xd.component.ts'
 @import { TopbarComponent } from '../topbar/topbar.xd.component.ts'
 @import { FormComponent } from '../form/form.xd.component.ts'
+@import { BindingPreviewComponent } from '../binding-preview/binding-preview.xd.component.ts'
+@import { AllowedUserDirective } from '../structural-directives/structural-directives.ts'
+@import { IsEvenDirective } from '../structural-directives/structural-directives.ts'
+@import { MinLengthDirective } from '../structural-directives/structural-directives.ts'
 
 <div class="shell">
   <app-sidebar
-    @if (applyDinamicBinding()) { 
-      text="{counter().toString()}"
-
-      @if (applyDinamicBinding2()) { 
-        text2="{counter2().toString()}" 
-      } 
-    }
-    enableDrag="{enableDrag()}"
-    collapsed="{sidebarCollapsed()}" 
-    (collapsedChange)="onCollapseChange($event)" 
+    collapsed="{sidebarCollapsed()}"
+    (collapsedChange)="onCollapseChange($event)"
   />
-  
+
   <div class="shell__main">
     <app-topbar (menuToggle)="onSidebarToggle()" />
-    
+
     <main class="shell__content">
+      <h2 class="section-title">Binding Dinamici</h2>
+
+      <section class="examples">
+        <article class="example">
+          <h2 class="example__title">Binding condizionale</h2>
+          <p class="example__description">value è collegata a conditionalCount solo mentre conditionalBound è true; quando il binding viene rimosso la proprietà torna al suo valore di default.</p>
+          <pre class="example__code"><code>{ snippets.conditionalProperty }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">conditionalBound</span>
+              <button type="button" class="{ conditionalBound() ? 'btn btn--on' : 'btn' }" (click)="toggle(conditionalBound)">
+                { conditionalBound() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">conditionalCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(conditionalCount, -1)">−</button>
+                <span class="stepper__value">{ conditionalCount() }</span>
+                <button type="button" class="btn" (click)="increment(conditionalCount, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-binding-preview
+              @if (conditionalBound()) {
+                value="{conditionalCount().toString()}"
+              }
+            />
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Binding dinamico innestato</h2>
+          <p class="example__description">detail è collegata a nestedName solo se sono true sia nestedOuterBound che nestedInnerBound: il blocco interno esiste soltanto mentre quello esterno è attivo.</p>
+          <pre class="example__code"><code>{ snippets.nestedProperty }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">nestedOuterBound</span>
+              <button type="button" class="{ nestedOuterBound() ? 'btn btn--on' : 'btn' }" (click)="toggle(nestedOuterBound)">
+                { nestedOuterBound() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">nestedInnerBound</span>
+              <button type="button" class="{ nestedInnerBound() ? 'btn btn--on' : 'btn' }" (click)="toggle(nestedInnerBound)">
+                { nestedInnerBound() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">nestedCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(nestedCount, -1)">−</button>
+                <span class="stepper__value">{ nestedCount() }</span>
+                <button type="button" class="btn" (click)="increment(nestedCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">nestedName</span>
+              <input class="control__input" value="{nestedName()}" (input)="setText(nestedName, $event)" />
+            </label>
+          </div>
+          <div class="example__result">
+            <app-binding-preview
+              @if (nestedOuterBound()) {
+                value="{nestedCount().toString()}"
+                @if (nestedInnerBound()) {
+                  detail="{nestedName()}"
+                }
+              }
+            />
+          </div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Direttive strutturali</h2>
+      <section class="examples">
+        <article class="example">
+          <h2 class="example__title">Direttiva strutturale</h2>
+          <p class="example__description">allowedUser verifica il nome in modo asincrono (1 s): il chip compare solo per Dario, Daniela, Michele, Federico o Silvano.</p>
+          <pre class="example__code"><code>{ snippets.structural }</code></pre>
+          <div class="example__controls">
+            <label class="control">
+              <span class="control__label">structuralName</span>
+              <input class="control__input" value="{structuralName()}" (input)="setText(structuralName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span class="chip" *allowedUser(name="{structuralName()}")>Ciao { structuralName() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Più direttive strutturali assieme</h2>
+          <p class="example__description">Il chip è renderizzato solo se tutte le direttive restituiscono true: multipleCount pari e multipleName di almeno 3 caratteri.</p>
+          <pre class="example__code"><code>{ snippets.multipleStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">multipleCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(multipleCount, -1)">−</button>
+                <span class="stepper__value">{ multipleCount() }</span>
+                <button type="button" class="btn" (click)="increment(multipleCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">multipleName</span>
+              <input class="control__input" value="{multipleName()}" (input)="setText(multipleName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span class="chip" *isEven(value="{multipleCount()}") *minLength(value="{multipleName()}" min="{3}")>{ multipleName() } · { multipleCount() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Direttiva strutturale condizionale</h2>
+          <p class="example__description">allowedUser è applicata solo mentre conditionalDirectiveApplied è true: altrimenti nessuna direttiva filtra il chip, che resta sempre visibile.</p>
+          <pre class="example__code"><code>{ snippets.conditionalStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">conditionalDirectiveApplied</span>
+              <button type="button" class="{ conditionalDirectiveApplied() ? 'btn btn--on' : 'btn' }" (click)="toggle(conditionalDirectiveApplied)">
+                { conditionalDirectiveApplied() ? 'true' : 'false' }
+              </button>
+            </div>
+            <label class="control">
+              <span class="control__label">conditionalDirectiveName</span>
+              <input class="control__input" value="{conditionalDirectiveName()}" (input)="setText(conditionalDirectiveName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span
+              class="chip"
+              @if (conditionalDirectiveApplied()) {
+                *allowedUser(name="{conditionalDirectiveName()}")
+              }
+            >Ciao { conditionalDirectiveName() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Due statiche e una condizionale</h2>
+          <p class="example__description">isEven e minLength sono sempre applicate, allowedUser solo mentre mixedDirectiveApplied è true.</p>
+          <pre class="example__code"><code>{ snippets.mixedStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">mixedCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(mixedCount, -1)">−</button>
+                <span class="stepper__value">{ mixedCount() }</span>
+                <button type="button" class="btn" (click)="increment(mixedCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">mixedName</span>
+              <input class="control__input" value="{mixedName()}" (input)="setText(mixedName, $event)" />
+            </label>
+            <div class="control">
+              <span class="control__label">mixedDirectiveApplied</span>
+              <button type="button" class="{ mixedDirectiveApplied() ? 'btn btn--on' : 'btn' }" (click)="toggle(mixedDirectiveApplied)">
+                { mixedDirectiveApplied() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result"><span
+              class="chip"
+              *isEven(value="{mixedCount()}")
+              *minLength(value="{mixedName()}" min="{3}")
+              @if (mixedDirectiveApplied()) {
+                *allowedUser(name="{mixedName()}")
+              }
+            >{ mixedName() } · { mixedCount() }</span></div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Liste</h2>
       <app-form />
-      <div style="display: flex; gap:.5rem;">
-        <button (click)="onDragToggle()">
-          Toggle dinamic binding
-        </button>
-        <button (click)="onApplyDinamicBindingToggle()">
-          Toggle dinamic binding
-        </button>
-        <button (click)="onTextToggle()">
-          Increase Value
-        </button>
-        <button (click)="onApplyDinamicBindingToggle2()">
-          Toggle dinamic binding 2
-        </button>
-        <button (click)="onTextToggle2()">
-          Increase Value 2
-        </button>
-      </div>
     </main>
   </div>
 </div>

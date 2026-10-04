@@ -600,7 +600,7 @@ describe('getMetadataOrExtract()', () => {
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
 
-    await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow('Metadata for symbol "Foo" not found.');
+    await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow(`Class "Foo" was not found in the import from ${resolvePosixPath('/src/foo.ts')}`);
   });
 
   it('throws when extraction yields no map at all', async () => {
@@ -608,7 +608,17 @@ describe('getMetadataOrExtract()', () => {
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(undefined);
 
-    await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow('Metadata for symbol "Foo" not found.');
+    await expect(getMetadataOrExtract('Foo', '/src/foo.ts')).rejects.toThrow(`Class "Foo" was not found in the import from ${resolvePosixPath('/src/foo.ts')}`);
+  });
+
+  it('names the import module path when the symbol is not found in a file resolved from a [baseDir, modulePath] tuple', async () => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    const resolvedPath = resolvePosixPath('/src', './foo');
+    vi.mocked(existsSync).mockImplementation((p) => p === resolvedPath);
+    vi.mocked(readFile).mockResolvedValue('export class Foo {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
+
+    await expect(getMetadataOrExtract('Foo', ['/src', './foo'])).rejects.toThrow('Class "Foo" was not found in the import from ./foo');
   });
 });
 

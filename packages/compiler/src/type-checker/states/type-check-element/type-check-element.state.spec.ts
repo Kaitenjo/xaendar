@@ -44,11 +44,45 @@ describe('typeCheckElement', () => {
       expect(text(run('<div class="a"><span></span></div>'))).toEqual(['child;']);
     });
 
-    it('type-checks expression attributes and event handlers', () => {
-      const lines = run('<div title="{name}" (click)="f($event, b)"></div>');
+    it('type-checks expression attributes and event handlers, declaring $event with the type of the native event in the block of the handler', () => {
+      const template = '<div title="{name}" (click)="f($event, b)"></div>';
+      const lines = run(template);
 
-      expect(text(lines)).toEqual(['root.name;', 'root.f($event, root.b);']);
-      expect(lines.every(l => l.mappings?.length)).toBe(true);
+      expect(text(lines)).toEqual([
+        'root.name;',
+        '{',
+        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  root.f($event, root.b);',
+        '}'
+      ]);
+      expect(lines[0].mappings).toHaveLength(1);
+      expect(lines[3].mappings).toEqual([{ columnStart: 2, columnEnd: 25, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+      expect([lines[1], lines[2], lines[4]].every(l => !l.mappings)).toBe(true);
+    });
+
+    it('declares $event in a separate block for each event, so that every handler gets its own', () => {
+      expect(text(run('<div (click)="f($event)" (input)="g($event)"></div>'))).toEqual([
+        '{',
+        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  root.f($event);',
+        '}',
+        '{',
+        '  let $event!: HTMLElementEventMap[\'input\'];',
+        '  root.g($event);',
+        '}'
+      ]);
+    });
+
+    it('emits the call to a handler not passed $event without a block declaring it', () => {
+      const template = '<div (click)="f($eventName, obj.$event, \'$event\')"></div>';
+      const lines = run(template);
+
+      expect(text(lines)).toEqual(['root.f(root.$eventName, root.obj.$event, \'$event\');']);
+      expect(lines[0].mappings).toEqual([{ columnStart: 0, columnEnd: 51, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+    });
+
+    it('leaves $event undeclared when only a member of it is passed, since it must be passed whole', () => {
+      expect(text(run('<div (click)="f($event.target)"></div>'))).toEqual(['root.f($event.target);']);
     });
 
     it('type-checks conditional bindings as nested if blocks', () => {
@@ -57,7 +91,10 @@ describe('typeCheckElement', () => {
       expect(text(lines)).toEqual([
         'if (root.cond()) {',
         '  root.name;',
-        '  root.f($event);',
+        '  {',
+        '    let $event!: HTMLElementEventMap[\'click\'];',
+        '    root.f($event);',
+        '  }',
         '  if (root.inner) {',
         '    root.b;',
         '  }',
@@ -111,6 +148,44 @@ describe('typeCheckElement', () => {
     it('type-checks a @switch without branches', () => {
       expect(text(run('<div @switch (mode()) { }></div>'))).toEqual(['switch (root.mode()) {', '}']);
     });
+
+    describe('event maps', () => {
+      const processChild: ProcessNode = (child, context) => typeCheckElement(child as ElementNode, processChild, context);
+      const runTree = (template: string) => text(typeCheckElement(parse(template), processChild, new TypeCheckContext()));
+
+      it('types the events of an <svg> and of its descendants through SVGElementEventMap', () => {
+        expect(runTree('<svg (click)="f($event)"><g><circle @if (cond) { (click)="g($event)" }></circle></g></svg>')).toEqual([
+          '{',
+          '  let $event!: SVGElementEventMap[\'click\'];',
+          '  root.f($event);',
+          '}',
+          'if (root.cond) {',
+          '  {',
+          '    let $event!: SVGElementEventMap[\'click\'];',
+          '    root.g($event);',
+          '  }',
+          '}'
+        ]);
+      });
+
+      it('types the events of a <math> and of its descendants through MathMLElementEventMap', () => {
+        expect(runTree('<math><mi (click)="f($event)"></mi></math>')).toEqual([
+          '{',
+          '  let $event!: MathMLElementEventMap[\'click\'];',
+          '  root.f($event);',
+          '}'
+        ]);
+      });
+
+      it('types the events of the siblings of an <svg> through HTMLElementEventMap', () => {
+        expect(runTree('<div><svg><svg></svg></svg><span (click)="f($event)"></span></div>')).toEqual([
+          '{',
+          '  let $event!: HTMLElementEventMap[\'click\'];',
+          '  root.f($event);',
+          '}'
+        ]);
+      });
+    });
   });
 
   describe('custom elements', () => {
@@ -133,14 +208,21 @@ describe('typeCheckElement', () => {
       ]);
     });
 
-    it('type-checks events with and without a payload', () => {
-      const component = metadata(properties, { done: 'number', ping: 'void' });
-      const output = text(run('<my-el title="a" label="b" (done)="f($event)" (ping)="g()"></my-el>', component)).join('\n');
+    it('declares $event only for the events carrying a payload whose handler is passed it', () => {
+      const component = metadata({}, { done: 'number', changed: 'string', ping: 'void' });
+      const lines = run('<my-el (done)="f($event)" (changed)="g()" (ping)="h()" (ping)="i($event)"></my-el>', component);
 
-      expect(output).toContain('let $event!: CustomEvent<number>;');
-      expect(output).toContain('root.f($event);');
-      expect(output).toContain('root.g();');
-      expect(output.match(/CustomEvent/g)).toHaveLength(1);
+      expect(text(lines)).toEqual([
+        '{',
+        '  let $event!: CustomEvent<number>;',
+        '  root.f($event);',
+        '}',
+        'root.g();',
+        'root.h();',
+        'root.i($event);'
+      ]);
+      expect(lines[2].mappings).toHaveLength(1);
+      expect(lines[4].mappings).toHaveLength(1);
     });
 
     it('throws when the selector is not imported', () => {
@@ -201,9 +283,7 @@ describe('typeCheckElement', () => {
         '    }',
         '    break;',
         '  default:',
-        '    {',
-        '      root.f();',
-        '    }',
+        '    root.f();',
         '    break;',
         '}'
       ]);
@@ -368,8 +448,30 @@ describe('typeCheckElement directives', () => {
     expect(() => run('<div @@myDirective(display="block")></div>', directiveMetadata(properties))).toThrow('@@myDirective on <div> is missing the following required properties:\n ● visible');
   });
 
-  it('throws for an unknown event', () => {
-    expect(() => run('<div @@myDirective((nope)="f()")></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+  it('types an event not declared as @Event as a native event of the element the directive is applied to', () => {
+    const directive = directiveMetadata({}, { toggled: 'boolean' });
+    const lines = run('<div @@myDirective((toggled)="f($event)" (click)="g($event)" (nope)="h()")></div>', directive);
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  let $event!: CustomEvent<boolean>;',
+      '  root.f($event);',
+      '}',
+      '{',
+      '  let $event!: HTMLElementEventMap[\'click\'];',
+      '  root.g($event);',
+      '}',
+      'root.h();'
+    ]);
+  });
+
+  it('types the native events bound in a directive through the event map of its element', () => {
+    expect(text(run('<svg @@myDirective((click)="f($event)")></svg>', directiveMetadata({})))).toEqual([
+      '{',
+      '  let $event!: SVGElementEventMap[\'click\'];',
+      '  root.f($event);',
+      '}'
+    ]);
   });
 
   it('type-checks the conditional bindings of a directive as nested if blocks', () => {
@@ -385,9 +487,7 @@ describe('typeCheckElement directives', () => {
       '    (root.mode) satisfies \'block\' | \'none\';',
       '  }',
       '  if (root.inner) {',
-      '    {',
-      '      root.f();',
-      '    }',
+      '    root.f();',
       '  }',
       '}',
       'else {',
@@ -411,9 +511,7 @@ describe('typeCheckElement directives', () => {
       '    }',
       '    break;',
       '  default:',
-      '    {',
-      '      root.f();',
-      '    }',
+      '    root.f();',
       '    break;',
       '}'
     ]);
@@ -427,8 +525,18 @@ describe('typeCheckElement directives', () => {
     expect(() => run(template, directiveMetadata({}))).toThrow('Unknown property "other" on @@myDirective (MyDirective has no @Property with this name).');
   });
 
-  it('throws for an unknown event inside a conditional binding of a directive', () => {
-    expect(() => run('<div @@myDirective(@if (cond()) { (nope)="f()" })></div>', directiveMetadata({}))).toThrow('Unknown event "nope" on @@myDirective (MyDirective has no @Event with this name).');
+  it('types an event not declared as @Event inside a conditional binding of a directive as a native event of its element', () => {
+    const component = metadata({});
+    const lines = run('<my-el @@myDirective(@if (cond()) { (click)="f($event)" })></my-el>', component, directiveMetadata({}));
+
+    expect(text(lines)).toEqual([
+      'if (root.cond()) {',
+      '  {',
+      '    let $event!: HTMLElementEventMap[\'click\'];',
+      '    root.f($event);',
+      '  }',
+      '}'
+    ]);
   });
 
   describe('required properties bound inside conditional bindings', () => {
@@ -524,6 +632,71 @@ describe('typeCheckElement directives', () => {
 
   it('throws when a directive applied inside a conditional binding is not imported', () => {
     expect(() => run('<div @if (cond()) { @@myDirective }></div>')).toThrow('@@myDirective selector is not associated to any Directive imported in the template');
+  });
+});
+
+describe('typeCheckElement structural directives', () => {
+  const properties = {
+    role: new ComponentPropertyMetadata('role', '\'admin\' | \'user\'', { required: true }),
+    level: new ComponentPropertyMetadata('level', 'number')
+  };
+
+  it('type-checks structural directive properties after the directives, then processes children', () => {
+    const directive = { ...directiveMetadata({ display: new ComponentPropertyMetadata('display', 'string') }), selector: 'other' } as DirectiveMetadata;
+    const lines = run('<div *myDirective(role="admin" level="{count()}") @@other(display="{mode}")><span></span></div>', directiveMetadata(properties), directive);
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  (root.mode) satisfies string;',
+      '}',
+      '{',
+      '  let x!: string;',
+      '  x satisfies \'admin\' | \'user\';',
+      '}',
+      '{',
+      '  (root.count()) satisfies number;',
+      '}',
+      'child;'
+    ]);
+  });
+
+  it('accepts a structural directive declared without bindings', () => {
+    expect(text(run('<div *myDirective></div>', directiveMetadata({})))).toEqual([]);
+  });
+
+  it('throws when the structural directive is not imported', () => {
+    expect(() => run('<div *myDirective></div>')).toThrow('*myDirective selector is not associated to any Directive imported in the template');
+  });
+
+  it('throws for an unknown property', () => {
+    expect(() => run('<div *myDirective(other="x")></div>', directiveMetadata({}))).toThrow('Unknown property "other" on *myDirective (MyDirective has no @Property with this name).');
+  });
+
+  it('throws when required properties are missing', () => {
+    expect(() => run('<div *myDirective(level="{1}")></div>', directiveMetadata(properties))).toThrow('*myDirective on <div> is missing the following required properties:\n ● role');
+  });
+
+  it.each([
+    ['a native element', '<div @if (cond()) { *myDirective(role="admin") } @else { @if (inner) { *myDirective(role="{current}") } }></div>'],
+    ['a custom element', '<my-el @if (cond()) { *myDirective(role="admin") } @else { @if (inner) { *myDirective(role="{current}") } }></my-el>']
+  ])('type-checks the structural directives applied inside a conditional binding of %s', (_description, template) => {
+    const lines = run(template, metadata({}), directiveMetadata(properties));
+
+    expect(text(lines)).toEqual([
+      'if (root.cond()) {',
+      '  {',
+      '    let x!: string;',
+      '    x satisfies \'admin\' | \'user\';',
+      '  }',
+      '}',
+      'else {',
+      '  if (root.inner) {',
+      '    {',
+      '      (root.current) satisfies \'admin\' | \'user\';',
+      '    }',
+      '  }',
+      '}'
+    ]);
   });
 });
 

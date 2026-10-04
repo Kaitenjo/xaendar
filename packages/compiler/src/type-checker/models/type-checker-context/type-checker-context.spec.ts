@@ -47,4 +47,16 @@ describe('TypeCheckContext', () => {
     expect(child.hasIdentifier('item')).toBe(true);
     expect(child.getImportBySelector('my-z')).toBeUndefined();
   });
+
+  it('defaults the event map to HTMLElementEventMap', () => {
+    expect(new TypeCheckContext().getEventMap()).toBe('HTMLElementEventMap');
+    expect(new TypeCheckContext(new TypeCheckContext()).getEventMap()).toBe('HTMLElementEventMap');
+  });
+
+  it('inherits the event map of its closest ancestor scope declaring one', () => {
+    const svg = new TypeCheckContext(new TypeCheckContext(), [], 'SVGElementEventMap');
+
+    expect(new TypeCheckContext(new TypeCheckContext(svg)).getEventMap()).toBe('SVGElementEventMap');
+    expect(new TypeCheckContext(svg, [], 'MathMLElementEventMap').getEventMap()).toBe('MathMLElementEventMap');
+  });
 });

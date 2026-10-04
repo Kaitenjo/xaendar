@@ -153,7 +153,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       const diagnostics = languageService.getSemanticDiagnostics(shim.path);
 
       for (let i = 0; i < diagnostics.length; i++) {
-        state.logError('', `Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
+        state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
       }
 
       // After logging every diagnostics we have to return null to raise an error

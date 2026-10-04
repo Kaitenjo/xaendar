@@ -3,7 +3,8 @@ import { TokenWithSpan } from '../token.type';
 
 /**
  * Token emitted when the lexer encounters the end of a directive, e.g. `")"` in `<div @@myDirective(display="block") />`.
- * It is emitted for directives declared without bindings too, e.g. `<div @@myDirective />`.
+ * It is emitted for directives declared without bindings too, e.g. `<div @@myDirective />`, and it marks
+ * the end of a structural directive as well, e.g. `")"` in `<div *hasRole(role="admin") />`.
  */
 export type DirectiveCloseToken = TokenWithSpan<{
   /**

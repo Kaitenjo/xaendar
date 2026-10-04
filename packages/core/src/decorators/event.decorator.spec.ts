@@ -5,22 +5,26 @@ import { CustomElement } from '../models';
 import type { Output } from '../types/event/output.type';
 import { Event } from './event.decorator';
 
-function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]) {
-  const initializers = new Array<(this: unknown) => void>();
-  const context = {
-    name,
-    addInitializer: (fn: (this: unknown) => void) => initializers.push(fn)
-  } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
+type Decorated<ReturnType> = { init(this: Element): Output<ReturnType> };
 
-  const element = document.createElement('div');
+function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]): Decorated<ReturnType> {
+  const context = { name } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
+  const decorated = Event<CustomElement, ReturnType>(options)({} as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
+  return decorated as unknown as Decorated<ReturnType>;
+}
+
+function listen(element: Element): ReturnType<typeof vi.fn> {
   const listener = vi.fn();
   element.addEventListener('clicked', listener);
+  return listener;
+}
 
-  const decorated = Event<CustomElement, ReturnType>(options)({} as  ClassAccessorDecoratorValue<Output<ReturnType>>, context);
-  initializers.forEach(fn => fn.call(element));
+function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]) {
+  const decorated = decorate<ReturnType>(name, options);
+  const element = document.createElement('div');
+  const listener = listen(element);
 
-  const emit = (decorated as unknown as { get(): Output<ReturnType> }).get().emit;
-  return { emit: (...args: Parameters<Output<ReturnType>['emit']>) => emit.call(element, ...args), listener };
+  return { emit: decorated.init.call(element).emit, listener };
 }
 
 function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
@@ -30,6 +34,26 @@ function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
 describe('Event decorator', () => {
   it('throws for symbol names', () => {
     expect(() => setup(Symbol('clicked'))).toThrow('Symbol properties are not supported as event names');
+  });
+
+  it('creates a separate output for each instance, dispatching on its own element', () => {
+    const decorated = decorate<number>();
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const firstListener = listen(first);
+    const secondListener = listen(second);
+
+    const firstOutput = decorated.init.call(first);
+    const secondOutput = decorated.init.call(second);
+    expect(firstOutput).not.toBe(secondOutput);
+
+    firstOutput.emit(1);
+    expect(lastEvent(firstListener).detail).toBe(1);
+    expect(secondListener).not.toHaveBeenCalled();
+
+    secondOutput.emit(2);
+    expect(lastEvent(secondListener).detail).toBe(2);
+    expect(firstListener).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches a CustomEvent named after the accessor with the value as detail', () => {

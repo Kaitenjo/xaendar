@@ -66,12 +66,14 @@ export class TypeChecker {
    * Generates the full `function typeCheck() { ... }` shim body for the
    * component's template.
    *
-   * A `let $event!: Event;` declaration is prepended only if the generated
-   * body actually references `$event` (event handler bindings), so shims
-   * for templates with no event bindings don't carry an unused local —
-   * relevant if the consuming project has `noUnusedLocals` enabled.
-   * 
-   * @param baseDir - Absolute path used to resolve relative import paths
+   * `$event` is not declared at the top of the shim: every event binding passing it
+   * to its handler gets its own block declaring it, as `CustomEvent<payload type>` for a component or directive
+   * `@Event` carrying a payload, and through the event map of the element for a native event, e.g.
+   * `HTMLElementEventMap['click']` or, inside an `<svg>`, `SVGElementEventMap['click']`.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
+   * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
+   * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
   public async generate(metadatas: ComponentOrDirectiveMetadata[]): Promise<TypeCheckResult> {
     try {

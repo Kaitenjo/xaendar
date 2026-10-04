@@ -21,6 +21,34 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
  */
 export function lexDirective(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+  return lexSelector(cursor, context, TokenType.DIRECTIVE);
+}
+
+/**
+ * Consumes the selector of a structural directive, after the `*` already consumed by the state the directive is declared in,
+ * exactly like {@link lexDirective} does for a directive: `*selector(` opens the DIRECTIVE_BODY, pushing the
+ * STRUCTURAL_DIRECTIVE state so the body knows it belongs to a structural directive, while a selector without bindings
+ * is closed right away.
+ *
+ * @param cursor - The lexer cursor positioned right after `*`.
+ * @param context - The lexer context, whose history tells where the structural directive is declared.
+ * @returns Transition result with the structural directive tokens and the next state.
+ * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
+ */
+export function lexStructuralDirective(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+  return lexSelector(cursor, context, TokenType.STRUCTURAL_DIRECTIVE);
+}
+
+/**
+ * Consumes the selector of a directive or of a structural directive, see {@link lexDirective}.
+ *
+ * @param cursor - The lexer cursor positioned right after the prefix of the directive (`@@` or `*`).
+ * @param context - The lexer context, whose history tells where the directive is declared.
+ * @param type - The type of the token opening the directive.
+ * @returns Transition result with the directive tokens and the next state.
+ * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
+ */
+function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContext, type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE): LexerTransitionFunctionReturnType {
   let read = true;
   let selector = '';
   let retVal!: LexerTransitionFunctionReturnType;
@@ -34,7 +62,7 @@ export function lexDirective(cursor: LexerCursor, context: LexerTransitionFuncti
         retVal = {
           state: LexerState.DIRECTIVE_BODY,
           tokens: [{
-            type: TokenType.DIRECTIVE,
+            type,
             parts: [selector],
           }],
           pushState: true
@@ -70,7 +98,7 @@ export function lexDirective(cursor: LexerCursor, context: LexerTransitionFuncti
           state: resolveTagBodyState(context.history.at(-1)),
           tokens: [
             {
-              type: TokenType.DIRECTIVE,
+              type,
               parts: [selector],
             },
             {
@@ -82,7 +110,9 @@ export function lexDirective(cursor: LexerCursor, context: LexerTransitionFuncti
         break;
 
       case EQUAL_THEN:
-        throw 'Directive bindings must be declared between parentheses, e.g. @@selector(name="value")';
+        throw type === TokenType.DIRECTIVE
+          ? 'Directive bindings must be declared between parentheses, e.g. @@selector(name="value")'
+          : 'Structural directive bindings must be declared between parentheses, e.g. *selector(name="value")';
 
       default:
         cursor.advance();

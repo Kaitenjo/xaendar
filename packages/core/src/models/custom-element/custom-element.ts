@@ -24,15 +24,23 @@ export class CustomElement extends HTMLElement {
   /**
    * Disposers of the effects created via {@link effect}, invoked on disconnection.
    */
-  private readonly _unlistenFns = new Array<VoidFunction>();
+  private _unlistenFns = new Array<VoidFunction>();
 
   /**
-   * Optional lifecycle hook, see {@link OnInit}.
+   * Optional lifecycle hook, invoked each time the element is inserted into the DOM, before the render:
+   * the Shadow DOM is still empty.
    */
   public onInit?(): void;
 
   /**
-   * Optional lifecycle hook, see {@link OnDestroy}.
+   * Optional lifecycle hook, invoked each time the element is inserted into the DOM, right after the render:
+   * the Shadow DOM tree has been built and its signal subscriptions set up.
+   */
+  public afterRender?(): void;
+
+  /**
+   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
+   * created via {@link effect} are disposed and the rendered content is removed.
    */
   public onDestroy?(): void;
 
@@ -65,7 +73,7 @@ export class CustomElement extends HTMLElement {
    * Adopts the stylesheet registered for this component class (see `_defineRender`), if any,
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree and sets up
-   * reactive signal subscriptions.
+   * reactive signal subscriptions, and finally invokes `afterRender`, if declared.
    *
    * @throws When no render function is registered for this component class.
    */
@@ -82,6 +90,7 @@ export class CustomElement extends HTMLElement {
 
     this.onInit?.();
     this._context = render.call(this);
+    this.afterRender?.();
   }
 
   /**
@@ -97,6 +106,7 @@ export class CustomElement extends HTMLElement {
     for (let i = 0; i < this._unlistenFns.length; i++) {
       this._unlistenFns[i]();
     }
+    this._unlistenFns = [];
     this._context.clear();
   }
 }

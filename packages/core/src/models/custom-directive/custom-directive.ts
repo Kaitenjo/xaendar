@@ -1,5 +1,5 @@
 import { NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
-import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 
@@ -9,26 +9,43 @@ import { EffectOptions } from '../../signals/types/effect-options.type';
  *
  * The template runtime starts the directive via `DIRECTIVE_CONNECT` once its inputs
  * have been bound and tears it down via `DIRECTIVE_DISCONNECT` when its context is
- * destroyed. Subclasses may declare the optional `onInit` hook (whose returned
- * cleanup functions are run on disconnection) and `onDestroy`.
+ * destroyed. Subclasses may declare the optional `onInit` and `onDestroy` hooks.
  * Effects created via {@link CustomDirective.effect} are disposed automatically
  * on disconnection.
  */
-export abstract class CustomDirective {
+export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
   /**
-   * Cleanup functions invoked on disconnection: the ones returned by `onInit`
-   * and the disposers of the effects created via {@link effect}.
+   * Disposers of the effects created via {@link effect}, invoked on disconnection.
    */
   private _unlistenFns = new Array<VoidFunction>();
 
   /**
    * Reference to the HTML Element the directive is applied
    */
-  private element!: HTMLElement
+  private _element!: T
 
   /**
+   * Sets the HTML element the directive is applied to, invoked by the
+   * template runtime before `DIRECTIVE_CONNECT`.
+   *
+   * @param element - The element the directive is applied to.
+   */
+  public set [SET_DIRECTIVE_ELEMENT](element: T) {
+    this._element = element;
+  }
+
+  /**
+   * Gets the HTML element the directive is applied on
+   *
+   * @returns element - The element the directive is applied to.
+   */
+  public get element(): T {
+    return this._element;
+  }
+  
+  /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
-   * Invokes `onInit`, if declared, and keeps the cleanup functions it returns.
+   * Invokes `onInit`, if declared.
    */
   public [DIRECTIVE_CONNECT](): void {
     this.onInit?.();
@@ -36,23 +53,25 @@ export abstract class CustomDirective {
 
   /**
    * Disconnects the directive, invoked by the template runtime when its context is destroyed.
-   * Runs the cleanup functions returned by `onInit` and disposes the effects created
-   * via {@link effect}, then invokes `onDestroy`, if declared.
+   * Invokes `onDestroy`, if declared, then disposes the effects created via {@link effect}.
    */
   public [DIRECTIVE_DISCONNECT](): void {
     this.onDestroy?.();
     for (let i = 0; i < this._unlistenFns.length; i++) {
       this._unlistenFns[i]();
     }
+    this._unlistenFns = [];
   }
 
   /**
-   * Optional lifecycle hook, see {@link OnInit}.
+   * Optional lifecycle hook, invoked when the template runtime starts the directive,
+   * once its inputs have been bound.
    */
   public onInit?(): void;
 
   /**
-   * Optional lifecycle hook, see {@link OnDestroy}.
+   * Optional lifecycle hook, invoked when the context of the directive is destroyed,
+   * before the effects created via {@link effect} are disposed.
    */
   public onDestroy?(): void;
 
@@ -86,6 +105,6 @@ export abstract class CustomDirective {
    * @returns `false` if the event is cancelable and a listener canceled it, `true` otherwise.
    */
   public dispatchEvent(event: Event): boolean {
-    return this.element.dispatchEvent(event);
+    return this._element.dispatchEvent(event);
   }
 }

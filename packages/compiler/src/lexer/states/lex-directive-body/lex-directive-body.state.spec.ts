@@ -21,6 +21,43 @@ describe('lexDirectiveBody', () => {
     expect(() => lexDirectiveBody(new LexerCursor('@@other)'), context)).toThrow('Directives cannot be declared inside another directive');
   });
 
+  it('throws for a nested structural directive', () => {
+    expect(() => lexDirectiveBody(new LexerCursor('*other)'), context)).toThrow('Directives cannot be declared inside another directive');
+  });
+
+  describe('of a structural directive', () => {
+    const structuralContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.STRUCTURAL_DIRECTIVE], tokens: [] };
+
+    it('transitions to ATTRIBUTE for a property', () => {
+      expect(lexDirectiveBody(new LexerCursor('role="admin")'), structuralContext)).toEqual({ state: LexerState.ATTRIBUTE });
+    });
+
+    it('closes the structural directive and returns to TAG_BODY', () => {
+      expect(lexDirectiveBody(new LexerCursor(') class="a"'), structuralContext)).toEqual({
+        state: LexerState.TAG_BODY,
+        tokens: [{ type: TokenType.DIRECTIVE_CLOSE }],
+        popState: true
+      });
+    });
+
+    it('closes a structural directive declared inside a conditional binding and returns to CONDITIONAL_BINDING_BODY', () => {
+      const conditionalBindingContext: LexerTransitionFunctionContext = { history: [LexerState.TAG_OPEN_NAME, LexerState.FLOW_CONTROL_BLOCK, LexerState.STRUCTURAL_DIRECTIVE], tokens: [] };
+      expect(lexDirectiveBody(new LexerCursor(') }'), conditionalBindingContext).state).toBe(LexerState.CONDITIONAL_BINDING_BODY);
+    });
+
+    it('throws for an event binding', () => {
+      expect(() => lexDirectiveBody(new LexerCursor('(change)="onChange()")'), structuralContext)).toThrow('Structural directives cannot listen to events');
+    });
+
+    it('throws for a conditional binding', () => {
+      expect(() => lexDirectiveBody(new LexerCursor('@if (condition) { role="admin" })'), structuralContext)).toThrow('The properties of a structural directive cannot be bound conditionally');
+    });
+
+    it('throws for a nested directive', () => {
+      expect(() => lexDirectiveBody(new LexerCursor('@@other)'), structuralContext)).toThrow('Directives cannot be declared inside another directive');
+    });
+  });
+
   it('transitions to FLOW_CONTROL, leaving the keyword to it, for a conditional binding', () => {
     const cursor = new LexerCursor('@if (condition) { a="b" })');
     expect(lexDirectiveBody(cursor, context)).toEqual({ state: LexerState.FLOW_CONTROL });

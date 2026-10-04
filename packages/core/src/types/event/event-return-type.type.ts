@@ -4,7 +4,7 @@ import type { EventHost } from './event-host.type';
 /**
  * Represents the return type of an event decorator, ensuring it has a 'get' method and only 'get' method.
  */
-export type EventDecoratorReturnType<Class extends EventHost, Output> = Beautify<Required<Pick<NonVoidReturnTypeAccessorDecorator<Class, Output>, 'get'>>>;
+export type EventDecoratorReturnType<Class extends EventHost, Output> = Beautify<Required<Pick<NonVoidReturnTypeAccessorDecorator<Class, Output>, 'init'>>>;
 
 /**
  * Represents the return type of an accessor decorator excluding 'void'.

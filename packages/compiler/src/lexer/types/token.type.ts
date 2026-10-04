@@ -21,6 +21,7 @@ import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
 import { InterpolationExpressionToken } from './tokens/interpolation-expression-token.type';
 import { InterpolationLiteralToken } from './tokens/interpolation-literal-token.type';
+import { StructuralDirectiveToken } from './tokens/structural-directive-token.type';
 import { SwitchToken } from './tokens/switch-token.type';
 import { TagCloseNameToken } from './tokens/tag-close-name-token.type';
 import { TagCloseToken } from './tokens/tag-close-token.type';
@@ -58,6 +59,7 @@ export type Token =
   | ImportPathToken
   | DirectiveToken
   | DirectiveCloseToken
+  | StructuralDirectiveToken
   | EOFToken;
 
 export type TokenWithOptionalSpan = 
@@ -86,7 +88,8 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<ImportToken>
   | MaybeTokenWithSpan<ImportPathToken>
   | MaybeTokenWithSpan<DirectiveToken>
-  | MaybeTokenWithSpan<DirectiveCloseToken>;
+  | MaybeTokenWithSpan<DirectiveCloseToken>
+  | MaybeTokenWithSpan<StructuralDirectiveToken>;
 
 export type TokenWithSpan<T extends { type: TokenType }> = T & {
   span: Span

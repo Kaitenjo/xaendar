@@ -9,6 +9,7 @@
     "target": "browser"
   },
   "dependencies": {
+    "@xaendar/common": "0.12.0",
     "@xaendar/signals": "0.12.0",
     "@xaendar/types": "0.12.0"
   }

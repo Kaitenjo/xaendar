@@ -107,6 +107,11 @@ export enum TokenType {
    */
   DIRECTIVE_CLOSE,
   /**
+   * A structural directive, e.g. `*hasRole` in `<div *hasRole(role="admin") />`.
+   * Its end is marked by a DIRECTIVE_CLOSE token, exactly like the one of a directive.
+   */
+  STRUCTURAL_DIRECTIVE,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

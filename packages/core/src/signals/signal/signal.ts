@@ -1,5 +1,6 @@
 import type { SignalOptions } from '@xaendar/signals';
 import type { Signal as SignalType } from '../types/signal.type';
+import { untracked } from '../untracked';
 
 /**
  * Creates a writable reactive signal.
@@ -20,6 +21,6 @@ export function signal<T = unknown>(value: T, options?: SignalOptions<T>): Signa
   return Object.assign(getter, {
     set: signal.set.bind(signal),
     get: signal.get.bind(signal),
-    update: (updater: (prev: T) => T) => signal.set(updater(signal.get()))
+    update: (updater: (prev: T) => T) => signal.set(updater(untracked(() => signal.get())))
   });
 }

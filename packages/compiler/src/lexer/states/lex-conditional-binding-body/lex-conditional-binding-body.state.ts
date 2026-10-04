@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RIGHT_BRACE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RIGHT_BRACE, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -9,7 +9,7 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
 
 /**
  * Lexes the bindings declared in a block of a conditional binding, between `{` and `}`:
- * attributes, events, directives and nested conditional bindings, while `}` closes the block
+ * attributes, events, directives, structural directives and nested conditional bindings, while `}` closes the block
  * and resumes the state the conditional binding was declared in.
  *
  * The block of a `@switch` is lexed by this state too, even if it only holds `@case` and `@default` branches:
@@ -18,7 +18,7 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor pointing to the current position in the block.
  * @param context - The lexer context, whose history tells where the conditional binding was declared.
  * @returns An object containing the next lexer state and the tokens produced.
- * @throws If a directive is declared in a conditional binding belonging to another directive, or the tag ends before `}`.
+ * @throws If a directive or a structural directive is declared in a conditional binding belonging to a directive, or the tag ends before `}`.
  */
 export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -49,6 +49,20 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
 
         retVal = {
           state
+        };
+        read = false;
+        break;
+
+      case STAR:
+        // Like a directive, a structural directive cannot be applied by a conditional binding declared inside a directive
+        if (context.history.includes(LexerState.DIRECTIVE)) {
+          throw 'Directives cannot be declared inside another directive';
+        }
+
+        // Consume `*`.
+        cursor.advance();
+        retVal = {
+          state: LexerState.STRUCTURAL_DIRECTIVE
         };
         read = false;
         break;

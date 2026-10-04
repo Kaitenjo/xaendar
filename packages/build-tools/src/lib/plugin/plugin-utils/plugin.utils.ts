@@ -289,7 +289,7 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
   const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
   metadata = await extractClassMetadata(sourceFile, className);
   if (!metadata) {
-    throw `Class "${classNameOrSelector}" was not found in the import from ${path?.at(-1) ?? filePath}`;
+    throw `Class "${classNameOrSelector}" was not found in the import from ${Array.isArray(path) ? path[1] : filePath}`;
   }
 
   const selectorConflict = await claimSelectors(metadata);

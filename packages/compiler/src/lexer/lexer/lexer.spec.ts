@@ -48,6 +48,39 @@ describe('Lexer', () => {
     ]);
   });
 
+  it('tokenizes structural directives with and without bindings, also inside a conditional binding', () => {
+    const tokens = new Lexer('<div *first *second(role="{role()}" strict) @if (cond()) { *third(level="1") *fourth} class="a"></div>').tokenize();
+    expect(tokens.map(t => t.type)).toEqual([
+      TokenType.TAG_OPEN_NAME,
+      TokenType.STRUCTURAL_DIRECTIVE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.STRUCTURAL_DIRECTIVE,
+      TokenType.ATTRIBUTE,
+      TokenType.INTERPOLATION_EXPRESSION,
+      TokenType.ATTRIBUTE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.IF,
+      TokenType.CONDITION,
+      TokenType.BLOCK_OPEN,
+      TokenType.STRUCTURAL_DIRECTIVE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.STRUCTURAL_DIRECTIVE,
+      TokenType.DIRECTIVE_CLOSE,
+      TokenType.BLOCK_CLOSE,
+      TokenType.ATTRIBUTE,
+      TokenType.ATTRIBUTE_VALUE,
+      TokenType.TAG_OPEN_END,
+      TokenType.TAG_CLOSE_NAME
+    ]);
+  });
+
+  it('throws for an event or a conditional binding declared in a structural directive', () => {
+    expect(() => new Lexer('<div *hasRole((change)="onChange()")></div>').tokenize()).toThrow('Structural directives cannot listen to events');
+    expect(() => new Lexer('<div *hasRole(@if (cond()) { role="a" })></div>').tokenize()).toThrow('The properties of a structural directive cannot be bound conditionally');
+  });
+
   it('tokenizes an if / else if / else conditional binding', () => {
     const tokens = new Lexer('<div @if (a()) { title="x" } @else if (b(1, 2)) { title="{y()}" (click)="onClick()" } @else { disabled} class="a"></div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([

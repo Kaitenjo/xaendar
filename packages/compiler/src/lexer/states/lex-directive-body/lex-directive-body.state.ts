@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RPAREN, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -8,17 +8,22 @@ import { isConditionalBindingKeyword } from '../../utils/conditional-binding/con
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
- * Lexes the bindings of a directive declared between `@@selector(` and `)`:
- * properties are lexed as attributes, events as event bindings and `@if`/`@switch` open a
- * conditional binding, while `)` closes the directive and resumes the state the
- * directive was declared in.
+ * Lexes the bindings of a directive declared between `@@selector(` and `)`, or of a structural directive declared
+ * between `*selector(` and `)`: properties are lexed as attributes, events as event bindings and `@if`/`@switch` open a
+ * conditional binding, while `)` closes the directive and resumes the state the directive was declared in.
+ *
+ * A structural directive only binds properties: it listens to no event, since it holds no element to dispatch them on,
+ * and its properties cannot be bound conditionally.
  *
  * @param cursor - The lexer cursor pointing to the current position in the directive body.
  * @param context - The lexer context, whose history tells where the directive was declared.
  * @returns An object containing the next lexer state and the tokens produced.
- * @throws If a directive is declared inside the directive, a `@` does not start a conditional binding, or the tag ends before `)`.
+ * @throws If a directive is declared inside the directive, a `@` does not start a conditional binding, a structural
+ *   directive declares an event or a conditional binding, or the tag ends before `)`.
  */
 export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+  // The last state of the history is the one opening this body
+  const structural = context.history.at(-1) === LexerState.STRUCTURAL_DIRECTIVE;
   let read = true;
   let retVal!: LexerTransitionFunctionReturnType;
 
@@ -27,6 +32,10 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
       case AT_SIGN:
         if (cursor.peekMatch('@@')) {
           throw 'Directives cannot be declared inside another directive';
+        }
+
+        if (structural) {
+          throw 'The properties of a structural directive cannot be bound conditionally';
         }
 
         if (!isConditionalBindingKeyword(cursor)) {
@@ -38,6 +47,9 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
         };
         read = false;
         break;
+
+      case STAR:
+        throw 'Directives cannot be declared inside another directive';
 
       // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
       case SPACE:
@@ -51,7 +63,7 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
         cursor.advance();
         retVal = {
           /*
-            The last state of the history is the DIRECTIVE one opening this body, the one before
+            The last state of the history is the DIRECTIVE (or STRUCTURAL_DIRECTIVE) one opening this body, the one before
             tells where the directive was declared: in the tag body or inside a conditional binding.
           */
           state: resolveTagBodyState(context.history.at(-2)),
@@ -64,6 +76,10 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
         break;
 
       case LPAREN:
+        if (structural) {
+          throw 'Structural directives cannot listen to events: they hold no element to dispatch them on';
+        }
+
         retVal = {
           state: LexerState.EVENT
         };

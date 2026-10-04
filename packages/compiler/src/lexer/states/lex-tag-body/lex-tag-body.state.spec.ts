@@ -44,6 +44,12 @@ describe('lexTagBody', () => {
     expect(cursor.peek()).toBe('m'.charCodeAt(0));
   });
 
+  it('transitions to STRUCTURAL_DIRECTIVE and consumes "*" for a structural directive', () => {
+    const cursor = new LexerCursor('*hasRole(role="admin")');
+    expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.STRUCTURAL_DIRECTIVE });
+    expect(cursor.peek()).toBe('h'.charCodeAt(0));
+  });
+
   it('skips whitespace and keeps scanning', () => {
     const cursor = new LexerCursor('   class="a">');
     const result = lexTagBody(cursor, context);

@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.preview__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed #2c3042;
+  border-radius: 8px;
+  color: #6b7085;
+  font-size: 0.85rem;
+}
+
+.preview__row--bound {
+  border-style: solid;
+  border-color: rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.08);
+  color: #e4e6f0;
+}
+
+.preview__row dt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: #a5b4fc;
+}
+
+.preview__row dd {
+  margin: 0;
+  font-weight: 600;
+}

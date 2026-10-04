@@ -18,7 +18,7 @@ function createPropertyDecorator<
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(
-  value?: ActualValue | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue>, 
+  value?: ActualValue | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue>,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
 ): Function<Parameters<AccessorDecorator<Class, Value>>, PropertyDecoratorReturnType<Class, Value>> {
   return function (
@@ -45,19 +45,14 @@ function createPropertyDecorator<
     metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] ??= {};
     metadata[INTERNAL_ALIAS_TO_ATTRIBUTE][attributeName] = propertyKey;
 
-    const signal = input<ActualValue, IncomingValue>(actualValue, {
-      equals: actualOptions?.equals,
-      watched: actualOptions?.watched,
-      unwatched: actualOptions?.unwatched,
-      transform: actualOptions?.transform
-    });
-
     return {
-      get() {
-        return signal as Value;
-      },
       init(_?: InputSignal<ActualValue>) {
-        return signal as Value;
+        return input<ActualValue, IncomingValue>(actualValue, {
+          equals: actualOptions?.equals,
+          watched: actualOptions?.watched,
+          unwatched: actualOptions?.unwatched,
+          transform: actualOptions?.transform
+        }) as Value;
       },
     };
   };

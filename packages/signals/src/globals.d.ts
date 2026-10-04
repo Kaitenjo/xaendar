@@ -57,11 +57,12 @@ declare global {
        * The Signal starts in the dirty state with an uninitialised value, so
        * the callback will be invoked on the first `get()`.
        *
-       * @param computeFn - Pure function evaluated lazily to produce the value.
+       * @param computeFn - Pure function evaluated lazily to produce the value,
+       *   invoked with this Signal as `this`.
        * @param options - Optional configuration:
        *   - `equals` — custom equality function; defaults to `Object.is`.
        */
-      constructor(computeFn: () => T, options?: { equals?: (a: T, b: T) => boolean, watched?: () => void, unwatched?: () => void });
+      constructor(computeFn: (this: Computed<T>) => T, options?: { equals?: (a: T, b: T) => boolean, watched?: () => void, unwatched?: () => void });
       /**
        * Returns the current value of this Signal, re-evaluating the callback if
        * the cached value may be stale.

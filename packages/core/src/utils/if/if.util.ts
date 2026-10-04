@@ -181,7 +181,7 @@ function checkAndUpdateState(
   }
 
   if (state) {
-    state.context.clear();
+    untracked(() => state.context.clear());
     parentContext.removeChild(state.context);
   }
 
@@ -207,7 +207,7 @@ function checkAndUpdateState(
  */
 function teardown(parentContext: _Context, state: State | undefined): void {
   if (state) {
-    state.context.clear();
+    untracked(() => state.context.clear());
     parentContext.removeChild(state.context);
   }
 }

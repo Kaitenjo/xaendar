@@ -22,9 +22,9 @@ const run = async (template: string, context = new CompilerContext(), anchor: st
 const expectValidJavascript = (code: string[]) => expect(() => new Function(code.join('\n'))).not.toThrow();
 
 describe('generateElement', () => {
-  it('generates a bare element', async () => {
+  it('generates a bare element, without a function rendering its children', async () => {
     const { code, functionsToProcess } = await run('<div></div>');
-    expect(code).toEqual(['const div0 = _renderElement(root, context, null, \'div\', [], [], [], []);']);
+    expect(code).toEqual(['_renderElement(root, context, null, \'div\', [], [], [], [], [], [], null);']);
     expect(functionsToProcess?.size).toBe(0);
   });
 
@@ -65,9 +65,13 @@ describe('generateElement', () => {
     expect(() => context.addUnresolvableIdentifier('$event')).not.toThrow();
   });
 
-  it('registers a children function when the element has children', async () => {
+  it('registers a children function when the element has children, passing it as last argument', async () => {
     const { code, functionsToProcess } = await run('<div><span></span></div>');
-    expect(code).toContain('div0Children.call(this, div0, context);');
+    expect(code).toEqual([
+      '_renderElement(root, context, null, \'div\', [], [], [], [], [], [],',
+      '  (div0, parentContext) => div0Children.call(this, div0, parentContext)',
+      ');'
+    ]);
     expect(functionsToProcess?.get('div0Children')).toMatchObject({
       fn: { parentNode: 'div0', precode: '' },
       args: ['div0', 'parentContext', 'anchor']
@@ -87,14 +91,14 @@ describe('generateElement', () => {
   describe('conditional bindings', () => {
     it('skips the conditional bindings whose branches declare no binding', async () => {
       const { code } = await run('<div @if (cond()) { } @else { } @switch (mode()) { @case (1) { } } @switch (mode()) { }></div>');
-      expect(code).toEqual(['const div0 = _renderElement(root, context, null, \'div\', [], [], [], []);']);
+      expect(code).toEqual(['_renderElement(root, context, null, \'div\', [], [], [], [], [], [], null);']);
     });
 
     it('keeps the branches declaring no binding of a conditional binding declaring some', async () => {
       const { code } = await run('<div @if (cond()) { } @else { title="x" }></div>');
 
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '_renderElement(root, context, null, \'div\', [], [],',
         '  [',
         '    {',
         '      branches: [',
@@ -120,7 +124,7 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ], []);'
+        '  ], [], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
@@ -154,7 +158,7 @@ describe('generateElement', () => {
       const { code } = await run('<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>');
 
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '_renderElement(root, context, null, \'div\', [], [],',
         '  [',
         '    {',
         '      branches: [',
@@ -201,7 +205,7 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ], []);'
+        '  ], [], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
@@ -212,7 +216,7 @@ describe('generateElement', () => {
       const { code } = await run('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @default { id="y" } }></div>', context);
 
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '_renderElement(root, context, null, \'div\', [], [],',
         '  [',
         '    {',
         '      expression: () => this.mode(),',
@@ -247,7 +251,7 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ], []);'
+        '  ], [], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
@@ -273,7 +277,7 @@ describe('generateElement', () => {
       const { code } = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>');
 
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [],',
+        '_renderElement(root, context, null, \'div\', [], [],',
         '  [',
         '    {',
         '      branches: [',
@@ -325,7 +329,7 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ], []);'
+        '  ], [], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
@@ -356,7 +360,7 @@ describe('generateElement', () => {
       const { code } = await run('<my-el @if (cond()) { title="x" label="l" } @else { title="y" }></my-el>', context);
 
       expect(code).toEqual([
-        'const my_el0 = _renderElement(root, context, null, \'my-el\', [], [],',
+        '_renderElement(root, context, null, \'my-el\', [], [],',
         '  [',
         '    {',
         '      branches: [',
@@ -394,18 +398,18 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ], []);'
+        '  ], [], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
   });
 
   describe('directives', () => {
-    it('passes a directive declared without bindings as the last argument', async () => {
+    it('passes a directive declared without bindings', async () => {
       const { code } = await run('<div @@myDirective></div>');
 
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [], [],',
+        '_renderElement(root, context, null, \'div\', [], [], [],',
         '  [',
         '    {',
         '      selector: \'myDirective\',',
@@ -413,8 +417,7 @@ describe('generateElement', () => {
         '      events: [],',
         '      conditionalBindings: []',
         '    },',
-        '  ]',
-        ');'
+        '  ], [], [], null);'
       ]);
     });
 
@@ -438,7 +441,7 @@ describe('generateElement', () => {
 
       expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective']);
       expect(code).toEqual([
-        'const div0 = _renderElement(root, context, null, \'div\', [], [], [],',
+        '_renderElement(root, context, null, \'div\', [], [], [],',
         '  [',
         '    {',
         '      selector: \'myDirective\',',
@@ -509,8 +512,7 @@ describe('generateElement', () => {
         '        },',
         '      ]',
         '    },',
-        '  ]',
-        ');'
+        '  ], [], [], null);'
       ]);
       expectValidJavascript(code);
     });
@@ -567,7 +569,153 @@ describe('generateElement', () => {
     it('passes an empty conditional binding list before the directives', async () => {
       const { code } = await run('<div @@myDirective(display="block")></div>');
 
-      expect(code[0]).toBe('const div0 = _renderElement(root, context, null, \'div\', [], [], [],');
+      expect(code[0]).toBe('_renderElement(root, context, null, \'div\', [], [], [],');
+      expectValidJavascript(code);
+    });
+  });
+
+  describe('structural directives', () => {
+    it('passes the structural directives and an empty structural conditional binding list', async () => {
+      const { code, functionsToProcess } = await run('<div *first *second(role="admin" level="{count()}")></div>');
+
+      expect(code).toEqual([
+        '_renderElement(root, context, null, \'div\', [], [], [], [],',
+        '  [',
+        '    {',
+        '      selector: \'first\',',
+        '      attributes: []',
+        '    },',
+        '    {',
+        '      selector: \'second\',',
+        '      attributes: [',
+        '        {',
+        '          name: \'role\',',
+        '          value: \'admin\',',
+        '          setter: _setProperty',
+        '        },',
+        '        {',
+        '          name: \'level\',',
+        '          value: () => this.count(), ',
+        '          setter: _setExpressionProperty',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], [], null);'
+      ]);
+      expect(functionsToProcess?.size).toBe(0);
+      expectValidJavascript(code);
+    });
+
+    it('passes the function rendering the children, each time the element is created, as last argument', async () => {
+      const { code, functionsToProcess } = await run('<div *first><span></span></div>');
+
+      expect(code).toEqual([
+        '_renderElement(root, context, null, \'div\', [], [], [], [],',
+        '  [',
+        '    {',
+        '      selector: \'first\',',
+        '      attributes: []',
+        '    },',
+        '  ], [],',
+        '  (div0, parentContext) => div0Children.call(this, div0, parentContext)',
+        ');'
+      ]);
+      expect(functionsToProcess?.get('div0Children')).toMatchObject({
+        fn: { parentNode: 'div0', precode: '' },
+        args: ['div0', 'parentContext', 'anchor']
+      });
+      expectValidJavascript(code);
+    });
+
+    it('splits a conditional binding applying structural directives from the one binding the element', async () => {
+      const { code } = await run('<div @if (cond()) { title="x" *first } @else { *second }></div>');
+
+      expect(code).toEqual([
+        '_renderElement(root, context, null, \'div\', [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'title\',',
+        '              value: \'x\',',
+        '              setter: _setProperty,',
+        '              unbind: _removeAttribute',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '        {',
+        '          attributes: [],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          structuralDirectives: [',
+        '            {',
+        '              selector: \'first\',',
+        '              attributes: []',
+        '            },',
+        '          ],',
+        '          conditionalBindings: [],',
+        '        },',
+        '        {',
+        '          structuralDirectives: [',
+        '            {',
+        '              selector: \'second\',',
+        '              attributes: []',
+        '            },',
+        '          ],',
+        '          conditionalBindings: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], null);'
+      ]);
+      expectValidJavascript(code);
+    });
+
+    it('skips the element conditional bindings applying only structural directives, even through nested conditional bindings', async () => {
+      const { code } = await run('<div @if (cond()) { *first } @if (other()) { @if (inner()) { *second } }></div>');
+      const output = code.join('\n');
+
+      expect(code[0]).toBe('_renderElement(root, context, null, \'div\', [], [], [], [], [],');
+      expect(output).toContain('condition: () => this.inner(),');
+      expect(output).not.toContain('directives: [');
+      expectValidJavascript(code);
+    });
+
+    it('generates the nested conditional bindings applying structural directives, skipping the ones applying none', async () => {
+      const { code } = await run('<div @switch (mode()) { @case (1) { @if (inner()) { *first } @if (skipped()) { title="x" } } @default { } }></div>');
+      const output = code.join('\n');
+
+      expect(output).toContain('expression: () => this.mode(),');
+      expect(output).toContain('condition: [1],');
+      expect(output).toContain('condition: null,');
+      expect(output).toContain('condition: () => this.inner(),');
+      expect(output).toContain('structuralDirectives: [],');
+      expect(output.match(/condition: \(\) => this\.skipped\(\)/g)).toHaveLength(1);
+      expect(output.indexOf('condition: () => this.skipped(),')).toBeLessThan(output.indexOf('structuralDirectives'));
+      expectValidJavascript(code);
+    });
+
+    it('keeps the svg element factory while the element applying structural directives is created', async () => {
+      const { code } = await run('<svg *first><g></g></svg>');
+
+      expect(code[0]).toBe('context.createElement = _createSVGElement;');
+      expect(code.at(-1)).toBe('context.createElement = _createElement;');
       expectValidJavascript(code);
     });
   });

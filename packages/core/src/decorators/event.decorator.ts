@@ -34,30 +34,23 @@ export function Event<
 >(options?: EventOptions): Function<Parameters<AccessorDecorator<Class, Output<Data>>>, EventDecoratorReturnType<Class, Output<Data>>> {
   return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): EventDecoratorReturnType<Class, Output<Data>> => {
     const name = context.name;
-    let dispatchEvent: EventTarget['dispatchEvent'];
-
-    context.addInitializer(function (this: Class) {
-      dispatchEvent = this.dispatchEvent.bind(this);
-    });
 
     if (typeof name === 'symbol') {
       throw new Error('Symbol properties are not supported as event names');
     }
 
-    const output: Output<Data> = {
-      emit: (valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
-        const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
-          ? { ...options, ...valueOrOverrideOptions }
-          : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
-
-        const event = new CustomEvent(name, eventOptions);
-        dispatchEvent(event);
-      }
-    };
-
     return {
-      get(): Output<Data> {
-        return output;
+      init(): Output<Data> {
+        return {
+          emit: (valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
+            const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
+              ? { ...options, ...valueOrOverrideOptions }
+              : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
+
+            const event = new CustomEvent(name, eventOptions);
+            this.dispatchEvent(event);
+          }
+        };
       }
     }
   }

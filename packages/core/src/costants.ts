@@ -11,6 +11,11 @@ export const SVG_NS = 'http://www.w3.org/2000/svg';
  */
 export const MATHML_NS = 'http://www.w3.org/1998/Math/MathML';
 /**
+ * Key of the internal setter the template runtime invokes to give a directive the
+ * element it is applied to, before starting it (see `CustomDirective`).
+ */
+export const SET_DIRECTIVE_ELEMENT = Symbol('SetDirectiveElement');
+/**
  * Key of the internal method the template runtime invokes to start a directive,
  * once its inputs have been bound (see `CustomDirective`).
  */

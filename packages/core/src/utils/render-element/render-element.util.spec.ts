@@ -20,7 +20,6 @@ const {
   _setReactiveProperty
 } = await import('./render-element.util');
 const { signal } = await import('../../signals');
-const { effect } = await import('../../signals/effect/effect');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
@@ -31,33 +30,39 @@ function createRoot(root: Record<string, unknown> = {}) {
   return new _Context(root as never, { createElement: _createElement } as never);
 }
 
+type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context>;
+
 const render = (
   parent: Element,
   context: InstanceType<typeof _Context>,
-  { attributes = [], events = [], conditionalBindings = [], directives = [], anchor = null }: { attributes?: unknown[], events?: unknown[], conditionalBindings?: unknown[], directives?: unknown[], anchor?: Comment | null } = {}
-) => _renderElement(parent, context, anchor, 'div', attributes as never, events as never, conditionalBindings as never, directives as never);
+  { attributes = [], events = [], conditionalBindings = [], directives = [], children = null, anchor = null }: { attributes?: unknown[], events?: unknown[], conditionalBindings?: unknown[], directives?: unknown[], children?: Children | null, anchor?: Comment | null } = {}
+) => {
+  _renderElement(parent, context, anchor, 'div', attributes as never, events as never, conditionalBindings as never, directives as never, [], [], children);
+  // The element is the node mounted right before the anchor, or the last one appended when there is none
+  return (anchor ? anchor.previousSibling : parent.lastChild) as Element;
+};
 
 /**
- * Directive recording the values of its `label` input seen by the effects started in `reactToChanges`.
+ * Directive recording the values of its `label` input seen by the effect started in `onInit`.
  */
 class LabelDirective extends CustomDirective {
   public static readonly instances = new Array<LabelDirective>();
 
   public readonly label = input<string>('initial');
   public readonly seen = new Array<string>();
-  public readonly unlisten = vi.fn();
+  public readonly destroyed = vi.fn();
 
-  public onInit(): Array<() => void> {
-    return [effect(() => { this.seen.push(this.label()); }), this.unlisten];
-  }
-
-  constructor(element: HTMLElement) {
-    super(element);
+  constructor() {
+    super();
     LabelDirective.instances.push(this);
   }
 
-  public getElement(): HTMLElement {
-    return this.element;
+  public onInit(): void {
+    this.effect(() => { this.seen.push(this.label()); });
+  }
+
+  public onDestroy(): void {
+    this.destroyed();
   }
 }
 
@@ -276,6 +281,29 @@ describe('_renderElement', () => {
     context.clear();
 
     expect(parent.childNodes.length).toBe(0);
+  });
+
+  it('returns nothing', () => {
+    expect(_renderElement(document.createElement('div'), createRoot(), null, 'div', [], [], [], [], [], [], null)).toBeUndefined();
+  });
+
+  it('renders the children in the element, destroying them together with the context', () => {
+    const unlisten = vi.fn();
+    const children = vi.fn<Children>((element, parentContext) => {
+      element.appendChild(document.createElement('span'));
+      const childrenContext = new _Context({} as never, parentContext);
+      childrenContext.addUnlistener(unlisten);
+      return childrenContext;
+    });
+    const context = createRoot();
+    const element = render(document.createElement('div'), context, { children });
+
+    expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
+    expect(element.firstChild!.nodeName).toBe('SPAN');
+
+    context.clear();
+
+    expect(unlisten).toHaveBeenCalledOnce();
   });
 
   describe('attributes', () => {
@@ -655,7 +683,7 @@ describe('_renderElement', () => {
       await flush();
 
       expect(LabelDirective.instances.at(-1)).toBe(instance);
-      expect(instance.unlisten).not.toHaveBeenCalled();
+      expect(instance.destroyed).not.toHaveBeenCalled();
     });
 
     it('applies a directive only while the condition is true', async () => {
@@ -673,13 +701,13 @@ describe('_renderElement', () => {
       await flush();
       const instance = LabelDirective.instances.at(-1)!;
       expect(LabelDirective.instances).toHaveLength(instances + 1);
-      expect(instance.getElement()).toBe(element);
+      expect(instance.element).toBe(element);
       expect(instance.seen).toEqual(['bound']);
-      expect(instance.unlisten).not.toHaveBeenCalled();
+      expect(instance.destroyed).not.toHaveBeenCalled();
 
       enabled.set(false);
       await flush();
-      expect(instance.unlisten).toHaveBeenCalledOnce();
+      expect(instance.destroyed).toHaveBeenCalledOnce();
 
       enabled.set(true);
       await flush();
@@ -704,8 +732,8 @@ describe('_renderElement', () => {
 
       expect(second).not.toBe(first);
       expect(second.seen).toEqual(['second']);
-      expect(first.unlisten).toHaveBeenCalledOnce();
-      expect(second.unlisten).not.toHaveBeenCalled();
+      expect(first.destroyed).toHaveBeenCalledOnce();
+      expect(second.destroyed).not.toHaveBeenCalled();
     });
 
     it('does not apply a directive again when a signal read while starting it changes', async () => {
@@ -749,7 +777,7 @@ describe('_renderElement', () => {
     it('instantiates the directive registered for the selector on the element', () => {
       const element = render(document.createElement('div'), createRoot(), { directives: [directive()] });
 
-      expect(lastInstance().getElement()).toBe(element);
+      expect(lastInstance().element).toBe(element);
     });
 
     it('binds the directive properties before reacting to changes', () => {
@@ -788,11 +816,11 @@ describe('_renderElement', () => {
       const context = createRoot();
       render(document.createElement('div'), context, { directives: [directive()] });
       const instance = lastInstance();
-      expect(instance.unlisten).not.toHaveBeenCalled();
+      expect(instance.destroyed).not.toHaveBeenCalled();
 
       context.clear();
 
-      expect(instance.unlisten).toHaveBeenCalledOnce();
+      expect(instance.destroyed).toHaveBeenCalledOnce();
     });
 
     it('binds the properties of a conditional binding only while its condition is true, then resets them', async () => {
@@ -909,12 +937,10 @@ describe('_renderElement', () => {
   });
 
   describe('structural directives', () => {
-    type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context>;
-
     const renderStructural = (
       parent: Element,
       context: InstanceType<typeof _Context>,
-      { structuralDirectives = [], structuralConditionalBindings = [], children, anchor = null }: { structuralDirectives?: unknown[], structuralConditionalBindings?: unknown[], children?: Children, anchor?: Comment | null } = {}
+      { structuralDirectives = [], structuralConditionalBindings = [], children = null, anchor = null }: { structuralDirectives?: unknown[], structuralConditionalBindings?: unknown[], children?: Children | null, anchor?: Comment | null } = {}
     ) => _renderElement(parent, context, anchor, 'div', [{ name: 'id', value: 'target', setter: _setProperty }] as never, [], [], [], structuralDirectives as never, structuralConditionalBindings as never, children);
     const structural = (selector = 'visible', attributes: unknown[] = []) => ({ selector, attributes });
     const visible = (value: () => boolean) => ({ name: 'visible', value, setter: _setReactiveProperty });

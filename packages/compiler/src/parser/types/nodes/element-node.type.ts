@@ -4,6 +4,7 @@ import { AttributeNode } from './attribute-node.type';
 import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
 import { EventNode } from './event-node.type';
+import { StructuralDirectiveNode } from './structural-directive-node.type';
 
 /**
  * AST node representing an HTML element with a tag name, attributes, events, and children.
@@ -37,4 +38,8 @@ export type ElementNode = ASTNodeWithSpan<{
    * Directive nodes applied to this element.
    */
   directives: DirectiveNode[];
+  /**
+   * Structural directive nodes deciding whether this element is rendered.
+   */
+  structuralDirectives: StructuralDirectiveNode[];
 }>

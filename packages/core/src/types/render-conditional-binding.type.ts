@@ -13,7 +13,7 @@ import type { RenderElementStructuralDirective } from './render-element-structur
  *
  * @template Bindings - The bindings held by each branch.
  */
-export type RenderConditionalBinding<Bindings> = {
+export type RenderConditionalBinding<Bindings extends { conditionalBindings: RenderConditionalBinding<Bindings>[] }> = {
   /**
    * The `@if`, `@else if` and `@else` branches of the chain.
    */
@@ -21,7 +21,11 @@ export type RenderConditionalBinding<Bindings> = {
     /**
      * The condition the branch is selected with. An `@else` branch has none, so it is selected whenever it is reached.
      */
-    condition?: NoArgsFunction<boolean>
+    condition?: NoArgsFunction<boolean>,
+    /**
+     * The list of nested conditional bindings to be attached to the element while the branch is selected.
+     */
+    conditionalBindings: Bindings[]
   })[],
   /**
    * Only a `@switch` declares an expression.
@@ -72,7 +76,7 @@ export type RenderElementConditionalBinding = RenderConditionalBinding<{
  * Unlike the other bindings of the element, it lives as long as the place the element is rendered in, not as long as the element:
  * the element is created and destroyed according to the structural directives it applies.
  */
-export type RenderElementStructuralConditionalBinding = RenderConditionalBinding<{
+export type RenderElementStructuralDirectiveConditionalBinding = RenderConditionalBinding<{
   /**
    * The list of structural directives deciding whether the element is rendered while the branch is selected.
    */
@@ -80,5 +84,5 @@ export type RenderElementStructuralConditionalBinding = RenderConditionalBinding
   /**
    * The list of nested conditional bindings applying structural directives while the branch is selected.
    */
-  conditionalBindings: RenderElementStructuralConditionalBinding[]
+  conditionalBindings: RenderElementStructuralDirectiveConditionalBinding[]
 }>

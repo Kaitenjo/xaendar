@@ -4,6 +4,7 @@ import type { AttributeNode } from './attribute-node.type';
 import type { ConditionalBindingNode } from './conditional-binding-node.type';
 import type { DirectiveNode } from './directive-node.type';
 import type { EventNode } from './event-node.type';
+import type { StructuralDirectiveNode } from './structural-directive-node.type';
 
 /**
  * AST node representing a branch of a conditional binding, i.e. the bindings declared in the block of an
@@ -37,4 +38,9 @@ export type ConditionalBindingBranchNode<Condition = unknown> = ASTNodeWithSpan<
    * Always empty for a conditional binding declared inside a directive.
    */
   directives: DirectiveNode[];
+  /**
+   * Structural directive nodes deciding whether the element is rendered while the branch is selected.
+   * Always empty for a conditional binding declared inside a directive.
+   */
+  structuralDirectives: StructuralDirectiveNode[];
 }>

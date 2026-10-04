@@ -11,6 +11,10 @@ describe('resolveTagBodyState', () => {
     expect(resolveTagBodyState(LexerState.DIRECTIVE)).toBe(LexerState.DIRECTIVE_BODY);
   });
 
+  it('resumes the directive body for a structural directive', () => {
+    expect(resolveTagBodyState(LexerState.STRUCTURAL_DIRECTIVE)).toBe(LexerState.DIRECTIVE_BODY);
+  });
+
   it('resumes the tag body for any other state', () => {
     expect(resolveTagBodyState(LexerState.TAG_OPEN_NAME)).toBe(LexerState.TAG_BODY);
   });

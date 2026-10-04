@@ -149,6 +149,20 @@ describe('parseConditionalBinding', () => {
     expect(elseBranch.directives.map(({ selector }) => selector)).toEqual(['fourth']);
   });
 
+  it('parses the structural directives applied inside a conditional binding', () => {
+    const [node] = parse('<div @if (cond()) { title="x" *first *second(role="admin") @@myDirective @if (inner()) { *third } } @else { *fourth}></div>');
+    const [binding] = node.conditionalBindings;
+    const [branch, elseBranch] = binding.branches;
+
+    expect(node.structuralDirectives).toEqual([]);
+    expect(branch.attributes.map(({ name }) => name)).toEqual(['title']);
+    expect(branch.directives.map(({ selector }) => selector)).toEqual(['myDirective']);
+    expect(branch.structuralDirectives.map(({ selector }) => selector)).toEqual(['first', 'second']);
+    expect(branch.structuralDirectives[1].attributes.map(({ name }) => name)).toEqual(['role']);
+    expect(branch.conditionalBindings[0].branches[0].structuralDirectives.map(({ selector }) => selector)).toEqual(['third']);
+    expect(elseBranch.structuralDirectives.map(({ selector }) => selector)).toEqual(['fourth']);
+  });
+
   it('throws when the block of a branch is not opened', () => {
     expect(() => parseTokens(ifToken, condition, text)).toThrow('Expected BLOCK_OPEN, got TEXT');
   });

@@ -14,11 +14,13 @@ import type { ConditionalBindingNode } from '../../types/nodes/conditional-bindi
 import type { DirectiveNode } from '../../types/nodes/directive-node.type';
 import type { EventNode } from '../../types/nodes/event-node.type';
 import type { IfBindingNode } from '../../types/nodes/if-binding-node.type';
+import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
+import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
 
 /**
  * Parses a conditional binding, i.e. an IF or a SWITCH token declared among the bindings of an element or of
@@ -166,7 +168,7 @@ function parseCases(cursor: ParserCursor): string[] | null {
 
 /**
  * Parses the block of a branch, from its BLOCK_OPEN token up to its BLOCK_CLOSE one, collecting the attributes,
- * events, nested conditional bindings and directives declared in it into a `ConditionalBindingBranchNode`.
+ * events, nested conditional bindings, directives and structural directives declared in it into a `ConditionalBindingBranchNode`.
  *
  * @param cursor - Parser cursor positioned at the BLOCK_OPEN token of the branch.
  * @param parseNode - Parser function for recursive child parsing.
@@ -182,6 +184,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
+  const structuralDirectives = new Array<StructuralDirectiveNode>();
   let read = true;
 
   while (read) {
@@ -204,6 +207,10 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
         directives.push(parseDirective(cursor, parseNode, token));
         break;
 
+      case TokenType.STRUCTURAL_DIRECTIVE:
+        structuralDirectives.push(parseStructuralDirective(cursor, parseNode, token));
+        break;
+
       case TokenType.BLOCK_CLOSE:
         cursor.advance();
         read = false;
@@ -221,6 +228,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     events,
     conditionalBindings,
     directives,
+    structuralDirectives,
     span: {
       start,
       end: cursor.getCurrentToken().value.span.end,

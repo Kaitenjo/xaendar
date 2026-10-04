@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
@@ -7,7 +7,7 @@ import { isConditionalBindingKeyword } from '../../utils/conditional-binding/con
 
 /**
  * Scans the body of an open tag to determine what comes next:
- * a conditional binding (`@if`, `@switch`), a directive (`@@`), an event binding (`(`),
+ * a conditional binding (`@if`, `@switch`), a directive (`@@`), a structural directive (`*`), an event binding (`(`),
  * an attribute, the end of the tag (`>` or `/`), or whitespace.
  * Transitions to the appropriate state without emitting any tokens.
  *
@@ -37,6 +37,15 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
 
         retVal = {
           state
+        }
+        read = false;
+        break;
+
+      case STAR:
+        // Consume `*`.
+        cursor.advance();
+        retVal = {
+          state: LexerState.STRUCTURAL_DIRECTIVE
         }
         read = false;
         break;
