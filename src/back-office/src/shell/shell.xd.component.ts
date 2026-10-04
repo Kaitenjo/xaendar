@@ -42,7 +42,114 @@ export class ShellComponent extends CustomElement {
   @if (mixedDirectiveApplied()) {
     *allowedUser(name="{mixedName()}")
   }
->…</span>`
+>…</span>`,
+    ifElseProperty: `<app-binding-preview
+  @if (ifElseBound()) {
+    value="{ifElseCount().toString()}"
+  } @else {
+    detail="{ifElseName()}"
+  }
+/>`,
+    chainProperty: `<app-binding-preview
+  @if (chainBindingCount() > 5) {
+    value="{'alto: ' + chainBindingCount()}"
+  } @else if (chainBindingCount() > 0) {
+    value="{'basso: ' + chainBindingCount()}"
+    detail="{chainBindingName()}"
+  } @else {
+    detail="nessun valore positivo"
+  }
+/>`,
+    switchProperty: `<app-binding-preview
+  @switch (switchBindingStep()) {
+    @case (1) {
+      value="uno"
+    }
+    @case (2) @case (3) {
+      value="{'due o tre: ' + switchBindingStep()}"
+      detail="{switchBindingName()}"
+    }
+    @default {
+      detail="{'nessun caso per ' + switchBindingStep()}"
+    }
+  }
+/>`,
+    ifElseStructural: `<span
+  @if (ifElseDirectiveStrict()) {
+    *allowedUser(name="{ifElseDirectiveName()}")
+  } @else {
+    *minLength(value="{ifElseDirectiveName()}" min="{3}")
+  }
+>…</span>`,
+    chainStructural: `<span
+  @if (chainDirectiveCount() > 5) {
+    *allowedUser(name="{chainDirectiveName()}")
+  } @else if (chainDirectiveCount() > 0) {
+    *isEven(value="{chainDirectiveCount()}")
+    *minLength(value="{chainDirectiveName()}" min="{chainDirectiveCount()}")
+  } @else {
+    *minLength(value="{chainDirectiveName()}" min="{3}")
+  }
+>…</span>`,
+    switchStructural: `<span
+  @switch (switchDirectiveMode()) {
+    @case ('utente') {
+      *allowedUser(name="{switchDirectiveName()}")
+    }
+    @case ('pari') {
+      *isEven(value="{switchDirectiveCount()}")
+    }
+    @case ('entrambe') {
+      *isEven(value="{switchDirectiveCount()}")
+      *minLength(value="{switchDirectiveName()}" min="{switchDirectiveCount()}")
+    }
+    @default {}
+  }
+>…</span>`,
+    complexStructural: `<div
+  *minLength(value="{complexName()}" min="{2}")
+  @if (complexGuarded()) {
+    *allowedUser(name="{complexName()}")
+  }
+>
+  <app-binding-preview
+    @switch (complexMode()) {
+      @case ('pari') {
+        *isEven(value="{complexItems().length}")
+        value="{'pari: ' + complexItems().length}"
+      }
+      @case ('lungo') {
+        *minLength(value="{complexName()}" min="{5}")
+        value="{'lungo: ' + complexName()}"
+        @if (complexDetailed()) {
+          detail="{complexName().length + ' caratteri'}"
+        }
+      }
+      @default {
+        @if (complexDetailed()) {
+          detail="nessuna direttiva"
+        } @else {
+          value="libero"
+        }
+      }
+    }
+  />
+  @if (complexItems().length) {
+    @for (n of complexItems(); track n) {
+      <span
+        @if (complexMode() === 'pari') {
+          *isEven(value="{n}")
+        } @else if (complexMode() === 'lungo') {
+          *minLength(value="{complexName()}" min="{n}")
+        } @else if (complexDetailed()) {
+          *allowedUser(name="{complexName()}")
+        }
+      >{n}</span>
+    }
+  } @else {
+    <p>Nessun elemento</p>
+  }
+</div>`
   };
 
   public readonly sidebarCollapsed = signal(false);
@@ -72,6 +179,39 @@ export class ShellComponent extends CustomElement {
   public readonly mixedCount = signal(2);
   public readonly mixedName = signal('Dario');
   public readonly mixedDirectiveApplied = signal(true);
+
+  // Binding di proprietà if / else
+  public readonly ifElseBound = signal(true);
+  public readonly ifElseCount = signal(1);
+  public readonly ifElseName = signal('Daniela');
+
+  // Binding di proprietà if / else if / else
+  public readonly chainBindingCount = signal(3);
+  public readonly chainBindingName = signal('Michele');
+
+  // Binding di proprietà switch
+  public readonly switchBindingStep = signal(1);
+  public readonly switchBindingName = signal('Federico');
+
+  // Direttiva strutturale if / else
+  public readonly ifElseDirectiveStrict = signal(true);
+  public readonly ifElseDirectiveName = signal('Silvano');
+
+  // Direttiva strutturale if / else if / else
+  public readonly chainDirectiveCount = signal(4);
+  public readonly chainDirectiveName = signal('Daniela');
+
+  // Direttiva strutturale switch
+  public readonly switchDirectiveMode = signal<'utente' | 'pari' | 'entrambe' | 'nessuna'>('utente');
+  public readonly switchDirectiveCount = signal(2);
+  public readonly switchDirectiveName = signal('Michele');
+
+  // Direttive strutturali statiche e condizionali annidate
+  public readonly complexName = signal('Federico');
+  public readonly complexGuarded = signal(false);
+  public readonly complexMode = signal<'pari' | 'lungo' | 'libero'>('pari');
+  public readonly complexDetailed = signal(true);
+  public readonly complexItems = signal([1, 2, 3, 4, 5, 6]);
 
   /**
    * Collapses or expands the sidebar.
@@ -116,5 +256,25 @@ export class ShellComponent extends CustomElement {
    */
   public setText(target: Signal<string>, event: Event): void {
     target.set((event.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Sets a signal to one of its allowed values.
+   *
+   * @param target - The signal to update.
+   * @param value - The value to set.
+   */
+  public select<T>(target: Signal<T>, value: T): void {
+    target.set(value);
+  }
+
+  /**
+   * Resizes a list of the numbers from 1 to its length.
+   *
+   * @param target - The signal holding the list.
+   * @param step - How many numbers to add, negative to remove them.
+   */
+  public resize(target: Signal<number[]>, step: number): void {
+    target.update(items => Array.from({ length: Math.max(items.length + step, 0) }, (_, i) => i + 1));
   }
 }

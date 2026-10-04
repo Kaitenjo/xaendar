@@ -23,14 +23,34 @@ export class Computed<T = any> {
   /**
    * The current value of the signal.
    *
-   * Uninitialised (`!`) until the first evaluation. After that, holds either
-   * the return value of `#callback` or a boxed error
-   * `{ isError: true; value: Error }` if the last evaluation threw.
+   * Uninitialised (`!`) until the first evaluation. After that, holds the
+   * return value of the last evaluation of `#callback` that didn't throw.
    *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
    */
-  #value!: T | { isError: true; value: Error };
+  #value!: T;
+  /**
+   * Flag to prevent an emit to the sinks of the signal
+   * during the first evaluation
+   *
+   * @internalSlot
+   */
+  #hasValue: boolean;
+  /**
+   * Whether the last evaluation threw, either in `#callback` or in `#equals`.
+   * Kept apart from `#error` because anything can be thrown, `undefined` included.
+   *
+   * @internalSlot
+   */
+  #hasError: boolean;
+  /**
+   * The exception thrown by the last evaluation, meaningful only while
+   * `#hasError` is `true`.
+   *
+   * @internalSlot
+   */
+  #error: unknown;
   /**
    * The current evaluation state of this Signal.
    *
@@ -110,7 +130,7 @@ export class Computed<T = any> {
    *
    * Called with `this` bound to the `Computed` instance itself so that
    * internal methods (e.g. `addSource`) are accessible if needed.
-   * Any exception thrown by this function is caught and cached.
+   * Any exception thrown by this function is caught, cached and rethrown by `get()`.
    *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
@@ -136,6 +156,8 @@ export class Computed<T = any> {
     this.#sources = new Set;
     this.#sinks = new Set;
     this.#state = 'dirty';
+    this.#hasValue = false;
+    this.#hasError = false;
   }
 
   /**
@@ -149,14 +171,14 @@ export class Computed<T = any> {
    * depth-first to find and recalculate the deepest stale `Computed` first,
    * then re-checks upward until this Signal is `~clean~`.
    *
-   * @returns The current computed value, or a boxed error object if the last
-   *   evaluation threw.
+   * @returns The current computed value.
+   * @throws The exception thrown by the last evaluation, either by `#callback` or by `#equals`.
    * @throws If `frozen` is `true`.
    * @throws If the Signal is in the `~computing~` state (cyclic dependency).
    *
    * @see Signal algorithms — "Method: Signal.Computed.prototype.get"
    */
-  public get(): T | { isError: true; value: Error } {
+  public get(): T {
     if (GLOBAL_STATE.frozen) {
       throw new Error('Cannot get value of a Computed signal while the global state is frozen');
     }
@@ -174,6 +196,10 @@ export class Computed<T = any> {
         const deepest = this.#findDeepestStale();
         deepest.#computeValue();
       }
+    }
+
+    if (this.#hasError) {
+      throw this.#error;
     }
 
     return this.#value;
@@ -318,7 +344,8 @@ export class Computed<T = any> {
    * 4. Restores the previous `computing` value.
    * 5. Runs the "set Signal value" algorithm to detect value changes.
    * 6. Transitions state to `~clean~`.
-   * 7. Propagates `~dirty~` to sinks (or attempts `~clean~` if value unchanged).
+   * 7. Propagates `~dirty~` to sinks (or attempts `~clean~` if value unchanged),
+   *    except after the first evaluation, as no sink observed a previous value.
    *
    * @see Signal algorithms — "Algorithm: recalculate dirty computed Signal"
    */
@@ -331,27 +358,45 @@ export class Computed<T = any> {
     pushComputed(this);
     this.setState('computing', PRIVATE);
 
-    let newValue: T | { isError: true; value: Error };
+    let newValue!: T;
+    let error: unknown;
+    let thrown = false;
 
     try {
       newValue = this.#callback.call(this);
-    } catch (error) {
+    } catch (err) {
       // This log is not present in the TC39 spec, could be removed in next versions
       if (isDevMode()) {
-        console.error('Error thrown while computing a Computed signal:', error);
+        console.error('Error thrown while computing a Computed signal:', err);
       }
-      newValue = { isError: true, value: error as Error };
+      thrown = true;
+      error = err;
     } finally {
       popComputed();
     }
 
-    const outcome = this.#setValue(newValue);
+    const outcome = thrown ? this.#setError(error) : this.#setValue(newValue);
 
     this.setState('clean', PRIVATE);
 
+    /*
+      Nothing observed a value before the first evaluation: the only sinks are the Computed reading it
+      or a Watcher that started watching before reading it, so the outcome is not propagated
+    */
+    if (!this.#hasValue) {
+      this.#hasValue = true;
+      return;
+    }
+
+    /*
+      Watchers are skipped: they were already notified when this Signal left ~clean~,
+      notifying them again from a recalculation would schedule a run with nothing pending
+    */
     if (outcome === 'dirty') {
       for (const sink of this.#sinks) {
-        sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE);
+        if (sink instanceof Computed) {
+          sink.setState('dirty', PRIVATE);
+        }
       }
     } else {
       this.#propagateClean();
@@ -365,38 +410,40 @@ export class Computed<T = any> {
    * returns `~clean~` and leaves `#value` untouched. Otherwise updates
    * `#value` and returns `~dirty~`.
    *
-   * Special cases:
-   * - If `newValue` is a boxed error, `#equals` is skipped and the error is
-   *   cached directly.
-   * - If `#equals` itself throws, the exception is cached as a boxed error
-   *   and the outcome is `~dirty~`.
+   * `#equals` is skipped when no value is cached yet, or an exception is. If `#equals`
+   * itself throws, its exception is cached instead (see `#setError`).
    *
-   * @param newValue - The value (or boxed error) produced by `#callback`.
+   * @param newValue - The value produced by `#callback`.
    * @returns `~clean~` if the value is unchanged, `~dirty~` otherwise.
    *
    * @see Signal algorithms — "Set Signal value algorithm"
    */
-  #setValue(newValue: T | { isError: true; value: Error }): 'clean' | 'dirty' {
-    const oldValue = this.#value;
-
-    /*
-      If new value is an error we always update without calling equals
-    */
-    if (this.#isErrorValue(newValue)) {
-      this.#value = newValue;
-      return 'dirty';
-    }
-
+  #setValue(newValue: T): 'clean' | 'dirty' {
     try {
-      if (!this.#isErrorValue(oldValue) && this.#equals.call(this, oldValue, newValue)) {
+      if (this.#hasValue && !this.#hasError && this.#equals.call(this, this.#value, newValue)) {
         return 'clean';
       }
-    } catch (equalsError) {
-      this.#value = { isError: true, value: equalsError as Error };
-      return 'dirty';
+    } catch (err) {
+      return this.#setError(err);
     }
 
     this.#value = newValue;
+    this.#hasError = false;
+    this.#error = undefined;
+    return 'dirty';
+  }
+
+  /**
+   * Caches an exception thrown by `#callback` or by `#equals`, to be rethrown
+   * by `get()` until a later evaluation succeeds. The outcome is always
+   * `~dirty~`, without calling `#equals`.
+   *
+   * @param error - The exception to cache.
+   * @returns `~dirty~`.
+   */
+  #setError(error: unknown): 'dirty' {
+    this.#hasError = true;
+    this.#error = error;
     return 'dirty';
   }
 
@@ -430,19 +477,6 @@ export class Computed<T = any> {
         }
       }
     }
-  }
-
-  /**
-   * Type guard that checks whether a value is a boxed error object.
-   *
-   * Used to distinguish a legitimately computed value from a cached
-   * exception produced by `#callback` or `#equals`.
-   *
-   * @param value - The value to inspect.
-   * @returns `true` if `value` is `{ isError: true; value: Error }`.
-   */
-  #isErrorValue(value: unknown): value is { isError: true; value: Error } {
-    return typeof value === 'object' && !!value && 'isError' in value;
   }
 
   #isValidTransition(from: ComputedState, to: ComputedState): boolean {

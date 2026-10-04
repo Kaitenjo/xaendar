@@ -3,7 +3,7 @@ import { InterpolationNode } from '../../../parser/types/nodes/interpolation-nod
 import { TextNode } from '../../../parser/types/nodes/text-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { resolveExpression } from '../../utils/generator/generator.utils';
+import { resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 
 /**
  * Generates code for a text or interpolation node.
@@ -19,7 +19,7 @@ import { resolveExpression } from '../../utils/generator/generator.utils';
 export async function generateTextAndInterpolation(node: TextNode | InterpolationNode, parentNode: string, _index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   return {
     code: [`${node.type === ASTNodeType.Text
-      ? `_renderLiteralText(${parentNode}, context, '${node.value}', ${anchor});`
+      ? `_renderLiteralText(${parentNode}, context, ${toStringLiteral(node.value)}, ${anchor});`
       : `_renderText(${parentNode}, context, () => ${resolveExpression(node.expression, compilerContext).expression}, ${anchor});`
       }`,
     ]

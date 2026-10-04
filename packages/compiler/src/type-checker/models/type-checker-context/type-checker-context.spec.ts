@@ -49,14 +49,14 @@ describe('TypeCheckContext', () => {
   });
 
   it('defaults the event map to HTMLElementEventMap', () => {
-    expect(new TypeCheckContext().getEventMap()).toBe('HTMLElementEventMap');
-    expect(new TypeCheckContext(new TypeCheckContext()).getEventMap()).toBe('HTMLElementEventMap');
+    expect(new TypeCheckContext().eventMap).toBe('HTMLElementEventMap');
+    expect(new TypeCheckContext(new TypeCheckContext()).eventMap).toBe('HTMLElementEventMap');
   });
 
   it('inherits the event map of its closest ancestor scope declaring one', () => {
     const svg = new TypeCheckContext(new TypeCheckContext(), [], 'SVGElementEventMap');
 
-    expect(new TypeCheckContext(new TypeCheckContext(svg)).getEventMap()).toBe('SVGElementEventMap');
-    expect(new TypeCheckContext(svg, [], 'MathMLElementEventMap').getEventMap()).toBe('MathMLElementEventMap');
+    expect(new TypeCheckContext(new TypeCheckContext(svg)).eventMap).toBe('SVGElementEventMap');
+    expect(new TypeCheckContext(svg, [], 'MathMLElementEventMap').eventMap).toBe('MathMLElementEventMap');
   });
 });

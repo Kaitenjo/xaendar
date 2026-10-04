@@ -60,6 +60,23 @@ describe('effect', () => {
       expect(spy).toHaveBeenLastCalledWith(3);
     });
 
+    it('schedules a single re-run when notified more than once before it', async () => {
+      const source = new Signal.State(0);
+      const derived = new Signal.Computed(() => source.get() * 2);
+      const direct = new Signal.State(0);
+      const onBeforeRun = vi.fn();
+      const spy = vi.fn();
+
+      effect(() => { spy(derived.get() + direct.get()); }, { onBeforeRun });
+
+      source.set(1); // the effect becomes ~checked~: first notification
+      direct.set(1); // then ~dirty~: second notification, already scheduled
+      await flushMicrotasks();
+
+      expect(onBeforeRun).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenLastCalledWith(3);
+    });
+
     it('tracks multiple signals', async () => {
       const greeting = new Signal.State('hello');
       const subject = new Signal.State('world');
@@ -117,6 +134,56 @@ describe('effect', () => {
     });
   });
 
+  describe('errors', () => {
+    it('rethrows on creation and stops watching', async () => {
+      const state = new Signal.State(0);
+      const spy = vi.fn();
+      const onAfterRun = vi.fn();
+
+      expect(() => effect(() => {
+        spy(state.get());
+        throw new Error('boom');
+      }, { onAfterRun })).toThrow('boom');
+      expect(onAfterRun).toHaveBeenCalledOnce();
+
+      state.set(1);
+      await flushMicrotasks();
+
+      expect(spy).toHaveBeenCalledOnce();
+    });
+
+    it('rethrows from a re-run and keeps re-running', () => {
+      // The re-runs are executed by hand, so that their exceptions can be asserted
+      const tasks: (() => void)[] = [];
+      const queueSpy = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => { tasks.push(task); });
+
+      try {
+        const state = new Signal.State(0);
+        const spy = vi.fn();
+        const onAfterRun = vi.fn();
+
+        effect(() => {
+          spy(state.get());
+          if (state.get() > 0) {
+            throw new Error('boom');
+          }
+        }, { onAfterRun });
+
+        state.set(1);
+        expect(() => tasks.shift()?.()).toThrow('boom');
+        expect(onAfterRun).toHaveBeenCalledTimes(2);
+
+        state.set(2);
+        expect(() => tasks.shift()?.()).toThrow('boom');
+        expect(spy.mock.calls).toEqual([[0], [1], [2]]);
+        // A run that throws does not schedule another one with nothing pending
+        expect(tasks).toHaveLength(0);
+      } finally {
+        queueSpy.mockRestore();
+      }
+    });
+  });
+
   describe('options', () => {
 
     describe('onBeforeRun', () => {
@@ -147,7 +214,16 @@ describe('effect', () => {
     });
 
     describe('onAfterRun', () => {
-      it('is called after the initial execution', () => {
+      it('does not schedule a re-run right after the initial execution', async () => {
+      const onAfterRun = vi.fn();
+
+      effect(() => {}, { onAfterRun });
+      await flushMicrotasks();
+
+      expect(onAfterRun).toHaveBeenCalledOnce();
+    });
+
+    it('is called after the initial execution', () => {
         const order: string[] = [];
         effect(
           () => { order.push('fn'); },

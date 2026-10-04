@@ -3,6 +3,7 @@ import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExp
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
+import { Dictionary } from '@xaendar/types';
 
 /**
  * Complete set of JavaScript global identifiers up to ES2026.
@@ -407,6 +408,24 @@ export function getTextIdentifier(prefix = 'text', parentNode: string, index: st
  */
 export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 'switch' | 'case' | 'default', parentNode: string, index: string): string {
   return getIdentifier(prefix, parentNode, index);
+}
+
+/**
+ * Turns a text taken verbatim from the template (a text node, a static attribute value) into a
+ * single-quoted string literal for the generated code, escaping the characters that would end
+ * the literal or change its value: backslashes, single quotes and line terminators.
+ *
+ * @param value - The text to turn into a string literal.
+ * @returns The single-quoted string literal evaluating to `value`.
+ */
+export function toStringLiteral(value: string): string {
+  const STRING_LITERAL_ESCAPES: Readonly<Dictionary<string, string>> = {
+    '\\': '\\\\',
+    '\'': '\\\'',
+    '\n': '\\n',
+    '\r': '\\r'
+  };
+  return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, char => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
 }
 
 function getIdentifier(prefix: string, parentNode: string, index: string): string {

@@ -32,9 +32,15 @@ import { EffectOptions } from '../types/effect-options.type';
  * count.set(3); // silent
  * ```
  *
+ * An exception thrown by `fn` on the initial execution escapes `effect`, and
+ * the effect is torn down since no disposer could be returned. One thrown by a
+ * re-run escapes the microtask (reaching the global error handler), and the
+ * effect keeps re-running when its dependencies change.
+ *
  * @param fn - The side-effectful function to run. Any Signal read inside it
  *   is tracked as a dependency.
  * @returns A disposer function that, when called, permanently stops the effect.
+ * @throws The exception thrown by `fn` on the initial execution.
  */
 export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
   /**
@@ -59,12 +65,15 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
       queueMicrotask(() => {
         needsEnqueue = true;
         options?.onBeforeRun?.();
-        const pendings = watcher.getPending();
-        for (let i = 0; i < pendings.length; i++) {
-          pendings[i].get();
+        try {
+          const pendings = watcher.getPending();
+          for (let i = 0; i < pendings.length; i++) {
+            pendings[i].get();
+          }
+        } finally {
+          options?.onAfterRun?.();
+          watcher.watch();
         }
-        options?.onAfterRun?.();
-        watcher.watch();
       });
     }
   });
@@ -72,8 +81,15 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
   // Initial synchronous execution + first subscription.
   options?.onBeforeRun?.();
   watcher.watch(computed);
-  computed.get();
-  options?.onAfterRun?.();
+  try {
+    computed.get();
+  } catch (error) {
+    // The caller gets no disposer: stop watching, or the effect would re-run forever
+    watcher.unwatch(computed);
+    throw error;
+  } finally {
+    options?.onAfterRun?.();
+  }
 
   /**
    * Disposer — call this to permanently stop the effect.

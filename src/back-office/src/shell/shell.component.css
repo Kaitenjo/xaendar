@@ -134,6 +134,10 @@
   border-radius: 12px;
 }
 
+.example--wide {
+  grid-column: 1 / -1;
+}
+
 .example__title {
   margin: 0;
   color: var(--sh-text-strong);
@@ -196,4 +200,21 @@
   color: #5eead4;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.complex {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.complex__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.complex__empty {
+  margin: 0;
+  font-size: 0.82rem;
 }

@@ -70,12 +70,12 @@ declare global {
        * Registers this Signal as a source of any outer `Computed` currently
        * being evaluated (automatic dependency tracking).
        *
-       * @returns The current computed value, or a boxed error object if the last
-       *   evaluation threw.
+       * @returns The current computed value.
+       * @throws The exception thrown by the last evaluation of the callback or of `equals`.
        * @throws If `frozen` is `true`.
        * @throws If the Signal is in the computing state (cyclic dependency).
        */
-      get(): T | { isError: true, value: Error };
+      get(): T;
     }
 
     namespace subtle {

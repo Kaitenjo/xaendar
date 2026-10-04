@@ -49,7 +49,7 @@ export class TypeCheckContext extends CompilerContext {
    * @returns The event map of the closest scope declaring one, `HTMLElementEventMap` if none does.
    */
   public get eventMap(): ElementEventMap {
-    return this._eventMap ?? this.parent?._eventMap ?? 'HTMLElementEventMap';
+    return this._eventMap ?? this.parent?.eventMap ?? 'HTMLElementEventMap';
   }
 
   /**

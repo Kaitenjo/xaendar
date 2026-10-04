@@ -87,11 +87,52 @@ describe('Computed', () => {
       expect(addSource).toHaveBeenCalledWith(computed, PRIVATE);
     });
 
-    it('boxes errors thrown by the callback', () => {
+    it('rethrows the error thrown by the callback', () => {
       const err = new Error('boom');
       const computed = new Computed(() => { throw err; });
-      const result = computed.get();
-      expect(result).toMatchObject({ isError: true, value: err });
+      expect(() => computed.get()).toThrow(err);
+    });
+
+    it('rethrows a thrown undefined', () => {
+      const computed = new Computed(() => { throw undefined; });
+      let caught: unknown = 'not thrown';
+      try {
+        computed.get();
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeUndefined();
+    });
+
+    it('returns the new value once a later evaluation succeeds', () => {
+      const state = new State(0);
+      const equals = vi.fn(Object.is);
+      const computed = new Computed(() => {
+        if (state.get() === 0) {
+          throw new Error('zero');
+        }
+        return state.get();
+      }, { equals });
+      expect(() => computed.get()).toThrow('zero');
+      state.set(1);
+      expect(computed.get()).toBe(1);
+      // The cached value was an exception: equals is skipped
+      expect(equals).not.toHaveBeenCalled();
+    });
+
+    it('stops rethrowing when a later evaluation returns the value cached before the error', () => {
+      const state = new State(1);
+      const computed = new Computed(() => {
+        if (state.get() === 0) {
+          throw new Error('zero');
+        }
+        return 1;
+      });
+      expect(computed.get()).toBe(1);
+      state.set(0);
+      expect(() => computed.get()).toThrow('zero');
+      state.set(2);
+      expect(computed.get()).toBe(1);
     });
 
     it('logs the error to console.error when the callback throws in dev mode', () => {
@@ -100,7 +141,7 @@ describe('Computed', () => {
       try {
         const error = new Error('boom');
         const computed = new Computed(() => { throw error; });
-        computed.get();
+        expect(() => computed.get()).toThrow(error);
         expect(consoleSpy).toHaveBeenCalledWith(
           'Error thrown while computing a Computed signal:',
           error
@@ -116,7 +157,7 @@ describe('Computed', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
         const computed = new Computed(() => { throw new Error('boom'); });
-        computed.get();
+        expect(() => computed.get()).toThrow('boom');
         expect(consoleSpy).not.toHaveBeenCalled();
       } finally {
         consoleSpy.mockRestore();
@@ -173,9 +214,6 @@ describe('Computed', () => {
       const topCb = vi.fn(() => {
         const leftValue = left.get();
         const rightValue = right.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-          throw new Error;
-        }
 
         return leftValue + rightValue;
       });
@@ -211,9 +249,6 @@ describe('Computed', () => {
       const dCb = vi.fn(() => {
         const leftValue = b.get();
         const rightValue = cNode.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-          throw new Error;
-        }
 
         return leftValue + rightValue;
       });
@@ -240,7 +275,8 @@ describe('Computed', () => {
       computed.get();
 
       state.set(1);
-      expect(watcher.notify).toHaveBeenCalledTimes(1);
+      // The first evaluation is not propagated, the same value is not either
+      expect(watcher.notify).not.toHaveBeenCalled();
     });
 
     it('respects a custom equals function', () => {
@@ -255,26 +291,22 @@ describe('Computed', () => {
       expect(watcher.notify).toHaveBeenCalledTimes(1);
     });
 
-    it('boxes errors thrown by equals', () => {
+    it('rethrows the error thrown by equals', () => {
       const state = new State(1);
       const equals = vi.fn(() => { throw new Error('equals exploded'); });
       const computed = new Computed(() => state.get(), { equals });
       const watcher = makeMockWatcher();
       computed.addSink(watcher, PRIVATE);
 
-      computed.get(); // first eval sets #value, equals not called yet (no old value)
+      computed.get(); // first eval caches #value without calling equals (no old value)
       state.set(2); // triggers re-eval → equals throws
-      const result = computed.get()
-      if (typeof result === 'object') {
-        expect(result).toMatchObject({ isError: true });
-        expect(result.value.message).toBe('equals exploded');
-      }
+      expect(() => computed.get()).toThrow('equals exploded');
     });
 
-    it('always caches a boxed error without calling equals', () => {
+    it('always caches an error without calling equals', () => {
       const equals = vi.fn(Object.is);
       const computed = new Computed(() => { throw new Error('fail'); }, { equals });
-      computed.get();
+      expect(() => computed.get()).toThrow('fail');
       expect(equals).not.toHaveBeenCalled();
     });
   });
@@ -428,6 +460,18 @@ describe('Computed', () => {
       expect(watcher.notify).toHaveBeenCalledWith(PRIVATE);
     });
 
+    it('does not notify Watcher sinks again when recalculating a changed value', () => {
+      const state = new State(1);
+      const computed = new Computed(() => state.get());
+      const watcher = makeMockWatcher();
+      computed.addSink(watcher, PRIVATE);
+      computed.get();
+
+      state.set(2); // notifies the Watcher once, as the Signal leaves ~clean~
+      expect(computed.get()).toBe(2);
+      expect(watcher.notify).toHaveBeenCalledTimes(1);
+    });
+
     it('does not notify Watcher sinks when value is unchanged', () => {
       const state = new State(1);
       const computed = new Computed(() => Math.sign(state.get())); // always 1 for positive
@@ -444,9 +488,6 @@ describe('Computed', () => {
       const inner = new Computed(() => state.get());
       const outer = new Computed(() => {
         const innerValue = inner.get();
-        if (typeof innerValue === 'object') {
-          throw new Error;
-        }
 
         return innerValue + 1
       });
@@ -465,9 +506,6 @@ describe('Computed', () => {
       const double = new Computed(() => state.get() * 2);
       const square = new Computed(() => {
         const doubleValue = double.get();
-        if (typeof doubleValue === 'object') {
-          throw new Error;
-        }
 
         return doubleValue ** 2;
       });
@@ -484,9 +522,6 @@ describe('Computed', () => {
       const computed = new Computed(() => Math.sign(state.get())); // always 1
       const computed2 = new Computed(() => {
         const bValue = computed.get();
-        if (typeof bValue === 'object') {
-          throw new Error;
-        }
 
         return bValue + 10;
       });
@@ -514,7 +549,6 @@ describe('Computed', () => {
       const top = new Computed(() => {
         const leftValue = left.get();
         const rightValue = right.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') throw new Error();
         return leftValue + rightValue;
       });
 
@@ -540,13 +574,22 @@ describe('Computed', () => {
     });
 
 
-    it('handles a Computed that wraps another Computed with a boxed error', () => {
+    it('lets an outer Computed catch the error of an inner one', () => {
       const inner = new Computed(() => { throw new Error('inner fail'); });
       const outer = new Computed(() => {
-        const v = inner.get();
-        return v?.isError ? 'caught' : v;
+        try {
+          return inner.get();
+        } catch {
+          return 'caught';
+        }
       });
       expect(outer.get()).toBe('caught');
+    });
+
+    it('caches and rethrows the error of an inner Computed in an outer one', () => {
+      const inner = new Computed(() => { throw new Error('inner fail'); });
+      const outer = new Computed(() => inner.get());
+      expect(() => outer.get()).toThrow('inner fail');
     });
   });
 
@@ -588,9 +631,6 @@ describe('Computed', () => {
       const top = new Computed(() => {
         const leftValue = left.get();
         const rightValue = right.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-          throw new Error;
-        }
         return leftValue + rightValue;
       });
 
@@ -613,9 +653,6 @@ describe('Computed', () => {
       const top = new Computed(() => {
         const leftValue = left.get();
         const rightValue = right.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-          throw new Error;
-        }
         return leftValue + rightValue;
       });
 
@@ -636,9 +673,6 @@ describe('Computed', () => {
       const topCb = vi.fn(() => {
         const leftValue = left.get();
         const rightValue = right.get();
-        if (typeof leftValue === 'object' || typeof rightValue === 'object') {
-          throw new Error;
-        }
         return leftValue + rightValue;
       });
 
@@ -676,9 +710,6 @@ describe('Computed', () => {
       const middle = new Computed(() => Math.sign(state.get())); // always 1 for positive
       const top = new Computed(() => {
         const middleValue = middle.get();
-        if (typeof middleValue === 'object') {
-          throw new Error;
-        }
 
         return middleValue + 10
       });
@@ -700,9 +731,6 @@ describe('Computed', () => {
       const b = new Computed(() => a.get());
       const c = new Computed(() => {
         const bValue = b.get();
-        if (typeof bValue === 'object') {
-          throw new Error;
-        }
         return bValue + 1;
       });
       const watcher = makeMockWatcher();

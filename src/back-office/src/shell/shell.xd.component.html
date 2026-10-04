@@ -89,6 +89,109 @@
             />
           </div>
         </article>
+
+        <article class="example">
+          <h2 class="example__title">Binding if / else</h2>
+          <p class="example__description">Con ifElseBound true è collegata value, altrimenti detail: cambiando ramo il binding del ramo uscente viene rimosso e la sua proprietà torna al default.</p>
+          <pre class="example__code"><code>{ snippets.ifElseProperty }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">ifElseBound</span>
+              <button type="button" class="{ ifElseBound() ? 'btn btn--on' : 'btn' }" (click)="toggle(ifElseBound)">
+                { ifElseBound() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">ifElseCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(ifElseCount, -1)">−</button>
+                <span class="stepper__value">{ ifElseCount() }</span>
+                <button type="button" class="btn" (click)="increment(ifElseCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">ifElseName</span>
+              <input class="control__input" value="{ifElseName()}" (input)="setText(ifElseName, $event)" />
+            </label>
+          </div>
+          <div class="example__result">
+            <app-binding-preview
+              @if (ifElseBound()) {
+                value="{ifElseCount().toString()}"
+              } @else {
+                detail="{ifElseName()}"
+              }
+            />
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Binding if / else if / else</h2>
+          <p class="example__description">Sopra 5 value mostra il valore alto; tra 1 e 5 il valore basso e detail il nome; da 0 in giù è collegata solo detail con un testo statico.</p>
+          <pre class="example__code"><code>{ snippets.chainProperty }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">chainBindingCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(chainBindingCount, -1)">−</button>
+                <span class="stepper__value">{ chainBindingCount() }</span>
+                <button type="button" class="btn" (click)="increment(chainBindingCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">chainBindingName</span>
+              <input class="control__input" value="{chainBindingName()}" (input)="setText(chainBindingName, $event)" />
+            </label>
+          </div>
+          <div class="example__result">
+            <app-binding-preview
+              @if (chainBindingCount() > 5) {
+                value="{'alto: ' + chainBindingCount()}"
+              } @else if (chainBindingCount() > 0) {
+                value="{'basso: ' + chainBindingCount()}"
+                detail="{chainBindingName()}"
+              } @else {
+                detail="nessun valore positivo"
+              }
+            />
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Binding switch</h2>
+          <p class="example__description">Il caso 1 collega solo value, i casi 2 e 3 condividono lo stesso ramo e collegano entrambe le proprietà, ogni altro valore finisce nel ramo default.</p>
+          <pre class="example__code"><code>{ snippets.switchProperty }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">switchBindingStep</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(switchBindingStep, -1)">−</button>
+                <span class="stepper__value">{ switchBindingStep() }</span>
+                <button type="button" class="btn" (click)="increment(switchBindingStep, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">switchBindingName</span>
+              <input class="control__input" value="{switchBindingName()}" (input)="setText(switchBindingName, $event)" />
+            </label>
+          </div>
+          <div class="example__result">
+            <app-binding-preview
+              @switch (switchBindingStep()) {
+                @case (1) {
+                  value="uno"
+                }
+                @case (2) @case (3) {
+                  value="{'due o tre: ' + switchBindingStep()}"
+                  detail="{switchBindingName()}"
+                }
+                @default {
+                  detail="{'nessun caso per ' + switchBindingStep()}"
+                }
+              }
+            />
+          </div>
+        </article>
       </section>
 
       <h2 class="section-title">Direttive strutturali</h2>
@@ -183,6 +286,199 @@
                 *allowedUser(name="{mixedName()}")
               }
             >{ mixedName() } · { mixedCount() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Direttiva strutturale if / else</h2>
+          <p class="example__description">In modalità stretta il chip richiede un utente consentito (allowedUser, 1 s), altrimenti basta un nome di almeno 3 caratteri (minLength).</p>
+          <pre class="example__code"><code>{ snippets.ifElseStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">ifElseDirectiveStrict</span>
+              <button type="button" class="{ ifElseDirectiveStrict() ? 'btn btn--on' : 'btn' }" (click)="toggle(ifElseDirectiveStrict)">
+                { ifElseDirectiveStrict() ? 'true' : 'false' }
+              </button>
+            </div>
+            <label class="control">
+              <span class="control__label">ifElseDirectiveName</span>
+              <input class="control__input" value="{ifElseDirectiveName()}" (input)="setText(ifElseDirectiveName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span
+              class="chip"
+              @if (ifElseDirectiveStrict()) {
+                *allowedUser(name="{ifElseDirectiveName()}")
+              } @else {
+                *minLength(value="{ifElseDirectiveName()}" min="{3}")
+              }
+            >Ciao { ifElseDirectiveName() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Direttiva strutturale if / else if / else</h2>
+          <p class="example__description">Sopra 5 serve un utente consentito; tra 1 e 5 il conteggio deve essere pari e il nome lungo almeno quanto il conteggio; da 0 in giù basta un nome di 3 caratteri.</p>
+          <pre class="example__code"><code>{ snippets.chainStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">chainDirectiveCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(chainDirectiveCount, -1)">−</button>
+                <span class="stepper__value">{ chainDirectiveCount() }</span>
+                <button type="button" class="btn" (click)="increment(chainDirectiveCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">chainDirectiveName</span>
+              <input class="control__input" value="{chainDirectiveName()}" (input)="setText(chainDirectiveName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span
+              class="chip"
+              @if (chainDirectiveCount() > 5) {
+                *allowedUser(name="{chainDirectiveName()}")
+              } @else if (chainDirectiveCount() > 0) {
+                *isEven(value="{chainDirectiveCount()}")
+                *minLength(value="{chainDirectiveName()}" min="{chainDirectiveCount()}")
+              } @else {
+                *minLength(value="{chainDirectiveName()}" min="{3}")
+              }
+            >{ chainDirectiveName() } · { chainDirectiveCount() }</span></div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Direttiva strutturale switch</h2>
+          <p class="example__description">La modalità sceglie quali direttive applicare: allowedUser, solo isEven, isEven e minLength assieme, oppure nessuna (ramo default, chip sempre visibile).</p>
+          <pre class="example__code"><code>{ snippets.switchStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">switchDirectiveMode</span>
+              <div class="stepper">
+                <button type="button" class="{ switchDirectiveMode() === 'utente' ? 'btn btn--on' : 'btn' }" (click)="select(switchDirectiveMode, 'utente')">utente</button>
+                <button type="button" class="{ switchDirectiveMode() === 'pari' ? 'btn btn--on' : 'btn' }" (click)="select(switchDirectiveMode, 'pari')">pari</button>
+                <button type="button" class="{ switchDirectiveMode() === 'entrambe' ? 'btn btn--on' : 'btn' }" (click)="select(switchDirectiveMode, 'entrambe')">entrambe</button>
+                <button type="button" class="{ switchDirectiveMode() === 'nessuna' ? 'btn btn--on' : 'btn' }" (click)="select(switchDirectiveMode, 'nessuna')">nessuna</button>
+              </div>
+            </div>
+            <div class="control">
+              <span class="control__label">switchDirectiveCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(switchDirectiveCount, -1)">−</button>
+                <span class="stepper__value">{ switchDirectiveCount() }</span>
+                <button type="button" class="btn" (click)="increment(switchDirectiveCount, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">switchDirectiveName</span>
+              <input class="control__input" value="{switchDirectiveName()}" (input)="setText(switchDirectiveName, $event)" />
+            </label>
+          </div>
+          <div class="example__result"><span
+              class="chip"
+              @switch (switchDirectiveMode()) {
+                @case ('utente') {
+                  *allowedUser(name="{switchDirectiveName()}")
+                }
+                @case ('pari') {
+                  *isEven(value="{switchDirectiveCount()}")
+                }
+                @case ('entrambe') {
+                  *isEven(value="{switchDirectiveCount()}")
+                  *minLength(value="{switchDirectiveName()}" min="{switchDirectiveCount()}")
+                }
+                @default {}
+              }
+            >{ switchDirectiveName() } · { switchDirectiveCount() }</span></div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Composizione complessa</h2>
+      <section class="examples">
+        <article class="example example--wide">
+          <h2 class="example__title">Direttive statiche e condizionali annidate</h2>
+          <p class="example__description">Il contenitore richiede sempre un nome di almeno 2 caratteri e, con complexGuarded true, anche un utente consentito. Dentro, la modalità sceglie con uno switch le direttive e i binding della preview (con if / else annidati) e quelle di ogni chip generato dal for, che usa una catena if / else if.</p>
+          <pre class="example__code"><code>{ snippets.complexStructural }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">complexMode</span>
+              <div class="stepper">
+                <button type="button" class="{ complexMode() === 'pari' ? 'btn btn--on' : 'btn' }" (click)="select(complexMode, 'pari')">pari</button>
+                <button type="button" class="{ complexMode() === 'lungo' ? 'btn btn--on' : 'btn' }" (click)="select(complexMode, 'lungo')">lungo</button>
+                <button type="button" class="{ complexMode() === 'libero' ? 'btn btn--on' : 'btn' }" (click)="select(complexMode, 'libero')">libero</button>
+              </div>
+            </div>
+            <div class="control">
+              <span class="control__label">complexItems</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="resize(complexItems, -1)">−</button>
+                <span class="stepper__value">{ complexItems().length }</span>
+                <button type="button" class="btn" (click)="resize(complexItems, 1)">+</button>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control__label">complexName</span>
+              <input class="control__input" value="{complexName()}" (input)="setText(complexName, $event)" />
+            </label>
+            <div class="control">
+              <span class="control__label">complexGuarded</span>
+              <button type="button" class="{ complexGuarded() ? 'btn btn--on' : 'btn' }" (click)="toggle(complexGuarded)">
+                { complexGuarded() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">complexDetailed</span>
+              <button type="button" class="{ complexDetailed() ? 'btn btn--on' : 'btn' }" (click)="toggle(complexDetailed)">
+                { complexDetailed() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result"><div
+              class="complex"
+              *minLength(value="{complexName()}" min="{2}")
+              @if (complexGuarded()) {
+                *allowedUser(name="{complexName()}")
+              }
+            >
+              <app-binding-preview
+                @switch (complexMode()) {
+                  @case ('pari') {
+                    *isEven(value="{complexItems().length}")
+                    value="{'pari: ' + complexItems().length}"
+                  }
+                  @case ('lungo') {
+                    *minLength(value="{complexName()}" min="{5}")
+                    value="{'lungo: ' + complexName()}"
+                    @if (complexDetailed()) {
+                      detail="{complexName().length + ' caratteri'}"
+                    }
+                  }
+                  @default {
+                    @if (complexDetailed()) {
+                      detail="nessuna direttiva"
+                    } @else {
+                      value="libero"
+                    }
+                  }
+                }
+              />
+              @if (complexItems().length) {
+                <div class="complex__chips">
+                  @for (n of complexItems(); track n) {
+                    <span
+                      class="chip"
+                      @if (complexMode() === 'pari') {
+                        *isEven(value="{n}")
+                      } @else if (complexMode() === 'lungo') {
+                        *minLength(value="{complexName()}" min="{n}")
+                      } @else if (complexDetailed()) {
+                        *allowedUser(name="{complexName()}")
+                      }
+                    >{ n }</span>
+                  }
+                </div>
+              } @else {
+                <p class="complex__empty">Nessun elemento</p>
+              }
+            </div></div>
         </article>
       </section>
 

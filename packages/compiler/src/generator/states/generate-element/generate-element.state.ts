@@ -10,7 +10,7 @@ import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { getElementIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
+import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -137,7 +137,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
     if (typeof value === 'string') {
       retval.push(
         ...indent([
-          `value: '${value}',`,
+          `value: ${toStringLiteral(value)},`,
           'setter: _setProperty',
         ])
       );

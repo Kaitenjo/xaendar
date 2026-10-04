@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import { getBlockIdentifier, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE } from './generator.utils';
+import { getBlockIdentifier, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 
 const resolve = (source: string, context = new CompilerContext(), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
 
@@ -92,5 +92,28 @@ describe('identifier helpers', () => {
   it('builds block identifiers', () => {
     expect(getBlockIdentifier('if', ROOT_NODE, '0')).toBe('if0');
     expect(getBlockIdentifier('elseIf', 'div0', '0_1')).toBe('div0__elseIf0_1');
+  });
+});
+
+describe('toStringLiteral', () => {
+  const LINE_SEPARATOR = String.fromCharCode(0x2028);
+  const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
+
+  it('wraps a plain text in single quotes', () => {
+    expect(toStringLiteral('hello')).toBe(`'hello'`);
+  });
+
+  it.each([
+    ['a single quote', `it's`, `'it\\'s'`],
+    ['a backslash', 'a\\b', `'a\\\\b'`],
+    ['line feeds and carriage returns', 'a\r\nb', `'a\\r\\nb'`],
+    ['line and paragraph separators', `a${LINE_SEPARATOR}b${PARAGRAPH_SEPARATOR}c`, `'a\\u2028b\\u2029c'`]
+  ])('escapes %s', (_description, value, literal) => {
+    expect(toStringLiteral(value)).toBe(literal);
+  });
+
+  it('produces a literal evaluating back to the text', () => {
+    const value = `it's a \\ "quoted"\r\n${LINE_SEPARATOR}text`;
+    expect(new Function(`return ${toStringLiteral(value)};`)()).toBe(value);
   });
 });
