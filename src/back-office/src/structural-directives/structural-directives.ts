@@ -23,9 +23,9 @@ export class AllowedUserDirective extends StructuralDirective {
    *
    * @returns A promise resolving to `true` if the name is allowed.
    */
-  public shouldRender(): Promise<boolean> {
+  public shouldRender(): boolean {
     const name = this.name();
-    return new Promise(resolve => setTimeout(() => resolve(ALLOWED_USERS.includes(name)), 1000));
+    return ALLOWED_USERS.includes(name);
   }
 }
 
