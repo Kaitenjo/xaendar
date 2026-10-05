@@ -122,6 +122,15 @@ export class _Context {
   }
 
   /**
+   * Returns the child contexts registered in this scope, in registration order.
+   *
+   * @returns The child contexts of this context.
+   */
+  public getChildren(): ReadonlyArray<_Context> {
+    return this._children;
+  }
+
+  /**
    * Registers a DOM node as directly owned by this context.
    *
    * @param node - The DOM node to track.

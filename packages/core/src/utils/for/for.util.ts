@@ -52,9 +52,10 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
         const existing = entries.get(key);
 
         let entry: ForEntry;
+        let nodes: Node[];
 
         if (existing) {
-          const nodes = existing.context.getNodes();
+          nodes = getItemNodes(parentNode, existing.context);
           const lastNode = nodes[nodes.length - 1];
           if (lastNode?.nextSibling !== nextReference) {
             for (let i = 0; i < nodes.length; i++) {
@@ -66,12 +67,12 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
         } else {
           const created = forFn(parentNode, parentContext, items, i, nextReference);
           parentContext.addChild(created.context);
+          nodes = getItemNodes(parentNode, created.context);
           entry = created;
         }
 
         newEntries.set(key, entry);
-        const ownNodes = entry.context.getNodes();
-        nextReference = ownNodes[0] ?? nextReference;
+        nextReference = nodes[0] ?? nextReference;
       }
 
       entries = newEntries;
@@ -79,6 +80,66 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
   });
 
   parentContext.addUnlistener(unlistener);
+}
+
+/**
+ * Returns, in DOM order, the nodes an item renders directly into `parentNode`: not only the ones owned
+ * by its context, but also the ones owned by its descendant contexts (e.g. the content of a nested
+ * `@if`/`@for`, which lives before its anchor). An item always occupies a contiguous range of
+ * `parentNode`, so the nodes are the ones going from the first to the last of them.
+ *
+ * @param parentNode - The element the item is rendered into.
+ * @param context - The context of the item.
+ * @returns The nodes of the item, in DOM order, or an empty array if it does not render any.
+ */
+function getItemNodes(parentNode: Node, context: _Context): Node[] {
+  const owned = new Array<Node>();
+  collectNodes(parentNode, context, owned);
+
+  if (!owned.length) {
+    return owned;
+  }
+
+  let first = owned[0];
+  let last = owned[0];
+  for (let i = 1; i < owned.length; i++) {
+    const node = owned[i];
+    if (node.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING) {
+      first = node;
+    } else if (node.compareDocumentPosition(last) & Node.DOCUMENT_POSITION_PRECEDING) {
+      last = node;
+    }
+  }
+
+  const nodes = [first];
+  for (let node = first; node !== last; node = node.nextSibling!) {
+    nodes.push(node.nextSibling!);
+  }
+
+  return nodes;
+}
+
+/**
+ * Collects the nodes owned by `context` and by its descendants that are rendered into `parentNode`.
+ * Since all the nodes of a context are rendered into the same element, a context whose nodes are
+ * rendered elsewhere (e.g. the children of an element) is skipped along with its descendants:
+ * their nodes are moved together with the element containing them.
+ *
+ * @param parentNode - The element the nodes have to be rendered into.
+ * @param context - The context to collect the nodes from.
+ * @param nodes - The array the collected nodes are pushed into.
+ */
+function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void {
+  const owned = context.getNodes();
+  if (owned.length && owned[0].parentNode !== parentNode) {
+    return;
+  }
+
+  nodes.push(...owned);
+  const children = context.getChildren();
+  for (let i = 0; i < children.length; i++) {
+    collectNodes(parentNode, children[i], nodes);
+  }
 }
 
 /**

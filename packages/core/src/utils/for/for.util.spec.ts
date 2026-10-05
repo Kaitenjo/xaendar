@@ -8,6 +8,7 @@ await vi.hoisted(async () => {
 
 const { _Context, mountNode } = await import('../context/context.util');
 const { _for, _iterationVariables } = await import('./for.util');
+const { _if } = await import('../if/if.util');
 const { effect, signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
@@ -16,9 +17,44 @@ function createRoot() {
   return new _Context({} as never, { createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
-type Options = { withNodes?: boolean, withUpdate?: boolean };
+type Body = (parentNode: HTMLElement, itemContext: InstanceType<typeof _Context>, text: string, reference: Node | null) => void;
+type Options = { withNodes?: boolean, withUpdate?: boolean, body?: Body };
 
-function setup(initial: string[], { withNodes = true, withUpdate = true }: Options = {}) {
+const renderItem: Body = (parentNode, itemContext, text, reference) => {
+  const li = document.createElement('li');
+  li.textContent = text;
+  mountNode(li, parentNode, itemContext, reference as Comment | null);
+};
+
+/**
+ * Wraps `body` into `depth` nested `@if` blocks, so that the first node owned by the
+ * item context is an anchor comment and the actual content lives in a descendant context.
+ */
+function nestedIf(depth: number, body: Body = renderItem, condition = () => true): Body {
+  return depth === 0 ? body : (parentNode, itemContext, text, reference) => {
+    _if(parentNode, itemContext, reference as Comment | null, [{
+      condition,
+      block: (blockParent, blockContext, blockReference) => {
+        const branchContext = new _Context({} as never, blockContext);
+        nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
+        return branchContext;
+      }
+    }]);
+  };
+}
+
+/**
+ * Renders the item text inside an `<li>` through a child context, as the compiler does for the children of an element.
+ */
+const renderItemWithChildren: Body = (parentNode, itemContext, text, reference) => {
+  const li = document.createElement('li');
+  mountNode(li, parentNode, itemContext, reference as Comment | null);
+  mountNode(document.createTextNode(text), li, itemContext.addChild());
+};
+
+const nodeTexts =(parent: HTMLElement) => Array.from(parent.childNodes).map(node => node.textContent);
+
+function setup(initial: string[], { withNodes = true, withUpdate = true, body = renderItem }: Options = {}) {
   const parent = document.createElement('ul');
   const context = createRoot();
   const items = signal(initial);
@@ -26,9 +62,7 @@ function setup(initial: string[], { withNodes = true, withUpdate = true }: Optio
   const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
     const itemContext = new _Context({} as never, parentContext);
     if (withNodes) {
-      const li = document.createElement('li');
-      li.textContent = String(list[index]);
-      mountNode(li, parentNode, itemContext, reference as Comment | null);
+      body(parentNode, itemContext, String(list[index]), reference);
     }
     return { context: itemContext, update: withUpdate ? update : undefined };
   });
@@ -121,6 +155,76 @@ describe('_for', () => {
 
     expect(forFn).toHaveBeenCalledTimes(3);
     expect(parent.querySelectorAll('li').length).toBe(0);
+  });
+
+  describe('when the item content is rendered by a nested context', () => {
+    it('inserts the previous item before the first rendered node of the next one', () => {
+      const { parent, texts } = setup(['a', 'b', 'c'], { body: nestedIf(1) });
+
+      expect(texts()).toEqual(['a', 'b', 'c']);
+      expect(nodeTexts(parent)).toEqual(['a', 'if', 'b', 'if', 'c', 'if', 'for']);
+    });
+
+    it('descends through several levels of nested contexts', () => {
+      const { texts } = setup(['a', 'b', 'c'], { body: nestedIf(3) });
+      expect(texts()).toEqual(['a', 'b', 'c']);
+    });
+
+    it('keeps the order when new items are added', async () => {
+      const { texts, change } = setup(['b', 'd'], { body: nestedIf(2) });
+
+      await change(['a', 'b', 'c', 'd']);
+
+      expect(texts()).toEqual(['a', 'b', 'c', 'd']);
+    });
+
+    it('moves the nodes of the nested contexts when reordering', async () => {
+      const { parent, texts, change } = setup(['a', 'b', 'c'], { body: nestedIf(2) });
+      const [a, b, c] = Array.from(parent.querySelectorAll('li'));
+
+      await change(['c', 'a', 'b']);
+
+      expect(texts()).toEqual(['c', 'a', 'b']);
+      expect(Array.from(parent.querySelectorAll('li'))).toEqual([c, a, b]);
+      expect(nodeTexts(parent)).toEqual(['c', 'if', 'if', 'a', 'if', 'if', 'b', 'if', 'if', 'for']);
+    });
+
+    it('moves the nested content placed between the own nodes of the item', async () => {
+      const body: Body = (parentNode, itemContext, text, reference) => {
+        renderItem(parentNode, itemContext, text, reference);
+        nestedIf(1)(parentNode, itemContext, `${text}!`, reference);
+      };
+      const { parent, change } = setup(['a', 'b'], { body });
+
+      await change(['b', 'a']);
+
+      expect(nodeTexts(parent)).toEqual(['b', 'b!', 'if', 'a', 'a!', 'if', 'for']);
+    });
+
+    it('ignores the contexts rendering into the children of an element', async () => {
+      const body: Body = (parentNode, itemContext, text, reference) => {
+        nestedIf(1, renderItem, () => false)(parentNode, itemContext, text, reference);
+        renderItemWithChildren(parentNode, itemContext, text, reference);
+      };
+      const { parent, texts, change } = setup(['a', 'b'], { body });
+
+      expect(nodeTexts(parent)).toEqual(['if', 'a', 'if', 'b', 'for']);
+
+      await change(['b', 'a']);
+
+      expect(texts()).toEqual(['b', 'a']);
+      expect(nodeTexts(parent)).toEqual(['if', 'b', 'if', 'a', 'for']);
+    });
+
+    it('falls back to the anchor when the nested context is not rendered', () => {
+      const { parent } = setup(['a', 'b'], { body: nestedIf(1, renderItem, () => false) });
+      expect(nodeTexts(parent)).toEqual(['if', 'if', 'for']);
+    });
+
+    it('falls back to the last anchor when the nested context does not own any node', () => {
+      const { parent } = setup(['a', 'b'], { body: nestedIf(2, () => {}) });
+      expect(nodeTexts(parent)).toEqual(['if', 'if', 'if', 'if', 'for']);
+    });
   });
 
   it('stops reacting and cleans up when the parent context is destroyed', async () => {
