@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { indent } from './indent.utils';
+import { indent } from './indent.util';
 
 describe('indent()', () => {
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import './array';
+import './array.util';
 
 describe('Array.prototype.removeItem', () => {
   it('removes the first occurrence of the item and returns true', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slice } from './string.utils';
+import { slice } from './string.util';
 
 describe('slice()', () => {
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isValidCustomElementName } from './tags.utils';
+import { isValidCustomElementName } from './tags.util';
 
 
 describe('isValidCustomElementName()', () => {

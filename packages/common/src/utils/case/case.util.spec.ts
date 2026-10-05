@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toKebabCase, toPascalCase } from './case.utils';
+import { toKebabCase, toPascalCase } from './case.util';
 
 describe('toPascalCase()', () => {
   it('converts a kebab-case string to PascalCase', () => {
