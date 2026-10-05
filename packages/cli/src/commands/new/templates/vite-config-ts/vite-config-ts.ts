@@ -8,6 +8,10 @@ export function viteConfigTs(): string {
 
 export default defineConfig({
   root: 'src',
+  publicDir: '../public',
+  build: {
+    outDir: '../dist',
+  },
   server: {
     open: true,
     port: 4200

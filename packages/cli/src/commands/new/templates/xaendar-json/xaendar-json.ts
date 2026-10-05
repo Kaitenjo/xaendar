@@ -8,9 +8,6 @@
 export function xaendarJson(name: string, style: string): string {
   return `{
   "name": "${name}",
-  "entry": "src/main.ts",
-  "outDir": "dist",
-  "assetsDir": "assets",
   "generate": {
     "components": {
       "style": "${style}"

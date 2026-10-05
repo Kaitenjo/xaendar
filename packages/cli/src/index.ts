@@ -2,6 +2,7 @@
 import { program } from 'commander';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { buildCommand } from './commands/build/build.command';
 import { generateCommand } from './commands/generate/generate.command';
 import { newCommand } from './commands/new/new.command';
 import { startCommand } from './commands/start/start.command';
@@ -16,5 +17,6 @@ program
 program.addCommand(generateCommand());
 program.addCommand(newCommand());
 program.addCommand(startCommand());
+program.addCommand(buildCommand());
 
 program.parse();

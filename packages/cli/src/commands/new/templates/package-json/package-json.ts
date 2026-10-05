@@ -12,7 +12,7 @@ export function packageJson(name: string, version: string): string {
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build",
+    "build": "xd build",
     "start": "xd start",
     "test": "vitest",
     "xd": "xd"
@@ -27,7 +27,7 @@ export function packageJson(name: string, version: string): string {
     "@vitest/coverage-v8": "^5.0.3",
     "@xaendar/cli": "^${version}",
     "typescript": "^6.0.3",
-    "vite": "^8.3.1",
+    "vite": "^8.3.2",
     "vitest": "^5.0.3"
   }
 }

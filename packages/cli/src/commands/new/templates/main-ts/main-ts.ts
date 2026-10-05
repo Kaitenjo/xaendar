@@ -1,4 +1,4 @@
-import { toPascalCase } from '../../../../utils/case/case.utils';
+import { toPascalCase } from '@xaendar/common';
 
 /**
  * Generates the content of the project entry point `src/main.ts`.

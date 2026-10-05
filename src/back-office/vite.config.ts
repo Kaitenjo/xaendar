@@ -6,6 +6,10 @@ const monorepoRoot = path.resolve(dirName, '../..');
 
 export default defineConfig({
   root: 'src',
+  publicDir: '../public',
+  build: {
+    outDir: '../dist',
+  },
   resolve: {
     alias: [
       { find: /^@xaendar\/common$/, replacement: path.resolve(monorepoRoot, 'packages/common/src/public-api.ts') },
