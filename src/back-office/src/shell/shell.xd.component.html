@@ -8,6 +8,7 @@
 
 <div class="shell">
   <app-sidebar
+    style="{ { backgroundColor: 'red' } }"
     collapsed="{sidebarCollapsed()}"
     (collapsedChange)="onCollapseChange($event)"
   />
@@ -424,7 +425,7 @@
                 { complexGuarded() ? 'true' : 'false' }
               </button>
             </div>
-            <div class="control">
+            <div bindingPreview class="control">
               <span class="control__label">complexDetailed</span>
               <button type="button" class="{ complexDetailed() ? 'btn btn--on' : 'btn' }" (click)="toggle(complexDetailed)">
                 { complexDetailed() ? 'true' : 'false' }
@@ -439,6 +440,7 @@
               }
             >
               <app-binding-preview
+                bindingPreview
                 @switch (complexMode()) {
                   @case ('pari') {
                     *isEven(value="{complexItems().length}")

@@ -2,4 +2,7 @@ export * from './computed.type';
 export * from './effect-options.type';
 export * from './input-signal.options.type';
 export * from './input-signal.type';
+export * from './query-element.type';
+export * from './query-signal.type';
+export * from './query-target.type';
 export * from './signal.type';

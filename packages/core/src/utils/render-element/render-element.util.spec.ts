@@ -210,7 +210,7 @@ describe('property setters', () => {
     });
 
     it('sets the value of an input signal of a directive', () => {
-      const directive = new LabelDirective(document.createElement('div'));
+      const directive = new LabelDirective();
 
       _setProperty(createRoot(), directive, 'label', 'updated');
 
@@ -218,7 +218,7 @@ describe('property setters', () => {
     });
 
     it('resolves the alias of a directive property through the class metadata', () => {
-      const directive = new LabelDirective(document.createElement('div'));
+      const directive = new LabelDirective();
 
       _setProperty(createRoot(), directive, 'my-label', 'aliased');
 
@@ -226,7 +226,7 @@ describe('property setters', () => {
     });
 
     it('throws when a directive does not declare the property', () => {
-      const directive = new LabelDirective(document.createElement('div'));
+      const directive = new LabelDirective();
 
       expect(() => _setProperty(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
     });

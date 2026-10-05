@@ -3,6 +3,10 @@
  */
 export const INTERNAL_ALIAS_TO_ATTRIBUTE = 'aliasToAttribute';
 /**
+ * Internal metadata key holding the selector a web component is registered with (see `WebComponent`).
+ */
+export const INTERNAL_SELECTOR = 'selector';
+/**
  * Namespace for SVG elements.
  */
 export const SVG_NS = 'http://www.w3.org/2000/svg';

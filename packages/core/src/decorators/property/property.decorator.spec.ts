@@ -1,18 +1,18 @@
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import { CustomElement } from '../models';
-import type { InputSignal } from '../signals/types/input-signal.type';
-import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../types/property-decorator-options.type';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
+import { CustomElement } from '../../models';
+import type { InputSignal } from '../../signals/types/input-signal.type';
+import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { Property } = await import('./property.decorator');
-const { isInputSignal } = await import('../signals/input/input-instance.symbol');
-const { INPUT_SIGNAL_SET_SYMBOL } = await import('../signals/input/input-set.symbol');
+const { Property } = await import('../property/property.decorator');
+const { isInputSignal } = await import('../../signals/input/input-instance.symbol');
+const { INPUT_SIGNAL_SET_SYMBOL } = await import('../../signals/input/input-set.symbol');
 
 type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
 type Decorated<ActualValue> = { init(): InputSignal<ActualValue> };

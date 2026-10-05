@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DIRECTIVE_CONNECT, INTERNAL_ALIAS_TO_ATTRIBUTE, MATHML_NS, SVG_NS } from './costants';
+import { DIRECTIVE_CONNECT, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_SELECTOR, MATHML_NS, SVG_NS } from './costants';
 
 describe('costants', () => {
   it('exposes the alias-to-attribute metadata key', () => {
     expect(INTERNAL_ALIAS_TO_ATTRIBUTE).toBe('aliasToAttribute');
+  });
+
+  it('exposes the selector metadata key', () => {
+    expect(INTERNAL_SELECTOR).toBe('selector');
   });
 
   it('exposes the SVG namespace', () => {

@@ -1,8 +1,8 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
-import type { EventHost } from '../types/event/event-host.type';
-import { EventOptions } from '../types/event/event-options.type';
-import { EventDecoratorReturnType } from '../types/event/event-return-type.type';
-import { Output } from '../types/event/output.type';
+import type { EventHost } from '../../types/event/event-host.type';
+import { EventOptions } from '../../types/event/event-options.type';
+import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
+import { Output } from '../../types/event/output.type';
 
 function isEventOptions(value: EventOptions | unknown): value is EventOptions {
   return !!value && typeof value === 'object' && ('bubbles' in value || 'cancelable' in value || 'composed' in value);

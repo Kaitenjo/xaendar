@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../costants';
-import type { BindingHost } from '../types/binding-host.type';
-import { input } from '../signals/input/input';
-import { InputSignal } from '../signals/types/input-signal.type';
-import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../types/property-decorator-options.type';
-import { PropertyDecoratorReturnType } from '../types/property/property-return-type.type';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
+import type { BindingHost } from '../../types/binding-host.type';
+import { input } from '../../signals/input/input';
+import { InputSignal } from '../../signals/types/input-signal.type';
+import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../../types/property-decorator-options.type';
+import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
 
 const propertyDecoratorOptionsWithRequiredBrand = Symbol('PropertyDecoratorOptionsWithRequiredBrand');
 type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & {

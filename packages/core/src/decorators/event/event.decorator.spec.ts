@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CustomElement } from '../models';
-import type { Output } from '../types/event/output.type';
-import { Event } from './event.decorator';
+import { CustomElement } from '../../models';
+import type { Output } from '../../types/event/output.type';
+import { Event } from '../event/event.decorator';
 
 type Decorated<ReturnType> = { init(this: Element): Output<ReturnType> };
 

@@ -1,5 +1,5 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
-import { Signal, signal } from '@xaendar/core/signals';
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
+import { QuerySignal, Signal, signal } from '@xaendar/core/signals';
 
 /**
  * Application shell: sidebar, topbar and a playground of template binding examples.
@@ -213,6 +213,17 @@ export class ShellComponent extends CustomElement {
   public readonly complexDetailed = signal(true);
   public readonly complexItems = signal([1, 2, 3, 4, 5, 6]);
 
+  @Query('[bindingPreview]')
+  public accessor testQuery!: QuerySignal<HTMLElement | null>;
+
+  @Query.all('[bindingPreview]')
+  public accessor testQueryAll!: QuerySignal<HTMLElement[]>;
+
+  public afterRender(): void {
+    this.effect(() => console.log(this.testQuery()));
+    this.effect(() => console.log(this.testQueryAll()));
+  }
+  
   /**
    * Collapses or expands the sidebar.
    */
