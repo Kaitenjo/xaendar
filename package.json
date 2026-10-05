@@ -29,6 +29,7 @@
     "@rolldown/plugin-babel": "^0.2.4",
     "commander": "^15.0.0",
     "fast-glob": "^3.3.3",
+    "lightningcss": "1.33.0",
     "magic-string": "^1.4.3",
     "typescript": "^6.0.3",
     "vscode-languageclient": "^10.1.2",

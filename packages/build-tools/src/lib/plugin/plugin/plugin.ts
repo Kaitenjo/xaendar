@@ -2,6 +2,7 @@ import { loadTsConfig } from '@xaendar/language-core';
 import type { Logger, Plugin } from 'vite';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
+import { createConfigResolvedHook } from '../config-resolved/config-resolved';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createHotUpdateHook } from '../hot-update/hot-update';
 import { createLoadHook } from '../load/load';
@@ -66,12 +67,14 @@ export function xaendarPlugin(): Plugin {
     host,
     compilerOptions: tsConfig.options,
     projectFileNames: tsConfig.fileNames,
+    minifyStyles: false,
     setLogger: value => logger = value,
     logError
   };
 
   return {
     name: 'xaendar',
+    configResolved: createConfigResolvedHook(state),
     resolveId: createResolveIdHook(),
     load: createLoadHook(state),
     transform: createTransformHook(state),

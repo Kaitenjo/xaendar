@@ -8,6 +8,10 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
+vi.mock('../config-resolved/config-resolved', () => ({
+  createConfigResolvedHook: vi.fn()
+}));
+
 vi.mock('../configure-server/configure-server', () => ({
   createConfigureServerHook: vi.fn()
 }));
@@ -34,6 +38,7 @@ vi.mock('../watch-change/watch-change', () => ({
 
 import { loadTsConfig } from '@xaendar/language-core';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
+import { createConfigResolvedHook } from '../config-resolved/config-resolved';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createHotUpdateHook } from '../hot-update/hot-update';
 import { createLoadHook } from '../load/load';
@@ -72,6 +77,11 @@ let hotUpdateHook: NonNullable<ReturnType<typeof createHotUpdateHook>>;
  */
 let configureServerHook: NonNullable<ReturnType<typeof createConfigureServerHook>>;
 
+/**
+ * Mocked `configResolved` hook handler returned by `createConfigResolvedHook`.
+ */
+let configResolvedHook: NonNullable<ReturnType<typeof createConfigResolvedHook>>;
+
 beforeEach(() => {
   vi.clearAllMocks();
   resolveIdHook = {} as NonNullable<ReturnType<typeof createResolveIdHook>>;
@@ -80,6 +90,8 @@ beforeEach(() => {
   watchChangeHook = {} as NonNullable<ReturnType<typeof createWatchChangeHook>>;
   hotUpdateHook = {} as NonNullable<ReturnType<typeof createHotUpdateHook>>;
   configureServerHook = {} as NonNullable<ReturnType<typeof createConfigureServerHook>>;
+  configResolvedHook = {} as NonNullable<ReturnType<typeof createConfigResolvedHook>>;
+  vi.mocked(createConfigResolvedHook).mockReturnValue(configResolvedHook);
   vi.mocked(loadTsConfig).mockReturnValue({ options: { target: 99 }, fileNames: ['/project/src/globals.d.ts'] });
   vi.mocked(createConfigureServerHook).mockReturnValue(configureServerHook);
   vi.mocked(createResolveIdHook).mockReturnValue(resolveIdHook);
@@ -90,10 +102,11 @@ beforeEach(() => {
 });
 
 describe('xaendarPlugin()', () => {
-  it('builds a Vite plugin wiring the resolveId, load, transform, watchChange, hotUpdate and configureServer hooks', () => {
+  it('builds a Vite plugin wiring the configResolved, resolveId, load, transform, watchChange, hotUpdate and configureServer hooks', () => {
     const plugin = xaendarPlugin();
 
     expect(plugin.name).toBe('xaendar');
+    expect(plugin.configResolved).toBe(configResolvedHook);
     expect(plugin.resolveId).toBe(resolveIdHook);
     expect(plugin.load).toBe(loadHook);
     expect(plugin.transform).toBe(transformHook);
@@ -114,6 +127,7 @@ describe('xaendarPlugin()', () => {
     expect(vi.mocked(createLoadHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createWatchChangeHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createConfigureServerHook).mock.calls[0][0]).toBe(stateArg);
+    expect(vi.mocked(createConfigResolvedHook).mock.calls[0][0]).toBe(stateArg);
   });
 
   it('logs to the console when no logger has been set yet', () => {

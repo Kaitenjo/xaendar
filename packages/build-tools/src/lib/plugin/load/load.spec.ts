@@ -35,6 +35,7 @@ function createState(files: Record<string, string>): XaendarPluginState {
     } as unknown as NodeCompilerHost,
     compilerOptions: {},
     projectFileNames: [],
+    minifyStyles: false,
     setLogger: vi.fn(),
     logError: vi.fn()
   };
@@ -109,6 +110,23 @@ describe('createLoadHook()', () => {
     expect(result).toEqual({ code: expect.stringContaining('sheet.replaceSync(".a { color: red; }");\n\nexport { sheet };'), map: { mappings: '' }, moduleType: 'js' });
     expect(ctx.addWatchFile).toHaveBeenCalledWith(STYLE_PATH);
     expect(compile).not.toHaveBeenCalled();
+  });
+
+  it('minifies the style when style minification is enabled', async () => {
+    const ctx = createPluginContext();
+    const state = { ...createState({ [STYLE_PATH]: '.a {\n  color: #ff0000;\n}' }), minifyStyles: true };
+
+    const result = await load(state, ctx, STYLE_MODULE_ID);
+
+    expect(result).toEqual({ code: expect.stringContaining('sheet.replaceSync(".a{color:red}");'), map: { mappings: '' }, moduleType: 'js' });
+  });
+
+  it('does not minify an unreadable style file even when style minification is enabled', async () => {
+    const ctx = createPluginContext();
+
+    const result = await load({ ...createState({}), minifyStyles: true }, ctx, STYLE_MODULE_ID);
+
+    expect(result).toEqual({ code: 'export const sheet = undefined;\n', map: { mappings: '' }, moduleType: 'js' });
   });
 
   it('exports an undefined stylesheet when the style file cannot be read, still watching it', async () => {

@@ -126,6 +126,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     } as unknown as NodeCompilerHost,
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: ['/project/src/globals.d.ts'],
+    minifyStyles: false,
     setLogger: vi.fn(),
     logError: vi.fn()
   };

@@ -7,6 +7,7 @@ import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
 import { extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
+import { minifyCss } from '../style/minify-css/minify-css.utils';
 
 type LoadHook = NonNullable<HookHandler<Plugin['load']>>;
 
@@ -42,6 +43,9 @@ function loadStyleModule(ctx: ThisParameterType<LoadHook>, state: XaendarPluginS
   let styleResult: StyleCompileResult;
   try {
     styleResult = compileStyle(stylePath, state.host);
+    if (state.minifyStyles && styleResult.cssText) {
+      styleResult.cssText = minifyCss(styleResult.cssText, stylePath);
+    }
   } catch (err) {
     return ctx.error(`Failed to compile style - ${stylePath}\n${err}`);
   }

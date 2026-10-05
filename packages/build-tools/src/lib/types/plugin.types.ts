@@ -20,6 +20,10 @@ export type XaendarPluginState = {
    */
   projectFileNames: readonly string[];
   /**
+   * Whether the compiled styles must be minified, set once the Vite config is resolved.
+   */
+  minifyStyles: boolean;
+  /**
    * Sets the active Vite logger used by hook-level error reporting.
    */
   setLogger(logger: Logger | undefined): void;
