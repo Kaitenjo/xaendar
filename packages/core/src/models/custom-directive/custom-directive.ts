@@ -1,7 +1,8 @@
-import { NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
+import { NoArgsVoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import { _Context } from '../../utils/context/context.util';
 
 /**
  * Base class for custom directives: behaviors applied to an existing HTML element
@@ -15,9 +16,10 @@ import { EffectOptions } from '../../signals/types/effect-options.type';
  */
 export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
   /**
-   * Disposers of the effects created via {@link effect}, invoked on disconnection.
+   * The active template execution context for this directive instance,
+   * holding all identifier bindings and registered cleanup functions.
    */
-  private _unlistenFns = new Array<VoidFunction>();
+  private _context!: _Context;
 
   /**
    * Reference to the HTML Element the directive is applied
@@ -42,13 +44,14 @@ export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
   public get element(): T {
     return this._element;
   }
-  
+
   /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
    * Invokes `onInit`, if declared.
    */
-  public [DIRECTIVE_CONNECT](): void {
+  public [DIRECTIVE_CONNECT](context: _Context): void {
     this.onInit?.();
+    this._context = context;
   }
 
   /**
@@ -57,10 +60,6 @@ export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
    */
   public [DIRECTIVE_DISCONNECT](): void {
     this.onDestroy?.();
-    for (let i = 0; i < this._unlistenFns.length; i++) {
-      this._unlistenFns[i]();
-    }
-    this._unlistenFns = [];
   }
 
   /**
@@ -86,14 +85,11 @@ export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const dispose = effect(fn, options);
-    this._unlistenFns.push(dispose);
+    this._context.addUnlistener(dispose);
 
     return () => {
-      const index = this._unlistenFns.indexOf(dispose);
-      if (index !== -1) {
-        this._unlistenFns.splice(index, 1);
-        dispose();
-      }
+      this._context.removeUnlistener(dispose);
+      dispose();
     };
   }
 

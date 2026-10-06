@@ -13,12 +13,25 @@ loadSignals();
 const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
 let counter = 0;
-function create(): CustomElement {
+function create(render: (element: CustomElement) => void = () => undefined): CustomElement {
   const klass = class extends CustomElement { };
-  _defineRender(klass, () => ({ clear: vi.fn() }) as never);
+  _defineRender(klass, function (this: CustomElement) {
+    render(this);
+    return { clear: vi.fn() } as never;
+  });
   const name = `x-query-signal-${counter++}`;
   customElements.define(name, klass);
   return document.createElement(name) as CustomElement;
+}
+
+/**
+ * Creates a query signal on a new element, then connects the element to the document.
+ */
+function connected<Value>(read: (shadowRoot: ShadowRoot) => Value, initialValue: Value, equals?: (a: Value, b: Value) => boolean) {
+  const element = create();
+  const signal = createQuerySignal(element, read, initialValue, equals);
+  document.body.appendChild(element);
+  return { element, signal };
 }
 
 function withMetadata(metadata: unknown): Constructor<HTMLElement> {
@@ -46,24 +59,43 @@ describe('toSelector', () => {
 describe('createQuerySignal', () => {
   const read = (shadowRoot: ShadowRoot) => shadowRoot.childElementCount;
 
-  it('holds the initial value before any change of the Shadow DOM', () => {
+  it('holds the initial value until the element is connected', () => {
     expect(createQuerySignal(create(), read, -1)()).toBe(-1);
   });
 
-  it('is recomputed each time the Shadow DOM changes', async () => {
+  it('does not observe the Shadow DOM until the element is connected', async () => {
     const element = create();
-    const signal = createQuerySignal(element, read, 0);
+    const signal = createQuerySignal(element, read, -1);
+
+    element.shadowRoot!.append(document.createElement('span'));
+    await flush();
+
+    expect(signal()).toBe(-1);
+  });
+
+  it('reads the value on connection, right after the render', () => {
+    const element = create(element => element.shadowRoot!.append(document.createElement('span')));
+    const signal = createQuerySignal(element, read, -1);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(1);
+    element.remove();
+  });
+
+  it('is recomputed each time the Shadow DOM changes', async () => {
+    const { element, signal } = connected(read, 0);
 
     element.shadowRoot!.append(document.createElement('span'), document.createElement('span'));
     await flush();
 
     expect(signal()).toBe(2);
     expect(signal.get()).toBe(2);
+    element.remove();
   });
 
   it('observes also the nested nodes', async () => {
-    const element = create();
-    const signal = createQuerySignal(element, shadowRoot => shadowRoot.querySelectorAll('i').length, 0);
+    const { element, signal } = connected(shadowRoot => shadowRoot.querySelectorAll('i').length, 0);
     const wrapper = document.createElement('section');
     element.shadowRoot!.append(wrapper);
     await flush();
@@ -72,11 +104,11 @@ describe('createQuerySignal', () => {
     await flush();
 
     expect(signal()).toBe(1);
+    element.remove();
   });
 
   it('uses the given equality function to decide whether to notify', async () => {
-    const element = create();
-    const signal = createQuerySignal(element, read, 0, () => true);
+    const { element, signal } = connected(read, 0, () => true);
     const spy = vi.fn();
     const dispose = effect(() => spy(signal()));
     spy.mockClear();
@@ -86,11 +118,11 @@ describe('createQuerySignal', () => {
 
     expect(spy).not.toHaveBeenCalled();
     dispose();
+    element.remove();
   });
 
   it('notifies when the value changes', async () => {
-    const element = create();
-    const signal = createQuerySignal(element, read, 0);
+    const { element, signal } = connected(read, 0);
     const spy = vi.fn();
     const dispose = effect(() => spy(signal()));
     spy.mockClear();
@@ -100,17 +132,31 @@ describe('createQuerySignal', () => {
 
     expect(spy).toHaveBeenCalledExactlyOnceWith(1);
     dispose();
+    element.remove();
   });
 
   it('stops observing the Shadow DOM when the element is disconnected', async () => {
-    const element = create();
-    const signal = createQuerySignal(element, read, 0);
-    document.body.appendChild(element);
+    const { element, signal } = connected(read, 0);
     element.remove();
 
     element.shadowRoot!.append(document.createElement('span'));
     await flush();
 
     expect(signal()).toBe(0);
+  });
+
+  it('reads the value again and keeps updating when the element is inserted again', async () => {
+    const { element, signal } = connected(read, 0);
+    element.remove();
+    element.shadowRoot!.append(document.createElement('span'));
+
+    document.body.appendChild(element);
+    expect(signal()).toBe(1);
+
+    element.shadowRoot!.append(document.createElement('span'));
+    await flush();
+
+    expect(signal()).toBe(2);
+    element.remove();
   });
 });

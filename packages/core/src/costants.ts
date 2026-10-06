@@ -29,3 +29,11 @@ export const DIRECTIVE_CONNECT = Symbol('DirectiveConnect');
  * typically when its host element is removed from the DOM.
  */
 export const DIRECTIVE_DISCONNECT = Symbol('DirectiveDisconnect');
+/**
+ * Key of the internal list of callbacks a `CustomElement` invokes each time it is connected, right after the render.
+ */
+export const CONNECTED_HOOKS = Symbol('ConnectedHooks');
+/**
+ * Key of the internal list of callbacks a `CustomElement` invokes each time it is disconnected.
+ */
+export const DISCONNECTED_HOOKS = Symbol('DisconnectedHooks');

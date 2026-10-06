@@ -2,6 +2,7 @@
 import { EffectOptions, loadSignals } from '@xaendar/signals';
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
+import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { CustomElement } from './custom-element';
@@ -153,6 +154,51 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'dispose', 'clear']);
+    });
+  });
+
+  describe('internal hooks', () => {
+    it('invokes the connected hooks right after the render, before afterRender', () => {
+      const calls = new Array<string>();
+      const { element, render } = createWithHooks({ afterRender: () => { calls.push('afterRender'); } });
+      render.mockImplementation(() => {
+        calls.push('render');
+        return { clear: vi.fn() } as never;
+      });
+      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(() => calls.push('hook'));
+
+      document.body.appendChild(element);
+
+      expect(calls).toEqual(['render', 'hook', 'afterRender']);
+      element.remove();
+    });
+
+    it('invokes the disconnected hooks after onDestroy and the clearing of the context', () => {
+      const calls = new Array<string>();
+      const { element, context } = createWithHooks({ onDestroy: () => calls.push('onDestroy') });
+      context.clear.mockImplementation(() => calls.push('clear'));
+      (element as unknown as CustomElement)[DISCONNECTED_HOOKS].push(() => calls.push('hook'));
+
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(calls).toEqual(['onDestroy', 'clear', 'hook']);
+    });
+
+    it('invokes the hooks again each time the element is connected and disconnected', () => {
+      const connected = vi.fn();
+      const disconnected = vi.fn();
+      const { element } = createWithHooks({});
+      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(connected);
+      (element as unknown as CustomElement)[DISCONNECTED_HOOKS].push(disconnected);
+
+      document.body.appendChild(element);
+      element.remove();
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(connected).toHaveBeenCalledTimes(2);
+      expect(disconnected).toHaveBeenCalledTimes(2);
     });
   });
 

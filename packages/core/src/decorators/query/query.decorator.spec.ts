@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { loadSignals } from '@xaendar/signals';
 import type { AccessorDecorator, Constructor } from '@xaendar/types';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
@@ -15,8 +15,11 @@ const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
 let counter = 0;
 
+afterEach(() => document.body.replaceChildren());
+
 /**
- * Creates an element, not connected to the document, whose Shadow DOM can be freely modified.
+ * Creates an element, not yet connected to the document, whose render does not touch its Shadow DOM:
+ * the queries created on it start observing the Shadow DOM once it is connected.
  */
 function create(): CustomElement {
   const klass = class extends CustomElement { };
@@ -28,11 +31,12 @@ function create(): CustomElement {
 
 /**
  * Registers a web component through the `WebComponent` decorator, reproducing the class metadata
- * the runtime attaches to the decorated class.
+ * the runtime attaches to the decorated class, with an empty render so its instances can be connected.
  */
 function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
   const selector = `x-query-target-${counter++}`;
   const klass = class extends base { };
+  _defineRender(klass, () => ({ clear: vi.fn() }) as never);
   const metadata = {};
   WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: metadata });
@@ -61,6 +65,7 @@ describe('query', () => {
   it('holds the first element having the attribute', async () => {
     const element = create();
     const signal = query(element, '[item]');
+    document.body.appendChild(element);
     const first = item();
 
     element.shadowRoot!.append(document.createElement('span'), first, item());
@@ -72,6 +77,7 @@ describe('query', () => {
   it('goes back to null when the element is removed', async () => {
     const element = create();
     const signal = query(element, '[item]');
+    document.body.appendChild(element);
     const target = item();
     element.shadowRoot!.append(target);
     await flush();
@@ -85,6 +91,7 @@ describe('query', () => {
   it('does not notify when the element did not change', async () => {
     const element = create();
     const signal = query(element, '[item]');
+    document.body.appendChild(element);
     element.shadowRoot!.append(item());
     await flush();
     const spy = vi.fn();
@@ -101,6 +108,7 @@ describe('query', () => {
   it('holds the first element with the tag name when the target is a tag name', async () => {
     const element = create();
     const signal = query(element, 'section');
+    document.body.appendChild(element);
     const target = document.createElement('section');
 
     element.shadowRoot!.append(document.createElement('span'), target, document.createElement('section'));
@@ -112,6 +120,7 @@ describe('query', () => {
   it('holds the first element matching a compound CSS selector', async () => {
     const element = create();
     const signal = query(element, 'ul > li.active');
+    document.body.appendChild(element);
     const list = document.createElement('ul');
     const inactive = document.createElement('li');
     const active = document.createElement('li');
@@ -128,6 +137,7 @@ describe('query', () => {
     const element = create();
     const { klass, selector } = defineComponent();
     const signal = query(element, klass);
+    document.body.appendChild(element);
     const first = document.createElement(selector);
 
     element.shadowRoot!.append(document.createElement('span'), first, document.createElement(selector));
@@ -142,6 +152,7 @@ describe('query', () => {
     const { klass } = defineComponent();
     const other = defineComponent();
     const signal = query(element, klass);
+    document.body.appendChild(element);
 
     element.shadowRoot!.append(document.createElement(other.selector));
     await flush();
@@ -164,6 +175,7 @@ describe('queryAll', () => {
   it('holds all the elements having the attribute, in document order', async () => {
     const element = create();
     const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
     const first = item();
     const second = item();
     const nested = item();
@@ -179,6 +191,7 @@ describe('queryAll', () => {
   it('updates when an element is removed', async () => {
     const element = create();
     const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
     const first = item();
     const second = item();
     element.shadowRoot!.append(first, second);
@@ -193,6 +206,7 @@ describe('queryAll', () => {
   it('notifies when the set of elements changes', async () => {
     const element = create();
     const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
     const spy = vi.fn();
     const dispose = effect(() => spy(signal()));
     spy.mockClear();
@@ -207,6 +221,7 @@ describe('queryAll', () => {
   it('notifies when the elements change but their count does not', async () => {
     const element = create();
     const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
     const first = item();
     element.shadowRoot!.append(first);
     await flush();
@@ -225,6 +240,7 @@ describe('queryAll', () => {
   it('does not notify when the elements did not change', async () => {
     const element = create();
     const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
     element.shadowRoot!.append(item());
     await flush();
     const spy = vi.fn();
@@ -242,6 +258,7 @@ describe('queryAll', () => {
     const element = create();
     const tags = queryAll(element, 'section');
     const classes = queryAll(element, '.card');
+    document.body.appendChild(element);
     const first = document.createElement('section');
     const second = document.createElement('div');
     second.className = 'card';
@@ -258,6 +275,7 @@ describe('queryAll', () => {
     const { klass, selector } = defineComponent();
     const other = defineComponent();
     const signal = queryAll(element, klass);
+    document.body.appendChild(element);
     const first = document.createElement(selector);
     const second = document.createElement(selector);
 
@@ -278,6 +296,7 @@ describe('Query decorator', () => {
   it('creates a signal holding the first element having the attribute', async () => {
     const element = create();
     const signal = init(Query('[item]'), element);
+    document.body.appendChild(element);
     expect(signal()).toBeNull();
 
     const target = item();
@@ -291,6 +310,7 @@ describe('Query decorator', () => {
     const element = create();
     const { klass, selector } = defineComponent();
     const signal = init(Query(klass), element);
+    document.body.appendChild(element);
 
     const target = document.createElement(selector);
     element.shadowRoot!.append(target);
@@ -303,6 +323,7 @@ describe('Query decorator', () => {
     it('creates a signal holding all the elements having the attribute', async () => {
       const element = create();
       const signal = init(Query.all('[item]'), element);
+      document.body.appendChild(element);
       expect(signal()).toEqual([]);
 
       const first = item();
@@ -317,6 +338,7 @@ describe('Query decorator', () => {
       const element = create();
       const { klass, selector } = defineComponent();
       const signal = init(Query.all(klass), element);
+      document.body.appendChild(element);
 
       const first = document.createElement(selector);
       const second = document.createElement(selector);

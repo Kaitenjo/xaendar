@@ -1,4 +1,5 @@
-import { NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
+import { NoArgsVoidFunction } from '@xaendar/types';
+import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../utils/context/context.util';
@@ -22,9 +23,15 @@ export class CustomElement extends HTMLElement {
    */
   private readonly _root = this.attachShadow({ mode: 'open' });
   /**
-   * Disposers of the effects created via {@link effect}, invoked on disconnection.
+   * Internal callbacks invoked by the runtime each time the element is inserted into the DOM,
+   * right after the render. They are never cleared, so they survive the reconnections.
    */
-  private _unlistenFns = new Array<VoidFunction>();
+  public readonly [CONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
+  /**
+   * Internal callbacks invoked by the runtime each time the element is removed from the DOM,
+   * after the context is cleared. They are never cleared, so they survive the reconnections.
+   */
+  public readonly [DISCONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
 
   /**
    * Optional lifecycle hook, invoked each time the element is inserted into the DOM, before the render:
@@ -56,14 +63,11 @@ export class CustomElement extends HTMLElement {
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const dispose = effect(fn, options);
-    this._unlistenFns.push(dispose);
+    this._context.addUnlistener(dispose);
 
     return () => {
-      const index = this._unlistenFns.indexOf(dispose);
-      if (index !== -1) {
-        this._unlistenFns.splice(index, 1);
-        dispose();
-      }
+      this._context.removeUnlistener(dispose);
+      dispose();
     };
   }
 
@@ -73,7 +77,8 @@ export class CustomElement extends HTMLElement {
    * Adopts the stylesheet registered for this component class (see `_defineRender`), if any,
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree and sets up
-   * reactive signal subscriptions, and finally invokes `afterRender`, if declared.
+   * reactive signal subscriptions, then invokes the internal connected hooks
+   * (e.g. the ones of the query signals) and finally `afterRender`, if declared.
    *
    * @throws When no render function is registered for this component class.
    */
@@ -90,6 +95,7 @@ export class CustomElement extends HTMLElement {
 
     this.onInit?.();
     this._context = render.call(this);
+    this[CONNECTED_HOOKS].forEach(hook => hook());
     this.afterRender?.();
   }
 
@@ -99,14 +105,12 @@ export class CustomElement extends HTMLElement {
    * Invokes `onDestroy`, if declared, and disposes the effects created via {@link effect}.
    * Then invokes `context.clear()`
    * to dispose all active signal subscriptions, detach event listeners, and remove
-   * tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted.
+   * tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
+   * and finally invokes the internal disconnected hooks.
    */
   private disconnectedCallback(): void {
     this.onDestroy?.();
-    for (let i = 0; i < this._unlistenFns.length; i++) {
-      this._unlistenFns[i]();
-    }
-    this._unlistenFns = [];
     this._context.clear();
+    this[DISCONNECTED_HOOKS].forEach(hook => hook());
   }
 }

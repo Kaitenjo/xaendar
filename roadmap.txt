@@ -2,9 +2,6 @@
 - Direttive
 - Creazione componenti imperativamente
 - CustomElements che partrono da un HTMLElement specifico
-- @Query / @Query.all: il MutationObserver viene creato una sola volta in init() (costruttore), ma disconnectedCallback
-  lo disconnette e svuota _unlistenFns. Se l'elemento viene rimosso e reinserito nel DOM, i signal di query non si
-  aggiornano piu'. Va creato/riattaccato in connectedCallback (e riletto il valore dopo il render).
 
 L'ordine di import delle classi javascript dei web components sembra essere
 decisivo al bootstrapping perchè i decoratori di classe e proprieta vengono invocati

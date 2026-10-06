@@ -92,7 +92,7 @@ export function _renderElement(
 
   structuralDirectives.length || structuralConditionalBindings.length
    ? renderStructuralElement(parentNode, context, anchor, structuralDirectives, structuralConditionalBindings, render)
-    : render(context, anchor);
+   : render(context, anchor);
 }
 
 /**
@@ -269,7 +269,7 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
       bindEvents(element, branchContext, branch.events);
     });
 
-    directive[DIRECTIVE_CONNECT]();
+    directive[DIRECTIVE_CONNECT](context);
     context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
   }
 }

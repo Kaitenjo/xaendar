@@ -1,3 +1,4 @@
+import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QuerySignal } from '../types/query-signal.type';
@@ -17,13 +18,14 @@ export function toSelector(target: QueryTarget): string {
 
 /**
  * Creates a signal holding the result of `read`, kept up to date by observing
- * the Shadow DOM of the element: it is recomputed each time its tree changes.
- * The observer is disconnected when the element is disconnected.
+ * the Shadow DOM of the element while it is connected: it is read again each time the element
+ * is inserted into the DOM, right after the render, and recomputed each time its tree changes.
+ * The observer is disconnected each time the element is removed from the DOM.
  *
  * @template Value - The type of the queried value.
  * @param element - The component whose Shadow DOM is observed.
  * @param read - Reads the current value from the Shadow DOM.
- * @param initialValue - The value held until the first change of the Shadow DOM.
+ * @param initialValue - The value held until the element is connected for the first time.
  * @param equals - Tells whether two values are equal, to avoid notifying when the result didn't change.
  * @returns A {@link QuerySignal} instance.
  */
@@ -33,8 +35,11 @@ export function createQuerySignal<Value>(element: CustomElement, read: (shadowRo
   const getter = function () { return signal.get(); }
 
   const mutationObserver = new MutationObserver(() => signal.set(read(shadowRoot)));
-  mutationObserver.observe(shadowRoot, { childList: true, subtree: true });
-  element['_unlistenFns'].push(() => mutationObserver.disconnect());
+  element[CONNECTED_HOOKS].push(() => {
+    mutationObserver.observe(shadowRoot, { childList: true, subtree: true });
+    signal.set(read(shadowRoot));
+  });
+  element[DISCONNECTED_HOOKS].push(() => mutationObserver.disconnect());
 
   return Object.assign(getter, {
     get: signal.get.bind(signal)
