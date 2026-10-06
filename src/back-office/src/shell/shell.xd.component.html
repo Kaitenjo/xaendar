@@ -2,6 +2,8 @@
 @import { TopbarComponent } from '../topbar/topbar.xd.component.ts'
 @import { FormComponent } from '../form/form.xd.component.ts'
 @import { BindingPreviewComponent } from '../binding-preview/binding-preview.xd.component.ts'
+@import { QueryPreviewComponent } from '../query-preview/query-preview.xd.component.ts'
+@import { SlotPreviewComponent } from '../slot-preview/slot-preview.xd.component.ts'
 @import { AllowedUserDirective } from '../structural-directives/structural-directives.ts'
 @import { IsEvenDirective } from '../structural-directives/structural-directives.ts'
 @import { MinLengthDirective } from '../structural-directives/structural-directives.ts'
@@ -19,7 +21,7 @@
     <main class="shell__content">
       <h2 class="section-title">Binding Dinamici</h2>
 
-      <section class="examples">
+       <section class="examples">
         <article class="example">
           <h2 class="example__title">Binding condizionale</h2>
           <p class="example__description">value è collegata a conditionalCount solo mentre conditionalBound è true; quando il binding viene rimosso la proprietà torna al suo valore di default.</p>
@@ -481,6 +483,244 @@
                 <p class="complex__empty">Nessun elemento</p>
               }
             </div></div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Query sullo Shadow DOM</h2>
+      <section class="examples">
+        <article class="example">
+          <h2 class="example__title">Query</h2>
+          <p class="example__description">app-query-preview renderizza nel suo Shadow DOM queryCount elementi [item]: Query tiene il primo, e torna null quando non ce ne sono.</p>
+          <pre class="example__code"><code>{ snippets.query }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">queryCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(queryCount, -1)">−</button>
+                <span class="stepper__value">{ queryCount() }</span>
+                <button type="button" class="btn" (click)="increment(queryCount, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-query-preview count="{queryCount()}" />
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Query.all</h2>
+          <p class="example__description">Query.all tiene tutti gli elementi [item] nell'ordine del documento: invertendo la lista gli elementi vengono spostati, e l'array segue il nuovo ordine.</p>
+          <pre class="example__code"><code>{ snippets.queryAll }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">queryAllCount</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="increment(queryAllCount, -1)">−</button>
+                <span class="stepper__value">{ queryAllCount() }</span>
+                <button type="button" class="btn" (click)="increment(queryAllCount, 1)">+</button>
+              </div>
+            </div>
+            <div class="control">
+              <span class="control__label">queryAllReversed</span>
+              <button type="button" class="{ queryAllReversed() ? 'btn btn--on' : 'btn' }" (click)="toggle(queryAllReversed)">
+                { queryAllReversed() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-query-preview count="{queryAllCount()}" reversed="{queryAllReversed()}" />
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Query con la classe di un componente</h2>
+          <p class="example__description">Passando la classe di un web component, la query cerca il selettore con cui è registrato: l'app-binding-preview annidata viene trovata solo mentre queryClassNested è true.</p>
+          <pre class="example__code"><code>{ snippets.queryClass }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">queryClassNested</span>
+              <button type="button" class="{ queryClassNested() ? 'btn btn--on' : 'btn' }" (click)="toggle(queryClassNested)">
+                { queryClassNested() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-query-preview count="{1}" nested="{queryClassNested()}" />
+          </div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Query sul contenuto proiettato</h2>
+      <section class="examples">
+        <article class="example">
+          <h2 class="example__title">Query.content</h2>
+          <p class="example__description">Query.content cerca tra gli elementi proiettati negli slot, nell'ordine degli slot: H è nel light DOM dopo gli elementi D, ma lo slot header viene prima di quello di default.</p>
+          <pre class="example__code"><code>{ snippets.content }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">contentHeader</span>
+              <button type="button" class="{ contentHeader() ? 'btn btn--on' : 'btn' }" (click)="toggle(contentHeader)">
+                { contentHeader() ? 'true' : 'false' }
+              </button>
+            </div>
+            <div class="control">
+              <span class="control__label">contentItems</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="resize(contentItems, -1)">−</button>
+                <span class="stepper__value">{ contentItems().length }</span>
+                <button type="button" class="btn" (click)="resize(contentItems, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              @for (n of contentItems(); track n) {
+                <span class="chip" item>{ 'D' + n }</span>
+              }
+              @if (contentHeader()) {
+                <span class="chip" slot="header" item>H</span>
+              }
+            </app-slot-preview>
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Query.content.all</h2>
+          <p class="example__description">Gli elementi proiettati seguono l'ordine degli slot (header, default, footer), mentre con lightDom seguono l'ordine del documento.</p>
+          <pre class="example__code"><code>{ snippets.contentAll }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">contentAllItems</span>
+              <div class="stepper">
+                <button type="button" class="btn" (click)="resize(contentAllItems, -1)">−</button>
+                <span class="stepper__value">{ contentAllItems().length }</span>
+                <button type="button" class="btn" (click)="resize(contentAllItems, 1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              <span class="chip" slot="footer" item>F</span>
+              @for (n of contentAllItems(); track n) {
+                <span class="chip" item>{ 'D' + n }</span>
+              }
+              <span class="chip" slot="header" item>H</span>
+            </app-slot-preview>
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Discendenti e contenuto di fallback</h2>
+          <p class="example__description">La query trova anche i discendenti degli elementi proiettati (H1 e H2 dentro il div assegnato a header). Senza contenuto lo slot header mostra il suo fallback, che viene ignorato.</p>
+          <pre class="example__code"><code>{ snippets.contentDescendants }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">descendantProjected</span>
+              <button type="button" class="{ descendantProjected() ? 'btn btn--on' : 'btn' }" (click)="toggle(descendantProjected)">
+                { descendantProjected() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              @if (descendantProjected()) {
+                <div class="chip-group" slot="header">
+                  <span class="chip" item>H1</span>
+                  <span class="chip" item>H2</span>
+                </div>
+              }
+              <span class="chip" item>D</span>
+            </app-slot-preview>
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Filtro per slot e light DOM</h2>
+          <p class="example__description">slots limita la query agli slot indicati; lightDom la estende a tutto il light DOM, compreso N, che non è assegnato a nessuno slot e quindi non viene mostrato.</p>
+          <pre class="example__code"><code>{ snippets.contentLightDom }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">lightDomUnassigned</span>
+              <button type="button" class="{ lightDomUnassigned() ? 'btn btn--on' : 'btn' }" (click)="toggle(lightDomUnassigned)">
+                { lightDomUnassigned() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              <span class="chip" slot="header" item>H</span>
+              <span class="chip" item>D</span>
+              <span class="chip" slot="footer" item>F</span>
+              @if (lightDomUnassigned()) {
+                <span class="chip" slot="nessuno" item>N</span>
+              }
+            </app-slot-preview>
+          </div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Modifiche agli slot</h2>
+      <section class="examples">
+        <article class="example">
+          <h2 class="example__title">Aggiungere e togliere l'attributo slot</h2>
+          <p class="example__description">Con slotAttribute true X ha slot="header"; senza l'attributo finisce nello slot di default, dopo D.</p>
+          <pre class="example__code"><code>{ snippets.slotAttribute }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">slotAttribute</span>
+              <button type="button" class="{ slotAttribute() ? 'btn btn--on' : 'btn' }" (click)="toggle(slotAttribute)">
+                { slotAttribute() ? 'true' : 'false' }
+              </button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              <span class="chip" item>D</span>
+              <span
+                class="chip"
+                item
+                @if (slotAttribute()) {
+                  slot="header"
+                }
+              >X</span>
+            </app-slot-preview>
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Cambiare il valore dell'attributo slot</h2>
+          <p class="example__description">Il pulsante sposta X tra lo slot header e lo slot footer.</p>
+          <pre class="example__code"><code>{ snippets.slotValue }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">slotTarget</span>
+              <button type="button" class="btn" (click)="alternate(slotTarget, 'header', 'footer')">{ slotTarget() }</button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview>
+              <span class="chip" item>D</span>
+              <span class="chip" item slot="{slotTarget()}">X</span>
+            </app-slot-preview>
+          </div>
+        </article>
+
+        <article class="example">
+          <h2 class="example__title">Rinominare lo slot interno</h2>
+          <p class="example__description">Il pulsante cambia l'attributo name dell'ultimo slot di app-slot-preview: con altro, F non è più assegnato a nessuno slot e resta solo nel light DOM.</p>
+          <pre class="example__code"><code>{ snippets.slotName }</code></pre>
+          <div class="example__controls">
+            <div class="control">
+              <span class="control__label">innerSlotName</span>
+              <button type="button" class="btn" (click)="alternate(innerSlotName, 'footer', 'altro')">{ innerSlotName() }</button>
+            </div>
+          </div>
+          <div class="example__result">
+            <app-slot-preview footerSlot="{innerSlotName()}">
+              <span class="chip" slot="header" item>H</span>
+              <span class="chip" slot="footer" item>F</span>
+            </app-slot-preview>
+          </div>
         </article>
       </section>
 

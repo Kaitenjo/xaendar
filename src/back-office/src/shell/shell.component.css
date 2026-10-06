@@ -117,46 +117,72 @@
   color: #c7d2fe;
 }
 
-/* Examples */
+/*
+  Examples: one per row, each shown in full width. The code sits beside the controls and the result,
+  and moves above them when the list gets narrow. Nothing scrolls horizontally: the code wraps.
+*/
 .examples {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
 }
 
 .example {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.1rem 1.25rem;
-  background: var(--sh-surface);
-  border: 1px solid var(--sh-border);
-  border-radius: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    'title title'
+    'description description'
+    'code controls'
+    'code result';
+  gap: 0.75rem 1.5rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--sh-border);
 }
 
-.example--wide {
-  grid-column: 1 / -1;
+.example:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+@container (max-width: 860px) {
+  .example {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'title'
+      'description'
+      'code'
+      'controls'
+      'result';
+  }
 }
 
 .example__title {
+  grid-area: title;
   margin: 0;
   color: var(--sh-text-strong);
   font-size: 0.95rem;
 }
 
 .example__description {
+  grid-area: description;
   margin: 0;
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
 .example__code {
+  grid-area: code;
+  align-self: start;
   margin: 0;
   padding: 0.75rem 0.9rem;
   background: #0d0f15;
   border: 1px solid var(--sh-border);
   border-radius: 8px;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: #c9cde0;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 0.75rem;
@@ -164,6 +190,8 @@
 }
 
 .example__controls {
+  grid-area: controls;
+  align-self: start;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1.25rem;
@@ -174,11 +202,13 @@
 }
 
 .example__result {
+  grid-area: result;
+  align-self: start;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 0;
   min-height: 2.75rem;
-  margin-top: auto;
 }
 
 /* Comments used as anchors are ignored by :empty */
@@ -200,6 +230,12 @@
   color: #5eead4;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .complex {

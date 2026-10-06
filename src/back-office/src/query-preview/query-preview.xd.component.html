@@ -1,0 +1,24 @@
+@import { BindingPreviewComponent } from '../binding-preview/binding-preview.xd.component.ts'
+
+<div class="items">
+  @for (n of items(); track n) {
+    <span class="item" item>{ n }</span>
+  }
+  @if (nested()) {
+    <app-binding-preview class="nested" value="annidata" />
+  }
+</div>
+<dl class="preview">
+  <div class="preview__row">
+    <dt>{ labels.first }</dt>
+    <dd>{ describe(first()) }</dd>
+  </div>
+  <div class="preview__row">
+    <dt>{ labels.all }</dt>
+    <dd>{ describeAll(all()) }</dd>
+  </div>
+  <div class="preview__row">
+    <dt>{ labels.preview }</dt>
+    <dd>{ describeTag(preview()) }</dd>
+  </div>
+</dl>

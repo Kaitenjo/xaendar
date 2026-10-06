@@ -1,0 +1,61 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+
+.item {
+  padding: 0.35rem 0.75rem;
+  background: rgba(34, 211, 182, 0.12);
+  border: 1px solid rgba(34, 211, 182, 0.4);
+  border-radius: 999px;
+  color: #5eead4;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.nested {
+  flex-basis: 100%;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.preview__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #e4e6f0;
+  font-size: 0.85rem;
+}
+
+.preview__row dt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: #a5b4fc;
+}
+
+.preview__row dd {
+  margin: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+}

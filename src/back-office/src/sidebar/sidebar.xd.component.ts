@@ -41,10 +41,10 @@ export class SidebarComponent extends CustomElement {
   }
 
   public onInit(): void {
-    this.effect(() => this.collapsed.set(this.inputCollapsed()));
   }
-
+  
   public afterRender(): void {
+    this.effect(() => this.collapsed.set(this.inputCollapsed()));
     this.effect(() => this.style.backgroundColor = this.styleProperty()['backgroundColor'] ?? '');
   }
 }

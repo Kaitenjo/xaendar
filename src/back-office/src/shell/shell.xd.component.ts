@@ -1,5 +1,5 @@
-import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { QuerySignal, Signal, signal } from '@xaendar/core/signals';
+import { CustomElement, WebComponent } from '@xaendar/core';
+import { Signal, signal } from '@xaendar/core/signals';
 
 /**
  * Application shell: sidebar, topbar and a playground of template binding examples.
@@ -149,7 +149,95 @@ export class ShellComponent extends CustomElement {
   } @else {
     <p>Nessun elemento</p>
   }
-</div>`
+</div>`,
+    query: `@Query('[item]')
+public accessor first!: QuerySignal<HTMLElement | null>;
+
+<!-- template di app-query-preview -->
+@for (n of items(); track n) {
+  <span item>{ n }</span>
+}`,
+    queryAll: `@Query.all('[item]')
+public accessor all!: QuerySignal<HTMLElement[]>;
+
+<app-query-preview
+  count="{queryAllCount()}"
+  reversed="{queryAllReversed()}"
+/>`,
+    queryClass: `@Query(BindingPreviewComponent)
+public accessor preview!: QuerySignal<BindingPreviewComponent | null>;
+
+<!-- template di app-query-preview -->
+@if (nested()) {
+  <app-binding-preview value="annidata" />
+}`,
+    content: `@Query.content('[item]')
+public accessor first!: QuerySignal<HTMLElement | null>;
+
+<app-slot-preview>
+  @for (n of contentItems(); track n) {
+    <span item>{ 'D' + n }</span>
+  }
+  @if (contentHeader()) {
+    <span slot="header" item>H</span>
+  }
+</app-slot-preview>`,
+    contentAll: `@Query.content.all('[item]')
+public accessor all!: QuerySignal<HTMLElement[]>;
+
+<app-slot-preview>
+  <span slot="footer" item>F</span>
+  @for (n of contentAllItems(); track n) {
+    <span item>{ 'D' + n }</span>
+  }
+  <span slot="header" item>H</span>
+</app-slot-preview>`,
+    contentDescendants: `<!-- template di app-slot-preview -->
+<slot name="header">
+  <span item>fallback</span>
+</slot>
+
+<app-slot-preview>
+  @if (descendantProjected()) {
+    <div slot="header">
+      <span item>H1</span>
+      <span item>H2</span>
+    </div>
+  }
+  <span item>D</span>
+</app-slot-preview>`,
+    contentLightDom: `@Query.content.all('[item]', { slots: 'header' })
+@Query.content.all('[item]', { slots: ['header', 'footer'] })
+@Query.content.all('[item]', { lightDom: true })
+
+<app-slot-preview>
+  <span slot="header" item>H</span>
+  <span item>D</span>
+  <span slot="footer" item>F</span>
+  @if (lightDomUnassigned()) {
+    <span slot="nessuno" item>N</span>
+  }
+</app-slot-preview>`,
+    slotAttribute: `<app-slot-preview>
+  <span item>D</span>
+  <span
+    item
+    @if (slotAttribute()) {
+      slot="header"
+    }
+  >X</span>
+</app-slot-preview>`,
+    slotValue: `<app-slot-preview>
+  <span item>D</span>
+  <span item slot="{slotTarget()}">X</span>
+</app-slot-preview>`,
+    slotName: `<!-- template di app-slot-preview -->
+<slot name="{footerSlot()}" />
+
+<app-slot-preview footerSlot="{innerSlotName()}">
+  <span slot="header" item>H</span>
+  <span slot="footer" item>F</span>
+</app-slot-preview>`
   };
 
   public readonly sidebarCollapsed = signal(false);
@@ -213,16 +301,34 @@ export class ShellComponent extends CustomElement {
   public readonly complexDetailed = signal(true);
   public readonly complexItems = signal([1, 2, 3, 4, 5, 6]);
 
-  @Query('[bindingPreview]')
-  public accessor testQuery!: QuerySignal<HTMLElement | null>;
+  // Query sullo Shadow DOM
+  public readonly queryCount = signal(3);
+  public readonly queryAllCount = signal(4);
+  public readonly queryAllReversed = signal(false);
+  public readonly queryClassNested = signal(true);
 
-  @Query.all('[bindingPreview]')
-  public accessor testQueryAll!: QuerySignal<HTMLElement[]>;
+  // Query sul contenuto proiettato
+  public readonly contentHeader = signal(true);
+  public readonly contentItems = signal([1, 2]);
+  public readonly contentAllItems = signal([1, 2]);
+  public readonly descendantProjected = signal(true);
+  public readonly lightDomUnassigned = signal(true);
 
-  public afterRender(): void {
-    this.effect(() => console.log(this.testQuery()));
-    this.effect(() => console.log(this.testQueryAll()));
-  }
+  // Modifiche agli slot
+  public readonly slotAttribute = signal(true);
+  public readonly slotTarget = signal<'header' | 'footer'>('header');
+  public readonly innerSlotName = signal<'footer' | 'altro'>('footer');
+
+  // @Query('[bindingPreview]')
+  // public accessor testQuery!: QuerySignal<HTMLElement | null>;
+
+  // @Query.all('[bindingPreview]')
+  // public accessor testQueryAll!: QuerySignal<HTMLElement[]>;
+
+  // public afterRender(): void {
+  //   this.effect(() => console.log(this.testQuery()));
+  //   this.effect(() => console.log(this.testQueryAll()));
+  // }
   
   /**
    * Collapses or expands the sidebar.
@@ -277,6 +383,17 @@ export class ShellComponent extends CustomElement {
    */
   public select<T>(target: Signal<T>, value: T): void {
     target.set(value);
+  }
+
+  /**
+   * Switches a signal between two values.
+   *
+   * @param target - The signal to update.
+   * @param first - One of the two values.
+   * @param second - The other value.
+   */
+  public alternate<T>(target: Signal<T>, first: T, second: T): void {
+    target.update(value => value === first ? second : first);
   }
 
   /**
