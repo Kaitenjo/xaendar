@@ -56,6 +56,17 @@ describe('parseForExpression', () => {
     expect([...result.implicitAliases]).toEqual([['$index', 'i'], ['$last', 'l']]);
   });
 
+  it.each([
+    ['the item alias', 'item of items', 'item'],
+    ['the item alias with an empty track section', 'item of items; ; i = $index', 'item'],
+    ['$index without item alias', '10', '$index'],
+    ['the $index alias without item alias', '10; ; i = $index', 'i']
+  ])('defaults the track expression to %s', (_name, source, trackSource) => {
+    const result = parseForExpression(source);
+    expect(result.trackSource).toBe(trackSource);
+    expect(result.trackExpression.getText()).toBe(trackSource);
+  });
+
   it('ignores a trailing separator', () => {
     expect(parseForExpression('item of items; track item;').trackSource).toBe('item');
   });
@@ -77,7 +88,7 @@ describe('parseForExpression', () => {
   });
 
   it.each([
-    ['fewer than two sections', 'item of items', '@for requires at least'],
+    ['an empty expression', '  ', '@for requires at least'],
     ['a missing "of" keyword', 'item items; track item', '\'item items\' must be a single expression, got \'items\' after \'item\'.'],
     ['an iterable followed by other tokens', 'item of items items; track item', '\'items items\' must be a single expression'],
     ['an invalid item alias', '1x of items; track x', '\'1x\' is not a valid item alias.'],

@@ -47,6 +47,27 @@ describe('CompilerContext', () => {
       expect(child.hasIdentifier('missing')).toBe(false);
       expect(child.getIdentifierKind('missing')).toBeUndefined();
     });
+
+    it('allows shadowing a parent identifier, resolving to the nearest scope', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('$index');
+      const child = new CompilerContext(parent);
+      child.addIdentifier('$index', 'signal');
+      const grandChild = new CompilerContext(child);
+      expect(child.getIdentifierKind('$index')).toBe('signal');
+      expect(grandChild.getIdentifierKind('$index')).toBe('signal');
+      expect(parent.getIdentifierKind('$index')).toBe('value');
+    });
+
+    it('falls back to the parent identifier once the shadowing one is removed', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('$index');
+      const child = new CompilerContext(parent);
+      child.addIdentifier('$index', 'signal');
+      child.removeIdentifier('$index');
+      expect(child.hasIdentifier('$index')).toBe(true);
+      expect(child.getIdentifierKind('$index')).toBe('value');
+    });
   });
 
   describe('unresolvable identifiers', () => {
@@ -65,10 +86,27 @@ describe('CompilerContext', () => {
       expect(context.getUnresolvableIdentifierKind('$event')).toBe('value');
     });
 
-    it('throws when the name is already a declared identifier', () => {
+    it('throws when adding a duplicated unresolvable identifier', () => {
+      const context = new CompilerContext();
+      context.addUnresolvableIdentifier('$event');
+      expect(() => context.addUnresolvableIdentifier('$event')).toThrow('Identifier "$event" is already declared in this scope.');
+    });
+
+    it('keeps unresolvable identifiers separate from plain identifiers', () => {
       const context = new CompilerContext();
       context.addIdentifier('a');
-      expect(() => context.addUnresolvableIdentifier('a')).toThrow('Identifier "a" is already declared in this scope.');
+      context.addUnresolvableIdentifier('a', 'signal');
+      expect(context.getIdentifierKind('a')).toBe('value');
+      expect(context.getUnresolvableIdentifierKind('a')).toBe('signal');
+    });
+
+    it('allows shadowing a parent unresolvable identifier, resolving to the nearest scope', () => {
+      const parent = new CompilerContext();
+      parent.addUnresolvableIdentifier('$event');
+      const child = new CompilerContext(parent);
+      child.addUnresolvableIdentifier('$event', 'signal');
+      expect(child.getUnresolvableIdentifierKind('$event')).toBe('signal');
+      expect(parent.getUnresolvableIdentifierKind('$event')).toBe('value');
     });
 
     it('resolves through the parent chain', () => {

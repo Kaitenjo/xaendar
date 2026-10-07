@@ -64,7 +64,7 @@ export class CompilerContext {
    * @throws When an identifier with the same name is already declared in this scope.
    */
   public addIdentifier(name: string, kind: IdentifierKind = 'value'): void {
-    if (this.hasIdentifier(name)) {
+    if (this._identifiers.has(name)) {
       throw new Error(`Identifier "${name}" is already declared in this scope.`);
     }
 
@@ -81,7 +81,7 @@ export class CompilerContext {
    * @throws When an identifier with the same name is already declared in this scope.
    */
   public addUnresolvableIdentifier(name: string, kind: IdentifierKind = 'value'): void {
-    if (this.hasIdentifier(name)) {
+    if (this._unresolvableIdentifiers.has(name)) {
       throw new Error(`Identifier "${name}" is already declared in this scope.`);
     }
 

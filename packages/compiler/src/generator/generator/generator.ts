@@ -104,7 +104,7 @@ export class Generator {
           generatedCode.push(indent(precode));
         }
 
-        const functionBody = [];
+        const functionBody = new Array<string>;
         for (let i = 0; i < node.children.length; i++) {
           const child = node.children[i];
           const result = await this._processNode(child, parentNode, i.toString(), context, anchor ?? null);
@@ -141,7 +141,6 @@ export class Generator {
    */
   private async _processNode(node: ASTNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType | undefined> {
     const state = this._states[node.type];
-
     if (!state) {
       throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span });
     }

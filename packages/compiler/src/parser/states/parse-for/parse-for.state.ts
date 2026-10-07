@@ -44,12 +44,14 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
  *
  * The expected format is:
  * ```
- * [item of ]iterable; track expr[; alias = $implicit, ...]
+ * [item of ]iterable[; track expr][; alias = $implicit, ...]
  * ```
  *
  * The iterable is either an array or a number `n`, iterated as `0, 1, ..., n - 1`.
  * The `item of` part is optional: without it the loop declares no item alias and
  * only the implicit variables are available (e.g. `@for (10; track $index)`).
+ * The `track` part is optional too: it defaults to the item alias or, when there
+ * is none, to `$index` (or its alias).
  *
  * @param source - The raw string content of the `@for(...)` expression.
  * @returns A {@link ForExpression} object.
@@ -58,8 +60,8 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
 export function parseForExpression(source: string): ForExpression {
   const sections = splitForSections(source);
 
-  if (sections.length < 2) {
-    throw '@for requires at least "item of items(); track expr" or "numberItems(); track $index';
+  if (sections.length < 1) {
+    throw '@for requires at least one of these forms: "item of items()" or "numberItems()".';
   }
 
   // ---- Section 1: "item of items" or "items" ----
@@ -81,23 +83,29 @@ export function parseForExpression(source: string): ForExpression {
   // Validate the iterable as a JS expression.
   const iterValidation = validateExpression(iterableSource);
 
-  // ---- Section 2: "track item.id" ----
-  const trackSection = sections[1].trim();
-
-  if (!trackSection.startsWith('track ')) {
-    throw 'Second section of @for must start with "track".';
-  }
-
-  const trackSource = slice(trackSection, 6).trim();
-  const trackValidation = validateExpression(trackSource);
-
-  // ---- Section 3 (optional): "$index = i, $last = l" ----
+  // ---- Section 2 (optional): "$index = i, $last = l" ----
+  // Parsed before the track section, whose fallback may depend on the `$index` alias.
   const implicitAliases = new Map<ForImplicitVariables, string>;
 
   if (sections.length >= 3 && sections[2] !== undefined) {
     const aliasSection = sections[2].trim();
     parseImplicitAliases(aliasSection, implicitAliases);
   }
+
+  // ---- Section 3 (optional): "track item.id" ----
+  // Without it the loop tracks by item, or by index when there is no item alias.
+  const trackSection = sections[1]?.trim();
+  let trackSource = itemAlias ?? implicitAliases.get('$index') ?? '$index';
+
+  if (trackSection) {
+    if (!trackSection.startsWith('track ')) {
+      throw 'Second section of @for must start with "track".';
+    }
+
+    trackSource = slice(trackSection, 6).trim();
+  }
+
+  const trackValidation = validateExpression(trackSource);
 
   return {
     itemAlias,
