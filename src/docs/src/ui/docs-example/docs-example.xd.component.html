@@ -1,0 +1,30 @@
+@import { DocsCodeComponent } from '../docs-code/docs-code.xd.component.ts'
+
+<figure class="{ kind() === 'edge' ? 'example example--edge' : 'example' }">
+  <figcaption class="head">
+    @if (kind() === 'edge') {
+      <span class="badge">{ t().example.edge }</span>
+    }
+    <span class="heading">{ heading() }</span>
+    <button class="toggle" type="button" (click)="toggleCode()">
+      @if (open()) {
+        { t().example.hideCode }
+      } @else {
+        { t().example.showCode }
+      }
+    </button>
+  </figcaption>
+  <div class="stage">
+    <slot />
+  </div>
+  @if (open()) {
+    <div class="source">
+      <div class="tabs" role="tablist" aria-label="{ t().example.files }">
+        @for (file of files(); track file.name) {
+          <button class="{ file.name === current().name ? 'tab tab--active' : 'tab' }" type="button" role="tab" (click)="select(file.name)">{ file.name }</button>
+        }
+      </div>
+      <docs-code code="{ current().code }" lang="{ current().lang }" bare="{ true }" />
+    </div>
+  }
+</figure>

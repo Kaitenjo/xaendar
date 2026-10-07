@@ -1,0 +1,61 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { UserProfileComponent } from '../../../examples/essentials/components/user-profile/user-profile.xd.component.ts'
+
+<span class="eyebrow">Essentials</span>
+<h1>Components</h1>
+<p class="lead">
+  Components are the building blocks of a Xaendar application. Each one is a standard custom element: a TypeScript
+  class for the logic, a template for the markup and a stylesheet scoped to its shadow root.
+</p>
+
+<h2>Defining a component</h2>
+<p>A component needs three things:</p>
+<ul>
+  <li>a class extending <code>CustomElement</code>, declared in a file ending with <code>.xd.component.ts</code>;</li>
+  <li>the <code>{'@WebComponent'}</code> decorator, with the tag name (<code>selector</code>) and the path of the template (<code>templateUrl</code>);</li>
+  <li>optionally a stylesheet (<code>styleUrl</code>), applied only inside the component.</li>
+</ul>
+<p>
+  The example below contains two components. <code>ex-user-badge</code> receives data through <strong>inputs</strong>
+  and talks back through an <strong>output</strong>; <code>ex-user-profile</code> uses it twice. Open the files tabs
+  to read both.
+</p>
+<docs-example name="essentials/components/user-profile" heading="A parent and a child component">
+  <ex-user-profile />
+</docs-example>
+
+<h2>Inputs</h2>
+<p>
+  An input is an <code>accessor</code> decorated with <code>{'@Property'}</code>. Its value is a signal: read it by
+  calling it, <code>name()</code>, in the class or in the template. The decorator argument is the default value;
+  <code>{'@Property.required()'}</code> marks an input the parent must always bind.
+</p>
+<p>
+  The parent binds an input like an attribute. <code>name="Ada Lovelace"</code> passes a static string, while
+  <code>{'online="{ adaOnline() }"'}</code> passes the value of an expression, and keeps it up to date.
+</p>
+
+<h2>Outputs</h2>
+<p>
+  An output is an <code>accessor</code> decorated with <code>{'@Event'}</code>, typed <code>Output</code>. Calling
+  <code>emit(value)</code> dispatches a <code>CustomEvent</code> named after the accessor, with the value in its
+  <code>detail</code>. The parent listens to it like to any DOM event: <code>(wave)="onWave($event)"</code>.
+</p>
+
+<h2>Using a component</h2>
+<p>
+  A template declares the components it uses with <code>{'@import'}</code>, so that the compiler can check the
+  bindings against their inputs and outputs. The classes must also be imported by your JavaScript at runtime, so
+  that the custom elements get defined.
+</p>
+<docs-callout kind="tip">
+  Components are real custom elements: once defined, <code>{'<ex-user-badge>'}</code> works in any HTML page, in
+  another framework, or created with <code>document.createElement()</code>.
+</docs-callout>
+
+<h2>Next</h2>
+<p>
+  Read about <a href="#/en/essentials/signals">reactivity with signals</a>, or dive into the
+  <a href="#/en/components/anatomy">components guides</a>.
+</p>

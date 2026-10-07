@@ -1,0 +1,3 @@
+Xaendar: [TypeChecker] Failed to compile template - /src/rating/rating.xd.component.html
+[Ln 1, Col 6] - Property 'secret' is private and only accessible within class 'RatingComponent'.
+ ---> secret() }

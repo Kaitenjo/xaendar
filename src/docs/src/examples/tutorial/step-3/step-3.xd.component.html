@@ -1,0 +1,11 @@
+<h3>My todos</h3>
+<form (submit)="add($event)">
+  <input name="title" placeholder="What needs to be done?" autocomplete="off" />
+  <button>Add</button>
+</form>
+<ul>
+  @for (todo of todos(); track todo.id) {
+    <li>{ todo.title }</li>
+  }
+</ul>
+<p>{ todos().length } todos</p>

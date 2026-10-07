@@ -1,0 +1,9 @@
+@if (visible()) {
+  <p class="name">{ fullName() }</p>
+} @else {
+  <p class="name hidden">Nobody reads fullName now</p>
+}
+<p>fullName was evaluated <strong>{ shownEvaluations() }</strong> times</p>
+<button (click)="rename()">Change last name</button>
+<button (click)="toggle()">Show / hide</button>
+<button (click)="readThrice()">Read it 3 times</button>

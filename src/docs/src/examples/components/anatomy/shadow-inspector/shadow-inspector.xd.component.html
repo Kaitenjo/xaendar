@@ -1,0 +1,13 @@
+<button (click)="inspect()">Inspect this component</button>
+@if (facts().length) {
+  <table>
+    <tbody>
+      @for (fact of facts(); track fact.id) {
+        <tr>
+          <td><code>{ fact.expression }</code></td>
+          <td>{ fact.result }</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

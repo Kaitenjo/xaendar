@@ -1,0 +1,55 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalWatchedComponent } from '../../../examples/signals/options/watched/watched.xd.component.ts'
+@import { SignalFrozenComponent } from '../../../examples/signals/options/frozen/frozen.xd.component.ts'
+
+<span class="eyebrow">Signals</span>
+<h1>Signal options</h1>
+<p class="lead">
+  The second argument of <code>signal()</code> customizes equality and lets a signal know when it starts and stops
+  being observed.
+</p>
+<docs-code snippet="signals/types.ts" />
+
+<h2>equals</h2>
+<p>
+  Decides whether a new value is a change. See <a href="#/en/signals/overview">Signals</a> for an example; on
+  <code>computed()</code> it decides whether a new result is a change.
+</p>
+
+<h2>watched and unwatched</h2>
+<p>
+  <code>watched</code> runs when the signal gains its first live dependent — an effect or a template binding, directly
+  or through computed signals. <code>unwatched</code> runs when it loses the last one. They are the place to start and
+  stop whatever feeds the signal: a timer, a subscription, an event listener.
+</p>
+<docs-example name="signals/options/watched" heading="A clock that only ticks while it is displayed">
+  <ex-signal-watched />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="They run again around every update of the only dependent">
+    <p>
+      Watch the counters while the clock is displayed: every tick adds one <code>unwatched</code> and one
+      <code>watched</code>. When a dependent re-runs, it unsubscribes from all its sources before subscribing again to
+      the ones it reads; if it is the only dependent, the signal is briefly unwatched. Make the callbacks cheap and
+      idempotent — here the timer is cleared and started again at each tick.
+    </p>
+  </docs-callout>
+  <docs-example name="signals/options/frozen" kind="edge" heading="Signals are frozen inside watched and unwatched">
+    <ex-signal-frozen />
+  </docs-example>
+  <docs-callout kind="edge" heading="Defer the writes">
+    The callbacks run while the reactive graph is being updated, with every signal frozen: reading or writing one
+    throws. Schedule the work instead — <code>queueMicrotask</code>, a timer, an event — as the clock does.
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Computed signals ignore them">
+    <code>computed(fn, options)</code> accepts the same options type, but only <code>equals</code> is used.
+  </docs-callout>
+  <docs-callout kind="note" heading="Inputs have one more option">
+    The <code>{'@Property'}</code> decorator accepts these options plus <code>transform</code> and <code>alias</code>.
+    See <a href="#/en/components/inputs">Inputs</a>.
+  </docs-callout>
+</section>

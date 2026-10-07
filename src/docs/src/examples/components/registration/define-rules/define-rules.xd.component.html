@@ -1,0 +1,13 @@
+<div class="controls">
+  <button (click)="defineNew()">A new name</button>
+  <button (click)="define('nohyphen')">nohyphen</button>
+  <button (click)="define('Ex-Upper')">Ex-Upper</button>
+  <button (click)="define('font-face')">font-face</button>
+  <button (click)="define('ex-define-rules')">ex-define-rules</button>
+  <button (click)="defineClassAgain()">The same class again</button>
+</div>
+<ul>
+  @for (attempt of attempts(); track attempt.id) {
+    <li><code>customElements.{ attempt.call }</code><br />→ { attempt.outcome }</li>
+  }
+</ul>

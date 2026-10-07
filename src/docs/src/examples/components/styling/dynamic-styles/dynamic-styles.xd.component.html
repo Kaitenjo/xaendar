@@ -1,0 +1,5 @@
+<input type="range" min="0" max="100" value="40" aria-label="Progress" (input)="setProgress($event)" />
+<div class="track">
+  <div class="{ barClass() }" style="{ barStyle() }"></div>
+</div>
+<p class="{ status() === 'done' ? 'label label--done' : 'label' }">{ progress() }% · { status() }</p>

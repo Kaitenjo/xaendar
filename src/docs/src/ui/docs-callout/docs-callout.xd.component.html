@@ -1,0 +1,11 @@
+<aside class="{ 'callout callout--' + kind() }">
+  <div class="title">
+    <span class="label">{ label() }</span>
+    @if (heading()) {
+      <span class="heading">{ heading() }</span>
+    }
+  </div>
+  <div class="body">
+    <slot />
+  </div>
+</aside>

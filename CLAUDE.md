@@ -20,10 +20,12 @@ npx vitest -t "name of test"                              # run tests matching a
 npm run lint               # eslint .
 npm run lint:fix
 
-npm run build:src          # vite build of the root demo/shell (vite.config.ts)
-npm start                  # nodemon + tsx runs src/test.ts, restarting on changes under src/ and packages/**/*.ts
-                            # (src/test.ts is a scratch entry point used to manually exercise the compiler — feel free to edit it, don't rely on its current contents)
+npm run build:src          # `xd build` of the documentation site in src/docs (output: src/docs/dist)
+npm start                  # `xd start` of the documentation site (Vite dev server on port 4200)
+npm test --prefix src/docs # vitest specs of the docs site's own utilities (router, highlighter, routes)
 ```
+
+`src/docs` is the framework's documentation/storybook site, written in Xaendar itself and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally). It is a separate npm project (own `package.json`/lockfile/`tsconfig.json`, whose `paths` point at the packages' sources). Live examples live in `src/docs/src/examples/**` and are shown with their exact source via `?raw` globs (`src/docs/src/core/sources`); pages are bilingual (`*.en.xd.component.html` / `*.it.xd.component.html`).
 
 Package-level build/publish is driven from `schematics/` (its own TS project, built with `npm run build:schematics`), not from per-package npm scripts — the individual `packages/*/package.json` files have no scripts of their own:
 

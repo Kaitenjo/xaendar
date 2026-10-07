@@ -1,0 +1,103 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ComputedLazyComponent } from '../../../examples/signals/computed/lazy/lazy.xd.component.ts'
+@import { ComputedDynamicComponent } from '../../../examples/signals/computed/dynamic-dependencies/dynamic-dependencies.xd.component.ts'
+@import { ComputedDiamondComponent } from '../../../examples/signals/computed/diamond/diamond.xd.component.ts'
+@import { ComputedErrorsComponent } from '../../../examples/signals/computed/errors/errors.xd.component.ts'
+@import { ComputedCircularComponent } from '../../../examples/signals/computed/circular/circular.xd.component.ts'
+
+<span class="eyebrow">Signal</span>
+<h1>Signal derivati (computed)</h1>
+<p class="lead">
+  <code>computed(fn)</code> crea un signal in sola lettura il cui valore deriva da altri signal. Traccia ciò che
+  <code>fn</code> legge, viene valutato in modo lazy e mette in cache il risultato finché una dipendenza non cambia.
+</p>
+
+<h2>Lazy e in cache</h2>
+<p>
+  Un signal derivato non fa nulla quando viene creato. La prima lettura esegue <code>fn</code>; le letture successive
+  restituiscono il valore in cache, finché uno dei signal letti da <code>fn</code> non cambia. Anche allora non viene
+  eseguito nulla subito: il valore è solo marcato come vecchio, e ricalcolato alla lettura successiva.
+</p>
+<docs-example name="signals/computed/lazy" heading="Valutazioni di un signal derivato">
+  <ex-computed-lazy />
+</docs-example>
+<p>
+  Mentre il nome completo è visibile, leggerlo tre volte non costa nulla e ogni cambio di cognome costa una
+  valutazione. Nascondilo: i cambi di cognome non costano più nulla, perché nessuno legge il valore. Mostrarlo di
+  nuovo lo valuta una volta.
+</p>
+
+<h2>Dipendenze dinamiche</h2>
+<p>
+  Le dipendenze vengono raccolte di nuovo a ogni valutazione: un signal letto in un ramo non percorso non è una
+  dipendenza. Qui <code>title</code> è una dipendenza solo finché <code>showTitle</code> è vero.
+</p>
+<docs-example name="signals/computed/dynamic-dependencies" heading="Una dipendenza che va e viene">
+  <ex-computed-dynamic />
+</docs-example>
+
+<h2>Aggiornamenti senza glitch</h2>
+<p>
+  Quando più signal derivati dipendono dalla stessa sorgente, un cambiamento viene propagato in ordine topologico: un
+  signal viene valutato solo dopo i signal da cui dipende, e una sola volta. Nessuno vede mai un valore vecchio
+  mescolato a uno nuovo.
+</p>
+<docs-example name="signals/computed/diamond" heading="Un diamante: price → tax, shipping → total">
+  <ex-computed-diamond />
+</docs-example>
+
+<h2>Errori</h2>
+<p>
+  Se <code>fn</code> lancia un errore, l’errore viene messo in cache come un valore: ogni lettura lo rilancia, senza
+  eseguire <code>fn</code>, finché una dipendenza non cambia. La valutazione successiva andata a buon fine lo cancella.
+</p>
+<docs-example name="signals/computed/errors" heading="Un signal derivato che fallisce con input non validi">
+  <ex-computed-errors />
+</docs-example>
+
+<h2>Opzioni e this</h2>
+<p>
+  <code>computed(fn, opzioni)</code> accetta l’opzione <code>equals</code>: quando il nuovo risultato è uguale a quello
+  in cache, chi dipende dal signal non viene avvisato di alcun cambiamento. Dentro una <code>function</code> normale,
+  <code>this</code> è il <code>Signal.Computed</code> sottostante; le arrow function mantengono il <code>this</code>
+  della classe.
+</p>
+<docs-code snippet="signals/computed-this.ts" />
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Un signal derivato non osservato viene valutato a ogni lettura">
+    La cache vale solo finché qualcosa — un effetto, un binding del template — dipende dal signal derivato. Nascondi il
+    nome completo nel primo esempio e premi “Read it 3 times”: tre letture, tre valutazioni. Evita di leggere
+    ripetutamente un signal derivato costoso da codice normale; leggilo una volta in una variabile.
+  </docs-callout>
+  <docs-example name="signals/computed/circular" kind="edge" heading="Signal derivati che si leggono a vicenda lanciano un errore">
+    <ex-computed-circular />
+  </docs-example>
+  <docs-callout kind="edge" heading="Mantieni fn pura">
+    Un signal derivato può essere eseguito in momenti imprevedibili — o mai, se nessuno lo legge. Non scrivere signal e
+    non eseguire effetti collaterali in <code>fn</code>: usa un <a href="#/it/signals/effects">effetto</a>.
+  </docs-callout>
+  <docs-callout kind="edge" heading="È in sola lettura">
+    La funzione restituita da <code>computed()</code> ha <code>get()</code> ma non <code>set()</code> né
+    <code>update()</code>. Per cambiarne il valore, cambia le sue dipendenze.
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="watched e unwatched">
+    Il tipo delle opzioni accetta <code>watched</code> e <code>unwatched</code>, ma i signal derivati li ignorano: li
+    chiamano solo i signal scrivibili. Vedi <a href="#/it/signals/options">Opzioni dei signal</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>computed(fn, opzioni?)</code></td><td>Crea un signal in sola lettura derivato dai signal letti da <code>fn</code>.</td></tr>
+      <tr><td><code>c()</code>, <code>c.get()</code></td><td>Legge il valore, valutando <code>fn</code> se serve; rilancia un errore in cache.</td></tr>
+      <tr><td><code>opzioni.equals</code></td><td>Decide se un nuovo risultato è un cambiamento, <code>Object.is</code> di default.</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,318 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+  Typography of the documentation pages. Every page adopts this same stylesheet; it also styles
+  the content the pages project into docs-callout, which stays part of the page's shadow tree.
+*/
+:host {
+  display: block;
+  color: var(--xd-text-soft);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--xd-text);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2.35rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  margin: 2.75rem 0 0.75rem;
+  padding-top: 0.25rem;
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+
+h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.18rem;
+  font-weight: 650;
+}
+
+h4 {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+.lead {
+  margin-bottom: 1.75rem;
+  color: var(--xd-text-soft);
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  color: var(--xd-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+a {
+  color: var(--xd-accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--xd-accent) 35%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+strong {
+  color: var(--xd-text);
+  font-weight: 650;
+}
+
+code {
+  padding: 0.12em 0.38em;
+  border-radius: 5px;
+  background: var(--xd-inline-code-bg);
+  color: var(--xd-text);
+  font-family: var(--xd-font-mono);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+
+ul,
+ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+}
+
+li {
+  margin: 0.3rem 0;
+}
+
+li > ul,
+li > ol {
+  margin: 0.3rem 0;
+}
+
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--xd-border);
+}
+
+table {
+  width: 100%;
+  margin: 1.25rem 0 1.5rem;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.table-wrap {
+  margin: 1.25rem 0 1.5rem;
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  margin: 0;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--xd-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--xd-text);
+  font-weight: 650;
+  white-space: nowrap;
+  background: var(--xd-bg-soft);
+}
+
+td code {
+  white-space: normal;
+}
+
+kbd {
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--xd-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--xd-font-mono);
+  font-size: 0.82em;
+}
+
+.steps {
+  counter-reset: step;
+  padding-left: 0;
+  list-style: none;
+}
+
+.steps > li {
+  position: relative;
+  padding-left: 2.4rem;
+}
+
+.steps > li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--xd-accent-soft);
+  color: var(--xd-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.card {
+  display: block;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius);
+  background: var(--xd-bg-elevated);
+  color: var(--xd-text-soft);
+  font-weight: 400;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+a.card:hover {
+  border-color: var(--xd-accent);
+  transform: translateY(-2px);
+}
+
+.card__title {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--xd-text);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.card__text {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.edge-cases {
+  margin-top: 3rem;
+}
+
+.api-summary td:first-child {
+  white-space: nowrap;
+}
+
+.diagram {
+  margin: 1.25rem 0 1.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--xd-border-strong);
+  border-radius: var(--xd-radius);
+  background: var(--xd-bg-soft);
+  overflow-x: auto;
+  color: var(--xd-text);
+  font: 0.82rem/1.6 var(--xd-font-mono);
+  white-space: pre;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.9rem;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+  }
+
+  code {
+    white-space: normal;
+  }
+}
+
+/* Home page */
+.hero {
+  padding: 1.5rem 0 1rem;
+}
+
+.hero h1 {
+  max-width: 14em;
+  font-size: 3rem;
+  line-height: 1.1;
+}
+
+.gradient {
+  background: var(--xd-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0.5rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--xd-border-strong);
+  border-radius: 999px;
+  color: var(--xd-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button:hover {
+  border-color: var(--xd-accent);
+  color: var(--xd-accent);
+}
+
+.button--primary,
+.button--primary:hover {
+  border-color: transparent;
+  background: var(--xd-gradient);
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .hero h1 {
+    font-size: 2.2rem;
+  }
+}

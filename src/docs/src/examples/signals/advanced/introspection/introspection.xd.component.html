@@ -1,0 +1,10 @@
+<div class="controls">
+  <button (click)="read()">total.get()</button>
+  <button (click)="watch()">watcher.watch(total)</button>
+  <button (click)="unwatch()">watcher.unwatch(total)</button>
+</div>
+<table>
+  @for (row of rows(); track row) {
+    <tr><td>{ row.call }</td><td>{ row.result }</td></tr>
+  }
+</table>

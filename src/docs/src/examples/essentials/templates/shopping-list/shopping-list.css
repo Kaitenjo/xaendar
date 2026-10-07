@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input,
+button {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+li {
+  padding: 0.2rem 0;
+}
+
+.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+p {
+  margin: 0;
+}

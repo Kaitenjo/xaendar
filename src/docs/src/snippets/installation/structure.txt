@@ -1,0 +1,15 @@
+my-app/
+├── package.json        scripts: start (xd start), build (xd build), test (vitest)
+├── xaendar.json        project settings read by the CLI
+├── tsconfig.json       also used to type-check the templates
+├── vite.config.ts      plain Vite config: the CLI adds the Xaendar plugins
+└── src/
+    ├── index.html
+    ├── signals.ts      installs the Signal polyfill, loaded first
+    ├── main.ts         imports the components, so that they get defined
+    ├── styles.css      global styles (html, body)
+    └── my-app-root/
+        ├── my-app-root.xd.component.ts
+        ├── my-app-root.xd.component.html
+        ├── my-app-root.xd.component.css
+        └── my-app-root.xd.component.spec.ts

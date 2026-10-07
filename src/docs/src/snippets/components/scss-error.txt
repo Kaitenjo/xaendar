@@ -1,0 +1,3 @@
+Failed to compile style - /src/rating/rating.scss
+Error: Unsupported stylesheet extension ".scss" for /src/rating/rating.scss.
+  Plugin: xaendar

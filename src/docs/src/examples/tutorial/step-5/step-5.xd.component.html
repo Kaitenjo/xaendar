@@ -1,0 +1,30 @@
+@import { TodoItemComponent } from './todo-item.xd.component.ts'
+
+<h3>My todos</h3>
+<form (submit)="add($event)">
+  <input name="title" placeholder="What needs to be done?" autocomplete="off" />
+  <button>Add</button>
+</form>
+<ul>
+  @for (todo of visible(); track todo) {
+    <li>
+      <ex-todo-item todo="{ todo }" (doneChange)="onDoneChange($event)" (remove)="onRemove($event)" />
+    </li>
+  }
+</ul>
+<div class="filters">
+  <button class="{ filter() === 'all' ? 'active' : '' }" (click)="show('all')">All</button>
+  <button class="{ filter() === 'active' ? 'active' : '' }" (click)="show('active')">Active</button>
+  <button class="{ filter() === 'done' ? 'active' : '' }" (click)="show('done')">Done</button>
+</div>
+@switch (filter()) {
+  @case ('all') {
+    <p>{ remaining() } of { todos().length } left</p>
+  }
+  @case ('active') {
+    <p>{ visible().length } still to do</p>
+  }
+  @default {
+    <p>{ visible().length } completed</p>
+  }
+}

@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.total {
+  margin-top: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+ol {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

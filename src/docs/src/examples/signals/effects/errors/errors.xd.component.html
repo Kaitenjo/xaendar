@@ -1,0 +1,13 @@
+<div class="controls">
+  <button (click)="failOnFirstRun()">Effect failing on its first run</button>
+  @if (created()) {
+    <button (click)="increment()">value++ (now { value() })</button>
+  } @else {
+    <button (click)="create()">Effect failing on odd values</button>
+  }
+</div>
+<ol>
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

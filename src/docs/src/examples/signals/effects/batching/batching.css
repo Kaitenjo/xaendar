@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button {
+  font: 0.85rem ui-monospace, monospace;
+  cursor: pointer;
+}
+
+ol {
+  max-height: 10rem;
+  overflow: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

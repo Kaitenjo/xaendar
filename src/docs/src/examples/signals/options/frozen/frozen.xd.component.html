@@ -1,0 +1,10 @@
+@if (visible()) {
+  <p>Template reads: { watchedSignal() }</p>
+} @else {
+  <button (click)="show()">Start watching the signal</button>
+}
+<ul>
+  @for (outcome of outcomes(); track outcome) {
+    <li>{ outcome }</li>
+  }
+</ul>

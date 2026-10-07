@@ -1,0 +1,134 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { EncapsulationComponent } from '../../../examples/components/styling/encapsulation/encapsulation.xd.component.ts'
+@import { HostSelectorsComponent } from '../../../examples/components/styling/host-selectors/host-selectors.xd.component.ts'
+@import { CustomPropertiesComponent } from '../../../examples/components/styling/custom-properties/custom-properties.xd.component.ts'
+@import { PartsAndSlottedComponent } from '../../../examples/components/styling/parts-and-slotted/parts-and-slotted.xd.component.ts'
+@import { DynamicStylesComponent } from '../../../examples/components/styling/dynamic-styles/dynamic-styles.xd.component.ts'
+@import { StyleObjectComponent } from '../../../examples/components/styling/style-object/style-object.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Styling</h1>
+<p class="lead">
+  Each component has its own stylesheet, adopted by its shadow root: its rules match the elements of its template and
+  nothing else, and the rules of the page do not match them. What crosses the boundary is decided by CSS itself:
+  inherited properties, custom properties, the host element, the projected content and the parts a component exposes.
+</p>
+
+<h2>The component stylesheet</h2>
+<p>
+  <code>styleUrl</code> points to a plain <code>.css</code> file. The plugin compiles it once into a
+  <code>CSSStyleSheet</code>, which every instance of the component adopts when it is connected: a hundred instances
+  share one stylesheet. Components pointing to the same file share it too.
+</p>
+<docs-example name="components/styling/encapsulation" heading="Two paragraphs with the same class">
+  <ex-encapsulation />
+</docs-example>
+<p>
+  Both paragraphs have the class <code>title</code>, and each stylesheet styles only its own: the red border stays in
+  the parent, the uppercase stays in the child. The color and the italic, instead, reach the child: they are set on
+  its host element, and inherited properties flow into the shadow root like into any other element.
+</p>
+
+<h2>Styling the host</h2>
+<p>
+  Inside the stylesheet, <code>:host</code> matches the element of the component itself. A custom element is
+  <code>display: inline</code> by default, so most components set a display here. <code>:host(selector)</code> matches
+  the host only when it also matches the selector: a class, an attribute or a state set from outside.
+</p>
+<docs-example name="components/styling/host-selectors" heading=":host, :host(.selected), :host([tone='danger'])">
+  <ex-host-selectors />
+</docs-example>
+<p>
+  The parent only sets a class and an attribute; the chip decides how they look. The click is handled by a single
+  listener on the container, because a template cannot listen to native events on a component tag: see the edge
+  cases of <a href="#/en/components/outputs">Outputs</a>.
+</p>
+
+<h2>Theming with custom properties</h2>
+<p>
+  Custom properties are inherited, so they cross shadow roots: a component can read
+  <code>var(--accent, fallback)</code> and let any ancestor decide the value. This is the way to offer a theming API
+  without exposing the internals.
+</p>
+<docs-example name="components/styling/custom-properties" heading="An accent color and a radius set on a container">
+  <ex-custom-properties />
+</docs-example>
+
+<h2>Parts and projected content</h2>
+<p>
+  An element with a <code>part</code> attribute can be styled from outside with <code>::part(name)</code>, and only that
+  element: its children stay private. The content projected into a slot belongs to the template that wrote it, so it
+  is styled by that template’s stylesheet; the component can add rules for it with <code>::slotted(selector)</code>,
+  which only matches the elements assigned to a slot, not their descendants.
+</p>
+<docs-example name="components/styling/parts-and-slotted" heading="::part and ::slotted">
+  <ex-parts-and-slotted />
+</docs-example>
+<p>
+  When both stylesheets style the same projected element, the outer one wins: the green of the parent beats the red
+  of <code>::slotted(.note)</code>. A component’s <code>::slotted</code> rules are defaults that the user of the
+  component can override.
+</p>
+
+<h2>Dynamic classes and styles</h2>
+<p>
+  <code>class</code> and <code>style</code> are attributes like any other: bind them to an expression and the attribute
+  is rewritten when the value changes. Building the string in a computed signal keeps the template short and the
+  binding reactive.
+</p>
+<docs-example name="components/styling/dynamic-styles" heading="A progress bar">
+  <ex-dynamic-styles />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="components/styling/style-object" heading="An object bound to style" kind="edge">
+    <ex-style-object />
+  </docs-example>
+  <p>
+    A binding on a native element sets an attribute, and an attribute is a string: an object becomes
+    <code>[object Object]</code>, and the browser ignores it. Build the string yourself.
+  </p>
+  <docs-callout kind="issue" heading="A template literal at the start of an expression">
+    <p>
+      An expression that starts with a backtick, after the space following the brace, is not parsed. Remove the space,
+      or build the string with <code>+</code>.
+    </p>
+    <docs-code snippet="components/template-literal-class.html" />
+    <docs-code snippet="components/template-literal-error.txt" />
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Preprocessors">
+    <p>Only <code>.css</code> files are supported: Sass, Less and the others are rejected.</p>
+    <docs-code snippet="components/scss-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="@import and relative URLs in a component stylesheet">
+    <p>
+      The stylesheet is built in the browser from the text of the file, so it has no URL of its own. An
+      <code>{'@import'}</code> rule is dropped with a warning, and a relative <code>url()</code> is resolved against the
+      page instead of the CSS file. Use one file per component, or share a file between components, and refer to assets
+      with absolute paths, for example from the <code>public</code> folder.
+    </p>
+    <docs-code snippet="components/css-limits.css" />
+    <docs-code snippet="components/css-import-warning.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="The global stylesheet does not reach components">
+    The styles of the page, including resets such as <code>box-sizing: border-box</code>, do not apply inside shadow
+    roots. Repeat them in the component stylesheets, or share a stylesheet file between components.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Selector</th><th>Written in</th><th>Matches</th></tr></thead>
+    <tbody>
+      <tr><td><code>:host</code>, <code>:host(selector)</code></td><td>the component</td><td>The host element, optionally only when it matches the selector.</td></tr>
+      <tr><td><code>::slotted(selector)</code></td><td>the component</td><td>The elements assigned to its slots, not their descendants.</td></tr>
+      <tr><td><code>element::part(name)</code></td><td>the user of the component</td><td>The element with <code>part="name"</code> inside the component.</td></tr>
+      <tr><td><code>var(--name, fallback)</code></td><td>the component</td><td>A custom property set by any ancestor.</td></tr>
+      <tr><td><code>:defined</code></td><td>anywhere</td><td>Custom elements whose definition is loaded.</td></tr>
+    </tbody>
+  </table>
+</div>

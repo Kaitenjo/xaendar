@@ -1,0 +1,137 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { EncapsulationComponent } from '../../../examples/components/styling/encapsulation/encapsulation.xd.component.ts'
+@import { HostSelectorsComponent } from '../../../examples/components/styling/host-selectors/host-selectors.xd.component.ts'
+@import { CustomPropertiesComponent } from '../../../examples/components/styling/custom-properties/custom-properties.xd.component.ts'
+@import { PartsAndSlottedComponent } from '../../../examples/components/styling/parts-and-slotted/parts-and-slotted.xd.component.ts'
+@import { DynamicStylesComponent } from '../../../examples/components/styling/dynamic-styles/dynamic-styles.xd.component.ts'
+@import { StyleObjectComponent } from '../../../examples/components/styling/style-object/style-object.xd.component.ts'
+
+<span class="eyebrow">Componenti</span>
+<h1>Stili</h1>
+<p class="lead">
+  Ogni componente ha il proprio foglio di stile, adottato dal suo shadow root: le sue regole colpiscono gli elementi
+  del suo template e nient’altro, e le regole della pagina non colpiscono quegli elementi. Cosa attraversa il confine lo
+  decide il CSS stesso: le proprietà ereditate, le custom property, l’elemento host, il contenuto proiettato e le parti
+  che un componente espone.
+</p>
+
+<h2>Il foglio di stile del componente</h2>
+<p>
+  <code>styleUrl</code> punta a un normale file <code>.css</code>. Il plugin lo compila una sola volta in un
+  <code>CSSStyleSheet</code>, che ogni istanza del componente adotta quando viene collegata: cento istanze condividono
+  un solo foglio di stile. Lo condividono anche i componenti che puntano allo stesso file.
+</p>
+<docs-example name="components/styling/encapsulation" heading="Due paragrafi con la stessa classe">
+  <ex-encapsulation />
+</docs-example>
+<p>
+  Entrambi i paragrafi hanno la classe <code>title</code>, e ogni foglio di stile dà uno stile solo al proprio: il
+  bordo rosso resta nel padre, il maiuscolo resta nel figlio. Il colore e il corsivo, invece, raggiungono il figlio:
+  sono impostati sul suo elemento host, e le proprietà ereditate entrano nello shadow root come in qualsiasi altro
+  elemento.
+</p>
+
+<h2>Lo stile dell’host</h2>
+<p>
+  Dentro il foglio di stile, <code>:host</code> colpisce l’elemento del componente stesso. Un custom element è
+  <code>display: inline</code> per default, quindi la maggior parte dei componenti imposta qui un display.
+  <code>:host(selettore)</code> colpisce l’host solo quando corrisponde anche al selettore: una classe, un attributo o
+  uno stato impostati dall’esterno.
+</p>
+<docs-example name="components/styling/host-selectors" heading=":host, :host(.selected), :host([tone='danger'])">
+  <ex-host-selectors />
+</docs-example>
+<p>
+  Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Il clic è gestito da un unico
+  listener sul contenitore, perché un template non può ascoltare eventi nativi sul tag di un componente: vedi i casi
+  limite di <a href="#/it/components/outputs">Output</a>.
+</p>
+
+<h2>Temi con le custom property</h2>
+<p>
+  Le custom property sono ereditate, quindi attraversano gli shadow root: un componente può leggere
+  <code>var(--accent, fallback)</code> e lasciare che sia un antenato qualsiasi a deciderne il valore. È il modo per
+  offrire un’API per i temi senza esporre i dettagli interni.
+</p>
+<docs-example name="components/styling/custom-properties" heading="Un colore di accento e un raggio impostati su un contenitore">
+  <ex-custom-properties />
+</docs-example>
+
+<h2>Parti e contenuto proiettato</h2>
+<p>
+  Un elemento con l’attributo <code>part</code> può ricevere uno stile dall’esterno con <code>::part(nome)</code>, e solo
+  quell’elemento: i suoi figli restano privati. Il contenuto proiettato in uno slot appartiene al template che lo ha
+  scritto, quindi riceve lo stile dal foglio di quel template; il componente può aggiungere regole con
+  <code>::slotted(selettore)</code>, che colpisce solo gli elementi assegnati a uno slot, non i loro discendenti.
+</p>
+<docs-example name="components/styling/parts-and-slotted" heading="::part e ::slotted">
+  <ex-parts-and-slotted />
+</docs-example>
+<p>
+  Quando entrambi i fogli di stile colpiscono lo stesso elemento proiettato, vince quello esterno: il verde del padre
+  batte il rosso di <code>::slotted(.note)</code>. Le regole <code>::slotted</code> di un componente sono valori di
+  default che chi usa il componente può sovrascrivere.
+</p>
+
+<h2>Classi e stili dinamici</h2>
+<p>
+  <code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene
+  riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding
+  reattivo.
+</p>
+<docs-example name="components/styling/dynamic-styles" heading="Una barra di avanzamento">
+  <ex-dynamic-styles />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="components/styling/style-object" heading="Un oggetto legato a style" kind="edge">
+    <ex-style-object />
+  </docs-example>
+  <p>
+    Un binding su un elemento nativo imposta un attributo, e un attributo è una stringa: un oggetto diventa
+    <code>[object Object]</code>, che il browser ignora. Costruisci tu la stringa.
+  </p>
+  <docs-callout kind="issue" heading="Un template literal all’inizio di un’espressione">
+    <p>
+      Un’espressione che inizia con un backtick, dopo lo spazio che segue la graffa, non viene analizzata. Togli lo
+      spazio, oppure costruisci la stringa con <code>+</code>.
+    </p>
+    <docs-code snippet="components/template-literal-class.html" />
+    <docs-code snippet="components/template-literal-error.txt" />
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Preprocessori">
+    <p>Sono supportati solo i file <code>.css</code>: Sass, Less e gli altri vengono rifiutati.</p>
+    <docs-code snippet="components/scss-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="@import e URL relativi nel foglio di stile di un componente">
+    <p>
+      Il foglio di stile viene costruito nel browser a partire dal testo del file, quindi non ha un URL proprio. Una
+      regola <code>{'@import'}</code> viene scartata con un avviso, e un <code>url()</code> relativo viene risolto
+      rispetto alla pagina invece che al file CSS. Usa un file per componente, oppure condividi un file tra più
+      componenti, e riferisciti alle risorse con percorsi assoluti, per esempio dalla cartella <code>public</code>.
+    </p>
+    <docs-code snippet="components/css-limits.css" />
+    <docs-code snippet="components/css-import-warning.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Il foglio di stile globale non raggiunge i componenti">
+    Gli stili della pagina, compresi i reset come <code>box-sizing: border-box</code>, non si applicano dentro gli
+    shadow root. Ripetili nei fogli di stile dei componenti, oppure condividi un file tra più componenti.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Selettore</th><th>Scritto in</th><th>Colpisce</th></tr></thead>
+    <tbody>
+      <tr><td><code>:host</code>, <code>:host(selettore)</code></td><td>il componente</td><td>L’elemento host, eventualmente solo quando corrisponde al selettore.</td></tr>
+      <tr><td><code>::slotted(selettore)</code></td><td>il componente</td><td>Gli elementi assegnati ai suoi slot, non i loro discendenti.</td></tr>
+      <tr><td><code>elemento::part(nome)</code></td><td>chi usa il componente</td><td>L’elemento con <code>part="nome"</code> dentro il componente.</td></tr>
+      <tr><td><code>var(--nome, fallback)</code></td><td>il componente</td><td>Una custom property impostata da un antenato qualsiasi.</td></tr>
+      <tr><td><code>:defined</code></td><td>ovunque</td><td>I custom element la cui definizione è stata caricata.</td></tr>
+    </tbody>
+  </table>
+</div>

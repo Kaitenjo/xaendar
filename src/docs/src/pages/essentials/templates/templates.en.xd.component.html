@@ -1,0 +1,56 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ShoppingListComponent } from '../../../examples/essentials/templates/shopping-list/shopping-list.xd.component.ts'
+
+<span class="eyebrow">Essentials</span>
+<h1>Dynamic templates</h1>
+<p class="lead">
+  A template is an HTML5 file with a few additions: interpolations, bindings, event listeners and control flow
+  blocks. Expressions are written in TypeScript and can use every public member of the component by name.
+</p>
+
+<h2>The syntax at a glance</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Syntax</th><th>Meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>{'{ count() }'}</code></td><td>Text interpolation: renders the value of the expression as text.</td></tr>
+      <tr><td><code>title="Hello"</code></td><td>A static attribute, or a static string for an input of a component.</td></tr>
+      <tr><td><code>{'title="{ label() }"'}</code></td><td>A binding: sets the attribute, or the input, to the value of the expression.</td></tr>
+      <tr><td><code>(click)="save()"</code></td><td>An event listener calling a method of the component; <code>$event</code> is the event.</td></tr>
+      <tr><td><code>{'@if (cond) { … } @else { … }'}</code></td><td>Renders a block conditionally.</td></tr>
+      <tr><td><code>{'@for (item of items(); track item.id) { … }'}</code></td><td>Renders a block for each item.</td></tr>
+      <tr><td><code>{'@switch (value) { @case (1) { … } @default { … } }'}</code></td><td>Renders the block of the matching case.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<docs-example name="essentials/templates/shopping-list" heading="Interpolation, bindings, events and control flow">
+  <ex-shopping-list />
+</docs-example>
+
+<h2>Expressions</h2>
+<p>
+  Expressions refer to the members of the component by their bare name: write <code>items()</code>, not
+  <code>this.items()</code>. They can use literals, operators, calls, ternaries, template literals, optional chaining
+  and the usual browser globals (<code>Math</code>, <code>JSON</code>…), but no assignments, arrow functions or
+  <code>new</code>: logic belongs to the class.
+</p>
+<docs-callout kind="warning">
+  Signals are never unwrapped automatically: <code>{'{ count }'}</code> renders the signal function itself. Always
+  call it: <code>{'{ count() }'}</code>.
+</docs-callout>
+
+<h2>Special characters</h2>
+<p>
+  In the text of a template, <code>{'\x7B'}</code> always starts an interpolation, <code>{'@'}</code> always starts a
+  control flow block and <code>{'<'}</code> always starts a tag. To write them as text, interpolate a string:
+  <code>{'{ \'@\' }'}</code>. See <a href="#/en/templates/overview">Template syntax</a>.
+</p>
+
+<h2>Next</h2>
+<p>
+  Read the <a href="#/en/essentials/next-steps">next steps</a>, or the <a href="#/en/templates/overview">templates guides</a>.
+</p>

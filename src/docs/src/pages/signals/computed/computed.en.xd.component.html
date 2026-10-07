@@ -1,0 +1,101 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ComputedLazyComponent } from '../../../examples/signals/computed/lazy/lazy.xd.component.ts'
+@import { ComputedDynamicComponent } from '../../../examples/signals/computed/dynamic-dependencies/dynamic-dependencies.xd.component.ts'
+@import { ComputedDiamondComponent } from '../../../examples/signals/computed/diamond/diamond.xd.component.ts'
+@import { ComputedErrorsComponent } from '../../../examples/signals/computed/errors/errors.xd.component.ts'
+@import { ComputedCircularComponent } from '../../../examples/signals/computed/circular/circular.xd.component.ts'
+
+<span class="eyebrow">Signals</span>
+<h1>Computed signals</h1>
+<p class="lead">
+  <code>computed(fn)</code> creates a read-only signal whose value is derived from other signals. It tracks what
+  <code>fn</code> reads, evaluates lazily and caches the result until a dependency changes.
+</p>
+
+<h2>Lazy and cached</h2>
+<p>
+  A computed signal does nothing when it is created. The first read runs <code>fn</code>; later reads return the cached
+  value, until one of the signals <code>fn</code> read changes. Even then nothing runs immediately: the value is only
+  marked stale, and recomputed by the next read.
+</p>
+<docs-example name="signals/computed/lazy" heading="Evaluations of a computed signal">
+  <ex-computed-lazy />
+</docs-example>
+<p>
+  While the full name is shown, reading it three times costs nothing and each rename costs one evaluation. Hide it:
+  renames now cost nothing at all, because nobody reads the value. Showing it again evaluates it once.
+</p>
+
+<h2>Dynamic dependencies</h2>
+<p>
+  Dependencies are collected again at every evaluation: a signal read in a branch that was not taken is not a
+  dependency. Here <code>title</code> is only a dependency while <code>showTitle</code> is true.
+</p>
+<docs-example name="signals/computed/dynamic-dependencies" heading="A dependency that comes and goes">
+  <ex-computed-dynamic />
+</docs-example>
+
+<h2>Glitch-free updates</h2>
+<p>
+  When several computed signals depend on the same source, a change is propagated in topological order: a signal is
+  evaluated only after the signals it depends on, and only once. No consumer ever sees an old value mixed with a new
+  one.
+</p>
+<docs-example name="signals/computed/diamond" heading="A diamond: price → tax, shipping → total">
+  <ex-computed-diamond />
+</docs-example>
+
+<h2>Errors</h2>
+<p>
+  If <code>fn</code> throws, the error is cached like a value: every read throws it again, without running
+  <code>fn</code>, until a dependency changes. The next successful evaluation clears it.
+</p>
+<docs-example name="signals/computed/errors" heading="A computed signal that throws on invalid input">
+  <ex-computed-errors />
+</docs-example>
+
+<h2>Options and this</h2>
+<p>
+  <code>computed(fn, options)</code> accepts the <code>equals</code> option: when the new result equals the cached one,
+  the consumers are not told that anything changed. Inside a regular <code>function</code>, <code>this</code> is the
+  underlying <code>Signal.Computed</code>; arrow functions keep the <code>this</code> of the class.
+</p>
+<docs-code snippet="signals/computed-this.ts" />
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="An unobserved computed signal is evaluated at every read">
+    The cache only holds while something — an effect, a template binding — depends on the computed signal. Hide the
+    full name in the first example and press “Read it 3 times”: three reads, three evaluations. Avoid reading an
+    expensive computed signal repeatedly from plain code; read it once into a variable.
+  </docs-callout>
+  <docs-example name="signals/computed/circular" kind="edge" heading="Computed signals reading each other throw">
+    <ex-computed-circular />
+  </docs-example>
+  <docs-callout kind="edge" heading="Keep fn pure">
+    A computed signal can run at unpredictable times — or not at all, if nobody reads it. Do not write signals or
+    perform side effects in <code>fn</code>: use an <a href="#/en/signals/effects">effect</a>.
+  </docs-callout>
+  <docs-callout kind="edge" heading="It is read-only">
+    The function returned by <code>computed()</code> has <code>get()</code> but no <code>set()</code> or
+    <code>update()</code>. To change the value, change its dependencies.
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="watched and unwatched">
+    The options type accepts <code>watched</code> and <code>unwatched</code>, but computed signals ignore them: only
+    writable signals call them. See <a href="#/en/signals/options">Signal options</a>.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>computed(fn, options?)</code></td><td>Creates a read-only signal derived from the signals <code>fn</code> reads.</td></tr>
+      <tr><td><code>c()</code>, <code>c.get()</code></td><td>Reads the value, evaluating <code>fn</code> if needed; rethrows a cached error.</td></tr>
+      <tr><td><code>options.equals</code></td><td>Decides whether a new result is a change, <code>Object.is</code> by default.</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,77 @@
+@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
+@import { CounterComponent } from '../../examples/home/counter/counter.xd.component.ts'
+
+<section class="hero">
+  <span class="eyebrow">Framework per Web Components</span>
+  <h1>Web Component, compilati in <span class="gradient">aggiornamenti chirurgici del DOM</span></h1>
+  <p class="lead">
+    Xaendar estende HTML5 con un linguaggio di template dichiarativo. Il compilatore analizza ogni template
+    e collega ogni elemento, attributo e nodo di testo direttamente ai signal che legge: niente virtual DOM,
+    nessun re-render dei componenti — il cambio di un signal tocca solo i nodi che ne dipendono.
+  </p>
+  <div class="actions">
+    <a class="button button--primary" href="#/it/installation">Inizia</a>
+    <a class="button" href="#/it/overview">Cos’è Xaendar?</a>
+    <a class="button" href="#/it/tutorial">Segui il tutorial</a>
+  </div>
+</section>
+
+<docs-example name="home/counter" heading="Signal + template = aggiornamenti a grana fine">
+  <ex-home-counter />
+</docs-example>
+
+<h2>Perché Xaendar</h2>
+<div class="cards">
+  <div class="card">
+    <span class="card__title">Web Component nativi</span>
+    <span class="card__text">Ogni componente è un vero custom element con il proprio shadow root: usalo ovunque, con qualsiasi altro framework o senza.</span>
+  </div>
+  <div class="card">
+    <span class="card__title">Signal al centro</span>
+    <span class="card__text">Lo stato vive in signal basati sulla proposta TC39. I valori derivati sono lazy e in cache, gli effetti sono raggruppati.</span>
+  </div>
+  <div class="card">
+    <span class="card__title">Template compilati e tipizzati</span>
+    <span class="card__text">I template sono compilati in fase di build e verificati contro la classe del componente: gli errori fanno fallire la build.</span>
+  </div>
+  <div class="card">
+    <span class="card__title">Nessun virtual DOM</span>
+    <span class="card__text">Il codice generato collega ogni nodo del DOM ai signal che legge. Niente viene confrontato, niente viene ri-renderizzato.</span>
+  </div>
+  <div class="card">
+    <span class="card__title">Direttive</span>
+    <span class="card__text">Aggiungi comportamenti riutilizzabili a qualsiasi elemento con le direttive custom, o decidi se esiste con quelle strutturali.</span>
+  </div>
+  <div class="card">
+    <span class="card__title">Query reattive</span>
+    <span class="card__text">Interroga lo shadow DOM o il contenuto proiettato: i risultati sono signal che seguono ogni modifica del DOM.</span>
+  </div>
+</div>
+
+<h2>Esplora la documentazione</h2>
+<div class="cards">
+  <a class="card" href="#/it/essentials/components">
+    <span class="card__title">Fondamenti →</span>
+    <span class="card__text">Componenti, signal e template in pochi minuti.</span>
+  </a>
+  <a class="card" href="#/it/signals/overview">
+    <span class="card__title">Signal →</span>
+    <span class="card__text">signal, computed, effect, untracked e i loro casi limite.</span>
+  </a>
+  <a class="card" href="#/it/components/anatomy">
+    <span class="card__title">Componenti →</span>
+    <span class="card__text">Input, output, ciclo di vita, slot e query.</span>
+  </a>
+  <a class="card" href="#/it/templates/overview">
+    <span class="card__title">Template →</span>
+    <span class="card__text">Interpolazione, binding, eventi e controllo di flusso.</span>
+  </a>
+  <a class="card" href="#/it/directives/overview">
+    <span class="card__title">Direttive →</span>
+    <span class="card__text">Direttive custom, strutturali e condizionali.</span>
+  </a>
+  <a class="card" href="#/it/reference/api">
+    <span class="card__title">Riferimento →</span>
+    <span class="card__text">API, prontuario della sintassi, enciclopedia degli errori e problemi noti.</span>
+  </a>
+</div>

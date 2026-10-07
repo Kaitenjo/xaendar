@@ -1,0 +1,110 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DefineRulesComponent } from '../../../examples/components/registration/define-rules/define-rules.xd.component.ts'
+@import { LazyLoadingComponent } from '../../../examples/components/registration/lazy-loading/lazy-loading.xd.component.ts'
+
+<span class="eyebrow">Componenti</span>
+<h1>Selettori e registrazione</h1>
+<p class="lead">
+  <code>{'@WebComponent'}</code> registra la classe nel registro dei custom element del browser, con il suo selettore,
+  appena il modulo che la dichiara viene valutato. Da quel momento ogni elemento con quel nome di tag, già presente
+  nella pagina o creato in seguito, è un’istanza della classe.
+</p>
+
+<h2>Scegliere un selettore</h2>
+<p>
+  Il selettore è un <strong>nome di custom element</strong>, e il browser è severo: deve iniziare con una lettera
+  minuscola, contenere un trattino, non contenere maiuscole e non essere uno dei pochi nomi riservati come
+  <code>font-face</code>. Un prefisso comune a tutta l’applicazione (<code>app-</code>, <code>acme-</code>) mantiene i
+  nomi leggibili ed evita collisioni con elementi di terze parti.
+</p>
+<docs-example name="components/registration/define-rules" heading="customElements.define con nomi validi e non validi">
+  <ex-define-rules />
+</docs-example>
+<p>
+  Il compilatore applica le stesse regole durante la build, e si ferma prima del browser:
+</p>
+<docs-code snippet="components/invalid-selector-error.txt" />
+
+<h2>Un nome, una classe</h2>
+<p>
+  Un nome si può definire una sola volta, e una classe si può definire con un solo nome: l’esempio qui sopra mostra
+  entrambi gli errori. Il compilatore controlla tutti i componenti del progetto, quindi due classi che reclamano lo
+  stesso selettore fanno fallire la build; senza quel controllo, la seconda <code>define</code> lancerebbe un errore a
+  runtime.
+</p>
+<docs-code snippet="components/duplicate-selector-error.txt" />
+
+<h2>Usare un componente in un template</h2>
+<p>Un template usa un componente in due passaggi distinti.</p>
+<ol class="steps">
+  <li>
+    <strong>Durante la build</strong>, il template importa la classe con <code>{'@import'}</code>. Il compilatore
+    legge la classe per conoscerne selettore, input e output, e controlla i binding rispetto a questi. Niente di
+    questo import arriva al browser.
+    <docs-code snippet="components/import-component.html" />
+  </li>
+  <li>
+    <strong>A runtime</strong>, il modulo che dichiara la classe deve essere stato valutato, così che il decoratore
+    abbia definito l’elemento. Il modo abituale è un entry point che importa tutti i componenti prima di
+    renderizzare qualsiasi cosa; questo sito lo fa con un import glob:
+    <docs-code snippet="components/main-glob.ts" />
+  </li>
+</ol>
+<p>Un tag con il trattino che il template non importa fa fallire la build:</p>
+<docs-code snippet="components/not-imported-error.txt" />
+
+<h2>Caricare un componente su richiesta</h2>
+<p>
+  Un componente importato con un <code>import()</code> dinamico viene definito solo quando arriva il suo modulo. Gli
+  elementi con il suo tag già presenti nella pagina vengono allora <em>aggiornati</em> (upgrade): il browser esegue il
+  costruttore su di essi e li collega, ma i binding applicati nel frattempo non hanno raggiunto nessun input, perché
+  nessun input esisteva ancora: sono stati scritti come semplici attributi, che i componenti non leggono.
+</p>
+<docs-example name="components/registration/lazy-loading" heading="Binding applicati prima e dopo la definizione" kind="edge">
+  <ex-lazy-loading />
+</docs-example>
+<p>
+  Fai clic prima su <em>count + 1</em>, poi carica il pannello. Il primo pannello mostra i valori di default: la sua
+  <code>label</code> statica non arriverà mai, e il suo <code>count</code> arriva solo con il cambiamento successivo,
+  perché un binding reattivo scrive l’input quando il suo valore cambia. Il secondo pannello viene renderizzato da un
+  <code>{'@if'}</code> solo dopo il caricamento del modulo, quindi riceve tutti i binding. La regola è questa:
+  renderizza un componente caricato su richiesta solo quando <code>customElements.get()</code> lo conosce, o quando la
+  promise di <code>customElements.whenDefined()</code> è risolta.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Un elemento mai definito resta vuoto, in silenzio">
+    Un componente importato in un template ma mai valutato a runtime compila, e viene renderizzato come un elemento
+    vuoto e non definito: nessuno shadow root, nessun contenuto, nessun errore. La pseudo-classe <code>:defined</code>
+    permette di dargli uno stile mentre aspetta, come fa l’esempio del caricamento su richiesta.
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Custom element che non sono componenti Xaendar">
+    <p>
+      Ogni tag con il trattino in un template deve essere un componente Xaendar importato con <code>{'@import'}</code>,
+      quindi gli elementi di altre librerie non si possono scrivere in un template. Vanno creati da codice, come
+      mostrato in <a href="#/it/components/dom-apis">Usare le API del DOM</a>.
+    </p>
+    <docs-code snippet="components/foreign-element-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Il registro è globale">
+    C’è un solo registro per pagina e non c’è modo di annullare la definizione di un nome. Due applicazioni nella
+    stessa pagina, o due versioni della stessa libreria, non possono definire lo stesso selettore: il prefisso è
+    l’unica protezione.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@import { Classe } from "./percorso.xd.component.ts"'}</code></td><td>In un template: fa conoscere un componente al compilatore. Solo durante la build.</td></tr>
+      <tr><td><code>customElements.get(nome)</code></td><td>La classe definita con quel nome, o <code>undefined</code>.</td></tr>
+      <tr><td><code>customElements.whenDefined(nome)</code></td><td>Una promise risolta quando il nome viene definito.</td></tr>
+      <tr><td><code>:defined</code>, <code>:not(:defined)</code></td><td>Pseudo-classi CSS per gli elementi definiti e per quelli non ancora definiti.</td></tr>
+    </tbody>
+  </table>
+</div>

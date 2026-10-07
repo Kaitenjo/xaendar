@@ -1,0 +1,11 @@
+@import { ProgressMeterComponent } from './progress-meter.xd.component.ts'
+
+<div class="controls">
+  <button (click)="step(-1)">−1</button>
+  <button (click)="step(1)">+1</button>
+  <label><input type="checkbox" checked (change)="toggleValue()" /> show-value</label>
+</div>
+<p class="caption">value, max and show-value bound</p>
+<ex-progress-meter value="{ done() }" max="{ total() }" show-value="{ showValue() }" />
+<p class="caption">Only value bound: max is 100, show-value is true</p>
+<ex-progress-meter value="{ done() }" />

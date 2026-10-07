@@ -1,0 +1,89 @@
+@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TodoStep1Component } from '../../examples/tutorial/step-1/step-1.xd.component.ts'
+@import { TodoStep2Component } from '../../examples/tutorial/step-2/step-2.xd.component.ts'
+@import { TodoStep3Component } from '../../examples/tutorial/step-3/step-3.xd.component.ts'
+@import { TodoStep4Component } from '../../examples/tutorial/step-4/step-4.xd.component.ts'
+@import { TodoStep5Component } from '../../examples/tutorial/step-5/step-5.xd.component.ts'
+
+<span class="eyebrow">Introduction</span>
+<h1>Tutorial: a todo app</h1>
+<p class="lead">
+  Build a small todo application in five steps. Each step adds one concept, and each example is the complete,
+  working code of that step: compare the files of two consecutive steps to see exactly what changed.
+</p>
+
+<h2>Step 1 — A static component</h2>
+<p>
+  Every component starts as a class decorated with <code>{'@WebComponent'}</code>, pointing at its template and its
+  stylesheet. The template is plain HTML for now.
+</p>
+<docs-example name="tutorial/step-1" heading="Step 1: a static template">
+  <ex-todo-step-1 />
+</docs-example>
+
+<h2>Step 2 — State in a signal</h2>
+<p>
+  The todos move into a signal. The template renders them with <code>{'@for'}</code>, and shows their number with an
+  interpolation. <code>track todo.id</code> tells <code>{'@for'}</code> how to recognise a todo across changes, so that
+  its DOM can be reused.
+</p>
+<docs-example name="tutorial/step-2" heading="Step 2: rendering a signal">
+  <ex-todo-step-2 />
+</docs-example>
+
+<h2>Step 3 — Adding todos</h2>
+<p>
+  The <code>(submit)</code> listener calls <code>add($event)</code>, which reads the form, appends a todo and resets
+  the form. The update produces a new array: signals compare values by identity, so pushing into the existing array
+  would notify nobody.
+</p>
+<docs-example name="tutorial/step-3" heading="Step 3: handling events">
+  <ex-todo-step-3 />
+</docs-example>
+
+<h2>Step 4 — Completing and removing</h2>
+<p>
+  Each row gets a checkbox and a remove button. A <strong>conditional binding</strong>,
+  <code>{'@if (todo.done) { checked }'}</code> written inside the tag, adds the <code>checked</code> attribute only
+  to the done todos. A <code>computed</code> signal counts the remaining todos, and <code>{'@if'}</code> shows a
+  message when the list is empty.
+</p>
+<docs-example name="tutorial/step-4" heading="Step 4: computed signals and conditionals">
+  <ex-todo-step-4 />
+</docs-example>
+<docs-callout kind="edge" heading="Why track todo instead of todo.id?">
+  Toggling a todo replaces it with a new object that has the same id. <code>{'@for'}</code> reuses the row of a key it
+  already knows, and the row keeps showing the object it was created with: tracked by <code>todo.id</code>, a toggled
+  todo would not be redrawn. Tracking by the object itself renders a new row for the new object. See
+  <a href="#/en/templates/for">Lists with {'@for'}</a>.
+</docs-callout>
+
+<h2>Step 5 — A child component and a filter</h2>
+<p>
+  The row moves into its own component, <code>ex-todo-item</code>. It receives the todo through a required input and
+  reports what happens through two outputs, <code>doneChange</code> and <code>remove</code>. The parent keeps the state
+  and adds a filter: a signal, a <code>computed</code> list of the visible todos, and a <code>{'@switch'}</code> for the
+  footer.
+</p>
+<docs-example name="tutorial/step-5" heading="Step 5: inputs, outputs and @switch">
+  <ex-todo-step-5 />
+</docs-example>
+<docs-callout kind="edge" heading="Why todo()?.title instead of todo().title?">
+  A child component is rendered as soon as it is inserted in the page, and the parent binds its inputs right after.
+  During that first render <code>todo()</code> is still <code>undefined</code>, even though the input is required:
+  reading <code>todo().title</code> would throw, and stop the rest of the child template from rendering. Optional
+  chaining keeps the first render safe; the bindings update as soon as the input is set. See
+  <a href="#/en/components/inputs">Inputs with {'@Property'}</a>.
+</docs-callout>
+<docs-callout kind="note" heading="Inline property types">
+  The input of <code>ex-todo-item</code> is typed with an inline object type instead of the <code>Todo</code> type
+  alias. The compiler copies the type of each input, as text, into the code that type-checks the templates binding it,
+  where an imported alias would not be found. See <a href="#/en/reference/known-issues">Known issues</a>.
+</docs-callout>
+
+<h2>Where to go from here</h2>
+<p>
+  The guides cover each concept in depth, with their edge cases: start from <a href="#/en/signals/overview">signals</a>,
+  <a href="#/en/components/inputs">inputs</a> and <a href="#/en/templates/for">lists</a>.
+</p>

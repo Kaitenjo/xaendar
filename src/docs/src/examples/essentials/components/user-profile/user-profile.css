@@ -1,0 +1,19 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+ex-user-badge {
+  width: min(100%, 22rem);
+}
+
+p {
+  margin: 0.25rem 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}

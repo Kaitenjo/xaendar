@@ -1,0 +1,14 @@
+@import { EffectChildComponent } from './effect-child.xd.component.ts'
+
+<div class="controls">
+  <button (click)="toggle()">@if (mounted()) { Remove the child } @else { Add the child }</button>
+  <button (click)="disposeLeaked()">Dispose the standalone effects ({ alive() } alive)</button>
+</div>
+@if (mounted()) {
+  <ex-effect-child />
+}
+<ul>
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ul>

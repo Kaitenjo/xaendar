@@ -1,0 +1,4 @@
+<p>Rendered list: <strong>{ fruits().join(', ') }</strong> — the effect ran <strong>{ runs() }</strong> times</p>
+<button (click)="pushInPlace()">fruits().push('pear')</button>
+<button (click)="setSame()">fruits.set(fruits())</button>
+<button (click)="replace()">fruits.update(f => [...f, 'cherry'])</button>

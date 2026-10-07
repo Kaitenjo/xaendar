@@ -1,0 +1,112 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalCounterComponent } from '../../../examples/signals/overview/counter/counter.xd.component.ts'
+@import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
+@import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
+
+<span class="eyebrow">Signal</span>
+<h1>Signal</h1>
+<p class="lead">
+  Un signal è un contenitore di un valore che avvisa chi lo usa quando il valore cambia. Tutto ciò che è reattivo in
+  Xaendar — binding dei template, signal derivati, effetti, query, input dei componenti — è costruito sui signal.
+</p>
+
+<h2>Creare e leggere un signal</h2>
+<p>
+  <code>signal(valoreIniziale, opzioni?)</code>, esportato da <code>{'@xaendar/core/signals'}</code>, crea un
+  <strong>signal scrivibile</strong>. Il signal è una funzione: chiamala per leggere il valore. Dentro un signal
+  derivato, un effetto o un binding del template, la lettura registra anche una dipendenza.
+</p>
+<docs-code snippet="signals/signal-api.ts" />
+<docs-example name="signals/overview/counter" heading="Leggere e scrivere un signal">
+  <ex-signal-counter />
+</docs-example>
+
+<h2>Scrivere</h2>
+<ul>
+  <li><code>set(valore)</code> sostituisce il valore.</li>
+  <li>
+    <code>update(fn)</code> passa il valore attuale a <code>fn</code> e imposta ciò che restituisce. Il valore attuale
+    viene letto <em>senza tracciamento</em>, quindi chiamare <code>update</code> dentro un effetto non rende l’effetto
+    dipendente dal signal che aggiorna.
+  </li>
+</ul>
+<p>
+  Una scrittura avvisa subito chi dipende dal signal che qualcosa è cambiato; il lavoro che ne segue — effetti e
+  binding dei template che vengono rieseguiti — è raggruppato ed eseguito in un microtask. Vedi
+  <a href="#/it/signals/effects">Effetti</a>.
+</p>
+
+<h2>Uguaglianza</h2>
+<p>
+  Prima di avvisare chiunque, un signal confronta il nuovo valore con quello attuale. Di default usa
+  <code>Object.is</code>: per oggetti e array significa <strong>identità</strong>, non contenuto.
+</p>
+<docs-example name="signals/overview/identity" kind="edge" heading="Modificare un array sul posto non avvisa nessuno">
+  <ex-signal-identity />
+</docs-example>
+<p>
+  <code>push</code> cambia l’array, ma il signal contiene sempre lo stesso riferimento: niente viene ri-renderizzato,
+  e la pera resta invisibile finché non viene impostato un nuovo array. Anche reimpostare lo stesso riferimento viene
+  ignorato. Tratta i valori dei signal come immutabili e produci sempre nuovi array e oggetti.
+</p>
+<h3>Uguaglianza personalizzata</h3>
+<p>
+  L’opzione <code>equals</code> sostituisce <code>Object.is</code>. Restituisci <code>true</code> quando il nuovo valore
+  va considerato uguale a quello attuale: la scrittura viene ignorata e resta il vecchio valore.
+</p>
+<docs-example name="signals/overview/custom-equals" heading="Un signal che ignora maiuscole e minuscole">
+  <ex-signal-custom-equals />
+</docs-example>
+
+<h2>Tipi</h2>
+<docs-code snippet="signals/types.ts" />
+<p>
+  <code>Signal</code> e <code>Computed</code> sono i tipi restituiti da <code>signal()</code> e <code>computed()</code>.
+  Usali per annotare i membri di un componente quando un signal arriva da altrove, per esempio da un modulo condiviso:
+  vedi <a href="#/it/signals/shared-state">Stato condiviso</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Le mutazioni sono invisibili">
+    Mutare il valore di un signal — <code>push</code>, <code>splice</code>, assegnare una proprietà — non avvisa
+    nessuno, e lascia il template con dati vecchi. Il cambiamento vero successivo rivela tutte le mutazioni nascoste
+    in un colpo solo.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un valore uguale non è un cambiamento">
+    <code>set</code> e <code>update</code> non fanno nulla quando il nuovo valore è uguale a quello attuale. Con un
+    <code>equals</code> personalizzato resta il vecchio valore: nell’esempio sopra, scrivere “ADA” lascia “Ada” nel signal.
+  </docs-callout>
+  <docs-callout kind="edge" heading="equals viene eseguito a ogni scrittura">
+    <code>equals</code> viene chiamato in modo sincrono da ogni <code>set</code> e <code>update</code>, con il valore
+    attuale e quello nuovo e con <code>this</code> legato al <code>Signal.State</code> sottostante. Mantienilo un
+    confronto puro ed economico tra i suoi due argomenti: se lancia un errore, lo lancia anche la scrittura.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Letture fuori da un contesto reattivo">
+    Leggere un signal in un gestore di eventi o in un metodo qualsiasi restituisce solo il valore: nessuno si
+    sottoscrive. Vengono tracciate solo le letture fatte mentre è in esecuzione un signal derivato, un effetto o un
+    binding del template.
+  </docs-callout>
+  <docs-callout kind="issue" heading="signal() non restituisce un Signal.State">
+    Il tipo dice <code>Signal.State</code>, ma <code>signal()</code> restituisce una funzione che ne avvolge uno:
+    <code>instanceof Signal.State</code> è falso e le API di <code>Signal.subtle</code> lo rifiutano. Vedi
+    <a href="#/it/signals/advanced">Avanzato: Signal.subtle</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>signal(valore, opzioni?)</code></td><td>Crea un signal scrivibile.</td></tr>
+      <tr><td><code>sig()</code>, <code>sig.get()</code></td><td>Legge il valore, tracciandolo nei contesti reattivi.</td></tr>
+      <tr><td><code>sig.set(valore)</code></td><td>Sostituisce il valore, a meno che non sia uguale a quello attuale.</td></tr>
+      <tr><td><code>sig.update(fn)</code></td><td>Imposta <code>fn(attuale)</code>, leggendo il valore attuale senza tracciarlo.</td></tr>
+      <tr><td><code>opzioni.equals</code></td><td>Uguaglianza personalizzata, <code>Object.is</code> di default.</td></tr>
+      <tr><td><code>opzioni.watched</code>, <code>opzioni.unwatched</code></td><td>Vedi <a href="#/it/signals/options">Opzioni dei signal</a>.</td></tr>
+    </tbody>
+  </table>
+</div>

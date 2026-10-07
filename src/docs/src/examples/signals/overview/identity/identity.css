@@ -1,0 +1,15 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+p {
+  flex-basis: 100%;
+  margin: 0 0 0.25rem;
+}
+
+button {
+  font: 0.85rem ui-monospace, monospace;
+  cursor: pointer;
+}

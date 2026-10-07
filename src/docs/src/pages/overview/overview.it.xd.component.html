@@ -1,0 +1,125 @@
+@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { GranularUpdatesComponent } from '../../examples/overview/granular-updates/granular-updates.xd.component.ts'
+
+<span class="eyebrow">Introduzione</span>
+<h1>Cos’è Xaendar?</h1>
+<p class="lead">
+  Xaendar è un framework per costruire Web Component in modo dichiarativo. Un componente è una classe TypeScript più
+  un template scritto in una sintassi HTML5 estesa; il compilatore trasforma il template in codice che aggiorna il DOM
+  con la precisione di JavaScript scritto a mano.
+</p>
+
+<h2>Reattività a grana fine, decisa in fase di build</h2>
+<p>
+  La maggior parte dei framework a componenti riesegue una funzione di render quando lo stato cambia, e ne confronta il
+  risultato con quello precedente: il diff del virtual DOM. Xaendar non fa né l’una né l’altra cosa.
+</p>
+<docs-code snippet="overview/virtual-dom.txt" />
+<p>
+  In fase di build il compilatore analizza ogni template e trova, per ogni elemento, attributo e nodo di testo,
+  l’espressione che lo produce. A runtime ogni espressione diventa un piccolo binding reattivo, sottoscritto solo ai
+  signal che legge. Il cambio di un signal esegue esattamente i binding che ne dipendono, e ogni binding scrive
+  esattamente un nodo.
+</p>
+<docs-code snippet="overview/binding-graph.txt" />
+
+<docs-example name="overview/granular-updates" heading="Si aggiornano solo i nodi che leggono un signal">
+  <ex-granular-updates />
+</docs-example>
+<p>
+  Il log viene da un <code>MutationObserver</code> collegato alla card. Premi i pulsanti e guarda quali nodi
+  lampeggiano: l’incremento tocca un nodo di testo e un attributo, il cambio di nome un solo nodo di testo, e il
+  paragrafo statico non compare mai.
+</p>
+
+<h2>I mattoni fondamentali</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Concetto</th><th>Cos’è</th><th>Guida</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Componente</td>
+        <td>Una classe che estende <code>CustomElement</code>, decorata con <code>{'@WebComponent'}</code>: un vero custom element, renderizzato nel proprio shadow root.</td>
+        <td><a href="#/it/components/anatomy">Componenti</a></td>
+      </tr>
+      <tr>
+        <td>Template</td>
+        <td>HTML5 esteso con interpolazione, binding, eventi e controllo di flusso (<code>{'@if'}</code>, <code>{'@for'}</code>, <code>{'@switch'}</code>), compilato in fase di build.</td>
+        <td><a href="#/it/templates/overview">Template</a></td>
+      </tr>
+      <tr>
+        <td>Signal</td>
+        <td>Un valore reattivo: chi lo legge, che sia un binding del template, un signal derivato o un effetto, viene notificato quando cambia.</td>
+        <td><a href="#/it/signals/overview">Signal</a></td>
+      </tr>
+      <tr>
+        <td>Direttiva</td>
+        <td>Un comportamento riutilizzabile applicato a un elemento (<code>{'@@nome'}</code>), o una condizione che decide se l’elemento esiste (<code>{'*nome'}</code>).</td>
+        <td><a href="#/it/directives/overview">Direttive</a></td>
+      </tr>
+      <tr>
+        <td>Query</td>
+        <td>Un signal che contiene gli elementi corrispondenti a un selettore, nello shadow DOM o nel contenuto proiettato.</td>
+        <td><a href="#/it/components/queries">Query</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>La vita di un componente</h2>
+<ol class="steps">
+  <li>
+    <strong>Build.</strong> Il plugin Vite legge ogni file <code>*.xd.component.ts</code>, ne trova template e foglio
+    di stile, verifica i tipi del template rispetto alla classe e lo compila in una funzione di render.
+  </li>
+  <li>
+    <strong>Definizione.</strong> Importare la classe valuta <code>{'@WebComponent'}</code>, che chiama
+    <code>customElements.define()</code>.
+  </li>
+  <li>
+    <strong>Connessione.</strong> Quando l’elemento entra nel documento il suo shadow root adotta il foglio di stile,
+    viene eseguito <code>onInit</code>, la funzione di render costruisce il DOM e collega i binding, e per ultimo viene eseguito <code>afterRender</code>.
+  </li>
+  <li>
+    <strong>Aggiornamenti.</strong> Il cambio di un signal riesegue solo i binding che lo leggono, raggruppati in un microtask.
+  </li>
+  <li>
+    <strong>Disconnessione.</strong> Viene eseguito <code>onDestroy</code>, poi ogni binding, listener ed effetto del
+    componente viene eliminato e i nodi renderizzati vengono rimossi.
+  </li>
+</ol>
+
+<h2>I pacchetti</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Pacchetto</th><th>Ruolo</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>{'@xaendar/core'}</code></td><td>Decorator, classi base e runtime dei template. L’entry <code>{'@xaendar/core/signals'}</code> esporta <code>signal</code>, <code>computed</code>, <code>effect</code> e <code>untracked</code>.</td></tr>
+      <tr><td><code>{'@xaendar/signals'}</code></td><td>Il polyfill di <code>Signal</code>, basato sulla proposta TC39, installato da <code>loadSignals()</code>.</td></tr>
+      <tr><td><code>{'@xaendar/compiler'}</code></td><td>Lexer, parser, type checker e generatore di codice dei template.</td></tr>
+      <tr><td><code>{'@xaendar/build-tools'}</code></td><td>Il plugin Vite, <code>xaendarPlugin()</code>.</td></tr>
+      <tr><td><code>{'@xaendar/cli'}</code></td><td>Il comando <code>xd</code>: <code>new</code>, <code>start</code>, <code>build</code>, <code>generate</code>.</td></tr>
+      <tr><td><code>{'@xaendar/language-core'}</code>, language server, client VS Code</td><td>Supporto ai template negli editor.</td></tr>
+      <tr><td><code>{'@xaendar/common'}</code>, <code>{'@xaendar/types'}</code></td><td>Utility e tipi condivisi dagli altri pacchetti.</td></tr>
+    </tbody>
+  </table>
+</div>
+<docs-callout kind="note">
+  Il codice applicativo importa solo <code>{'@xaendar/core'}</code>, <code>{'@xaendar/core/signals'}</code> e
+  <code>{'@xaendar/signals'}</code>. Gli altri pacchetti sono strumenti di build e per l’editor.
+</docs-callout>
+
+<h2>Cosa Xaendar non fa</h2>
+<p>
+  Xaendar è volutamente piccolo. Non ci sono dependency injection, router, pipe né two-way binding: lo stato condiviso
+  vive in semplici moduli di signal, la formattazione nei metodi, e i form si collegano con gli eventi. La pagina
+  <a href="#/it/reference/coming-from-angular">Arrivando da Angular</a> mappa ogni concetto di Angular sul suo
+  equivalente in Xaendar, e la sezione <a href="#/it/patterns/forms">Pattern</a> mostra il modo idiomatico di colmare
+  le differenze.
+</p>

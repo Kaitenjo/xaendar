@@ -1,0 +1,29 @@
+@import { HighlightDirective } from '../../directives/highlight.directive.ts'
+
+<div class="{ classes() }">
+  @if (caption() || verdict()) {
+    <div class="head">
+      <span class="file">{ caption() }</span>
+      @if (verdict() === 'bad') {
+        <span class="verdict verdict--bad">✗ { t().code.bad }</span>
+      }
+      @if (verdict() === 'good') {
+        <span class="verdict verdict--good">✓ { t().code.good }</span>
+      }
+    </div>
+  }
+  <button class="copy" type="button" (click)="copy()">
+    @if (copied()) {
+      { t().code.copied }
+    } @else {
+      { t().code.copy }
+    }
+  </button>
+  <pre class="pre"><code class="code" @@highlight(code="{ text() }" lang="{ source().lang }") /></pre>
+  @if (error()) {
+    <div class="error">
+      <div class="error__label">{ t().code.error }</div>
+      <pre class="error__text">{ error() }</pre>
+    </div>
+  }
+</div>

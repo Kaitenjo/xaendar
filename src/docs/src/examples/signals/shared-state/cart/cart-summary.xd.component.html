@@ -1,0 +1,11 @@
+<h4>Cart</h4>
+@if (lines().length) {
+  <ul>
+    @for (line of lines(); track line) {
+      <li>{ line.quantity } × { line.product }</li>
+    }
+  </ul>
+  <button (click)="clear()">Empty the cart</button>
+} @else {
+  <p>The cart is empty.</p>
+}

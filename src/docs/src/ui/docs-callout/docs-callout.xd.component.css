@@ -1,0 +1,66 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+  margin: 1.25rem 0;
+}
+
+.callout {
+  --tone: var(--xd-note);
+  padding: 0.85rem 1.1rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  border-left: 4px solid var(--tone);
+  border-radius: var(--xd-radius-sm);
+  background: color-mix(in srgb, var(--tone) 7%, var(--xd-bg));
+}
+
+.callout--tip {
+  --tone: var(--xd-tip);
+}
+
+.callout--warning {
+  --tone: var(--xd-warning);
+}
+
+.callout--edge {
+  --tone: var(--xd-edge);
+}
+
+.callout--unsupported {
+  --tone: var(--xd-unsupported);
+}
+
+.callout--issue {
+  --tone: var(--xd-issue);
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin-bottom: 0.3rem;
+}
+
+.label {
+  color: var(--tone);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heading {
+  color: var(--xd-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.body {
+  color: var(--xd-text-soft);
+  font-size: 0.94rem;
+}

@@ -1,0 +1,8 @@
+<p class="total">Total: { total() }</p>
+<button (click)="raise()">price += 25</button>
+<p>Evaluations of total, most recent first:</p>
+<ol>
+  @for (line of evaluations(); track line) {
+    <li>{ line }</li>
+  }
+</ol>

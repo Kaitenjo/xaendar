@@ -1,0 +1,18 @@
+@if (previous() || next()) {
+  <nav class="pager">
+    @if (previous()) {
+      <a class="card card--previous" href="{ '#/' + lang() + '/' + previous()?.path }">
+        <span class="card__label">← { t().pager.previous }</span>
+        <span class="card__title">{ previous()?.title[lang()] }</span>
+      </a>
+    } @else {
+      <span></span>
+    }
+    @if (next()) {
+      <a class="card card--next" href="{ '#/' + lang() + '/' + next()?.path }">
+        <span class="card__label">{ t().pager.next } →</span>
+        <span class="card__title">{ next()?.title[lang()] }</span>
+      </a>
+    }
+  </nav>
+}

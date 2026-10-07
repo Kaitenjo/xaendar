@@ -1,0 +1,3 @@
+warning: Could not find template at /src/rating/rating.html
+  Plugin: xaendar
+  File: /src/rating/rating.xd.component.ts

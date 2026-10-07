@@ -1,0 +1,120 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+  margin: 1.5rem 0 2rem;
+}
+
+.example {
+  margin: 0;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius);
+  background: var(--xd-bg-elevated);
+  box-shadow: var(--xd-shadow);
+  overflow: hidden;
+}
+
+.example--edge {
+  border-color: color-mix(in srgb, var(--xd-edge) 55%, var(--xd-border));
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem 0.6rem 1rem;
+  border-bottom: 1px solid var(--xd-border);
+  background: var(--xd-bg-soft);
+}
+
+.badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--xd-edge) 14%, transparent);
+  color: var(--xd-edge);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.heading {
+  flex: 1;
+  min-width: 0;
+  color: var(--xd-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.toggle {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius-sm);
+  background: var(--xd-bg-elevated);
+  color: var(--xd-text-soft);
+  font: 500 0.75rem/1.5 var(--xd-font);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--xd-accent);
+  border-color: var(--xd-accent);
+}
+
+.toggle:focus-visible,
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--xd-focus);
+}
+
+.stage {
+  padding: 1.5rem 1.25rem;
+  background:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--xd-text-muted) 22%, transparent) 1px, transparent 0) 0 0 / 18px 18px,
+    var(--xd-bg);
+  color: var(--xd-text);
+  overflow-x: auto;
+}
+
+.source {
+  border-top: 1px solid var(--xd-border);
+  background: var(--xd-code-bg);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem 0;
+  border-bottom: 1px solid var(--xd-code-border);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--xd-text-muted);
+  font: 500 0.76rem/1.4 var(--xd-font-mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--xd-text);
+}
+
+.tab--active {
+  border-bottom-color: var(--xd-accent);
+  color: var(--xd-accent);
+}
+
+docs-code {
+  margin: 0;
+}

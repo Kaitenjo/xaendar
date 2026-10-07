@@ -1,0 +1,113 @@
+@import { DocsCodeComponent } from '../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Introduzione</span>
+<h1>Installazione</h1>
+<p class="lead">
+  Crea un progetto con lo strumento a riga di comando <code>xd</code>, oppure aggiungi Xaendar a mano a un progetto
+  Vite esistente. In entrambi i casi servono gli stessi quattro ingredienti: i pacchetti di runtime, la trasformazione
+  dei decorator, il plugin Vite di Xaendar e il polyfill dei signal.
+</p>
+
+<h2>Creare un progetto con la CLI</h2>
+<docs-code snippet="installation/new-project.sh" />
+<p>
+  <code>xd new</code> crea la cartella, scrive i file qui sotto ed esegue <code>npm install</code>.
+  <code>npm start</code> esegue <code>xd start</code>, che serve l’applicazione sulla porta 4200 e la ricompila a ogni
+  modifica; <code>npm run build</code> esegue <code>xd build</code>, che scrive il bundle di produzione in <code>dist</code>.
+</p>
+<docs-code snippet="installation/structure.txt" />
+<p>Tre file meritano uno sguardo più da vicino.</p>
+<h3>index.html</h3>
+<docs-code snippet="installation/index.html" />
+<p>
+  La pagina carica due script modulo, in quest’ordine. <code>signals.ts</code> installa l’oggetto globale
+  <code>Signal</code> di cui <code>{'@xaendar/core'}</code> ha bisogno appena viene valutato; <code>main.ts</code>
+  importa i componenti.
+</p>
+<h3>signals.ts</h3>
+<docs-code snippet="installation/signals.ts" />
+<h3>main.ts</h3>
+<docs-code snippet="installation/main.ts" />
+<p>
+  Un componente esiste nel browser solo dopo che la sua classe è stata valutata: a quel punto
+  <code>{'@WebComponent'}</code> lo registra con <code>customElements.define()</code>. Ogni componente e direttiva
+  usati dalle pagine deve essere importato, direttamente o indirettamente, dall’entry point.
+</p>
+
+<h2>Aggiungere Xaendar a mano</h2>
+<ol class="steps">
+  <li>
+    Installa i pacchetti di runtime e gli strumenti di build.
+    <docs-code snippet="installation/manual-install.sh" />
+  </li>
+  <li>
+    Registra la trasformazione dei decorator e il plugin di Xaendar nella configurazione di Vite, in quest’ordine.
+    <docs-code snippet="installation/vite.config.ts" />
+  </li>
+  <li>
+    Configura TypeScript. Xaendar usa i decorator standard e la parola chiave <code>accessor</code>: quindi
+    <strong>non</strong> abilitare <code>experimentalDecorators</code>. Il plugin verifica i tipi dei template con il
+    <code>tsconfig.json</code> che trova nella cartella da cui viene avviato Vite.
+    <docs-code snippet="installation/tsconfig.json" />
+  </li>
+  <li>Carica <code>signals.ts</code> prima dell’entry point, come nell’<code>index.html</code> qui sopra.</li>
+</ol>
+
+<h2>Il tuo primo componente</h2>
+<p>
+  Un componente è una classe che estende <code>CustomElement</code>, decorata con <code>{'@WebComponent'}</code>,
+  più un template e un foglio di stile opzionale. I nomi dei file contano: il plugin compila solo le classi dichiarate
+  in file che terminano con <code>.xd.component.ts</code>.
+</p>
+<docs-code snippet="installation/my-app-root.xd.component.ts" />
+<p>
+  Prosegui con i <a href="#/it/essentials/components">Fondamenti</a> per un giro veloce, oppure segui il
+  <a href="#/it/tutorial">tutorial</a> per costruire passo passo una piccola applicazione.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Il polyfill non è caricato">
+    <p>
+      <code>{'@xaendar/core'}</code> legge <code>Signal.subtle</code> mentre i suoi moduli vengono valutati. Se
+      <code>loadSignals()</code> non è ancora stato eseguito, l’applicazione si ferma prima di renderizzare qualsiasi cosa:
+    </p>
+    <docs-code snippet="installation/missing-signals.txt" />
+    <p>
+      Tieni <code>signals.ts</code> come script modulo separato, posto prima di <code>main.ts</code>, oppure rendilo il
+      primissimo import di <code>main.ts</code>: i moduli vengono valutati nell’ordine degli import.
+    </p>
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un componente mai importato non renderizza nulla">
+    <p>
+      L’istruzione <code>{'@import'}</code> di un template viene letta solo dal compilatore, per verificare i tipi dei
+      binding. Se la classe non viene mai importata dal tuo JavaScript, il custom element non viene mai definito: il
+      browser mantiene un elemento sconosciuto e vuoto, senza segnalare errori.
+    </p>
+  </docs-callout>
+  <docs-callout kind="edge" heading="I componenti vanno definiti prima che il padre renderizzi">
+    <p>
+      Se un padre renderizza mentre un figlio che usa non è ancora definito, i binding del figlio vengono impostati
+      come semplici attributi stringa: una volta definito il figlio, i suoi input mantengono i valori di default
+      finché un signal legato non cambia di nuovo. Importa prima i componenti foglia, oppure aggiungi l’elemento radice
+      solo dopo aver importato tutti i moduli, come fa questo sito. Vedi
+      <a href="#/it/components/registration">Selettori e registrazione</a>.
+    </p>
+  </docs-callout>
+  <docs-callout kind="edge" heading="L’ordine dei plugin Vite conta">
+    <p>
+      Il plugin di Xaendar inserisce il template nel blocco statico generato dalla trasformazione dei decorator. Se la
+      trasformazione viene eseguita dopo, la build fallisce con:
+    </p>
+    <docs-code snippet="installation/plugin-order-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="Un errore nel template non fa fallire la build">
+    <p>
+      Gli errori di un template vengono stampati, ma <code>xd build</code> termina comunque con exit code 0. Il
+      componente il cui template è fallito finisce nel bundle senza funzione di render, e lancia un errore quando
+      viene connesso: <code>MyAppRootComponent does not seems to have a Render Function</code>. Leggi sempre l’output
+      della build, e vedi <a href="#/it/reference/known-issues">Problemi noti</a>.
+    </p>
+  </docs-callout>
+</section>

@@ -1,0 +1,9 @@
+<button (click)="raise()">Raise the level</button>
+<dl>
+  <dt>untyped = level</dt>
+  <dd><progress max="10" value="{ untyped() }"></progress> text: { untyped() }</dd>
+  <dt>{ 'typed: Signal<number> = level' }</dt>
+  <dd><progress max="10" value="{ typed() }"></progress> text: { typed() }</dd>
+  <dt>{ 'wrapped = computed(() => level())' }</dt>
+  <dd><progress max="10" value="{ wrapped() }"></progress> text: { wrapped() }</dd>
+</dl>

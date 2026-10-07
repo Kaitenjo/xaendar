@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+td {
+  padding: 0.3rem 0.5rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  overflow-wrap: anywhere;
+}
+
+td:last-child {
+  font-weight: 600;
+  white-space: nowrap;
+}

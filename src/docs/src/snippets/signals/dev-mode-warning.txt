@@ -1,0 +1,7 @@
+Invalid state transition from computing to checked in Computed Signal
+Error
+    at Computed.setState (computed.ts)
+    at State.set (state.ts)
+    at getter.set (input.ts)
+    at updateProperty (render-element.util.ts)
+    …

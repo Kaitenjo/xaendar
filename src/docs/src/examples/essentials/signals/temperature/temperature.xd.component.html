@@ -1,0 +1,10 @@
+<p class="reading">{ celsius() } °C = { fahrenheit() } °F</p>
+<div class="controls">
+  <button (click)="colder()">−1 °C</button>
+  <button (click)="warmer()">+1 °C</button>
+</div>
+<ul class="log">
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ul>

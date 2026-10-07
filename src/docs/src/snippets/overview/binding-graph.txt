@@ -1,0 +1,6 @@
+ template                                   signals          DOM
+ ─────────────────────────────────────      ─────────        ──────────────────────────
+ <p>You clicked { count() } times</p>   ◀── count  ───▶  text node "3"
+ <p class="{ count() > 9 ? 'big' : '' }">   count  ───▶  attribute class=""
+ <p>Hello, { name() }!</p>              ◀── name   ───▶  text node "Ada"
+ <p>A static paragraph</p>                  (none)       created once, never touched again

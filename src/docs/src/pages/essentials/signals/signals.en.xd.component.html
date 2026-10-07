@@ -1,0 +1,59 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TemperatureComponent } from '../../../examples/essentials/signals/temperature/temperature.xd.component.ts'
+
+<span class="eyebrow">Essentials</span>
+<h1>Reactivity with signals</h1>
+<p class="lead">
+  A signal is a value that notifies whoever reads it when it changes. Signals hold the state of your components, and
+  they are what the compiled templates subscribe to.
+</p>
+
+<h2>Three primitives</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Function</th><th>Creates</th><th>Use it for</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>signal(value)</code></td><td>A writable signal: read it with <code>count()</code>, change it with <code>set()</code> or <code>update()</code>.</td><td>The state.</td></tr>
+      <tr><td><code>computed(fn)</code></td><td>A read-only signal derived from others, recomputed lazily when they change.</td><td>Values derived from the state.</td></tr>
+      <tr><td><code>effect(fn)</code></td><td>A function that runs now, and again whenever a signal it read changes.</td><td>Side effects: logging, storage, imperative DOM work.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>All three are exported by <code>{'@xaendar/core/signals'}</code>.</p>
+
+<docs-example name="essentials/signals/temperature" heading="A signal, a computed signal and an effect">
+  <ex-temperature />
+</docs-example>
+
+<h2>Reading and writing</h2>
+<p>
+  A signal is a function: calling it returns its value and, inside a computed signal, an effect or a template
+  binding, registers a dependency. <code>set(value)</code> replaces the value; <code>update(fn)</code> computes the
+  new value from the previous one. Writing a value equal to the current one, by <code>Object.is</code>, notifies nobody.
+</p>
+<docs-callout kind="warning">
+  Signals compare values by identity. Pushing into an array, or changing a property of an object, does not change
+  the signal: always produce a new array or object, as <code>{'items.update(items => [...items, item])'}</code> does.
+</docs-callout>
+
+<h2>Signals in templates</h2>
+<p>
+  Templates read signals by calling them, exactly like the class: <code>{'{ celsius() }'}</code>. The compiler turns
+  each interpolation, binding and control flow block into a binding subscribed to the signals it reads, so a change
+  updates only the affected nodes.
+</p>
+
+<h2>Effects of a component</h2>
+<p>
+  <code>this.effect()</code> creates an effect bound to the component: it is disposed automatically when the
+  component leaves the page. Create it in <code>onInit</code> or <code>afterRender</code>.
+</p>
+
+<h2>Next</h2>
+<p>
+  Continue with <a href="#/en/essentials/templates">dynamic templates</a>, or read the
+  <a href="#/en/signals/overview">signals guides</a> for every detail and edge case.
+</p>

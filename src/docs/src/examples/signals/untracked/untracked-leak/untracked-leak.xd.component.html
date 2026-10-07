@@ -1,0 +1,8 @@
+<p>
+  <button (click)="changeNote()">note++</button>
+  { 'untracked(() => { total(); note(); })' } — runs: <strong>{ leakingRuns() }</strong>
+</p>
+<p>
+  <button (click)="changeOther()">other++</button>
+  { 'untracked(() => other())' } — runs: <strong>{ cleanRuns() }</strong>
+</p>

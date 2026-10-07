@@ -1,0 +1,3 @@
+Xaendar: Failed to compile template - /src/team/team.xd.component.html
+[TypeChecker] Required property "name" of <ex-greeting-card> must always be bound: bind it in every branch of its conditional binding, including an @else or @default one, or outside of it.
+----> name="{ user().name }"

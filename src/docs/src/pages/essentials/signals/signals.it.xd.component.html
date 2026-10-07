@@ -1,0 +1,60 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TemperatureComponent } from '../../../examples/essentials/signals/temperature/temperature.xd.component.ts'
+
+<span class="eyebrow">Fondamenti</span>
+<h1>Reattività con i signal</h1>
+<p class="lead">
+  Un signal è un valore che avvisa chi lo legge quando cambia. I signal contengono lo stato dei componenti, e sono ciò
+  a cui si sottoscrivono i template compilati.
+</p>
+
+<h2>Tre primitive</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Funzione</th><th>Crea</th><th>Serve per</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>signal(valore)</code></td><td>Un signal scrivibile: si legge con <code>count()</code>, si modifica con <code>set()</code> o <code>update()</code>.</td><td>Lo stato.</td></tr>
+      <tr><td><code>computed(fn)</code></td><td>Un signal in sola lettura derivato da altri, ricalcolato in modo lazy quando cambiano.</td><td>Valori derivati dallo stato.</td></tr>
+      <tr><td><code>effect(fn)</code></td><td>Una funzione eseguita subito, e di nuovo ogni volta che cambia un signal che ha letto.</td><td>Effetti collaterali: log, salvataggi, lavoro imperativo sul DOM.</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Tutte e tre sono esportate da <code>{'@xaendar/core/signals'}</code>.</p>
+
+<docs-example name="essentials/signals/temperature" heading="Un signal, un signal derivato e un effetto">
+  <ex-temperature />
+</docs-example>
+
+<h2>Leggere e scrivere</h2>
+<p>
+  Un signal è una funzione: chiamarla restituisce il valore e, dentro un signal derivato, un effetto o un binding del
+  template, registra una dipendenza. <code>set(valore)</code> sostituisce il valore; <code>update(fn)</code> calcola il
+  nuovo valore a partire dal precedente. Scrivere un valore uguale a quello attuale, secondo <code>Object.is</code>, non
+  notifica nessuno.
+</p>
+<docs-callout kind="warning">
+  I signal confrontano i valori per identità. Fare push in un array, o cambiare una proprietà di un oggetto, non cambia
+  il signal: produci sempre un nuovo array o oggetto, come fa <code>{'items.update(items => [...items, item])'}</code>.
+</docs-callout>
+
+<h2>I signal nei template</h2>
+<p>
+  I template leggono i signal chiamandoli, esattamente come la classe: <code>{'{ celsius() }'}</code>. Il compilatore
+  trasforma ogni interpolazione, binding e blocco di controllo di flusso in un binding sottoscritto ai signal che
+  legge, così un cambiamento aggiorna solo i nodi interessati.
+</p>
+
+<h2>Gli effetti di un componente</h2>
+<p>
+  <code>this.effect()</code> crea un effetto legato al componente: viene eliminato automaticamente quando il componente
+  lascia la pagina. Crealo in <code>onInit</code> o in <code>afterRender</code>.
+</p>
+
+<h2>Prossimo passo</h2>
+<p>
+  Prosegui con i <a href="#/it/essentials/templates">template dinamici</a>, oppure leggi le
+  <a href="#/it/signals/overview">guide sui signal</a> per ogni dettaglio e caso limite.
+</p>

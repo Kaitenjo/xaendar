@@ -1,0 +1,6 @@
+<!-- todo() is still undefined during the first render: the parent binds it right after. Hence ?. -->
+<label class="{ todo()?.done ? 'done' : '' }">
+  <input type="checkbox" (change)="toggle()" @if (todo()?.done) { checked } />
+  { todo()?.title }
+</label>
+<button (click)="delete()">✕</button>

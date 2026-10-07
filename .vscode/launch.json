@@ -40,10 +40,10 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug xd start (back-office)",
+      "name": "Debug xd start (docs)",
       "program": "${workspaceFolder}/packages/cli/bin/xd.mjs",
       "args": ["start"],
-      "cwd": "${workspaceFolder}/src/back-office",
+      "cwd": "${workspaceFolder}/src/docs",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "skipFiles": [

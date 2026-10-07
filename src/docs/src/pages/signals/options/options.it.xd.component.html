@@ -1,0 +1,56 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalWatchedComponent } from '../../../examples/signals/options/watched/watched.xd.component.ts'
+@import { SignalFrozenComponent } from '../../../examples/signals/options/frozen/frozen.xd.component.ts'
+
+<span class="eyebrow">Signal</span>
+<h1>Opzioni dei signal</h1>
+<p class="lead">
+  Il secondo argomento di <code>signal()</code> personalizza l’uguaglianza e permette a un signal di sapere quando
+  inizia e smette di essere osservato.
+</p>
+<docs-code snippet="signals/types.ts" />
+
+<h2>equals</h2>
+<p>
+  Decide se un nuovo valore è un cambiamento. Vedi <a href="#/it/signals/overview">Signal</a> per un esempio; su
+  <code>computed()</code> decide se un nuovo risultato è un cambiamento.
+</p>
+
+<h2>watched e unwatched</h2>
+<p>
+  <code>watched</code> viene eseguita quando il signal acquisisce il primo dipendente attivo — un effetto o un binding
+  del template, direttamente o tramite signal derivati. <code>unwatched</code> viene eseguita quando perde l’ultimo.
+  Sono il posto giusto per avviare e fermare ciò che alimenta il signal: un timer, una sottoscrizione, un listener.
+</p>
+<docs-example name="signals/options/watched" heading="Un orologio che avanza solo quando è visibile">
+  <ex-signal-watched />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Vengono rieseguite a ogni aggiornamento dell’unico dipendente">
+    <p>
+      Osserva i contatori mentre l’orologio è visibile: ogni tick aggiunge un <code>unwatched</code> e un
+      <code>watched</code>. Quando un dipendente viene rieseguito, annulla la sottoscrizione a tutte le sue sorgenti
+      prima di sottoscriversi di nuovo a quelle che legge; se è l’unico dipendente, il signal resta per un istante non
+      osservato. Rendi le callback economiche e idempotenti — qui il timer viene fermato e riavviato a ogni tick.
+    </p>
+  </docs-callout>
+  <docs-example name="signals/options/frozen" kind="edge" heading="I signal sono congelati dentro watched e unwatched">
+    <ex-signal-frozen />
+  </docs-example>
+  <docs-callout kind="edge" heading="Rimanda le scritture">
+    Le callback vengono eseguite mentre il grafo reattivo è in aggiornamento, con tutti i signal congelati: leggerne o
+    scriverne uno lancia un errore. Programma invece il lavoro — <code>queueMicrotask</code>, un timer, un evento —
+    come fa l’orologio.
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="I signal derivati le ignorano">
+    <code>computed(fn, opzioni)</code> accetta lo stesso tipo di opzioni, ma usa solo <code>equals</code>.
+  </docs-callout>
+  <docs-callout kind="note" heading="Gli input hanno un’opzione in più">
+    Il decorator <code>{'@Property'}</code> accetta queste opzioni più <code>transform</code> e <code>alias</code>.
+    Vedi <a href="#/it/components/inputs">Input</a>.
+  </docs-callout>
+</section>

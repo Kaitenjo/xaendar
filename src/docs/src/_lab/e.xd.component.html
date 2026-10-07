@@ -1,0 +1,8 @@
+@import { LabEChild } from './e.xd.component.ts'
+@import { LabYesDirective } from './yes.directive.ts'
+@if (show()) {
+  <lab-e-child where="if" />
+}
+@for (i of items(); track i) {
+  <lab-e-child where="for" />
+}

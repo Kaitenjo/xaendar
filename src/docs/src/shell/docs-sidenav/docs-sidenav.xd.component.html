@@ -1,0 +1,33 @@
+<nav class="nav">
+  @for (section of sections; track section.title.en) {
+    <section class="section">
+      <h2 class="section__title">{ section.title[lang()] }</h2>
+      <ul class="list">
+        @for (item of section.items; track item.title.en) {
+          <li>
+            @if (item.page) {
+              <a class="{ item.page.path === path() ? 'link link--active' : 'link' }" href="{ '#/' + lang() + '/' + item.page.path }">{ item.title[lang()] }</a>
+            } @else if (isExpanded(item)) {
+              <button class="group group--open" type="button" aria-expanded="true" (click)="toggle(item)">
+                <span>{ item.title[lang()] }</span>
+                <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+              <ul class="list list--nested">
+                @for (page of item.pages ?? []; track page.path) {
+                  <li>
+                    <a class="{ page.path === path() ? 'link link--nested link--active' : 'link link--nested' }" href="{ '#/' + lang() + '/' + page.path }">{ page.title[lang()] }</a>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <button class="group" type="button" aria-expanded="false" (click)="toggle(item)">
+                <span>{ item.title[lang()] }</span>
+                <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</nav>

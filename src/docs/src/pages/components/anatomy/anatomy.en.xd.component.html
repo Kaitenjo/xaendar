@@ -1,0 +1,144 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { RatingComponent } from '../../../examples/components/anatomy/rating/rating.xd.component.ts'
+@import { ShadowInspectorComponent } from '../../../examples/components/anatomy/shadow-inspector/shadow-inspector.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Anatomy of a component</h1>
+<p class="lead">
+  A Xaendar component is a standard custom element: a class extending <code>CustomElement</code>, decorated with
+  <code>{'@WebComponent'}</code>, plus an HTML template and an optional stylesheet. The compiler turns the template
+  into a render function at build time; at run time the browser creates, connects and removes the element like any
+  other tag.
+</p>
+
+<h2>Three files</h2>
+<docs-code snippet="components/anatomy-files.txt" />
+<p>
+  The suffix of the class file is not a convention but a requirement: the Vite plugin only compiles the classes
+  declared in files ending with <code>.xd.component.ts</code>. The template and the stylesheet can have any name, since
+  the decorator points to them.
+</p>
+<docs-example name="components/anatomy/rating" heading="A five-star rating">
+  <ex-rating />
+</docs-example>
+<p>Everything a component needs is in the example above:</p>
+<ul>
+  <li>
+    <strong>state</strong> in signals (<code>value</code>, <code>hovered</code>): writing one updates exactly the
+    nodes that read it;
+  </li>
+  <li><strong>derived state</strong> in computed signals (<code>shown</code>, <code>label</code>);</li>
+  <li>
+    <strong>event handlers</strong> in methods, called by the template with
+    <code>(click)="rate(star)"</code>;
+  </li>
+  <li>
+    <strong>constants</strong> in plain members (<code>stars</code>): the template reads them, but nothing is
+    notified when they change. See <a href="#/en/signals/shared-state">Shared state</a> for the rule.
+  </li>
+</ul>
+<p>
+  The template reads the public members of the class by name, without <code>this</code>. It is type-checked against
+  the class at build time: a misspelled member or a wrong argument fails the build.
+</p>
+
+<h2>The decorator</h2>
+<docs-code snippet="components/web-component-options.ts" />
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Option</th><th>Required</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>selector</code></td>
+        <td>yes</td>
+        <td>The tag name of the component. See <a href="#/en/components/registration">Selectors and registration</a>.</td>
+      </tr>
+      <tr>
+        <td><code>templateUrl</code></td>
+        <td>yes</td>
+        <td>The template, relative to the class file.</td>
+      </tr>
+      <tr>
+        <td><code>styleUrl</code></td>
+        <td>no</td>
+        <td>A <code>.css</code> file relative to the class file. See <a href="#/en/components/styling">Styling</a>.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p>
+  The decorator does two things at run time: it stores the selector in the metadata of the class, where
+  <code>{'@Query(Class)'}</code> finds it, and it calls <code>customElements.define(selector, Class)</code>. The rest
+  happens at build time, where the plugin reads the three options straight from the source code.
+</p>
+<docs-code snippet="components/build-pipeline.txt" />
+
+<h2>The base class and the shadow root</h2>
+<p>
+  <code>CustomElement</code> extends <code>HTMLElement</code>. Its constructor attaches an <strong>open</strong> shadow
+  root, where the template is rendered: the page styles do not reach inside it, and the component styles do not leak
+  out. The template is rendered each time the element is connected to the document, and the shadow root is emptied
+  each time it is removed. The <a href="#/en/components/lifecycle">Lifecycle</a> page covers the hooks in between.
+</p>
+<docs-example name="components/anatomy/shadow-inspector" heading="What the base class sets up">
+  <ex-shadow-inspector />
+</docs-example>
+<p>
+  The class is a real <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> returns an instance of
+  <code>RatingComponent</code>, and every DOM API (attributes, events, <code>classList</code>, ...) works on it as on
+  a native element.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="issue" heading="Options that are not string literals are ignored without errors">
+    <p>
+      The plugin reads <code>selector</code>, <code>templateUrl</code> and <code>styleUrl</code> from the source code,
+      so they must be string literals. With a constant, a template literal or a computed value the plugin skips the
+      class without reporting anything: the decorator still defines the element, but connecting it throws. The same
+      happens to a component declared in a file without the <code>.xd.component.ts</code> suffix.
+    </p>
+    <docs-code snippet="components/non-literal-options.ts" />
+    <docs-code snippet="components/render-function-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="A missing template is only a warning">
+    <p>
+      A <code>templateUrl</code> pointing to a file that does not exist produces a warning, not a build error, and the
+      same exception at run time.
+    </p>
+    <docs-code snippet="components/missing-template.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Created is not rendered">
+    An element created with <code>document.createElement</code> has a shadow root, but an empty one: the template is
+    rendered on connection, and removed on disconnection. The inspector above shows the three states.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Private and protected members are out of reach">
+    <p>
+      The template is type-checked as code outside the class, so it can only read public members. A
+      <code>private</code> or <code>protected</code> member fails the build.
+    </p>
+    <docs-code snippet="components/private-member-error.txt" />
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Closed shadow roots">
+    <p>
+      The shadow root is always open, and it cannot be replaced: the base class has already attached it.
+    </p>
+    <docs-code snippet="components/attach-shadow.ts" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@WebComponent({ selector, templateUrl, styleUrl? })'}</code></td><td>Compiles the template and the stylesheet, and defines the custom element.</td></tr>
+      <tr><td><code>CustomElement</code></td><td>The base class: an <code>HTMLElement</code> with an open shadow root and the lifecycle hooks.</td></tr>
+      <tr><td><code>this.shadowRoot</code></td><td>Where the template is rendered.</td></tr>
+      <tr><td><code>this.effect(fn, options?)</code></td><td>An effect disposed when the element is removed. See <a href="#/en/signals/effects">Effects</a>.</td></tr>
+      <tr><td><code>onInit()</code>, <code>afterRender()</code>, <code>onDestroy()</code></td><td>Optional hooks. See <a href="#/en/components/lifecycle">Lifecycle</a>.</td></tr>
+    </tbody>
+  </table>
+</div>

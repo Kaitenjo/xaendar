@@ -1,0 +1,9 @@
+import { signal } from '@xaendar/core/signals';
+
+const count = signal(0);                 // Signal<number>
+const user = signal<User | null>(null);  // explicit type when the initial value is not enough
+
+count();                  // read (tracked inside computed signals, effects and templates)
+count.get();              // the same
+count.set(5);             // replace the value
+count.update(n => n + 1); // compute it from the previous one, read without tracking

@@ -1,0 +1,10 @@
+Tag <rating> is not a valid custom element name. Custom element names must:
+- contain a hyphen
+- no spaces.
+- start with a lowercase letter.
+- not contain uppercase letters.
+- not be a native HTML tag name.
+- not contain the following chars: '@', '#', '$', '%', '&', '*', '!', '?', '/', '\', '|', "'", '"', '<', '>', '='
+Xaendar: Invalid custom element name "rating" in component /src/rating/rating.xd.component.ts
+
+Uncaught SyntaxError: Failed to execute 'define' on 'CustomElementRegistry': "rating" is not a valid custom element name

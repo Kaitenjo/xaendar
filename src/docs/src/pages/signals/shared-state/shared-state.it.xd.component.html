@@ -1,0 +1,64 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CartProductsComponent } from '../../../examples/signals/shared-state/cart/cart-products.xd.component.ts'
+@import { CartSummaryComponent } from '../../../examples/signals/shared-state/cart/cart-summary.xd.component.ts'
+@import { SignalMembersComponent } from '../../../examples/signals/shared-state/signal-members/signal-members.xd.component.ts'
+
+<span class="eyebrow">Signal</span>
+<h1>Stato condiviso</h1>
+<p class="lead">
+  Xaendar non ha dependency injection. Lo stato condiviso tra più componenti vive in un semplice modulo ES: i moduli
+  vengono valutati una sola volta per pagina, quindi ogni componente che ne importa uno vede gli stessi signal.
+</p>
+
+<h2>Uno store è un modulo</h2>
+<p>
+  Esporta signal, signal derivati e le funzioni che li modificano. I due componenti qui sotto non sanno nulla l’uno
+  dell’altro: importano solo lo stesso store.
+</p>
+<docs-example name="signals/shared-state/cart" heading="Due componenti che condividono un carrello">
+  <ex-cart-products />
+  <ex-cart-summary />
+</docs-example>
+
+<h3>Tenere le scritture in un unico posto</h3>
+<p>
+  Esportare un signal scrivibile permette a chiunque di modificarlo. Per tenere ogni modifica dentro lo store, mantieni
+  il signal privato ed esporta viste <code>computed</code> in sola lettura più le operazioni:
+</p>
+<docs-code snippet="signals/store.ts" />
+
+<h2>Esporre signal condivisi a un template</h2>
+<p>
+  I template vedono solo i membri del loro componente, quindi il componente espone il signal condiviso come campo. Il
+  modo in cui dichiari quel campo conta: il compilatore decide se un binding di attributo è reattivo guardando la
+  <strong>dichiarazione</strong> dei membri che legge, non i loro valori.
+</p>
+<docs-example name="signals/shared-state/signal-members" kind="edge" heading="Lo stesso signal, esposto in tre modi">
+  <ex-signal-members />
+</docs-example>
+<p>
+  Aumenta il livello: i tre testi lo seguono, ma la prima barra resta dov’era. Le interpolazioni di testo sono sempre
+  reattive; un binding di attributo è reattivo solo se nomina un membro che il compilatore riconosce come signal —
+  inizializzato chiamando una funzione di <code>{'@xaendar/core/signals'}</code>, o annotato con uno dei suoi tipi.
+</p>
+<docs-code snippet="signals/members.ts" />
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="I signal condivisi non tipizzati bloccano i binding degli attributi">
+    Un membro come <code>readonly level = level</code> viene valutato una sola volta negli attributi. Annotalo con
+    <code>Signal</code> o <code>Computed</code>, oppure avvolgilo in <code>computed()</code>. Il sito che stai leggendo
+    fa così per il router e le traduzioni.
+  </docs-callout>
+  <docs-callout kind="edge" heading="L’annotazione deve essere un tipo di @xaendar/core/signals">
+    Il riconoscimento è sintattico: considera solo i nomi importati da <code>{'@xaendar/core/signals'}</code> nello
+    stesso file. Un tuo alias di tipo, anche se è lo stesso tipo, non viene riconosciuto. Non viene riconosciuto
+    nemmeno un membro inizializzato chiamando qualsiasi altra funzione, qualunque sia la sua annotazione.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un’istanza per pagina">
+    Lo stato di un modulo è condiviso da tutte le istanze di tutti i componenti, e sopravvive a esse: rimuovere tutti i
+    componenti non azzera lo store. Azzeralo esplicitamente quando serve, per esempio tra un test e l’altro.
+  </docs-callout>
+</section>

@@ -1,0 +1,5 @@
+<ul>
+  @for (item of items(); track item.id) {
+    <li class="{ item.done ? 'done' : 'todo' }">{ item.name }</li>
+  }
+</ul>

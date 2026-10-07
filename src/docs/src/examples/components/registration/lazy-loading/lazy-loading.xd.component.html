@@ -1,0 +1,22 @@
+@import { LazyPanelComponent } from './lazy-panel.lazy.xd.component.ts'
+
+<div class="controls">
+  <button (click)="increment()">count + 1</button>
+  <button (click)="load()" @if (loaded()) { disabled }>Load the panel</button>
+  <span class="status">@if (loaded()) { Defined: reload the page to start over } @else { Not defined yet }</span>
+</div>
+<div class="columns">
+  <section>
+    <h5>Rendered before the definition</h5>
+    <ex-lazy-panel count="{ count() }" label="early" />
+    <p class="attributes">Attributes: { attributes() }</p>
+  </section>
+  <section>
+    <h5>Rendered after the definition</h5>
+    @if (loaded()) {
+      <ex-lazy-panel count="{ count() }" label="late" />
+    } @else {
+      <p class="placeholder">Waits for the definition</p>
+    }
+  </section>
+</div>

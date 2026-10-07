@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+button {
+  font: 0.85rem ui-monospace, monospace;
+  cursor: pointer;
+}
+
+table {
+  border-collapse: collapse;
+  font: 0.85rem ui-monospace, monospace;
+}
+
+td {
+  padding: 0.2rem 1rem 0.2rem 0;
+}
+
+td:last-child {
+  font-weight: 700;
+}

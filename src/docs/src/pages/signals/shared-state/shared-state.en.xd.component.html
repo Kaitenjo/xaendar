@@ -1,0 +1,64 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CartProductsComponent } from '../../../examples/signals/shared-state/cart/cart-products.xd.component.ts'
+@import { CartSummaryComponent } from '../../../examples/signals/shared-state/cart/cart-summary.xd.component.ts'
+@import { SignalMembersComponent } from '../../../examples/signals/shared-state/signal-members/signal-members.xd.component.ts'
+
+<span class="eyebrow">Signals</span>
+<h1>Sharing state</h1>
+<p class="lead">
+  Xaendar has no dependency injection. State shared by several components lives in a plain ES module: modules are
+  evaluated once per page, so every component importing one sees the same signals.
+</p>
+
+<h2>A store is a module</h2>
+<p>
+  Export signals, computed signals and the functions that change them. The two components below know nothing about
+  each other: they only import the same store.
+</p>
+<docs-example name="signals/shared-state/cart" heading="Two components sharing a cart">
+  <ex-cart-products />
+  <ex-cart-summary />
+</docs-example>
+
+<h3>Keeping writes in one place</h3>
+<p>
+  Exporting a writable signal lets anyone change it. To keep every change inside the store, keep the signal private and
+  export read-only <code>computed</code> views plus the operations:
+</p>
+<docs-code snippet="signals/store.ts" />
+
+<h2>Exposing shared signals to a template</h2>
+<p>
+  Templates only see the members of their component, so the component exposes the shared signal as a field. How you
+  declare that field matters: the compiler decides whether an attribute binding is reactive by looking at the
+  <strong>declaration</strong> of the members it reads, not at their values.
+</p>
+<docs-example name="signals/shared-state/signal-members" kind="edge" heading="The same signal, exposed three ways">
+  <ex-signal-members />
+</docs-example>
+<p>
+  Raise the level: the three texts follow it, but the first progress bar stays where it was. Text interpolations are
+  always reactive; an attribute binding is reactive only if it names a member the compiler recognizes as a signal — one
+  initialized by calling a function of <code>{'@xaendar/core/signals'}</code>, or annotated with one of its types.
+</p>
+<docs-code snippet="signals/members.ts" />
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="Untyped shared signals freeze attribute bindings">
+    A member like <code>readonly level = level</code> is evaluated once in attributes. Annotate it with
+    <code>Signal</code> or <code>Computed</code>, or wrap it in <code>computed()</code>. The site you are reading does
+    this for its router and its translations.
+  </docs-callout>
+  <docs-callout kind="edge" heading="The annotation must be a type of @xaendar/core/signals">
+    The detection is syntactic: it only recognizes the names imported from <code>{'@xaendar/core/signals'}</code> in the
+    same file. A type alias of your own, even if it is the same type, is not recognized. A member initialized by
+    calling any other function is not recognized either, whatever its annotation.
+  </docs-callout>
+  <docs-callout kind="edge" heading="One instance per page">
+    Module state is shared by every instance of every component, and survives them: removing all the components does not
+    reset the store. Reset it explicitly when needed, for example between tests.
+  </docs-callout>
+</section>

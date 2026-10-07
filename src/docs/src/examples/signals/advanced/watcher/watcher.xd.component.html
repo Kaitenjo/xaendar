@@ -1,0 +1,7 @@
+<button (click)="start()">Create the effect</button>
+<button (click)="incrementTwice()">count += 1, twice</button>
+<ol>
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

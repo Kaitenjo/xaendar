@@ -1,0 +1,4 @@
+src/rating/
+├── rating.xd.component.ts     the class: compiled by the Xaendar plugin because of its suffix
+├── rating.xd.component.html   the template, referenced by templateUrl
+└── rating.css                 the stylesheet, referenced by styleUrl: optional, any name, plain CSS

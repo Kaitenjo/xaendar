@@ -1,0 +1,50 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.status {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+h5 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+ex-lazy-panel:not(:defined)::before {
+  content: 'ex-lazy-panel is not defined: it renders nothing';
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.attributes,
+.placeholder {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.placeholder {
+  font-style: italic;
+  opacity: 0.6;
+}

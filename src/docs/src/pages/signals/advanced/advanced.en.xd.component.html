@@ -1,0 +1,94 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalWatcherComponent } from '../../../examples/signals/advanced/watcher/watcher.xd.component.ts'
+@import { SignalIntrospectionComponent } from '../../../examples/signals/advanced/introspection/introspection.xd.component.ts'
+
+<span class="eyebrow">Signals</span>
+<h1>Advanced: Signal.subtle</h1>
+<p class="lead">
+  Xaendar signals are a thin layer over the <a href="https://github.com/tc39/proposal-signals">TC39 Signals
+  proposal</a>, polyfilled by <code>{'@xaendar/signals'}</code>. The global <code>Signal</code> object exposes the
+  primitives the framework is built on: you rarely need them, but they explain how everything works.
+</p>
+
+<h2>The global Signal object</h2>
+<p>
+  <code>loadSignals()</code> installs <code>globalThis.Signal</code> once, with <code>Signal.State</code>,
+  <code>Signal.Computed</code> and the <code>Signal.subtle</code> namespace. <code>signal()</code> and
+  <code>computed()</code> wrap a <code>Signal.State</code> and a <code>Signal.Computed</code> in a callable function;
+  <code>effect()</code> combines a <code>Signal.Computed</code> with a <code>Signal.subtle.Watcher</code>.
+</p>
+
+<h2>Watchers</h2>
+<p>
+  A <code>Watcher</code> is told, synchronously, that one of the signals it watches may have changed. It cannot do
+  anything in its <code>notify</code> callback — every signal is frozen — except scheduling work. That work reads the
+  pending computed signals with <code>getPending()</code>, then calls <code>watch()</code> to be notified again: a
+  watcher notifies once, then waits to be re-armed.
+</p>
+<docs-example name="signals/advanced/watcher" heading="An effect built by hand">
+  <ex-signal-watcher />
+</docs-example>
+
+<h2>Introspection</h2>
+<p>
+  <code>Signal.subtle</code> can inspect the live graph: <code>introspectSources</code>, <code>introspectSinks</code>,
+  <code>hasSources</code>, <code>hasSinks</code>, and <code>currentComputed</code>, which returns the computed signal
+  being evaluated, if any. Evaluating a computed signal links it to its sources, in both directions; unwatching it
+  unlinks it again.
+</p>
+<docs-example name="signals/advanced/introspection" heading="Inspecting price → total ← quantity">
+  <ex-signal-introspection />
+</docs-example>
+
+<h2>Dev mode</h2>
+<docs-code snippet="signals/dev-mode.ts" />
+<p>
+  In dev mode the polyfill logs the errors thrown inside computed signals, watchers and the
+  <code>watched</code>/<code>unwatched</code> callbacks, and warns about invalid state transitions of the graph.
+  <code>loadSignals</code> installs the global object only once, but applies <code>devMode</code> at every call.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="issue" heading="Signal.subtle rejects the functions returned by signal() and computed()">
+    <p>
+      They are typed as <code>Signal.State</code> and <code>Signal.Computed</code>, but they are wrapper functions, and
+      there is no public way to reach the object they wrap. The <code>Signal.subtle</code> API only works with objects
+      created with <code>new Signal.State()</code> and <code>new Signal.Computed()</code>, like the examples above.
+    </p>
+    <docs-code snippet="signals/subtle-wrapper.ts" />
+    <docs-code snippet="signals/subtle-wrapper-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Watching twice throws">
+    <code>watch()</code> on a signal already watched by the same watcher throws
+    <code>Cannot watch a signal that is already being watched</code>; <code>unwatch()</code> on a signal it does not
+    watch throws <code>Cannot unwatch a signal that is not being watched</code>. Both throw while signals are frozen too.
+  </docs-callout>
+  <docs-callout kind="issue" heading="Dev mode warns on property bindings">
+    <p>
+      With dev mode on, binding a property of a child component logs warnings like the one below. They come from the
+      bug described in <a href="#/en/signals/untracked">Reading without tracking</a> and do not affect the result; this
+      site keeps dev mode off for that reason.
+    </p>
+    <docs-code snippet="signals/dev-mode-warning.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>loadSignals(options?)</code></td><td>Installs the global <code>Signal</code> object; <code>devMode</code> enables logs and warnings.</td></tr>
+      <tr><td><code>new Signal.State(value, options?)</code></td><td>A writable node: <code>get()</code>, <code>set()</code>.</td></tr>
+      <tr><td><code>new Signal.Computed(fn, options?)</code></td><td>A derived node: <code>get()</code>.</td></tr>
+      <tr><td><code>new Signal.subtle.Watcher(notify)</code></td><td><code>watch(...signals)</code>, <code>unwatch(...signals)</code>, <code>getPending()</code>.</td></tr>
+      <tr><td><code>Signal.subtle.untrack(fn)</code></td><td>The same as <code>untracked</code>.</td></tr>
+      <tr><td><code>Signal.subtle.currentComputed()</code></td><td>The computed signal being evaluated, or <code>null</code>.</td></tr>
+      <tr><td><code>Signal.subtle.introspectSources(node)</code>, <code>introspectSinks(node)</code></td><td>The nodes a node depends on, and the nodes depending on it.</td></tr>
+      <tr><td><code>Signal.subtle.hasSources(node)</code>, <code>hasSinks(node)</code></td><td>Whether those lists are not empty.</td></tr>
+    </tbody>
+  </table>
+</div>

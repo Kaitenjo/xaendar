@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+/* Matches the paragraph of this template only */
+.title {
+  font-weight: 700;
+  text-transform: uppercase;
+}

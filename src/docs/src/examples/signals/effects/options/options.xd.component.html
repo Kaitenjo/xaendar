@@ -1,0 +1,13 @@
+<div class="controls">
+  @if (running()) {
+    <button (click)="increment()">count++</button>
+    <button (click)="dispose()">Dispose</button>
+  } @else {
+    <button (click)="start()">Create the effect</button>
+  }
+</div>
+<ol>
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

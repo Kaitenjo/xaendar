@@ -1,0 +1,139 @@
+@import { LangDirective } from '../../directives/lang.directive.ts'
+@import { HomePageEn, HomePageIt } from '../../pages/home/home.xd.component.ts'
+@import { NotFoundPageEn, NotFoundPageIt } from '../../pages/not-found/not-found.xd.component.ts'
+@import { ComponentsAnatomyPageEn, ComponentsAnatomyPageIt } from '../../pages/components/anatomy/anatomy.xd.component.ts'
+@import { ComponentsContentProjectionPageEn, ComponentsContentProjectionPageIt } from '../../pages/components/content-projection/content-projection.xd.component.ts'
+@import { ComponentsContentQueriesPageEn, ComponentsContentQueriesPageIt } from '../../pages/components/content-queries/content-queries.xd.component.ts'
+@import { ComponentsDomApisPageEn, ComponentsDomApisPageIt } from '../../pages/components/dom-apis/dom-apis.xd.component.ts'
+@import { ComponentsInheritancePageEn, ComponentsInheritancePageIt } from '../../pages/components/inheritance/inheritance.xd.component.ts'
+@import { ComponentsInputsPageEn, ComponentsInputsPageIt } from '../../pages/components/inputs/inputs.xd.component.ts'
+@import { ComponentsLifecyclePageEn, ComponentsLifecyclePageIt } from '../../pages/components/lifecycle/lifecycle.xd.component.ts'
+@import { ComponentsOutputsPageEn, ComponentsOutputsPageIt } from '../../pages/components/outputs/outputs.xd.component.ts'
+@import { ComponentsQueriesPageEn, ComponentsQueriesPageIt } from '../../pages/components/queries/queries.xd.component.ts'
+@import { ComponentsRegistrationPageEn, ComponentsRegistrationPageIt } from '../../pages/components/registration/registration.xd.component.ts'
+@import { ComponentsStylingPageEn, ComponentsStylingPageIt } from '../../pages/components/styling/styling.xd.component.ts'
+@import { EssentialsComponentsPageEn, EssentialsComponentsPageIt } from '../../pages/essentials/components/components.xd.component.ts'
+@import { EssentialsNextStepsPageEn, EssentialsNextStepsPageIt } from '../../pages/essentials/next-steps/next-steps.xd.component.ts'
+@import { EssentialsSignalsPageEn, EssentialsSignalsPageIt } from '../../pages/essentials/signals/signals.xd.component.ts'
+@import { EssentialsTemplatesPageEn, EssentialsTemplatesPageIt } from '../../pages/essentials/templates/templates.xd.component.ts'
+@import { InstallationPageEn, InstallationPageIt } from '../../pages/installation/installation.xd.component.ts'
+@import { OverviewPageEn, OverviewPageIt } from '../../pages/overview/overview.xd.component.ts'
+@import { SignalsAdvancedPageEn, SignalsAdvancedPageIt } from '../../pages/signals/advanced/advanced.xd.component.ts'
+@import { SignalsComputedPageEn, SignalsComputedPageIt } from '../../pages/signals/computed/computed.xd.component.ts'
+@import { SignalsEffectsPageEn, SignalsEffectsPageIt } from '../../pages/signals/effects/effects.xd.component.ts'
+@import { SignalsOptionsPageEn, SignalsOptionsPageIt } from '../../pages/signals/options/options.xd.component.ts'
+@import { SignalsOverviewPageEn, SignalsOverviewPageIt } from '../../pages/signals/overview/overview.xd.component.ts'
+@import { SignalsSharedStatePageEn, SignalsSharedStatePageIt } from '../../pages/signals/shared-state/shared-state.xd.component.ts'
+@import { SignalsUntrackedPageEn, SignalsUntrackedPageIt } from '../../pages/signals/untracked/untracked.xd.component.ts'
+@import { TutorialPageEn, TutorialPageIt } from '../../pages/tutorial/tutorial.xd.component.ts'
+
+@switch (path()) {
+  @case ('') {
+    <page-home-en *lang(code="en") />
+    <page-home-it *lang(code="it") />
+  }
+  @case ('components/anatomy') {
+    <page-components-anatomy-en *lang(code="en") />
+    <page-components-anatomy-it *lang(code="it") />
+  }
+  @case ('components/content-projection') {
+    <page-components-content-projection-en *lang(code="en") />
+    <page-components-content-projection-it *lang(code="it") />
+  }
+  @case ('components/content-queries') {
+    <page-components-content-queries-en *lang(code="en") />
+    <page-components-content-queries-it *lang(code="it") />
+  }
+  @case ('components/dom-apis') {
+    <page-components-dom-apis-en *lang(code="en") />
+    <page-components-dom-apis-it *lang(code="it") />
+  }
+  @case ('components/inheritance') {
+    <page-components-inheritance-en *lang(code="en") />
+    <page-components-inheritance-it *lang(code="it") />
+  }
+  @case ('components/inputs') {
+    <page-components-inputs-en *lang(code="en") />
+    <page-components-inputs-it *lang(code="it") />
+  }
+  @case ('components/lifecycle') {
+    <page-components-lifecycle-en *lang(code="en") />
+    <page-components-lifecycle-it *lang(code="it") />
+  }
+  @case ('components/outputs') {
+    <page-components-outputs-en *lang(code="en") />
+    <page-components-outputs-it *lang(code="it") />
+  }
+  @case ('components/queries') {
+    <page-components-queries-en *lang(code="en") />
+    <page-components-queries-it *lang(code="it") />
+  }
+  @case ('components/registration') {
+    <page-components-registration-en *lang(code="en") />
+    <page-components-registration-it *lang(code="it") />
+  }
+  @case ('components/styling') {
+    <page-components-styling-en *lang(code="en") />
+    <page-components-styling-it *lang(code="it") />
+  }
+  @case ('essentials/components') {
+    <page-essentials-components-en *lang(code="en") />
+    <page-essentials-components-it *lang(code="it") />
+  }
+  @case ('essentials/next-steps') {
+    <page-essentials-next-steps-en *lang(code="en") />
+    <page-essentials-next-steps-it *lang(code="it") />
+  }
+  @case ('essentials/signals') {
+    <page-essentials-signals-en *lang(code="en") />
+    <page-essentials-signals-it *lang(code="it") />
+  }
+  @case ('essentials/templates') {
+    <page-essentials-templates-en *lang(code="en") />
+    <page-essentials-templates-it *lang(code="it") />
+  }
+  @case ('installation') {
+    <page-installation-en *lang(code="en") />
+    <page-installation-it *lang(code="it") />
+  }
+  @case ('overview') {
+    <page-overview-en *lang(code="en") />
+    <page-overview-it *lang(code="it") />
+  }
+  @case ('signals/advanced') {
+    <page-signals-advanced-en *lang(code="en") />
+    <page-signals-advanced-it *lang(code="it") />
+  }
+  @case ('signals/computed') {
+    <page-signals-computed-en *lang(code="en") />
+    <page-signals-computed-it *lang(code="it") />
+  }
+  @case ('signals/effects') {
+    <page-signals-effects-en *lang(code="en") />
+    <page-signals-effects-it *lang(code="it") />
+  }
+  @case ('signals/options') {
+    <page-signals-options-en *lang(code="en") />
+    <page-signals-options-it *lang(code="it") />
+  }
+  @case ('signals/overview') {
+    <page-signals-overview-en *lang(code="en") />
+    <page-signals-overview-it *lang(code="it") />
+  }
+  @case ('signals/shared-state') {
+    <page-signals-shared-state-en *lang(code="en") />
+    <page-signals-shared-state-it *lang(code="it") />
+  }
+  @case ('signals/untracked') {
+    <page-signals-untracked-en *lang(code="en") />
+    <page-signals-untracked-it *lang(code="it") />
+  }
+  @case ('tutorial') {
+    <page-tutorial-en *lang(code="en") />
+    <page-tutorial-it *lang(code="it") />
+  }
+  @default {
+    <page-not-found-en *lang(code="en") />
+    <page-not-found-it *lang(code="it") />
+  }
+}

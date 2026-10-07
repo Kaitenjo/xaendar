@@ -1,0 +1,3 @@
+Xaendar: Failed to compile template - /src/review/review.xd.component.html
+[TypeChecker] ex-rating selector is not associated to any WebComponent imported in the template
+----> <ex-rating />

@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+button {
+  margin-bottom: 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The header inside the panel, exposed with part="header" */
+ex-styled-panel::part(header) {
+  transition: background 0.2s;
+}
+
+ex-styled-panel.highlighted::part(header) {
+  background: #f5a524;
+  color: #1a1a1a;
+}
+
+/* The projected content belongs to this template: these rules apply to it as usual */
+p {
+  margin: 0.5rem 0 0;
+}
+
+.note {
+  color: #2e7d32;
+}

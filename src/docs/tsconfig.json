@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ],
+    "rootDir": "./src",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@xaendar/common": ["../../packages/common/src/public-api"],
+      "@xaendar/core": ["../../packages/core/src/public-api"],
+      "@xaendar/core/signals": ["../../packages/core/src/signals/index.ts"],
+      "@xaendar/signals": ["../../packages/signals/src/public-api"],
+      "@xaendar/types": ["../../packages/types/src/public-api"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../packages/core/src/globals.d.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "src/snippets/**"
+  ]
+}

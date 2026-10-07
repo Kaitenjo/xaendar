@@ -1,0 +1,8 @@
+@import { ChipComponent } from './chip.xd.component.ts'
+
+<div class="chips" (click)="pick($event)">
+  <ex-chip data-name="signals" class="{ selected() === 'signals' ? 'selected' : '' }">Signals</ex-chip>
+  <ex-chip data-name="components" class="{ selected() === 'components' ? 'selected' : '' }">Components</ex-chip>
+  <ex-chip data-name="issues" tone="danger" class="{ selected() === 'issues' ? 'selected' : '' }">Known issues</ex-chip>
+</div>
+<p>Selected: { selected() }</p>

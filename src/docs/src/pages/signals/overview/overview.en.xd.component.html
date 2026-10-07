@@ -1,0 +1,109 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalCounterComponent } from '../../../examples/signals/overview/counter/counter.xd.component.ts'
+@import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
+@import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
+
+<span class="eyebrow">Signals</span>
+<h1>Signals</h1>
+<p class="lead">
+  A signal is a wrapper around a value that notifies its consumers when the value changes. Everything reactive in
+  Xaendar — template bindings, computed signals, effects, queries, component inputs — is built on signals.
+</p>
+
+<h2>Creating and reading a signal</h2>
+<p>
+  <code>signal(initialValue, options?)</code>, exported by <code>{'@xaendar/core/signals'}</code>, creates a
+  <strong>writable signal</strong>. The signal is a function: call it to read the value. Inside a computed signal,
+  an effect or a template binding, the read also registers a dependency.
+</p>
+<docs-code snippet="signals/signal-api.ts" />
+<docs-example name="signals/overview/counter" heading="Reading and writing a signal">
+  <ex-signal-counter />
+</docs-example>
+
+<h2>Writing</h2>
+<ul>
+  <li><code>set(value)</code> replaces the value.</li>
+  <li>
+    <code>update(fn)</code> passes the current value to <code>fn</code> and sets what it returns. The current value
+    is read <em>without tracking</em>, so calling <code>update</code> inside an effect does not make the effect
+    depend on the signal it updates.
+  </li>
+</ul>
+<p>
+  A write notifies the consumers synchronously that something changed; the work they do in response — effects and
+  template bindings re-running — is batched and happens in a microtask. See <a href="#/en/signals/effects">Effects</a>.
+</p>
+
+<h2>Equality</h2>
+<p>
+  Before notifying anybody, a signal compares the new value with the current one. By default it uses
+  <code>Object.is</code>: for objects and arrays that means <strong>identity</strong>, not content.
+</p>
+<docs-example name="signals/overview/identity" kind="edge" heading="Mutating an array in place notifies nobody">
+  <ex-signal-identity />
+</docs-example>
+<p>
+  <code>push</code> changes the array, but the signal still holds the same reference: nothing re-renders, and the
+  pear stays invisible until a new array is set. Setting the same reference again is ignored too. Treat signal
+  values as immutable and always produce new arrays and objects.
+</p>
+<h3>Custom equality</h3>
+<p>
+  The <code>equals</code> option replaces <code>Object.is</code>. Return <code>true</code> when the new value should be
+  considered the same as the current one: the write is then ignored and the old value is kept.
+</p>
+<docs-example name="signals/overview/custom-equals" heading="A case-insensitive signal">
+  <ex-signal-custom-equals />
+</docs-example>
+
+<h2>Types</h2>
+<docs-code snippet="signals/types.ts" />
+<p>
+  <code>Signal</code> and <code>Computed</code> are the types of what <code>signal()</code> and
+  <code>computed()</code> return. Annotate component members with them when a signal comes from somewhere else, for
+  example from a shared module: see <a href="#/en/signals/shared-state">Sharing state</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="Mutations are invisible">
+    Mutating the value of a signal — <code>push</code>, <code>splice</code>, assigning a property — notifies nobody,
+    and leaves the template showing stale data. The next real change then reveals every hidden mutation at once.
+  </docs-callout>
+  <docs-callout kind="edge" heading="An equal value is not a change">
+    <code>set</code> and <code>update</code> do nothing when the new value equals the current one. With a custom
+    <code>equals</code> the old value is kept: in the example above, typing “ADA” leaves “Ada” in the signal.
+  </docs-callout>
+  <docs-callout kind="edge" heading="equals runs inside every write">
+    <code>equals</code> is called synchronously by every <code>set</code> and <code>update</code>, with the current
+    and the new value and with <code>this</code> bound to the underlying <code>Signal.State</code>. Keep it a pure,
+    cheap comparison of its two arguments: if it throws, the write throws.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Reading outside a reactive context">
+    Reading a signal in an event handler or in a plain method just returns the value: nothing subscribes. Only reads
+    made while a computed signal, an effect or a template binding runs are tracked.
+  </docs-callout>
+  <docs-callout kind="issue" heading="signal() does not return a Signal.State">
+    The type says <code>Signal.State</code>, but <code>signal()</code> returns a function wrapping one:
+    <code>instanceof Signal.State</code> is false and the <code>Signal.subtle</code> API rejects it. See
+    <a href="#/en/signals/advanced">Advanced: Signal.subtle</a>.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>signal(value, options?)</code></td><td>Creates a writable signal.</td></tr>
+      <tr><td><code>sig()</code>, <code>sig.get()</code></td><td>Reads the value, tracking it in reactive contexts.</td></tr>
+      <tr><td><code>sig.set(value)</code></td><td>Replaces the value, unless it is equal to the current one.</td></tr>
+      <tr><td><code>sig.update(fn)</code></td><td>Sets <code>fn(current)</code>, reading the current value untracked.</td></tr>
+      <tr><td><code>options.equals</code></td><td>Custom equality, <code>Object.is</code> by default.</td></tr>
+      <tr><td><code>options.watched</code>, <code>options.unwatched</code></td><td>See <a href="#/en/signals/options">Signal options</a>.</td></tr>
+    </tbody>
+  </table>
+</div>

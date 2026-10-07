@@ -1,0 +1,22 @@
+<h3>My todos</h3>
+<form (submit)="add($event)">
+  <input name="title" placeholder="What needs to be done?" autocomplete="off" />
+  <button>Add</button>
+</form>
+@if (todos().length) {
+  <ul>
+    <!-- Tracked by identity: toggling replaces the todo, so its row is rendered again -->
+    @for (todo of todos(); track todo) {
+      <li>
+        <label class="{ todo.done ? 'done' : '' }">
+          <input type="checkbox" (change)="toggle(todo.id)" @if (todo.done) { checked } />
+          { todo.title }
+        </label>
+        <button (click)="remove(todo.id)">✕</button>
+      </li>
+    }
+  </ul>
+  <p>{ remaining() } of { todos().length } left</p>
+} @else {
+  <p>Nothing to do. Enjoy!</p>
+}

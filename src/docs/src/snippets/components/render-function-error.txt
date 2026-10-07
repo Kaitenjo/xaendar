@@ -1,0 +1,2 @@
+Uncaught Error: RatingComponent does not seems to have a Render Function
+    at RatingComponent.connectedCallback (custom-element.ts)
