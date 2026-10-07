@@ -7,6 +7,15 @@ import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 
 /**
+ * Generic arrow function the iterable of every `@for` is passed to: it accepts only a
+ * number or an array, the only iterables `_for` supports at runtime, so any other value
+ * (e.g. a `Set`) is reported on the iterable itself, and it types a number `n` as the
+ * `number[]` it is turned into at runtime (`0, 1, ..., n - 1`), leaving an array untouched. Being distributive, a `number | Item[]`
+ * iterable gives items typed `number | Item`.
+ */
+const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T extends number ? number[] : T => iterable as never)';
+
+/**
  * Type-checks an `@for` block using a real `for...of` loop.
  *
  * This replaces the previous "synthetic function with a `typeof array`
@@ -14,7 +23,14 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
  * rather than a single element. A real `for (const item of array)` lets
  * TypeScript infer `item`'s type correctly as the array's element type —
  * exactly like it would for a loop written by hand — with no synthetic
- * function boundary needed.
+ * function boundary needed. The iterable goes through {@link FOR_ITERABLE}
+ * so that a numeric iterable is accepted too; without an `item of` part
+ * the loop variable is `_`.
+ *
+ * @param node - The `ForNode` to type-check.
+ * @param processNode - Callback emitting the lines of each child node.
+ * @param context - The enclosing type-check scope.
+ * @returns The lines of the `for...of` loop.
  */
 export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const forContext = new TypeCheckContext(context);
@@ -24,7 +40,9 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   const evenName = resolveImplicit(node, '$even');
   const oddName = resolveImplicit(node, '$odd');
 
-  forContext.addUnresolvableIdentifier(node.itemAlias);
+  if (node.itemAlias) {
+    forContext.addUnresolvableIdentifier(node.itemAlias);
+  }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
   for (let i = 0; i < identifiers.length; i++) {
     forContext.addUnresolvableIdentifier(identifiers[i], 'signal');
@@ -37,7 +55,8 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   // (l'intero blocco @for). Se al momento il parser non lo produce, questo
   // è un buon segnale per aggiungerlo: senza, l'errore su "root.foo non
   // esiste" punterebbe sempre all'intero blocco invece che al solo nome.
-  lines.push(line(`for (const ${node.itemAlias} of root.`, mapped(node.iterableSource, node.span), ') {'));
+  const iterable = resolveExpression(node.iterableExpression, context, { resolver: 'root' }).expression;
+  lines.push(line(`for (const ${node.itemAlias ?? '_'} of ${FOR_ITERABLE}(`, mapped(iterable, node.span), ')) {'));
 
   lines.push(...indentLines([
     plain(`let ${indexName}!: Signal<number>;`),

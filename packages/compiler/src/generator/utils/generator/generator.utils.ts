@@ -296,8 +296,7 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
 
     if (compilerContext.hasIdentifier(text)) {
       const kind = compilerContext.getIdentifierKind(text);
-      const access = `context.get('${text}')`;
-      return kind === 'signal' ? { expression: `${access}()`, reactive: true } : { expression: access, reactive: false };
+      return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
     }
 
     if (options.resolver) {

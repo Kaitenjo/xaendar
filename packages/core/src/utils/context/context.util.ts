@@ -31,7 +31,7 @@ export class _Context {
    * Called when this context is destroyed to remove DOM nodes,
    * detach event listeners, and dispose signal effect subscriptions.
    */
-  private _unwatchFns = new Array<NoArgsVoidFunction>;
+  private _unlistenFns = new Array<NoArgsVoidFunction>;
   /**
    * Function used to create new DOM elements within this context.
    */
@@ -167,7 +167,7 @@ export class _Context {
    * @param fns - The cleanup functions to register.
    */
   public addUnlistener(...fns: NoArgsVoidFunction[]): void {
-    this._unwatchFns.push(...fns);
+    this._unlistenFns.push(...fns);
   }
 
   /**
@@ -177,7 +177,17 @@ export class _Context {
    * @param fns - The cleanup functions to unregister.
    */
   public removeUnlistener(...fns: NoArgsVoidFunction[]): void {
-    this._unwatchFns = this._unwatchFns.filter(item => !fns.includes(item));
+    this._unlistenFns = this._unlistenFns.filter(item => !fns.includes(item));
+  }
+
+  /**
+   * Returns the cleanup functions registered in this scope via {@link addUnlistener},
+   * in registration order. Does not include those registered on child contexts.
+   *
+   * @returns The cleanup functions that will be invoked when this context is cleared.
+   */
+  public getUnlistenFns(): NoArgsVoidFunction[] {
+    return this._unlistenFns;
   }
 
   /**
@@ -188,15 +198,15 @@ export class _Context {
    * considered disposed and should no longer be used.
    */
   public clear(): void {
-    for (let i = 0; i < this._unwatchFns.length; i++) {
-      this._unwatchFns[i]();
+    for (let i = 0; i < this._unlistenFns.length; i++) {
+      this._unlistenFns[i]();
     }
 
     for (let i = 0; i < this._children.length; i++) {
       this._children[i].clear();
     }
 
-    this._unwatchFns = [];
+    this._unlistenFns = [];
     this._children = [];
     this._nodes = [];
     this._variables.clear();

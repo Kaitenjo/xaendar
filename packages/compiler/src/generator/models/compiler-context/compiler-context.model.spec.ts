@@ -4,14 +4,8 @@ import { CompilerContext } from './compiler-context.model';
 
 describe('CompilerContext', () => {
   describe('constructor', () => {
-    it('registers plain and typed identifiers', () => {
-      const context = new CompilerContext(undefined, ['a', ['b', 'signal']]);
-      expect(context.getIdentifierKind('a')).toBe('value');
-      expect(context.getIdentifierKind('b')).toBe('signal');
-    });
-
-    it('accepts an empty identifier list', () => {
-      expect(new CompilerContext(undefined, []).hasIdentifier('a')).toBe(false);
+    it('starts without identifiers', () => {
+      expect(new CompilerContext().hasIdentifier('a')).toBe(false);
     });
 
     it('inherits the cache from the parent', () => {
@@ -30,6 +24,14 @@ describe('CompilerContext', () => {
       expect(context.hasIdentifier('a')).toBe(false);
     });
 
+    it('registers plain and typed identifiers', () => {
+      const context = new CompilerContext();
+      context.addIdentifier('a');
+      context.addIdentifier('b', 'signal');
+      expect(context.getIdentifierKind('a')).toBe('value');
+      expect(context.getIdentifierKind('b')).toBe('signal');
+    });
+
     it('throws when adding a duplicated identifier', () => {
       const context = new CompilerContext();
       context.addIdentifier('a');
@@ -37,7 +39,8 @@ describe('CompilerContext', () => {
     });
 
     it('resolves identifiers and kinds through the parent chain', () => {
-      const parent = new CompilerContext(undefined, [['a', 'signal']]);
+      const parent = new CompilerContext();
+      parent.addIdentifier('a', 'signal');
       const child = new CompilerContext(parent);
       expect(child.hasIdentifier('a')).toBe(true);
       expect(child.getIdentifierKind('a')).toBe('signal');
@@ -63,7 +66,8 @@ describe('CompilerContext', () => {
     });
 
     it('throws when the name is already a declared identifier', () => {
-      const context = new CompilerContext(undefined, ['a']);
+      const context = new CompilerContext();
+      context.addIdentifier('a');
       expect(() => context.addUnresolvableIdentifier('a')).toThrow('Identifier "a" is already declared in this scope.');
     });
 

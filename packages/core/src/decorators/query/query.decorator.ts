@@ -80,13 +80,13 @@ Query.all = function all<ElementType extends HTMLElement = HTMLElement, Target e
  *
  * @example
  * ```ts
- * @Query.slot('[header]')
+ * @Query.content('[header]')
  * accessor header: QuerySignal<HTMLElement | null>;
  *
- * @Query.slot(MyButtonComponent, { slot: 'footer' })
+ * @Query.content(MyButtonComponent, { slots: 'footer' })
  * accessor footerButton: QuerySignal<MyButtonComponent | null>;
  *
- * @Query.slot('[item]', { lightDom: true })
+ * @Query.content('[item]', { lightDom: true })
  * accessor item: QuerySignal<HTMLElement | null>;
  * ```
  */
@@ -113,10 +113,10 @@ Query.content = Object.assign(function slot<ElementType extends HTMLElement = HT
    *
    * @example
    * ```ts
-   * @Query.slot.all('[item]')
+   * @Query.content.all('[item]')
    * accessor items: QuerySignal<HTMLElement[]>;
    *
-   * @Query.slot.all(MyButtonComponent, { slot: 'footer' })
+   * @Query.content.all(MyButtonComponent, { slots: 'footer' })
    * accessor footerButtons: QuerySignal<MyButtonComponent[]>;
    * ```
    */
@@ -161,24 +161,24 @@ export function queryAll<Target extends QueryTarget, ElementType extends HTMLEle
 }
 
 /**
- * Creates a signal holding the first element projected into the slots of , or one of their descendants,
- * matching the target, or  if there is none.
+ * Creates a signal holding the first element projected into the slots of `element`, or one of their descendants,
+ * matching the target, or `null` if there is none.
  *
  * @template Target - The {@link QueryTarget} of the query.
  * @param element - The component whose projected content is queried.
  * @param target - A CSS selector, or the class of a web component.
  * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
  * @returns A {@link QuerySignal} of the matching element.
- * @throws When the target is a class not decorated with .
+ * @throws When the target is a class not decorated with `@WebComponent`.
  */
 export function querySlot<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options: QuerySlotOptions = {}): QuerySignal<QueryElement<Target, ElementType> | null> {
   return createSlotQuerySignal<QueryElement<Target, ElementType>, QueryElement<Target, ElementType> | null>(element, toSelector(target), options, elements => elements[0] ?? null, null);
 }
 
 /**
- * Creates a signal holding all the elements projected into the slots of , and their descendants,
+ * Creates a signal holding all the elements projected into the slots of `element`, and their descendants,
  * matching the target, in order: slots in tree order, then assigned elements in assignment order.
- * With the  option they are in document order.
+ * With the `lightDom` option they are in document order.
  * The signal notifies only when the set of matching elements changes.
  *
  * @template Target - The {@link QueryTarget} of the query.
@@ -186,7 +186,7 @@ export function querySlot<Target extends QueryTarget, ElementType extends HTMLEl
  * @param target - A CSS selector, or the class of a web component.
  * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
  * @returns A {@link QuerySignal} of the matching elements.
- * @throws When the target is a class not decorated with .
+ * @throws When the target is a class not decorated with `@WebComponent`.
  */
 export function querySlotAll<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options: QuerySlotOptions = {}): QuerySignal<QueryElement<Target, ElementType>[]> {
   return createSlotQuerySignal<QueryElement<Target, ElementType>, QueryElement<Target, ElementType>[]>(element, toSelector(target), options, elements => elements, [], sameElements);
@@ -197,7 +197,7 @@ export function querySlotAll<Target extends QueryTarget, ElementType extends HTM
  *
  * @param a - The first list.
  * @param b - The second list.
- * @returns  when the lists are equal.
+ * @returns `true` when the lists are equal.
  */
 function sameElements(a: ReadonlyArray<Element>, b: ReadonlyArray<Element>): boolean {
   return a.length === b.length && a.every((item, index) => item === b[index]);

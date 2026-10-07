@@ -227,6 +227,29 @@ describe('_for', () => {
     });
   });
 
+  it('iterates a number n as the indexes from 0 to n - 1', async () => {
+    const parent = document.createElement('ul');
+    const count = signal(3);
+    const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
+      const itemContext = new _Context({} as never, parentContext);
+      renderItem(parentNode, itemContext, String(list[index]), reference);
+      return { context: itemContext };
+    });
+    const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
+
+    _for(parent, createRoot(), null, () => count(), (_item, index) => index, forFn as never);
+    expect(texts()).toEqual(['0', '1', '2']);
+
+    count.set(5);
+    await flush();
+    expect(texts()).toEqual(['0', '1', '2', '3', '4']);
+    expect(forFn).toHaveBeenCalledTimes(5);
+
+    count.set(0);
+    await flush();
+    expect(texts()).toEqual([]);
+  });
+
   it('stops reacting and cleans up when the parent context is destroyed', async () => {
     const { parent, context, forFn, change } = setup(['a']);
 
@@ -269,6 +292,13 @@ describe('_iterationVariables', () => {
     expect(context.get('x')).toBe('a');
     expect(context.get('i')).toBeDefined();
     expect(context.get('$first')).toBeDefined();
+  });
+
+  it('does not register an item when no item alias is declared', () => {
+    const context = createRoot();
+    const { vars } = _iterationVariables(context, [0, 1], 1, undefined, aliases);
+
+    expect(Object.keys(vars)).toEqual(['$index', '$first', '$last', '$even', '$odd']);
   });
 
   it('updates the signals in place', async () => {

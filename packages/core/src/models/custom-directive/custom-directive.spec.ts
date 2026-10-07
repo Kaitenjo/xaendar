@@ -3,6 +3,7 @@ import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { effect } from '../../signals/effect/effect';
+import { _Context } from '../../utils/context/context.util';
 import { CustomDirective } from './custom-directive';
 
 loadSignals();
@@ -27,6 +28,18 @@ function create<T extends CustomDirective>(Directive: new () => T, element = doc
   return directive;
 }
 
+/**
+ * Connects the directive to a new context as the template runtime does: clearing the
+ * returned context disconnects the directive and disposes its effects.
+ */
+function connect(directive: CustomDirective): _Context {
+  const context = new _Context({} as never, {} as never);
+  context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
+  directive[DIRECTIVE_CONNECT](context);
+
+  return context;
+}
+
 describe('CustomDirective', () => {
   it('exposes the element it is applied to', () => {
     const element = document.createElement('div');
@@ -42,7 +55,7 @@ describe('CustomDirective', () => {
 
   it('invokes onInit when connected', () => {
     const directive = create(TestDirective);
-    directive[DIRECTIVE_CONNECT]();
+    connect(directive);
 
     expect(directive.onInitSpy).toHaveBeenCalledOnce();
   });
@@ -50,10 +63,7 @@ describe('CustomDirective', () => {
   it('can be connected and disconnected without onInit and onDestroy', () => {
     const directive = create(class extends CustomDirective { });
 
-    expect(() => {
-      directive[DIRECTIVE_CONNECT]();
-      directive[DIRECTIVE_DISCONNECT]();
-    }).not.toThrow();
+    expect(() => connect(directive).clear()).not.toThrow();
   });
 
   it('invokes onDestroy before disposing its effects when disconnected', () => {
@@ -66,9 +76,8 @@ describe('CustomDirective', () => {
     directive.onInitSpy.mockImplementation(directive => {
       directive.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
     });
-    directive[DIRECTIVE_CONNECT]();
 
-    directive[DIRECTIVE_DISCONNECT]();
+    connect(directive).clear();
 
     expect(calls).toEqual(['onDestroy', 'dispose']);
   });
@@ -79,10 +88,10 @@ describe('CustomDirective', () => {
     directive.onInitSpy.mockImplementation(directive => {
       directive.effect(() => undefined, { onCleanup });
     });
-    directive[DIRECTIVE_CONNECT]();
+    const context = connect(directive);
 
-    directive[DIRECTIVE_DISCONNECT]();
-    directive[DIRECTIVE_DISCONNECT]();
+    context.clear();
+    context.clear();
 
     expect(onCleanup).toHaveBeenCalledOnce();
   });
@@ -93,9 +102,8 @@ describe('CustomDirective', () => {
     directive.onInitSpy.mockImplementation(() => {
       effect(() => undefined, { onCleanup });
     });
-    directive[DIRECTIVE_CONNECT]();
 
-    directive[DIRECTIVE_DISCONNECT]();
+    connect(directive).clear();
 
     expect(onCleanup).not.toHaveBeenCalled();
   });
@@ -105,6 +113,7 @@ describe('CustomDirective', () => {
       const state = new Signal.State(0);
       const spy = vi.fn();
       const directive = create(TestDirective);
+      connect(directive);
 
       directive.effect(() => spy(state.get()));
       expect(spy).toHaveBeenCalledExactlyOnceWith(0);
@@ -120,6 +129,7 @@ describe('CustomDirective', () => {
       const onBeforeRun = vi.fn();
       const onAfterRun = vi.fn();
       const directive = create(TestDirective);
+      connect(directive);
 
       directive.effect(() => undefined, { onBeforeRun, onAfterRun });
 
@@ -135,10 +145,10 @@ describe('CustomDirective', () => {
       directive.onInitSpy.mockImplementation(directive => {
         directive.effect(() => spy(state.get()), { onCleanup });
       });
-      directive[DIRECTIVE_CONNECT]();
+      const context = connect(directive);
 
       expect(onCleanup).not.toHaveBeenCalled();
-      directive[DIRECTIVE_DISCONNECT]();
+      context.clear();
       expect(onCleanup).toHaveBeenCalledOnce();
 
       state.set(1);
@@ -151,6 +161,7 @@ describe('CustomDirective', () => {
       const spy = vi.fn();
       const onCleanup = vi.fn();
       const directive = create(TestDirective);
+      connect(directive);
 
       const dispose = directive.effect(() => spy(state.get()), { onCleanup });
       dispose();
@@ -164,11 +175,12 @@ describe('CustomDirective', () => {
     it('does not dispose the effect twice when the disposer is called before the disconnection', () => {
       const onCleanup = vi.fn();
       const directive = create(TestDirective);
+      const context = connect(directive);
 
       const dispose = directive.effect(() => undefined, { onCleanup });
       dispose();
       dispose();
-      directive[DIRECTIVE_DISCONNECT]();
+      context.clear();
 
       expect(onCleanup).toHaveBeenCalledOnce();
     });
@@ -176,9 +188,10 @@ describe('CustomDirective', () => {
     it('does not dispose the effect twice when the disposer is called after the disconnection', () => {
       const onCleanup = vi.fn();
       const directive = create(TestDirective);
+      const context = connect(directive);
 
       const dispose = directive.effect(() => undefined, { onCleanup });
-      directive[DIRECTIVE_DISCONNECT]();
+      context.clear();
 
       expect(() => dispose()).not.toThrow();
       expect(onCleanup).toHaveBeenCalledOnce();
@@ -188,6 +201,7 @@ describe('CustomDirective', () => {
       const firstCleanup = vi.fn();
       const secondCleanup = vi.fn();
       const directive = create(TestDirective);
+      const context = connect(directive);
 
       const disposeFirst = directive.effect(() => undefined, { onCleanup: firstCleanup });
       directive.effect(() => undefined, { onCleanup: secondCleanup });
@@ -196,7 +210,7 @@ describe('CustomDirective', () => {
       expect(firstCleanup).toHaveBeenCalledOnce();
       expect(secondCleanup).not.toHaveBeenCalled();
 
-      directive[DIRECTIVE_DISCONNECT]();
+      context.clear();
       expect(firstCleanup).toHaveBeenCalledOnce();
       expect(secondCleanup).toHaveBeenCalledOnce();
     });

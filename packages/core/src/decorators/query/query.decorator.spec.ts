@@ -5,9 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
+import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { WebComponent } from '../web-component/web-component.decorator';
-import { Query, query, queryAll } from './query.decorator';
+import { Query, query, queryAll, querySlot, querySlotAll } from './query.decorator';
 
 loadSignals();
 
@@ -23,7 +24,7 @@ afterEach(() => document.body.replaceChildren());
  */
 function create(): CustomElement {
   const klass = class extends CustomElement { };
-  _defineRender(klass, () => ({ clear: vi.fn() }) as never);
+  _defineRender(klass, () => new _Context({} as never, {} as never));
   const name = `x-query-decorator-${counter++}`;
   customElements.define(name, klass);
   return document.createElement(name) as CustomElement;
@@ -36,7 +37,7 @@ function create(): CustomElement {
 function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
   const selector = `x-query-target-${counter++}`;
   const klass = class extends base { };
-  _defineRender(klass, () => ({ clear: vi.fn() }) as never);
+  _defineRender(klass, () => new _Context({} as never, {} as never));
   const metadata = {};
   WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: metadata });
@@ -346,6 +347,142 @@ describe('Query decorator', () => {
       await flush();
 
       expect(signal()).toEqual([first, second]);
+    });
+  });
+});
+
+/**
+ * Creates an element, not yet connected to the document, whose render adds a default slot and a slot named `a`
+ * to its Shadow DOM, with the given children in its light DOM.
+ */
+function withSlots(...children: Element[]): CustomElement {
+  const klass = class extends CustomElement { };
+  _defineRender(klass, function (this: CustomElement) {
+    const named = document.createElement('slot');
+    named.name = 'a';
+    this.shadowRoot!.append(document.createElement('slot'), named);
+    return new _Context(this, {} as never);
+  });
+  const name = `x-query-decorator-${counter++}`;
+  customElements.define(name, klass);
+  const element = document.createElement(name) as CustomElement;
+  element.append(...children);
+  return element;
+}
+
+describe('querySlot', () => {
+  it('holds the first projected element matching the target', () => {
+    const { klass, selector } = defineComponent();
+    const first = document.createElement(selector);
+    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
+    const signal = querySlot(element, klass);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(first);
+  });
+
+  it('is null when no projected element matches the target', () => {
+    const element = withSlots(document.createElement('span'));
+    const signal = querySlot(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBeNull();
+  });
+
+  it('applies the given options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = querySlot(element, '[item]', { slots: 'a' });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+});
+
+describe('querySlotAll', () => {
+  it('holds all the projected elements matching the target', () => {
+    const [first, second] = [item(), item()];
+    const element = withSlots(first, document.createElement('span'), second);
+    const signal = querySlotAll(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(signal()).toEqual([first, second]);
+  });
+
+  it('applies the given options', () => {
+    const unassigned = item();
+    unassigned.slot = 'b';
+    const element = withSlots(item(), unassigned);
+    const signal = querySlotAll(element, '[item]', { lightDom: true });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toEqual([element.firstElementChild, unassigned]);
+  });
+
+  it('does not notify when the elements did not change', async () => {
+    const element = withSlots(item());
+    const signal = querySlotAll(element, '[item]');
+    document.body.appendChild(element);
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    element.append(document.createElement('span'));
+    await flush();
+
+    expect(spy).not.toHaveBeenCalled();
+    dispose();
+  });
+});
+
+describe('Query.content decorator', () => {
+  it('creates a signal holding the first projected element matching the target', () => {
+    const target = item();
+    const element = withSlots(target, item());
+    const signal = init(Query.content('[item]'), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(target);
+  });
+
+  it('forwards the options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = init(Query.content('[item]', { slots: 'a' }), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+
+  describe('all', () => {
+    it('creates a signal holding all the projected elements matching the target', () => {
+      const [first, second] = [item(), item()];
+      const element = withSlots(first, second);
+      const signal = init(Query.content.all('[item]'), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toEqual([first, second]);
+    });
+
+    it('forwards the options', () => {
+      const inA = item();
+      inA.slot = 'a';
+      const element = withSlots(item(), inA);
+      const signal = init(Query.content.all('[item]', { slots: 'a' }), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toEqual([inA]);
     });
   });
 });

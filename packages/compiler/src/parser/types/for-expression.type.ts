@@ -10,12 +10,14 @@ import { ForImplicitVariables } from './nodes/for-implicit-variables';
  * during parsing.
  */
 export type ForExpression = {
-  /** 
-   * The loop variable alias (e.g. `item` in `@for(item of items)`). 
+  /**
+   * The loop variable alias (e.g. `item` in `@for(item of items)`), `undefined` when the
+   * `item of` part is omitted (e.g. `@for(10; track $index)`).
    */
-  itemAlias: string;
-  /** 
-   * The iterable expression parsed and validated as a JS expression (e.g. `items`). 
+  itemAlias?: string;
+  /**
+   * The iterable expression parsed and validated as a JS expression (e.g. `items`):
+   * an array, or a number `n` iterated as `0, 1, ..., n - 1`.
    */
   iterableExpression: Expression;
   /** 

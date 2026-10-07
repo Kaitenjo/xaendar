@@ -2,7 +2,7 @@ import { NoArgsVoidFunction } from '@xaendar/types';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
-import type { _Context } from '../../utils/context/context.util';
+import { _Context } from '../../utils/context/context.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
@@ -17,7 +17,7 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context!: _Context;
+  private _context = new _Context(this, {} as unknown as _Context);
   /**
    * The root of the Web Component, where the content is rendered
    */
@@ -62,7 +62,15 @@ export class CustomElement extends HTMLElement {
    * @returns A function that disposes the effect ahead of the disconnection.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
-    const dispose = effect(fn, options);
+    const stop = effect(fn, options);
+    let active = true;
+    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
+    const dispose = () => {
+      if (active) {
+        active = false;
+        stop();
+      }
+    };
     this._context.addUnlistener(dispose);
 
     return () => {
@@ -93,8 +101,18 @@ export class CustomElement extends HTMLElement {
       this._root.adoptedStyleSheets = [styleSheet];
     }
 
+    /*
+      Effect called in the constructor and on init would raise an error
+      due to context field being undefined until the onInit has finished its
+      execution. 
+
+      We create a temporaney context on field initialize and move his unlistener functions
+      to the real context when render has ended
+    */
     this.onInit?.();
+    const unwatchFns = this._context.getUnlistenFns();
     this._context = render.call(this);
+    this._context.addUnlistener(...unwatchFns);
     this[CONNECTED_HOOKS].forEach(hook => hook());
     this.afterRender?.();
   }
@@ -102,10 +120,9 @@ export class CustomElement extends HTMLElement {
   /**
    * Called by the browser engine each time the element is removed from the DOM.
    *
-   * Invokes `onDestroy`, if declared, and disposes the effects created via {@link effect}.
-   * Then invokes `context.clear()`
-   * to dispose all active signal subscriptions, detach event listeners, and remove
-   * tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
+   * Invokes `onDestroy`, if declared, then invokes `context.clear()` to dispose the effects
+   * created via {@link effect} and all the other active signal subscriptions, detach event listeners,
+   * and remove tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
    * and finally invokes the internal disconnected hooks.
    */
   private disconnectedCallback(): void {

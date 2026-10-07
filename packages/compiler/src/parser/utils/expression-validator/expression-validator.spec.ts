@@ -110,4 +110,24 @@ describe('validateExpression', () => {
       expect(() => validateExpression('items.map(() => 1)')).toThrow();
     });
   });
+
+  describe('single expression', () => {
+    it.each(['a() + b()', 'a ? b : c', ' a ','a // comment', 'a /* comment */'])('accepts "%s"', source => {
+      expect(() => validateExpression(source)).not.toThrow();
+    });
+
+    it.each([
+      ['a b', 'b'],
+      ['a; b', '; b'],
+      ['a;', ';'],
+      ['a, b', ', b'],
+      ['a)', ')']
+    ])('rejects "%s", having "%s" after the first expression', (source, rest) => {
+      expect(() => validateExpression(source)).toThrow(`'${source}' must be a single expression, got '${rest}' after 'a'.`);
+    });
+
+    it('accepts an incomplete expression recovered by the parser', () => {
+      expect(validateExpression('a.').node.getText()).toBe('a.');
+    });
+  });
 });

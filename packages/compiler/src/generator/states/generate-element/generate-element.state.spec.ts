@@ -41,9 +41,16 @@ describe('generateElement', () => {
 
     expect(output).toContain('value: \'a\',');
     expect(output).toContain('setter: _setProperty');
-    expect(output).toContain('value: () => this.name, ');
+    expect(output).toContain('value: () => this.name,');
     expect(output).toContain('setter: _setExpressionProperty');
     expect(output).toContain('setter: _setReactiveProperty');
+  });
+
+  it('wraps an object literal attribute value in parentheses', async () => {
+    const { code } = await run('<div title="{{ a: b }}"></div>');
+
+    expect(code.join('\n')).toContain('value: () => ({ a: this.b }),');
+    expectValidJavascript(code);
   });
 
   it('generates events with and without parameters', async () => {
@@ -257,7 +264,8 @@ describe('generateElement', () => {
     });
 
     it('resolves the conditions and the expressions against the current scope', async () => {
-      const context = new CompilerContext(undefined, ['item']);
+      const context = new CompilerContext();
+      context.addIdentifier('item');
       const { code } = await run('<div @if (item.active) { title="x" } @switch (item.kind) { @case (1) { id="y" } }></div>', context);
       const output = code.join('\n');
 
@@ -461,7 +469,7 @@ describe('generateElement', () => {
         '              attributes: [',
         '                {',
         '                  name: \'display\',',
-        '                  value: () => this.mode(), ',
+        '                  value: () => this.mode(),',
         '                  setter: _setReactiveProperty,',
         '                  unbind: _setExpressionProperty,',
         '                  defaultValue: \'d\'',
@@ -595,7 +603,7 @@ describe('generateElement', () => {
         '        },',
         '        {',
         '          name: \'level\',',
-        '          value: () => this.count(), ',
+        '          value: () => this.count(),',
         '          setter: _setExpressionProperty',
         '        },',
         '      ]',

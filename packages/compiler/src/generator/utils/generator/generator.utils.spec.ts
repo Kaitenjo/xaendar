@@ -38,12 +38,13 @@ describe('resolveExpression', () => {
     expect(resolve('$event', context)).toEqual({ expression: '$event', reactive });
   });
 
-  it('resolves declared value identifiers through the context', () => {
-    expect(resolve('item', new CompilerContext(undefined, ['item']))).toEqual({ expression: 'context.get(\'item\')', reactive: false });
-  });
-
-  it('resolves declared signal identifiers and unwraps them', () => {
-    expect(resolve('item', new CompilerContext(undefined, [['item', 'signal']]))).toEqual({ expression: 'context.get(\'item\')()', reactive: true });
+  it.each([
+    ['signal', true],
+    ['value', false]
+  ] as const)('resolves declared %s identifiers through the context', (kind, reactive) => {
+    const context = new CompilerContext();
+    context.addIdentifier('item', kind);
+    expect(resolve('item', context)).toEqual({ expression: 'context.get(\'item\')', reactive });
   });
 
   it('does not resolve globals or member names', () => {

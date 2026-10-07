@@ -44,35 +44,38 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
  *
  * The expected format is:
  * ```
- * item of iterable; track expr[; $implicit = alias, ...]
+ * [item of ]iterable; track expr[; alias = $implicit, ...]
  * ```
  *
- * @param source     - The raw string content of the `@for(...)` expression.
- * @param baseOffset - Character offset of `source` within the original template,
- *                     used to produce accurate diagnostic positions.
- * @returns A {@link ForExpression} object. When unrecoverable syntax errors are
- *          found the returned object contains only `diagnostics`.
+ * The iterable is either an array or a number `n`, iterated as `0, 1, ..., n - 1`.
+ * The `item of` part is optional: without it the loop declares no item alias and
+ * only the implicit variables are available (e.g. `@for (10; track $index)`).
+ *
+ * @param source - The raw string content of the `@for(...)` expression.
+ * @returns A {@link ForExpression} object.
+ * @throws When `source` is not a valid `@for` expression.
  */
 export function parseForExpression(source: string): ForExpression {
   const sections = splitForSections(source);
 
   if (sections.length < 2) {
-    throw '@for requires at least "item of iterable; track expr".';
+    throw '@for requires at least "item of items(); track expr" or "numberItems(); track $index';
   }
 
-  // ---- Section 1: "item of items" ----
+  // ---- Section 1: "item of items" or "items" ----
   const iterSection = sections[0].trim();
   const ofIndex = iterSection.indexOf(' of ');
 
-  if (ofIndex === -1) {
-    throw '@for expression must be in the form "item of iterable".';
-  }
+  let itemAlias: string | undefined;
+  let iterableSource = iterSection;
 
-  const itemAlias = slice(iterSection, 0, ofIndex).trim();
-  const iterableSource = slice(iterSection, ofIndex + 4).trim();
+  if (ofIndex !== -1) {
+    itemAlias = slice(iterSection, 0, ofIndex).trim();
+    iterableSource = slice(iterSection, ofIndex + 4).trim();
 
-  if (!isValidIdentifier(itemAlias)) {
-    throw `'${itemAlias}' is not a valid item alias.`;
+    if (!isValidIdentifier(itemAlias)) {
+      throw `'${itemAlias}' is not a valid item alias.`;
+    }
   }
 
   // Validate the iterable as a JS expression.
@@ -174,7 +177,7 @@ function splitForSections(source: string): string[] {
     }
 
     if (inString) {
-      current += char;
+      current = `${current}${char}`;
       if (char === inString && source[i - 1] !== '\\') {
         inString = null;
       }
@@ -183,20 +186,20 @@ function splitForSections(source: string): string[] {
 
     if (char === '"' || char === "'" || char === '`') {
       inString = char;
-      current += char;
+      current = `${current}${char}`;
       continue;
     }
 
     // Brackets — do not split inside nested bracket pairs.
     if (char === '(' || char === '[' || char === '{') {
       depth++;
-      current += char;
+      current = `${current}${char}`;
       continue;
     }
 
     if (char === ')' || char === ']' || char === '}') {
       depth--;
-      current += char;
+      current = `${current}${char}`;
       continue;
     }
 
@@ -207,7 +210,7 @@ function splitForSections(source: string): string[] {
       continue;
     }
 
-    current += char;
+    current = `${current}${char}`;
   }
 
   // Push the last section even when it has no trailing `;`.

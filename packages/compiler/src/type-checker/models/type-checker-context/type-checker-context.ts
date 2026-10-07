@@ -24,12 +24,14 @@ export class TypeCheckContext extends CompilerContext {
    * Creates a new type checker scope.
    *
    * @param parent - Optional enclosing scope; its imports are visible from this scope.
-   * @param identifiers - Named identifier bindings declared in this scope.
    * @param _eventMap - Event map of the elements declared in this scope, when it differs from the one of the
    *   enclosing scope, i.e. for the children of an `<svg>` or a `<math>` element.
    */
-  constructor(parent?: TypeCheckContext, identifiers?: ConstructorParameters<typeof CompilerContext>[1], private readonly _eventMap?: ElementEventMap) {
-    super(parent, identifiers);
+  constructor(
+    parent?: TypeCheckContext, 
+    private readonly _eventMap?: ElementEventMap
+  ) {
+    super(parent);
   }
   
   /**

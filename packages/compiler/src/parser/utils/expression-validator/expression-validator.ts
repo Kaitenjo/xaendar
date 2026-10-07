@@ -1,4 +1,5 @@
-import { Node, ScriptTarget, SyntaxKind, VariableStatement, createSourceFile, forEachChild } from 'typescript';
+import { slice } from '@xaendar/common';
+import { LanguageVariant, Node, ScriptTarget, SyntaxKind, VariableStatement, createScanner, createSourceFile, forEachChild } from 'typescript';
 import { ExpressionValidationResult } from '../../types/expression-validation-result.type';
 
 /**
@@ -56,6 +57,16 @@ export function validateExpression(source: string): ExpressionValidationResult {
 
   const statement = sourceFile.statements[0] as VariableStatement;
   const expression = statement.declarationList.declarations[0].initializer!;
+
+  /*
+    The parser stops at the end of the first expression: anything following it but whitespace and comments
+    means the source holds more than one expression (e.g. `a b`, `a; b`, `a, b`, the latter parsed as a second declaration).
+    An incomplete expression (e.g. `a.`) is still a single one, recovered by the parser.
+  */
+  const scanner = createScanner(ScriptTarget.ESNext, true, LanguageVariant.Standard, sourceFile.text, undefined, expression.end);
+  if (scanner.scan() !== SyntaxKind.EndOfFileToken) {
+    throw `'${source.trim()}' must be a single expression, got '${slice(sourceFile.text, expression.end).trim()}' after '${expression.getText()}'.`;
+  }
 
   visitNode(expression);
 

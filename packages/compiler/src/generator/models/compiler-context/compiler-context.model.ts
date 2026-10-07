@@ -44,25 +44,14 @@ export class CompilerContext {
   /**
    * Creates a new scope context.
    *
-   * @param identifiers - Named identifier bindings declared in this scope.
-   *   Plain strings default to kind `'value'`; pass a `[name, kind]` tuple
-   *   to declare a signal-backed identifier.
    * @param parent - Optional parent context representing the enclosing scope.
    */
   constructor(
     parent?: CompilerContext,
-    identifiers?: Array<string | [string, IdentifierKind]>,
   ) {
     if (parent) {
       this.parent = parent;
       this.cache = parent.cache;
-    }
-
-    if (identifiers?.length) {
-      for (let i = 0; i < identifiers.length; i++) {
-        const identifier = identifiers[i];
-        typeof identifier === 'string' ? this._identifiers.set(identifier, 'value') : this._identifiers.set(identifier[0], identifier[1]);
-      }
     }
   }
 

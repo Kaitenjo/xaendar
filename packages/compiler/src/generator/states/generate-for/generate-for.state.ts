@@ -22,8 +22,10 @@ import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../
  * }
  * ```
  *
- * The iterable identifier is resolved through the active {@link Context}:
- * if found in scope it is used as-is, otherwise `this.` is prepended.
+ * The iterable expression is resolved through the active {@link CompilerContext}
+ * like any other template expression. A numeric iterable `n` is turned into
+ * `0, 1, ..., n - 1` at runtime by `_for`. When the `item of` part is omitted
+ * no item alias is declared, and the item parameter of the track function is `_`.
  *
  * The internal loop counter is always named `$i_<nodeName>` to avoid
  * collisions when `@for` blocks are nested.
@@ -41,8 +43,8 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     functionsToProcess: new Map()
   }
 
-  const iterableSource = node.iterableSource;
-  const iterableExpr = compilerContext.hasIdentifier(iterableSource) ? iterableSource : `this.${iterableSource}`;
+  const iterableExpr = resolveExpression(node.iterableExpression, compilerContext).expression;
+  const itemName = node.itemAlias ?? '_';
 
   const itemsName = getTextIdentifier('items', parentNode, index);
   const counterName = getTextIdentifier('i', parentNode, index);
@@ -54,24 +56,26 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   const oddName = resolveImplicit(node, '$odd');
   const forContext = new CompilerContext(compilerContext);
 
-  forContext.addIdentifier(node.itemAlias);
+  if (node.itemAlias) {
+    forContext.addIdentifier(node.itemAlias);
+  }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
   for (let i = 0; i < identifiers.length; i++) {
-    forContext.addUnresolvableIdentifier(identifiers[i], 'signal');
+    forContext.addIdentifier(identifiers[i], 'signal');
   }
 
   const forKey = getBlockIdentifier('for', parentNode, index);
   retVal.functionsToProcess!.set(forKey, {
     fn: {
       precode:
-`const { vars, update } = _iterationVariables(context, ${itemsName}, ${counterName}, '${node.itemAlias}', { 
+`const { vars, update } = _iterationVariables(context, ${itemsName}, ${counterName}, ${node.itemAlias ? `'${node.itemAlias}'` : undefined}, {
     $index: '${indexName}', 
     $first: '${firstName}', 
     $last: '${lastName}', 
     $even: '${evenName}', 
     $odd: '${oddName}' 
   });
-  const { ${node.itemAlias}, ${indexName}, ${firstName}, ${lastName}, ${evenName}, ${oddName} } = vars;`,
+  const { ${[node.itemAlias, ...identifiers].filter(Boolean).join(', ')} } = vars;`,
       node,
       parentNode: forKey,
       context: forContext,
@@ -99,7 +103,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
                                     <------- Context where executed at runtime
     }
   */
-  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${node.itemAlias}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, ${forKey}.bind(this));`);
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${itemName}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, ${forKey}.bind(this));`);
 
   return retVal
 }

@@ -260,7 +260,7 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
 
     // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
     const directive = new Directive();
-    directive[SET_DIRECTIVE_ELEMENT] = element as HTMLElement;
+    directive[SET_DIRECTIVE_ELEMENT] = element;
 
     bindDirectiveProperties(directive, context, attributes);
     bindEvents(element, context, events);
@@ -269,8 +269,9 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
       bindEvents(element, branchContext, branch.events);
     });
 
-    directive[DIRECTIVE_CONNECT](context);
+    // Registered before connecting, so that `onDestroy` runs before the effects created in `onInit` are disposed
     context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
+    directive[DIRECTIVE_CONNECT](context);
   }
 }
 

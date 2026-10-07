@@ -3,8 +3,6 @@ import { effect, signal, untracked } from '../../signals';
 import { IterationVariablesHandle } from '../../types/iteration-variables.type';
 import { _Context, createAnchor } from '../context/context.util';
 
-type ForKey = string | number;
-
 type ForEntry = {
   context: _Context;
   update?: (newIndex: number, items: unknown[]) => void;
@@ -21,22 +19,25 @@ type ForEntry = {
  * - key sparita → il Context viene distrutto.
  * - key nuova → il Context viene creato.
  *
+ * @param condition - Ritorna gli item da iterare: un array, oppure un numero
+ *   `n` iterato come `0, 1, ..., n - 1`.
  * @param forFn - Callback invocata per creare un nuovo item. Deve ritornare
  *   sia il Context che possiede i nodi, sia (opzionalmente) una funzione
  *   `update` per aggiornare le variabili implicite in-place quando l'item
  *   viene riusato a un indice diverso.
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[]>, trackExpression: Function<[unknown, number], ForKey>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: Function<[unknown, number], string | number>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
   const anchor = createAnchor('for', parentNode, parentContext, referenceNode);
-  let entries = new Map<ForKey, ForEntry>();
+  let entries = new Map<string | number, ForEntry>();
 
   const unlistener = effect(() => {
-    const items = condition();
+    const iterable = condition();
+    const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
     const newKeys = items.map((item, i) => trackExpression(item, i));
     const newKeySet = new Set(newKeys);
 
     untracked(() => {
-      const newEntries = new Map<ForKey, ForEntry>();
+      const newEntries = new Map<string | number, ForEntry>();
 
       for (const [key, entry] of entries) {
         if (!newKeySet.has(key)) {
@@ -154,20 +155,19 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
  *
  * @param items - The full array being iterated.
  * @param index - The current iteration index.
- * @param itemName - The identifier to reference the i-th item during iteration.
+ * @param itemName - The identifier to reference the i-th item during iteration, `undefined` when the `@for` declares none.
  * @param aliases - Aliases for implicit variables defined in the `@for` loop.
  * @returns A handle exposing the resolved variables and an `update` function.
  */
-export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string, aliases: { $index: string, $first: string, $last: string, $even: string, $odd: string }): IterationVariablesHandle {
+export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string | undefined, aliases: { $index: string, $first: string, $last: string, $even: string, $odd: string }): IterationVariablesHandle {
   const $index = signal(index);
   const $first = signal(index === 0);
   const $last = signal(index === items.length - 1);
   const $even = signal(index % 2 === 0);
   const $odd = signal(index % 2 !== 0);
 
-  const retVal = {
+  const retVal: IterationVariablesHandle = {
     vars: {
-      [itemName]: items[index],
       [aliases.$index]: $index,
       [aliases.$first]: $first,
       [aliases.$last]: $last,
@@ -182,6 +182,10 @@ export function _iterationVariables(context: _Context, items: unknown[], index: 
       $odd.set(newIndex % 2 !== 0);
     }
   };
+
+  if (itemName !== undefined) {
+    retVal.vars[itemName] = items[index]
+  }
 
   const entries = Object.entries(retVal.vars);
   for (let i = 0; i < entries.length; i++) {

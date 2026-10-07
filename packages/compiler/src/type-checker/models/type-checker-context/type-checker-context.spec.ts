@@ -41,7 +41,8 @@ describe('TypeCheckContext', () => {
   it('inherits the imports of its ancestor scopes', () => {
     const root = new TypeCheckContext();
     root.addImport(component);
-    const child = new TypeCheckContext(new TypeCheckContext(root), ['item']);
+    const child = new TypeCheckContext(new TypeCheckContext(root));
+    child.addIdentifier('item');
 
     expect(child.getImportBySelector('my-a')).toBe(component);
     expect(child.hasIdentifier('item')).toBe(true);
@@ -54,9 +55,9 @@ describe('TypeCheckContext', () => {
   });
 
   it('inherits the event map of its closest ancestor scope declaring one', () => {
-    const svg = new TypeCheckContext(new TypeCheckContext(), [], 'SVGElementEventMap');
+    const svg = new TypeCheckContext(new TypeCheckContext(), 'SVGElementEventMap');
 
     expect(new TypeCheckContext(new TypeCheckContext(svg)).eventMap).toBe('SVGElementEventMap');
-    expect(new TypeCheckContext(svg, [], 'MathMLElementEventMap').eventMap).toBe('MathMLElementEventMap');
+    expect(new TypeCheckContext(svg, 'MathMLElementEventMap').eventMap).toBe('MathMLElementEventMap');
   });
 });

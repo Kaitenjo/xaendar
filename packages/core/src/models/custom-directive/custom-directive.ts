@@ -14,7 +14,7 @@ import { _Context } from '../../utils/context/context.util';
  * Effects created via {@link CustomDirective.effect} are disposed automatically
  * on disconnection.
  */
-export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
+export abstract class CustomDirective<T extends Element = Element> {
   /**
    * The active template execution context for this directive instance,
    * holding all identifier bindings and registered cleanup functions.
@@ -48,15 +48,19 @@ export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
   /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
    * Invokes `onInit`, if declared.
+   *
+   * @param context - The context of the element the directive is applied to: the effects created
+   *   via {@link effect} are registered on it, so they are disposed when it is cleared.
    */
   public [DIRECTIVE_CONNECT](context: _Context): void {
-    this.onInit?.();
     this._context = context;
+    this.onInit?.();
   }
 
   /**
-   * Disconnects the directive, invoked by the template runtime when its context is destroyed.
-   * Invokes `onDestroy`, if declared, then disposes the effects created via {@link effect}.
+   * Disconnects the directive, invoked by the template runtime when its context is destroyed,
+   * before the effects created via {@link effect} are disposed by the clearing of the context.
+   * Invokes `onDestroy`, if declared.
    */
   public [DIRECTIVE_DISCONNECT](): void {
     this.onDestroy?.();
@@ -84,7 +88,15 @@ export abstract class CustomDirective<T extends HTMLElement = HTMLElement> {
    * @returns A function that disposes the effect ahead of the disconnection
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
-    const dispose = effect(fn, options);
+    const stop = effect(fn, options);
+    let active = true;
+    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
+    const dispose = () => {
+      if (active) {
+        active = false;
+        stop();
+      }
+    };
     this._context.addUnlistener(dispose);
 
     return () => {

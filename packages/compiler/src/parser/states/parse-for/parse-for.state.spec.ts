@@ -32,6 +32,25 @@ describe('parseForExpression', () => {
     expect(result.implicitAliases.size).toBe(0);
   });
 
+  it('parses an iterable without item alias', () => {
+    const result = parseForExpression('10; track $index');
+    expect(result.itemAlias).toBeUndefined();
+    expect(result.iterableSource).toBe('10');
+    expect(result.trackSource).toBe('$index');
+  });
+
+  it.each(['numbers', 'numbers()', 'count() * 2'])('parses the iterable %s without item alias', source => {
+    const result = parseForExpression(`${source}; track $index`);
+    expect(result.itemAlias).toBeUndefined();
+    expect(result.iterableSource).toBe(source);
+  });
+
+  it('parses a numeric iterable with item alias', () => {
+    const result = parseForExpression('n of 5; track n');
+    expect(result.itemAlias).toBe('n');
+    expect(result.iterableSource).toBe('5');
+  });
+
   it('parses implicit variable aliases', () => {
     const result = parseForExpression('item of items; track item.id; i = $index, l = $last');
     expect([...result.implicitAliases]).toEqual([['$index', 'i'], ['$last', 'l']]);
@@ -42,8 +61,9 @@ describe('parseForExpression', () => {
   });
 
   it('does not split on separators inside strings or brackets', () => {
-    const result = parseForExpression('item of fn([1; 2], "a;b"); track item');
-    expect(result.iterableSource).toBe('fn([1; 2], "a;b")');
+    expect(parseForExpression('item of fn(";", "a;b"); track item').iterableSource).toBe('fn(";", "a;b")');
+    // A `;` inside brackets is never valid JS: the whole section reaches the validation of the iterable
+    expect(() => parseForExpression('item of fn([1; 2]); track item')).toThrow('\'fn([1; 2])\' must be a single expression');
   });
 
   it('handles escaped quotes inside strings', () => {
@@ -58,7 +78,8 @@ describe('parseForExpression', () => {
 
   it.each([
     ['fewer than two sections', 'item of items', '@for requires at least'],
-    ['a missing "of" keyword', 'item items; track item', 'must be in the form "item of iterable"'],
+    ['a missing "of" keyword', 'item items; track item', '\'item items\' must be a single expression, got \'items\' after \'item\'.'],
+    ['an iterable followed by other tokens', 'item of items items; track item', '\'items items\' must be a single expression'],
     ['an invalid item alias', '1x of items; track x', '\'1x\' is not a valid item alias.'],
     ['an alias that is not an identifier', '// of items; track x', 'is not a valid item alias'],
     ['a second section without track', 'item of items; foo', 'must start with "track"'],

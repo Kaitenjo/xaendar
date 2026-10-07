@@ -4,6 +4,7 @@ import { NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
+import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { CustomElement } from './custom-element';
 
@@ -17,12 +18,27 @@ type TestElement = HTMLElement & {
   effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction
 };
 
+/**
+ * Builds a context whose `clear` is spied on, still clearing it (so disposing the effects
+ * registered on it) after invoking the optional `onClear` callback.
+ */
+function createContext(onClear?: NoArgsVoidFunction): _Context {
+  const context = new _Context({} as never, {} as never);
+  const clear = context.clear.bind(context);
+  vi.spyOn(context, 'clear').mockImplementation(() => {
+    onClear?.();
+    clear();
+  });
+
+  return context;
+}
+
 let counter = 0;
-function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
+function create(context?: _Context, styleSheet?: CSSStyleSheet): TestElement {
   const name = `x-base-${counter++}`;
   const klass = class extends CustomElement { };
   if (context) {
-    _defineRender(klass, () => context as never, styleSheet);
+    _defineRender(klass, () => context, styleSheet);
   }
 
   customElements.define(name, klass);
@@ -31,11 +47,11 @@ function create(context?: unknown, styleSheet?: CSSStyleSheet): TestElement {
 
 /**
  * Builds a connectable element with the given lifecycle hooks, whose render function
- * returns a context that only records when it is cleared.
+ * returns a context invoking `onClear` when it is cleared.
  */
-function createWithHooks(hooks: { onInit?: (element: TestElement) => void, afterRender?: () => void, onDestroy?: () => void }) {
-  const context = { clear: vi.fn() };
-  const render = vi.fn(() => context as never);
+function createWithHooks(hooks: { onInit?: (element: TestElement) => void, afterRender?: () => void, onDestroy?: () => void, onClear?: NoArgsVoidFunction }) {
+  const context = createContext(hooks.onClear);
+  const render = vi.fn(() => context);
   const name = `x-base-${counter++}`;
   const klass = class extends CustomElement {
     public onInit = hooks.onInit && (() => hooks.onInit!(this as unknown as TestElement));
@@ -60,7 +76,7 @@ describe('CustomElement', () => {
   });
 
   it('renders on connection', () => {
-    const context = { clear: vi.fn() };
+    const context = createContext();
     const element = create(context);
 
     document.body.appendChild(element);
@@ -72,7 +88,7 @@ describe('CustomElement', () => {
 
   it('adopts the registered stylesheet on connection', () => {
     const styleSheet = new CSSStyleSheet();
-    const element = create({ clear: vi.fn() }, styleSheet);
+    const element = create(createContext(), styleSheet);
 
     document.body.appendChild(element);
 
@@ -81,7 +97,7 @@ describe('CustomElement', () => {
   });
 
   it('clears the context on disconnection', () => {
-    const context = { clear: vi.fn() };
+    const context = createContext();
     const element = create(context);
 
     document.body.appendChild(element);
@@ -96,7 +112,7 @@ describe('CustomElement', () => {
       const { element, render } = createWithHooks({ onInit: () => { calls.push('onInit'); } });
       render.mockImplementation(() => {
         calls.push('render');
-        return { clear: vi.fn() } as never;
+        return createContext();
       });
 
       document.body.appendChild(element);
@@ -129,7 +145,7 @@ describe('CustomElement', () => {
       });
       render.mockImplementation(() => {
         calls.push('render');
-        return { clear: vi.fn() } as never;
+        return createContext();
       });
 
       document.body.appendChild(element);
@@ -140,20 +156,20 @@ describe('CustomElement', () => {
   });
 
   describe('onDestroy', () => {
-    it('is invoked on disconnection, before disposing the effects and clearing the context', () => {
+    it('is invoked on disconnection, before clearing the context, which disposes the effects', () => {
       const calls = new Array<string>();
-      const { element, context } = createWithHooks({
+      const { element } = createWithHooks({
         onInit: element => {
           element.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
         },
-        onDestroy: () => calls.push('onDestroy')
+        onDestroy: () => calls.push('onDestroy'),
+        onClear: () => calls.push('clear')
       });
-      context.clear.mockImplementation(() => calls.push('clear'));
 
       document.body.appendChild(element);
       element.remove();
 
-      expect(calls).toEqual(['onDestroy', 'dispose', 'clear']);
+      expect(calls).toEqual(['onDestroy', 'clear', 'dispose']);
     });
   });
 
@@ -163,7 +179,7 @@ describe('CustomElement', () => {
       const { element, render } = createWithHooks({ afterRender: () => { calls.push('afterRender'); } });
       render.mockImplementation(() => {
         calls.push('render');
-        return { clear: vi.fn() } as never;
+        return createContext();
       });
       (element as unknown as CustomElement)[CONNECTED_HOOKS].push(() => calls.push('hook'));
 
@@ -175,8 +191,7 @@ describe('CustomElement', () => {
 
     it('invokes the disconnected hooks after onDestroy and the clearing of the context', () => {
       const calls = new Array<string>();
-      const { element, context } = createWithHooks({ onDestroy: () => calls.push('onDestroy') });
-      context.clear.mockImplementation(() => calls.push('clear'));
+      const { element } = createWithHooks({ onDestroy: () => calls.push('onDestroy'), onClear: () => calls.push('clear') });
       (element as unknown as CustomElement)[DISCONNECTED_HOOKS].push(() => calls.push('hook'));
 
       document.body.appendChild(element);

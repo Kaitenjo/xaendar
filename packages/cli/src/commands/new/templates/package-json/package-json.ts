@@ -27,7 +27,7 @@ export function packageJson(name: string, version: string): string {
     "@vitest/coverage-v8": "^5.0.3",
     "@xaendar/cli": "^${version}",
     "typescript": "^6.0.3",
-    "vite": "^8.3.2",
+    "vite": "^8.3.3",
     "vitest": "^5.0.3"
   }
 }

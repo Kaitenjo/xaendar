@@ -55,7 +55,7 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
 
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], node.tagName, eventMap, context));
 
-  const childrenContext = eventMap === context.eventMap ? context : new TypeCheckContext(context, [], eventMap);
+  const childrenContext = eventMap === context.eventMap ? context : new TypeCheckContext(context, eventMap);
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
     lines.push(...processNode(children[i], childrenContext))

@@ -405,4 +405,8 @@ public accessor all!: QuerySignal<HTMLElement[]>;
   public resize(target: Signal<number[]>, step: number): void {
     target.update(items => Array.from({ length: Math.max(items.length + step, 0) }, (_, i) => i + 1));
   }
+
+  counter = signal(10);
+
+  
 }

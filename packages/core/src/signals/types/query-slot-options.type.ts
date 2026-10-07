@@ -1,5 +1,5 @@
 /**
- * Options of the queries on the content projected into a component (see `Query.slot`).
+ * Options of the queries on the content projected into a component (see `Query.content`).
  * By default the query looks for the elements assigned to the slots of the Shadow DOM, and their descendants:
  * it can be restricted to a single slot via `slot`, or extended to the whole light DOM via `lightDom`,
  * but not both.
