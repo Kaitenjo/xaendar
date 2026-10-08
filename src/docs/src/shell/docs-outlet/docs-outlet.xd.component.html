@@ -12,12 +12,27 @@
 @import { ComponentsQueriesPageEn, ComponentsQueriesPageIt } from '../../pages/components/queries/queries.xd.component.ts'
 @import { ComponentsRegistrationPageEn, ComponentsRegistrationPageIt } from '../../pages/components/registration/registration.xd.component.ts'
 @import { ComponentsStylingPageEn, ComponentsStylingPageIt } from '../../pages/components/styling/styling.xd.component.ts'
+@import { DirectivesConditionalPageEn, DirectivesConditionalPageIt } from '../../pages/directives/conditional/conditional.xd.component.ts'
+@import { DirectivesCustomPageEn, DirectivesCustomPageIt } from '../../pages/directives/custom/custom.xd.component.ts'
+@import { DirectivesOverviewPageEn, DirectivesOverviewPageIt } from '../../pages/directives/overview/overview.xd.component.ts'
+@import { DirectivesStructuralPageEn, DirectivesStructuralPageIt } from '../../pages/directives/structural/structural.xd.component.ts'
 @import { EssentialsComponentsPageEn, EssentialsComponentsPageIt } from '../../pages/essentials/components/components.xd.component.ts'
 @import { EssentialsNextStepsPageEn, EssentialsNextStepsPageIt } from '../../pages/essentials/next-steps/next-steps.xd.component.ts'
 @import { EssentialsSignalsPageEn, EssentialsSignalsPageIt } from '../../pages/essentials/signals/signals.xd.component.ts'
 @import { EssentialsTemplatesPageEn, EssentialsTemplatesPageIt } from '../../pages/essentials/templates/templates.xd.component.ts'
 @import { InstallationPageEn, InstallationPageIt } from '../../pages/installation/installation.xd.component.ts'
 @import { OverviewPageEn, OverviewPageIt } from '../../pages/overview/overview.xd.component.ts'
+@import { PatternsAsyncDataPageEn, PatternsAsyncDataPageIt } from '../../pages/patterns/async-data/async-data.xd.component.ts'
+@import { PatternsFormsPageEn, PatternsFormsPageIt } from '../../pages/patterns/forms/forms.xd.component.ts'
+@import { PatternsHtmlRenderingPageEn, PatternsHtmlRenderingPageIt } from '../../pages/patterns/html-rendering/html-rendering.xd.component.ts'
+@import { PatternsListsPageEn, PatternsListsPageIt } from '../../pages/patterns/lists/lists.xd.component.ts'
+@import { PatternsRoutingPageEn, PatternsRoutingPageIt } from '../../pages/patterns/routing/routing.xd.component.ts'
+@import { PatternsThemingPageEn, PatternsThemingPageIt } from '../../pages/patterns/theming/theming.xd.component.ts'
+@import { ReferenceApiPageEn, ReferenceApiPageIt } from '../../pages/reference/api/api.xd.component.ts'
+@import { ReferenceComingFromAngularPageEn, ReferenceComingFromAngularPageIt } from '../../pages/reference/coming-from-angular/coming-from-angular.xd.component.ts'
+@import { ReferenceErrorsPageEn, ReferenceErrorsPageIt } from '../../pages/reference/errors/errors.xd.component.ts'
+@import { ReferenceKnownIssuesPageEn, ReferenceKnownIssuesPageIt } from '../../pages/reference/known-issues/known-issues.xd.component.ts'
+@import { ReferenceTemplateSyntaxPageEn, ReferenceTemplateSyntaxPageIt } from '../../pages/reference/template-syntax/template-syntax.xd.component.ts'
 @import { SignalsAdvancedPageEn, SignalsAdvancedPageIt } from '../../pages/signals/advanced/advanced.xd.component.ts'
 @import { SignalsComputedPageEn, SignalsComputedPageIt } from '../../pages/signals/computed/computed.xd.component.ts'
 @import { SignalsEffectsPageEn, SignalsEffectsPageIt } from '../../pages/signals/effects/effects.xd.component.ts'
@@ -25,6 +40,20 @@
 @import { SignalsOverviewPageEn, SignalsOverviewPageIt } from '../../pages/signals/overview/overview.xd.component.ts'
 @import { SignalsSharedStatePageEn, SignalsSharedStatePageIt } from '../../pages/signals/shared-state/shared-state.xd.component.ts'
 @import { SignalsUntrackedPageEn, SignalsUntrackedPageIt } from '../../pages/signals/untracked/untracked.xd.component.ts'
+@import { TemplatesBindingPageEn, TemplatesBindingPageIt } from '../../pages/templates/binding/binding.xd.component.ts'
+@import { TemplatesConditionalBindingsPageEn, TemplatesConditionalBindingsPageIt } from '../../pages/templates/conditional-bindings/conditional-bindings.xd.component.ts'
+@import { TemplatesEventsPageEn, TemplatesEventsPageIt } from '../../pages/templates/events/events.xd.component.ts'
+@import { TemplatesExpressionsPageEn, TemplatesExpressionsPageIt } from '../../pages/templates/expressions/expressions.xd.component.ts'
+@import { TemplatesForPageEn, TemplatesForPageIt } from '../../pages/templates/for/for.xd.component.ts'
+@import { TemplatesIfPageEn, TemplatesIfPageIt } from '../../pages/templates/if/if.xd.component.ts'
+@import { TemplatesImportsPageEn, TemplatesImportsPageIt } from '../../pages/templates/imports/imports.xd.component.ts'
+@import { TemplatesOverviewPageEn, TemplatesOverviewPageIt } from '../../pages/templates/overview/overview.xd.component.ts'
+@import { TemplatesSvgMathmlPageEn, TemplatesSvgMathmlPageIt } from '../../pages/templates/svg-mathml/svg-mathml.xd.component.ts'
+@import { TemplatesSwitchPageEn, TemplatesSwitchPageIt } from '../../pages/templates/switch/switch.xd.component.ts'
+@import { TemplatesTextInterpolationPageEn, TemplatesTextInterpolationPageIt } from '../../pages/templates/text-interpolation/text-interpolation.xd.component.ts'
+@import { ToolsBuildPageEn, ToolsBuildPageIt } from '../../pages/tools/build/build.xd.component.ts'
+@import { ToolsCliPageEn, ToolsCliPageIt } from '../../pages/tools/cli/cli.xd.component.ts'
+@import { ToolsLanguageServicePageEn, ToolsLanguageServicePageIt } from '../../pages/tools/language-service/language-service.xd.component.ts'
 @import { TutorialPageEn, TutorialPageIt } from '../../pages/tutorial/tutorial.xd.component.ts'
 
 @switch (path()) {
@@ -76,6 +105,22 @@
     <page-components-styling-en *lang(code="en") />
     <page-components-styling-it *lang(code="it") />
   }
+  @case ('directives/conditional') {
+    <page-directives-conditional-en *lang(code="en") />
+    <page-directives-conditional-it *lang(code="it") />
+  }
+  @case ('directives/custom') {
+    <page-directives-custom-en *lang(code="en") />
+    <page-directives-custom-it *lang(code="it") />
+  }
+  @case ('directives/overview') {
+    <page-directives-overview-en *lang(code="en") />
+    <page-directives-overview-it *lang(code="it") />
+  }
+  @case ('directives/structural') {
+    <page-directives-structural-en *lang(code="en") />
+    <page-directives-structural-it *lang(code="it") />
+  }
   @case ('essentials/components') {
     <page-essentials-components-en *lang(code="en") />
     <page-essentials-components-it *lang(code="it") />
@@ -99,6 +144,50 @@
   @case ('overview') {
     <page-overview-en *lang(code="en") />
     <page-overview-it *lang(code="it") />
+  }
+  @case ('patterns/async-data') {
+    <page-patterns-async-data-en *lang(code="en") />
+    <page-patterns-async-data-it *lang(code="it") />
+  }
+  @case ('patterns/forms') {
+    <page-patterns-forms-en *lang(code="en") />
+    <page-patterns-forms-it *lang(code="it") />
+  }
+  @case ('patterns/html-rendering') {
+    <page-patterns-html-rendering-en *lang(code="en") />
+    <page-patterns-html-rendering-it *lang(code="it") />
+  }
+  @case ('patterns/lists') {
+    <page-patterns-lists-en *lang(code="en") />
+    <page-patterns-lists-it *lang(code="it") />
+  }
+  @case ('patterns/routing') {
+    <page-patterns-routing-en *lang(code="en") />
+    <page-patterns-routing-it *lang(code="it") />
+  }
+  @case ('patterns/theming') {
+    <page-patterns-theming-en *lang(code="en") />
+    <page-patterns-theming-it *lang(code="it") />
+  }
+  @case ('reference/api') {
+    <page-reference-api-en *lang(code="en") />
+    <page-reference-api-it *lang(code="it") />
+  }
+  @case ('reference/coming-from-angular') {
+    <page-reference-coming-from-angular-en *lang(code="en") />
+    <page-reference-coming-from-angular-it *lang(code="it") />
+  }
+  @case ('reference/errors') {
+    <page-reference-errors-en *lang(code="en") />
+    <page-reference-errors-it *lang(code="it") />
+  }
+  @case ('reference/known-issues') {
+    <page-reference-known-issues-en *lang(code="en") />
+    <page-reference-known-issues-it *lang(code="it") />
+  }
+  @case ('reference/template-syntax') {
+    <page-reference-template-syntax-en *lang(code="en") />
+    <page-reference-template-syntax-it *lang(code="it") />
   }
   @case ('signals/advanced') {
     <page-signals-advanced-en *lang(code="en") />
@@ -127,6 +216,62 @@
   @case ('signals/untracked') {
     <page-signals-untracked-en *lang(code="en") />
     <page-signals-untracked-it *lang(code="it") />
+  }
+  @case ('templates/binding') {
+    <page-templates-binding-en *lang(code="en") />
+    <page-templates-binding-it *lang(code="it") />
+  }
+  @case ('templates/conditional-bindings') {
+    <page-templates-conditional-bindings-en *lang(code="en") />
+    <page-templates-conditional-bindings-it *lang(code="it") />
+  }
+  @case ('templates/events') {
+    <page-templates-events-en *lang(code="en") />
+    <page-templates-events-it *lang(code="it") />
+  }
+  @case ('templates/expressions') {
+    <page-templates-expressions-en *lang(code="en") />
+    <page-templates-expressions-it *lang(code="it") />
+  }
+  @case ('templates/for') {
+    <page-templates-for-en *lang(code="en") />
+    <page-templates-for-it *lang(code="it") />
+  }
+  @case ('templates/if') {
+    <page-templates-if-en *lang(code="en") />
+    <page-templates-if-it *lang(code="it") />
+  }
+  @case ('templates/imports') {
+    <page-templates-imports-en *lang(code="en") />
+    <page-templates-imports-it *lang(code="it") />
+  }
+  @case ('templates/overview') {
+    <page-templates-overview-en *lang(code="en") />
+    <page-templates-overview-it *lang(code="it") />
+  }
+  @case ('templates/svg-mathml') {
+    <page-templates-svg-mathml-en *lang(code="en") />
+    <page-templates-svg-mathml-it *lang(code="it") />
+  }
+  @case ('templates/switch') {
+    <page-templates-switch-en *lang(code="en") />
+    <page-templates-switch-it *lang(code="it") />
+  }
+  @case ('templates/text-interpolation') {
+    <page-templates-text-interpolation-en *lang(code="en") />
+    <page-templates-text-interpolation-it *lang(code="it") />
+  }
+  @case ('tools/build') {
+    <page-tools-build-en *lang(code="en") />
+    <page-tools-build-it *lang(code="it") />
+  }
+  @case ('tools/cli') {
+    <page-tools-cli-en *lang(code="en") />
+    <page-tools-cli-it *lang(code="it") />
+  }
+  @case ('tools/language-service') {
+    <page-tools-language-service-en *lang(code="en") />
+    <page-tools-language-service-it *lang(code="it") />
   }
   @case ('tutorial') {
     <page-tutorial-en *lang(code="en") />

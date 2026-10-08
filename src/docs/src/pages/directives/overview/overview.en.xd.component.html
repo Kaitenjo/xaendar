@@ -1,0 +1,113 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DirectiveBasicsComponent } from '../../../examples/directives/overview/directive-basics/directive-basics.xd.component.ts'
+
+<span class="eyebrow">Directives</span>
+<h1>Directives</h1>
+<p class="lead">
+  A directive adds behavior to an element that a template renders, without wrapping it in a component. Xaendar has two
+  kinds: <strong>custom directives</strong>, written <code>{'@@name'}</code>, act on an element that exists; and
+  <strong>structural directives</strong>, written <code>*name</code>, decide whether the element exists at all.
+</p>
+
+<h2>Two kinds of directives</h2>
+<docs-example name="directives/overview/directive-basics" heading="A custom and a structural directive">
+  <ex-directive-basics />
+</docs-example>
+<p>
+  <code>exTint</code> extends <code>CustomDirective</code>: it receives the element it is applied to in
+  <code>this.element</code>, and an effect keeps its background in sync with the <code>color</code> input.
+  <code>exVisibleWhen</code> extends <code>StructuralDirective</code>: it has no element, only a
+  <code>shouldRender()</code> method, and the paragraph exists while the method returns <code>true</code>. Both declare
+  their inputs with <code>{'@Property'}</code>, exactly like components.
+</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>Custom directive</th><th>Structural directive</th></tr></thead>
+    <tbody>
+      <tr><td>Base class</td><td><code>CustomDirective</code></td><td><code>StructuralDirective</code></td></tr>
+      <tr><td>Syntax</td><td><code>{'@@name(…)'}</code></td><td><code>*name(…)</code></td></tr>
+      <tr><td>Element</td><td><code>this.element</code>, already rendered</td><td>None: the element may not exist</td></tr>
+      <tr><td>Inputs</td><td><code>{'@Property'}</code></td><td><code>{'@Property'}</code></td></tr>
+      <tr><td>Outputs</td><td><code>{'@Event'}</code>, dispatched on the element</td><td>None</td></tr>
+      <tr><td>Hooks</td><td><code>onInit</code>, <code>onDestroy</code></td><td>None: only <code>shouldRender</code></td></tr>
+      <tr><td>Effects</td><td><code>this.effect</code>, disposed with the directive</td><td><code>shouldRender</code> runs inside one</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Syntax</h2>
+<p>
+  The inputs and the listeners of a directive go between the parentheses after its name, with the same syntax as the
+  attributes and the listeners of a tag. Without inputs, the parentheses can be left out. An element can have several
+  directives of both kinds.
+</p>
+<docs-code snippet="directives/directive-syntax.html" />
+<p>
+  Custom directives are covered in <a href="#/en/directives/custom">Custom directives</a>, structural ones in
+  <a href="#/en/directives/structural">Structural directives</a>, and directives applied by an <code>{'@if'}</code>
+  inside a tag in <a href="#/en/directives/conditional">Conditional directives</a>.
+</p>
+
+<h2>Declaring and registering</h2>
+<p>
+  <code>{'@Directive'}</code> takes a selector and registers the class under it as soon as the module is evaluated. As
+  for components, a directive has to be known twice: the template imports it with <code>{'@import'}</code>, so that the
+  compiler can check its inputs and outputs, and the module has to be loaded at runtime before a template using it is
+  rendered. A glob in <code>main.ts</code> takes care of the second part for every directive of the application.
+</p>
+<docs-code snippet="directives/directive-registration.ts" />
+<docs-callout kind="tip" heading="Prefix your selectors">
+  Selectors of directives live in a single registry, shared by the whole application and by the libraries it uses.
+  Unlike the names of custom elements, they need no dash: a short prefix, such as <code>ex</code> in these pages,
+  avoids clashes.
+</docs-callout>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="A directive not imported by the template">
+    <p>
+      The compiler only knows the directives imported by the template, and rejects the others, even when they are
+      registered at runtime.
+    </p>
+    <docs-code snippet="directives/not-imported-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="A directive not loaded at runtime">
+    <p>
+      The opposite case compiles: the template imports the class, but no code loads its module before the template is
+      rendered. The decorator never runs: the element using the directive stays empty, and nothing after it in the
+      template is rendered.
+    </p>
+    <docs-code snippet="directives/missing-registration-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Two directives with the same selector">
+    <p>
+      The registry accepts a selector once. The compiler reports the clash as soon as it has met both directives,
+      while compiling the templates importing them; at runtime, the second decorator throws when its module is
+      evaluated, even if no template uses it.
+    </p>
+    <docs-code snippet="directives/duplicate-selector-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="The wrong prefix">
+    <p>
+      The compiler does not check that <code>{'@@'}</code> is used for custom directives and <code>*</code> for
+      structural ones. The mistake shows up when the element is rendered.
+    </p>
+    <docs-code snippet="directives/wrong-kind-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{"@Directive({ selector: 'name' })"}</code></td><td>Registers the class under the selector.</td></tr>
+      <tr><td><code>CustomDirective{'<T>'}</code></td><td>Base class of directives acting on an element of type <code>T</code>.</td></tr>
+      <tr><td><code>StructuralDirective</code></td><td>Base class of directives deciding whether an element is rendered.</td></tr>
+      <tr><td><code>{'@@name(input="…" (event)="…")'}</code></td><td>Applies a custom directive.</td></tr>
+      <tr><td><code>*name(input="…")</code></td><td>Applies a structural directive.</td></tr>
+    </tbody>
+  </table>
+</div>

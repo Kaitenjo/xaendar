@@ -1,0 +1,10 @@
+@for (task of tasks(); track task.id) {                   <!-- an array, and the key of each item -->
+  <li>{ $index() + 1 }. { task.title }</li>                <!-- context variables are signals: call them -->
+}
+
+@for (task of tasks(); track task.id; position = $index) { <!-- an alias: name = variable -->
+  <li>{ position() }</li>
+}
+
+@for (5) { <span class="dot"></span> }                     <!-- repeat a block -->
+@for (n of count(); track n) { <span>{ n }</span> }       <!-- 0, 1, … count() - 1 -->

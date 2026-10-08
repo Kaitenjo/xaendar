@@ -1,0 +1,6 @@
+<!-- Every listener written inside the parentheses is added to the element: an output of the directive... -->
+<div @@exResize((resized)="measure($event)")>…</div>
+
+<!-- ...or a native event, as if it were written on the tag -->
+<button @@exTooltip(text="Saves the file" (click)="save()")>Save</button>
+<button @@exTooltip(text="Saves the file") (click)="save()">Save</button>

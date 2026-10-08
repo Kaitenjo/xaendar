@@ -1,0 +1,1 @@
+Error: HelperElement does not seems to be decorated with @WebComponent

@@ -1,0 +1,13 @@
+@import { IsEvenDirective } from './is-even.directive.ts'
+@import { PositiveDirective } from './positive.directive.ts'
+
+<div class="controls">
+  <button (click)="change(-1)">−1</button>
+  <button (click)="change(1)">+1</button>
+  <button (click)="change(2)">+2</button>
+  <strong>n = { n() }</strong>
+</div>
+<p class="even" *exIsEven(value="{ n() }")>
+  Even. <input type="text" placeholder="Type, then press +2" />
+</p>
+<p class="both" *exIsEven(value="{ n() }") *exPositive(value="{ n() }")>Even and positive.</p>

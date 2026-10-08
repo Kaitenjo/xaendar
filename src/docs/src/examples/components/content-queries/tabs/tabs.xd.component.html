@@ -1,0 +1,12 @@
+@import { TabGroupComponent } from './tab-group.xd.component.ts'
+@import { TabPanelComponent } from './tab-panel.xd.component.ts'
+
+<button class="add" (click)="addPanel()">Add a panel</button>
+<ex-tab-group>
+  <ex-tab-panel label="Signals">Values that notify their readers.</ex-tab-panel>
+  <ex-tab-panel label="Components">Custom elements with a template.</ex-tab-panel>
+  <ex-tab-panel label="Templates">HTML with bindings and control flow.</ex-tab-panel>
+  @for (number of extra(); track number) {
+    <ex-tab-panel label="{ 'Extra ' + number }">A panel added at run time.</ex-tab-panel>
+  }
+</ex-tab-group>

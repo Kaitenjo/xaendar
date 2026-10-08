@@ -1,0 +1,116 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ForContextComponent } from '../../../examples/templates/for/for-context/for-context.xd.component.ts'
+@import { ForNumbersComponent } from '../../../examples/templates/for/for-numbers/for-numbers.xd.component.ts'
+@import { ForNestedComponent } from '../../../examples/templates/for/for-nested/for-nested.xd.component.ts'
+@import { ForEmptyComponent } from '../../../examples/templates/for/for-empty/for-empty.xd.component.ts'
+@import { KeyedStateComponent } from '../../../examples/templates/for/keyed-state/keyed-state.xd.component.ts'
+@import { ReplacedObjectComponent } from '../../../examples/templates/for/replaced-object/replaced-object.xd.component.ts'
+@import { DuplicateKeysComponent } from '../../../examples/templates/for/duplicate-keys/duplicate-keys.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Liste con {'@for'}</h1>
+<p class="lead">
+  <code>{'@for'}</code> renderizza il suo blocco una volta per ogni elemento di un array, oppure un certo numero di
+  volte. Ogni riga è identificata da una chiave, data da <code>track</code>: quando l’array cambia, le righe la cui
+  chiave è ancora presente vengono mantenute, spostate se serve, e solo le altre vengono create o rimosse.
+</p>
+
+<h2>Elementi, chiavi e contesto</h2>
+<docs-code snippet="templates/for-syntax.html" />
+<docs-example name="templates/for/for-context" heading="Il contesto di ogni riga">
+  <ex-for-context />
+</docs-example>
+<p>
+  Dentro il blocco, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e
+  <code>$odd</code> descrivono la posizione della riga. Sono signal: chiamali, e si aggiornano quando vengono aggiunte o
+  rimosse righe prima, come mostrano le righe alternate, senza renderizzare di nuovo la riga.
+  <code>position = $index</code> dà a uno di essi un altro nome, ed è il modo per raggiungere l’indice di un ciclo
+  esterno da uno interno.
+</p>
+<p>
+  La chiave è un’espressione dell’elemento: un identificatore, oppure l’elemento stesso con <code>track task</code>.
+  Senza <code>track</code> la chiave è l’elemento stesso.
+</p>
+
+<h2>Ripetere un certo numero di volte</h2>
+<p>
+  Un numero al posto di un array ripete il blocco: <code>{'@for (5)'}</code> senza variabile, oppure
+  <code>{'@for (n of count())'}</code> con <code>n</code> che va da <code>0</code> a <code>count() - 1</code>. Il
+  numero può venire da un signal, e le righe lo seguono.
+</p>
+<docs-example name="templates/for/for-numbers" heading="Cinque punti e una valutazione">
+  <ex-for-numbers />
+</docs-example>
+
+<h2>Cicli annidati</h2>
+<docs-example name="templates/for/for-nested" heading="Una tavola pitagorica">
+  <ex-for-nested />
+</docs-example>
+<p>
+  Il ciclo interno vede le variabili di quello esterno. Entrambi hanno il proprio <code>$index</code>, e quello interno
+  nasconde quello esterno: l’alias <code>r = $index</code> mantiene raggiungibile dalle celle l’indice della riga.
+</p>
+
+<h2>Liste vuote</h2>
+<p>
+  Non esiste un blocco <code>{'@empty'}</code>: avvolgi il ciclo in un <code>{'@if'}</code> sulla lunghezza
+  dell’array.
+</p>
+<docs-example name="templates/for/for-empty" heading="Una lista di messaggi che può essere vuota">
+  <ex-for-empty />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/for/keyed-state" heading="Righe che si spostano" kind="edge">
+    <ex-keyed-state />
+  </docs-example>
+  <p>
+    Scrivi delle note accanto ad Ada in entrambe le colonne, poi sposta l’ultima persona in cima. Con la chiave
+    sull’identificatore, la riga di Ada si sposta con il suo campo e le sue note. Con la chiave sull’indice non cambia
+    nulla: l’elemento di una riga viene fissato quando la riga viene creata, quindi le righe mantengono i vecchi nomi.
+    Usa come chiave un identificatore stabile, mai l’indice.
+  </p>
+  <docs-example name="templates/for/replaced-object" heading="Un elemento sostituito da una copia" kind="edge">
+    <ex-replaced-object />
+  </docs-example>
+  <p>
+    Per lo stesso motivo, sostituire un elemento con un nuovo oggetto con la stessa chiave lascia la riga com’era: la
+    prima colonna continua a mostrare <em>apple</em>. Usare come chiave l’elemento stesso crea una nuova riga per il
+    nuovo oggetto, perdendo lo stato di quella vecchia. Quando gli elementi cambiano sul posto, tieni i valori che
+    cambiano in signal dentro gli elementi, come nella terza colonna: il testo che li legge si aggiorna senza toccare la
+    riga. È elencato in <a href="#/it/reference/known-issues">Problemi noti</a>.
+  </p>
+  <docs-example name="templates/for/duplicate-keys" heading="Due elementi con la stessa chiave" kind="edge">
+    <ex-duplicate-keys />
+  </docs-example>
+  <p>
+    Le chiavi devono essere uniche. Con un duplicato le righe smettono di corrispondere all’array, e ogni cambiamento
+    peggiora le cose: premi il pulsante qualche volta. Nessuno lo segnala.
+  </p>
+  <docs-callout kind="edge" heading="Cosa si può iterare, e cosa no">
+    <p>
+      Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per
+      esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array.
+      L’espressione di <code>track</code> può leggere solo l’elemento e il contesto, non i membri del componente. Un
+      numero negativo non renderizza nulla.
+    </p>
+    <docs-code snippet="templates/for-errors.txt" />
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@for (item of items(); track item.id) { … }'}</code></td><td>Una riga per ogni elemento, identificata dalla sua chiave.</td></tr>
+      <tr><td><code>{'@for (item of items()) { … }'}</code></td><td>La chiave è l’elemento stesso.</td></tr>
+      <tr><td><code>{'@for (5) { … }'}</code>, <code>{'@for (n of count()) { … }'}</code></td><td>Ripete il blocco, con <code>n</code> da <code>0</code>.</td></tr>
+      <tr><td><code>$index()</code>, <code>$first()</code>, <code>$last()</code>, <code>$even()</code>, <code>$odd()</code></td><td>La posizione della riga, come signal.</td></tr>
+      <tr><td><code>{'…; track item.id; i = $index'}</code></td><td>Un alias per una variabile di contesto.</td></tr>
+    </tbody>
+  </table>
+</div>

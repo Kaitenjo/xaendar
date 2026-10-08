@@ -1,0 +1,11 @@
+<!-- Inside a tag: attributes, inputs, listeners and directives present while a condition holds -->
+<button
+  @if (locked()) {
+    disabled title="Locked"
+  } @else {
+    (click)="edit()"
+  }
+  @switch (size()) {
+    @case ('large') { data-size="large" }
+  }
+>Edit</button>

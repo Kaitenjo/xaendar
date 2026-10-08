@@ -1,0 +1,22 @@
+@import { TodoItemComponent } from './todo-item.xd.component.ts'     <!-- components used here -->
+
+<h2 class="{ headingClass() }">{ title() }</h2>                       <!-- bindings and interpolation -->
+<button (click)="add($event)">Add</button>                             <!-- event binding -->
+
+@if (todos().length) {                                                  <!-- control flow -->
+  <ul>
+    @for (todo of todos(); track todo.id) {
+      <ex-todo-item todo="{ todo }" (removed)="remove($event)" />      <!-- inputs and outputs -->
+    }
+  </ul>
+} @else {
+  <p>Nothing to do.</p>
+}
+
+<input @@exAutofocus type="text" />                                    <!-- a custom directive -->
+<p *exMedia(query="(min-width: 600px)")>Wide screen</p>                <!-- a structural directive -->
+<button
+  @if (busy()) {
+    disabled                                                            <!-- a conditional binding -->
+  }
+>Save</button>

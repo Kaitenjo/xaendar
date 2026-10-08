@@ -1,1 +1,94 @@
-<h1>TODO inheritance</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SharedBaseComponent } from '../../../examples/components/inheritance/shared-base/shared-base.xd.component.ts'
+@import { InheritedInputComponent } from '../../../examples/components/inheritance/inherited-input/inherited-input.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Inheritance</h1>
+<p class="lead">
+  Components are classes, so they can share logic through a base class: signals, computed signals and methods are
+  inherited as usual, and templates can read them. Two things are not inherited: the template, which belongs to each
+  decorated class, and the knowledge the template compiler has of inputs and events, which it reads only from the class
+  of the component.
+</p>
+
+<h2>A base class for shared logic</h2>
+<p>
+  The base class extends <code>CustomElement</code> and has no decorator: it is not a component, and it is never
+  registered. Each component extends it, with its own <code>{'@WebComponent'}</code> and its own template.
+</p>
+<docs-example name="components/inheritance/shared-base" heading="Two counters, one logic">
+  <ex-shared-base />
+</docs-example>
+<p>
+  <code>count</code>, <code>atZero</code> and the three methods live in <code>CounterBase</code>; the two templates
+  read them as if they were declared in the components. Signals declared in a base class are recognized in attribute
+  bindings too: the compiler follows the <code>extends</code> chain, also into other files.
+</p>
+<p>
+  The input is the exception. The base class needs <code>step</code>, but declares it <code>abstract</code>, typed as a
+  plain function, and each component declares it with <code>{'@Property'}</code>: that way the compiler sees it, and
+  checks <code>{'step="{ 5 }"'}</code> against its type. The plain function type matters: see the edge cases.
+</p>
+
+<h2>Extending a component</h2>
+<p>
+  A component can extend another one. The subclass needs its own decorator, which gives it a selector and a render
+  function; its <code>templateUrl</code> can point to the template of the parent.
+</p>
+<docs-code snippet="components/subclass-template.ts" />
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="components/inheritance/inherited-input" heading="An input declared in the base class" kind="edge">
+    <ex-inherited-input />
+  </docs-example>
+  <p>
+    Here the base class declares <code>step</code> with <code>{'@Property'}</code>, and the component inherits it.
+    The template of the parent binds <code>step="2"</code>, a string, and it compiles: the compiler does not know the
+    input, so it checks nothing. At run time the input works, and receives the string: each click concatenates
+    instead of adding. Declare inputs in the class of the component, abstract in the base class when it needs them.
+  </p>
+  <docs-callout kind="issue" heading="A signal member declared again in a subclass">
+    <p>
+      The compiler collects the signal members of the whole class chain without removing duplicates, so a member that
+      is a signal in the base class and is declared again in the component breaks the template. Unlike type errors, it
+      makes the build fail. In the base class, give the member a type that is not a signal type.
+    </p>
+    <docs-code snippet="components/duplicate-signal.ts" />
+    <docs-code snippet="components/duplicate-signal-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="Inherited events are unknown to templates">
+    <p>
+      An event declared with <code>{'@Event'}</code> in a base class is dispatched as usual, but a template cannot bind
+      it: the compiler looks for it in the class of the component only. Declare events in the class of the component.
+    </p>
+    <docs-code snippet="components/inherited-event-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="A subclass without a decorator has no template">
+    <p>
+      The render function belongs to the decorated class, and it is not looked up along the prototype chain. A
+      subclass registered by hand, without <code>{'@WebComponent'}</code>, throws when it is connected.
+    </p>
+    <docs-code snippet="components/manual-subclass.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="The base class needs no file suffix">
+    Only the classes decorated with <code>{'@WebComponent'}</code> must be in <code>.xd.component.ts</code> files. A base
+    class without decorator can live in any file, as <code>counter-base.ts</code> does.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Member of the base class</th><th>Inherited</th><th>Seen by templates</th></tr></thead>
+    <tbody>
+      <tr><td>Signals, computed signals, plain members</td><td>yes</td><td>yes, reactive in attributes too</td></tr>
+      <tr><td>Methods</td><td>yes</td><td>yes</td></tr>
+      <tr><td><code>{'@Property'}</code></td><td>yes, at run time</td><td>no: bindings are not checked</td></tr>
+      <tr><td><code>{'@Event'}</code></td><td>yes, at run time</td><td>no: bindings do not compile</td></tr>
+      <tr><td>Template and stylesheet</td><td>no: each decorated class has its own</td><td>—</td></tr>
+    </tbody>
+  </table>
+</div>

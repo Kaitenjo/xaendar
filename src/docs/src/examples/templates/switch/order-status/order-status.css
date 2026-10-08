@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.option {
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.option--active {
+  outline: 2px solid #6750a4;
+}
+
+p {
+  margin: 0;
+}

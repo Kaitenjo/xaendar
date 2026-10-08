@@ -28,7 +28,7 @@ export class TodoItemComponent extends CustomElement {
    * Emitted with the identifier of the todo when it has to be removed.
    */
   @Event()
-  public accessor remove!: Output<number>;
+  public accessor removed!: Output<number>;
 
   /**
    * Asks the parent to toggle the todo.
@@ -41,6 +41,6 @@ export class TodoItemComponent extends CustomElement {
    * Asks the parent to remove the todo.
    */
   public delete(): void {
-    this.remove.emit(this.todo().id);
+    this.removed.emit(this.todo().id);
   }
 }

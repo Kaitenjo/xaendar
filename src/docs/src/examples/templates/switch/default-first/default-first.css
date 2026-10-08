@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+button {
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+}
+
+h5 {
+  margin: 0 0 0.3rem;
+}
+
+p {
+  margin: 0;
+  font-weight: 600;
+}

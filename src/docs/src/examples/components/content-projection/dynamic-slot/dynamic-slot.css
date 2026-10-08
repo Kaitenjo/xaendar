@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+button {
+  margin-bottom: 0.6rem;
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.note {
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: #f5a524;
+  color: #000;
+}

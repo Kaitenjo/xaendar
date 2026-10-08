@@ -1,0 +1,19 @@
+<div class="row">
+  <button (click)="greet('Ada', 2)">greet('Ada', 2)</button>
+  <button (click)="inspect('button', $event)">inspect('button', $event)</button>
+</div>
+<div class="row">
+  @for (color of colors; track color.id) {
+    <button (click)="pick(color.id)">pick({ color.name })</button>
+  }
+</div>
+<div class="row">
+  <button (click)="bump(apples)">bump(apples): { apples() }</button>
+  <button (click)="bump(pears)">bump(pears): { pears() }</button>
+  <input type="text" placeholder="onInput($event)" aria-label="Type here" (input)="onInput($event)" />
+</div>
+<ol class="log">
+  @for (line of calls(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

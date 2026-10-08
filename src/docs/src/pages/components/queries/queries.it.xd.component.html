@@ -1,1 +1,118 @@
-<h1>TODO queries</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ViewQueryComponent } from '../../../examples/components/queries/view-query/view-query.xd.component.ts'
+@import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
+@import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
+@import { QueryFunctionsComponent } from '../../../examples/components/queries/query-functions/query-functions.xd.component.ts'
+
+<span class="eyebrow">Componenti</span>
+<h1>Query sulla vista</h1>
+<p class="lead">
+  Una query sulla vista trova elementi nel template del componente e mantiene il risultato in un signal. È il modo per
+  raggiungere il DOM dalla classe: per dare il focus a un campo, misurare un elemento o chiamare un metodo di un
+  componente figlio. Il risultato segue il template: quando un <code>{'@if'}</code> o un <code>{'@for'}</code>
+  aggiungono o rimuovono elementi, la query si aggiorna.
+</p>
+
+<h2>Interrogare il template</h2>
+<docs-code snippet="components/query-decorators.ts" />
+<p>
+  <code>{'@Query'}</code> contiene il primo elemento che corrisponde a un selettore CSS, oppure <code>null</code>.
+  <code>{'@Query.all'}</code> li contiene tutti, in ordine di documento. Al posto di un selettore puoi passare la classe
+  di un componente: la query usa il suo selettore, e il risultato è tipizzato come un’istanza della classe, con i suoi
+  membri pubblici.
+</p>
+<docs-example name="components/queries/view-query" heading="Una query per tag, una per classe e una per tutte le righe">
+  <ex-view-query />
+</docs-example>
+<p>
+  <em>Add</em> legge il valore del campo e lo svuota tramite l’elemento trovato da <code>field</code>, e chiama
+  <code>increment()</code> sul badge trovato tramite la sua classe. La lista è renderizzata da un
+  <code>{'@for'}</code>, e <code>rows</code> la segue: <code>found</code>, un computed che legge la query, si aggiorna
+  da solo.
+</p>
+<p>
+  Una query cerca nello shadow root del proprio componente, e solo lì: trova gli elementi che il template proietta in un
+  componente figlio, perché sono scritti in questo template, ma non gli elementi dentro lo shadow root del figlio.
+</p>
+
+<h2>Quando il risultato è disponibile</h2>
+<p>
+  La query viene riempita subito dopo il render, prima di <code>afterRender</code>, e viene aggiornata da un
+  <code>MutationObserver</code> ogni volta che gli elementi del template vengono aggiunti o rimossi. Quindi è vuota in
+  <code>onInit</code>, ed è un po’ in ritardo rispetto ai cambiamenti del template.
+</p>
+<docs-example name="components/queries/query-timing" heading="La query prima e dopo il render, e dopo un cambiamento">
+  <ex-query-timing />
+</docs-example>
+<p>
+  Il template viene aggiornato in un microtask dopo il cambiamento del signal, e la query un microtask dopo ancora.
+  Leggi le query in <code>afterRender</code>, negli handler degli eventi, oppure in modo reattivo in un computed o in un
+  effect: un effect creato in <code>onInit</code> viene rieseguito quando la query viene riempita.
+</p>
+
+<h2>Query senza decoratori</h2>
+<p>
+  <code>query</code> e <code>queryAll</code> creano gli stessi signal dei decoratori, a partire da un campo. Sono
+  esportate da <code>{'@xaendar/core'}</code>.
+</p>
+<docs-code snippet="components/query-functions.ts" />
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="components/queries/attribute-changes" heading="Una query su una classe che cambia" kind="edge">
+    <ex-attribute-changes />
+  </docs-example>
+  <p>
+    L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la
+    classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa:
+    aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.
+  </p>
+  <docs-example name="components/queries/query-functions" heading="queryAll in un binding di attributo" kind="edge">
+    <ex-query-functions />
+  </docs-example>
+  <p>
+    Il compilatore dei template riconosce un membro signal dalla funzione che lo inizializza, che deve venire da
+    <code>{'@xaendar/core/signals'}</code>. <code>queryAll</code> viene da <code>{'@xaendar/core'}</code>, quindi in un
+    attributo <code>rows</code> viene letto una volta sola, al render, quando la query è ancora vuota: il primo
+    indicatore non si muove mai, e un’annotazione di tipo non aiuta, perché con una chiamata come inizializzatore conta
+    solo la funzione. Leggi la query tramite un <code>computed</code>, oppure usa il decoratore, il cui accessor viene
+    riconosciuto dal tipo. Le interpolazioni nel testo sono sempre reattive. Vedi
+    <a href="#/it/signals/shared-state">Stato condiviso</a>.
+  </p>
+  <docs-callout kind="issue" heading="Una query creata dopo il collegamento">
+    <p>
+      Una query inizia a osservare quando l’elemento viene collegato, quindi una creata più tardi, per esempio in
+      <code>afterRender</code>, resta <code>null</code> finché l’elemento non viene ricollegato, e lancia un errore al
+      successivo scollegamento. Crea le query nei campi, oppure con i decoratori.
+    </p>
+    <docs-code snippet="components/late-query.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Ricollegamento: onInit vede i vecchi elementi">
+    Quando l’elemento viene spostato, il template viene renderizzato di nuovo da zero, ma la query viene aggiornata solo
+    dopo il render: in <code>onInit</code> contiene ancora gli elementi del render precedente, ormai staccati dal
+    documento.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Una classe che non è un componente">
+    <p>
+      Una classe passata a una query deve essere decorata con <code>{'@WebComponent'}</code>, che le dà il selettore.
+      Altrimenti la query lancia un errore quando il componente viene creato.
+    </p>
+    <docs-code snippet="components/query-undecorated-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Query(target)'}</code></td><td>Il primo elemento del template che corrisponde a <code>target</code>, oppure <code>null</code>.</td></tr>
+      <tr><td><code>{'@Query.all(target)'}</code></td><td>Tutti gli elementi corrispondenti, in ordine di documento. Notifica solo quando la lista cambia.</td></tr>
+      <tr><td><code>query(this, target)</code>, <code>queryAll(this, target)</code></td><td>Le stesse query, create in un campo.</td></tr>
+      <tr><td><code>target</code></td><td>Un selettore CSS, oppure la classe di un componente.</td></tr>
+      <tr><td><code>{'QuerySignal<T>'}</code></td><td>Un signal in sola lettura: <code>query()</code> oppure <code>query.get()</code>.</td></tr>
+    </tbody>
+  </table>
+</div>

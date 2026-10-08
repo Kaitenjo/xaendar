@@ -1,0 +1,31 @@
+<div class="controls">
+  <label><input type="checkbox" (change)="toggleLocked()" /> locked</label>
+  <label><input type="checkbox" checked (change)="toggleEditable()" /> editable</label>
+  <label>priority
+    <select (change)="setPriority($event)">
+      <option value="low">low</option>
+      <option value="high">high</option>
+      <option value="urgent">urgent</option>
+    </select>
+  </label>
+</div>
+<button
+  class="task"
+  @if (locked()) {
+    disabled title="This task is locked"
+  } @else {
+    title="Click to edit"
+  }
+  @if (editable()) {
+    (click)="edit()"
+  }
+  @switch (priority()) {
+    @case ('high') {
+      data-priority="high"
+    }
+    @case ('urgent') {
+      data-priority="urgent" aria-label="Urgent: write the release notes"
+    }
+  }
+>Write the release notes</button>
+<p>Edits: { edits() }</p>

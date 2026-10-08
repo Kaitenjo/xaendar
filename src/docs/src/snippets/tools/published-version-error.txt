@@ -1,0 +1,2 @@
+[MISSING_EXPORT] "_defineRender" is not exported by "node_modules/@xaendar/core/dist/xaendar-core.js".
+[MISSING_EXPORT] "CustomElement" is not exported by "node_modules/@xaendar/core/dist/xaendar-core.js".

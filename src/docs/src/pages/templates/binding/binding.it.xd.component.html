@@ -1,0 +1,104 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { AttributeBindingComponent } from '../../../examples/templates/binding/attribute-binding/attribute-binding.xd.component.ts'
+@import { MethodInAttributeComponent } from '../../../examples/templates/binding/method-in-attribute/method-in-attribute.xd.component.ts'
+@import { BooleanAttributesComponent } from '../../../examples/templates/binding/boolean-attributes/boolean-attributes.xd.component.ts'
+@import { ValueAttributeComponent } from '../../../examples/templates/binding/value-attribute/value-attribute.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Binding di attributi e proprietà</h1>
+<p class="lead">
+  Un attributo il cui valore è un’espressione tra graffe è legato: il compilatore lo imposta quando l’elemento viene
+  creato, e di nuovo ogni volta che il valore cambia. Su un elemento nativo un binding imposta un attributo; sul tag di
+  un componente imposta l’input con lo stesso nome.
+</p>
+
+<h2>Legare gli attributi</h2>
+<docs-code snippet="templates/binding-forms.html" />
+<docs-example name="templates/binding/attribute-binding" heading="Quattro attributi legati alla stessa pagina">
+  <ex-attribute-binding />
+</docs-example>
+<p>
+  L’intero valore deve essere un’unica espressione: un template literal o una concatenazione quando serve del testo
+  intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e
+  <code>style</code> si legano come qualsiasi altro attributo, come mostrato in
+  <a href="#/it/components/styling">Stili</a>.
+</p>
+
+<h2>Quali espressioni sono reattive</h2>
+<p>
+  Gli attributi seguono una regola più rigida del testo. Il compilatore decide a build time se un attributo può
+  cambiare, cercando i <strong>membri signal</strong> che l’espressione nomina: membri inizializzati con una funzione di
+  <code>{'@xaendar/core/signals'}</code>, input e query. Un attributo che non ne nomina nessuno viene impostato una volta
+  sola.
+</p>
+<docs-example name="templates/binding/method-in-attribute" heading="Un metodo, un computed e un signal">
+  <ex-method-in-attribute />
+</docs-example>
+<p>
+  <code>percentOf()</code> legge il livello, ma è un metodo: il compilatore non può vedere cosa legge, quindi il primo
+  indicatore mantiene il valore del primo render. Lo stesso metodo nel testo sotto è reattivo, perché le interpolazioni
+  nel testo lo sono sempre. Sposta la logica dei binding degli attributi nei computed. La regola per i membri che
+  contengono un signal creato altrove è in <a href="#/it/signals/shared-state">Stato condiviso</a>.
+</p>
+
+<h2>Legare gli input dei componenti</h2>
+<p>
+  Sul tag di un componente la stessa sintassi imposta un input, con valori di qualsiasi tipo, controllati rispetto al
+  tipo dell’input. Un valore statico è sempre una stringa. Vedi <a href="#/it/components/inputs">Input</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/binding/boolean-attributes" heading="disabled legato a false" kind="edge">
+    <ex-boolean-attributes />
+  </docs-example>
+  <p>
+    Un attributo booleano conta per la sua presenza, non per il suo valore: <code>disabled="false"</code> disabilita
+    comunque il pulsante, quindi il primo è sempre disabilitato. Usa un
+    <a href="#/it/templates/conditional-bindings">binding condizionale</a>, che aggiunge e rimuove l’attributo.
+  </p>
+  <docs-example name="templates/binding/value-attribute" heading="L’attributo value e la proprietà value" kind="edge">
+    <ex-value-attribute />
+  </docs-example>
+  <p>
+    Scrivi in entrambi i campi, poi resetta. Un binding imposta l’attributo <code>value</code>, che è solo il valore
+    iniziale del campo: dopo che l’utente ha scritto, il campo mostra la sua proprietà <code>value</code>, e il primo
+    campo non si svuota. Il secondo campo imposta la proprietà da un effect. Il pattern
+    <a href="#/it/patterns/forms">Form</a> lo racchiude in una direttiva.
+  </p>
+  <docs-callout kind="edge" heading="Testo intorno a un’espressione">
+    <p>
+      Le graffe contano solo quando contengono l’intero valore: un valore che mescola testo e graffe è statico, e le
+      graffe finiscono nell’attributo.
+    </p>
+    <docs-code snippet="templates/mixed-attribute.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="null e undefined">
+    Un attributo legato a <code>null</code> o <code>undefined</code> non viene rimosso: diventa il testo
+    <code>"null"</code> o <code>"undefined"</code>. Per rimuovere un attributo, legalo in modo condizionale.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un attributo legato due volte">
+    <p>Un attributo può essere statico o legato, non entrambi, anche quando uno dei due è condizionale.</p>
+    <docs-code snippet="templates/bound-twice-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un attributo booleano senza valore">
+    Un <code>disabled</code> statico scritto senza valore viene impostato a <code>"true"</code>: l’elemento è
+    disabilitato, come previsto, ma l’attributo non vale <code>""</code> come in HTML.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Risultato</th></tr></thead>
+    <tbody>
+      <tr><td><code>name="text"</code></td><td>Un attributo statico.</td></tr>
+      <tr><td><code>{'name="{ expression }"'}</code></td><td>Un attributo impostato con <code>String(value)</code>, di nuovo a ogni cambiamento di un membro signal che nomina.</td></tr>
+      <tr><td><code>{'name="{`…${expression}…`}"'}</code></td><td>Lo stesso, con del testo intorno al valore.</td></tr>
+      <tr><td><code>{'@if (condition) { name }'}</code></td><td>Un attributo presente solo finché vale la condizione.</td></tr>
+      <tr><td><code>{'input="{ expression }"'}</code> su un componente</td><td>Imposta l’input, con il valore così com’è.</td></tr>
+    </tbody>
+  </table>
+</div>

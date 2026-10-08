@@ -123,6 +123,12 @@
     </p>
     <docs-code snippet="components/private-member-error.txt" />
   </docs-callout>
+  <docs-callout kind="edge" heading="Nomi di membri già usati da HTMLElement">
+    La classe eredita ogni membro di <code>HTMLElement</code>, quindi un signal chiamato <code>title</code>, un input
+    chiamato <code>lang</code> o un evento chiamato <code>remove</code> vanno in conflitto, e TypeScript rifiuta la
+    classe. La build controlla i tipi dei template, non delle classi, quindi l’errore compare solo nell’editor o con
+    <code>tsc</code>. Vedi i casi limite di <a href="#/it/components/outputs">Output</a> per le soluzioni.
+  </docs-callout>
   <docs-callout kind="unsupported" heading="Shadow root chiusi">
     <p>
       Lo shadow root è sempre aperto, e non si può sostituire: la classe base lo ha già agganciato.

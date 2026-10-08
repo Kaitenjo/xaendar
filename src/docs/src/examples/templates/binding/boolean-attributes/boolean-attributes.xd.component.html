@@ -1,0 +1,9 @@
+<label><input type="checkbox" (change)="toggle()" /> locked: { locked() }</label>
+<p><button disabled="{ locked() }">disabled="{'{ locked() }'}"</button></p>
+<p>
+  <button
+    @if (locked()) {
+      disabled
+    }
+  >{'@if (locked()) { disabled }'}</button>
+</p>

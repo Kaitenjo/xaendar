@@ -1,0 +1,114 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TooltipDemoComponent } from '../../../examples/directives/custom/tooltip/tooltip-demo.xd.component.ts'
+@import { DropdownMenuComponent } from '../../../examples/directives/custom/click-outside/dropdown-menu.xd.component.ts'
+@import { ResizableBoxComponent } from '../../../examples/directives/custom/resize/resizable-box.xd.component.ts'
+@import { BubblesComponent } from '../../../examples/directives/custom/svg-grow/bubbles.xd.component.ts'
+@import { DirectiveTimingComponent } from '../../../examples/directives/custom/directive-timing/directive-timing.xd.component.ts'
+
+<span class="eyebrow">Directives</span>
+<h1>Custom directives</h1>
+<p class="lead">
+  A custom directive extends <code>CustomDirective</code> and works on the element it is applied to: it listens to it,
+  changes it, measures it, or puts something next to it. The same behavior can then be added to any element of any
+  template with <code>{'@@name'}</code>, without a wrapper component.
+</p>
+
+<h2>The element, the inputs and the hooks</h2>
+<docs-example name="directives/custom/tooltip" heading="A tooltip">
+  <ex-tooltip-demo />
+</docs-example>
+<p>
+  The element is in <code>this.element</code>, typed by the argument of <code>CustomDirective</code>. The inputs are
+  declared with <code>{'@Property'}</code> and read as signals, so <code>this.effect</code> keeps the text of the
+  tooltip in sync: hover <strong>Save</strong>, click it, and the tooltip changes while it is shown.
+</p>
+<p>
+  <code>onInit</code> runs when the directive starts, <code>onDestroy</code> when the element leaves the template. The
+  effects created with <code>this.effect</code> are disposed on their own, right after <code>onDestroy</code>; the rest
+  has to be undone by hand. This directive appends its tooltip to the body, outside the element, so it removes it in
+  <code>onDestroy</code>: otherwise a tooltip shown while its element is removed would stay on the page.
+</p>
+
+<h2>Outputs</h2>
+<p>
+  A directive declares outputs with <code>{'@Event'}</code>, like a component. It has no element of its own: its events
+  are dispatched on the element it is applied to, and the template listens to them inside the parentheses of the
+  directive.
+</p>
+<docs-example name="directives/custom/click-outside" heading="Closing a menu with a click outside">
+  <ex-dropdown-menu />
+</docs-example>
+<p>
+  The directive listens to the whole document, and emits <code>outside</code> when the pointer is pressed out of its
+  element. The check uses <code>composedPath()</code> instead of <code>target</code>: the page is made of shadow roots,
+  and the target of an event seen from the document is the outermost host, never the element inside it.
+</p>
+<docs-example name="directives/custom/resize" heading="Measuring an element">
+  <ex-resizable-box />
+</docs-example>
+<p>
+  Here the output carries a detail, and <code>$event</code> is the <code>CustomEvent</code> with the size. The type of
+  the output is written inline, for the reason explained in <a href="#/en/components/outputs">Outputs</a>.
+</p>
+<docs-code snippet="directives/native-event-in-directive.html" />
+<p>
+  The parentheses also accept native events: they are added to the element as if they were written on the tag.
+</p>
+
+<h2>SVG elements</h2>
+<p>
+  The argument of <code>CustomDirective</code> can be any element type. A directive meant for SVG circles gets the SVG
+  API of the circle, such as its animated radius, without casts.
+</p>
+<docs-example name="directives/custom/svg-grow" heading="Circles growing under the pointer">
+  <ex-bubbles />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="directives/custom/directive-timing" heading="What a directive sees in onInit" kind="edge">
+    <ex-directive-timing />
+  </docs-example>
+  <p>
+    A directive starts once the element has its attributes and is in the document, but before its children are
+    rendered: <code>onInit</code> sees the <code>id</code> and the bound label, yet no list item, and the items appear
+    a microtask later. Code that needs the children can wait for a microtask, or watch them with a
+    <code>MutationObserver</code>.
+  </p>
+  <p>
+    Unlike a component, a directive receives its inputs <strong>before</strong> <code>onInit</code>: the label is
+    already <code>first</code>, not the default. A child component, instead, still has its defaults in its own
+    <code>onInit</code>, as shown in <a href="#/en/components/inputs">Inputs</a>.
+  </p>
+  <docs-callout kind="edge" heading="Nothing is ready in the constructor">
+    <p>
+      The element and the context of the directive are set after the constructor. There, <code>this.element</code> is
+      <code>undefined</code> and <code>this.effect</code> throws: the setup belongs in <code>onInit</code>.
+    </p>
+    <docs-code snippet="directives/constructor-access.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Once per element, and only known inputs">
+    <p>
+      A directive can be applied once to the same element. Its inputs are checked like those of a component: unknown
+      names and wrong types are compile errors.
+    </p>
+    <docs-code snippet="directives/custom-errors.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Member</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>element</code></td><td>The element the directive is applied to, available from <code>onInit</code>.</td></tr>
+      <tr><td><code>onInit()</code></td><td>Runs once the inputs are bound and the element is in the document, before its children are rendered.</td></tr>
+      <tr><td><code>onDestroy()</code></td><td>Runs when the element leaves the template, before the effects are disposed.</td></tr>
+      <tr><td><code>effect(fn, options?)</code></td><td>An effect disposed with the directive; returns a function disposing it earlier.</td></tr>
+      <tr><td><code>dispatchEvent(event)</code></td><td>Dispatches an event on the element; used by the outputs.</td></tr>
+      <tr><td><code>{'@Property'}</code>, <code>{'@Event'}</code></td><td>Inputs and outputs, as in components.</td></tr>
+    </tbody>
+  </table>
+</div>

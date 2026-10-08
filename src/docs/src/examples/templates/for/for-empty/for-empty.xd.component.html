@@ -1,0 +1,13 @@
+<div class="controls">
+  <button (click)="dismiss()">Dismiss one</button>
+  <button (click)="receive()">Receive one</button>
+</div>
+@if (messages().length) {
+  <ul>
+    @for (message of messages(); track message) {
+      <li>{ message }</li>
+    }
+  </ul>
+} @else {
+  <p class="empty">No messages.</p>
+}

@@ -1,0 +1,9 @@
+Highlighted in .xd.component.html files:
+  @import { A } from './a.ts'          keyword, names and path
+  (click)="save()"                     event name and handler
+  title="{ expr }"                     attribute bound to an expression
+  @if @else @for @switch @case @default
+
+Not highlighted:
+  { expr } in text                     the grammar expects {{ expr }}, which is not Xaendar syntax
+  @@directive(…) and *directive(…)

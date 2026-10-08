@@ -1,0 +1,14 @@
+// tint.directive.ts
+@Directive({ selector: 'exTint' })
+export class TintDirective extends CustomDirective {}
+
+// other-tint.directive.ts
+@Directive({ selector: 'exTint' })
+export class OtherTintDirective extends CustomDirective {}
+
+// While compiling a template importing one of them, once the other one is known
+Xaendar: Failed to compile template - <path>
+Selector "exTint" of directive "TintDirective" - <path> is already used by directive "OtherTintDirective" - <path>. Directive selectors must be unique.
+
+// At runtime, when the second module is evaluated
+Error: Selector "exTint" is already used by directive TintDirective

@@ -1,0 +1,13 @@
+<svg viewBox="0 0 300 130">                               <!-- camelCase attributes are kept -->
+  @for (bar of bars(); track bar) {
+    <rect
+      x="{ bar.x }" y="{ bar.y }" width="40" height="{ bar.height }"
+      (mouseenter)="highlight(bar.day)"                 
+    />
+    <text x="{ bar.x + 20 }" y="125">{ bar.day }</text>
+  }
+</svg>
+
+<math display="block">
+  <mi>x</mi><mo>=</mo><mn>{ value() }</mn>                <!-- MathML elements, bound like any other -->
+</math>

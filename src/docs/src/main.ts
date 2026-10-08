@@ -4,6 +4,6 @@
   The root element is only added once every definition is in place. The *.lazy.xd.component.ts files are
   left out on purpose: the examples about lazy loading import them on demand.
 */
-import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts', '!./**/*.lazy.xd.component.ts', '!./snippets/**', '!./_lab/**'], { eager: true });
+import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts', '!./**/*.lazy.xd.component.ts', '!./snippets/**'], { eager: true });
 
 document.body.append(document.createElement('docs-app'));

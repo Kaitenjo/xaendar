@@ -1,0 +1,28 @@
+<div class="toolbar">
+  <input type="search" placeholder="{ t().reference.filter }" aria-label="{ t().reference.filter }" (input)="search($event)" />
+  <select aria-label="Area" (change)="pickArea($event)">
+    <option value="">{ t().reference.all }</option>
+    @for (name of areas) {
+      <option value="{ name }">{ name }</option>
+    }
+  </select>
+  <span class="count">{ entries().length + ' ' + t().reference.results }</span>
+</div>
+@if (entries().length > 0) {
+  <ul class="entries">
+    @for (entry of entries(); track entry) {
+      <li class="entry">
+        <div class="entry-head">
+          <h3 class="entry-title">{ entry.titleText }</h3>
+          <span class="{`badge ${entry.kind === 'bug' ? 'issue' : 'muted'}`}">{ t().reference.issueKinds[entry.kind] }</span>
+          <span class="module">{ entry.area }</span>
+        </div>
+        <p>{ entry.detailsText }</p>
+        <p><span class="label">{ t().reference.workaround }:</span>{ entry.workaroundText }</p>
+        <p><a href="{ entry.href }">{ t().reference.readMore } →</a></p>
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="empty">{ t().reference.noResults }</p>
+}

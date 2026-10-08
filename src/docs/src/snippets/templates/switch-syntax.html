@@ -1,0 +1,12 @@
+@switch (status()) {
+  @case ('pending')
+  @case ('paid') {                     <!-- stacked cases share one block -->
+    <p>Preparing</p>
+  }
+  @case ('shipped') {
+    <p>On its way</p>
+  }
+  @default {                           <!-- when no case matches: keep it last -->
+    <p>Unknown</p>
+  }
+}

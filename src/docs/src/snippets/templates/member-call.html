@@ -1,0 +1,6 @@
+<!-- Compiles, then throws at the first click:
+     TypeError: Cannot read properties of undefined (reading 'bind') -->
+<button (click)="cart.clear()">Empty the cart</button>
+
+<!-- ✓ call a method of the component, which calls the other one -->
+<button (click)="clearCart()">Empty the cart</button>

@@ -1,0 +1,7 @@
+Allowed      members and methods of the class, literals, arithmetic and comparisons, && || ?? ?: !,
+             typeof, ?. and optional calls, indexes, array and object literals, spread, template literals,
+             globals such as Math, JSON and String, the variables of @for, $event in listeners
+
+Forbidden    assignments, new, arrow and function expressions, this, as, regular expressions,
+             the comma operator, more than one expression, private and protected members,
+             module constants (expose them as members)

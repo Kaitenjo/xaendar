@@ -1,0 +1,10 @@
+@import { InnerHtmlDirective } from './inner-html.directive.ts'
+
+<div class="panes">
+  <textarea rows="9" (input)="edit($event)">{ source() }</textarea>
+  <div class="preview" @@exInnerHtml(html="{ html() }")></div>
+</div>
+<button (click)="toggleSource()">{ showSource() ? 'Hide' : 'Show' } the generated HTML</button>
+@if (showSource()) {
+  <pre>{ html() }</pre>
+}

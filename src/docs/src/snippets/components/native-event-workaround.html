@@ -1,0 +1,6 @@
+<!-- ✗ <ex-quantity-picker (click)="track($event)" /> does not compile -->
+
+<!-- ✓ click is composed: it leaves the shadow root of the picker and bubbles to the div -->
+<div (click)="track($event)">
+  <ex-quantity-picker value="{ quantity() }" (valueChange)="setQuantity($event)" />
+</div>

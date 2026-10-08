@@ -1,0 +1,17 @@
+<!-- Inside a tag, @if and @switch choose which attributes, listeners and directives the element has -->
+<button
+  class="task"
+  @if (locked()) {
+    disabled title="This task is locked"
+  } @else {
+    title="Click to edit"
+  }
+  @if (editable()) {
+    (click)="edit()"
+  }
+  @switch (priority()) {
+    @case ('urgent') {
+      data-priority="urgent"
+    }
+  }
+>Write the release notes</button>

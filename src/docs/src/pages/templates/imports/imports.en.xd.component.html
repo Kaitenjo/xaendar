@@ -1,0 +1,68 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TeamCardComponent } from '../../../examples/templates/imports/team-card/team-card.xd.component.ts'
+
+<span class="eyebrow">Templates</span>
+<h1>Importing components</h1>
+<p class="lead">
+  <code>{'@import'}</code> tells the compiler which components and directives a template uses. It works only at build
+  time: the compiler reads the classes it names to know their selectors, inputs and events, and checks every use
+  against them. It does not load anything in the browser.
+</p>
+
+<h2>Forms</h2>
+<docs-code snippet="templates/import-forms.html" />
+<docs-example name="templates/imports/team-card" heading="Two components from one file">
+  <ex-team-card />
+</docs-example>
+<p>
+  The syntax is the one of a named import in TypeScript: one or more class names in braces, and a path in single or
+  double quotes. A file can declare several components, and one <code>{'@import'}</code> brings all those the template
+  needs. Imports can appear anywhere in the template; keeping them at the top makes them easy to find.
+</p>
+<p>
+  The path is relative to the template, and it is resolved as a file, with or without the <code>.ts</code> extension,
+  or as a folder with an <code>index.ts</code>. Packages and the path aliases of <code>tsconfig.json</code> are not
+  resolved yet.
+</p>
+
+<h2>Importing is not registering</h2>
+<p>
+  The browser knows a component only once the file declaring its class has run, which defines the custom element.
+  Every component must therefore also be imported in TypeScript somewhere, usually all at once in
+  <code>main.ts</code>. See <a href="#/en/components/registration">Selectors and registration</a>, which also shows the
+  error for a component used without <code>{'@import'}</code>.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="Errors">
+    <p>
+      With a path that does not resolve, a default import or a name the file does not declare, the template does not
+      compile. Imports nobody uses are not reported.
+    </p>
+    <docs-code snippet="templates/import-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Packages and path aliases">
+    A component published in a package, or reached through a path alias, cannot be imported in a template yet: the
+    resolver only follows relative paths, and the class must be declared in the file it points to.
+  </docs-callout>
+  <docs-callout kind="issue" heading="Types are not imported">
+    <code>{'@import'}</code> only accepts classes of components and directives. The types used by their inputs are not
+    imported with them, so the inputs must use inline types. See the edge cases of
+    <a href="#/en/components/inputs">Inputs</a>.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Syntax</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{"@import { Card } from './card.xd.component.ts'"}</code></td><td>One component or directive.</td></tr>
+      <tr><td><code>{"@import { A, B } from './people.xd.component.ts'"}</code></td><td>Several classes of the same file.</td></tr>
+      <tr><td>Path</td><td>Relative to the template; extension optional; a folder means its <code>index.ts</code>.</td></tr>
+    </tbody>
+  </table>
+</div>

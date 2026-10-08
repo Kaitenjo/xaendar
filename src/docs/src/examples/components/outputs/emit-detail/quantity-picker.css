@@ -1,0 +1,22 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+button {
+  min-width: 2.25rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+output {
+  min-width: 2rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.clear {
+  margin-left: 0.5rem;
+}

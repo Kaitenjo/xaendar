@@ -9,7 +9,9 @@ export default defineConfig({
   publicDir: '../public',
   build: {
     emptyOutDir: true,
-    outDir: '../dist'
+    outDir: '../dist',
+    // Every page and example is registered eagerly by main.ts, before the first render, so the site is a single chunk
+    chunkSizeWarningLimit: 4096
   },
   resolve: {
     alias: [

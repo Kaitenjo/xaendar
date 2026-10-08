@@ -1,0 +1,110 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Developer tools</span>
+<h1>CLI</h1>
+<p class="lead">
+  <code>xd</code>, from <code>{'@xaendar/cli'}</code>, creates projects and components, and runs Vite with the plugins
+  Xaendar needs. There is nothing more to it: <code>vite.config.ts</code> stays a plain Vite configuration.
+</p>
+<docs-code snippet="tools/cli-help.txt" />
+
+<h2>xd new</h2>
+<docs-code snippet="tools/new-command.sh" />
+<p>
+  The name of the project is used for the folder, for <code>package.json</code>, and for the root component,
+  <code>{'<name>-root'}</code>. The generated files are described in
+  <a href="#/en/installation">Installation</a>. The command stops if the folder exists and is not empty.
+</p>
+<p>
+  <code>xaendar.json</code> records the settings of the project. Today it holds only the extension chosen with
+  <code>--style</code>.
+</p>
+<docs-code snippet="tools/xaendar-json.json" />
+
+<h2>xd start and xd build</h2>
+<p>
+  <code>xd start</code> (or <code>xd s</code>) runs the Vite dev server, <code>xd build</code> (or <code>xd b</code>) a
+  production build. Both read <code>vite.config.ts</code> from the current folder and add two plugins to it: Babel, to
+  compile the decorators, and the Xaendar plugin, to compile templates and styles. The details are in
+  <a href="#/en/tools/build">Build and Vite plugin</a>. Everything else, such as the port, the root folder or the
+  output folder, comes from the Vite configuration.
+</p>
+
+<h2>xd component</h2>
+<docs-code snippet="tools/component-command.sh" />
+<p>
+  The command creates a folder named after the component, with the class, the template, the stylesheet and a spec. The
+  name is used as the selector, so it must be a valid custom element name; the class is named after it in PascalCase.
+</p>
+<docs-code snippet="tools/generated-component.ts" />
+<p>
+  Remember to import the new component: in <code>main.ts</code>, or through a glob, so that it is defined, and in the
+  templates using it, with <code>{'@import'}</code>.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="issue" heading="xd generate does not exist">
+    <p>
+      The component command is meant to live in a <code>generate</code> group, with the alias <code>g</code>, but it
+      ends up registered at the top level. Use <code>xd component</code> or <code>xd c</code>.
+    </p>
+    <docs-code snippet="tools/generate-command-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Invalid names">
+    <p>Component names are checked before anything is written.</p>
+    <docs-code snippet="tools/component-name-errors.txt" />
+    <p>
+      The name of a project, instead, is checked only when the root component is generated, after the other files have
+      been written.
+    </p>
+    <docs-code snippet="tools/project-name-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="--style accepts what the plugin cannot compile">
+    <p>
+      <code>xd new</code> accepts <code>scss</code>, <code>less</code> and <code>styl</code>, but the plugin compiles only
+      <code>.css</code> files. <code>xd component</code>, on its side, ignores <code>xaendar.json</code> and always
+      writes a <code>.css</code> file.
+    </p>
+    <docs-code snippet="tools/style-option.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="The generated spec does not run">
+    <p>
+      The generated <code>package.json</code> runs Vitest, which knows neither the decorators transform nor the Xaendar
+      plugin: the spec of the root component fails before running. Testing components requires a Vitest configuration
+      with the same plugins and a DOM environment.
+    </p>
+    <docs-code snippet="tools/generated-spec-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="The published packages are older than this documentation">
+    <p>
+      The packages published on npm as 0.12.0 predate the API described in this site: their
+      <code>{'@xaendar/core'}</code> exports <code>BaseWebComponent</code> instead of <code>CustomElement</code>. A
+      project created by a CLI built from the repository installs them, and its build fails. Until the next release,
+      work inside the repository, as this site does.
+    </p>
+    <docs-code snippet="tools/published-version-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="xd build exits with 0 on template errors">
+    <p>
+      A template that does not compile is reported, but the build goes on and succeeds: the component reaches the bundle
+      without a render function. Check the output in automated pipelines.
+    </p>
+    <docs-code snippet="tools/build-exit-code.sh" />
+  </docs-callout>
+</section>
+
+<h2>Command summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Command</th><th>Options</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'xd new <name>'}</code></td><td><code>-p, --path</code>, <code>-s, --style</code></td><td>Creates a project and installs its dependencies.</td></tr>
+      <tr><td><code>xd start</code>, <code>xd s</code></td><td>—</td><td>Starts the Vite dev server with the Xaendar plugins.</td></tr>
+      <tr><td><code>xd build</code>, <code>xd b</code></td><td>—</td><td>Builds the project with the Xaendar plugins.</td></tr>
+      <tr><td><code>{'xd component <name>'}</code>, <code>xd c</code></td><td><code>-p, --path</code>, <code>-f, --force</code></td><td>Creates a component folder.</td></tr>
+      <tr><td><code>xd --version</code>, <code>xd --help</code></td><td>—</td><td>Version and help.</td></tr>
+    </tbody>
+  </table>
+</div>

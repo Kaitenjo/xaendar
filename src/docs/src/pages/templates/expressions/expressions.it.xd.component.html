@@ -1,0 +1,84 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ExpressionTableComponent } from '../../../examples/templates/expressions/expression-table/expression-table.xd.component.ts'
+@import { ShadowedGlobalsComponent } from '../../../examples/templates/expressions/shadowed-globals/shadowed-globals.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Sintassi delle espressioni</h1>
+<p class="lead">
+  Interpolazioni, binding, condizioni e cicli accettano tutti un’espressione: una singola espressione TypeScript, che
+  legge per nome i membri pubblici del componente. Le espressioni possono calcolare e combinare valori, ma non cambiare
+  nulla né dichiarare funzioni: la logica a più passi va nella classe.
+</p>
+
+<h2>Cosa può fare un’espressione</h2>
+<docs-example name="templates/expressions/expression-table" heading="Un’espressione per ogni tipo">
+  <ex-expression-table />
+</docs-example>
+<p>
+  Operatori, il ternario, optional chaining e nullish coalescing, chiamate a metodi del componente e dei valori,
+  indici, <code>typeof</code>, letterali di array e oggetti, spread, e i globali del browser come <code>Math</code> e
+  <code>JSON</code>. Un oggetto letterale va racchiuso tra parentesi: senza, l’interpolazione non mostra nulla.
+</p>
+
+<h2>Cosa non può fare</h2>
+<p>
+  Assegnazioni, <code>new</code>, funzioni, <code>this</code>, asserzioni di tipo, espressioni regolari e più di
+  un’espressione vengono rifiutate quando il template viene compilato:
+</p>
+<docs-code snippet="templates/forbidden-expressions.txt" />
+<p>
+  Ognuna di queste ha un posto nella classe: un metodo che assegna, un computed che trasforma una lista, un membro che
+  contiene il risultato di <code>new</code> o di un’espressione regolare.
+</p>
+
+<h2>Cosa può leggere</h2>
+<p>
+  Le espressioni vengono controllate come codice esterno alla classe, quindi vedono i suoi membri pubblici e quelli
+  ereditati, senza <code>this</code>, più i globali. Le costanti del modulo non sono membri, e i membri
+  <code>private</code> o <code>protected</code> sono irraggiungibili: esponi come membri pubblici ciò che serve al
+  template. I controlli usano le opzioni del tuo <code>tsconfig.json</code>, comprese quelle strict.
+</p>
+<docs-code snippet="templates/module-constant.ts" />
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/expressions/shadowed-globals" heading="Membri con il nome di un globale" kind="edge">
+    <ex-shadowed-globals />
+  </docs-example>
+  <p>
+    Un membro chiamato <code>history</code> o <code>location</code> viene nascosto dal globale del browser con lo stesso
+    nome: il template mostra <code>window.history</code> e l’indirizzo della pagina. Altri nomi di globali, come
+    <code>name</code> o <code>status</code>, non ne risentono. Rinomina i membri. È elencato in
+    <a href="#/it/reference/known-issues">Problemi noti</a>.
+  </p>
+  <docs-callout kind="edge" heading="Controlli strict dal tsconfig.json">
+    <p>
+      Il template viene controllato con le opzioni strict del progetto. Con <code>noUncheckedIndexedAccess</code>, una
+      proprietà di un <code>Record</code> può essere undefined; un membro <code>readonly</code> ha il tipo letterale del
+      suo valore, quindi confrontarlo con un altro letterale viene segnalato. I messaggi mostrano il membro con il
+      prefisso <code>root.</code>.
+    </p>
+    <docs-code snippet="templates/strict-checks.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="La reattività dipende da dove si trova l’espressione">
+    Ogni signal letto da un’espressione viene tracciato nel testo, nelle condizioni e nei cicli. In un attributo, solo i
+    membri signal che l’espressione nomina: vedi <a href="#/it/templates/binding">Binding</a>. Gli handler degli eventi
+    seguono una propria sintassi, più limitata: vedi <a href="#/it/templates/events">Gestione degli eventi</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Ammesso</th><th>Non ammesso</th></tr></thead>
+    <tbody>
+      <tr><td>Operatori aritmetici, di confronto, logici, <code>!</code>, ternario</td><td>Assegnazioni</td></tr>
+      <tr><td><code>?.</code>, <code>??</code>, indici, <code>typeof</code></td><td><code>as</code>, <code>this</code></td></tr>
+      <tr><td>Chiamate a membri, a metodi dei valori, a globali</td><td><code>new</code>, arrow function, function expression</td></tr>
+      <tr><td>Letterali di array e oggetti, spread</td><td>Letterali di espressioni regolari</td></tr>
+      <tr><td>Una sola espressione</td><td>L’operatore virgola, più istruzioni</td></tr>
+    </tbody>
+  </table>
+</div>

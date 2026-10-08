@@ -1,1 +1,96 @@
-<h1>TODO content-projection</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CardSlotsComponent } from '../../../examples/components/content-projection/card-slots/card-slots.xd.component.ts'
+@import { DynamicSlotComponent } from '../../../examples/components/content-projection/dynamic-slot/dynamic-slot.xd.component.ts'
+@import { ForwardingComponent } from '../../../examples/components/content-projection/forwarding/forwarding.xd.component.ts'
+@import { SlotTimingComponent } from '../../../examples/components/content-projection/slot-timing/slot-timing.xd.component.ts'
+
+<span class="eyebrow">Componenti</span>
+<h1>Proiezione di contenuto con gli slot</h1>
+<p class="lead">
+  Gli elementi scritti tra i tag di un componente non vengono renderizzati al suo interno: restano dove sono, come
+  figli dell’elemento, e il componente li mostra tramite gli elementi <code>{'<slot>'}</code> del proprio template.
+  Xaendar non aggiunge nulla agli slot standard dello shadow DOM, quindi vale tutto ciò che sai già su di loro.
+</p>
+
+<h2>Slot di default, slot con nome e fallback</h2>
+<p>
+  Uno <code>{'<slot />'}</code> senza nome riceve ogni figlio senza attributo <code>slot</code>. Uno
+  <code>{'<slot name="header" />'}</code> riceve i figli con <code>slot="header"</code>. Il contenuto di uno slot è il
+  suo fallback, mostrato finché non gli viene assegnato nulla.
+</p>
+<docs-example name="components/content-projection/card-slots" heading="Una card con tre slot">
+  <ex-card-slots />
+</docs-example>
+<p>
+  La seconda card riempie solo lo slot di default, quindi il suo header mostra <em>Untitled</em>. Il footer della prima
+  card è proiettato dentro un <code>{'@if'}</code>: il contenuto proiettato fa parte del template del padre, con le sue
+  condizioni, i suoi cicli e i suoi binding. Il pulsante nel footer chiama un metodo del padre e mostra un signal del
+  padre; la card decide solo dove compare.
+</p>
+
+<h2>Scegliere lo slot a runtime</h2>
+<p>
+  <code>slot</code> è un attributo come gli altri, quindi può essere legato a un’espressione: il browser sposta
+  l’elemento nel nuovo slot quando il valore cambia. Un elemento il cui <code>slot</code> non corrisponde a nessuno slot
+  del componente non viene mostrato affatto.
+</p>
+<docs-example name="components/content-projection/dynamic-slot" heading="slot legato a un signal">
+  <ex-dynamic-slot />
+</docs-example>
+<p>
+  Su <em>nowhere</em> la nota scompare, ma è ancora un figlio dello split view: i suoi binding continuano a funzionare,
+  e ricompare appena il suo <code>slot</code> corrisponde.
+</p>
+
+<h2>Inoltrare gli slot</h2>
+<p>
+  Un componente può passare il contenuto proiettato a un componente figlio: mette uno <code>{'<slot>'}</code> tra i
+  figli del figlio, con un attributo <code>slot</code> che sceglie dove va.
+</p>
+<docs-example name="components/content-projection/forwarding" heading="Un pannello che inoltra i suoi slot a una card">
+  <ex-forwarding />
+</docs-example>
+<p>
+  Il secondo pannello non riceve un titolo, e mostra <em>Panel fallback</em>, non l’<em>Untitled</em> della card: la
+  card riceve lo slot del pannello, quindi per la card il suo header non è mai vuoto.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="components/content-projection/slot-timing" heading="Quando arriva il contenuto proiettato" kind="edge">
+    <ex-slot-timing />
+  </docs-example>
+  <p>
+    Il componente viene renderizzato prima che il padre ne crei i figli, quindi in <code>afterRender</code> i suoi slot
+    sono ancora vuoti. I figli arrivano subito dopo, e ogni cambiamento viene annunciato da <code>slotchange</code>, che
+    un template può legare sull’elemento <code>{'<slot>'}</code>. Per leggere in modo reattivo gli elementi proiettati,
+    usa una <a href="#/it/components/content-queries">query sul contenuto</a>.
+  </p>
+  <docs-callout kind="edge" heading="Gli spazi non nascondono il fallback">
+    Nell’HTML normale gli spazi e gli a capo tra i tag di un componente sono nodi di testo, assegnati allo slot di
+    default, quindi il fallback scompare. Un template Xaendar non crea nodi di testo per gli spazi, e le ancore di
+    <code>{'@if'}</code> e <code>{'@for'}</code> sono commenti, che non vengono mai assegnati: finché non viene proiettato
+    nulla di visibile, il fallback compare.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Il contenuto proiettato appartiene al padre">
+    Il componente non può leggere gli elementi proiettati tramite il proprio template, né dar loro uno stile oltre a
+    <code>::slotted()</code>: sono elementi del template del padre, con lo stile del suo foglio. Vedi
+    <a href="#/it/components/styling">Stili</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo API</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'<slot />'}</code></td><td>Lo slot di default: i figli senza attributo <code>slot</code>.</td></tr>
+      <tr><td><code>{'<slot name="x" />'}</code></td><td>Uno slot con nome: i figli con <code>slot="x"</code>.</td></tr>
+      <tr><td><code>{'<slot>fallback</slot>'}</code></td><td>Mostra il suo contenuto finché non gli viene assegnato nulla.</td></tr>
+      <tr><td><code>{'slot="{ expr }"'}</code></td><td>Sposta un figlio in un altro slot quando il valore cambia.</td></tr>
+      <tr><td><code>(slotchange)</code></td><td>Scatta su uno slot quando cambiano gli elementi assegnati.</td></tr>
+    </tbody>
+  </table>
+</div>

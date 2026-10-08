@@ -1,0 +1,69 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TeamCardComponent } from '../../../examples/templates/imports/team-card/team-card.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Importare componenti</h1>
+<p class="lead">
+  <code>{'@import'}</code> dice al compilatore quali componenti e direttive usa un template. Funziona solo a build time:
+  il compilatore legge le classi che nomina per conoscerne selettori, input ed eventi, e controlla ogni utilizzo
+  rispetto a esse. Non carica nulla nel browser.
+</p>
+
+<h2>Forme</h2>
+<docs-code snippet="templates/import-forms.html" />
+<docs-example name="templates/imports/team-card" heading="Due componenti da un solo file">
+  <ex-team-card />
+</docs-example>
+<p>
+  La sintassi è quella di un import con nome in TypeScript: uno o più nomi di classe tra graffe, e un percorso tra
+  apici singoli o doppi. Un file può dichiarare più componenti, e un solo <code>{'@import'}</code> porta tutti quelli
+  che servono al template. Gli import possono stare in qualsiasi punto del template; tenerli in cima li rende facili da
+  trovare.
+</p>
+<p>
+  Il percorso è relativo al template, e viene risolto come file, con o senza l’estensione <code>.ts</code>, oppure come
+  cartella con un <code>index.ts</code>. I pacchetti e gli alias di percorso del <code>tsconfig.json</code> non vengono
+  ancora risolti.
+</p>
+
+<h2>Importare non è registrare</h2>
+<p>
+  Il browser conosce un componente solo dopo che il file che ne dichiara la classe è stato eseguito, il che definisce
+  il custom element. Ogni componente va quindi importato anche in TypeScript da qualche parte, di solito tutti insieme
+  in <code>main.ts</code>. Vedi <a href="#/it/components/registration">Selettori e registrazione</a>, che mostra anche
+  l’errore per un componente usato senza <code>{'@import'}</code>.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Errori">
+    <p>
+      Con un percorso che non si risolve, un import di default o un nome che il file non dichiara, il template non
+      compila. Gli import che nessuno usa non vengono segnalati.
+    </p>
+    <docs-code snippet="templates/import-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="unsupported" heading="Pacchetti e alias di percorso">
+    Un componente pubblicato in un pacchetto, o raggiunto tramite un alias di percorso, non si può ancora importare in un
+    template: il resolver segue solo percorsi relativi, e la classe deve essere dichiarata nel file a cui puntano.
+  </docs-callout>
+  <docs-callout kind="issue" heading="I tipi non vengono importati">
+    <code>{'@import'}</code> accetta solo classi di componenti e direttive. I tipi usati dai loro input non vengono
+    importati con esse, quindi gli input devono usare tipi inline. Vedi i casi limite di
+    <a href="#/it/components/inputs">Input</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{"@import { Card } from './card.xd.component.ts'"}</code></td><td>Un componente o una direttiva.</td></tr>
+      <tr><td><code>{"@import { A, B } from './people.xd.component.ts'"}</code></td><td>Più classi dello stesso file.</td></tr>
+      <tr><td>Percorso</td><td>Relativo al template; estensione facoltativa; una cartella indica il suo <code>index.ts</code>.</td></tr>
+    </tbody>
+  </table>
+</div>

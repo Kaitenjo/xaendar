@@ -30,7 +30,7 @@ export class DocsSearchComponent extends CustomElement {
   /**
    * The current language.
    */
-  public readonly lang: Computed<Lang> = lang;
+  public readonly currentLang: Computed<Lang> = lang;
 
   /**
    * The text typed by the reader.
@@ -50,7 +50,7 @@ export class DocsSearchComponent extends CustomElement {
   /**
    * The pages matching the query.
    */
-  public readonly results = computed(() => searchPages(this.query(), this.lang()));
+  public readonly results = computed(() => searchPages(this.query(), this.currentLang()));
 
   /**
    * Focuses the search field when `/` is pressed outside of a text field.
@@ -149,7 +149,7 @@ export class DocsSearchComponent extends CustomElement {
    * @returns The `href` of the page.
    */
   public linkTo(target: string): string {
-    return `#/${this.lang()}/${target}`;
+    return `#/${this.currentLang()}/${target}`;
   }
 
   /**

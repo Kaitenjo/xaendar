@@ -1,0 +1,8 @@
+(click)="save(count())"        [Lexer] Event must be included in Double Quotes
+(click)="save(count() + 1)"    [Lexer] Event must be included in Double Quotes
+(click)="save(); close()"      [Lexer] Event must be included in Double Quotes
+(click)="() => save()"         [Lexer] Event handler cannot be empty
+(click)="count = 0"            [Lexer] No spaces are allowed in event handler name
+(click)="save($event.target)"  Cannot find name '$event'. Did you mean 'event'?
+(click)="save('a')"            Argument of type 'string' is not assignable to parameter of type 'number'.
+(click)="nope()"               Property 'nope' does not exist on type 'CartComponent'.

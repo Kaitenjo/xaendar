@@ -1,0 +1,14 @@
+<!-- checked="false" is still a checked box: a boolean attribute counts by its presence -->
+<input type="checkbox" checked="{ done() }" />
+
+<!-- A conditional binding adds or removes the attribute... -->
+<input
+  type="checkbox"
+  @if (done()) {
+    checked
+  }
+  (change)="toggle()"
+/>
+
+<!-- ...but, like value, the attribute is only the initial state: once the user clicks the box,
+     the property checked is what counts, and it has to be written in code, as a directive does with value -->

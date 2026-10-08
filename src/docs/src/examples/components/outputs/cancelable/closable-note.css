@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, #f5a524 22%, transparent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}

@@ -1,0 +1,7 @@
+<!-- html() returns '<b>bold</b>': interpolation creates a text node, so the tags are shown as text -->
+<p>{ html() }</p>
+<!-- Rendered: <b>bold</b> -->
+
+<!-- A directive is the only way to set innerHTML -->
+<p @@exInnerHtml(html="{ html() }")></p>
+<!-- Rendered: bold, in bold -->

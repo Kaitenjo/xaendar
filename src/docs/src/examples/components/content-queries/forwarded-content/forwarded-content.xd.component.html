@@ -1,0 +1,8 @@
+@import { ListWrapperComponent } from './list-wrapper.xd.component.ts'
+
+<button (click)="add()">Add an item</button>
+<ex-list-wrapper>
+  @for (item of items(); track item) {
+    <li>{ item }</li>
+  }
+</ex-list-wrapper>

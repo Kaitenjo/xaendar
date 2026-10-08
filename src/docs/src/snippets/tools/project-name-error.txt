@@ -1,0 +1,7 @@
+$ xd new MyApp
+Tag <MyApp-root> is not a valid custom element name. Custom element names must:
+…
+
+# MyApp/ is left with package.json, xaendar.json, vite.config.ts, tsconfig.json, src/index.html,
+# src/signals.ts and src/main.ts: no root component, no styles.css, and npm install never ran.
+# Delete the folder and use a lowercase name, such as my-app.

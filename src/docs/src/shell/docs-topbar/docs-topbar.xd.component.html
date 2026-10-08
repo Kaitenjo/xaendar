@@ -15,7 +15,7 @@
   <div class="actions">
     <div class="langs" role="group" aria-label="{ t().topbar.language }">
       @for (code of langs; track code) {
-        <button class="{ code === lang() ? 'lang lang--active' : 'lang' }" type="button" (click)="switchTo(code)">{ code.toUpperCase() }</button>
+        <button class="{ code === currentLang() ? 'lang lang--active' : 'lang' }" type="button" (click)="switchTo(code)">{ code.toUpperCase() }</button>
       }
     </div>
     <button class="icon" type="button" aria-label="{ t().topbar.theme }" (click)="toggleTheme()">

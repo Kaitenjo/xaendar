@@ -1,0 +1,2 @@
+<p @@exTint(@@exTooltip(text="Hi"))>…</p>
+[Lexer] [Ln 2, Col 31] - Directives cannot be declared inside another directive

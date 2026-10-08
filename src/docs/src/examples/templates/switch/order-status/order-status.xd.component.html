@@ -1,0 +1,20 @@
+<div class="controls">
+  @for (option of statuses; track option) {
+    <button class="{ option === status() ? 'option option--active' : 'option' }" (click)="choose(option)">{ option }</button>
+  }
+</div>
+@switch (status()) {
+  @case ('pending')
+  @case ('paid') {
+    <p>📦 We are preparing your order.</p>
+  }
+  @case ('shipped') {
+    <p>🚚 Your order is on its way.</p>
+  }
+  @case ('delivered') {
+    <p>✅ Delivered. Enjoy!</p>
+  }
+  @default {
+    <p>❓ Unknown status: please contact us.</p>
+  }
+}

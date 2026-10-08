@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 0.5rem;
+}
+
+.axis {
+  stroke: currentColor;
+  stroke-opacity: 0.4;
+}
+
+.bar {
+  fill: #6750a4;
+  transition: fill 0.15s;
+}
+
+.bar--hovered {
+  fill: #f5a524;
+}
+
+text {
+  fill: currentColor;
+  font-size: 10px;
+}
+
+p {
+  margin: 0.4rem 0 0;
+}

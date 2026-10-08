@@ -1,0 +1,8 @@
+$ xd new my-app --style scss
+# Accepted: the root component gets my-app-root.xd.component.scss
+
+$ npm start
+Failed to compile style - …/my-app-root.xd.component.scss
+Error: Unsupported stylesheet extension ".scss" for …/my-app-root.xd.component.scss.
+
+# Only .css is supported: rename the file and the styleUrl.

@@ -1,0 +1,21 @@
+<div class="controls">
+  @for (id of ids) {
+    <button (click)="load(id)">User { id }</button>
+  }
+</div>
+<div class="state">
+  @switch (status()) {
+    @case ('idle') {
+      <p>Pick a user. User 1 is slow, user 4 does not exist.</p>
+    }
+    @case ('loading') {
+      <p class="loading">Loading…</p>
+    }
+    @case ('error') {
+      <p class="error">{ error() }</p>
+    }
+    @case ('ready') {
+      <p><strong>{ user()?.name }</strong> — { user()?.email }</p>
+    }
+  }
+</div>

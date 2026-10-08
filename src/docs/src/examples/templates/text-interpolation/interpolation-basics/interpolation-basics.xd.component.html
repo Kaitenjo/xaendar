@@ -1,0 +1,12 @@
+<div class="controls">
+  <button (click)="add()">Add one</button>
+  <button (click)="switchProduct()">Switch product</button>
+</div>
+<ul>
+  <li>A signal: { quantity() }</li>
+  <li>A computed signal: { total() }</li>
+  <li>A method reading signals: { formattedTotal() }</li>
+  <li>An expression: { quantity() === 1 ? 'one piece' : quantity() + ' pieces' }</li>
+  <li>A method of the value: { product().toUpperCase() }</li>
+  <li>A template literal: {`${quantity()} × ${product()}`}</li>
+</ul>

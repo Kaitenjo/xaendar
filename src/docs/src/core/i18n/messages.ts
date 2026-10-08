@@ -44,6 +44,29 @@ const EN = {
   pager: {
     previous: 'Previous',
     next: 'Next'
+  },
+  reference: {
+    filter: 'Filter',
+    all: 'All',
+    results: 'results',
+    noResults: 'Nothing matches the filter.',
+    cause: 'Cause',
+    fix: 'Fix',
+    workaround: 'Workaround',
+    readMore: 'Read more',
+    internal: 'Internal',
+    kinds: {
+      decorator: 'Decorator',
+      class: 'Class',
+      function: 'Function',
+      type: 'Type',
+      global: 'Global'
+    },
+    issueKinds: {
+      bug: 'Bug',
+      limitation: 'Limitation',
+      docs: 'Documentation'
+    }
   }
 };
 
@@ -95,6 +118,29 @@ const IT: Messages = {
   pager: {
     previous: 'Precedente',
     next: 'Successiva'
+  },
+  reference: {
+    filter: 'Filtra',
+    all: 'Tutti',
+    results: 'risultati',
+    noResults: 'Nessun elemento corrisponde al filtro.',
+    cause: 'Causa',
+    fix: 'Soluzione',
+    workaround: 'Come aggirarlo',
+    readMore: 'Approfondisci',
+    internal: 'Interno',
+    kinds: {
+      decorator: 'Decoratore',
+      class: 'Classe',
+      function: 'Funzione',
+      type: 'Tipo',
+      global: 'Globale'
+    },
+    issueKinds: {
+      bug: 'Bug',
+      limitation: 'Limite',
+      docs: 'Documentazione'
+    }
   }
 };
 

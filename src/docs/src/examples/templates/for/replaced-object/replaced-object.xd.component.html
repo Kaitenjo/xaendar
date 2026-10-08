@@ -1,0 +1,28 @@
+<button (click)="rename()">Rename the first fruit</button>
+<div class="columns">
+  <section>
+    <h5>track fruit.id</h5>
+    <ul>
+      @for (fruit of fruits(); track fruit.id) {
+        <li>{ fruit.name }</li>
+      }
+    </ul>
+  </section>
+  <section>
+    <h5>track fruit</h5>
+    <ul>
+      @for (fruit of fruits(); track fruit) {
+        <li>{ fruit.name }</li>
+      }
+    </ul>
+  </section>
+  <section>
+    <h5>a signal in the item</h5>
+    <ul>
+      @for (fruit of liveFruits; track fruit.id) {
+        <li>{ fruit.name() }</li>
+      }
+    </ul>
+  </section>
+</div>
+<p>In the signal: { fruits()[0]?.name }</p>

@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+td {
+  padding: 0.3rem 0.8rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  vertical-align: top;
+}
+
+td:first-child {
+  font-family: ui-monospace, monospace;
+}
+
+pre {
+  margin: 0;
+  font-size: 0.8rem;
+}

@@ -1,0 +1,11 @@
+@import { Card } from './card.xd.component.ts'           a wrong path
+Error: Unable to resolve module path for "Card".
+
+@import { Card } from '@my-lib/card'                       a package or a path alias
+Error: Unable to resolve module path for "Card".
+
+@import Card from './card.xd.component.ts'                 a default import
+[Lexer] [Ln 1, Col 12] - Expected { after @import
+
+@import { Crad } from './card.xd.component.ts'             a name the file does not export
+Class "Crad" was not found in the import from ./card.xd.component.ts

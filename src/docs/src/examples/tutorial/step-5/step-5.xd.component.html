@@ -8,7 +8,7 @@
 <ul>
   @for (todo of visible(); track todo) {
     <li>
-      <ex-todo-item todo="{ todo }" (doneChange)="onDoneChange($event)" (remove)="onRemove($event)" />
+      <ex-todo-item todo="{ todo }" (doneChange)="onDoneChange($event)" (removed)="onRemove($event)" />
     </li>
   }
 </ul>

@@ -1,0 +1,9 @@
+/* In the stylesheet of a component, :root matches nothing: the shadow root has no root element */
+:root {
+  --accent: red; /* never applied */
+}
+
+/* :host is the element of the component: tokens declared here reach its whole shadow tree, and its children */
+:host {
+  --accent: red;
+}

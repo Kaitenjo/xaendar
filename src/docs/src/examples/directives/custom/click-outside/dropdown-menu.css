@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.dropdown {
+  display: inline-block;
+}
+
+.menu {
+  min-width: 100%;
+  margin: 4px 0 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: #ffffff;
+  color: #191b26;
+  border: 1px solid #cdd0de;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(20, 22, 40, 0.15);
+}
+
+.menu button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+.menu button:hover {
+  background: #eeeff6;
+}
+
+p {
+  margin: 0.6rem 0 0;
+}

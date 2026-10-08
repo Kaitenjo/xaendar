@@ -1,0 +1,7 @@
+@import { SplitViewComponent } from './split-view.xd.component.ts'
+
+<button (click)="next()">slot="{ side() }"</button>
+<ex-split-view>
+  <span class="note" slot="{ side() }">The note</span>
+  <span slot="start">Always at the start</span>
+</ex-split-view>

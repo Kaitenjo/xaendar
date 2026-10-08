@@ -1,0 +1,81 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { EventArgumentsComponent } from '../../../examples/templates/events/event-arguments/event-arguments.xd.component.ts'
+@import { KeyFilterComponent } from '../../../examples/templates/events/key-filter/key-filter.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Gestione degli eventi</h1>
+<p class="lead">
+  Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente. L’handler
+  è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere,
+  tipizzare e testare.
+</p>
+
+<h2>Chiamare un metodo</h2>
+<docs-code snippet="templates/event-forms.html" />
+<docs-example name="templates/events/event-arguments" heading="Ogni tipo di argomento">
+  <ex-event-arguments />
+</docs-example>
+<p>Gli argomenti possono essere:</p>
+<ul>
+  <li>letterali: stringhe, numeri, <code>true</code>, <code>false</code>, <code>null</code>;</li>
+  <li><code>$event</code>, l’evento stesso, in qualsiasi posizione;</li>
+  <li>membri del componente e variabili di un <code>{'@for'}</code>, con le loro proprietà, come in <code>color.id</code>;</li>
+  <li>un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.</li>
+</ul>
+<p>
+  Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per
+  <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile
+  con il parametro del metodo.
+</p>
+
+<h2>Cosa non può contenere un handler</h2>
+<p>
+  Chiamate dentro gli argomenti, espressioni, assegnazioni, arrow function e più di un’istruzione vengono rifiutate. I
+  messaggi del lexer non sempre dicono perché, quindi eccoli, accanto all’handler che li produce:
+</p>
+<docs-code snippet="templates/event-argument-errors.txt" />
+<p>
+  Per tutti la soluzione è la stessa: un metodo del componente che fa il lavoro, chiamato con i valori di cui ha
+  bisogno.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/events/key-filter" heading="Niente modificatori degli eventi" kind="edge">
+    <ex-key-filter />
+  </docs-example>
+  <p>
+    I template non hanno modificatori degli eventi: <code>(keydown.enter)</code> ascolta un evento che si chiama
+    letteralmente <code>keydown.enter</code>, che il browser non invia mai, e il primo contatore non si muove. Filtra
+    il tasto nel metodo, come fa il secondo campo. Lo stesso vale per <code>preventDefault()</code> e
+    <code>stopPropagation()</code>: chiamali su <code>$event</code>.
+  </p>
+  <docs-callout kind="issue" heading="Un metodo di un altro oggetto">
+    <p>Un handler che chiama un metodo di un membro compila, ma fallisce al primo evento.</p>
+    <docs-code snippet="templates/member-call.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Le proprietà di $event">
+    <code>$event</code> si può passare solo intero: <code>$event.target</code> o <code>$event.detail</code> in un
+    handler non compilano. Leggile nel metodo.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Eventi dei componenti">
+    Sul tag di un componente si possono legare solo gli eventi che dichiara con <code>{'@Event'}</code>, non quelli
+    nativi; sugli elementi nativi solo quelli nativi. Vedi i casi limite di
+    <a href="#/it/components/outputs">Output</a>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>(event)="method()"</code></td><td>Chiama un metodo del componente per ogni evento.</td></tr>
+      <tr><td><code>(event)="method($event)"</code></td><td>Passa l’evento, tipizzato in base al nome.</td></tr>
+      <tr><td><code>(event)="method('a', 1, item.id, aSignal)"</code></td><td>Letterali, membri, variabili di un ciclo e le loro proprietà.</td></tr>
+      <tr><td><code>{'@if (condition) { (event)="method()" }'}</code></td><td>Un listener attivo solo finché vale la condizione. Vedi <a href="#/it/templates/conditional-bindings">Binding condizionali</a>.</td></tr>
+    </tbody>
+  </table>
+</div>

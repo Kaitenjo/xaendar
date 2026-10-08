@@ -1,0 +1,22 @@
+:host {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+output {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.type {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

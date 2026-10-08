@@ -1,0 +1,10 @@
+<button (click)="next()">Next page</button>
+<p>
+  <a
+    target="_blank"
+    href="{`https://example.com/results?page=${page()}`}"
+    title="{ tooltip() }"
+    class="{ linkClass() }"
+    aria-label="{ 'Results, page ' + page() }"
+  >Results, page { page() }</a>
+</p>

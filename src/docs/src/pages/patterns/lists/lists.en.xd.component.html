@@ -1,0 +1,70 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { InventoryComponent } from '../../../examples/patterns/lists/inventory/inventory.xd.component.ts'
+
+<span class="eyebrow">Patterns</span>
+<h1>Lists and CRUD</h1>
+<p class="lead">
+  A list is a signal holding an array, replaced by every change, and rendered by an <code>{'@for'}</code> with a stable
+  key. Filters, sorting and totals are computed signals over it. Fields that change often can be signals themselves, so
+  that a change updates one cell instead of a row.
+</p>
+
+<h2>An inventory</h2>
+<docs-example name="patterns/lists/inventory" heading="Add, remove, edit, filter, sort">
+  <ex-inventory />
+</docs-example>
+<p>
+  <code>items</code> is never mutated: adding, inserting and removing all write a new array, as signals compare values
+  with <code>Object.is</code>, explained in <a href="#/en/signals/overview">Signals</a>. The <code>{'@for'}</code>
+  tracks <code>item.id</code>: when the array changes, the rows of the items still present are kept and moved, and
+  only the new ones are created. Insert an item at random, or sort the list: the existing rows move, untouched.
+</p>
+<p>
+  <code>visible</code> filters and sorts the items in a computed signal, and the template only renders it; the original
+  order stays in <code>items</code>. The ids come from a counter and are never reused, so the keys stay unique even
+  after removals.
+</p>
+<p>
+  The quantity of each item is a signal of its own. The <strong>+</strong> and <strong>−</strong> buttons update it in
+  place: the array does not change, no row is touched, and only the cell and the total, a computed signal reading every
+  quantity, are written.
+</p>
+<p>
+  The form is read with <code>FormData</code> and cleared with <code>form.reset()</code>: the field has no bound
+  value, so restoring its initial value empties it, with no directive needed. See <a href="#/en/patterns/forms">Forms</a>
+  for fields driven by the state.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="Replacing an item with the same id">
+    <p>
+      A new object with the same key does not update its row: the row keeps showing the object it was created with.
+      This is why the quantity is a signal.
+    </p>
+    <docs-code snippet="patterns/replace-item.ts" />
+    <p>
+      The details, and the other pitfalls of keys, are in <a href="#/en/templates/for">{'@for'}</a>.
+    </p>
+  </docs-callout>
+  <docs-callout kind="edge" heading="Keys that repeat">
+    Two items with the same key corrupt the list. Derive keys from a counter or from the ids of the server, never from
+    the position or from a field that users can edit, such as the name.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Operation</th><th>Code</th></tr></thead>
+    <tbody>
+      <tr><td>Add</td><td><code>{'items.update(list => [...list, item])'}</code></td></tr>
+      <tr><td>Remove</td><td><code>{'items.update(list => list.filter(other => other !== item))'}</code></td></tr>
+      <tr><td>Edit a field</td><td><code>{'item.quantity.update(n => n + 1)'}</code>, with the field as a signal</td></tr>
+      <tr><td>Filter, sort, total</td><td><code>computed</code> over <code>items</code></td></tr>
+      <tr><td>Render</td><td><code>{'@for (item of visible(); track item.id)'}</code></td></tr>
+    </tbody>
+  </table>
+</div>

@@ -12,7 +12,7 @@
           <input type="checkbox" (change)="toggle(todo.id)" @if (todo.done) { checked } />
           { todo.title }
         </label>
-        <button (click)="remove(todo.id)">✕</button>
+        <button (click)="removeTodo(todo.id)">✕</button>
       </li>
     }
   </ul>

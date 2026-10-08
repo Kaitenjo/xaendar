@@ -1,0 +1,25 @@
+<div class="controls">
+  <button (click)="next()">Next day</button>
+  <button (click)="resetCount()">Reset the count</button>
+  <span>dayName() ran { evaluations() } times</span>
+</div>
+@switch (dayName()) {
+  @case ('mon') {
+    <p>Monday</p>
+  }
+  @case ('tue') {
+    <p>Tuesday</p>
+  }
+  @case ('wed') {
+    <p>Wednesday</p>
+  }
+  @case ('thu') {
+    <p>Thursday</p>
+  }
+  @case ('fri') {
+    <p>Friday</p>
+  }
+  @default {
+    <p>Weekend</p>
+  }
+}

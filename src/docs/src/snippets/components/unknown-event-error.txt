@@ -1,0 +1,3 @@
+Xaendar: Failed to compile template - /src/cart/cart.xd.component.html
+[TypeChecker] Unknown event "valuechange" on <ex-quantity-picker> (QuantityPickerComponent has no @Event with this name).
+----> (valuechange)="setQuantity($event)"

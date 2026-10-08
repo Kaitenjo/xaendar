@@ -1,0 +1,5 @@
+<p>{`a ${`b ${n()}`} c`}</p>
+
+Xaendar: Failed to compile template - /src/label/label.xd.component.html
+[Parser] [Ln 1, Col 6] - '`a ${``b ${n()}`' must be a single expression, got 'b ${n()}`' after '`a ${``'.
+ ---> `a ${`b ${n()}`} c`}

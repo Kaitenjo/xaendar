@@ -1,0 +1,16 @@
+@import { ThemeCardComponent } from './theme-card.xd.component.ts'
+
+<div class="controls">
+  <label>Theme
+    <select (change)="pickTheme($event)">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="sepia">Sepia</option>
+    </select>
+  </label>
+  <label>Accent <input type="color" value="#5b45e8" (input)="pickAccent($event)" /></label>
+</div>
+<div class="stage" data-theme="{ theme() }" style="{`--accent: ${accent()}`}">
+  <ex-theme-card heading="Inherited tokens">Colors come from custom properties set by the stage.</ex-theme-card>
+  <ex-theme-card class="loud" heading="Styled through a part">The heading of this card is styled from outside.</ex-theme-card>
+</div>

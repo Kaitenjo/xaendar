@@ -1,0 +1,49 @@
+@import { UserPageComponent } from './user-page.xd.component.ts'
+
+<nav>
+  <button
+    (click)="goBack()"
+    @if (!canGoBack()) {
+      disabled
+    }
+  >← Back</button>
+  <a
+    href="/"
+    (click)="follow($event)"
+    @if (route().name === 'home') {
+      aria-current="page"
+    }
+  >Home</a>
+  <a
+    href="/users"
+    (click)="follow($event)"
+    @if (route().name === 'users' || route().name === 'user') {
+      aria-current="page"
+    }
+  >Users</a>
+  <a href="/nowhere" (click)="follow($event)">A broken link</a>
+  <code>{ path() }</code>
+</nav>
+<section>
+  @switch (route().name) {
+    @case ('home') {
+      <h3>Home</h3>
+      <p>Pick a section above.</p>
+    }
+    @case ('users') {
+      <h3>Users</h3>
+      <ul>
+        @for (user of users; track user.id) {
+          <li><a href="{ '/users/' + user.id }" (click)="follow($event)">{ user.name }</a></li>
+        }
+      </ul>
+    }
+    @case ('user') {
+      <ex-user-page user="{ route().params['id'] ?? '' }" />
+    }
+    @default {
+      <h3>Not found</h3>
+      <p>Nothing lives at { path() }.</p>
+    }
+  }
+</section>

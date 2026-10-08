@@ -1,0 +1,14 @@
+@import { StageReporterComponent } from './stage-reporter.xd.component.ts'
+
+<div class="controls">
+  <button (click)="toggle()">@if (shown()) { Remove the child } @else { Add the child }</button>
+  <button (click)="clear()">Clear the log</button>
+</div>
+@if (shown()) {
+  <ex-stage-reporter (stage)="onStage($event)" />
+}
+<ol>
+  @for (line of received(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

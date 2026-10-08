@@ -121,6 +121,12 @@
     </p>
     <docs-code snippet="components/private-member-error.txt" />
   </docs-callout>
+  <docs-callout kind="edge" heading="Member names already taken by HTMLElement">
+    The class inherits every member of <code>HTMLElement</code>, so a signal named <code>title</code>, an input named
+    <code>lang</code> or an event named <code>remove</code> clashes with it, and TypeScript rejects the class. The build
+    type-checks templates, not classes, so the error only shows in the editor or with <code>tsc</code>. See the edge
+    cases of <a href="#/en/components/outputs">Outputs</a> for the fixes.
+  </docs-callout>
   <docs-callout kind="unsupported" heading="Closed shadow roots">
     <p>
       The shadow root is always open, and it cannot be replaced: the base class has already attached it.

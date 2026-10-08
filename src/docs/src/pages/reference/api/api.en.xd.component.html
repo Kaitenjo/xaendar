@@ -1,0 +1,16 @@
+@import { DocsApiListComponent } from '../../../ui/docs-api-list/docs-api-list.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Reference</span>
+<h1>API reference</h1>
+<p class="lead">
+  Every export of <code>{'@xaendar/core'}</code>, <code>{'@xaendar/core/signals'}</code> and
+  <code>{'@xaendar/signals'}</code>, with its signature and the page explaining it. Filter by name, by text or by
+  module.
+</p>
+<docs-callout kind="note" heading="Three entry points">
+  Components, directives and decorators come from <code>{'@xaendar/core'}</code>; the signal functions from
+  <code>{'@xaendar/core/signals'}</code>; <code>loadSignals</code> and the global <code>Signal</code> from
+  <code>{'@xaendar/signals'}</code>. The exports marked as internal are used by the compiled templates.
+</docs-callout>
+<docs-api-list />

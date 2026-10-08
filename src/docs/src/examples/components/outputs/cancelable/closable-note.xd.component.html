@@ -1,0 +1,9 @@
+@if (open()) {
+  <div class="note">
+    <span><slot /></span>
+    <button aria-label="Close" (click)="close()">✕</button>
+  </div>
+} @else {
+  <button (click)="reopen()">Reopen</button>
+}
+<p class="status">{ status() }</p>

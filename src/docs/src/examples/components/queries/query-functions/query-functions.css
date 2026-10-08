@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+ul {
+  margin: 0.5rem 0;
+}
+
+p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

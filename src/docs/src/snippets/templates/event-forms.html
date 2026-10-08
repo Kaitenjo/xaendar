@@ -1,0 +1,7 @@
+<button (click)="save()">Save</button>                      <!-- a method, without arguments -->
+<button (click)="greet('Ada', 2)">Greet</button>           <!-- literals: strings, numbers, true, false, null -->
+<button (click)="inspect('button', $event)">Inspect</button> <!-- the event, in any position -->
+<button (click)="bump(apples)">+</button>                  <!-- a member: a signal is passed, not its value -->
+@for (color of colors; track color.id) {
+  <button (click)="pick(color.id)">{ color.name }</button> <!-- variables of the loop and their properties -->
+}

@@ -1,0 +1,77 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Strumenti</span>
+<h1>Language service e VS Code</h1>
+<p class="lead">
+  Il repository contiene un’estensione di VS Code per i template, fatta di due parti: una grammatica per l’evidenziazione
+  della sintassi, e un client che avvia <code>{'@xaendar/language-server'}</code>, pensato per portare i controlli del
+  compilatore nell’editor. Entrambe sono in una fase iniziale: questa pagina descrive cosa fanno oggi.
+</p>
+
+<docs-callout kind="unsupported" heading="Lavori in corso">
+  Il repository non ha un passaggio di pacchettizzazione per il Marketplace, e il language server non segnala ancora
+  diagnostica né offre completamenti. I messaggi del compilatore sono disponibili nel terminale di
+  <code>xd start</code>, come descritto in <a href="#/it/tools/build">Build e plugin Vite</a>.
+</docs-callout>
+
+<h2>Avviare l’estensione</h2>
+<p>L’estensione viene compilata dal repository e avviata in una finestra di sviluppo di VS Code.</p>
+<docs-code snippet="tools/extension-dev.sh" />
+<p>
+  Si attiva nei workspace che contengono file <code>.xd.component.html</code>, li associa al linguaggio
+  <em>Xaendar Template</em>, e avvia il server via IPC.
+</p>
+
+<h2>Evidenziazione della sintassi</h2>
+<p>
+  La grammatica viene iniettata in quella HTML di VS Code: i template mantengono l’evidenziazione dell’HTML, e alcuni
+  costrutti di Xaendar ricevono colori propri.
+</p>
+<docs-code snippet="tools/language-grammar.txt" />
+
+<h2>Il language server</h2>
+<p>
+  Il server è progettato per compilare ogni template mentre viene modificato, con lo stesso shim di type check usato
+  dal plugin Vite, e per trasformarne il risultato in funzionalità dell’editor:
+</p>
+<ul>
+  <li>
+    <strong>Diagnostica</strong>: dopo 300 ms senza digitare, gli errori semantici di TypeScript sul template, nella loro
+    posizione; gli errori di sintassi del template sulla sua prima riga.
+  </li>
+  <li>
+    <strong>Completamenti</strong>: i completamenti di TypeScript dentro le espressioni del template, attivati da
+    <code>.</code>, <code>{'\x7B'}</code> e <code>(</code>.
+  </li>
+</ul>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="issue" heading="Nessun template viene mai associato a un componente">
+    Per compilare un template, il server deve conoscere la classe componente che lo usa. L’indice che associa i template
+    ai componenti viene costruito all’avvio, ma il codice che lo riempie è disattivato: ogni template viene saltato,
+    quindi non si ottengono né diagnostica né completamenti.
+  </docs-callout>
+  <docs-callout kind="issue" heading="Le interpolazioni non sono evidenziate">
+    La grammatica si aspetta <code>{'{{ expr }}'}</code>, una sintassi che Xaendar non usa. Le interpolazioni scritte come
+    <code>{'{ expr }'}</code> nel testo, e le direttive, mantengono i colori dell’HTML semplice.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Altri limiti">
+    Il server dichiara il supporto all’hover ma non lo implementa, e parte cinque secondi dopo l’estensione.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Funzionalità</th><th>Stato</th></tr></thead>
+    <tbody>
+      <tr><td>Evidenziazione di <code>{'@import'}</code>, control flow, eventi, attributi legati</td><td>Disponibile</td></tr>
+      <tr><td>Evidenziazione di interpolazioni e direttive</td><td>Assente</td></tr>
+      <tr><td>Diagnostica e completamenti</td><td>Implementati, non attivi</td></tr>
+      <tr><td>Hover, vai alla definizione, formattazione</td><td>Non implementati</td></tr>
+      <tr><td>Pacchetto per il Marketplace</td><td>Non disponibile</td></tr>
+    </tbody>
+  </table>
+</div>

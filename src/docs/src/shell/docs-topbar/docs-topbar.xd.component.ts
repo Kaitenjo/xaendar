@@ -33,7 +33,7 @@ export class DocsTopbarComponent extends CustomElement {
   /**
    * The current language.
    */
-  public readonly lang: Computed<Lang> = lang;
+  public readonly currentLang: Computed<Lang> = lang;
 
   /**
    * The current theme.
@@ -48,7 +48,7 @@ export class DocsTopbarComponent extends CustomElement {
   /**
    * The link to the home page.
    */
-  public readonly home = computed(() => href('', this.lang()));
+  public readonly home = computed(() => href('', this.currentLang()));
 
   /**
    * Asks the application to open or close the navigation.

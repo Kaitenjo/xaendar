@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+form {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 22rem;
+}
+
+label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+button {
+  justify-self: start;
+  cursor: pointer;
+}
+
+.errors {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  color: #c2410c;
+}
+
+.sent {
+  margin: 0.6rem 0 0;
+  overflow-wrap: anywhere;
+}

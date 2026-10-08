@@ -1,0 +1,10 @@
+<div class="controls">
+  <button (click)="change(-1)">−1</button>
+  <button (click)="change(1)">+1</button>
+  <span>{ guests() } guests</span>
+</div>
+@if (guests() > 0) {
+  <label>Notes for the guests <input type="text" placeholder="Type, then change the number" /></label>
+} @else {
+  <p>Nobody is coming.</p>
+}

@@ -1,0 +1,13 @@
+@import { ClickOutsideDirective } from './click-outside.directive.ts'
+
+<div class="dropdown" @@exClickOutside((outside)="close()")>
+  <button (click)="toggle()">Sort by ▾</button>
+  @if (open()) {
+    <ul class="menu">
+      <li><button (click)="pick('name')">Name</button></li>
+      <li><button (click)="pick('date')">Date</button></li>
+      <li><button (click)="pick('size')">Size</button></li>
+    </ul>
+  }
+</div>
+<p>Sorted by { picked() }. Open the menu, then click anywhere else on the page.</p>

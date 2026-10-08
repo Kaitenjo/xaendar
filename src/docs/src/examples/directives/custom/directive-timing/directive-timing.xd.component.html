@@ -1,0 +1,13 @@
+@import { InspectDirective } from './inspect.directive.ts'
+
+<button (click)="rename()">Change the label</button>
+<ul id="fruits" @@exInspect(label="{ label() }" (report)="log($event)")>
+  <li>Apple</li>
+  <li>Pear</li>
+  <li>Plum</li>
+</ul>
+<ol class="log">
+  @for (line of lines(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

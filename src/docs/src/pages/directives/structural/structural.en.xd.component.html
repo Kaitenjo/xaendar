@@ -1,0 +1,120 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ParityComponent } from '../../../examples/directives/structural/parity/parity.xd.component.ts'
+@import { CitySearchComponent } from '../../../examples/directives/structural/min-length/city-search.xd.component.ts'
+@import { MediaLayoutComponent } from '../../../examples/directives/structural/media/media-layout.xd.component.ts'
+@import { AdminPanelComponent } from '../../../examples/directives/structural/allowed-user/admin-panel.xd.component.ts'
+@import { LateReadComponent } from '../../../examples/directives/structural/late-read/late-read.xd.component.ts'
+
+<span class="eyebrow">Directives</span>
+<h1>Structural directives</h1>
+<p class="lead">
+  A structural directive extends <code>StructuralDirective</code> and implements one method,
+  <code>shouldRender()</code>. The element it is applied to, with everything inside it, exists while the method returns
+  <code>true</code>. It is an <code>{'@if'}</code> with a name, inputs and logic of its own, reusable in any template.
+</p>
+
+<h2>shouldRender</h2>
+<docs-example name="directives/structural/parity" heading="Even numbers, and even positive numbers">
+  <ex-parity />
+</docs-example>
+<p>
+  <code>shouldRender</code> runs inside an effect: it is evaluated again whenever a signal it reads changes, here the
+  <code>value</code> input. When the outcome becomes <code>true</code> the element is rendered; when it becomes
+  <code>false</code> the element and its subtree are destroyed.
+</p>
+<p>
+  The second paragraph has two structural directives: it is rendered only while <strong>all</strong> of them return
+  <code>true</code>. The order does not matter, and there is no limit on their number.
+</p>
+<p>
+  Type something in the field, then press <strong>+2</strong>: the outcome stays <code>true</code>, so the element is
+  left alone and keeps the text. Press <strong>+1</strong> and then <strong>+1</strong> again: the element is destroyed
+  and created anew, with an empty field. The same happens with <code>{'@if'}</code>, as shown in
+  <a href="#/en/templates/if">{'@if'}</a>.
+</p>
+
+<h2>Inputs</h2>
+<docs-example name="directives/structural/min-length" heading="Results after three letters">
+  <ex-city-search />
+</docs-example>
+<p>
+  A structural directive can have any number of inputs, declared with <code>{'@Property'}</code>. Since
+  <code>min</code> is a number, it is bound with an expression, <code>{'min="{ 3 }"'}</code>: a static value would be a
+  string, and the compiler would reject it.
+</p>
+
+<h2>Reading other signals</h2>
+<p>
+  <code>shouldRender</code> tracks every signal it reads, not only the inputs. A signal kept in a module can make the
+  rendering follow the state of the browser.
+</p>
+<docs-example name="directives/structural/media" heading="Content chosen by media queries">
+  <ex-media-layout />
+</docs-example>
+<p>
+  The signals are created once per media query and shared by all the instances of the directive. A structural
+  directive has no <code>onInit</code> or <code>onDestroy</code>, so it has nowhere to remove a listener it adds: any
+  resource it needs has to live outside of it, like the map of this module.
+</p>
+
+<h2>Asynchronous directives</h2>
+<p>
+  <code>shouldRender</code> can return a promise. The element is rendered or destroyed when the promise settles: until
+  then, it stays as it is.
+</p>
+<docs-example name="directives/structural/allowed-user" heading="A permission checked by a server">
+  <ex-admin-panel />
+</docs-example>
+<p>
+  Switch to <strong>Guest</strong>: the panel stays visible during the check, and disappears when the answer arrives.
+  Then try the third button: the check for the guest is still running when the one for the admin starts. When the first
+  answer arrives, the directive has already been evaluated again, so the outcome is discarded: only the latest
+  evaluation decides, and the panel never flickers.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="directives/structural/late-read" heading="Signals read after an await" kind="edge">
+    <ex-late-read />
+  </docs-example>
+  <p>
+    Only the signals read before the first <code>await</code> are tracked: after it, the evaluation is no longer
+    running inside the effect. The second directive reads its input after waiting, so switching user does not evaluate
+    it again, and the paragraph stays. Read every input at the top of the method, as the first directive does.
+  </p>
+  <docs-callout kind="edge" heading="Before the first answer">
+    An asynchronous directive starts with no outcome: the element is not rendered until the first promise resolves
+    to <code>true</code>. A promise that rejects leaves the previous outcome in place, and its error reaches the
+    console as an unhandled rejection: catch it in the method if a failure should hide the element.
+  </docs-callout>
+  <docs-callout kind="edge" heading="No listeners and no conditional inputs">
+    <p>
+      A structural directive has no element to dispatch events on, since the element may not exist, so it accepts no
+      listeners. Its inputs cannot be bound conditionally either; the directive itself can be applied by a condition,
+      as shown in <a href="#/en/directives/conditional">Conditional directives</a>.
+    </p>
+    <docs-code snippet="directives/structural-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="A valueless attribute before the directive">
+    <p>
+      An attribute without a value, such as <code>hidden</code>, written right before a structural directive is not
+      parsed. Moving it after the directive, or giving it an empty value, works around the problem.
+    </p>
+    <docs-code snippet="directives/hidden-attribute.html" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>shouldRender()</code></td><td>Returns <code>boolean</code> or <code>{'Promise<boolean>'}</code>; evaluated again when a signal read before the first <code>await</code> changes.</td></tr>
+      <tr><td><code>{'@Property'}</code></td><td>Inputs, as in components; never bound conditionally.</td></tr>
+      <tr><td><code>*a(…) *b(…)</code></td><td>The element is rendered while every directive returns <code>true</code>.</td></tr>
+      <tr><td>Pending promise</td><td>The element keeps its state; outcomes of older evaluations are discarded.</td></tr>
+    </tbody>
+  </table>
+</div>

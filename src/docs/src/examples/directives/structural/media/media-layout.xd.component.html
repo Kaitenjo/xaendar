@@ -1,0 +1,6 @@
+@import { MediaDirective } from './media.directive.ts'
+
+<p *exMedia(query="(min-width: 700px)")>🖥️ The window is at least 700px wide.</p>
+<p *exMedia(query="(max-width: 699.98px)")>📱 The window is narrower than 700px.</p>
+<p *exMedia(query="(prefers-reduced-motion: reduce)")>The system asks for reduced motion.</p>
+<p class="hint">Resize the window to switch the first two paragraphs.</p>

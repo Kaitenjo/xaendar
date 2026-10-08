@@ -24,7 +24,7 @@ export class DocsSidenavComponent extends CustomElement {
   /**
    * The current language.
    */
-  public readonly lang: Computed<Lang> = lang;
+  public readonly currentLang: Computed<Lang> = lang;
 
   /**
    * The path of the page being read.

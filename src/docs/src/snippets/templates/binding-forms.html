@@ -1,0 +1,10 @@
+<a href="/docs">Docs</a>                                  <!-- a static value -->
+<a title="{ tooltip() }">…</a>                            <!-- an expression -->
+<a href="{`/results?page=${page()}`}">…</a>              <!-- a template literal -->
+<p class="{ linkClass() }" style="{ barStyle() }">…</p>  <!-- class and style are attributes too -->
+<button
+  @if (locked()) {
+    disabled                                              <!-- a boolean attribute: present or absent -->
+  }
+>Save</button>
+<ex-progress-meter value="{ done() }" />                 <!-- the input of a component -->

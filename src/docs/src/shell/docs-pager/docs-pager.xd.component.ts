@@ -24,7 +24,7 @@ export class DocsPagerComponent extends CustomElement {
   /**
    * The current language.
    */
-  public readonly lang: Computed<Lang> = lang;
+  public readonly currentLang: Computed<Lang> = lang;
 
   /**
    * The page before the one being read.

@@ -1,0 +1,93 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { IfElseChainComponent } from '../../../examples/templates/if/if-else-chain/if-else-chain.xd.component.ts'
+@import { BranchStateComponent } from '../../../examples/templates/if/branch-state/branch-state.xd.component.ts'
+@import { BranchCollisionComponent } from '../../../examples/templates/if/branch-collision/branch-collision.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Condizioni con {'@if'}</h1>
+<p class="lead">
+  <code>{'@if'}</code> renderizza un blocco solo finché la sua condizione è truthy, con rami facoltativi
+  <code>{'@else if'}</code> e <code>{'@else'}</code>. La condizione è reattiva: viene rieseguita ogni volta che cambia
+  un signal che legge, e il blocco cambia ramo quando il risultato lo richiede.
+</p>
+
+<h2>Rami</h2>
+<docs-code snippet="templates/if-syntax.html" />
+<docs-example name="templates/if/if-else-chain" heading="Una temperatura in quattro rami">
+  <ex-if-else-chain />
+</docs-example>
+<p>
+  Le condizioni vengono provate dall’alto, e vince la prima truthy. Come le interpolazioni nel testo, le condizioni sono
+  sempre reattive, anche quando chiamano un metodo. Un blocco può contenere tutto ciò che può contenere un template:
+  elementi, testo, componenti e altro control flow. Qui i rami contengono solo testo, dentro un unico paragrafo: una
+  catena i cui rami iniziano con lo stesso elemento incontra un bug del compilatore, descritto nei casi limite.
+</p>
+
+<h2>Quando un ramo viene renderizzato di nuovo</h2>
+<p>
+  Il blocco tiene traccia del ramo che mostra, non del valore della condizione. Finché vince lo stesso ramo, i suoi
+  elementi non vengono toccati; quando vince un altro ramo, gli elementi del vecchio vengono rimossi, con i componenti
+  che contengono, e vengono creati quelli nuovi.
+</p>
+<docs-example name="templates/if/branch-state" heading="Un campo dentro un ramo">
+  <ex-branch-state />
+</docs-example>
+<p>
+  Scrivi delle note, poi aggiungi ospiti: la condizione viene rieseguita a ogni clic, ma resta vera, e il campo
+  conserva il suo testo. Scendi a zero e torna su: il campo viene creato di nuovo, vuoto. Lo stato che deve
+  sopravvivere va nei signal, non negli elementi di un ramo.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/if/branch-collision" heading="Rami che iniziano con lo stesso elemento" kind="edge">
+    <ex-branch-collision />
+  </docs-example>
+  <p>
+    Muovi lo slider: a sinistra i colori sono giusti, ma ogni ramo dopo il primo mostra il testo dell’ultimo. Il
+    compilatore dà agli elementi dei rami <code>{'@else if'}</code> ed <code>{'@else'}</code> i nomi che avrebbero se
+    fossero fratelli dell’<code>{'@if'}</code>, quindi elementi con lo stesso tag nella stessa posizione condividono il
+    codice generato, tra loro e con i fratelli del blocco. È un problema noto; finché non viene corretto:
+  </p>
+  <ul>
+    <li>fai lo switch su un computed, come a destra: i rami di <code>{'@switch'}</code> non sono colpiti;</li>
+    <li>tieni solo testo nei rami, come nel primo esempio;</li>
+    <li>scrivi blocchi <code>{'@if'}</code> separati, con condizioni che si escludono a vicenda;</li>
+    <li>un semplice <code>{'@if'}</code> con un solo <code>{'@else'}</code> è sicuro, purché nessun fratello del blocco abbia lo stesso tag nella stessa posizione.</li>
+  </ul>
+  <docs-callout kind="issue" heading="Un @if con @else direttamente dentro un @else">
+    <p>
+      Le funzioni generate per il blocco interno e per quello esterno ricevono gli stessi nomi: viene renderizzato il
+      ramo sbagliato, e il template finisce in una ricorsione infinita. Usa <code>{'@else if'}</code>, oppure avvolgi il
+      blocco interno in un elemento.
+    </p>
+    <docs-code snippet="templates/nested-else.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Errori di sintassi">
+    <p>
+      Lo spazio dopo <code>{'@if'}</code> è obbligatorio, un <code>{'@else'}</code> deve seguire un blocco, e non esiste
+      <code>as</code> per dare un nome al valore della condizione: rileggilo dentro il blocco, oppure tienilo in un
+      computed.
+    </p>
+    <docs-code snippet="templates/if-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Truthy, non true">
+    La condizione segue JavaScript: <code>0</code>, <code>''</code>, <code>null</code>, <code>undefined</code> e
+    <code>NaN</code> selezionano il ramo <code>{'@else'}</code>. Per un conteggio che può valere zero, confrontalo in modo
+    esplicito, come fa <code>{'guests() > 0'}</code>.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@if (condition) { … }'}</code></td><td>Renderizza il blocco finché la condizione è truthy.</td></tr>
+      <tr><td><code>{'@else if (condition) { … }'}</code></td><td>Provato quando le condizioni precedenti sono falsy.</td></tr>
+      <tr><td><code>{'@else { … }'}</code></td><td>Renderizzato quando nessuna condizione è truthy.</td></tr>
+    </tbody>
+  </table>
+</div>

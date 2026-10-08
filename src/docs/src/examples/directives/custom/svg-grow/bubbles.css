@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+}
+
+circle {
+  fill: #6750a4;
+  fill-opacity: 0.75;
+  cursor: pointer;
+}

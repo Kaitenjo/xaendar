@@ -1,0 +1,17 @@
+:host {
+  display: grid;
+  gap: 0.5rem;
+}
+
+label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+input {
+  font: inherit;
+}

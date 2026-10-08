@@ -1,0 +1,8 @@
+{ count = 1 }               [Parser] 'FirstAssignment' is not allowed inside template expressions.
+{ new Date() }              [Parser] 'new' is not allowed inside template expressions.
+{ items.map(i => i * 2) }   [Parser] Function expressions are not allowed inside template expressions.
+{ this.count() }            [Parser] 'ThisKeyword' is not allowed inside template expressions.
+{ value as number }         [Parser] 'AsExpression' is not allowed inside template expressions.
+{ /a/.test(text) }          [Parser] 'RegularExpressionLiteral' is not allowed inside template expressions.
+{ (a, b) }                  [Parser] 'CommaToken' is not allowed inside template expressions.
+{ a; b }                    [Parser] 'a; b' must be a single expression, got '; b' after 'a'.

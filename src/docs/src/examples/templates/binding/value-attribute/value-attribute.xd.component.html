@@ -1,0 +1,4 @@
+<label>value attribute <input type="text" value="{ text() }" (input)="onInput($event)" /></label>
+<label>value property <input class="by-property" type="text" (input)="onInput($event)" /></label>
+<button (click)="reset()">Reset the text</button>
+<p>The signal holds: "{ text() }"</p>

@@ -1,0 +1,8 @@
+<ul>
+  @for (task of tasks(); track task.id) {
+    <li class="{ selectedIds().includes(task.id) ? 'task selected' : 'task' }" (click)="toggle(task.id)">{ task.title }</li>
+  }
+</ul>
+<button (click)="addTask()">Add a task</button>
+<p>Query on .selected: <strong>{ fromQuery() }</strong></p>
+<p>From the state: <strong>{ fromState() }</strong></p>

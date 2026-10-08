@@ -1,0 +1,79 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignupFormComponent } from '../../../examples/patterns/forms/signup-form/signup-form.xd.component.ts'
+@import { BindValueDemoComponent } from '../../../examples/patterns/forms/bind-value/bind-value-demo.xd.component.ts'
+
+<span class="eyebrow">Pattern</span>
+<h1>Form</h1>
+<p class="lead">
+  Xaendar non ha un modulo per i form né il two-way binding. Un form è fatto di elementi semplici: i loro eventi
+  scrivono signal, dei computed li validano, e una direttiva riscrive i valori nei campi quando è lo stato a guidarli.
+</p>
+
+<h2>Leggere i campi</h2>
+<docs-example name="patterns/forms/signup-form" heading="Un form di registrazione">
+  <ex-signup-form />
+</docs-example>
+<p>
+  Ogni campo ha un listener che scrive il suo signal: <code>input</code> per i campi di testo, <code>change</code> per
+  select e checkbox. Il metodo riceve l’evento e legge <code>value</code> o <code>checked</code> dal suo target, dato che
+  un template non può leggere da solo <code>$event.target</code>, come spiegato in
+  <a href="#/it/templates/events">Eventi</a>.
+</p>
+<p>
+  <code>errors</code> è un computed sui campi, quindi è sempre aggiornato, e il template lo mostra solo dopo il primo
+  tentativo di invio. Il listener di <code>submit</code> chiama <code>preventDefault()</code>, che impedisce al browser
+  di ricaricare la pagina; <code>novalidate</code> spegne la validazione del browser, qui sostituita da quella del
+  computed.
+</p>
+
+<h2>Scrivere i campi</h2>
+<p>
+  Leggere basta finché è solo l’utente a cambiare i campi. Quando li cambia anche lo stato, con un reset, un valore
+  predefinito o una formattazione, legare <code>value</code> non basta.
+</p>
+<docs-example name="patterns/forms/bind-value" heading="L’attributo value e la proprietà value">
+  <ex-bind-value-demo />
+</docs-example>
+<p>
+  Scrivi nel primo campo, poi premi <strong>Reset</strong>: il signal si svuota, il campo no. Un binding imposta
+  l’<em>attributo</em> <code>value</code>, che un campo usa solo come valore iniziale: dopo che l’utente ha scritto, il
+  campo mostra la sua <em>proprietà</em> <code>value</code> e ignora l’attributo. Il secondo campo usa
+  <code>exBindValue</code>, una direttiva che scrive la proprietà in un effect, e segue il signal in entrambe le
+  direzioni. La stessa direttiva guida la select.
+</p>
+<p>
+  La direttiva salta la scrittura quando il campo contiene già il valore: riscriverlo mentre l’utente digita
+  sposterebbe il cursore alla fine.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Una select riceve le option dopo le sue direttive">
+    Una direttiva custom parte prima che i figli del suo elemento vengano renderizzati, come mostrato in
+    <a href="#/it/directives/custom">Direttive custom</a>. In <code>onInit</code> una select non ha ancora le option,
+    quindi un valore scritto lì va perso e resta selezionata la prima option. <code>exBindValue</code> avvia il suo
+    effect un microtask dopo, quando le option esistono.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Checkbox">
+    <p>
+      <code>checked</code> è un attributo booleano: legato a <code>false</code>, spunta comunque la casella. E, come
+      <code>value</code>, è solo lo stato iniziale.
+    </p>
+    <docs-code snippet="patterns/checkbox-attribute.html" />
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Esigenza</th><th>Strumento</th></tr></thead>
+    <tbody>
+      <tr><td>Leggere un campo</td><td><code>(input)</code> o <code>(change)</code> che chiama un metodo che legge <code>event.target</code></td></tr>
+      <tr><td>Validare</td><td>Un <code>computed</code> sui campi</td></tr>
+      <tr><td>Inviare</td><td><code>(submit)</code> con <code>preventDefault()</code></td></tr>
+      <tr><td>Scrivere un campo</td><td>Una direttiva che imposta la proprietà in un effect</td></tr>
+    </tbody>
+  </table>
+</div>

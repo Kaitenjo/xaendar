@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+math {
+  margin: 0.6rem 0;
+  font-size: 1.3rem;
+}
+
+p {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+}

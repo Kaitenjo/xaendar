@@ -1,0 +1,6 @@
+<!-- ✗ a value mixing text and braces is static: the attribute is exactly "btn { kind() }" -->
+<button class="btn { kind() }">Save</button>
+
+<!-- ✓ the whole value is one expression -->
+<button class="{ 'btn ' + kind() }">Save</button>
+<button class="{`btn ${kind()}`}">Save</button>

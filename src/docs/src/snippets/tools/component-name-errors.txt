@@ -1,0 +1,14 @@
+$ xd c Widget
+Tag <Widget> is not a valid custom element name. Custom element names must:
+- contain a hyphen
+- no spaces.
+- start with a lowercase letter.
+- not contain uppercase letters.
+- not be a native HTML tag name.
+- not contain the following chars: '@', '#', '$', '%', '&', '*', '!', '?', '/', '\', '|', ''', '"', '<', '>', '='
+
+$ xd c font-face
+Tag <font-face> is a reserved tag name and cannot be used as a custom element name.
+
+$ xd c user-card       (the folder exists)
+✖  Directory "user-card" already exists.

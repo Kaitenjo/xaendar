@@ -1,0 +1,71 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Riferimento</span>
+<h1>Arrivando da Angular</h1>
+<p class="lead">
+  Xaendar prende in prestito gran parte del suo vocabolario da Angular: decoratori, signal, un control flow con
+  <code>{'@if'}</code> e <code>{'@for'}</code>, direttive strutturali. Sotto i nomi, il modello è diverso: ogni
+  componente è un vero custom element con una shadow root, i template vengono compilati in aggiornamenti diretti di
+  singoli nodi, e intorno non c’è un framework: niente moduli, niente injector, niente zone.
+</p>
+
+<h2>Lo stesso componente</h2>
+<docs-code snippet="reference/angular-component.ts" />
+
+<h2>Corrispondenze</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Angular</th><th>Xaendar</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Component'}</code></td><td><code>{'@WebComponent'}</code> su una classe che estende <code>CustomElement</code></td></tr>
+      <tr><td><code>input()</code>, <code>{'@Input'}</code></td><td><code>{'@Property'}</code> su un accessor tipizzato <code>InputSignal</code></td></tr>
+      <tr><td><code>input.required()</code></td><td><code>{'@Property.required()'}</code></td></tr>
+      <tr><td><code>output()</code>, <code>{'@Output'}</code></td><td><code>{'@Event'}</code> su un accessor tipizzato <code>Output</code>: un <code>CustomEvent</code> del DOM</td></tr>
+      <tr><td><code>signal</code>, <code>computed</code>, <code>effect</code>, <code>untracked</code></td><td>Gli stessi nomi, da <code>{'@xaendar/core/signals'}</code>, sulla proposta TC39</td></tr>
+      <tr><td><code>viewChild</code>, <code>viewChildren</code></td><td><code>{'@Query'}</code>, <code>{'@Query.all'}</code></td></tr>
+      <tr><td><code>contentChild</code>, <code>contentChildren</code></td><td><code>{'@Query.content'}</code>, <code>{'@Query.content.all'}</code></td></tr>
+      <tr><td><code>{'<ng-content select>'}</code></td><td><code>{'<slot name>'}</code>, con lo slotting nativo</td></tr>
+      <tr><td><code>ngOnInit</code>, <code>ngAfterViewInit</code>, <code>ngOnDestroy</code></td><td><code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>: chiamati a ogni connessione e disconnessione</td></tr>
+      <tr><td>Direttive di attributo</td><td>Direttive custom, <code>{'@@nome'}</code></td></tr>
+      <tr><td>Direttive strutturali</td><td><code>*nome</code>, con <code>shouldRender()</code>, anche asincrono</td></tr>
+      <tr><td><code>{'{{ expr }}'}</code></td><td><code>{'{ expr }'}</code></td></tr>
+      <tr><td><code>[attr]="expr"</code></td><td><code>{'attr="{ expr }"'}</code></td></tr>
+      <tr><td><code>[class.x]</code>, <code>[style.x]</code></td><td>Un template literal in <code>class</code> o <code>style</code>, o un binding condizionale</td></tr>
+      <tr><td><code>imports</code> del componente</td><td><code>{'@import'}</code> in cima al template</td></tr>
+      <tr><td>Service e <code>inject()</code></td><td>Moduli che esportano signal e funzioni</td></tr>
+      <tr><td>Pipe</td><td>Metodi e computed</td></tr>
+      <tr><td><code>styleUrls</code>, <code>:host</code>, <code>::ng-deep</code></td><td><code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Cosa funziona diversamente</h2>
+<ul>
+  <li>
+    <strong>Gli input arrivano dopo il primo render.</strong> Un figlio viene renderizzato appena connesso, e i suoi
+    input vengono impostati subito dopo: <code>onInit</code> vede i default. Leggi gli input in modo reattivo. Vedi
+    <a href="#/it/components/inputs">Input</a>.
+  </li>
+  <li>
+    <strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>:
+    un <code>value</code> smette di contare quando l’utente digita, e <code>disabled="{'\x7B'} false {'\x7D'}"</code>
+    disabilita comunque. Vedi <a href="#/it/templates/binding">Binding</a> e <a href="#/it/patterns/forms">Form</a>.
+  </li>
+  <li>
+    <strong>Spostare un elemento lo renderizza di nuovo.</strong> La disconnessione distrugge il contenuto della shadow
+    root, e la connessione successiva lo renderizza di nuovo. Vedi <a href="#/it/components/lifecycle">Ciclo di vita</a>.
+  </li>
+  <li>
+    <strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare
+    né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi
+    <a href="#/it/reference/template-syntax">il prontuario</a>.
+  </li>
+</ul>
+
+<docs-callout kind="unsupported" heading="Non disponibile">
+  Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi
+  come <code>(keydown.enter)</code>, <code>{'@defer'}</code>, <code>{'@let'}</code>, <code>{'@empty'}</code>,
+  <code>ng-template</code> e il rendering lato server. La sezione <a href="#/it/patterns/forms">Pattern</a> mostra come
+  coprire i casi comuni con signal e direttive.
+</docs-callout>

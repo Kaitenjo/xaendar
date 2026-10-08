@@ -1,0 +1,5 @@
+<p>1 < 2</p>
+
+Xaendar: Failed to compile template - /src/math/math.xd.component.html
+[Lexer] [Ln 1, Col 13] - Unexpected character 'p' after '/': expected '>' to close self-closing tag
+ ---> /p

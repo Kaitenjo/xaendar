@@ -1,0 +1,13 @@
+<div class="controls">
+  <button (click)="prepend()">Add at the top</button>
+  <button (click)="append()">Add at the bottom</button>
+</div>
+<ol>
+  @for (task of tasks(); track task.id; position = $index) {
+    <li class="{ $even() ? 'row row--even' : 'row' }">
+      <span class="title">{ task.title }</span>
+      <code>$index { position() } · $first { $first() } · $last { $last() } · $even { $even() } · $odd { $odd() }</code>
+      <button aria-label="Remove" (click)="removeTask(task.id)">✕</button>
+    </li>
+  }
+</ol>

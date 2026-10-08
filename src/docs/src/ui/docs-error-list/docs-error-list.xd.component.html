@@ -1,0 +1,27 @@
+<div class="toolbar">
+  <input type="search" placeholder="{ t().reference.filter }" aria-label="{ t().reference.filter }" (input)="search($event)" />
+  <select aria-label="Phase" (change)="pickPhase($event)">
+    <option value="">{ t().reference.all }</option>
+    @for (name of phases) {
+      <option value="{ name }">{ name }</option>
+    }
+  </select>
+  <span class="count">{ entries().length + ' ' + t().reference.results }</span>
+</div>
+@if (entries().length > 0) {
+  <ul class="entries">
+    @for (entry of entries(); track entry) {
+      <li class="entry">
+        <div class="entry-head">
+          <span class="badge">{ entry.phase }</span>
+        </div>
+        <pre>{ entry.message }</pre>
+        <p><span class="label">{ t().reference.cause }:</span> { entry.causeText }</p>
+        <p><span class="label">{ t().reference.fix }:</span> { entry.fixText }</p>
+        <p><a href="{ entry.href }">{ t().reference.readMore } →</a></p>
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="empty">{ t().reference.noResults }</p>
+}

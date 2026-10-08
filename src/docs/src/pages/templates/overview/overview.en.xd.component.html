@@ -1,0 +1,126 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { WhitespaceComponent } from '../../../examples/templates/overview/whitespace/whitespace.xd.component.ts'
+
+<span class="eyebrow">Templates</span>
+<h1>Template syntax</h1>
+<p class="lead">
+  A Xaendar template is HTML with a handful of additions: interpolations and bindings in braces, events in parentheses,
+  control flow and imports introduced by <code>{'@'}</code>, and directives. The compiler reads it at build time,
+  checks every expression against the class of the component, and turns it into code that creates the DOM and wires
+  each node to the signals it reads.
+</p>
+
+<h2>Everything at a glance</h2>
+<docs-code snippet="templates/template-anatomy.html" />
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Syntax</th><th>Meaning</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td><code>{"{ expression }"}</code></td><td>A text node showing the value</td><td><a href="#/en/templates/text-interpolation">Text interpolation</a></td></tr>
+      <tr><td><code>{'name="{ expression }"'}</code></td><td>An attribute, or the input of a component</td><td><a href="#/en/templates/binding">Binding</a></td></tr>
+      <tr><td><code>(event)="method(…)"</code></td><td>A listener</td><td><a href="#/en/templates/events">Event binding</a></td></tr>
+      <tr><td><code>{'@if'}</code>, <code>{'@for'}</code>, <code>{'@switch'}</code></td><td>Control flow</td><td><a href="#/en/templates/if">{'@if'}</a>, <a href="#/en/templates/for">{'@for'}</a>, <a href="#/en/templates/switch">{'@switch'}</a></td></tr>
+      <tr><td><code>{'@if'}</code> inside a tag</td><td>Bindings applied only while a condition holds</td><td><a href="#/en/templates/conditional-bindings">Conditional bindings</a></td></tr>
+      <tr><td><code>{'@import'}</code></td><td>The components used by the template</td><td><a href="#/en/templates/imports">{'@import'}</a></td></tr>
+      <tr><td><code>{'@@name'}</code>, <code>*name</code></td><td>Custom and structural directives</td><td><a href="#/en/directives/overview">Directives</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Stricter than HTML</h2>
+<p>
+  The browser forgives a lot of HTML; the compiler does not, and each of these mistakes fails the build with the
+  position of the problem:
+</p>
+<ul>
+  <li>void elements are closed with <code>{'/>'}</code> as in XML, <code>{'<input />'}</code>, never left open;</li>
+  <li>closing tags match the opening ones letter by letter, upper case included;</li>
+  <li>attribute values are always in double quotes.</li>
+</ul>
+<docs-code snippet="templates/void-element-error.txt" />
+<docs-code snippet="templates/closing-case-error.txt" />
+<docs-code snippet="templates/quotes-error.txt" />
+
+<h2>Whitespace</h2>
+<p>
+  The compiler drops the line breaks of the text, instead of turning them into spaces, and drops the text made only of
+  whitespace, between two tags or two interpolations. Indentation is kept, and the browser collapses it into one space.
+</p>
+<docs-example name="templates/overview/whitespace" heading="Six ways of writing two words">
+  <ex-whitespace />
+</docs-example>
+<ol>
+  <li>the line break disappears, and the two words touch;</li>
+  <li>the indentation of the second line becomes the space: indent the lines of text you wrap;</li>
+  <li>the space between two tags is dropped;</li>
+  <li><code>{"{' '}"}</code> writes a space that stays;</li>
+  <li>the space between two interpolations is dropped too;</li>
+  <li>building the text in one expression keeps it.</li>
+</ol>
+
+<h2>Special characters</h2>
+<p>
+  <code>{'@'}</code>, braces and <code>{'<'}</code> have a meaning in templates, and the compiler does not decode
+  HTML entities: <code>&lt;</code> is shown as written. To show those characters, interpolate a string; for all
+  the others, such as arrows and typographic quotes, write the character itself.
+</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Character</th><th>Write</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@'}</code></td><td><code>{"{'@'}"}</code></td><td>{'@'}</td></tr>
+      <tr><td>opening brace</td><td><code>{"{'\\x7B'}"}</code></td><td>{'\x7B'}</td></tr>
+      <tr><td>closing brace</td><td><code>{"{'\\x7D'}"}</code></td><td>{'\x7D'}</td></tr>
+      <tr><td><code>{'<'}</code></td><td><code>{"{'<'}"}</code></td><td>{'<'}</td></tr>
+      <tr><td>a whole snippet</td><td><code>{"{'{ count() }'}"}</code></td><td>{'{ count() }'}</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>
+  A string may contain braces only in pairs, as in the last row: an unpaired brace inside a string still counts when the
+  compiler looks for the end of the interpolation, hence the <code>\x7B</code> and <code>\x7D</code> escapes.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="An @ in plain text">
+    <p>
+      An <code>{'@'}</code> followed by letters starts a block, so an email address in the text does not compile.
+      Inside attribute values <code>{'@'}</code> is safe.
+    </p>
+    <docs-code snippet="templates/at-sign-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="A less-than sign in plain text">
+    <p>
+      <code>{'<'}</code> always opens a tag, and the error points somewhere after it. <code>{'>'}</code> is safe.
+    </p>
+    <docs-code snippet="templates/less-than-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="An unclosed comment hides the rest of the template">
+    <p>
+      HTML comments are allowed and are not rendered, but one that is never closed swallows everything after it,
+      without any error.
+    </p>
+    <docs-code snippet="templates/unclosed-comment.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Upper-case tags">
+    <code>{'<DIV>'}</code> with <code>{'</DIV>'}</code> compiles and renders a <code>div</code>, as in HTML; only the
+    two tags have to match.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Rule</th><th>Write</th></tr></thead>
+    <tbody>
+      <tr><td>Void elements</td><td><code>{'<br />'}</code>, <code>{'<input />'}</code>, <code>{'<img />'}</code></td></tr>
+      <tr><td>Attribute values</td><td>Double quotes only</td></tr>
+      <tr><td>A space that must stay</td><td><code>{"{' '}"}</code>, or the text built in one expression</td></tr>
+      <tr><td><code>{'@'}</code>, braces, <code>{'<'}</code> in text</td><td><code>{"{'@'}"}</code>, <code>{"{'\\x7B'}"}</code>, <code>{"{'\\x7D'}"}</code>, <code>{"{'<'}"}</code></td></tr>
+      <tr><td>Entities</td><td>The character itself: →, —, ’, ©</td></tr>
+    </tbody>
+  </table>
+</div>

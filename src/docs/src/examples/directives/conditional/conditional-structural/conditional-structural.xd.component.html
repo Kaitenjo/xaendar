@@ -1,0 +1,15 @@
+@import { IsEvenDirective } from '../../structural/parity/is-even.directive.ts'
+@import { PositiveDirective } from '../../structural/parity/positive.directive.ts'
+
+<div class="controls">
+  <button (click)="change(-1)">−1</button>
+  <button (click)="change(1)">+1</button>
+  <label><input type="checkbox" (change)="toggle()" /> Only positive</label>
+  <strong>n = { n() }</strong>
+</div>
+<p
+  *exIsEven(value="{ n() }")
+  @if (onlyPositive()) {
+    *exPositive(value="{ n() }")
+  }
+>{ n() } passes.</p>

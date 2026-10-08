@@ -1,0 +1,15 @@
+@import { HookParentComponent } from './hook-parent.xd.component.ts'
+
+<div class="controls">
+  <button (click)="toggle()">@if (shown()) { Remove the parent } @else { Add the parent }</button>
+  <button (click)="rename()">Change the label: { label() }</button>
+  <button (click)="clear()">Clear the log</button>
+</div>
+@if (shown()) {
+  <ex-hook-parent label="{ label() }" />
+}
+<ol class="log">
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

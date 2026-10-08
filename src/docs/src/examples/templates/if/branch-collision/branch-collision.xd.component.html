@@ -1,0 +1,32 @@
+<label>{ degrees() } °C <input type="range" min="-10" max="40" value="5" aria-label="Temperature" (input)="setDegrees($event)" /></label>
+<div class="columns">
+  <section>
+    <h5>{'@if'} with a p in every branch</h5>
+    @if (degrees() < 0) {
+      <p class="freezing">Freezing</p>
+    } @else if (degrees() < 15) {
+      <p class="cold">Cold</p>
+    } @else if (degrees() < 25) {
+      <p class="mild">Mild</p>
+    } @else {
+      <p class="hot">Hot</p>
+    }
+  </section>
+  <section>
+    <h5>{'@switch'} on a computed signal</h5>
+    @switch (level()) {
+      @case ('freezing') {
+        <p class="freezing">Freezing</p>
+      }
+      @case ('cold') {
+        <p class="cold">Cold</p>
+      }
+      @case ('mild') {
+        <p class="mild">Mild</p>
+      }
+      @default {
+        <p class="hot">Hot</p>
+      }
+    }
+  </section>
+</div>

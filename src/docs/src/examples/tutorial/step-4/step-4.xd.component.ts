@@ -75,7 +75,7 @@ export class TodoStep4Component extends CustomElement {
    *
    * @param id - The identifier of the todo.
    */
-  public remove(id: number): void {
+  public removeTodo(id: number): void {
     this.todos.update(todos => todos.filter(todo => todo.id !== id));
   }
 }

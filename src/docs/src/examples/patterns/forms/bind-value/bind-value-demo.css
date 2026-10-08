@@ -1,0 +1,29 @@
+:host {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 24rem;
+}
+
+label {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button {
+  cursor: pointer;
+}

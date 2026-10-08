@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+input,
+button {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+ul {
+  margin: 0.6rem 0;
+}
+
+p {
+  margin: 0;
+  font-size: 0.85rem;
+}

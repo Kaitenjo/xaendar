@@ -1,0 +1,11 @@
+<button (click)="add()">Add an item</button>
+<ul>
+  @for (item of items(); track item) {
+    <li class="item">Item { item }</li>
+  }
+</ul>
+<ol class="log">
+  @for (line of log(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

@@ -1,0 +1,78 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignupFormComponent } from '../../../examples/patterns/forms/signup-form/signup-form.xd.component.ts'
+@import { BindValueDemoComponent } from '../../../examples/patterns/forms/bind-value/bind-value-demo.xd.component.ts'
+
+<span class="eyebrow">Patterns</span>
+<h1>Forms</h1>
+<p class="lead">
+  Xaendar has no form module and no two-way binding. A form is made of plain elements: their events write signals,
+  computed signals validate them, and a directive writes values back into the fields when the state has to drive them.
+</p>
+
+<h2>Reading the fields</h2>
+<docs-example name="patterns/forms/signup-form" heading="A sign-up form">
+  <ex-signup-form />
+</docs-example>
+<p>
+  Each field has a listener writing its signal: <code>input</code> for text fields, <code>change</code> for selects and
+  checkboxes. The method receives the event and reads <code>value</code> or <code>checked</code> from its target, since
+  a template cannot read <code>$event.target</code> itself, as explained in <a href="#/en/templates/events">Events</a>.
+</p>
+<p>
+  <code>errors</code> is a computed signal over the fields, so it is always up to date, and the template shows it only
+  after the first attempt to submit. The <code>submit</code> listener calls <code>preventDefault()</code>, which keeps
+  the browser from reloading the page; <code>novalidate</code> turns off the validation of the browser, replaced here
+  by the computed one.
+</p>
+
+<h2>Writing the fields</h2>
+<p>
+  Reading is enough as long as the user is the only one changing the fields. When the state changes them too, with a
+  reset, a default or a formatting, binding <code>value</code> is not enough.
+</p>
+<docs-example name="patterns/forms/bind-value" heading="The value attribute and the value property">
+  <ex-bind-value-demo />
+</docs-example>
+<p>
+  Type in the first field, then press <strong>Reset</strong>: the signal is cleared, the field is not. A binding sets
+  the <code>value</code> <em>attribute</em>, which a field only uses as its initial value: once the user has typed, the
+  field shows its <code>value</code> <em>property</em>, and ignores the attribute. The second field uses
+  <code>exBindValue</code>, a directive writing the property in an effect, and follows the signal in both directions.
+  The same directive drives the select.
+</p>
+<p>
+  The directive skips the write when the field already holds the value: writing it again while the user types would
+  move the caret to the end.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="A select gets its options after its directives">
+    A custom directive starts before the children of its element are rendered, as shown in
+    <a href="#/en/directives/custom">Custom directives</a>. A select has no options yet in <code>onInit</code>, so a
+    value written there is lost and the first option stays selected. <code>exBindValue</code> starts its effect a
+    microtask later, when the options exist.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Checkboxes">
+    <p>
+      <code>checked</code> is a boolean attribute: bound to <code>false</code>, it still checks the box. And, like
+      <code>value</code>, it is only the initial state.
+    </p>
+    <docs-code snippet="patterns/checkbox-attribute.html" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Need</th><th>Tool</th></tr></thead>
+    <tbody>
+      <tr><td>Read a field</td><td><code>(input)</code> or <code>(change)</code> calling a method that reads <code>event.target</code></td></tr>
+      <tr><td>Validate</td><td>A <code>computed</code> over the fields</td></tr>
+      <tr><td>Submit</td><td><code>(submit)</code> with <code>preventDefault()</code></td></tr>
+      <tr><td>Write a field</td><td>A directive setting the property in an effect</td></tr>
+    </tbody>
+  </table>
+</div>

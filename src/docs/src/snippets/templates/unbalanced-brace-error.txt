@@ -1,0 +1,5 @@
+<p>{ '{' }</p>
+
+Xaendar: Failed to compile template - /src/price/price.xd.component.html
+[Parser] [Ln 1, Col 2] - Expected closing tag p while file is over
+ ---> <p>{ '{' }</p>

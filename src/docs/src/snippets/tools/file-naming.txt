@@ -1,0 +1,5 @@
+src/user-card/user-card.xd.component.ts     compiled: template, styles and type check
+src/user-card/user-card.ts                  not compiled: the class has no render function
+src/user-card/user-card.xd.component.html   found through templateUrl
+src/user-card/user-card.xd.component.css    found through styleUrl; any name, .css only
+src/directives/tooltip.directive.ts         directives need no compilation: any name

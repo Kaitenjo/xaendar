@@ -1,0 +1,127 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { WhitespaceComponent } from '../../../examples/templates/overview/whitespace/whitespace.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Sintassi dei template</h1>
+<p class="lead">
+  Un template Xaendar è HTML con poche aggiunte: interpolazioni e binding tra graffe, eventi tra parentesi, control
+  flow e import introdotti da <code>{'@'}</code>, e direttive. Il compilatore lo legge a build time, controlla ogni
+  espressione rispetto alla classe del componente, e lo trasforma in codice che crea il DOM e collega ogni nodo ai
+  signal che legge.
+</p>
+
+<h2>Tutto in un colpo d’occhio</h2>
+<docs-code snippet="templates/template-anatomy.html" />
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Sintassi</th><th>Significato</th><th>Pagina</th></tr></thead>
+    <tbody>
+      <tr><td><code>{"{ expression }"}</code></td><td>Un nodo di testo che mostra il valore</td><td><a href="#/it/templates/text-interpolation">Interpolazione del testo</a></td></tr>
+      <tr><td><code>{'name="{ expression }"'}</code></td><td>Un attributo, o l’input di un componente</td><td><a href="#/it/templates/binding">Binding</a></td></tr>
+      <tr><td><code>(event)="method(…)"</code></td><td>Un listener</td><td><a href="#/it/templates/events">Gestione degli eventi</a></td></tr>
+      <tr><td><code>{'@if'}</code>, <code>{'@for'}</code>, <code>{'@switch'}</code></td><td>Control flow</td><td><a href="#/it/templates/if">{'@if'}</a>, <a href="#/it/templates/for">{'@for'}</a>, <a href="#/it/templates/switch">{'@switch'}</a></td></tr>
+      <tr><td><code>{'@if'}</code> dentro un tag</td><td>Binding applicati solo finché vale una condizione</td><td><a href="#/it/templates/conditional-bindings">Binding condizionali</a></td></tr>
+      <tr><td><code>{'@import'}</code></td><td>I componenti usati dal template</td><td><a href="#/it/templates/imports">{'@import'}</a></td></tr>
+      <tr><td><code>{'@@name'}</code>, <code>*name</code></td><td>Direttive custom e strutturali</td><td><a href="#/it/directives/overview">Direttive</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Più rigoroso dell’HTML</h2>
+<p>
+  Il browser perdona molti errori nell’HTML; il compilatore no, e ciascuno di questi errori fa fallire la build con la
+  posizione del problema:
+</p>
+<ul>
+  <li>gli elementi void si chiudono con <code>{'/>'}</code> come in XML, <code>{'<input />'}</code>, non si lasciano aperti;</li>
+  <li>i tag di chiusura corrispondono a quelli di apertura lettera per lettera, maiuscole comprese;</li>
+  <li>i valori degli attributi sono sempre tra doppi apici.</li>
+</ul>
+<docs-code snippet="templates/void-element-error.txt" />
+<docs-code snippet="templates/closing-case-error.txt" />
+<docs-code snippet="templates/quotes-error.txt" />
+
+<h2>Spazi</h2>
+<p>
+  Il compilatore elimina gli a capo del testo, invece di trasformarli in spazi, ed elimina il testo fatto solo di spazi,
+  tra due tag o tra due interpolazioni. L’indentazione resta, e il browser la riduce a un solo spazio.
+</p>
+<docs-example name="templates/overview/whitespace" heading="Sei modi di scrivere due parole">
+  <ex-whitespace />
+</docs-example>
+<ol>
+  <li>l’a capo sparisce, e le due parole si toccano;</li>
+  <li>l’indentazione della seconda riga diventa lo spazio: indenta le righe di testo che vai a capo;</li>
+  <li>lo spazio tra due tag viene eliminato;</li>
+  <li><code>{"{' '}"}</code> scrive uno spazio che resta;</li>
+  <li>anche lo spazio tra due interpolazioni viene eliminato;</li>
+  <li>costruire il testo in un’unica espressione lo mantiene.</li>
+</ol>
+
+<h2>Caratteri speciali</h2>
+<p>
+  <code>{'@'}</code>, le graffe e <code>{'<'}</code> hanno un significato nei template, e il compilatore non decodifica
+  le entità HTML: <code>&lt;</code> viene mostrato così come è scritto. Per mostrare quei caratteri, interpola una
+  stringa; per tutti gli altri, come frecce e apostrofi tipografici, scrivi il carattere stesso.
+</p>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Carattere</th><th>Scrivi</th><th>Risultato</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@'}</code></td><td><code>{"{'@'}"}</code></td><td>{'@'}</td></tr>
+      <tr><td>graffa aperta</td><td><code>{"{'\\x7B'}"}</code></td><td>{'\x7B'}</td></tr>
+      <tr><td>graffa chiusa</td><td><code>{"{'\\x7D'}"}</code></td><td>{'\x7D'}</td></tr>
+      <tr><td><code>{'<'}</code></td><td><code>{"{'<'}"}</code></td><td>{'<'}</td></tr>
+      <tr><td>un intero frammento</td><td><code>{"{'{ count() }'}"}</code></td><td>{'{ count() }'}</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>
+  Una stringa può contenere graffe solo a coppie, come nell’ultima riga: una graffa spaiata dentro una stringa conta
+  comunque quando il compilatore cerca la fine dell’interpolazione, da cui gli escape <code>\x7B</code> e
+  <code>\x7D</code>.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="Una @ nel testo">
+    <p>
+      Una <code>{'@'}</code> seguita da lettere apre un blocco, quindi un indirizzo email nel testo non compila. Dentro
+      i valori degli attributi <code>{'@'}</code> è sicura.
+    </p>
+    <docs-code snippet="templates/at-sign-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un segno di minore nel testo">
+    <p>
+      <code>{'<'}</code> apre sempre un tag, e l’errore indica un punto successivo. <code>{'>'}</code> è sicuro.
+    </p>
+    <docs-code snippet="templates/less-than-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="Un commento non chiuso nasconde il resto del template">
+    <p>
+      I commenti HTML sono ammessi e non vengono renderizzati, ma uno che non viene mai chiuso inghiotte tutto ciò che
+      lo segue, senza alcun errore.
+    </p>
+    <docs-code snippet="templates/unclosed-comment.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Tag in maiuscolo">
+    <code>{'<DIV>'}</code> con <code>{'</DIV>'}</code> compila e renderizza un <code>div</code>, come in HTML; basta che i
+    due tag corrispondano.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Regola</th><th>Scrivi</th></tr></thead>
+    <tbody>
+      <tr><td>Elementi void</td><td><code>{'<br />'}</code>, <code>{'<input />'}</code>, <code>{'<img />'}</code></td></tr>
+      <tr><td>Valori degli attributi</td><td>Solo doppi apici</td></tr>
+      <tr><td>Uno spazio che deve restare</td><td><code>{"{' '}"}</code>, oppure il testo costruito in un’unica espressione</td></tr>
+      <tr><td><code>{'@'}</code>, graffe, <code>{'<'}</code> nel testo</td><td><code>{"{'@'}"}</code>, <code>{"{'\\x7B'}"}</code>, <code>{"{'\\x7D'}"}</code>, <code>{"{'<'}"}</code></td></tr>
+      <tr><td>Entità</td><td>Il carattere stesso: →, —, ’, ©</td></tr>
+    </tbody>
+  </table>
+</div>

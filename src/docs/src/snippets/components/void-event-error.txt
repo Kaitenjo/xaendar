@@ -1,0 +1,3 @@
+Xaendar: [TypeChecker] Failed to compile template - /src/cart/cart.xd.component.html
+[Ln 3, Col 80] - Cannot find name '$event'. Did you mean 'event'?
+ ---> (cleared)="clear($event)"

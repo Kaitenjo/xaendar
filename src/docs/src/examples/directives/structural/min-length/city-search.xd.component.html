@@ -1,0 +1,8 @@
+@import { MinLengthDirective } from './min-length.directive.ts'
+
+<input type="search" placeholder="Type at least 3 letters, e.g. 'ari'" (input)="type($event)" />
+<ul *exMinLength(text="{ query() }" min="{ 3 }")>
+  @for (city of results()) {
+    <li>{ city }</li>
+  }
+</ul>

@@ -1,0 +1,7 @@
+<button (click)="next()">Next list</button>
+<p>In the signal: <code>{ JSON.stringify(tags()) }</code></p>
+<p>Rendered:
+  @for (tag of tags(); track tag) {
+    <span class="tag">{ tag }</span>
+  }
+</p>

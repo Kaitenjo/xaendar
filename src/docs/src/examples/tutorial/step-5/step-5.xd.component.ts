@@ -90,7 +90,7 @@ export class TodoStep5Component extends CustomElement {
   }
 
   /**
-   * Handles the `remove` event of a row.
+   * Handles the `removed` event of a row.
    *
    * @param event - The event, carrying the identifier of the todo.
    */

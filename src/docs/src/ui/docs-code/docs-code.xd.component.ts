@@ -32,10 +32,11 @@ export class DocsCodeComponent extends CustomElement {
   public accessor code!: InputSignal<string>;
 
   /**
-   * The language of `code`, one of {@link CodeLang} (`text` when unknown).
+   * The language of `code`, one of {@link CodeLang} (`text` when unknown). Bound as `lang`: a member
+   * named `lang` would clash with the `lang` property of `HTMLElement`.
    */
-  @Property('ts')
-  public accessor lang!: InputSignal<string>;
+  @Property('ts', { alias: 'lang' })
+  public accessor language!: InputSignal<string>;
 
   /**
    * The path of a snippet in `src/snippets`, whose content and language replace `code` and `lang`.
@@ -84,7 +85,7 @@ export class DocsCodeComponent extends CustomElement {
     if (this.snippet()) {
       return getSnippet(this.snippet());
     }
-    const lang = this.lang() as CodeLang;
+    const lang = this.language() as CodeLang;
     return { name: this.filename(), lang: CODE_LANGS.includes(lang) ? lang : 'text', code: this.code() };
   });
 

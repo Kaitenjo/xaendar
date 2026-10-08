@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+ul {
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.selected {
+  background: color-mix(in srgb, #6750a4 25%, transparent);
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+p {
+  margin: 0.4rem 0 0;
+}

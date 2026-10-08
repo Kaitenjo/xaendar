@@ -1,0 +1,7 @@
+$ xd generate component user-card
+error: unknown command 'generate'
+
+$ xd g c user-card
+error: unknown command 'g'
+
+# The command is registered at the top level: use xd component (or xd c)

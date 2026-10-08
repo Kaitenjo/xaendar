@@ -1,0 +1,70 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ThemePreviewComponent } from '../../../examples/patterns/theming/theme-preview/theme-preview.xd.component.ts'
+
+<span class="eyebrow">Pattern</span>
+<h1>Temi</h1>
+<p class="lead">
+  Lo shadow DOM tiene i selettori della pagina fuori dai componenti, ma non le proprietà ereditate, e le custom property
+  si ereditano. Un tema è quindi un insieme di custom property dichiarate su un antenato, che i componenti leggono con
+  <code>var()</code>.
+</p>
+
+<h2>Token e part</h2>
+<docs-example name="patterns/theming/theme-preview" heading="Tre temi e un colore d’accento">
+  <ex-theme-preview />
+</docs-example>
+<p>
+  Lo stage imposta <code>data-theme</code> da un signal, e il suo foglio di stile dichiara un insieme di token per ogni
+  valore. Le card non dichiarano alcun tema: leggono <code>--card-bg</code>, <code>--card-text</code> e
+  <code>--accent</code>, con un fallback per quando non c’è un tema. L’accento arriva da un campo colore, legato
+  direttamente in un attributo <code>style</code> con un template literal.
+</p>
+<p>
+  La seconda card mostra l’altra strada: il suo titolo è esposto con <code>part="heading"</code>, e il padre lo stila con
+  <code>::part(heading)</code>. I token sono adatti ai valori condivisi da molti componenti; le part ai casi in cui un
+  componente lascia ristilare un elemento preciso a chi lo usa. Entrambi sono descritti in
+  <a href="#/it/components/styling">Stili</a>.
+</p>
+
+<h2>Un tema per l’intera applicazione</h2>
+<p>
+  Questo sito tiene il tema in un signal di modulo, lo scrive su <code>{'<html data-theme>'}</code> e salva la scelta.
+  I token sono dichiarati su <code>:root</code> nel foglio di stile globale, quindi ogni componente li eredita.
+</p>
+<docs-code snippet="patterns/theme-store.ts" />
+<p>
+  I componenti vengono renderizzati dopo il caricamento degli script dell’applicazione. Un piccolo script inline in
+  <code>index.html</code> applica il tema salvato, o quello preferito dal sistema, prima del primo paint, così la pagina
+  non lampeggia mai con i colori sbagliati.
+</p>
+<docs-code snippet="patterns/no-flash.html" />
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading=":root dentro un componente">
+    <p>
+      Una shadow root non ha un elemento radice, quindi <code>:root</code> nel foglio di stile di un componente non
+      corrisponde a nulla. I token locali di un componente vanno su <code>:host</code>.
+    </p>
+    <docs-code snippet="patterns/root-in-component.css" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Solo le proprietà ereditate attraversano il confine">
+    Un tema non può ristilare l’interno di un componente con i selettori normali. Ciò che il componente non legge da una
+    custom property, o non espone come part, resta come lo definisce il componente.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Strumento</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>--token</code> e <code>var(--token, fallback)</code></td><td>Valori impostati dalla pagina, letti da ogni componente sottostante.</td></tr>
+      <tr><td><code>part="nome"</code> e <code>::part(nome)</code></td><td>Un elemento di un componente, ristilato dall’esterno.</td></tr>
+      <tr><td><code>{'data-theme="{ theme() }"'}</code></td><td>Cambiare l’insieme di token da un signal.</td></tr>
+      <tr><td>Script inline in <code>index.html</code></td><td>Il tema salvato applicato prima del primo paint.</td></tr>
+    </tbody>
+  </table>
+</div>

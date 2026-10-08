@@ -1,0 +1,68 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { OrderStatusComponent } from '../../../examples/templates/switch/order-status/order-status.xd.component.ts'
+@import { DefaultFirstComponent } from '../../../examples/templates/switch/default-first/default-first.xd.component.ts'
+@import { SwitchEvaluationsComponent } from '../../../examples/templates/switch/switch-evaluations/switch-evaluations.xd.component.ts'
+
+<span class="eyebrow">Templates</span>
+<h1>Branching with {'@switch'}</h1>
+<p class="lead">
+  <code>{'@switch'}</code> compares one value with a list of cases and renders the block of the first one that matches,
+  or the <code>{'@default'}</code> block when none does. It reads better than a chain of <code>{'@else if'}</code> when
+  every branch tests the same value.
+</p>
+
+<h2>Cases</h2>
+<docs-code snippet="templates/switch-syntax.html" />
+<docs-example name="templates/switch/order-status" heading="The status of an order">
+  <ex-order-status />
+</docs-example>
+<p>
+  The comparison is strict, <code>===</code>: <code>{"@case (1)"}</code> does not match the string <code>'1'</code>.
+  Cases written one after the other without a block share the block of the last one, as <em>pending</em> and
+  <em>paid</em> do. As with <code>{'@if'}</code>, the block is rendered again only when another case wins.
+</p>
+<p>
+  A <code>{'@switch'}</code> on a computed signal is also the way around a bug of <code>{'@else if'}</code> chains whose
+  branches start with the same element: see the edge cases of <a href="#/en/templates/if">{'@if'}</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="templates/switch/default-first" heading="A @default before the cases" kind="edge">
+    <ex-default-first />
+  </docs-example>
+  <p>
+    The blocks are tried in the order they are written, and <code>{'@default'}</code> always matches: written first,
+    it hides every case after it. Keep it last.
+  </p>
+  <docs-example name="templates/switch/switch-evaluations" heading="How many times the value is read" kind="edge">
+    <ex-switch-evaluations />
+  </docs-example>
+  <p>
+    The expression of the switch runs once for each case it is compared with: once for Monday, five times for the
+    weekend. A method with side effects, or a slow one, runs as many times. Switch on a signal or a computed signal,
+    which read their cached value. This is listed in <a href="#/en/reference/known-issues">Known issues</a>.
+  </p>
+  <docs-callout kind="edge" heading="Case values are literals">
+    <p>
+      The value of a case cannot read the members of the component. Compare with literals, or move the logic into a
+      computed signal that returns one of them.
+    </p>
+    <docs-code snippet="templates/switch-case-member.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Syntax</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@switch (value) { … }'}</code></td><td>Compares the value with the cases, in order.</td></tr>
+      <tr><td><code>{"@case ('a') { … }"}</code></td><td>Rendered when the value is <code>=== 'a'</code>.</td></tr>
+      <tr><td><code>{"@case ('a') @case ('b') { … }"}</code></td><td>One block for several values.</td></tr>
+      <tr><td><code>{'@default { … }'}</code></td><td>Rendered when no case matches. Keep it last.</td></tr>
+    </tbody>
+  </table>
+</div>

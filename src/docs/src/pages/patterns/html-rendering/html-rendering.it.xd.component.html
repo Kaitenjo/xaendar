@@ -1,0 +1,62 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { MarkdownPreviewComponent } from '../../../examples/patterns/html-rendering/markdown-preview/markdown-preview.xd.component.ts'
+
+<span class="eyebrow">Pattern</span>
+<h1>Renderizzare HTML</h1>
+<p class="lead">
+  Un’interpolazione crea sempre un nodo di testo, e un binding su un elemento nativo imposta sempre un attributo. Una
+  stringa di HTML quindi appare come testo, che è il default sicuro. Renderizzarla come markup richiede una direttiva
+  che imposti <code>innerHTML</code>.
+</p>
+
+<h2>Una direttiva per innerHTML</h2>
+<docs-example name="patterns/html-rendering/markdown-preview" heading="Un’anteprima Markdown">
+  <ex-markdown-preview />
+</docs-example>
+<p>
+  <code>exInnerHtml</code> scrive il suo input in <code>innerHTML</code> da un effect, quindi l’anteprima segue ogni
+  tasto premuto. Il convertitore Markdown fa l’escape dell’intero sorgente prima di aggiungere i suoi tag: l’HTML
+  scritto nell’editor esce come testo, e l’unico markup del risultato è quello scritto dal convertitore.
+</p>
+<p>
+  Gli elementi inseriti vivono nella shadow root del componente, quindi il suo foglio di stile li stila: i titoli e il
+  codice dell’anteprima usano le regole di <code>markdown-preview.css</code>.
+</p>
+<docs-code snippet="patterns/interpolated-html.html" />
+
+<docs-callout kind="warning" heading="Non fidarti mai dell’HTML">
+  <p>
+    <code>innerHTML</code> esegue i gestori di eventi del markup che riceve: basta un <code>{'<img>'}</code> con un
+    attributo <code>onerror</code> per eseguire codice. L’HTML degli utenti, o di qualsiasi fonte che non controlli, va
+    trattato con l’escape, come fa il convertitore, oppure sanificato da una libreria fatta apposta.
+  </p>
+  <docs-code snippet="patterns/sanitize.ts" />
+</docs-callout>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="edge" heading="L’HTML inserito non è un template">
+    La stringa viene analizzata dal browser, non dal compilatore: un’interpolazione al suo interno è testo semplice, un
+    listener scritto come <code>(click)</code> è un attributo qualsiasi, e nessuna direttiva viene applicata. Ogni
+    cambio dell’input sostituisce l’intero contenuto, quindi gli elementi inseriti perdono il loro stato, come il focus o
+    una selezione di testo.
+  </docs-callout>
+  <docs-callout kind="edge" heading="L’elemento non deve avere altro contenuto">
+    La direttiva sostituisce tutto ciò che l’elemento contiene, e i figli scritti nel template vengono renderizzati
+    subito dopo <code>onInit</code>, come mostrato in <a href="#/it/directives/custom">Direttive custom</a>. Applicala a
+    un elemento vuoto.
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Risultato</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'{ html() }'}</code></td><td>La stringa come testo, tag compresi.</td></tr>
+      <tr><td><code>{'@@exInnerHtml(html="{ html() }")'}</code></td><td>La stringa analizzata come HTML, aggiornata quando cambia.</td></tr>
+    </tbody>
+  </table>
+</div>

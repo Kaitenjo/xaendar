@@ -1,0 +1,5 @@
+@import { TooltipDirective } from './tooltip.directive.ts'
+
+<button @@exTooltip(text="Copies the selection")>Copy</button>
+<button @@exTooltip(text="{`Saved ${saves()} times`}" (click)="save()")>Save</button>
+<button @@exTooltip(text="Moves the selection to the bin")>Delete</button>

@@ -1,0 +1,8 @@
+<p title="static"
+  @if (on()) {
+    title="bound"
+  }
+>…</p>
+
+Xaendar: Failed to compile template - /src/card/card.xd.component.html
+[Parser] [Ln 1, Col 2] - Attribute "title" is bound more than once on <p>

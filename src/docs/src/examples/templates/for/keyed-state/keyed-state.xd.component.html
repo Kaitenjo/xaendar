@@ -1,0 +1,15 @@
+<button (click)="rotate()">Move the last one to the top</button>
+<div class="columns">
+  <section>
+    <h5>track person.id</h5>
+    @for (person of people(); track person.id) {
+      <label>{ person.name } <input type="text" placeholder="{ 'Notes on ' + person.name }" /></label>
+    }
+  </section>
+  <section>
+    <h5>track $index</h5>
+    @for (person of people(); track $index) {
+      <label>{ person.name } <input type="text" placeholder="{ 'Notes on ' + person.name }" /></label>
+    }
+  </section>
+</div>

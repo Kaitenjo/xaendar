@@ -1,0 +1,144 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+  margin: 1.5rem 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar input,
+.toolbar select {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  color: var(--xd-text);
+  background: var(--xd-bg-elevated);
+  border: 1px solid var(--xd-border-strong);
+  border-radius: var(--xd-radius-sm);
+}
+
+.toolbar input {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+  outline: none;
+  box-shadow: var(--xd-focus);
+}
+
+.count {
+  font-size: 0.85rem;
+  color: var(--xd-text-muted);
+}
+
+.entries {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius);
+  background: var(--xd-bg-elevated);
+}
+
+.entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.entry-name {
+  margin: 0;
+  font-size: 1rem;
+  font-family: var(--xd-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  color: var(--xd-accent);
+  background: var(--xd-accent-soft);
+}
+
+.badge.muted {
+  color: var(--xd-text-muted);
+  background: var(--xd-bg-muted);
+}
+
+.badge.issue {
+  color: var(--xd-issue);
+  background: color-mix(in srgb, var(--xd-issue) 12%, transparent);
+}
+
+.module {
+  font-size: 0.8rem;
+  font-family: var(--xd-font-mono);
+  color: var(--xd-text-muted);
+}
+
+code,
+pre {
+  font-family: var(--xd-font-mono);
+  font-size: 0.82rem;
+}
+
+pre {
+  margin: 0.55rem 0;
+  padding: 0.5rem 0.7rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--xd-code-text);
+  background: var(--xd-code-bg);
+  border: 1px solid var(--xd-code-border);
+  border-radius: var(--xd-radius-sm);
+}
+
+p {
+  margin: 0.4rem 0 0;
+  line-height: 1.55;
+  color: var(--xd-text-soft);
+}
+
+.label {
+  margin-right: 0.3em;
+  font-weight: 600;
+  color: var(--xd-text);
+}
+
+a {
+  color: var(--xd-accent);
+  font-size: 0.88rem;
+}
+
+.empty {
+  color: var(--xd-text-muted);
+}

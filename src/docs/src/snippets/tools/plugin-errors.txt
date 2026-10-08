@@ -1,0 +1,11 @@
+# A template that does not pass the type check: logged, and the component gets no render function
+Xaendar: [TypeChecker] Failed to compile template - src/user-card/user-card.xd.component.html
+[Ln 3, Col 12] - Property 'nmae' does not exist on type 'UserCardComponent'.
+ ---> nmae() }
+
+# A template that does not parse
+Xaendar: Failed to compile template - src/user-card/user-card.xd.component.html
+[Parser] [Ln 1, Col 2] - Expected closing tag input while file is over
+
+# At run time, in the browser
+UserCardComponent does not seems to have a Render Function

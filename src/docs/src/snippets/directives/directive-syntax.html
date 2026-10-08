@@ -1,0 +1,13 @@
+<!-- A custom directive, with and without inputs -->
+<p @@exTint>Default color</p>
+<p @@exTint(color="#bbf7d0")>Static input</p>
+<p @@exTint(color="{ color() }")>Bound input</p>
+
+<!-- Listeners inside the parentheses: the outputs of the directive, or native events of the element -->
+<div @@exClickOutside((outside)="close()")>…</div>
+
+<!-- A structural directive -->
+<p *exVisibleWhen(condition="{ shown() }")>Rendered while shown() is true</p>
+
+<!-- Several directives on the same element -->
+<button @@exTint(color="#fde68a") @@exTooltip(text="Saves the file")>Save</button>

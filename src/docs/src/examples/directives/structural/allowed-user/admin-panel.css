@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.panel {
+  margin: 0.6rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(21, 128, 61, 0.15);
+}
+
+.log {
+  margin: 0.6rem 0 0;
+  padding-left: 1.4rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.8rem;
+}

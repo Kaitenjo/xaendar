@@ -1,0 +1,34 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+p {
+  margin: 0.4rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+}
+
+.even {
+  background: rgba(103, 80, 164, 0.15);
+}
+
+.both {
+  background: rgba(21, 128, 61, 0.15);
+}

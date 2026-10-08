@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+button {
+  margin-bottom: 0.5rem;
+  font: inherit;
+  cursor: pointer;
+}

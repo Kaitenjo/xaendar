@@ -1,0 +1,9 @@
+<p @@exTint @@exTint(color="red")>…</p>
+[Parser] [Ln 2, Col 2] - Directive "exTint" is applied more than once on <p>
+
+<p @@exTint(shade="red")>…</p>
+[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).
+----> shade="red"
+
+<p @@exGrow(scale="{ 'big' }")>…</p>
+[Ln 2, Col 25] - Type 'string' does not satisfy the expected type 'number'.

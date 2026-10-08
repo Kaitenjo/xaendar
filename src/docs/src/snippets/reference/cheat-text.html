@@ -1,0 +1,11 @@
+<!-- Interpolation: any expression, always reactive, always a text node -->
+<p>Hello { name() }, you have { count() + 1 } messages</p>
+<p>{`${count()} items`}</p>                 <!-- template literal: no space before the backtick -->
+<p>{ user()?.name ?? 'anonymous' }</p>
+
+<!-- Characters with a meaning: write them through an interpolation -->
+<p>{ '@' } { '<' } { '\x7B' } { '\x7D' }</p>
+
+<!-- Void elements are always self-closed; attribute values always in double quotes -->
+<input type="text" />
+<br />

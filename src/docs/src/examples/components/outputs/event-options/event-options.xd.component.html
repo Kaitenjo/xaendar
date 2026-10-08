@@ -1,0 +1,29 @@
+@import { EventSourceComponent } from './event-source.xd.component.ts'
+
+<div class="frame">
+  <ex-event-source (plain)="fromTag($event)" (bubbling)="fromTag($event)" (escaping)="fromTag($event)" />
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Emission</th>
+        @for (level of levels; track level) {
+          <th>{ level }</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row) {
+        <tr>
+          <th>{ row.emission }</th>
+          @for (cell of row.cells; track $index) {
+            <td>{ cell }</td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<p class="seen">Seen by the document: { documentView() }</p>
+<button (click)="reset()">Reset</button>

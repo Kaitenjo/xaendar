@@ -1,0 +1,21 @@
+@if (items().length > 10) {
+  <p>Many</p>
+} @else if (items().length > 0) {
+  <p>A few</p>
+} @else {
+  <p>None</p>
+}
+
+@for (item of items(); track item.id) {
+  <li>{ $index() + 1 }. { item.name } { $first() ? '(first)' : '' }</li>
+}
+@for (row of rows(); track row.id; i = $index) { … }    <!-- alias -->
+@for (5) { <span>★</span> }                             <!-- a number of times -->
+@for (n of count()) { <span>{ n }</span> }              <!-- 0 … count() - 1 -->
+
+@switch (status()) {
+  @case ('draft')
+  @case ('review') { <p>In progress</p> }
+  @case ('done') { <p>Done</p> }
+  @default { <p>Unknown</p> }
+}

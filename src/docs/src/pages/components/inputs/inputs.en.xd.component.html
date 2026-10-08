@@ -1,1 +1,167 @@
-<h1>TODO inputs</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { PropertyBasicsComponent } from '../../../examples/components/inputs/property-basics/property-basics.xd.component.ts'
+@import { AttributesVsPropertiesComponent } from '../../../examples/components/inputs/attributes-vs-properties/attributes-vs-properties.xd.component.ts'
+@import { TransformEqualsComponent } from '../../../examples/components/inputs/transform-equals/transform-equals.xd.component.ts'
+@import { InitTimingComponent } from '../../../examples/components/inputs/init-timing/init-timing.xd.component.ts'
+@import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Inputs with {'@Property'}</h1>
+<p class="lead">
+  An input is how a parent passes data to a child. You declare it with <code>{'@Property'}</code> on an accessor of the
+  child, and it becomes an <code>InputSignal</code>: a signal that the parent writes through its template and the child
+  can only read. Everything that reads it, in the template or in a computed signal, updates when the parent binds a
+  new value.
+</p>
+
+<h2>Declaring an input</h2>
+<docs-code snippet="components/property-options.ts" />
+<p>
+  The decorator goes on an <code>accessor</code> field typed <code>{'InputSignal<T>'}</code>, which the decorator
+  replaces with the signal; the <code>!</code> tells TypeScript that the field is initialized for you. The first
+  argument is the default value, used until the parent binds something. The name used in templates is the name of
+  the accessor, unless <code>alias</code> gives another one: an alias is the way to use dashes, as HTML attributes
+  usually do.
+</p>
+<docs-example name="components/inputs/property-basics" heading="A meter with three inputs">
+  <ex-property-basics />
+</docs-example>
+<p>
+  The first meter binds all three inputs; the second binds only <code>value</code>, so <code>max</code> stays
+  <code>100</code> and <code>show-value</code> stays <code>true</code>. Inside the meter, <code>percent</code> is a
+  computed signal reading two inputs: inputs are signals like any other, so everything built on them is reactive.
+</p>
+
+<h2>Static values and expressions</h2>
+<p>
+  A binding on a component tag sets the input, not an attribute. Its value is either the text written in the template,
+  always a string, or the result of an expression in braces, of any type. The template compiler checks both against
+  the type of the input.
+</p>
+<docs-example name="components/inputs/attributes-vs-properties" heading="A static value and an expression">
+  <ex-attributes-vs-properties />
+</docs-example>
+<p>
+  The input of <code>ex-value-type</code> is <code>{'InputSignal<unknown>'}</code>, so both bindings compile, and the
+  child receives a string in the first case and a number in the second. On an input typed <code>number</code> the
+  static value does not compile:
+</p>
+<docs-code snippet="components/static-number-error.txt" />
+
+<h2>Normalizing and comparing: transform and equals</h2>
+<p>
+  <code>transform</code> runs on every value the parent binds, before it is stored. <code>equals</code> compares the
+  result with the current value: when it returns <code>true</code> the input keeps its value and notifies nobody. By
+  default the comparison is <code>Object.is</code>, so a new array with the same content counts as a change.
+</p>
+<docs-example name="components/inputs/transform-equals" heading="Tags trimmed, lowercased and compared by content">
+  <ex-transform-equals />
+</docs-example>
+<p>
+  <em>Send the same tags</em> binds a new array, but once normalized it has the same tags as the current one: the count
+  of runs does not move. <em>Send other tags</em> moves it by one. The first run of the effect happens in
+  <code>onInit</code>, before the parent binds anything, and reads the default empty list: the next section explains
+  why.
+</p>
+
+<h2>Required inputs</h2>
+<p>
+  <code>{'@Property.required()'}</code> declares an input without a default. Every template using the component must
+  bind it, and the check happens at build time: a template that leaves it out fails to compile, and so does a template
+  that binds it only in some branches of a <a href="#/en/templates/conditional-bindings">conditional binding</a>.
+</p>
+<docs-code snippet="components/required-error.txt" />
+<docs-code snippet="components/required-branch-error.txt" />
+
+<h2>When the values arrive</h2>
+<p>
+  The child is rendered as soon as the parent creates it, before the parent binds its inputs. So in
+  <code>onInit</code>, in the first render and in <code>afterRender</code>, every input still has its default, and a
+  required input is <code>undefined</code>. The bound values arrive right after, and everything that reads the inputs
+  reactively updates.
+</p>
+<docs-example name="components/inputs/init-timing" heading="What the card sees, step by step">
+  <ex-init-timing />
+</docs-example>
+<p>
+  Add the card and read the log: <code>onInit</code> and <code>afterRender</code> see <code>undefined</code>, the effect
+  runs once with <code>undefined</code> and again with the bound name. Rename re-runs only the effect, and the text of
+  the card. Hence two rules:
+</p>
+<ul>
+  <li>
+    read inputs <strong>reactively</strong>: in the template, in computed signals and in effects, never once in a hook;
+  </li>
+  <li>
+    in the template of a component with a required input, handle <code>undefined</code>, as the card does with
+    <code>name() ?? '…'</code>: an exception thrown by the first render breaks the template for good. See
+    <a href="#/en/reference/known-issues">Known issues</a>.
+  </li>
+</ul>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="components/inputs/conditional-reset" heading="Unbinding an input" kind="edge">
+    <ex-conditional-reset />
+  </docs-example>
+  <p>
+    When the condition of a conditional binding stops holding, the input goes back to its default, <code>50</code>,
+    not to the last bound value. Binding it again sets the current value of the parent.
+  </p>
+  <docs-callout kind="edge" heading="Attributes written from outside are ignored">
+    An input is not linked to the attribute of the same name: there is no <code>attributeChangedCallback</code>. The
+    button of the second example writes <code>value="42"</code> on the first component, and nothing changes. Code
+    outside Xaendar cannot set an input through the DOM: give the component a method, or wrap it in a Xaendar parent.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Inputs are read-only inside the component">
+    <p>
+      <code>InputSignal</code> has no public <code>set</code>: only the bindings of the parent write it. For a value
+      that the component changes too, copy the input into a local signal in an effect, and write the local one.
+    </p>
+    <docs-code snippet="components/read-only-input.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="transform does not change the type checked in templates">
+    <p>
+      Templates are checked against the type of the <code>InputSignal</code>, not against the parameter of
+      <code>transform</code>: a transform from <code>string</code> to <code>number</code> does not let you write a
+      static number. Use transforms that keep the type, and bind expressions.
+    </p>
+    <docs-code snippet="components/transform-type.ts" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="The type of an input is copied as text">
+    <p>
+      To check the templates of the parents, the compiler copies the type of the input as written, without its imports.
+      A type imported in the file of the component is unknown in the files of its parents. Write the type inline, or
+      use primitives.
+    </p>
+    <docs-code snippet="components/property-type-text.ts" />
+    <docs-code snippet="components/property-type-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="Inherited inputs are not checked">
+    The template compiler only sees the inputs declared in the class of the component, not those inherited from a base
+    class: their bindings compile without any type check. See <a href="#/en/components/inheritance">Inheritance</a>.
+  </docs-callout>
+  <docs-callout kind="edge" heading="A component defined after its parent rendered">
+    A component loaded later, for example with a dynamic import, receives its bindings as string attributes until it
+    is defined, and its default values after. See
+    <a href="#/en/components/registration">Selectors and registration</a>.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Property(default?, options?)'}</code></td><td>An optional input, holding <code>default</code> until it is bound.</td></tr>
+      <tr><td><code>{'@Property.required(options?)'}</code></td><td>An input that every template must bind. <code>undefined</code> until it is bound.</td></tr>
+      <tr><td><code>alias</code></td><td>The name of the input in templates.</td></tr>
+      <tr><td><code>transform(value)</code></td><td>Converts every bound value before it is stored.</td></tr>
+      <tr><td><code>equals(a, b)</code></td><td>When it returns <code>true</code>, the new value is discarded and nobody is notified. Default: <code>Object.is</code>.</td></tr>
+      <tr><td><code>watched</code>, <code>unwatched</code></td><td>Called when the input gains its first reader and loses its last one. See <a href="#/en/signals/options">Signal options</a>.</td></tr>
+      <tr><td><code>{'InputSignal<T>'}</code></td><td>A read-only signal: <code>input()</code> or <code>input.get()</code>.</td></tr>
+    </tbody>
+  </table>
+</div>

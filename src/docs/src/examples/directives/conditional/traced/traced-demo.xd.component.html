@@ -1,0 +1,25 @@
+@import { TracedDirective } from './trace.directive.ts'
+
+<div class="controls">
+  <button (click)="toggleApplied()">{ applied() ? 'Remove' : 'Apply' } the directive</button>
+  <button (click)="toggleWarm()">Make it { warm() ? 'cold' : 'warm' }</button>
+</div>
+<p
+  @if (applied()) {
+    @@exTraced(color="#fde68a")
+  }
+>The directive is applied by a condition.</p>
+<p
+  @@exTraced(
+    @if (warm()) {
+      color="#fecaca"
+    } @else {
+      color="#bfdbfe"
+    }
+  )
+>The input of the directive is bound by a condition.</p>
+<ol class="log">
+  @for (line of trace(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

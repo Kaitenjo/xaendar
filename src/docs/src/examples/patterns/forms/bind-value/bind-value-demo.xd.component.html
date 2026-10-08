@@ -1,0 +1,16 @@
+@import { BindValueDirective } from './bind-value.directive.ts'
+
+<label>Attribute <input type="text" value="{ text() }" (input)="type($event)" /></label>
+<label>Directive <input type="text" @@exBindValue(value="{ text() }") (input)="type($event)" /></label>
+<label>Size
+  <select @@exBindValue(value="{ size() }") (change)="choose($event)">
+    <option value="s">Small</option>
+    <option value="m">Medium</option>
+    <option value="l">Large</option>
+  </select>
+</label>
+<div class="controls">
+  <button (click)="reset()">Reset</button>
+  <button (click)="shout()">Upper case</button>
+  <span>Signals: "{ text() }", { size() }</span>
+</div>

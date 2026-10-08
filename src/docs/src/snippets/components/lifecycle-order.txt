@@ -1,0 +1,13 @@
+element connected to the document
+ ├─ the stylesheet is adopted by the shadow root
+ ├─ onInit()
+ ├─ the template is rendered
+ │    └─ each child component is connected here, and runs this same sequence to the end
+ │       before the parent binds its inputs and its events
+ ├─ the view queries start observing the shadow root
+ └─ afterRender()
+
+element disconnected from the document
+ ├─ onDestroy()
+ ├─ the effects created with this.effect() are disposed and the template is removed
+ └─ the view queries stop observing

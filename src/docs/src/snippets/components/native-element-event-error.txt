@@ -1,0 +1,2 @@
+Xaendar: [TypeChecker] Failed to compile template - /src/cart/cart.xd.component.html
+Property 'valueChange' does not exist on type 'HTMLElementEventMap'.

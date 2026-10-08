@@ -1,0 +1,81 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TaskButtonComponent } from '../../../examples/templates/conditional-bindings/task-button/task-button.xd.component.ts'
+@import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Binding condizionali</h1>
+<p class="lead">
+  <code>{'@if'}</code> e <code>{'@switch'}</code> possono comparire anche dentro un tag, tra i suoi attributi. Lì
+  decidono quali attributi, listener, input e direttive ha l’elemento: l’elemento resta, e solo i suoi binding vengono
+  aggiunti e rimossi al cambiare delle condizioni.
+</p>
+
+<h2>Attributi e listener</h2>
+<docs-code snippet="templates/conditional-binding-syntax.html" />
+<docs-example name="templates/conditional-bindings/task-button" heading="Un pulsante, tre condizioni">
+  <ex-task-button />
+</docs-example>
+<p>
+  Blocca il task: il pulsante riceve <code>disabled</code> e un nuovo <code>title</code>; sbloccalo ed entrambi vengono
+  sostituiti dagli attributi del ramo <code>{'@else'}</code>. Disattiva la modifica: il listener viene rimosso, e i clic
+  non vengono più contati. Scegli una priorità: <code>data-priority</code> viene impostato, cambiato o rimosso, e il
+  foglio di stile fa il resto. Gli attributi booleani come <code>disabled</code> sono l’uso principale: contano per la
+  loro presenza, quindi non si possono legare a <code>false</code>, come spiegato in
+  <a href="#/it/templates/binding">Binding</a>.
+</p>
+<p>
+  Le condizioni sono reattive, come quelle dei blocchi, e i binding condizionali si possono annidare. Un ramo può
+  contenere le stesse cose di un tag: attributi statici e legati, listener e direttive. Le direttive applicate in modo
+  condizionale hanno una pagina dedicata: <a href="#/it/directives/conditional">Direttive condizionali</a>.
+</p>
+
+<h2>Input dei componenti</h2>
+<p>
+  Sul tag di un componente, un binding condizionale imposta un input finché vale la condizione. Quando smette di
+  valere, l’input torna al suo <strong>valore di default</strong>, non all’ultimo valore ricevuto.
+</p>
+<docs-example name="components/inputs/conditional-reset" heading="Un input legato solo quando è collegato">
+  <ex-conditional-reset />
+</docs-example>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-callout kind="issue" heading="Un valore di default che non è un letterale">
+    <p>
+      Per ripristinare il default quando un binding condizionale viene rimosso, il compilatore copia il default
+      dell’input, così come è scritto nel decoratore, nel codice del template che lo lega. Un default scritto come
+      identificatore, o come qualsiasi espressione che dipende dal file del componente, lì non esiste, e il template del
+      padre smette di renderizzare.
+    </p>
+    <docs-code snippet="templates/conditional-default-verbatim.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Input obbligatori in ogni ramo">
+    <p>
+      Un input obbligatorio legato in modo condizionale deve essere legato in ogni ramo, compreso un
+      <code>{'@else'}</code> o un <code>{'@default'}</code>, oppure fuori dalla condizione.
+    </p>
+    <docs-code snippet="components/required-branch-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Un attributo è statico oppure condizionale">
+    <p>
+      Lo stesso attributo non si può scrivere sia fuori sia dentro una condizione. Rami diversi della stessa condizione,
+      invece, possono legarlo ciascuno a modo suo.
+    </p>
+    <docs-code snippet="templates/bound-twice-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi dentro un tag</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@if (condition) { name="value" }'}</code></td><td>Attributi, listener, input e direttive presenti finché vale la condizione.</td></tr>
+      <tr><td><code>{'@else { … }'}</code></td><td>I binding usati altrimenti.</td></tr>
+      <tr><td><code>{"@switch (value) { @case ('a') { … } }"}</code></td><td>Binding scelti in base al valore.</td></tr>
+      <tr><td>Binding rimosso</td><td>Un attributo viene rimosso; un input torna al default; un listener si ferma.</td></tr>
+    </tbody>
+  </table>
+</div>

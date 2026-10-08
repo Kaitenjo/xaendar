@@ -1,0 +1,19 @@
+@if (a()) {
+  <p>A</p>
+} @else {
+  @if (b()) {          <!-- ✗ an @if/@else directly inside an @else -->
+    <p>B</p>
+  } @else {
+    <p>Neither</p>
+  }
+}
+<!-- At run time the wrong branch is rendered, and: RangeError: Maximum call stack size exceeded -->
+
+<!-- ✓ chain the conditions with @else if, or wrap the inner @if in an element -->
+@if (a()) {
+  <p>A</p>
+} @else if (b()) {
+  <p>B</p>
+} @else {
+  <p>Neither</p>
+}

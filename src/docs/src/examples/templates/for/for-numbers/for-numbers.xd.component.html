@@ -1,0 +1,11 @@
+<p class="fixed">
+  @for (5) {
+    <span class="dot"></span>
+  }
+</p>
+<label>Rating <input type="range" min="0" max="5" value="3" (input)="setRating($event)" /></label>
+<p class="stars">
+  @for (star of rating(); track star) {
+    <span title="{ 'Star ' + (star + 1) }">★</span>
+  }
+</p>

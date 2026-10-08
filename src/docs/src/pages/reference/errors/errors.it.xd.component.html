@@ -1,0 +1,16 @@
+@import { DocsErrorListComponent } from '../../../ui/docs-error-list/docs-error-list.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+
+<span class="eyebrow">Riferimento</span>
+<h1>Enciclopedia degli errori</h1>
+<p class="lead">
+  I messaggi del compilatore, della build, del runtime, dei signal e della CLI, così come vengono stampati, ciascuno con
+  la sua causa e la sua soluzione. Incolla una parte di un messaggio nel filtro per trovarlo.
+</p>
+<docs-callout kind="tip" heading="Leggere un messaggio del compilatore">
+  Gli errori dei template iniziano con <code>Xaendar: Failed to compile template</code> e il percorso del template,
+  seguiti dalla fase tra parentesi quadre, dalla riga e dalla colonna, e dall’estratto coinvolto. Gli errori del type
+  checker senza fase sono messaggi di TypeScript, controllati rispetto alla classe del componente. Posizioni e percorsi
+  sono omessi qui sotto.
+</docs-callout>
+<docs-error-list />

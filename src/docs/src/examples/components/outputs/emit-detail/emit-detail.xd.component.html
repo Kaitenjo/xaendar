@@ -1,0 +1,9 @@
+@import { QuantityPickerComponent } from './quantity-picker.xd.component.ts'
+
+<ex-quantity-picker value="{ quantity() }" (valueChange)="setQuantity($event)" (cleared)="clear()" />
+<p>Quantity in the parent: <strong>{ quantity() }</strong>, at most { limit }</p>
+<ol class="log">
+  @for (line of received(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

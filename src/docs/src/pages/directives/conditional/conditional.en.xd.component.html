@@ -1,0 +1,71 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TracedDemoComponent } from '../../../examples/directives/conditional/traced/traced-demo.xd.component.ts'
+@import { ConditionalStructuralComponent } from '../../../examples/directives/conditional/conditional-structural/conditional-structural.xd.component.ts'
+
+<span class="eyebrow">Directives</span>
+<h1>Conditional directives</h1>
+<p class="lead">
+  Directives can be applied by an <code>{'@if'}</code> or a <code>{'@switch'}</code> written inside a tag, like the
+  other <a href="#/en/templates/conditional-bindings">conditional bindings</a>. The element stays; the directive is
+  created when its branch is taken, and destroyed when it is left.
+</p>
+<docs-code snippet="directives/conditional-directive-syntax.html" />
+
+<h2>Custom directives</h2>
+<docs-example name="directives/conditional/traced" heading="A directive applied by a condition">
+  <ex-traced-demo />
+</docs-example>
+<p>
+  Remove the directive from the first paragraph: <code>onDestroy</code> runs, and the effects of the instance are
+  disposed. Apply it again: a <strong>new</strong> instance is created, with its own <code>onInit</code>. Nothing
+  survives between the two, so a directive applied conditionally should leave the element as it found it, as this one
+  does with the background.
+</p>
+<p>
+  The second paragraph keeps its directive, and switches only the binding of its input. The instance stays the same,
+  and its effect simply runs again with the new value.
+</p>
+
+<h2>Structural directives</h2>
+<docs-example name="directives/conditional/conditional-structural" heading="A structural directive added by a condition">
+  <ex-conditional-structural />
+</docs-example>
+<p>
+  The paragraph always has <code>exIsEven</code>, and <code>exPositive</code> only while the box is checked. The rule
+  does not change: the element is rendered while every directive currently applied returns <code>true</code>. Check the
+  box while <code>n</code> is negative and even: <code>exPositive</code> joins and the paragraph disappears; uncheck it
+  and the paragraph comes back. Both directives are defined in
+  <a href="#/en/directives/structural">Structural directives</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="edge" heading="Conditional inputs only on custom directives">
+    <p>
+      A custom directive can bind its inputs inside a condition, as the second paragraph above does. A structural
+      directive cannot: apply the whole directive conditionally instead, one per branch.
+    </p>
+    <docs-code snippet="directives/structural-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="No directives inside a directive">
+    <p>
+      The parentheses of a directive hold its inputs and listeners, and conditions over them, but no other directive.
+    </p>
+    <docs-code snippet="directives/nested-directives-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Syntax inside a tag</th><th>Behavior</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@if (c) { @@dir(…) }'}</code></td><td>A new instance each time the branch is taken; <code>onDestroy</code> when it is left.</td></tr>
+      <tr><td><code>{'@@dir(@if (c) { input="…" })'}</code></td><td>Same instance; only the binding of the input changes.</td></tr>
+      <tr><td><code>{'@if (c) { *dir(…) }'}</code></td><td>The directive joins or leaves the AND of the structural directives of the element.</td></tr>
+      <tr><td><code>{'*dir(@if (c) { input="…" })'}</code></td><td>Not allowed.</td></tr>
+    </tbody>
+  </table>
+</div>

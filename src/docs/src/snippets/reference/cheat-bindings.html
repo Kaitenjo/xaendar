@@ -1,0 +1,10 @@
+<!-- Native elements: attributes, set with setAttribute -->
+<a href="/home" title="{ tooltip() }" class="{`link ${active() ? 'on' : ''}`}">Home</a>
+
+<!-- Components: inputs, set as InputSignals -->
+<x-card heading="Static string" count="{ 3 }" user="{ user() }" />
+
+<!-- Events: one method call; arguments are literals, members, loop variables, property accesses or $event -->
+<button (click)="save()">Save</button>
+<input (input)="type($event)" />
+<x-picker (valueChange)="pick($event)" />

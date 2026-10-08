@@ -1,1 +1,122 @@
-<h1>TODO lifecycle</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
+@import { MoveComponent } from '../../../examples/components/lifecycle/move/move.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Lifecycle</h1>
+<p class="lead">
+  A component is rendered when its element is connected to the document and torn down when it is disconnected. Three
+  optional methods let you run code at those moments: <code>onInit</code>, <code>afterRender</code> and
+  <code>onDestroy</code>. They run at every connection and disconnection, not once per element.
+</p>
+
+<h2>The hooks</h2>
+<docs-code snippet="components/lifecycle-hooks.ts" />
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Hook</th><th>When</th><th>Use it for</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>constructor</code></td>
+        <td>Once, when the element is created.</td>
+        <td>Rarely needed: fields are initialized here anyway.</td>
+      </tr>
+      <tr>
+        <td><code>onInit()</code></td>
+        <td>At every connection, before the render.</td>
+        <td>Effects, timers, listeners on <code>window</code> or <code>document</code>.</td>
+      </tr>
+      <tr>
+        <td><code>afterRender()</code></td>
+        <td>At every connection, after the render.</td>
+        <td>Work on the elements of the template: focus, measures, canvas, third-party libraries.</td>
+      </tr>
+      <tr>
+        <td><code>onDestroy()</code></td>
+        <td>At every disconnection, before the template is removed.</td>
+        <td>Undoing what <code>onInit</code> did outside the component.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p>
+  The effects created with <code>this.effect()</code> need no cleanup: they are disposed when the element is
+  disconnected, right after <code>onDestroy</code>. The full sequence:
+</p>
+<docs-code snippet="components/lifecycle-order.txt" />
+
+<h2>Parents and children</h2>
+<p>
+  A child component is connected while its parent renders its template. So the child runs its whole sequence, from
+  <code>onInit</code> to <code>afterRender</code>, in the middle of the sequence of the parent, and before the parent
+  binds anything to it.
+</p>
+<docs-example name="components/lifecycle/hook-order" heading="The hooks of a parent and its child">
+  <ex-hook-order />
+</docs-example>
+<p>
+  Add the parent and read the log from the top: the parent starts, the child runs all its hooks with the default label,
+  then the parent finishes. The effect of the child runs again a moment later, when the bound label arrives: it is the
+  only place where the child sees it. Changing the label re-runs only the effect. Removing the parent calls
+  <code>onDestroy</code> on the parent first, then on the child, and disposes the effect of the child.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="components/lifecycle/move" heading="Moving an element" kind="edge">
+    <ex-move />
+  </docs-example>
+  <p>
+    Moving an element is a disconnection followed by a connection, so it goes through the whole lifecycle:
+  </p>
+  <ul>
+    <li><code>onDestroy</code>, <code>onInit</code> and <code>afterRender</code> run again, as the log shows;</li>
+    <li>
+      the template is rendered from scratch: the text typed in the field is lost, because it lived in the old DOM;
+    </li>
+    <li>the signals of the instance survive: the counter keeps its value;</li>
+    <li>
+      the effect created in a field is disposed at the first move and never created again, so it stops following the
+      counter, while the one created in <code>onInit</code> is created again at every connection.
+    </li>
+  </ul>
+  <docs-callout kind="edge" heading="Effects created in fields or in the constructor">
+    <p>
+      They work until the first disconnection, then they are gone for good. Create effects in <code>onInit</code>,
+      unless the element is never moved or reattached.
+    </p>
+    <docs-code snippet="components/effect-in-field.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="connectedCallback and disconnectedCallback are taken">
+    <p>
+      The base class uses the callbacks of custom elements to render the template, and keeps them private. Defining them
+      in a component does not compile, and at run time would replace the ones of the base class: the template would
+      never be rendered. Use the hooks.
+    </p>
+    <docs-code snippet="components/connected-callback.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="An element moved out of its template">
+    An element rendered by a template is removed by that template only while it is still where the template put it. If
+    you move it somewhere else, it stays there when its <code>{'@if'}</code> or its <code>{'@for'}</code> row goes away,
+    no longer bound to anything. Move only the elements you created yourself, as the example does.
+  </docs-callout>
+  <docs-callout kind="note" heading="No attributeChangedCallback">
+    Inputs are not attributes, so the base class declares no <code>observedAttributes</code>: read inputs reactively
+    instead. See <a href="#/en/components/inputs">Inputs</a>.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>onInit()</code></td><td>Runs at every connection, before the render.</td></tr>
+      <tr><td><code>afterRender()</code></td><td>Runs at every connection, after the render and the start of the view queries.</td></tr>
+      <tr><td><code>onDestroy()</code></td><td>Runs at every disconnection, before the effects are disposed and the template is removed.</td></tr>
+      <tr><td><code>this.effect(fn, options?)</code></td><td>An effect disposed at the next disconnection. Returns a function that disposes it earlier.</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+canvas {
+  max-width: 100%;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}

@@ -1,1 +1,114 @@
-<h1>TODO dom-apis</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CanvasChartComponent } from '../../../examples/components/dom-apis/canvas-chart/canvas-chart.xd.component.ts'
+@import { AutoFocusComponent } from '../../../examples/components/dom-apis/auto-focus/auto-focus.xd.component.ts'
+@import { ResizeObserverComponent } from '../../../examples/components/dom-apis/resize-observer/resize-observer.xd.component.ts'
+@import { ThirdPartyComponent } from '../../../examples/components/dom-apis/third-party/third-party.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>Using DOM APIs</h1>
+<p class="lead">
+  Templates cover most of the DOM work, but not all of it: drawing on a canvas, moving the focus, measuring elements,
+  driving a library that knows nothing about signals. For those, a component combines three tools: a
+  <a href="#/en/components/queries">query</a> to reach the element, a lifecycle hook to know when it exists, and an
+  effect to keep it in sync with the state.
+</p>
+
+<h2>Drawing from the state</h2>
+<p>
+  An effect created in <code>afterRender</code> runs once the template exists, and again whenever a signal it reads
+  changes. It is disposed when the component is disconnected, and created again at the next connection, with the new
+  elements.
+</p>
+<docs-example name="components/dom-apis/canvas-chart" heading="A canvas redrawn by an effect">
+  <ex-canvas-chart />
+</docs-example>
+<p>
+  The effect reads <code>values</code> and <code>color</code>, so each button redraws the chart exactly once. Nothing
+  else in the component knows about the canvas.
+</p>
+
+<h2>Reacting to elements that come and go</h2>
+<p>
+  A query is a signal, so an effect reading it runs again when the element appears or disappears. Created in
+  <code>onInit</code>, the effect follows the element for the whole life of the component.
+</p>
+<docs-example name="components/dom-apis/auto-focus" heading="Focus the field as soon as it appears">
+  <ex-auto-focus />
+</docs-example>
+<p>
+  <em>Edit</em> only changes a signal: the <code>{'@if'}</code> renders the field, the query finds it, and the effect
+  focuses it. The same pattern works for scrolling an element into view or starting an animation.
+</p>
+
+<h2>Observers</h2>
+<p>
+  <code>ResizeObserver</code>, <code>IntersectionObserver</code> and <code>MutationObserver</code> connect to elements
+  of the template in <code>afterRender</code> and disconnect in <code>onDestroy</code>. Their callbacks write signals,
+  and the template does the rest.
+</p>
+<docs-example name="components/dom-apis/resize-observer" heading="A box that knows its width">
+  <ex-resize-observer />
+</docs-example>
+<p>
+  Listeners on <code>window</code> or <code>document</code> follow the same rule: add them in <code>onInit</code> and
+  remove them in <code>onDestroy</code>, through a stable reference. Listeners on elements of the template need no
+  cleanup: they go away with the elements.
+</p>
+<docs-code snippet="components/window-listener.ts" />
+
+<h2>Custom elements from other libraries</h2>
+<p>
+  A template accepts only Xaendar components as custom elements, so an element from another library has to be created
+  in code: in <code>afterRender</code>, inside an element of the template, with an effect copying the state into its
+  properties.
+</p>
+<docs-example name="components/dom-apis/third-party" heading="A custom element written without Xaendar">
+  <ex-third-party />
+</docs-example>
+<p>
+  The gauge is a plain <code>HTMLElement</code> with a <code>value</code> property, as a component of any other library
+  would be. The effect sets the property, not an attribute, so any type of value can be passed. The gauge is created
+  with <code>new VanillaGauge()</code>: with <code>document.createElement</code> the class would be used only as a
+  type, TypeScript would drop the import, and the element would never be defined.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-callout kind="unsupported" heading="Foreign tags in templates">
+    <p>
+      Every tag with a hyphen in a template must be an imported Xaendar component, so the tag of the gauge cannot be
+      written in the template. See <a href="#/en/components/registration">Selectors and registration</a>.
+    </p>
+    <docs-code snippet="components/foreign-element-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Imperative changes to bound attributes do not last">
+    An attribute bound in the template is written again whenever its value changes: a class added with
+    <code>classList</code> to an element whose <code>class</code> is bound is gone at the next update. Change the state
+    the binding reads instead, or touch only what the template does not bind.
+  </docs-callout>
+  <docs-callout kind="edge" heading="The DOM is rebuilt at every connection">
+    Elements created or changed in code belong to one render: moving the component renders its template again, and
+    whatever <code>afterRender</code> built has to be built again, as the examples above do. See
+    <a href="#/en/components/lifecycle">Lifecycle</a>.
+  </docs-callout>
+  <docs-callout kind="edge" heading="Do not move the elements of the template">
+    The template removes an element only while it is still where the template put it. Move or remove only the elements
+    you created yourself.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Task</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>Reach an element of the template</td><td><code>{'@Query'}</code>, read in <code>afterRender</code> or in an effect.</td></tr>
+      <tr><td>Keep the DOM in sync with signals</td><td><code>this.effect()</code> in <code>afterRender</code>, or in <code>onInit</code> reading a query.</td></tr>
+      <tr><td>Observers</td><td>Connect in <code>afterRender</code>, disconnect in <code>onDestroy</code>.</td></tr>
+      <tr><td>Listeners on <code>window</code> or <code>document</code></td><td>Add in <code>onInit</code>, remove in <code>onDestroy</code>.</td></tr>
+      <tr><td>Foreign custom elements</td><td>Create in <code>afterRender</code>, feed with an effect.</td></tr>
+    </tbody>
+  </table>
+</div>

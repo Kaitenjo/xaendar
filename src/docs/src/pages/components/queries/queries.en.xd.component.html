@@ -1,1 +1,114 @@
-<h1>TODO queries</h1>
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ViewQueryComponent } from '../../../examples/components/queries/view-query/view-query.xd.component.ts'
+@import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
+@import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
+@import { QueryFunctionsComponent } from '../../../examples/components/queries/query-functions/query-functions.xd.component.ts'
+
+<span class="eyebrow">Components</span>
+<h1>View queries</h1>
+<p class="lead">
+  A view query finds elements in the template of the component and keeps the result in a signal. It is the way to
+  reach the DOM from the class: to focus a field, to measure an element, or to call a method of a child component. The
+  result follows the template: when an <code>{'@if'}</code> or an <code>{'@for'}</code> adds or removes elements, the
+  query is updated.
+</p>
+
+<h2>Querying the template</h2>
+<docs-code snippet="components/query-decorators.ts" />
+<p>
+  <code>{'@Query'}</code> holds the first element matching a CSS selector, or <code>null</code>.
+  <code>{'@Query.all'}</code> holds all of them, in document order. Instead of a selector you can pass the class of a
+  component: the query uses its selector, and the result is typed as an instance of the class, with its public members.
+</p>
+<docs-example name="components/queries/view-query" heading="A query by tag, one by class and one for all the rows">
+  <ex-view-query />
+</docs-example>
+<p>
+  <em>Add</em> reads the value of the field and empties it through the element found by <code>field</code>, and calls
+  <code>increment()</code> on the badge found by its class. The list is rendered by an <code>{'@for'}</code>, and
+  <code>rows</code> follows it: <code>found</code>, a computed signal reading the query, updates by itself.
+</p>
+<p>
+  A query looks into the shadow root of its component, and only there: it finds the elements the template projects into
+  a child component, since they are written in this template, but not the elements inside the shadow root of the child.
+</p>
+
+<h2>When the result is there</h2>
+<p>
+  The query is filled right after the render, before <code>afterRender</code>, and it is updated by a
+  <code>MutationObserver</code> each time the elements of the template are added or removed. So it is empty in
+  <code>onInit</code>, and it lags a little behind the changes of the template.
+</p>
+<docs-example name="components/queries/query-timing" heading="The query before and after the render, and after a change">
+  <ex-query-timing />
+</docs-example>
+<p>
+  The template is updated in a microtask after the signal changes, and the query a microtask after that. Read queries
+  in <code>afterRender</code>, in event handlers, or reactively in a computed signal or an effect: an effect created
+  in <code>onInit</code> runs again when the query is filled.
+</p>
+
+<h2>Queries without decorators</h2>
+<p>
+  <code>query</code> and <code>queryAll</code> create the same signals as the decorators, from a field. They are
+  exported by <code>{'@xaendar/core'}</code>.
+</p>
+<docs-code snippet="components/query-functions.ts" />
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="components/queries/attribute-changes" heading="A query on a class that changes" kind="edge">
+    <ex-attribute-changes />
+  </docs-example>
+  <p>
+    The observer watches elements being added and removed, not their attributes. Selecting a task changes only its
+    class, so the query on <code>.selected</code> keeps its old result until the list itself changes: add a task and it
+    catches up. Use queries to find elements, and keep the state in signals.
+  </p>
+  <docs-example name="components/queries/query-functions" heading="queryAll in an attribute binding" kind="edge">
+    <ex-query-functions />
+  </docs-example>
+  <p>
+    The template compiler recognizes a signal member by the function that initializes it, which must come from
+    <code>{'@xaendar/core/signals'}</code>. <code>queryAll</code> comes from <code>{'@xaendar/core'}</code>, so in an
+    attribute <code>rows</code> is read once, at the render, when the query is still empty: the first meter never moves,
+    and a type annotation does not help, since with a call as initializer only the function counts. Read the query
+    through a <code>computed</code>, or use the decorator, whose accessor is recognized by its type. Text
+    interpolations are always reactive. See <a href="#/en/signals/shared-state">Shared state</a>.
+  </p>
+  <docs-callout kind="issue" heading="A query created after the connection">
+    <p>
+      A query starts observing when the element is connected, so one created later, for example in
+      <code>afterRender</code>, stays <code>null</code> until the element is connected again, and throws at the next
+      disconnection. Create queries in fields, or with the decorators.
+    </p>
+    <docs-code snippet="components/late-query.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="Reconnection: onInit sees the old elements">
+    When the element is moved, the template is rendered again from scratch, but the query is refreshed only after the
+    render: in <code>onInit</code> it still holds the elements of the previous render, now detached from the document.
+  </docs-callout>
+  <docs-callout kind="edge" heading="A class that is not a component">
+    <p>
+      A class passed to a query must be decorated with <code>{'@WebComponent'}</code>, which gives it its selector.
+      Otherwise the query throws when the component is created.
+    </p>
+    <docs-code snippet="components/query-undecorated-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>API</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Query(target)'}</code></td><td>The first element of the template matching <code>target</code>, or <code>null</code>.</td></tr>
+      <tr><td><code>{'@Query.all(target)'}</code></td><td>All the matching elements, in document order. Notifies only when the list changes.</td></tr>
+      <tr><td><code>query(this, target)</code>, <code>queryAll(this, target)</code></td><td>The same queries, created in a field.</td></tr>
+      <tr><td><code>target</code></td><td>A CSS selector, or the class of a component.</td></tr>
+      <tr><td><code>{'QuerySignal<T>'}</code></td><td>A read-only signal: <code>query()</code> or <code>query.get()</code>.</td></tr>
+    </tbody>
+  </table>
+</div>

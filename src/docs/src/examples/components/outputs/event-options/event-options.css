@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.frame {
+  padding: 0.6rem;
+  border: 1px dashed color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 6px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th,
+td {
+  padding: 0.3rem 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  text-align: center;
+}
+
+tbody th {
+  text-align: left;
+  font-family: ui-monospace, monospace;
+  font-weight: 400;
+}
+
+.seen {
+  margin: 0.6rem 0;
+  font-size: 0.85rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}

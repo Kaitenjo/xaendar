@@ -1,0 +1,70 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { OrderStatusComponent } from '../../../examples/templates/switch/order-status/order-status.xd.component.ts'
+@import { DefaultFirstComponent } from '../../../examples/templates/switch/default-first/default-first.xd.component.ts'
+@import { SwitchEvaluationsComponent } from '../../../examples/templates/switch/switch-evaluations/switch-evaluations.xd.component.ts'
+
+<span class="eyebrow">Template</span>
+<h1>Diramazioni con {'@switch'}</h1>
+<p class="lead">
+  <code>{'@switch'}</code> confronta un valore con una lista di case e renderizza il blocco del primo che corrisponde,
+  oppure il blocco <code>{'@default'}</code> quando nessuno corrisponde. Si legge meglio di una catena di
+  <code>{'@else if'}</code> quando ogni ramo verifica lo stesso valore.
+</p>
+
+<h2>I case</h2>
+<docs-code snippet="templates/switch-syntax.html" />
+<docs-example name="templates/switch/order-status" heading="Lo stato di un ordine">
+  <ex-order-status />
+</docs-example>
+<p>
+  Il confronto è stretto, <code>===</code>: <code>{"@case (1)"}</code> non corrisponde alla stringa <code>'1'</code>.
+  I case scritti uno dopo l’altro senza blocco condividono il blocco dell’ultimo, come fanno <em>pending</em> e
+  <em>paid</em>. Come per <code>{'@if'}</code>, il blocco viene renderizzato di nuovo solo quando vince un altro case.
+</p>
+<p>
+  Uno <code>{'@switch'}</code> su un computed è anche il modo per aggirare un bug delle catene di
+  <code>{'@else if'}</code> i cui rami iniziano con lo stesso elemento: vedi i casi limite di
+  <a href="#/it/templates/if">{'@if'}</a>.
+</p>
+
+<section class="edge-cases">
+  <h2>Casi limite</h2>
+  <docs-example name="templates/switch/default-first" heading="Un @default prima dei case" kind="edge">
+    <ex-default-first />
+  </docs-example>
+  <p>
+    I blocchi vengono provati nell’ordine in cui sono scritti, e <code>{'@default'}</code> corrisponde sempre: scritto
+    per primo, nasconde ogni case che lo segue. Tienilo per ultimo.
+  </p>
+  <docs-example name="templates/switch/switch-evaluations" heading="Quante volte viene letto il valore" kind="edge">
+    <ex-switch-evaluations />
+  </docs-example>
+  <p>
+    L’espressione dello switch viene eseguita una volta per ogni case con cui viene confrontata: una volta per il
+    lunedì, cinque volte per il weekend. Un metodo con effetti collaterali, o lento, viene eseguito altrettante volte.
+    Fai lo switch su un signal o su un computed, che leggono il valore già calcolato. È elencato in
+    <a href="#/it/reference/known-issues">Problemi noti</a>.
+  </p>
+  <docs-callout kind="edge" heading="I valori dei case sono letterali">
+    <p>
+      Il valore di un case non può leggere i membri del componente. Confronta con dei letterali, oppure sposta la logica
+      in un computed che ne restituisce uno.
+    </p>
+    <docs-code snippet="templates/switch-case-member.txt" />
+  </docs-callout>
+</section>
+
+<h2>Riepilogo</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Sintassi</th><th>Descrizione</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'@switch (value) { … }'}</code></td><td>Confronta il valore con i case, in ordine.</td></tr>
+      <tr><td><code>{"@case ('a') { … }"}</code></td><td>Renderizzato quando il valore è <code>=== 'a'</code>.</td></tr>
+      <tr><td><code>{"@case ('a') @case ('b') { … }"}</code></td><td>Un blocco per più valori.</td></tr>
+      <tr><td><code>{'@default { … }'}</code></td><td>Renderizzato quando nessun case corrisponde. Tienilo per ultimo.</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+textarea {
+  font: 0.85rem ui-monospace, Consolas, monospace;
+  resize: vertical;
+}
+
+.preview {
+  padding: 0 0.75rem;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+}
+
+/* The HTML inserted by the directive lives in the shadow root, so these rules style it */
+.preview h4 {
+  margin: 0.6rem 0 0.3rem;
+  color: #6750a4;
+}
+
+.preview code {
+  padding: 0 0.25rem;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.18);
+}
+
+button {
+  margin-top: 0.6rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+pre {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.12);
+}

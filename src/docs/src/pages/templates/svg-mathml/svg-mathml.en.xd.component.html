@@ -1,0 +1,66 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SvgChartComponent } from '../../../examples/templates/svg-mathml/svg-chart/svg-chart.xd.component.ts'
+@import { MathmlFormulaComponent } from '../../../examples/templates/svg-mathml/mathml-formula/mathml-formula.xd.component.ts'
+@import { ForeignObjectComponent } from '../../../examples/templates/svg-mathml/foreign-object/foreign-object.xd.component.ts'
+
+<span class="eyebrow">Templates</span>
+<h1>SVG and MathML</h1>
+<p class="lead">
+  SVG and MathML can be written straight into templates. The compiler knows which elements belong to them and creates
+  each one in the right namespace, so everything a template does with HTML works with them too: bindings, events,
+  control flow, components around them.
+</p>
+
+<h2>SVG</h2>
+<docs-code snippet="templates/svg-syntax.html" />
+<docs-example name="templates/svg-mathml/svg-chart" heading="A bar chart">
+  <ex-svg-chart />
+</docs-example>
+<p>
+  The bars are real <code>SVGRectElement</code>s: an <code>{'@for'}</code> renders them, their geometry comes from a
+  computed signal, and their listeners are typed as for HTML, with a <code>MouseEvent</code> for
+  <code>mouseenter</code>. Names written in camelCase, such as <code>viewBox</code> or <code>linearGradient</code>, are
+  kept as they are, as SVG requires. Styles apply as usual: the stylesheet of the component colors the bars and the
+  hovered one.
+</p>
+
+<h2>MathML</h2>
+<docs-example name="templates/svg-mathml/mathml-formula" heading="A formula with bound values">
+  <ex-mathml-formula />
+</docs-example>
+<p>
+  The elements inside <code>{'<math>'}</code> are <code>MathMLElement</code>s, rendered by the browser. Interpolations
+  inside <code>{'<mn>'}</code> and <code>{'<mi>'}</code> update like any text: move the slider and only the numbers
+  change.
+</p>
+
+<section class="edge-cases">
+  <h2>Edge cases</h2>
+  <docs-example name="templates/svg-mathml/foreign-object" heading="HTML inside foreignObject" kind="edge">
+    <ex-foreign-object />
+  </docs-example>
+  <p>
+    In SVG, <code>{'<foreignObject>'}</code> holds HTML. The compiler keeps creating the children in the SVG namespace,
+    so the paragraph is an unknown SVG element and the browser does not render it. Place HTML over the SVG with CSS
+    positioning, or create the content of the <code>{'<foreignObject>'}</code> in code. This is listed in
+    <a href="#/en/reference/known-issues">Known issues</a>.
+  </p>
+  <docs-callout kind="edge" heading="Attributes are strings">
+    As for HTML, a binding sets an attribute with <code>setAttribute</code>: numbers become strings, which SVG accepts
+    for geometry. Properties of SVG elements, such as animated values, have to be set in code.
+  </docs-callout>
+</section>
+
+<h2>API summary</h2>
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th>Element</th><th>Namespace</th></tr></thead>
+    <tbody>
+      <tr><td><code>{'<svg>'}</code> and its descendants</td><td><code>http://www.w3.org/2000/svg</code></td></tr>
+      <tr><td><code>{'<math>'}</code> and its descendants</td><td><code>http://www.w3.org/1998/Math/MathML</code></td></tr>
+      <tr><td>Content of <code>{'<foreignObject>'}</code></td><td>SVG as well: a known issue</td></tr>
+    </tbody>
+  </table>
+</div>

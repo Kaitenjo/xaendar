@@ -1,0 +1,13 @@
+<button (click)="shuffle()">New values</button>
+<svg viewBox="0 0 300 130" role="img" aria-label="Visits per day" (mouseleave)="clear()">
+  <line x1="0" y1="110" x2="300" y2="110" class="axis" />
+  @for (bar of bars(); track bar) {
+    <rect
+      x="{ bar.x }" y="{ bar.y }" width="40" height="{ bar.height }"
+      class="{ bar.day === hovered() ? 'bar bar--hovered' : 'bar' }"
+      (mouseenter)="highlight(bar.day)"
+    />
+    <text x="{ bar.x + 20 }" y="125" text-anchor="middle">{ bar.day }</text>
+  }
+</svg>
+<p>@if (hovered()) { { hovered() } } @else { Point at a bar }</p>
