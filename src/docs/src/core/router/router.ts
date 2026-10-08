@@ -1,7 +1,6 @@
 import { computed, signal } from '@xaendar/core/signals';
-import type { Computed } from '@xaendar/core/signals';
+import type { Lang } from './route-hash.utils';
 import { formatHash, isLang, parseHash } from './route-hash.utils';
-import type { Lang, Route } from './route-hash.utils';
 
 /**
  * Key under which the language last chosen by the reader is stored.
@@ -45,17 +44,17 @@ const fallbackLang = readPreferredLang();
 /**
  * The route currently displayed.
  */
-export const route: Computed<Route> = computed(() => parseHash(hash(), fallbackLang));
+export const route = computed(() => parseHash(hash(), fallbackLang));
 
 /**
  * The language the documentation is currently read in.
  */
-export const lang: Computed<Lang> = computed(() => route().lang);
+export const lang = computed(() => route().lang);
 
 /**
  * The path of the page currently displayed.
  */
-export const path: Computed<string> = computed(() => route().path);
+export const path = computed(() => route().path);
 
 /**
  * Builds the link to a page.

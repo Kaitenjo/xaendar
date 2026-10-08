@@ -21,7 +21,7 @@ export class AttributesVsPropertiesComponent extends CustomElement {
   /**
    * The attributes of the first component, as they are in the DOM.
    */
-  public readonly attributes = signal('none');
+  public readonly attributesProp = signal('none');
 
   /**
    * Writes the value attribute of the first component, as code outside Xaendar would do.
@@ -30,7 +30,7 @@ export class AttributesVsPropertiesComponent extends CustomElement {
     const first = this.first();
     if (first) {
       first.setAttribute('value', '42');
-      this.attributes.set([...first.attributes].map(({ name, value }) => `${name}="${value}"`).join(' '));
+      this.attributesProp.set([...first.attributes].map(({ name, value }) => `${name}="${value}"`).join(' '));
     }
   }
 }

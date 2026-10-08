@@ -24,7 +24,7 @@ export class LazyLoadingComponent extends CustomElement {
   /**
    * The attributes of the first panel, as they are in the DOM.
    */
-  public readonly attributes = signal('');
+  public readonly attributesProp = signal('');
 
   /**
    * The first panel, rendered before its definition is loaded.
@@ -62,6 +62,6 @@ export class LazyLoadingComponent extends CustomElement {
    */
   private readAttributes(): void {
     const attributes = [...this.early()?.attributes ?? []];
-    this.attributes.set(attributes.map(({ name, value }) => `${name}="${value}"`).join(' ') || 'none');
+    this.attributesProp.set(attributes.map(({ name, value }) => `${name}="${value}"`).join(' ') || 'none');
   }
 }

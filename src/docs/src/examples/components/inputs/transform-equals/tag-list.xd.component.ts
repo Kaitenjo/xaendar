@@ -15,7 +15,7 @@ export class TagListComponent extends CustomElement {
    * The tags. Every incoming list is trimmed, lowercased and cleared of empty tags, then compared with the current
    * one: an equal list does not notify the readers of the input.
    */
-  @Property([] as string[], {
+  @Property(new Array<string>, {
     transform: (tags: string[]) => tags.map(tag => tag.trim().toLowerCase()).filter(tag => tag !== ''),
     equals: (a: string[], b: string[]) => a.join() === b.join()
   })

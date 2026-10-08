@@ -18,7 +18,7 @@ export class ComputedDynamicComponent extends CustomElement {
   /**
    * The title.
    */
-  public readonly title = signal('Dr.');
+  public readonly titleProp = signal('Dr.');
 
   /**
    * The name.
@@ -35,7 +35,7 @@ export class ComputedDynamicComponent extends CustomElement {
    */
   public readonly label = computed(() => {
     queueMicrotask(() => this.evaluations.update(count => count + 1));
-    return this.showTitle() ? `${this.title()} ${this.name()}` : this.name();
+    return this.showTitle() ? `${this.titleProp()} ${this.name()}` : this.name();
   });
 
   /**
@@ -49,6 +49,6 @@ export class ComputedDynamicComponent extends CustomElement {
    * Changes the title: label is evaluated again only while it reads it.
    */
   public changeTitle(): void {
-    this.title.update(title => title === 'Dr.' ? 'Rear Admiral' : 'Dr.');
+    this.titleProp.update(title => title === 'Dr.' ? 'Rear Admiral' : 'Dr.');
   }
 }

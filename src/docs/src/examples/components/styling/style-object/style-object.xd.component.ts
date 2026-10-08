@@ -30,5 +30,5 @@ export class StyleObjectComponent extends CustomElement {
   /**
    * The `style` attribute of each paragraph, as it is in the DOM.
    */
-  public readonly attributes = computed(() => this.samples().map(sample => sample.getAttribute('style')));
+  public readonly attributesProp = computed(() => this.samples().map(sample => sample.getAttribute('style')));
 }

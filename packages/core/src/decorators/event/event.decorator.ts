@@ -29,10 +29,9 @@ function isEventOptions(value: EventOptions | unknown): value is EventOptions {
  * ```
  */
 export function Event<
-  Class extends EventHost,
   Data = void,
->(options?: EventOptions): Function<Parameters<AccessorDecorator<Class, Output<Data>>>, EventDecoratorReturnType<Class, Output<Data>>> {
-  return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<Class, Output<Data>>): EventDecoratorReturnType<Class, Output<Data>> => {
+>(options?: EventOptions): Function<Parameters<AccessorDecorator<EventHost, Output<Data>>>, EventDecoratorReturnType<EventHost, Output<Data>>> {
+  return (_value: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<EventHost, Output<Data>>): EventDecoratorReturnType<EventHost, Output<Data>> => {
     const name = context.name;
 
     if (typeof name === 'symbol') {

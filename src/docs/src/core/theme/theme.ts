@@ -1,5 +1,4 @@
 import { signal } from '@xaendar/core/signals';
-import type { Signal } from '@xaendar/core/signals';
 
 /**
  * Color themes of the documentation.
@@ -15,17 +14,17 @@ const THEME_STORAGE_KEY = 'xaendar-docs-theme';
 /**
  * The theme currently applied, as set on `<html data-theme>` by `index.html`.
  */
-export const theme: Signal<Theme> = signal<Theme>(document.documentElement.dataset['theme'] === 'dark' ? 'dark' : 'light');
+export const theme = signal<Theme>(document.documentElement.dataset['theme'] === 'dark' ? 'dark' : 'light');
 
 /**
  * Switches between the light and the dark theme, and remembers the choice.
  */
 export function toggleTheme(): void {
-  const next: Theme = theme() === 'dark' ? 'light' : 'dark';
-  theme.set(next);
-  document.documentElement.dataset['theme'] = next;
+  theme.update(value => value === 'dark' ? 'light' : 'dark');
+
+  document.documentElement.dataset['theme'] = theme();
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, next);
+    localStorage.setItem(THEME_STORAGE_KEY, theme());
   } catch {
     // The theme is still applied, it just won't be remembered
   }

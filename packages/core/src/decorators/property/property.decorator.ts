@@ -79,15 +79,14 @@ function createPropertyDecorator<
  * ```
  */
 export function Property<
-  Class extends BindingHost,
   Value extends InputSignal<ActualValue>,
   ActualValue = Value extends InputSignal<infer U> ? U : unknown,
   IncomingValue = ActualValue
 >(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue>>> {
-  return createPropertyDecorator<Class, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+  return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
 }
 
 /**\
@@ -112,13 +111,12 @@ export function Property<
  * ```
  */
 Property.required = function required<
-  Class extends BindingHost,
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>
-): Function<Parameters<AccessorDecorator<Class, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<Class, InputSignal<ActualValue>>> {
-  return createPropertyDecorator<Class, InputSignal<ActualValue>, ActualValue, IncomingValue>({
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+  return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>({
     ...options,
     [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired',
     required: true,

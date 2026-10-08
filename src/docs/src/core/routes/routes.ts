@@ -60,7 +60,7 @@ export type NavSection = {
  * @returns The page.
  */
 function page(path: string, en: string, it: string, keywords?: string): DocsPage {
-  return keywords === undefined ? { path, title: { en, it } } : { path, title: { en, it }, keywords };
+  return { path, title: { en, it }, keywords };
 }
 
 /**
@@ -88,7 +88,7 @@ function group(en: string, it: string, pages: readonly DocsPage[]): NavItem {
 /**
  * The home page, reached from the logo: it is not listed in the navigation.
  */
-export const HOME_PAGE: DocsPage = page('', 'Home', 'Home');
+export const HOME_PAGE = page('', 'Home', 'Home');
 
 /**
  * The navigation of the documentation, modeled on the one of angular.dev.

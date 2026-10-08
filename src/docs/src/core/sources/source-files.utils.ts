@@ -78,7 +78,7 @@ function rankOf(fileName: string): number {
 export function collectFolder(registry: Readonly<Record<string, string>>, folder: string): SourceFile[] {
   const prefix = `${folder}/`;
   const main = folder.slice(folder.lastIndexOf('/') + 1);
-  const baseOf = (name: string): string => {
+  const baseOf = (name: string) => {
     const fileName = name.slice(name.lastIndexOf('/') + 1);
     return fileName.slice(0, fileName.indexOf('.'));
   };

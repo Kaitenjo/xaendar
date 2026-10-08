@@ -1,7 +1,13 @@
 @import { VolumeComponent } from './volume.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggle()">@if (linked()) { Unbind } @else { Bind }</button>
+  <button (click)="toggle()">
+    @if (linked()) { 
+      Unbind 
+    } @else { 
+      Bind 
+    }
+  </button>
   <button (click)="raise()">Level: { level() }</button>
 </div>
 <ex-volume

@@ -48,13 +48,12 @@ export function isLang(value: unknown): value is Lang {
  * @returns The route the hash points to.
  */
 export function parseHash(hash: string, fallbackLang: Lang): Route {
-  const segments = hash.replace(/^#/, '').split('/').filter(segment => segment.length > 0);
+  const segments = hash.replace(/^#/, '').split('/').filter(segment => segment.length);
   const [first] = segments;
-  if (isLang(first)) {
-    return { lang: first, path: segments.slice(1).join('/') };
-  }
-
-  return { lang: fallbackLang, path: segments.join('/') };
+  
+  return isLang(first)
+    ? { lang: first, path: segments.slice(1).join('/') }
+    : { lang: fallbackLang, path: segments.join('/') };
 }
 
 /**

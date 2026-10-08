@@ -13,7 +13,7 @@ export class ValueTypeComponent extends CustomElement {
   /**
    * Any value.
    */
-  @Property(null)
+  @Property<InputSignal<unknown>>(null)
   public accessor value!: InputSignal<unknown>;
 
   /**

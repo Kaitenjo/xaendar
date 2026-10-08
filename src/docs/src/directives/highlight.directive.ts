@@ -27,15 +27,15 @@ export class HighlightDirective extends CustomDirective<HTMLElement> {
    * of a property is copied as text in the type-check code of the templates binding it, where
    * an imported type alias would not be found.
    */
-  @Property('ts')
-  public accessor lang!: InputSignal<string>;
+  @Property<InputSignal<CodeLang>>('ts')
+  public accessor lang!: InputSignal<CodeLang>;
 
   /**
    * Starts rendering the code: the properties already hold their bound values here.
    */
   public onInit(): void {
     this.effect(() => {
-      this.element.innerHTML = highlight(this.code(), this.lang() as CodeLang);
+      this.element.innerHTML = highlight(this.code(), this.lang());
     });
   }
 }
