@@ -17,7 +17,7 @@ export class DocsPagerComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The current language.
    */
@@ -38,7 +38,7 @@ export class DocsPagerComponent extends CustomElement {
    * @returns The title of the page, empty without a page.
    */
   public titleOf(page: DocsPage | undefined): string {
-    return page ? pageTitle(page, this.t()) : '';
+    return page ? pageTitle(page, this.translations()) : '';
   }
 
   /**

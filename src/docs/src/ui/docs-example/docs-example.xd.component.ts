@@ -45,7 +45,7 @@ export class DocsExampleComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * Whether the source files are shown, `undefined` until the reader toggles them.
    */

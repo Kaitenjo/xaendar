@@ -125,7 +125,7 @@ export class InventoryComponent extends CustomElement {
   private _computeVisible(): Item[] {
     const filter = this.filter().trim().toLowerCase();
     const shown = this.items().filter(item => item.name.toLowerCase().includes(filter));
-    return this.sorted() ? [...shown].sort((a, b) => a.name.localeCompare(b.name)) : shown;
+    return this.sorted() ? [...shown].sort((left, right) => left.name.localeCompare(right.name)) : shown;
   }
 
   /**

@@ -2,6 +2,10 @@
 
 <ul>
   @for (member of members; track member.name) {
-    <li><ex-avatar full-name="{ member.name }" /> { member.name } <ex-role-badge role="{ member.role }" /></li>
+    <li>
+      <ex-avatar full-name="{ member.name }" />
+      { member.name }
+      <ex-role-badge role="{ member.role }" />
+    </li>
   }
 </ul>

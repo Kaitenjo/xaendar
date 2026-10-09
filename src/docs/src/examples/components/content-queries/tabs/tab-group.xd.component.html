@@ -1,6 +1,10 @@
 <div class="tabs" role="tablist">
   @for (tab of tabs(); track tab) {
-    <button role="tab" class="{ tab.index === activeIndex() ? 'tab tab--active' : 'tab' }" (click)="select(tab.index)">{ tab.label }</button>
+    <button role="tab" class="{ tab.index === activeIndex() ? 'tab tab--active' : 'tab' }" (click)="select(tab.index)">
+      { tab.label }
+    </button>
   }
 </div>
-<div class="panels"><slot /></div>
+<div class="panels">
+  <slot />
+</div>

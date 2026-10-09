@@ -7,27 +7,36 @@
 @import { ThirdPartyComponent } from '../../../examples/components/dom-apis/third-party/third-party.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.domApis.eyebrow") />
+<span @@i18n(key="pages.components.domApis.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.domApis.title") />
-<p class="lead" @@i18n(key="pages.components.domApis.lead") />
+<p @@i18n(key="pages.components.domApis.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.domApis.drawingFromTheState.title") />
 <p @@i18n(key="pages.components.domApis.drawingFromTheState.p1") />
-<docs-example name="components/dom-apis/canvas-chart" heading="{ t().pages.components.domApis.drawingFromTheState.example1 }">
+<docs-example
+  name="components/dom-apis/canvas-chart"
+  heading="{ translations().pages.components.domApis.drawingFromTheState.example1 }"
+>
   <ex-canvas-chart />
 </docs-example>
 <p @@i18n(key="pages.components.domApis.drawingFromTheState.p2") />
 
 <h2 @@i18n(key="pages.components.domApis.reactingToElementsThat.title") />
 <p @@i18n(key="pages.components.domApis.reactingToElementsThat.p1") />
-<docs-example name="components/dom-apis/auto-focus" heading="{ t().pages.components.domApis.reactingToElementsThat.example1 }">
+<docs-example
+  name="components/dom-apis/auto-focus"
+  heading="{ translations().pages.components.domApis.reactingToElementsThat.example1 }"
+>
   <ex-auto-focus />
 </docs-example>
 <p @@i18n(key="pages.components.domApis.reactingToElementsThat.p2") />
 
 <h2 @@i18n(key="pages.components.domApis.observers.title") />
 <p @@i18n(key="pages.components.domApis.observers.p1") />
-<docs-example name="components/dom-apis/resize-observer" heading="{ t().pages.components.domApis.observers.example1 }">
+<docs-example
+  name="components/dom-apis/resize-observer"
+  heading="{ translations().pages.components.domApis.observers.example1 }"
+>
   <ex-resize-observer />
 </docs-example>
 <p @@i18n(key="pages.components.domApis.observers.p2") />
@@ -35,32 +44,67 @@
 
 <h2 @@i18n(key="pages.components.domApis.customElementsFromOther.title") />
 <p @@i18n(key="pages.components.domApis.customElementsFromOther.p1") />
-<docs-example name="components/dom-apis/third-party" heading="{ t().pages.components.domApis.customElementsFromOther.example1 }">
+<docs-example
+  name="components/dom-apis/third-party"
+  heading="{ translations().pages.components.domApis.customElementsFromOther.example1 }"
+>
   <ex-third-party />
 </docs-example>
 <p @@i18n(key="pages.components.domApis.customElementsFromOther.p2") />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.domApis.edgeCases.title") />
-  <docs-callout kind="unsupported" heading="{ t().pages.components.domApis.edgeCases.callout1.heading }">
+  <docs-callout kind="unsupported" heading="{ translations().pages.components.domApis.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.components.domApis.edgeCases.callout1.p1") />
     <docs-code snippet="components/foreign-element-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.domApis.edgeCases.callout2.heading }" @@i18n(key="pages.components.domApis.edgeCases.callout2.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.domApis.edgeCases.callout3.heading }" @@i18n(key="pages.components.domApis.edgeCases.callout3.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.domApis.edgeCases.callout4.heading }" @@i18n(key="pages.components.domApis.edgeCases.callout4.body") />
+  <docs-callout
+    @@i18n(key="pages.components.domApis.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.components.domApis.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.components.domApis.edgeCases.callout3.body")
+    kind="edge"
+    heading="{ translations().pages.components.domApis.edgeCases.callout3.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.components.domApis.edgeCases.callout4.body")
+    kind="edge"
+    heading="{ translations().pages.components.domApis.edgeCases.callout4.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.components.domApis.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.domApis.apiSummary.th1") /><th @@i18n(key="pages.components.domApis.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.domApis.apiSummary.th1") />
+        <th @@i18n(key="pages.components.domApis.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.components.domApis.apiSummary.td1") /><td @@i18n(key="pages.components.domApis.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.components.domApis.apiSummary.td3") /><td @@i18n(key="pages.components.domApis.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.components.domApis.apiSummary.td5") /><td @@i18n(key="pages.components.domApis.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.components.domApis.apiSummary.td7") /><td @@i18n(key="pages.components.domApis.apiSummary.td8") /></tr>
-      <tr><td @@i18n(key="pages.components.domApis.apiSummary.td9") /><td @@i18n(key="pages.components.domApis.apiSummary.td10") /></tr>
+      <tr>
+        <td @@i18n(key="pages.components.domApis.apiSummary.td1") />
+        <td @@i18n(key="pages.components.domApis.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.domApis.apiSummary.td3") />
+        <td @@i18n(key="pages.components.domApis.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.domApis.apiSummary.td5") />
+        <td @@i18n(key="pages.components.domApis.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.domApis.apiSummary.td7") />
+        <td @@i18n(key="pages.components.domApis.apiSummary.td8") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.domApis.apiSummary.td9") />
+        <td @@i18n(key="pages.components.domApis.apiSummary.td10") />
+      </tr>
     </tbody>
   </table>
 </div>

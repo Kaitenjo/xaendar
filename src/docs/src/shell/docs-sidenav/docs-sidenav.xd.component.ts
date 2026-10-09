@@ -22,7 +22,7 @@ export class DocsSidenavComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The current language.
    */
@@ -66,7 +66,7 @@ export class DocsSidenavComponent extends CustomElement {
    * @returns The title of the page of a link, or the label of a group.
    */
   public titleOf(item: NavItem): string {
-    return itemTitle(item, this.t());
+    return itemTitle(item, this.translations());
   }
 
   /**
@@ -76,7 +76,7 @@ export class DocsSidenavComponent extends CustomElement {
    * @returns The title of the page.
    */
   public pageTitleOf(page: DocsPage): string {
-    return pageTitle(page, this.t());
+    return pageTitle(page, this.translations());
   }
 
   /**

@@ -33,7 +33,7 @@ export class DocsCalloutComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The label of the kind.
    */
@@ -45,6 +45,6 @@ export class DocsCalloutComponent extends CustomElement {
    * @returns The label of the kind.
    */
   private _computeLabel(): string {
-    return this.t().callout[this.kind() as CalloutKind] ?? this.kind();
+    return this.translations().callout[this.kind() as CalloutKind] ?? this.kind();
   }
 }

@@ -1,7 +1,7 @@
 <div class="controls">
-  <button (click)="changeA()">a++</button>
-  <button (click)="changeThreeTimes()">a++, b++, a++</button>
-  <button (click)="changeAndRevert()">a++, a--</button>
+  <button (click)="changeFirst()">first++</button>
+  <button (click)="changeThreeTimes()">first++, second++, first++</button>
+  <button (click)="changeAndRevert()">first++, first--</button>
 </div>
 <ol reversed>
   @for (run of runs(); track run.id) {

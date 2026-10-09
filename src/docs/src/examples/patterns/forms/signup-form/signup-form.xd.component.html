@@ -1,13 +1,23 @@
 <form novalidate (submit)="submit($event)">
-  <label>Name <input type="text" autocomplete="off" (input)="setName($event)" /></label>
-  <label>Email <input type="email" autocomplete="off" (input)="setEmail($event)" /></label>
-  <label>Plan
+  <label>
+    Name
+    <input type="text" autocomplete="off" (input)="setName($event)" />
+  </label>
+  <label>
+    Email
+    <input type="email" autocomplete="off" (input)="setEmail($event)" />
+  </label>
+  <label>
+    Plan
     <select (change)="setPlan($event)">
       <option value="free">Free</option>
       <option value="pro">Pro</option>
     </select>
   </label>
-  <label class="inline"><input type="checkbox" (change)="setTerms($event)" /> I accept the terms</label>
+  <label class="inline">
+    <input type="checkbox" (change)="setTerms($event)" />
+    I accept the terms
+  </label>
   <button type="submit">Sign up</button>
 </form>
 @if (attempted() && errors().length > 0) {
@@ -18,5 +28,8 @@
   </ul>
 }
 @if (sent()) {
-  <p class="sent">Sent: <code>{ sent() }</code></p>
+  <p class="sent">
+    Sent:
+    <code>{ sent() }</code>
+  </p>
 }

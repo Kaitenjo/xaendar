@@ -1,7 +1,11 @@
-<button aria-label="Less" (click)="decrement()"
+<button
   @if (atZero()) {
     disabled
   }
->−</button>
+  aria-label="Less"
+  (click)="decrement()"
+>
+  −
+</button>
 <output>{ count() }</output>
 <button aria-label="More" (click)="increment()">+</button>

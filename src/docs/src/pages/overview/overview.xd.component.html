@@ -4,9 +4,9 @@
 @import { GranularUpdatesComponent } from '../../examples/overview/granular-updates/granular-updates.xd.component.ts'
 @import { I18nDirective } from '../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.overview.eyebrow") />
+<span @@i18n(key="pages.overview.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.overview.title") />
-<p class="lead" @@i18n(key="pages.overview.lead") />
+<p @@i18n(key="pages.overview.lead") class="lead" />
 
 <h2 @@i18n(key="pages.overview.fineGrainedReactivityDecided.title") />
 <p @@i18n(key="pages.overview.fineGrainedReactivityDecided.p1") />
@@ -14,7 +14,10 @@
 <p @@i18n(key="pages.overview.fineGrainedReactivityDecided.p2") />
 <docs-code snippet="overview/binding-graph.txt" />
 
-<docs-example name="overview/granular-updates" heading="{ t().pages.overview.fineGrainedReactivityDecided.example1 }">
+<docs-example
+  name="overview/granular-updates"
+  heading="{ translations().pages.overview.fineGrainedReactivityDecided.example1 }"
+>
   <ex-granular-updates />
 </docs-example>
 <p @@i18n(key="pages.overview.fineGrainedReactivityDecided.p3") />
@@ -23,7 +26,11 @@
 <div class="table-wrap">
   <table>
     <thead>
-      <tr><th @@i18n(key="pages.overview.theBuildingBlocks.th1") /><th @@i18n(key="pages.overview.theBuildingBlocks.th2") /><th @@i18n(key="pages.overview.theBuildingBlocks.th3") /></tr>
+      <tr>
+        <th @@i18n(key="pages.overview.theBuildingBlocks.th1") />
+        <th @@i18n(key="pages.overview.theBuildingBlocks.th2") />
+        <th @@i18n(key="pages.overview.theBuildingBlocks.th3") />
+      </tr>
     </thead>
     <tbody>
       <tr>
@@ -68,20 +75,57 @@
 <div class="table-wrap">
   <table>
     <thead>
-      <tr><th @@i18n(key="pages.overview.thePackages.th1") /><th @@i18n(key="pages.overview.thePackages.th2") /></tr>
+      <tr>
+        <th @@i18n(key="pages.overview.thePackages.th1") />
+        <th @@i18n(key="pages.overview.thePackages.th2") />
+      </tr>
     </thead>
     <tbody>
-      <tr><td><code>{'@xaendar/core'}</code></td><td @@i18n(key="pages.overview.thePackages.td1") /></tr>
-      <tr><td><code>{'@xaendar/signals'}</code></td><td @@i18n(key="pages.overview.thePackages.td2") /></tr>
-      <tr><td><code>{'@xaendar/compiler'}</code></td><td @@i18n(key="pages.overview.thePackages.td3") /></tr>
-      <tr><td><code>{'@xaendar/build-tools'}</code></td><td @@i18n(key="pages.overview.thePackages.td4") /></tr>
-      <tr><td><code>{'@xaendar/cli'}</code></td><td @@i18n(key="pages.overview.thePackages.td5") /></tr>
-      <tr><td @@i18n(key="pages.overview.thePackages.td6") /><td @@i18n(key="pages.overview.thePackages.td7") /></tr>
-      <tr><td><code>{'@xaendar/common'}</code>, <code>{'@xaendar/types'}</code></td><td @@i18n(key="pages.overview.thePackages.td8") /></tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/core'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/signals'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/compiler'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/build-tools'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/cli'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td5") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.overview.thePackages.td6") />
+        <td @@i18n(key="pages.overview.thePackages.td7") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@xaendar/common'}</code>,
+          <code>{'@xaendar/types'}</code>
+        </td>
+        <td @@i18n(key="pages.overview.thePackages.td8") />
+      </tr>
     </tbody>
   </table>
 </div>
-<docs-callout kind="note" @@i18n(key="pages.overview.thePackages.callout1.body") />
+<docs-callout @@i18n(key="pages.overview.thePackages.callout1.body") kind="note" />
 
 <h2 @@i18n(key="pages.overview.whatXaendarDoesNot.title") />
 <p @@i18n(key="pages.overview.whatXaendarDoesNot.p1") />

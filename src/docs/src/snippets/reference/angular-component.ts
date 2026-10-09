@@ -27,7 +27,7 @@ export class CounterComponent {
    * Adds one and notifies the parent.
    */
   increment(): void {
-    this.count.update(n => n + 1);
+    this.count.update(value => value + 1);
     this.changed.emit(this.count());
   }
 }
@@ -57,7 +57,7 @@ export class CounterComponent extends CustomElement {
    * Adds one and notifies the parent.
    */
   public increment(): void {
-    this.count.update(n => n + 1);
+    this.count.update(value => value + 1);
     this.changed.emit(this.count());
   }
 }

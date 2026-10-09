@@ -4,13 +4,16 @@
 @import { UntrackedLeakComponent } from '../../../examples/signals/untracked/untracked-leak/untracked-leak.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.signals.untracked.eyebrow") />
+<span @@i18n(key="pages.signals.untracked.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.untracked.title") />
-<p class="lead" @@i18n(key="pages.signals.untracked.lead") />
+<p @@i18n(key="pages.signals.untracked.lead") class="lead" />
 
 <h2 @@i18n(key="pages.signals.untracked.whenToUseIt.title") />
 <p @@i18n(key="pages.signals.untracked.whenToUseIt.p1") />
-<docs-example name="signals/untracked/untracked-read" heading="{ t().pages.signals.untracked.whenToUseIt.example1 }">
+<docs-example
+  name="signals/untracked/untracked-read"
+  heading="{ translations().pages.signals.untracked.whenToUseIt.example1 }"
+>
   <ex-untracked-read />
 </docs-example>
 
@@ -19,11 +22,19 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.untracked.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.untracked.edgeCases.callout1.heading }" @@i18n(key="pages.signals.untracked.edgeCases.callout1.body") />
-  <docs-example name="signals/untracked/untracked-leak" kind="edge" heading="{ t().pages.signals.untracked.edgeCases.example1 }">
+  <docs-callout
+    @@i18n(key="pages.signals.untracked.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.signals.untracked.edgeCases.callout1.heading }"
+  />
+  <docs-example
+    name="signals/untracked/untracked-leak"
+    kind="edge"
+    heading="{ translations().pages.signals.untracked.edgeCases.example1 }"
+  >
     <ex-untracked-leak />
   </docs-example>
-  <docs-callout kind="issue" heading="{ t().pages.signals.untracked.edgeCases.callout2.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.signals.untracked.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.signals.untracked.edgeCases.callout2.p1") />
     <p @@i18n(key="pages.signals.untracked.edgeCases.callout2.p2") />
   </docs-callout>
@@ -32,9 +43,19 @@
 <h2 @@i18n(key="pages.signals.untracked.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.signals.untracked.apiSummary.th1") /><th @@i18n(key="pages.signals.untracked.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.signals.untracked.apiSummary.th1") />
+        <th @@i18n(key="pages.signals.untracked.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>untracked(fn)</code></td><td @@i18n(key="pages.signals.untracked.apiSummary.td1") /></tr>
+      <tr>
+        <td>
+          <code>untracked(fn)</code>
+        </td>
+        <td @@i18n(key="pages.signals.untracked.apiSummary.td1") />
+      </tr>
     </tbody>
   </table>
 </div>

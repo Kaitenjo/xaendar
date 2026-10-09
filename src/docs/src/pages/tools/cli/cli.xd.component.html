@@ -2,9 +2,9 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.tools.cli.eyebrow") />
+<span @@i18n(key="pages.tools.cli.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.tools.cli.title") />
-<p class="lead" @@i18n(key="pages.tools.cli.lead") />
+<p @@i18n(key="pages.tools.cli.lead") class="lead" />
 <docs-code snippet="tools/cli-help.txt" />
 
 <h2 @@i18n(key="pages.tools.cli.xdNew.title") />
@@ -24,29 +24,29 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.tools.cli.edgeCases.title") />
-  <docs-callout kind="issue" heading="{ t().pages.tools.cli.edgeCases.callout1.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.cli.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout1.p1") />
     <docs-code snippet="tools/generate-command-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.tools.cli.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.tools.cli.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout2.p1") />
     <docs-code snippet="tools/component-name-errors.txt" />
     <p @@i18n(key="pages.tools.cli.edgeCases.callout2.p2") />
     <docs-code snippet="tools/project-name-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.tools.cli.edgeCases.callout3.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.cli.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout3.p1") />
     <docs-code snippet="tools/style-option.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.tools.cli.edgeCases.callout4.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.cli.edgeCases.callout4.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout4.p1") />
     <docs-code snippet="tools/generated-spec-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.tools.cli.edgeCases.callout5.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.cli.edgeCases.callout5.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout5.p1") />
     <docs-code snippet="tools/published-version-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.tools.cli.edgeCases.callout6.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.cli.edgeCases.callout6.heading }">
     <p @@i18n(key="pages.tools.cli.edgeCases.callout6.p1") />
     <docs-code snippet="tools/build-exit-code.sh" />
   </docs-callout>
@@ -55,13 +55,54 @@
 <h2 @@i18n(key="pages.tools.cli.commandSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.tools.cli.commandSummary.th1") /><th @@i18n(key="pages.tools.cli.commandSummary.th2") /><th @@i18n(key="pages.tools.cli.commandSummary.th3") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.tools.cli.commandSummary.th1") />
+        <th @@i18n(key="pages.tools.cli.commandSummary.th2") />
+        <th @@i18n(key="pages.tools.cli.commandSummary.th3") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.tools.cli.commandSummary.td1") /><td><code>-p, --path</code>, <code>-s, --style</code></td><td @@i18n(key="pages.tools.cli.commandSummary.td2") /></tr>
-      <tr><td><code>xd start</code>, <code>xd s</code></td><td>—</td><td @@i18n(key="pages.tools.cli.commandSummary.td3") /></tr>
-      <tr><td><code>xd build</code>, <code>xd b</code></td><td>—</td><td @@i18n(key="pages.tools.cli.commandSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.tools.cli.commandSummary.td5") /><td><code>-p, --path</code>, <code>-f, --force</code></td><td @@i18n(key="pages.tools.cli.commandSummary.td6") /></tr>
-      <tr><td><code>xd --version</code>, <code>xd --help</code></td><td>—</td><td @@i18n(key="pages.tools.cli.commandSummary.td7") /></tr>
+      <tr>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td1") />
+        <td>
+          <code>-p, --path</code>,
+          <code>-s, --style</code>
+        </td>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd start</code>,
+          <code>xd s</code>
+        </td>
+        <td>—</td>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd build</code>,
+          <code>xd b</code>
+        </td>
+        <td>—</td>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td5") />
+        <td>
+          <code>-p, --path</code>,
+          <code>-f, --force</code>
+        </td>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd --version</code>,
+          <code>xd --help</code>
+        </td>
+        <td>—</td>
+        <td @@i18n(key="pages.tools.cli.commandSummary.td7") />
+      </tr>
     </tbody>
   </table>
 </div>

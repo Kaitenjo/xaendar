@@ -13,5 +13,5 @@ export class SignalsOptionsPage extends CustomElement {
   /**
    * The texts of the documentation, in the current language.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
 }

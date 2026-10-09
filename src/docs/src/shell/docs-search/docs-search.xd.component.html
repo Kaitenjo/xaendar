@@ -3,20 +3,35 @@
     <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2" />
     <path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
   </svg>
-  <input class="field" type="search" autocomplete="off" spellcheck="false" placeholder="{ t().search.placeholder }" aria-label="{ t().search.label }" (input)="onInput($event)" (keydown)="onKeydown($event)" (focus)="open()" (blur)="close()" />
+  <input
+    class="field"
+    type="search"
+    autocomplete="off"
+    spellcheck="false"
+    placeholder="{ translations().search.placeholder }"
+    aria-label="{ translations().search.label }"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (focus)="open()"
+    (blur)="close()"
+  />
   <kbd class="kbd">/</kbd>
   @if (expanded() && query()) {
     <ul class="results" role="listbox">
-      @for (page of results(); track page.path; i = $index) {
+      @for (page of results(); track page.path; index = $index) {
         <li>
-          <a class="{ i() === active() ? 'result result--active' : 'result' }" href="{ linkTo(page.path) }" (mousedown)="go(page.path)">
+          <a
+            class="{ index() === active() ? 'result result--active' : 'result' }"
+            href="{ linkTo(page.path) }"
+            (mousedown)="go(page.path)"
+          >
             <span class="result__title">{ titleOf(page) }</span>
             <span class="result__path">{ page.path }</span>
           </a>
         </li>
       }
       @if (!results().length) {
-        <li class="empty">{ t().search.noResults }</li>
+        <li class="empty">{ translations().search.noResults }</li>
       }
     </ul>
   }

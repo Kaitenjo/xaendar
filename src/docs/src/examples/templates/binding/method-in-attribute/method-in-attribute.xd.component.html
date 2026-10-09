@@ -1,5 +1,14 @@
 <button (click)="raise()">Raise the level: { level() }</button>
-<p><meter min="0" max="100" value="{ percentOf() }"></meter> a method: percentOf()</p>
-<p><meter min="0" max="100" value="{ percent() }"></meter> a computed signal: percent()</p>
-<p><meter min="0" max="10" value="{ level() }"></meter> the signal: level()</p>
+<p>
+  <meter min="0" max="100" value="{ percentOf() }"></meter>
+  a method: percentOf()
+</p>
+<p>
+  <meter min="0" max="100" value="{ percent() }"></meter>
+  a computed signal: percent()
+</p>
+<p>
+  <meter min="0" max="10" value="{ level() }"></meter>
+  the signal: level()
+</p>
 <p class="text">In the text, the method is reactive: { percentOf() }%</p>

@@ -17,7 +17,7 @@ export class DocsErrorListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The language of the links.
    */
@@ -66,7 +66,7 @@ export class DocsErrorListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const phase = this.phase();
     const current = this.currentLang();
-    const texts = this.t().errors;
+    const texts = this.translations().errors;
     return ERRORS
       .filter(entry => !phase || entry.phase === phase)
       .map(entry => ({ ...entry, causeText: texts[entry.message].cause, fixText: texts[entry.message].fix, href: `#/${current}/${entry.page}` }))

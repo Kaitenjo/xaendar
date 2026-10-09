@@ -14,7 +14,7 @@ export class SignalCustomEqualsComponent extends CustomElement {
    * A name compared case-insensitively: "ADA" is not a change from "Ada".
    */
   public readonly name = signal('Ada', {
-    equals: (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+    equals: (left: string, right: string) => left.toLowerCase() === right.toLowerCase()
   });
   /**
    * A name compared with the default equality, Object.is.

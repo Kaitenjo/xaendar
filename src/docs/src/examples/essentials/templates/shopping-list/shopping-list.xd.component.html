@@ -9,18 +9,21 @@
       <li class="{ item.done ? 'done' : '' }">
         <label>
           <input
-            type="checkbox"
-            (change)="toggle(item.id)"
             @if (item.done) {
               checked
             }
+            type="checkbox"
+            (change)="toggle(item.id)"
           />
           { item.name }
         </label>
       </li>
     }
   </ul>
-  <p>{ remaining() } of { items().length } left · <button (click)="clear()">Clear</button></p>
+  <p>
+    { remaining() } of { items().length } left ·
+    <button (click)="clear()">Clear</button>
+  </p>
 } @else {
   <p>The list is empty: add something!</p>
 }

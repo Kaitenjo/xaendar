@@ -8,12 +8,15 @@
 @import { DirectiveTimingComponent } from '../../../examples/directives/custom/directive-timing/directive-timing.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.directives.custom.eyebrow") />
+<span @@i18n(key="pages.directives.custom.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.directives.custom.title") />
-<p class="lead" @@i18n(key="pages.directives.custom.lead") />
+<p @@i18n(key="pages.directives.custom.lead") class="lead" />
 
 <h2 @@i18n(key="pages.directives.custom.theElementTheInputs.title") />
-<docs-example name="directives/custom/tooltip" heading="{ t().pages.directives.custom.theElementTheInputs.example1 }">
+<docs-example
+  name="directives/custom/tooltip"
+  heading="{ translations().pages.directives.custom.theElementTheInputs.example1 }"
+>
   <ex-tooltip-demo />
 </docs-example>
 <p @@i18n(key="pages.directives.custom.theElementTheInputs.p1") />
@@ -21,11 +24,14 @@
 
 <h2 @@i18n(key="pages.directives.custom.outputs.title") />
 <p @@i18n(key="pages.directives.custom.outputs.p1") />
-<docs-example name="directives/custom/click-outside" heading="{ t().pages.directives.custom.outputs.example1 }">
+<docs-example
+  name="directives/custom/click-outside"
+  heading="{ translations().pages.directives.custom.outputs.example1 }"
+>
   <ex-dropdown-menu />
 </docs-example>
 <p @@i18n(key="pages.directives.custom.outputs.p2") />
-<docs-example name="directives/custom/resize" heading="{ t().pages.directives.custom.outputs.example2 }">
+<docs-example name="directives/custom/resize" heading="{ translations().pages.directives.custom.outputs.example2 }">
   <ex-resizable-box />
 </docs-example>
 <p @@i18n(key="pages.directives.custom.outputs.p3") />
@@ -34,22 +40,29 @@
 
 <h2 @@i18n(key="pages.directives.custom.svgElements.title") />
 <p @@i18n(key="pages.directives.custom.svgElements.p1") />
-<docs-example name="directives/custom/svg-grow" heading="{ t().pages.directives.custom.svgElements.example1 }">
+<docs-example
+  name="directives/custom/svg-grow"
+  heading="{ translations().pages.directives.custom.svgElements.example1 }"
+>
   <ex-bubbles />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.directives.custom.edgeCases.title") />
-  <docs-example name="directives/custom/directive-timing" heading="{ t().pages.directives.custom.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="directives/custom/directive-timing"
+    heading="{ translations().pages.directives.custom.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-directive-timing />
   </docs-example>
   <p @@i18n(key="pages.directives.custom.edgeCases.p1") />
   <p @@i18n(key="pages.directives.custom.edgeCases.p2") />
-  <docs-callout kind="edge" heading="{ t().pages.directives.custom.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.custom.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.directives.custom.edgeCases.callout1.p1") />
     <docs-code snippet="directives/constructor-access.ts" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.directives.custom.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.custom.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.directives.custom.edgeCases.callout2.p1") />
     <docs-code snippet="directives/custom-errors.txt" />
   </docs-callout>
@@ -58,14 +71,50 @@
 <h2 @@i18n(key="pages.directives.custom.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.directives.custom.apiSummary.th1") /><th @@i18n(key="pages.directives.custom.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.directives.custom.apiSummary.th1") />
+        <th @@i18n(key="pages.directives.custom.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>element</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td1") /></tr>
-      <tr><td><code>onInit()</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td2") /></tr>
-      <tr><td><code>onDestroy()</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td3") /></tr>
-      <tr><td><code>effect(fn, options?)</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td4") /></tr>
-      <tr><td><code>dispatchEvent(event)</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td5") /></tr>
-      <tr><td><code>{'@Property'}</code>, <code>{'@Event'}</code></td><td @@i18n(key="pages.directives.custom.apiSummary.td6") /></tr>
+      <tr>
+        <td>
+          <code>element</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>onInit()</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>onDestroy()</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>effect(fn, options?)</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>dispatchEvent(event)</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@Property'}</code>,
+          <code>{'@Event'}</code>
+        </td>
+        <td @@i18n(key="pages.directives.custom.apiSummary.td6") />
+      </tr>
     </tbody>
   </table>
 </div>

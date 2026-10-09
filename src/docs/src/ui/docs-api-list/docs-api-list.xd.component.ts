@@ -17,7 +17,7 @@ export class DocsApiListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The language of the links.
    */
@@ -66,7 +66,7 @@ export class DocsApiListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const module = this.module();
     const current = this.currentLang();
-    const descriptions = this.t().api;
+    const descriptions = this.translations().api;
     return API
       .filter(entry => !module || entry.module === module)
       .map(entry => ({ ...entry, text: descriptions[entry.name], href: `#/${current}/${entry.page}` }))

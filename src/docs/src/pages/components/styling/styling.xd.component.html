@@ -9,76 +9,127 @@
 @import { StyleObjectComponent } from '../../../examples/components/styling/style-object/style-object.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.styling.eyebrow") />
+<span @@i18n(key="pages.components.styling.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.styling.title") />
-<p class="lead" @@i18n(key="pages.components.styling.lead") />
+<p @@i18n(key="pages.components.styling.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.styling.theComponentStylesheet.title") />
 <p @@i18n(key="pages.components.styling.theComponentStylesheet.p1") />
-<docs-example name="components/styling/encapsulation" heading="{ t().pages.components.styling.theComponentStylesheet.example1 }">
+<docs-example
+  name="components/styling/encapsulation"
+  heading="{ translations().pages.components.styling.theComponentStylesheet.example1 }"
+>
   <ex-encapsulation />
 </docs-example>
 <p @@i18n(key="pages.components.styling.theComponentStylesheet.p2") />
 
 <h2 @@i18n(key="pages.components.styling.stylingTheHost.title") />
 <p @@i18n(key="pages.components.styling.stylingTheHost.p1") />
-<docs-example name="components/styling/host-selectors" heading="{ t().pages.components.styling.stylingTheHost.example1 }">
+<docs-example
+  name="components/styling/host-selectors"
+  heading="{ translations().pages.components.styling.stylingTheHost.example1 }"
+>
   <ex-host-selectors />
 </docs-example>
 <p @@i18n(key="pages.components.styling.stylingTheHost.p2") />
 
 <h2 @@i18n(key="pages.components.styling.themingWithCustomProperties.title") />
 <p @@i18n(key="pages.components.styling.themingWithCustomProperties.p1") />
-<docs-example name="components/styling/custom-properties" heading="{ t().pages.components.styling.themingWithCustomProperties.example1 }">
+<docs-example
+  name="components/styling/custom-properties"
+  heading="{ translations().pages.components.styling.themingWithCustomProperties.example1 }"
+>
   <ex-custom-properties />
 </docs-example>
 
 <h2 @@i18n(key="pages.components.styling.partsAndProjectedContent.title") />
 <p @@i18n(key="pages.components.styling.partsAndProjectedContent.p1") />
-<docs-example name="components/styling/parts-and-slotted" heading="{ t().pages.components.styling.partsAndProjectedContent.example1 }">
+<docs-example
+  name="components/styling/parts-and-slotted"
+  heading="{ translations().pages.components.styling.partsAndProjectedContent.example1 }"
+>
   <ex-parts-and-slotted />
 </docs-example>
 <p @@i18n(key="pages.components.styling.partsAndProjectedContent.p2") />
 
 <h2 @@i18n(key="pages.components.styling.dynamicClassesAndStyles.title") />
 <p @@i18n(key="pages.components.styling.dynamicClassesAndStyles.p1") />
-<docs-example name="components/styling/dynamic-styles" heading="{ t().pages.components.styling.dynamicClassesAndStyles.example1 }">
+<docs-example
+  name="components/styling/dynamic-styles"
+  heading="{ translations().pages.components.styling.dynamicClassesAndStyles.example1 }"
+>
   <ex-dynamic-styles />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.styling.edgeCases.title") />
-  <docs-example name="components/styling/style-object" heading="{ t().pages.components.styling.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="components/styling/style-object"
+    heading="{ translations().pages.components.styling.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-style-object />
   </docs-example>
   <p @@i18n(key="pages.components.styling.edgeCases.p1") />
-  <docs-callout kind="issue" heading="{ t().pages.components.styling.edgeCases.callout1.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.components.styling.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.components.styling.edgeCases.callout1.p1") />
     <docs-code snippet="components/template-literal-class.html" />
     <docs-code snippet="components/template-literal-error.txt" />
   </docs-callout>
-  <docs-callout kind="unsupported" heading="{ t().pages.components.styling.edgeCases.callout2.heading }">
+  <docs-callout kind="unsupported" heading="{ translations().pages.components.styling.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.components.styling.edgeCases.callout2.p1") />
     <docs-code snippet="components/scss-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.styling.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.styling.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.components.styling.edgeCases.callout3.p1") />
     <docs-code snippet="components/css-limits.css" />
     <docs-code snippet="components/css-import-warning.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.styling.edgeCases.callout4.heading }" @@i18n(key="pages.components.styling.edgeCases.callout4.body") />
+  <docs-callout
+    @@i18n(key="pages.components.styling.edgeCases.callout4.body")
+    kind="edge"
+    heading="{ translations().pages.components.styling.edgeCases.callout4.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.components.styling.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.styling.apiSummary.th1") /><th @@i18n(key="pages.components.styling.apiSummary.th2") /><th @@i18n(key="pages.components.styling.apiSummary.th3") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.styling.apiSummary.th1") />
+        <th @@i18n(key="pages.components.styling.apiSummary.th2") />
+        <th @@i18n(key="pages.components.styling.apiSummary.th3") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.components.styling.apiSummary.td1") /><td @@i18n(key="pages.components.styling.apiSummary.td2") /><td @@i18n(key="pages.components.styling.apiSummary.td3") /></tr>
-      <tr><td @@i18n(key="pages.components.styling.apiSummary.td4") /><td @@i18n(key="pages.components.styling.apiSummary.td5") /><td @@i18n(key="pages.components.styling.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.components.styling.apiSummary.td7") /><td @@i18n(key="pages.components.styling.apiSummary.td8") /><td @@i18n(key="pages.components.styling.apiSummary.td9") /></tr>
-      <tr><td @@i18n(key="pages.components.styling.apiSummary.td10") /><td @@i18n(key="pages.components.styling.apiSummary.td11") /><td @@i18n(key="pages.components.styling.apiSummary.td12") /></tr>
-      <tr><td><code>:defined</code></td><td @@i18n(key="pages.components.styling.apiSummary.td13") /><td @@i18n(key="pages.components.styling.apiSummary.td14") /></tr>
+      <tr>
+        <td @@i18n(key="pages.components.styling.apiSummary.td1") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td2") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.styling.apiSummary.td4") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td5") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.styling.apiSummary.td7") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td8") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td9") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.styling.apiSummary.td10") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td11") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td12") />
+      </tr>
+      <tr>
+        <td>
+          <code>:defined</code>
+        </td>
+        <td @@i18n(key="pages.components.styling.apiSummary.td13") />
+        <td @@i18n(key="pages.components.styling.apiSummary.td14") />
+      </tr>
     </tbody>
   </table>
 </div>

@@ -8,9 +8,9 @@
 @import { ComponentEffectsComponent } from '../../../examples/signals/effects/component-effects/component-effects.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.signals.effects.eyebrow") />
+<span @@i18n(key="pages.signals.effects.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.effects.title") />
-<p class="lead" @@i18n(key="pages.signals.effects.lead") />
+<p @@i18n(key="pages.signals.effects.lead") class="lead" />
 
 <h2 @@i18n(key="pages.signals.effects.creatingAnEffect.title") />
 <docs-code snippet="signals/effect-api.ts" />
@@ -18,13 +18,16 @@
 
 <h2 @@i18n(key="pages.signals.effects.batching.title") />
 <p @@i18n(key="pages.signals.effects.batching.p1") />
-<docs-example name="signals/effects/batching" heading="{ t().pages.signals.effects.batching.example1 }">
+<docs-example name="signals/effects/batching" heading="{ translations().pages.signals.effects.batching.example1 }">
   <ex-effect-batching />
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.effects.effectsOfAComponent.title") />
 <p @@i18n(key="pages.signals.effects.effectsOfAComponent.p1") />
-<docs-example name="signals/effects/component-effects" heading="{ t().pages.signals.effects.effectsOfAComponent.example1 }">
+<docs-example
+  name="signals/effects/component-effects"
+  heading="{ translations().pages.signals.effects.effectsOfAComponent.example1 }"
+>
   <ex-component-effects />
 </docs-example>
 <p @@i18n(key="pages.signals.effects.effectsOfAComponent.p2") />
@@ -35,44 +38,88 @@
   <li @@i18n(key="pages.signals.effects.options.li2") />
   <li @@i18n(key="pages.signals.effects.options.li3") />
 </ul>
-<docs-example name="signals/effects/options" heading="{ t().pages.signals.effects.options.example1 }">
+<docs-example name="signals/effects/options" heading="{ translations().pages.signals.effects.options.example1 }">
   <ex-effect-options />
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.effects.disposing.title") />
 <p @@i18n(key="pages.signals.effects.disposing.p1") />
-<docs-example name="signals/effects/dispose" kind="edge" heading="{ t().pages.signals.effects.disposing.example1 }">
+<docs-example
+  name="signals/effects/dispose"
+  kind="edge"
+  heading="{ translations().pages.signals.effects.disposing.example1 }"
+>
   <ex-effect-dispose />
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.effects.errors.title") />
 <p @@i18n(key="pages.signals.effects.errors.p1") />
-<docs-example name="signals/effects/errors" kind="edge" heading="{ t().pages.signals.effects.errors.example1 }">
+<docs-example
+  name="signals/effects/errors"
+  kind="edge"
+  heading="{ translations().pages.signals.effects.errors.example1 }"
+>
   <ex-effect-errors />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.effects.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.effects.edgeCases.callout1.heading }" @@i18n(key="pages.signals.effects.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.effects.edgeCases.callout2.heading }" @@i18n(key="pages.signals.effects.edgeCases.callout2.body") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.effects.edgeCases.callout3.heading }">
+  <docs-callout
+    @@i18n(key="pages.signals.effects.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.signals.effects.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.effects.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.signals.effects.edgeCases.callout2.heading }"
+  />
+  <docs-callout kind="edge" heading="{ translations().pages.signals.effects.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.signals.effects.edgeCases.callout3.p1") />
     <docs-code snippet="signals/infinite-loop.ts" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.signals.effects.edgeCases.callout4.heading }" @@i18n(key="pages.signals.effects.edgeCases.callout4.body") />
-  <docs-callout kind="issue" heading="{ t().pages.signals.effects.edgeCases.callout5.heading }" @@i18n(key="pages.signals.effects.edgeCases.callout5.body") />
+  <docs-callout
+    @@i18n(key="pages.signals.effects.edgeCases.callout4.body")
+    kind="edge"
+    heading="{ translations().pages.signals.effects.edgeCases.callout4.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.effects.edgeCases.callout5.body")
+    kind="issue"
+    heading="{ translations().pages.signals.effects.edgeCases.callout5.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.signals.effects.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.signals.effects.apiSummary.th1") /><th @@i18n(key="pages.signals.effects.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.signals.effects.apiSummary.th1") />
+        <th @@i18n(key="pages.signals.effects.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.signals.effects.apiSummary.td1") /><td @@i18n(key="pages.signals.effects.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.signals.effects.apiSummary.td3") /><td @@i18n(key="pages.signals.effects.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.signals.effects.apiSummary.td5") /><td @@i18n(key="pages.signals.effects.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.signals.effects.apiSummary.td7") /><td @@i18n(key="pages.signals.effects.apiSummary.td8") /></tr>
-      <tr><td @@i18n(key="pages.signals.effects.apiSummary.td9") /><td @@i18n(key="pages.signals.effects.apiSummary.td10") /></tr>
+      <tr>
+        <td @@i18n(key="pages.signals.effects.apiSummary.td1") />
+        <td @@i18n(key="pages.signals.effects.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.effects.apiSummary.td3") />
+        <td @@i18n(key="pages.signals.effects.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.effects.apiSummary.td5") />
+        <td @@i18n(key="pages.signals.effects.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.effects.apiSummary.td7") />
+        <td @@i18n(key="pages.signals.effects.apiSummary.td8") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.effects.apiSummary.td9") />
+        <td @@i18n(key="pages.signals.effects.apiSummary.td10") />
+      </tr>
     </tbody>
   </table>
 </div>

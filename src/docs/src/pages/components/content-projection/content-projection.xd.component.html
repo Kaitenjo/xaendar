@@ -7,51 +7,102 @@
 @import { SlotTimingComponent } from '../../../examples/components/content-projection/slot-timing/slot-timing.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.contentProjection.eyebrow") />
+<span @@i18n(key="pages.components.contentProjection.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.contentProjection.title") />
-<p class="lead" @@i18n(key="pages.components.contentProjection.lead") />
+<p @@i18n(key="pages.components.contentProjection.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.title") />
 <p @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.p1") />
-<docs-example name="components/content-projection/card-slots" heading="{ t().pages.components.contentProjection.defaultSlotNamedSlots.example1 }">
+<docs-example
+  name="components/content-projection/card-slots"
+  heading="{ translations().pages.components.contentProjection.defaultSlotNamedSlots.example1 }"
+>
   <ex-card-slots />
 </docs-example>
 <p @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.p2") />
 
 <h2 @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.title") />
 <p @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.p1") />
-<docs-example name="components/content-projection/dynamic-slot" heading="{ t().pages.components.contentProjection.choosingTheSlotAt.example1 }">
+<docs-example
+  name="components/content-projection/dynamic-slot"
+  heading="{ translations().pages.components.contentProjection.choosingTheSlotAt.example1 }"
+>
   <ex-dynamic-slot />
 </docs-example>
 <p @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.p2") />
 
 <h2 @@i18n(key="pages.components.contentProjection.forwardingSlots.title") />
 <p @@i18n(key="pages.components.contentProjection.forwardingSlots.p1") />
-<docs-example name="components/content-projection/forwarding" heading="{ t().pages.components.contentProjection.forwardingSlots.example1 }">
+<docs-example
+  name="components/content-projection/forwarding"
+  heading="{ translations().pages.components.contentProjection.forwardingSlots.example1 }"
+>
   <ex-forwarding />
 </docs-example>
 <p @@i18n(key="pages.components.contentProjection.forwardingSlots.p2") />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.contentProjection.edgeCases.title") />
-  <docs-example name="components/content-projection/slot-timing" heading="{ t().pages.components.contentProjection.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="components/content-projection/slot-timing"
+    heading="{ translations().pages.components.contentProjection.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-slot-timing />
   </docs-example>
   <p @@i18n(key="pages.components.contentProjection.edgeCases.p1") />
-  <docs-callout kind="edge" heading="{ t().pages.components.contentProjection.edgeCases.callout1.heading }" @@i18n(key="pages.components.contentProjection.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.contentProjection.edgeCases.callout2.heading }" @@i18n(key="pages.components.contentProjection.edgeCases.callout2.body") />
+  <docs-callout
+    @@i18n(key="pages.components.contentProjection.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.components.contentProjection.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.components.contentProjection.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.components.contentProjection.edgeCases.callout2.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.components.contentProjection.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.contentProjection.apiSummary.th1") /><th @@i18n(key="pages.components.contentProjection.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.contentProjection.apiSummary.th1") />
+        <th @@i18n(key="pages.components.contentProjection.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{'<slot />'}</code></td><td @@i18n(key="pages.components.contentProjection.apiSummary.td1") /></tr>
-      <tr><td><code>{'<slot name="x" />'}</code></td><td @@i18n(key="pages.components.contentProjection.apiSummary.td2") /></tr>
-      <tr><td><code>{'<slot>fallback</slot>'}</code></td><td @@i18n(key="pages.components.contentProjection.apiSummary.td3") /></tr>
-      <tr><td><code>{'slot="{ expr }"'}</code></td><td @@i18n(key="pages.components.contentProjection.apiSummary.td4") /></tr>
-      <tr><td><code>(slotchange)</code></td><td @@i18n(key="pages.components.contentProjection.apiSummary.td5") /></tr>
+      <tr>
+        <td>
+          <code>{'<slot />'}</code>
+        </td>
+        <td @@i18n(key="pages.components.contentProjection.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'<slot name="x" />'}</code>
+        </td>
+        <td @@i18n(key="pages.components.contentProjection.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'<slot>fallback</slot>'}</code>
+        </td>
+        <td @@i18n(key="pages.components.contentProjection.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'slot="{ expr }"'}</code>
+        </td>
+        <td @@i18n(key="pages.components.contentProjection.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>(slotchange)</code>
+        </td>
+        <td @@i18n(key="pages.components.contentProjection.apiSummary.td5") />
+      </tr>
     </tbody>
   </table>
 </div>

@@ -5,9 +5,9 @@
 @import { SignalFrozenComponent } from '../../../examples/signals/options/frozen/frozen.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.signals.options.eyebrow") />
+<span @@i18n(key="pages.signals.options.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.options.title") />
-<p class="lead" @@i18n(key="pages.signals.options.lead") />
+<p @@i18n(key="pages.signals.options.lead") class="lead" />
 <docs-code snippet="signals/types.ts" />
 
 <h2 @@i18n(key="pages.signals.options.equals.title") />
@@ -15,19 +15,38 @@
 
 <h2 @@i18n(key="pages.signals.options.watchedAndUnwatched.title") />
 <p @@i18n(key="pages.signals.options.watchedAndUnwatched.p1") />
-<docs-example name="signals/options/watched" heading="{ t().pages.signals.options.watchedAndUnwatched.example1 }">
+<docs-example
+  name="signals/options/watched"
+  heading="{ translations().pages.signals.options.watchedAndUnwatched.example1 }"
+>
   <ex-signal-watched />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.options.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.options.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.signals.options.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.signals.options.edgeCases.callout1.p1") />
   </docs-callout>
-  <docs-example name="signals/options/frozen" kind="edge" heading="{ t().pages.signals.options.edgeCases.example1 }">
+  <docs-example
+    name="signals/options/frozen"
+    kind="edge"
+    heading="{ translations().pages.signals.options.edgeCases.example1 }"
+  >
     <ex-signal-frozen />
   </docs-example>
-  <docs-callout kind="edge" heading="{ t().pages.signals.options.edgeCases.callout2.heading }" @@i18n(key="pages.signals.options.edgeCases.callout2.body") />
-  <docs-callout kind="unsupported" heading="{ t().pages.signals.options.edgeCases.callout3.heading }" @@i18n(key="pages.signals.options.edgeCases.callout3.body") />
-  <docs-callout kind="note" heading="{ t().pages.signals.options.edgeCases.callout4.heading }" @@i18n(key="pages.signals.options.edgeCases.callout4.body") />
+  <docs-callout
+    @@i18n(key="pages.signals.options.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.signals.options.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.options.edgeCases.callout3.body")
+    kind="unsupported"
+    heading="{ translations().pages.signals.options.edgeCases.callout3.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.options.edgeCases.callout4.body")
+    kind="note"
+    heading="{ translations().pages.signals.options.edgeCases.callout4.heading }"
+  />
 </section>

@@ -17,7 +17,7 @@ export class DocsIssueListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The language of the links.
    */
@@ -66,7 +66,7 @@ export class DocsIssueListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const area = this.area();
     const current = this.currentLang();
-    const texts = this.t().issues;
+    const texts = this.translations().issues;
     return ISSUES
       .filter(entry => !area || entry.area === area)
       .map(entry => ({

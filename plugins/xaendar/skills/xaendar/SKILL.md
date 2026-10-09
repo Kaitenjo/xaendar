@@ -123,7 +123,41 @@ Follow these in every class you write or edit (components, directives, plain cla
   public accessor language!: InputSignal<CodeLang>;
   ```
   Any type works, imported aliases included. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union.
+- **Names**: never one-letter identifiers (variables, parameters and arrow callbacks, loop counters, catch bindings, type parameters, `@for` items and aliases): name what the value is. The build minifies the names anyway.
 - **Module constants** used by a single class become members of that class: a private field, or a public one if the template reads it. Keep at module level only what is exported, shared by several classes, or state shared by every instance (counters, caches).
+
+Follow these in every template you write or edit:
+
+- **Order inside an opening tag**: conditional structural directives (`@if (…) { *x(…) }`) → structural directives (`*x(…)`) → conditional directives (`@if (…) { @@x(…) }`) → directives (`@@x(…)`) → conditional attributes and inputs (`@if (…) { name="…" }`) → attributes and inputs → conditional events (`@if (…) { (name)="…" }`) → events (`(name)="…"`). "Conditional" means any `@if`/`@else`/`@switch` block inside the tag. The last four groups keep this order inside a directive's parentheses too. Keep each conditional block to a single group when you can. When the branches of one condition need different groups, keep a single `@if`/`@else` in the position of its first group.
+  ```html
+  <button
+    *exVisibleWhen(condition="{ shown() }")
+    @if (highlighted()) {
+      @@exTint(color="#fde68a")
+    }
+    @@exTooltip(text="{ hint() }" (opened)="track($event)")
+    @if (locked()) {
+      disabled
+    }
+    type="button"
+    class="{`btn ${kind()}`}"
+    @if (editable()) {
+      (click)="edit()"
+    }
+    (focus)="select()"
+  >
+    Edit
+  </button>
+  ```
+- **Conditions** (in classes and templates alike):
+  - Never test a condition and its negation separately (`if (x) { … } if (!x) { … }`, `@if (x) { … }` … `@if (!x) { … }`): use `if`/`else`, `@if`/`@else`.
+  - Never compare the same value with several constants in separate `if`s or in an `else if` chain (`if (kind === 'a') … else if (kind === 'b') …`): use `switch (kind)` / `@switch (kind())`, with a `default` when the other values need handling too. In templates, `@switch` also avoids the generated names shared by `@else if` branches.
+- **Line breaks**: inside `<pre>`, keep the content exactly as written. Elsewhere:
+  - An element containing another element puts each child on its own line, indented, and its closing tag on its own line.
+  - An element containing only text and interpolations stays on one line (`<span>{ total() } items</span>`) while its opening tag is short and the line stays within about 120 characters. Otherwise the text goes on its own indented line, unless it already touches both tags (`<x-card>Text</x-card>`): on its own line it would gain spaces at both ends, visible when the content flows inline (e.g. slotted).
+  - An opening tag that does not fit on one line, or contains a conditional block, has one item per line and ends with `>` / `/>` on its own line.
+  - Control-flow blocks are never inline.
+  - Xaendar removes newlines from text and drops whitespace-only text between two elements: write `{ ' ' }` between two elements that need a space, and keep punctuation on the line of the element it follows (`<code>a</code>,`).
 
 ## Verifying work
 

@@ -13,7 +13,7 @@ export class ParityComponent extends CustomElement {
   /**
    * The number checked by the directives.
    */
-  public readonly n = signal(2);
+  public readonly value = signal(2);
 
   /**
    * Changes the number.
@@ -21,6 +21,6 @@ export class ParityComponent extends CustomElement {
    * @param delta - The change.
    */
   public change(delta: number): void {
-    this.n.update(n => n + delta);
+    this.value.update(value => value + delta);
   }
 }

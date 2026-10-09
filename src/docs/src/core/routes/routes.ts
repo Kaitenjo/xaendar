@@ -274,5 +274,5 @@ export function searchPages(query: string, messages: Messages, limit = 8): DocsP
     return { candidate, score: words.filter(word => title.includes(word)).length * 2 + (title.startsWith(words[0]!) ? 1 : 0) };
   });
 
-  return scored.filter(({ score }) => score >= 0).sort((a, b) => b.score - a.score).slice(0, limit).map(({ candidate }) => candidate);
+  return scored.filter(({ score }) => score >= 0).sort((left, right) => right.score - left.score).slice(0, limit).map(({ candidate }) => candidate);
 }

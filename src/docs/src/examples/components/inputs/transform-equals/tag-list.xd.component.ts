@@ -17,7 +17,7 @@ export class TagListComponent extends CustomElement {
    */
   @Property(new Array<string>, {
     transform: (tags: string[]) => tags.map(tag => tag.trim().toLowerCase()).filter(tag => tag !== ''),
-    equals: (a: string[], b: string[]) => a.join() === b.join()
+    equals: (left: string[], right: string[]) => left.join() === right.join()
   })
   public accessor tags!: InputSignal<string[]>;
   /**

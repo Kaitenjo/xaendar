@@ -23,7 +23,7 @@ export class DocsSearchComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The current language.
    */
@@ -144,7 +144,7 @@ export class DocsSearchComponent extends CustomElement {
    * @returns The title of the page.
    */
   public titleOf(page: DocsPage): string {
-    return pageTitle(page, this.t());
+    return pageTitle(page, this.translations());
   }
 
   /**
@@ -153,7 +153,7 @@ export class DocsSearchComponent extends CustomElement {
    * @returns The pages matching the query.
    */
   private _computeResults(): DocsPage[] {
-    return searchPages(this.query(), this.t());
+    return searchPages(this.query(), this.translations());
   }
 
   /**

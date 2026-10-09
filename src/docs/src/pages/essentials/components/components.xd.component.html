@@ -3,9 +3,9 @@
 @import { UserProfileComponent } from '../../../examples/essentials/components/user-profile/user-profile.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.essentials.components.eyebrow") />
+<span @@i18n(key="pages.essentials.components.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.essentials.components.title") />
-<p class="lead" @@i18n(key="pages.essentials.components.lead") />
+<p @@i18n(key="pages.essentials.components.lead") class="lead" />
 
 <h2 @@i18n(key="pages.essentials.components.definingAComponent.title") />
 <p @@i18n(key="pages.essentials.components.definingAComponent.p1") />
@@ -15,7 +15,10 @@
   <li @@i18n(key="pages.essentials.components.definingAComponent.li3") />
 </ul>
 <p @@i18n(key="pages.essentials.components.definingAComponent.p2") />
-<docs-example name="essentials/components/user-profile" heading="{ t().pages.essentials.components.definingAComponent.example1 }">
+<docs-example
+  name="essentials/components/user-profile"
+  heading="{ translations().pages.essentials.components.definingAComponent.example1 }"
+>
   <ex-user-profile />
 </docs-example>
 
@@ -28,7 +31,7 @@
 
 <h2 @@i18n(key="pages.essentials.components.usingAComponent.title") />
 <p @@i18n(key="pages.essentials.components.usingAComponent.p1") />
-<docs-callout kind="tip" @@i18n(key="pages.essentials.components.usingAComponent.callout1.body") />
+<docs-callout @@i18n(key="pages.essentials.components.usingAComponent.callout1.body") kind="tip" />
 
 <h2 @@i18n(key="pages.essentials.components.next.title") />
 <p @@i18n(key="pages.essentials.components.next.p1") />

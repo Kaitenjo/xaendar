@@ -2,7 +2,7 @@
   <nav class="pager">
     @if (previous()) {
       <a class="card card--previous" href="{`#/${currentLang()}/${previous()?.path}`}">
-        <span class="card__label">← { t().pager.previous }</span>
+        <span class="card__label">← { translations().pager.previous }</span>
         <span class="card__title">{ titleOf(previous()) }</span>
       </a>
     } @else {
@@ -10,7 +10,7 @@
     }
     @if (next()) {
       <a class="card card--next" href="{`#/${currentLang()}/${next()?.path}`}">
-        <span class="card__label">{ t().pager.next } →</span>
+        <span class="card__label">{ translations().pager.next } →</span>
         <span class="card__title">{ titleOf(next()) }</span>
       </a>
     }

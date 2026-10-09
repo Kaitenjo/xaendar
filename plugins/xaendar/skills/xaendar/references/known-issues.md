@@ -78,9 +78,9 @@ The children of <foreignObject> stay in the SVG namespace, so the browser does n
 
 ### A space between two interpolations disappears (bug)
 
-{ a } { b } renders the two values joined.
+{ first } { second } renders the two values joined.
 
-**Workaround:** Write {`${a} ${b}`}, or put other text between them.
+**Workaround:** Write {`${first} ${second}`}, or put other text between them.
 
 ### A shorthand object in an interpolation renders nothing (bug)
 

@@ -27,4 +27,4 @@ Today the server reports nothing: the template→component index in `packages/la
 
 ## Updating the references
 
-`skills/xaendar/references/api.md`, `errors.md` and `known-issues.md` were generated from the English entries of the data files of the documentation site (`src/docs/src/pages/reference/*/*.data.ts`). `template-syntax.md` follows the cheat sheet of the site. Update them when the docs change.
+`skills/xaendar/references/api.md`, `errors.md` and `known-issues.md` were generated from the data files of the documentation site (`src/docs/src/pages/reference/*/*.data.ts`) and their English texts (the `api`, `errors` and `issues` sections of `src/docs/src/i18n/en.json`). `template-syntax.md` follows the cheat sheet of the site. Update them when the docs change.

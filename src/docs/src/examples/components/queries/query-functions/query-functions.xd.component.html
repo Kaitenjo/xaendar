@@ -4,8 +4,20 @@
     <li class="row">Item { item }</li>
   }
 </ul>
-<p><meter min="0" max="5" value="{ rows().length }"></meter> rows = queryAll(…)</p>
-<p><meter min="0" max="5" value="{ typedRows().length }"></meter> typedRows: QuerySignal = queryAll(…)</p>
-<p><meter min="0" max="5" value="{ rowCount() }"></meter> rowCount = computed(…)</p>
-<p><meter min="0" max="5" value="{ decoratedRows().length }"></meter> {'@Query.all'} decoratedRows</p>
+<p>
+  <meter min="0" max="5" value="{ rows().length }"></meter>
+  rows = queryAll(…)
+</p>
+<p>
+  <meter min="0" max="5" value="{ typedRows().length }"></meter>
+  typedRows: QuerySignal = queryAll(…)
+</p>
+<p>
+  <meter min="0" max="5" value="{ rowCount() }"></meter>
+  rowCount = computed(…)
+</p>
+<p>
+  <meter min="0" max="5" value="{ decoratedRows().length }"></meter>
+  {'@Query.all'} decoratedRows
+</p>
 <p class="text">In the text: { rows().length } rows</p>

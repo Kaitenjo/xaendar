@@ -5,19 +5,25 @@
 @import { RaceComponent } from '../../../examples/patterns/async-data/race/race.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.patterns.asyncData.eyebrow") />
+<span @@i18n(key="pages.patterns.asyncData.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.asyncData.title") />
-<p class="lead" @@i18n(key="pages.patterns.asyncData.lead") />
+<p @@i18n(key="pages.patterns.asyncData.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.asyncData.loadingErrorData.title") />
-<docs-example name="patterns/async-data/user-loader" heading="{ t().pages.patterns.asyncData.loadingErrorData.example1 }">
+<docs-example
+  name="patterns/async-data/user-loader"
+  heading="{ translations().pages.patterns.asyncData.loadingErrorData.example1 }"
+>
   <ex-user-loader />
 </docs-example>
 <p @@i18n(key="pages.patterns.asyncData.loadingErrorData.p1") />
 <p @@i18n(key="pages.patterns.asyncData.loadingErrorData.p2") />
 
 <h2 @@i18n(key="pages.patterns.asyncData.requestsThatOvertakeEach.title") />
-<docs-example name="patterns/async-data/race" heading="{ t().pages.patterns.asyncData.requestsThatOvertakeEach.example1 }">
+<docs-example
+  name="patterns/async-data/race"
+  heading="{ translations().pages.patterns.asyncData.requestsThatOvertakeEach.example1 }"
+>
   <ex-race />
 </docs-example>
 <p @@i18n(key="pages.patterns.asyncData.requestsThatOvertakeEach.p1") />
@@ -28,19 +34,44 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.asyncData.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.asyncData.edgeCases.callout1.heading }" @@i18n(key="pages.patterns.asyncData.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.asyncData.edgeCases.callout2.heading }" @@i18n(key="pages.patterns.asyncData.edgeCases.callout2.body") />
+  <docs-callout
+    @@i18n(key="pages.patterns.asyncData.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.asyncData.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.patterns.asyncData.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.asyncData.edgeCases.callout2.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.patterns.asyncData.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.patterns.asyncData.apiSummary.th1") /><th @@i18n(key="pages.patterns.asyncData.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.patterns.asyncData.apiSummary.th1") />
+        <th @@i18n(key="pages.patterns.asyncData.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.patterns.asyncData.apiSummary.td1") /><td @@i18n(key="pages.patterns.asyncData.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.patterns.asyncData.apiSummary.td3") /><td @@i18n(key="pages.patterns.asyncData.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.patterns.asyncData.apiSummary.td5") /><td @@i18n(key="pages.patterns.asyncData.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.patterns.asyncData.apiSummary.td7") /><td @@i18n(key="pages.patterns.asyncData.apiSummary.td8") /></tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td1") />
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td3") />
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td5") />
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td7") />
+        <td @@i18n(key="pages.patterns.asyncData.apiSummary.td8") />
+      </tr>
     </tbody>
   </table>
 </div>

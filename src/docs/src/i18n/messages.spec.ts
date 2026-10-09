@@ -38,7 +38,7 @@ describe('messages', () => {
   it('has a text for every key used by the templates', () => {
     const keys = Object.values(templates).flatMap(source => [
       ...[...source.matchAll(/@@i18n\(key="([^"]+)"\)/g)].map(([, key]) => key!),
-      ...[...source.matchAll(/\{ t\(\)\.([\w.]+) \}/g)].map(([, key]) => key!)
+      ...[...source.matchAll(/\{ translations\(\)\.([\w.]+) \}/g)].map(([, key]) => key!)
     ]);
 
     expect(keys.length).toBeGreaterThan(0);

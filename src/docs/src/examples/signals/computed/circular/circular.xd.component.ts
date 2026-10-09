@@ -20,11 +20,11 @@ export class ComputedCircularComponent extends CustomElement {
    * Builds a cycle and reads it.
    */
   public readCycle(): void {
-    // a and b read each other: the callbacks only run when a is read, once both exist
-    const a: Computed<number> = computed(() => b() + 1);
-    const b: Computed<number> = computed(() => a() + 1);
+    // first and second read each other: the callbacks only run when first is read, once both exist
+    const first: Computed<number> = computed(() => second() + 1);
+    const second: Computed<number> = computed(() => first() + 1);
     try {
-      this.outcome.set(`Value: ${a()}`);
+      this.outcome.set(`Value: ${first()}`);
     } catch (error) {
       this.outcome.set(`Error: ${(error as Error).message}`);
     }

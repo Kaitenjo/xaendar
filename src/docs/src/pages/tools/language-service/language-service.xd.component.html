@@ -2,11 +2,15 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.tools.languageService.eyebrow") />
+<span @@i18n(key="pages.tools.languageService.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.tools.languageService.title") />
-<p class="lead" @@i18n(key="pages.tools.languageService.lead") />
+<p @@i18n(key="pages.tools.languageService.lead") class="lead" />
 
-<docs-callout kind="unsupported" heading="{ t().pages.tools.languageService.callout1.heading }" @@i18n(key="pages.tools.languageService.callout1.body") />
+<docs-callout
+  @@i18n(key="pages.tools.languageService.callout1.body")
+  kind="unsupported"
+  heading="{ translations().pages.tools.languageService.callout1.heading }"
+/>
 
 <h2 @@i18n(key="pages.tools.languageService.runningTheExtension.title") />
 <p @@i18n(key="pages.tools.languageService.runningTheExtension.p1") />
@@ -26,21 +30,53 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.tools.languageService.edgeCases.title") />
-  <docs-callout kind="issue" heading="{ t().pages.tools.languageService.edgeCases.callout1.heading }" @@i18n(key="pages.tools.languageService.edgeCases.callout1.body") />
-  <docs-callout kind="issue" heading="{ t().pages.tools.languageService.edgeCases.callout2.heading }" @@i18n(key="pages.tools.languageService.edgeCases.callout2.body") />
-  <docs-callout kind="edge" heading="{ t().pages.tools.languageService.edgeCases.callout3.heading }" @@i18n(key="pages.tools.languageService.edgeCases.callout3.body") />
+  <docs-callout
+    @@i18n(key="pages.tools.languageService.edgeCases.callout1.body")
+    kind="issue"
+    heading="{ translations().pages.tools.languageService.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.tools.languageService.edgeCases.callout2.body")
+    kind="issue"
+    heading="{ translations().pages.tools.languageService.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.tools.languageService.edgeCases.callout3.body")
+    kind="edge"
+    heading="{ translations().pages.tools.languageService.edgeCases.callout3.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.tools.languageService.summary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.tools.languageService.summary.th1") /><th @@i18n(key="pages.tools.languageService.summary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.tools.languageService.summary.th1") />
+        <th @@i18n(key="pages.tools.languageService.summary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.tools.languageService.summary.td1") /><td @@i18n(key="pages.tools.languageService.summary.td2") /></tr>
-      <tr><td @@i18n(key="pages.tools.languageService.summary.td3") /><td @@i18n(key="pages.tools.languageService.summary.td4") /></tr>
-      <tr><td @@i18n(key="pages.tools.languageService.summary.td5") /><td @@i18n(key="pages.tools.languageService.summary.td6") /></tr>
-      <tr><td @@i18n(key="pages.tools.languageService.summary.td7") /><td @@i18n(key="pages.tools.languageService.summary.td8") /></tr>
-      <tr><td @@i18n(key="pages.tools.languageService.summary.td9") /><td @@i18n(key="pages.tools.languageService.summary.td10") /></tr>
+      <tr>
+        <td @@i18n(key="pages.tools.languageService.summary.td1") />
+        <td @@i18n(key="pages.tools.languageService.summary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.languageService.summary.td3") />
+        <td @@i18n(key="pages.tools.languageService.summary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.languageService.summary.td5") />
+        <td @@i18n(key="pages.tools.languageService.summary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.languageService.summary.td7") />
+        <td @@i18n(key="pages.tools.languageService.summary.td8") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.languageService.summary.td9") />
+        <td @@i18n(key="pages.tools.languageService.summary.td10") />
+      </tr>
     </tbody>
   </table>
 </div>

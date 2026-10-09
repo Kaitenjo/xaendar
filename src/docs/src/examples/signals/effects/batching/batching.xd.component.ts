@@ -13,11 +13,11 @@ export class EffectBatchingComponent extends CustomElement {
   /**
    * First dependency.
    */
-  public readonly a = signal(0);
+  public readonly first = signal(0);
   /**
    * Second dependency.
    */
-  public readonly b = signal(0);
+  public readonly second = signal(0);
   /**
    * The runs of the effect, most recent first.
    */
@@ -28,8 +28,8 @@ export class EffectBatchingComponent extends CustomElement {
    */
   public onInit(): void {
     this.effect(() => {
-      const text = `saw a = ${this.a()}, b = ${this.b()}`;
-      // update() does not track `runs`: the effect only depends on a and b
+      const text = `saw first = ${this.first()}, second = ${this.second()}`;
+      // update() does not track `runs`: the effect only depends on first and second
       this.runs.update(runs => [{ id: runs.length + 1, text }, ...runs]);
     });
   }
@@ -37,24 +37,24 @@ export class EffectBatchingComponent extends CustomElement {
   /**
    * One change: one run.
    */
-  public changeA(): void {
-    this.a.update(a => a + 1);
+  public changeFirst(): void {
+    this.first.update(value => value + 1);
   }
 
   /**
    * Three synchronous changes: still one run, which sees the final values.
    */
   public changeThreeTimes(): void {
-    this.a.update(a => a + 1);
-    this.b.update(b => b + 1);
-    this.a.update(a => a + 1);
+    this.first.update(value => value + 1);
+    this.second.update(value => value + 1);
+    this.first.update(value => value + 1);
   }
 
   /**
    * A change that is reverted before the microtask: the effect still runs, and sees the same values.
    */
   public changeAndRevert(): void {
-    this.a.update(a => a + 1);
-    this.a.update(a => a - 1);
+    this.first.update(value => value + 1);
+    this.first.update(value => value - 1);
   }
 }

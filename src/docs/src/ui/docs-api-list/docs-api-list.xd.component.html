@@ -1,12 +1,17 @@
 <div class="toolbar">
-  <input type="search" placeholder="{ t().reference.filter }" aria-label="{ t().reference.filter }" (input)="search($event)" />
-  <select aria-label="{ t().reference.module }" (change)="pickModule($event)">
-    <option value="">{ t().reference.all }</option>
+  <input
+    type="search"
+    placeholder="{ translations().reference.filter }"
+    aria-label="{ translations().reference.filter }"
+    (input)="search($event)"
+  />
+  <select aria-label="{ translations().reference.module }" (change)="pickModule($event)">
+    <option value="">{ translations().reference.all }</option>
     @for (name of modules) {
       <option value="{ name }">{ name }</option>
     }
   </select>
-  <span class="count">{`${entries().length} ${t().reference.results}`}</span>
+  <span class="count">{`${entries().length} ${translations().reference.results}`}</span>
 </div>
 @if (entries().length) {
   <ul class="entries">
@@ -14,18 +19,20 @@
       <li class="entry">
         <div class="entry-head">
           <h3 class="entry-name">{ entry.name }</h3>
-          <span class="badge">{ t().reference.kinds[entry.kind] }</span>
+          <span class="badge">{ translations().reference.kinds[entry.kind] }</span>
           @if (entry.internal) {
-            <span class="badge muted">{ t().reference.internal }</span>
+            <span class="badge muted">{ translations().reference.internal }</span>
           }
           <span class="module">{ entry.module }</span>
         </div>
         <pre>{ entry.signature }</pre>
         <p>{ entry.text }</p>
-        <p><a href="{ entry.href }">{ t().reference.readMore } →</a></p>
+        <p>
+          <a href="{ entry.href }">{ translations().reference.readMore } →</a>
+        </p>
       </li>
     }
   </ul>
 } @else {
-  <p class="empty">{ t().reference.noResults }</p>
+  <p class="empty">{ translations().reference.noResults }</p>
 }

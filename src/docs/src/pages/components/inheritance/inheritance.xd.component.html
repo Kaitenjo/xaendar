@@ -5,13 +5,16 @@
 @import { InheritedInputComponent } from '../../../examples/components/inheritance/inherited-input/inherited-input.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.inheritance.eyebrow") />
+<span @@i18n(key="pages.components.inheritance.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.inheritance.title") />
-<p class="lead" @@i18n(key="pages.components.inheritance.lead") />
+<p @@i18n(key="pages.components.inheritance.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.inheritance.aBaseClassFor.title") />
 <p @@i18n(key="pages.components.inheritance.aBaseClassFor.p1") />
-<docs-example name="components/inheritance/shared-base" heading="{ t().pages.components.inheritance.aBaseClassFor.example1 }">
+<docs-example
+  name="components/inheritance/shared-base"
+  heading="{ translations().pages.components.inheritance.aBaseClassFor.example1 }"
+>
   <ex-shared-base />
 </docs-example>
 <p @@i18n(key="pages.components.inheritance.aBaseClassFor.p2") />
@@ -23,36 +26,74 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.inheritance.edgeCases.title") />
-  <docs-example name="components/inheritance/inherited-input" heading="{ t().pages.components.inheritance.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="components/inheritance/inherited-input"
+    heading="{ translations().pages.components.inheritance.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-inherited-input />
   </docs-example>
   <p @@i18n(key="pages.components.inheritance.edgeCases.p1") />
-  <docs-callout kind="issue" heading="{ t().pages.components.inheritance.edgeCases.callout1.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.components.inheritance.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.components.inheritance.edgeCases.callout1.p1") />
     <docs-code snippet="components/duplicate-signal.ts" />
     <docs-code snippet="components/duplicate-signal-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.components.inheritance.edgeCases.callout2.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.components.inheritance.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.components.inheritance.edgeCases.callout2.p1") />
     <docs-code snippet="components/inherited-event-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.inheritance.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.inheritance.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.components.inheritance.edgeCases.callout3.p1") />
     <docs-code snippet="components/manual-subclass.ts" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.inheritance.edgeCases.callout4.heading }" @@i18n(key="pages.components.inheritance.edgeCases.callout4.body") />
+  <docs-callout
+    @@i18n(key="pages.components.inheritance.edgeCases.callout4.body")
+    kind="edge"
+    heading="{ translations().pages.components.inheritance.edgeCases.callout4.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.components.inheritance.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.inheritance.apiSummary.th1") /><th @@i18n(key="pages.components.inheritance.apiSummary.th2") /><th @@i18n(key="pages.components.inheritance.apiSummary.th3") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.inheritance.apiSummary.th1") />
+        <th @@i18n(key="pages.components.inheritance.apiSummary.th2") />
+        <th @@i18n(key="pages.components.inheritance.apiSummary.th3") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.components.inheritance.apiSummary.td1") /><td @@i18n(key="pages.components.inheritance.apiSummary.td2") /><td @@i18n(key="pages.components.inheritance.apiSummary.td3") /></tr>
-      <tr><td @@i18n(key="pages.components.inheritance.apiSummary.td4") /><td @@i18n(key="pages.components.inheritance.apiSummary.td5") /><td @@i18n(key="pages.components.inheritance.apiSummary.td6") /></tr>
-      <tr><td><code>{'@Property'}</code></td><td @@i18n(key="pages.components.inheritance.apiSummary.td7") /><td @@i18n(key="pages.components.inheritance.apiSummary.td8") /></tr>
-      <tr><td><code>{'@Event'}</code></td><td @@i18n(key="pages.components.inheritance.apiSummary.td9") /><td @@i18n(key="pages.components.inheritance.apiSummary.td10") /></tr>
-      <tr><td @@i18n(key="pages.components.inheritance.apiSummary.td11") /><td @@i18n(key="pages.components.inheritance.apiSummary.td12") /><td>—</td></tr>
+      <tr>
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td1") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td2") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td4") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td5") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@Property'}</code>
+        </td>
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td7") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td8") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@Event'}</code>
+        </td>
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td9") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td10") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td11") />
+        <td @@i18n(key="pages.components.inheritance.apiSummary.td12") />
+        <td>—</td>
+      </tr>
     </tbody>
   </table>
 </div>

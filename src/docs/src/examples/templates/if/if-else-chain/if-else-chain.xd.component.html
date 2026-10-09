@@ -1,4 +1,7 @@
-<label>{ degrees() } °C <input type="range" min="-10" max="40" value="18" aria-label="Temperature" (input)="setDegrees($event)" /></label>
+<label>
+  { degrees() } °C
+  <input type="range" min="-10" max="40" value="18" aria-label="Temperature" (input)="setDegrees($event)" />
+</label>
 <p class="advice">
   @if (degrees() < 0) {
     ❄ Freezing: stay inside.

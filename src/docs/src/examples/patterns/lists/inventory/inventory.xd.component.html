@@ -5,12 +5,22 @@
 </form>
 <div class="tools">
   <input type="search" placeholder="Filter" (input)="setFilter($event)" />
-  <label><input type="checkbox" (change)="toggleSort()" /> Sort by name</label>
+  <label>
+    <input type="checkbox" (change)="toggleSort()" />
+    Sort by name
+  </label>
 </div>
 @if (visible().length > 0) {
   <div class="table-wrap">
     <table>
-      <thead><tr><th>#</th><th>Item</th><th>Quantity</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         @for (item of visible(); track item.id) {
           <tr>
@@ -21,11 +31,22 @@
               <span>{ item.quantity() }</span>
               <button (click)="changeQuantity(item, 1)">+</button>
             </td>
-            <td><button class="remove" (click)="removeItem(item)">Remove</button></td>
+            <td>
+              <button class="remove" (click)="removeItem(item)">Remove</button>
+            </td>
           </tr>
         }
       </tbody>
-      <tfoot><tr><td></td><td>Total</td><td class="quantity"><span>{ total() }</span></td><td></td></tr></tfoot>
+      <tfoot>
+        <tr>
+          <td></td>
+          <td>Total</td>
+          <td class="quantity">
+            <span>{ total() }</span>
+          </td>
+          <td></td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 } @else {

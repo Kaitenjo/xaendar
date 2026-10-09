@@ -8,9 +8,9 @@
 @import { CancelableComponent } from '../../../examples/components/outputs/cancelable/cancelable.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.outputs.eyebrow") />
+<span @@i18n(key="pages.components.outputs.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.outputs.title") />
-<p class="lead" @@i18n(key="pages.components.outputs.lead") />
+<p @@i18n(key="pages.components.outputs.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.outputs.declaringAndEmitting.title") />
 <docs-code snippet="components/event-declaration.ts" />
@@ -18,14 +18,20 @@
 
 <h2 @@i18n(key="pages.components.outputs.listeningInTheParent.title") />
 <p @@i18n(key="pages.components.outputs.listeningInTheParent.p1") />
-<docs-example name="components/outputs/emit-detail" heading="{ t().pages.components.outputs.listeningInTheParent.example1 }">
+<docs-example
+  name="components/outputs/emit-detail"
+  heading="{ translations().pages.components.outputs.listeningInTheParent.example1 }"
+>
   <ex-emit-detail />
 </docs-example>
 <p @@i18n(key="pages.components.outputs.listeningInTheParent.p2") />
 
 <h2 @@i18n(key="pages.components.outputs.eventOptions.title") />
 <p @@i18n(key="pages.components.outputs.eventOptions.p1") />
-<docs-example name="components/outputs/event-options" heading="{ t().pages.components.outputs.eventOptions.example1 }">
+<docs-example
+  name="components/outputs/event-options"
+  heading="{ translations().pages.components.outputs.eventOptions.example1 }"
+>
   <ex-event-options />
 </docs-example>
 <p @@i18n(key="pages.components.outputs.eventOptions.p2") />
@@ -33,37 +39,53 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.outputs.edgeCases.title") />
-  <docs-example name="components/outputs/emit-on-mount" heading="{ t().pages.components.outputs.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="components/outputs/emit-on-mount"
+    heading="{ translations().pages.components.outputs.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-emit-on-mount />
   </docs-example>
   <p @@i18n(key="pages.components.outputs.edgeCases.p1") />
-  <docs-example name="components/outputs/detail-as-options" heading="{ t().pages.components.outputs.edgeCases.example2 }" kind="edge">
+  <docs-example
+    name="components/outputs/detail-as-options"
+    heading="{ translations().pages.components.outputs.edgeCases.example2 }"
+    kind="edge"
+  >
     <ex-detail-as-options />
   </docs-example>
   <p @@i18n(key="pages.components.outputs.edgeCases.p2") />
-  <docs-example name="components/outputs/cancelable" heading="{ t().pages.components.outputs.edgeCases.example3 }" kind="edge">
+  <docs-example
+    name="components/outputs/cancelable"
+    heading="{ translations().pages.components.outputs.edgeCases.example3 }"
+    kind="edge"
+  >
     <ex-cancelable />
   </docs-example>
   <p @@i18n(key="pages.components.outputs.edgeCases.p3") />
-  <docs-callout kind="edge" heading="{ t().pages.components.outputs.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.outputs.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.components.outputs.edgeCases.callout1.p1") />
     <docs-code snippet="components/void-event-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.outputs.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.outputs.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.components.outputs.edgeCases.callout2.p1") />
     <docs-code snippet="components/unknown-event-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.outputs.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.outputs.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.components.outputs.edgeCases.callout3.p1") />
     <docs-code snippet="components/native-element-event-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.components.outputs.edgeCases.callout4.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.components.outputs.edgeCases.callout4.heading }">
     <p @@i18n(key="pages.components.outputs.edgeCases.callout4.p1") />
     <docs-code snippet="components/component-native-event-error.txt" />
     <docs-code snippet="components/native-event-workaround.html" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.components.outputs.edgeCases.callout5.heading }" @@i18n(key="pages.components.outputs.edgeCases.callout5.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.outputs.edgeCases.callout6.heading }">
+  <docs-callout
+    @@i18n(key="pages.components.outputs.edgeCases.callout5.body")
+    kind="issue"
+    heading="{ translations().pages.components.outputs.edgeCases.callout5.heading }"
+  />
+  <docs-callout kind="edge" heading="{ translations().pages.components.outputs.edgeCases.callout6.heading }">
     <p @@i18n(key="pages.components.outputs.edgeCases.callout6.p1") />
     <docs-code snippet="components/member-name-clash.ts" />
   </docs-callout>
@@ -72,13 +94,41 @@
 <h2 @@i18n(key="pages.components.outputs.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.outputs.apiSummary.th1") /><th @@i18n(key="pages.components.outputs.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.outputs.apiSummary.th1") />
+        <th @@i18n(key="pages.components.outputs.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{'@Event(options?)'}</code></td><td @@i18n(key="pages.components.outputs.apiSummary.td1") /></tr>
-      <tr><td><code>{'Output<T>'}</code></td><td @@i18n(key="pages.components.outputs.apiSummary.td2") /></tr>
-      <tr><td><code>emit(detail, options?)</code></td><td @@i18n(key="pages.components.outputs.apiSummary.td3") /></tr>
-      <tr><td><code>emit(options?)</code></td><td @@i18n(key="pages.components.outputs.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.components.outputs.apiSummary.td5") /><td @@i18n(key="pages.components.outputs.apiSummary.td6") /></tr>
+      <tr>
+        <td>
+          <code>{'@Event(options?)'}</code>
+        </td>
+        <td @@i18n(key="pages.components.outputs.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'Output<T>'}</code>
+        </td>
+        <td @@i18n(key="pages.components.outputs.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>emit(detail, options?)</code>
+        </td>
+        <td @@i18n(key="pages.components.outputs.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>emit(options?)</code>
+        </td>
+        <td @@i18n(key="pages.components.outputs.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.outputs.apiSummary.td5") />
+        <td @@i18n(key="pages.components.outputs.apiSummary.td6") />
+      </tr>
     </tbody>
   </table>
 </div>

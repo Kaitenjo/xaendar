@@ -818,7 +818,7 @@
         "structuralDirectives": {
           "title": "Structural directives",
           "example1": "A structural directive added by a condition",
-          "p1": "The paragraph always has <code>exIsEven</code>, and <code>exPositive</code> only while the box is checked. The rule does not change: the element is rendered while every directive currently applied returns <code>true</code>. Check the box while <code>n</code> is negative and even: <code>exPositive</code> joins and the paragraph disappears; uncheck it and the paragraph comes back. Both directives are defined in <a href=\"#/en/directives/structural\">Structural directives</a>."
+          "p1": "The paragraph always has <code>exIsEven</code>, and <code>exPositive</code> only while the box is checked. The rule does not change: the element is rendered while every directive currently applied returns <code>true</code>. Check the box while <code>value</code> is negative and even: <code>exPositive</code> joins and the paragraph disappears; uncheck it and the paragraph comes back. Both directives are defined in <a href=\"#/en/directives/structural\">Structural directives</a>."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -2196,13 +2196,13 @@
         },
         "repeatingANumberOf": {
           "title": "Repeating a number of times",
-          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (n of count())</code> with <code>n</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
+          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
           "example1": "Five dots and a rating"
         },
         "nestedLoops": {
           "title": "Nested loops",
           "example1": "A multiplication table",
-          "p1": "The inner loop sees the variables of the outer one. Both have their own <code>$index</code>, and the inner one hides the outer: the alias <code>r = $index</code> keeps the index of the row reachable from the cells."
+          "p1": "The inner loop sees the variables of the outer one. Both have their own <code>$index</code>, and the inner one hides the outer: the alias <code>rowIndex = $index</code> keeps the index of the row reachable from the cells."
         },
         "emptyLists": {
           "title": "Empty lists",
@@ -2228,7 +2228,7 @@
           "th2": "Description",
           "td1": "A row for each item, identified by its key.",
           "td2": "The item itself is the key.",
-          "td3": "Repeats the block, with <code>n</code> from <code>0</code>.",
+          "td3": "Repeats the block, with <code>step</code> from <code>0</code>.",
           "td4": "The position of the row, as signals.",
           "td5": "An alias for a context variable."
         }
@@ -2863,7 +2863,7 @@
     },
     "[Parser] 'let i' is not a valid alias identifier.": {
       "cause": "An alias of @for written with let.",
-      "fix": "Write the alias as i = $index."
+      "fix": "Write the alias as index = $index."
     },
     "[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template": {
       "cause": "A tag with a dash that is not a Xaendar component imported by the template: a missing @import, or a custom element of another library.",
@@ -3125,8 +3125,8 @@
     },
     "a-space-between-two-interpolations-disappears": {
       "title": "A space between two interpolations disappears",
-      "details": "{ a } { b } renders the two values joined.",
-      "workaround": "Write {`${a} ${b}`}, or put other text between them."
+      "details": "{ first } { second } renders the two values joined.",
+      "workaround": "Write {`${first} ${second}`}, or put other text between them."
     },
     "a-shorthand-object-in-an-interpolation": {
       "title": "A shorthand object in an interpolation renders nothing",

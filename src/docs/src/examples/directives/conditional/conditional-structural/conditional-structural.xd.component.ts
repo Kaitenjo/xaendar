@@ -13,7 +13,7 @@ export class ConditionalStructuralComponent extends CustomElement {
   /**
    * The number checked by the directives.
    */
-  public readonly n = signal(-2);
+  public readonly value = signal(-2);
   /**
    * Whether the number must also be positive.
    */
@@ -25,7 +25,7 @@ export class ConditionalStructuralComponent extends CustomElement {
    * @param delta - The change.
    */
   public change(delta: number): void {
-    this.n.update(n => n + delta);
+    this.value.update(value => value + delta);
   }
 
   /**

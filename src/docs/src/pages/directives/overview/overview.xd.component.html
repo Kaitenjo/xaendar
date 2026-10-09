@@ -4,26 +4,74 @@
 @import { DirectiveBasicsComponent } from '../../../examples/directives/overview/directive-basics/directive-basics.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.directives.overview.eyebrow") />
+<span @@i18n(key="pages.directives.overview.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.directives.overview.title") />
-<p class="lead" @@i18n(key="pages.directives.overview.lead") />
+<p @@i18n(key="pages.directives.overview.lead") class="lead" />
 
 <h2 @@i18n(key="pages.directives.overview.twoKindsOfDirectives.title") />
-<docs-example name="directives/overview/directive-basics" heading="{ t().pages.directives.overview.twoKindsOfDirectives.example1 }">
+<docs-example
+  name="directives/overview/directive-basics"
+  heading="{ translations().pages.directives.overview.twoKindsOfDirectives.example1 }"
+>
   <ex-directive-basics />
 </docs-example>
 <p @@i18n(key="pages.directives.overview.twoKindsOfDirectives.p1") />
 <div class="table-wrap">
   <table>
-    <thead><tr><th></th><th @@i18n(key="pages.directives.overview.twoKindsOfDirectives.th1") /><th @@i18n(key="pages.directives.overview.twoKindsOfDirectives.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th></th>
+        <th @@i18n(key="pages.directives.overview.twoKindsOfDirectives.th1") />
+        <th @@i18n(key="pages.directives.overview.twoKindsOfDirectives.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td1") /><td><code>CustomDirective</code></td><td><code>StructuralDirective</code></td></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td2") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td3") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td4") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td5") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td6") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td7") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td8") /><td><code>{'@Property'}</code></td><td><code>{'@Property'}</code></td></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td9") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td10") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td11") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td12") /><td><code>onInit</code>, <code>onDestroy</code></td><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td13") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td14") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td15") /><td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td16") /></tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td1") />
+        <td>
+          <code>CustomDirective</code>
+        </td>
+        <td>
+          <code>StructuralDirective</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td2") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td3") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td5") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td6") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td7") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td8") />
+        <td>
+          <code>{'@Property'}</code>
+        </td>
+        <td>
+          <code>{'@Property'}</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td9") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td10") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td11") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td12") />
+        <td>
+          <code>onInit</code>,
+          <code>onDestroy</code>
+        </td>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td13") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td14") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td15") />
+        <td @@i18n(key="pages.directives.overview.twoKindsOfDirectives.td16") />
+      </tr>
     </tbody>
   </table>
 </div>
@@ -36,23 +84,27 @@
 <h2 @@i18n(key="pages.directives.overview.declaringAndRegistering.title") />
 <p @@i18n(key="pages.directives.overview.declaringAndRegistering.p1") />
 <docs-code snippet="directives/directive-registration.ts" />
-<docs-callout kind="tip" heading="{ t().pages.directives.overview.declaringAndRegistering.callout1.heading }" @@i18n(key="pages.directives.overview.declaringAndRegistering.callout1.body") />
+<docs-callout
+  @@i18n(key="pages.directives.overview.declaringAndRegistering.callout1.body")
+  kind="tip"
+  heading="{ translations().pages.directives.overview.declaringAndRegistering.callout1.heading }"
+/>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.directives.overview.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.directives.overview.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.overview.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.directives.overview.edgeCases.callout1.p1") />
     <docs-code snippet="directives/not-imported-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.directives.overview.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.overview.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.directives.overview.edgeCases.callout2.p1") />
     <docs-code snippet="directives/missing-registration-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.directives.overview.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.overview.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.directives.overview.edgeCases.callout3.p1") />
     <docs-code snippet="directives/duplicate-selector-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.directives.overview.edgeCases.callout4.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.directives.overview.edgeCases.callout4.heading }">
     <p @@i18n(key="pages.directives.overview.edgeCases.callout4.p1") />
     <docs-code snippet="directives/wrong-kind-error.txt" />
   </docs-callout>
@@ -61,13 +113,37 @@
 <h2 @@i18n(key="pages.directives.overview.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.directives.overview.apiSummary.th1") /><th @@i18n(key="pages.directives.overview.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.directives.overview.apiSummary.th1") />
+        <th @@i18n(key="pages.directives.overview.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.directives.overview.apiSummary.td1") /><td @@i18n(key="pages.directives.overview.apiSummary.td2") /></tr>
-      <tr><td><code>CustomDirective{'<T>'}</code></td><td @@i18n(key="pages.directives.overview.apiSummary.td3") /></tr>
-      <tr><td><code>StructuralDirective</code></td><td @@i18n(key="pages.directives.overview.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.apiSummary.td5") /><td @@i18n(key="pages.directives.overview.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.directives.overview.apiSummary.td7") /><td @@i18n(key="pages.directives.overview.apiSummary.td8") /></tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.apiSummary.td1") />
+        <td @@i18n(key="pages.directives.overview.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>CustomDirective{'<T>'}</code>
+        </td>
+        <td @@i18n(key="pages.directives.overview.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>StructuralDirective</code>
+        </td>
+        <td @@i18n(key="pages.directives.overview.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.apiSummary.td5") />
+        <td @@i18n(key="pages.directives.overview.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.directives.overview.apiSummary.td7") />
+        <td @@i18n(key="pages.directives.overview.apiSummary.td8") />
+      </tr>
     </tbody>
   </table>
 </div>

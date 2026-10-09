@@ -1,14 +1,24 @@
-<label>b = { b() } <input type="range" min="-6" max="6" value="-3" (input)="setB($event)" /></label>
+<label>
+  b = { linear() }
+  <input type="range" min="-6" max="6" value="-3" (input)="setLinear($event)" />
+</label>
 <math display="block">
   <mrow>
     <mi>x</mi>
     <mo>=</mo>
     <mfrac>
       <mrow>
-        <mn>{ -b() }</mn><mo>±</mo>
-        <msqrt><mn>{ delta() }</mn></msqrt>
+        <mn>{ -linear() }</mn>
+        <mo>±</mo>
+        <msqrt>
+          <mn>{ delta() }</mn>
+        </msqrt>
       </mrow>
-      <mrow><mn>2</mn><mo>·</mo><mn>{ a() }</mn></mrow>
+      <mrow>
+        <mn>2</mn>
+        <mo>·</mo>
+        <mn>{ quadratic() }</mn>
+      </mrow>
     </mfrac>
   </mrow>
 </math>

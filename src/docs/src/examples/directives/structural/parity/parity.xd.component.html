@@ -5,9 +5,10 @@
   <button (click)="change(-1)">−1</button>
   <button (click)="change(1)">+1</button>
   <button (click)="change(2)">+2</button>
-  <strong>n = { n() }</strong>
+  <strong>value = { value() }</strong>
 </div>
-<p class="even" *exIsEven(value="{ n() }")>
-  Even. <input type="text" placeholder="Type, then press +2" />
+<p *exIsEven(value="{ value() }") class="even">
+  Even.
+  <input type="text" placeholder="Type, then press +2" />
 </p>
-<p class="both" *exIsEven(value="{ n() }") *exPositive(value="{ n() }")>Even and positive.</p>
+<p *exIsEven(value="{ value() }") *exPositive(value="{ value() }") class="both">Even and positive.</p>

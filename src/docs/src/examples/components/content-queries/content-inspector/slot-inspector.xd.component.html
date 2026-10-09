@@ -1,13 +1,29 @@
 <div class="slots">
-  <aside><slot name="aside"><p class="item">E, fallback of aside</p></slot></aside>
-  <main><slot /></main>
+  <aside>
+    <slot name="aside">
+      <p class="item">E, fallback of aside</p>
+    </slot>
+  </aside>
+  <main>
+    <slot />
+  </main>
 </div>
 <div class="table-wrap">
   <table>
-    <thead><tr><th>Query</th><th>Found</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Query</th>
+        <th>Found</th>
+      </tr>
+    </thead>
     <tbody>
       @for (row of rows(); track row) {
-        <tr><td><code>{ row.query }</code></td><td>{ row.found }</td></tr>
+        <tr>
+          <td>
+            <code>{ row.query }</code>
+          </td>
+          <td>{ row.found }</td>
+        </tr>
       }
     </tbody>
   </table>

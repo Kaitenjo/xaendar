@@ -3,7 +3,10 @@
 <div class="controls">
   <button (click)="step(-1)">−1</button>
   <button (click)="step(1)">+1</button>
-  <label><input type="checkbox" checked (change)="toggleValue()" /> show-value</label>
+  <label>
+    <input type="checkbox" checked (change)="toggleValue()" />
+    show-value
+  </label>
 </div>
 <p class="caption">value, max and show-value bound</p>
 <ex-progress-meter value="{ done() }" max="{ total() }" show-value="{ showValue() }" />

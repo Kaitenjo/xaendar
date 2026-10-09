@@ -21,7 +21,7 @@ Check at least the following:
 - Mixed static text and `{ }` in one attribute value. It renders literally.
 - Boolean attributes bound to an expression (`disabled="{ x() }"`, `checked="{ … }"`). They are always present.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
-- Whitespace between interpolations that is expected to render (`{ a } { b }`).
+- Whitespace between interpolations that is expected to render (`{ first } { second }`).
 - `@else if`/`@else` branches whose top-level elements share a tag in the same position, and `@if/@else` directly inside an `@else`.
 - `@for` rows that replace items with new objects under the same key, or `track $index` on lists that get inserted or prepended items.
 - A child's `onInit` or first render reading a required input without guarding against `undefined`/defaults.
@@ -44,6 +44,16 @@ Check at least the following:
 - Module-level constants used by a single class, which should be members of that class.
 - Members initialized with a module signal and annotated anyway (`count: Computed<number> = count`): drop the annotation and the type imports it needed.
 - Inputs typed wider than they are (`InputSignal<string>`) and cast on read (`this.x() as T`), instead of `@Property<InputSignal<T>>(default)` with the same type on the accessor.
+- Opening tags whose items are out of order. The order is: conditional structural directives → structural directives → conditional directives → directives → conditional attributes/inputs → attributes/inputs → conditional events → events. The last four also apply inside a directive's parentheses. Also report conditional blocks that mix groups when the branches could be split by group without testing a condition and its negation separately.
+- One-letter identifiers (variables, parameters, arrow callbacks, loop counters, catch bindings, type parameters, `@for` items and aliases).
+- A condition and its negation tested in separate blocks (`if (x) { … } if (!x) { … }`, `@if (x)` … `@if (!x)`), instead of `if`/`else`.
+- The same value compared with several constants in separate `if`s or in an `else if` / `@else if` chain, instead of `switch` / `@switch`.
+- Line breaks:
+  - an element that contains another element on a single line;
+  - an element with only text whose opening tag is long or spans several lines, but whose text is not on its own line;
+  - a long opening tag not split into one item per line;
+  - inline control-flow blocks.
+  - Content of `<pre>` is exempt. When suggesting a fix, keep spaces that matter: `{ ' ' }` between two elements, and punctuation on the line of the element it follows.
 
 If the project has `node_modules`, you may run `npx xd build 2>&1 | grep -A6 "Xaendar:"` and `npx tsc --noEmit -p tsconfig.json` to confirm suspicions. These are read-only, except that the build writes `dist/`.
 

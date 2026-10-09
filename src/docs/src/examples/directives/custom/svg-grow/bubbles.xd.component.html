@@ -2,6 +2,6 @@
 
 <svg viewBox="0 0 240 100">
   @for (circle of circles) {
-    <circle cx="{ circle.x }" cy="{ circle.y }" r="{ circle.r }" @@exGrow(scale="{ circle.scale }") />
+    <circle @@exGrow(scale="{ circle.scale }") cx="{ circle.x }" cy="{ circle.y }" r="{ circle.r }" />
   }
 </svg>

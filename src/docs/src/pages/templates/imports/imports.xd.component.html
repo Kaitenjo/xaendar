@@ -4,13 +4,13 @@
 @import { TeamCardComponent } from '../../../examples/templates/imports/team-card/team-card.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.templates.imports.eyebrow") />
+<span @@i18n(key="pages.templates.imports.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.templates.imports.title") />
-<p class="lead" @@i18n(key="pages.templates.imports.lead") />
+<p @@i18n(key="pages.templates.imports.lead") class="lead" />
 
 <h2 @@i18n(key="pages.templates.imports.forms.title") />
 <docs-code snippet="templates/import-forms.html" />
-<docs-example name="templates/imports/team-card" heading="{ t().pages.templates.imports.forms.example1 }">
+<docs-example name="templates/imports/team-card" heading="{ translations().pages.templates.imports.forms.example1 }">
   <ex-team-card />
 </docs-example>
 <p @@i18n(key="pages.templates.imports.forms.p1") />
@@ -21,22 +21,48 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.imports.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.templates.imports.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.templates.imports.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.templates.imports.edgeCases.callout1.p1") />
     <docs-code snippet="templates/import-errors.txt" />
   </docs-callout>
-  <docs-callout kind="unsupported" heading="{ t().pages.templates.imports.edgeCases.callout2.heading }" @@i18n(key="pages.templates.imports.edgeCases.callout2.body") />
-  <docs-callout kind="issue" heading="{ t().pages.templates.imports.edgeCases.callout3.heading }" @@i18n(key="pages.templates.imports.edgeCases.callout3.body") />
+  <docs-callout
+    @@i18n(key="pages.templates.imports.edgeCases.callout2.body")
+    kind="unsupported"
+    heading="{ translations().pages.templates.imports.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.templates.imports.edgeCases.callout3.body")
+    kind="issue"
+    heading="{ translations().pages.templates.imports.edgeCases.callout3.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.templates.imports.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.templates.imports.apiSummary.th1") /><th @@i18n(key="pages.templates.imports.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.imports.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.imports.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{"@import { Card } from './card.xd.component.ts'"}</code></td><td @@i18n(key="pages.templates.imports.apiSummary.td1") /></tr>
-      <tr><td><code>{"@import { A, B } from './people.xd.component.ts'"}</code></td><td @@i18n(key="pages.templates.imports.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.templates.imports.apiSummary.td3") /><td @@i18n(key="pages.templates.imports.apiSummary.td4") /></tr>
+      <tr>
+        <td>
+          <code>{"@import { Card } from './card.xd.component.ts'"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.imports.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{"@import { A, B } from './people.xd.component.ts'"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.imports.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.templates.imports.apiSummary.td3") />
+        <td @@i18n(key="pages.templates.imports.apiSummary.td4") />
+      </tr>
     </tbody>
   </table>
 </div>

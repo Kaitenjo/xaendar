@@ -8,14 +8,17 @@
 @import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.components.inputs.eyebrow") />
+<span @@i18n(key="pages.components.inputs.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.inputs.title") />
-<p class="lead" @@i18n(key="pages.components.inputs.lead") />
+<p @@i18n(key="pages.components.inputs.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.inputs.declaringAnInput.title") />
 <docs-code snippet="components/property-options.ts" />
 <p @@i18n(key="pages.components.inputs.declaringAnInput.p1") />
-<docs-example name="components/inputs/property-basics" heading="{ t().pages.components.inputs.declaringAnInput.example1 }">
+<docs-example
+  name="components/inputs/property-basics"
+  heading="{ translations().pages.components.inputs.declaringAnInput.example1 }"
+>
   <ex-property-basics />
 </docs-example>
 <p @@i18n(key="pages.components.inputs.declaringAnInput.p2") />
@@ -24,7 +27,10 @@
 
 <h2 @@i18n(key="pages.components.inputs.staticValuesAndExpressions.title") />
 <p @@i18n(key="pages.components.inputs.staticValuesAndExpressions.p1") />
-<docs-example name="components/inputs/attributes-vs-properties" heading="{ t().pages.components.inputs.staticValuesAndExpressions.example1 }">
+<docs-example
+  name="components/inputs/attributes-vs-properties"
+  heading="{ translations().pages.components.inputs.staticValuesAndExpressions.example1 }"
+>
   <ex-attributes-vs-properties />
 </docs-example>
 <p @@i18n(key="pages.components.inputs.staticValuesAndExpressions.p2") />
@@ -32,7 +38,10 @@
 
 <h2 @@i18n(key="pages.components.inputs.normalizingAndComparingTransform.title") />
 <p @@i18n(key="pages.components.inputs.normalizingAndComparingTransform.p1") />
-<docs-example name="components/inputs/transform-equals" heading="{ t().pages.components.inputs.normalizingAndComparingTransform.example1 }">
+<docs-example
+  name="components/inputs/transform-equals"
+  heading="{ translations().pages.components.inputs.normalizingAndComparingTransform.example1 }"
+>
   <ex-transform-equals />
 </docs-example>
 <p @@i18n(key="pages.components.inputs.normalizingAndComparingTransform.p2") />
@@ -44,7 +53,10 @@
 
 <h2 @@i18n(key="pages.components.inputs.whenTheValuesArrive.title") />
 <p @@i18n(key="pages.components.inputs.whenTheValuesArrive.p1") />
-<docs-example name="components/inputs/init-timing" heading="{ t().pages.components.inputs.whenTheValuesArrive.example1 }">
+<docs-example
+  name="components/inputs/init-timing"
+  heading="{ translations().pages.components.inputs.whenTheValuesArrive.example1 }"
+>
   <ex-init-timing />
 </docs-example>
 <p @@i18n(key="pages.components.inputs.whenTheValuesArrive.p2") />
@@ -55,35 +67,92 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.inputs.edgeCases.title") />
-  <docs-example name="components/inputs/conditional-reset" heading="{ t().pages.components.inputs.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="components/inputs/conditional-reset"
+    heading="{ translations().pages.components.inputs.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-conditional-reset />
   </docs-example>
   <p @@i18n(key="pages.components.inputs.edgeCases.p1") />
-  <docs-callout kind="edge" heading="{ t().pages.components.inputs.edgeCases.callout1.heading }" @@i18n(key="pages.components.inputs.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.inputs.edgeCases.callout2.heading }">
+  <docs-callout
+    @@i18n(key="pages.components.inputs.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.components.inputs.edgeCases.callout1.heading }"
+  />
+  <docs-callout kind="edge" heading="{ translations().pages.components.inputs.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.components.inputs.edgeCases.callout2.p1") />
     <docs-code snippet="components/read-only-input.ts" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.components.inputs.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.components.inputs.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.components.inputs.edgeCases.callout3.p1") />
     <docs-code snippet="components/transform-type.ts" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.components.inputs.edgeCases.callout4.heading }" @@i18n(key="pages.components.inputs.edgeCases.callout4.body") />
-  <docs-callout kind="edge" heading="{ t().pages.components.inputs.edgeCases.callout5.heading }" @@i18n(key="pages.components.inputs.edgeCases.callout5.body") />
+  <docs-callout
+    @@i18n(key="pages.components.inputs.edgeCases.callout4.body")
+    kind="issue"
+    heading="{ translations().pages.components.inputs.edgeCases.callout4.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.components.inputs.edgeCases.callout5.body")
+    kind="edge"
+    heading="{ translations().pages.components.inputs.edgeCases.callout5.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.components.inputs.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.components.inputs.apiSummary.th1") /><th @@i18n(key="pages.components.inputs.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.inputs.apiSummary.th1") />
+        <th @@i18n(key="pages.components.inputs.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{'@Property(default?, options?)'}</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td1") /></tr>
-      <tr><td><code>{'@Property.required(options?)'}</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td2") /></tr>
-      <tr><td><code>alias</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td3") /></tr>
-      <tr><td><code>transform(value)</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td4") /></tr>
-      <tr><td><code>equals(a, b)</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td5") /></tr>
-      <tr><td><code>watched</code>, <code>unwatched</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td6") /></tr>
-      <tr><td><code>{'InputSignal<T>'}</code></td><td @@i18n(key="pages.components.inputs.apiSummary.td7") /></tr>
+      <tr>
+        <td>
+          <code>{'@Property(default?, options?)'}</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@Property.required(options?)'}</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>alias</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>transform(value)</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>equals(a, b)</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>watched</code>,
+          <code>unwatched</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'InputSignal<T>'}</code>
+        </td>
+        <td @@i18n(key="pages.components.inputs.apiSummary.td7") />
+      </tr>
     </tbody>
   </table>
 </div>

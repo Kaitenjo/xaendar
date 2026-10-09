@@ -4,12 +4,15 @@
 @import { ThemePreviewComponent } from '../../../examples/patterns/theming/theme-preview/theme-preview.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.patterns.theming.eyebrow") />
+<span @@i18n(key="pages.patterns.theming.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.theming.title") />
-<p class="lead" @@i18n(key="pages.patterns.theming.lead") />
+<p @@i18n(key="pages.patterns.theming.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.theming.tokensAndParts.title") />
-<docs-example name="patterns/theming/theme-preview" heading="{ t().pages.patterns.theming.tokensAndParts.example1 }">
+<docs-example
+  name="patterns/theming/theme-preview"
+  heading="{ translations().pages.patterns.theming.tokensAndParts.example1 }"
+>
   <ex-theme-preview />
 </docs-example>
 <p @@i18n(key="pages.patterns.theming.tokensAndParts.p1") />
@@ -23,22 +26,45 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.theming.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.theming.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.patterns.theming.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.patterns.theming.edgeCases.callout1.p1") />
     <docs-code snippet="patterns/root-in-component.css" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.patterns.theming.edgeCases.callout2.heading }" @@i18n(key="pages.patterns.theming.edgeCases.callout2.body") />
+  <docs-callout
+    @@i18n(key="pages.patterns.theming.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.theming.edgeCases.callout2.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.patterns.theming.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.patterns.theming.apiSummary.th1") /><th @@i18n(key="pages.patterns.theming.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.patterns.theming.apiSummary.th1") />
+        <th @@i18n(key="pages.patterns.theming.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.patterns.theming.apiSummary.td1") /><td @@i18n(key="pages.patterns.theming.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.patterns.theming.apiSummary.td3") /><td @@i18n(key="pages.patterns.theming.apiSummary.td4") /></tr>
-      <tr><td><code>{'data-theme="{ theme() }"'}</code></td><td @@i18n(key="pages.patterns.theming.apiSummary.td5") /></tr>
-      <tr><td @@i18n(key="pages.patterns.theming.apiSummary.td6") /><td @@i18n(key="pages.patterns.theming.apiSummary.td7") /></tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td1") />
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td3") />
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'data-theme="{ theme() }"'}</code>
+        </td>
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td5") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td6") />
+        <td @@i18n(key="pages.patterns.theming.apiSummary.td7") />
+      </tr>
     </tbody>
   </table>
 </div>

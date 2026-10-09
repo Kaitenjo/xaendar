@@ -8,6 +8,9 @@
 </div>
 <ul>
   @for (attempt of attempts(); track attempt.id) {
-    <li><code>customElements.{ attempt.call }</code><br />→ { attempt.outcome }</li>
+    <li>
+      <code>customElements.{ attempt.call }</code>
+      <br />→ { attempt.outcome }
+    </li>
   }
 </ul>

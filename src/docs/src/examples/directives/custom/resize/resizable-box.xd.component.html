@@ -1,6 +1,4 @@
 @import { ResizeDirective } from './resize.directive.ts'
 
-<div class="box" @@exResize((resized)="measure($event)")>
-  { size().width } × { size().height }
-</div>
+<div @@exResize((resized)="measure($event)") class="box">{ size().width } × { size().height }</div>
 <p class="hint">Drag the bottom-right corner of the box.</p>

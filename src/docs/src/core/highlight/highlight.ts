@@ -99,11 +99,11 @@ function highlightTs(code: string): string {
 function findClosing(code: string, start: number, open: string, close: string): number {
   let depth = 0;
   let quote = '';
-  for (let i = start; i < code.length; i++) {
-    const char = code[i];
+  for (let index = start; index < code.length; index++) {
+    const char = code[index];
     if (quote) {
       if (char === '\\') {
-        i++;
+        index++;
       } else if (char === quote) {
         quote = '';
       }
@@ -112,7 +112,7 @@ function findClosing(code: string, start: number, open: string, close: string): 
     } else if (char === open) {
       depth++;
     } else if (char === close && --depth === 0) {
-      return i;
+      return index;
     }
   }
   return code.length;
@@ -127,7 +127,7 @@ function findClosing(code: string, start: number, open: string, close: string): 
  */
 function highlightTemplate(code: string): string {
   let out = '';
-  let i = 0;
+  let position = 0;
   let text = '';
   const flushText = (): void => {
     out += escapeHtml(text);
@@ -138,16 +138,16 @@ function highlightTemplate(code: string): string {
    * Highlights a `(condition)` and the `{` opening a block, if present at the cursor.
    */
   const blockHeader = (): void => {
-    const space = /^\s*/.exec(code.slice(i))![0];
-    if (code[i + space.length] === '(') {
-      const end = findClosing(code, i + space.length, '(', ')');
-      out += `${escapeHtml(space)}${token('punc', '(')}${highlightTs(code.slice(i + space.length + 1, end))}${token('punc', code[end] ?? '')}`;
-      i = end + 1;
+    const space = /^\s*/.exec(code.slice(position))![0];
+    if (code[position + space.length] === '(') {
+      const end = findClosing(code, position + space.length, '(', ')');
+      out += `${escapeHtml(space)}${token('punc', '(')}${highlightTs(code.slice(position + space.length + 1, end))}${token('punc', code[end] ?? '')}`;
+      position = end + 1;
     }
-    const after = /^\s*/.exec(code.slice(i))![0];
-    if (code[i + after.length] === '{') {
+    const after = /^\s*/.exec(code.slice(position))![0];
+    if (code[position + after.length] === '{') {
       out += `${escapeHtml(after)}${token('punc', '{')}`;
-      i += after.length + 1;
+      position += after.length + 1;
     }
   };
 
@@ -155,25 +155,25 @@ function highlightTemplate(code: string): string {
    * Highlights the tag starting at the cursor, up to its closing `>`.
    */
   const tag = (): void => {
-    const name = /^<\/?\s*[^\s/>]*/.exec(code.slice(i))![0];
+    const name = /^<\/?\s*[^\s/>]*/.exec(code.slice(position))![0];
     out += `${token('punc', name.startsWith('</') ? '</' : '<')}${token('tag', name.replace(/^<\/?/, ''))}`;
-    i += name.length;
+    position += name.length;
     // Whether the next quoted value is the handler of an event binding
     let handler = false;
-    while (i < code.length) {
-      const rest = code.slice(i);
+    while (position < code.length) {
+      const rest = code.slice(position);
       let match: RegExpExecArray | null;
       if ((match = /^\s+/.exec(rest))) {
         out += escapeHtml(match[0]);
       } else if ((match = /^\/?>/.exec(rest))) {
         out += token('punc', match[0]);
-        i += match[0].length;
+        position += match[0].length;
         return;
       } else if ((match = /^(?:@@|\*)[\w-]+/.exec(rest))) {
         out += token('dir', match[0]);
       } else if ((match = CONTROL_FLOW_RE.exec(rest))) {
         out += token('ctl', match[0]);
-        i += match[0].length;
+        position += match[0].length;
         blockHeader();
         continue;
       } else if ((match = /^\([^\s()="'>/]+\)/.exec(rest))) {
@@ -203,43 +203,49 @@ function highlightTemplate(code: string): string {
         match = /^./s.exec(rest)!;
         out += escapeHtml(match[0]);
       }
-      i += match[0].length;
+      position += match[0].length;
     }
   };
 
-  while (i < code.length) {
-    const rest = code.slice(i);
+  while (position < code.length) {
+    const rest = code.slice(position);
     let match: RegExpExecArray | null;
     if (rest.startsWith('<!--')) {
       flushText();
-      const end = code.indexOf('-->', i);
+      const end = code.indexOf('-->', position);
       const stop = end < 0 ? code.length : end + 3;
-      out += token('com', code.slice(i, stop));
-      i = stop;
+      out += token('com', code.slice(position, stop));
+      position = stop;
     } else if (/^<\/?[A-Za-z]/.test(rest)) {
       flushText();
       tag();
     } else if ((match = /^@import\b[^\n]*/.exec(rest))) {
       flushText();
       out += `${token('ctl', '@import')}${highlightTs(match[0].slice('@import'.length))}`;
-      i += match[0].length;
+      position += match[0].length;
     } else if ((match = CONTROL_FLOW_RE.exec(rest))) {
       flushText();
       out += token('ctl', match[0]);
-      i += match[0].length;
+      position += match[0].length;
       blockHeader();
-    } else if (rest[0] === '{') {
-      flushText();
-      const end = findClosing(code, i, '{', '}');
-      out += `${token('interp', '{')}${highlightTs(code.slice(i + 1, end))}${token('interp', code[end] ?? '')}`;
-      i = end + 1;
-    } else if (rest[0] === '}') {
-      flushText();
-      out += token('punc', '}');
-      i++;
     } else {
-      text += rest[0];
-      i++;
+      switch (rest[0]) {
+        case '{': {
+          flushText();
+          const end = findClosing(code, position, '{', '}');
+          out += `${token('interp', '{')}${highlightTs(code.slice(position + 1, end))}${token('interp', code[end] ?? '')}`;
+          position = end + 1;
+          break;
+        }
+        case '}':
+          flushText();
+          out += token('punc', '}');
+          position++;
+          break;
+        default:
+          text += rest[0];
+          position++;
+      }
     }
   }
   flushText();
@@ -254,50 +260,56 @@ function highlightTemplate(code: string): string {
  */
 function highlightCss(code: string): string {
   let out = '';
-  let i = 0;
+  let position = 0;
   // Whether each open block contains rules (at-rules such as @media) or declarations
   const blocks: Array<'rules' | 'declarations'> = [];
   let pendingAtRule = '';
-  while (i < code.length) {
-    const rest = code.slice(i);
+  while (position < code.length) {
+    const rest = code.slice(position);
     const inDeclarations = blocks.at(-1) === 'declarations';
     let match: RegExpExecArray | null;
-    if ((match = /^\/\*[\s\S]*?(?:\*\/|$)/.exec(rest))) {
-      out += token('com', match[0]);
-    } else if ((match = /^('(?:\\.|[^'\\])*'?|"(?:\\.|[^"\\])*"?)/.exec(rest))) {
-      out += token('str', match[0]);
-    } else if ((match = /^@[\w-]+/.exec(rest))) {
-      pendingAtRule = match[0];
-      out += token('kw', match[0]);
-    } else if (rest[0] === '{') {
-      match = /^\{/.exec(rest)!;
-      blocks.push(pendingAtRule && !/^@(font-face|page|property|counter-style)$/.test(pendingAtRule) ? 'rules' : 'declarations');
-      pendingAtRule = '';
-      out += token('punc', '{');
-    } else if (rest[0] === '}') {
-      match = /^\}/.exec(rest)!;
-      blocks.pop();
-      out += token('punc', '}');
-    } else if (!inDeclarations && !pendingAtRule && (match = /^[^{}@/'"]+/.exec(rest))) {
-      const selector = match[0];
-      const trimmed = selector.trim();
-      out += trimmed ? `${escapeHtml(selector.slice(0, selector.indexOf(trimmed)))}${token('sel', trimmed)}${escapeHtml(selector.slice(selector.indexOf(trimmed) + trimmed.length))}` : escapeHtml(selector);
-    } else if (inDeclarations && (match = /^(--[\w-]+|-?[a-zA-Z][\w-]*)(?=\s*:)/.exec(rest)) && /(^|[;{]\s*)$/.test(out.replace(/<[^>]*>/g, '').slice(-200))) {
-      out += token('prop', match[0]);
-    } else if ((match = /^#[\da-fA-F]{3,8}\b|^-?\d*\.?\d+(?:%|[a-zA-Z]+)?/.exec(rest))) {
-      out += token('num', match[0]);
-    } else if ((match = /^!important\b/.exec(rest))) {
-      out += token('kw', match[0]);
-    } else if ((match = /^[\w-]+(?=\()/.exec(rest))) {
-      out += token('fn', match[0]);
-    } else {
-      match = /^[\s\S][^{}@/'"#\d!\w-]*/.exec(rest)!;
-      if (match[0].includes(';')) {
+    // Comments, strings and at-rules never start with a brace: braces are handled first
+    switch (rest[0]) {
+      case '{':
+        match = /^\{/.exec(rest)!;
+        blocks.push(pendingAtRule && !/^@(font-face|page|property|counter-style)$/.test(pendingAtRule) ? 'rules' : 'declarations');
         pendingAtRule = '';
-      }
-      out += escapeHtml(match[0]);
+        out += token('punc', '{');
+        break;
+      case '}':
+        match = /^\}/.exec(rest)!;
+        blocks.pop();
+        out += token('punc', '}');
+        break;
+      default:
+        if ((match = /^\/\*[\s\S]*?(?:\*\/|$)/.exec(rest))) {
+          out += token('com', match[0]);
+        } else if ((match = /^('(?:\\.|[^'\\])*'?|"(?:\\.|[^"\\])*"?)/.exec(rest))) {
+          out += token('str', match[0]);
+        } else if ((match = /^@[\w-]+/.exec(rest))) {
+          pendingAtRule = match[0];
+          out += token('kw', match[0]);
+        } else if (!inDeclarations && !pendingAtRule && (match = /^[^{}@/'"]+/.exec(rest))) {
+          const selector = match[0];
+          const trimmed = selector.trim();
+          out += trimmed ? `${escapeHtml(selector.slice(0, selector.indexOf(trimmed)))}${token('sel', trimmed)}${escapeHtml(selector.slice(selector.indexOf(trimmed) + trimmed.length))}` : escapeHtml(selector);
+        } else if (inDeclarations && (match = /^(--[\w-]+|-?[a-zA-Z][\w-]*)(?=\s*:)/.exec(rest)) && /(^|[;{]\s*)$/.test(out.replace(/<[^>]*>/g, '').slice(-200))) {
+          out += token('prop', match[0]);
+        } else if ((match = /^#[\da-fA-F]{3,8}\b|^-?\d*\.?\d+(?:%|[a-zA-Z]+)?/.exec(rest))) {
+          out += token('num', match[0]);
+        } else if ((match = /^!important\b/.exec(rest))) {
+          out += token('kw', match[0]);
+        } else if ((match = /^[\w-]+(?=\()/.exec(rest))) {
+          out += token('fn', match[0]);
+        } else {
+          match = /^[\s\S][^{}@/'"#\d!\w-]*/.exec(rest)!;
+          if (match[0].includes(';')) {
+            pendingAtRule = '';
+          }
+          out += escapeHtml(match[0]);
+        }
     }
-    i += match[0].length;
+    position += match[0].length;
   }
   return out;
 }

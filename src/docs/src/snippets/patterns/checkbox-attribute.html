@@ -3,10 +3,10 @@
 
 <!-- A conditional binding adds or removes the attribute... -->
 <input
-  type="checkbox"
   @if (done()) {
     checked
   }
+  type="checkbox"
   (change)="toggle()"
 />
 

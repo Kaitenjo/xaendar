@@ -89,12 +89,12 @@ export function collectFolder(registry: Readonly<Record<string, string>>, folder
       const name = key.slice(prefix.length);
       return { name, lang: langOf(name), code: registry[key] ?? '' };
     })
-    .sort((a, b) => {
-      const baseA = baseOf(a.name);
-      const baseB = baseOf(b.name);
+    .sort((left, right) => {
+      const baseA = baseOf(left.name);
+      const baseB = baseOf(right.name);
       if (baseA !== baseB) {
         return baseA === main ? -1 : baseB === main ? 1 : baseA.localeCompare(baseB);
       }
-      return rankOf(a.name) - rankOf(b.name) || a.name.localeCompare(b.name);
+      return rankOf(left.name) - rankOf(right.name) || left.name.localeCompare(right.name);
     });
 }

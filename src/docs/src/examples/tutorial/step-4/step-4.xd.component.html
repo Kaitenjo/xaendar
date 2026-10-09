@@ -10,11 +10,11 @@
       <li>
         <label class="{ todo.done ? 'done' : '' }">
           <input
-            type="checkbox"
-            (change)="toggle(todo.id)"
             @if (todo.done) {
               checked
             }
+            type="checkbox"
+            (change)="toggle(todo.id)"
           />
           { todo.title }
         </label>

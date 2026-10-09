@@ -1,2 +1,10 @@
-<label>(keydown.enter) <input type="text" placeholder="Press Enter" (keydown.enter)="onEnter()" /> { withModifier() }</label>
-<label>(keydown) + filter <input type="text" placeholder="Press Enter" (keydown)="onKeydown($event)" /> { withFilter() }</label>
+<label>
+  (keydown.enter)
+  <input type="text" placeholder="Press Enter" (keydown.enter)="onEnter()" />
+  { withModifier() }
+</label>
+<label>
+  (keydown) + filter
+  <input type="text" placeholder="Press Enter" (keydown)="onKeydown($event)" />
+  { withFilter() }
+</label>

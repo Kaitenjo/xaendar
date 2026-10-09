@@ -1,12 +1,17 @@
 <div class="toolbar">
-  <input type="search" placeholder="{ t().reference.filter }" aria-label="{ t().reference.filter }" (input)="search($event)" />
-  <select aria-label="{ t().reference.area }" (change)="pickArea($event)">
-    <option value="">{ t().reference.all }</option>
+  <input
+    type="search"
+    placeholder="{ translations().reference.filter }"
+    aria-label="{ translations().reference.filter }"
+    (input)="search($event)"
+  />
+  <select aria-label="{ translations().reference.area }" (change)="pickArea($event)">
+    <option value="">{ translations().reference.all }</option>
     @for (name of areas) {
       <option value="{ name }">{ name }</option>
     }
   </select>
-  <span class="count">{`${entries().length} ${t().reference.results}`}</span>
+  <span class="count">{`${entries().length} ${translations().reference.results}`}</span>
 </div>
 @if (entries().length > 0) {
   <ul class="entries">
@@ -14,15 +19,22 @@
       <li class="entry">
         <div class="entry-head">
           <h3 class="entry-title">{ entry.titleText }</h3>
-          <span class="{`badge ${entry.kind === 'bug' ? 'issue' : 'muted'}`}">{ t().reference.issueKinds[entry.kind] }</span>
+          <span class="{`badge ${entry.kind === 'bug' ? 'issue' : 'muted'}`}">
+            { translations().reference.issueKinds[entry.kind] }
+          </span>
           <span class="module">{ entry.area }</span>
         </div>
         <p>{ entry.detailsText }</p>
-        <p><span class="label">{ t().reference.workaround }:</span>{ entry.workaroundText }</p>
-        <p><a href="{ entry.href }">{ t().reference.readMore } →</a></p>
+        <p>
+          <span class="label">{ translations().reference.workaround }:</span>
+          { entry.workaroundText }
+        </p>
+        <p>
+          <a href="{ entry.href }">{ translations().reference.readMore } →</a>
+        </p>
       </li>
     }
   </ul>
 } @else {
-  <p class="empty">{ t().reference.noResults }</p>
+  <p class="empty">{ translations().reference.noResults }</p>
 }

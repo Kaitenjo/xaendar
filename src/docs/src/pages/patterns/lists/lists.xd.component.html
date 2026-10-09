@@ -4,12 +4,12 @@
 @import { InventoryComponent } from '../../../examples/patterns/lists/inventory/inventory.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.patterns.lists.eyebrow") />
+<span @@i18n(key="pages.patterns.lists.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.lists.title") />
-<p class="lead" @@i18n(key="pages.patterns.lists.lead") />
+<p @@i18n(key="pages.patterns.lists.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.lists.anInventory.title") />
-<docs-example name="patterns/lists/inventory" heading="{ t().pages.patterns.lists.anInventory.example1 }">
+<docs-example name="patterns/lists/inventory" heading="{ translations().pages.patterns.lists.anInventory.example1 }">
   <ex-inventory />
 </docs-example>
 <p @@i18n(key="pages.patterns.lists.anInventory.p1") />
@@ -19,24 +19,54 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.lists.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.lists.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.patterns.lists.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.patterns.lists.edgeCases.callout1.p1") />
     <docs-code snippet="patterns/replace-item.ts" />
     <p @@i18n(key="pages.patterns.lists.edgeCases.callout1.p2") />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.patterns.lists.edgeCases.callout2.heading }" @@i18n(key="pages.patterns.lists.edgeCases.callout2.body") />
+  <docs-callout
+    @@i18n(key="pages.patterns.lists.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.lists.edgeCases.callout2.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.patterns.lists.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.patterns.lists.apiSummary.th1") /><th @@i18n(key="pages.patterns.lists.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.patterns.lists.apiSummary.th1") />
+        <th @@i18n(key="pages.patterns.lists.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.patterns.lists.apiSummary.td1") /><td><code>{'items.update(list => [...list, item])'}</code></td></tr>
-      <tr><td @@i18n(key="pages.patterns.lists.apiSummary.td2") /><td><code>{'items.update(list => list.filter(other => other !== item))'}</code></td></tr>
-      <tr><td @@i18n(key="pages.patterns.lists.apiSummary.td3") /><td @@i18n(key="pages.patterns.lists.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.patterns.lists.apiSummary.td5") /><td @@i18n(key="pages.patterns.lists.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.patterns.lists.apiSummary.td7") /><td><code>{'@for (item of visible(); track item.id)'}</code></td></tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td1") />
+        <td>
+          <code>{'items.update(list => [...list, item])'}</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td2") />
+        <td>
+          <code>{'items.update(list => list.filter(other => other !== item))'}</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td3") />
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td5") />
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.lists.apiSummary.td7") />
+        <td>
+          <code>{'@for (item of visible(); track item.id)'}</code>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>

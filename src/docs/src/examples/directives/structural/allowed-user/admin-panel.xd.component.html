@@ -6,7 +6,7 @@
   <button (click)="race()">Guest, then admin after 300ms</button>
   <span>User: { user() }</span>
 </div>
-<p class="panel" *exAllowedUser(user="{ user() }")>🔑 Admin panel</p>
+<p *exAllowedUser(user="{ user() }") class="panel">🔑 Admin panel</p>
 <ol class="log">
   @for (line of checks(); track line.id) {
     <li>{ line.text }</li>

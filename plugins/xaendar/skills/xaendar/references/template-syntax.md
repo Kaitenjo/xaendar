@@ -22,7 +22,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '\x7B' }`, `{ '\x7D' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
 - A brace inside a string still counts for the lexer: `{ '}' }` breaks; use `{ '\x7D' }`.
 - HTML entities (`&lt;`, `&amp;`, …) are not decoded and newlines are removed.
-- Whitespace-only text is dropped: `{ a } { b }` renders `ab`. Use `{ ' ' }` between them, or a single expression such as a template literal.
+- Whitespace-only text is dropped: `{ first } { second }` renders the two values joined. Use `{ ' ' }` between them, or a single expression such as a template literal.
 - Template literals: write the backtick right after the brace (`{`…`}`); `{ `…` }` with a space is not parsed. Nested template literals are not supported.
 
 ## Bindings and events
@@ -63,14 +63,14 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 @for (item of items(); track item.id) {
   <li>{ $index() + 1 }. { item.name } { $first() ? '(first)' : '' }</li>
 }
-@for (row of rows(); track row.id; i = $index) {        <!-- alias -->
+@for (row of rows(); track row.id; index = $index) {    <!-- alias -->
   …
 }
 @for (5) {                                               <!-- a number of times -->
   <span>★</span>
 }
-@for (n of count(); track n) {                           <!-- 0 … count() - 1 -->
-  <span>{ n }</span>
+@for (step of count(); track step) {                     <!-- 0 … count() - 1 -->
+  <span>{ step }</span>
 }
 
 @switch (status()) {
@@ -100,8 +100,10 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 <!-- Inside a tag: attributes, inputs, listeners and directives present while a condition holds -->
 <button
   @if (locked()) {
-    disabled title="Locked"
+    disabled
+    title="Locked"
   } @else {
+    title="Edit"
     (click)="edit()"
   }
   @switch (size()) {
@@ -109,10 +111,12 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
       data-size="large"
     }
   }
->Edit</button>
+>
+  Edit
+</button>
 ```
 
-A `@Property.required` input must be bound in every branch.
+A `@Property.required` input must be bound in every branch. By convention, a block sits in the position of the first group it holds (directives, attributes, events), and a condition and its negation share one `@if`/`@else` block (see the template conventions in SKILL.md).
 
 ## Directives
 
@@ -162,7 +166,7 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 ```
 
 - Members used by the template must be `public`. Module constants must be exposed as members (`public readonly limit = LIMIT;`).
-- Shorthand objects (`{ a }`) in an interpolation render nothing: write `{ a: a }`.
+- Shorthand objects (`{ name }`) in an interpolation render nothing: write `{ name: name }`.
 - `history` and `location` always resolve to the browser globals.
 
 ## What does not exist

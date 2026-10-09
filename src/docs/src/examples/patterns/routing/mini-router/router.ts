@@ -54,9 +54,9 @@ function match(pattern: string, target: string): Record<string, string> | null {
   }
 
   const params: Record<string, string> = {};
-  for (let i = 0; i < expected.length; i++) {
-    const segment = expected[i] ?? '';
-    const value = actual[i] ?? '';
+  for (let index = 0; index < expected.length; index++) {
+    const segment = expected[index] ?? '';
+    const value = actual[index] ?? '';
     if (segment.startsWith(':')) {
       params[segment.slice(1)] = decodeURIComponent(value);
     } else if (segment !== value) {

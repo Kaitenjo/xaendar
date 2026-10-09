@@ -4,36 +4,65 @@
 @import { MarkdownPreviewComponent } from '../../../examples/patterns/html-rendering/markdown-preview/markdown-preview.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.patterns.htmlRendering.eyebrow") />
+<span @@i18n(key="pages.patterns.htmlRendering.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.htmlRendering.title") />
-<p class="lead" @@i18n(key="pages.patterns.htmlRendering.lead") />
+<p @@i18n(key="pages.patterns.htmlRendering.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.title") />
-<docs-example name="patterns/html-rendering/markdown-preview" heading="{ t().pages.patterns.htmlRendering.aDirectiveForInnerhtml.example1 }">
+<docs-example
+  name="patterns/html-rendering/markdown-preview"
+  heading="{ translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.example1 }"
+>
   <ex-markdown-preview />
 </docs-example>
 <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.p1") />
 <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.p2") />
 <docs-code snippet="patterns/interpolated-html.html" />
 
-<docs-callout kind="warning" heading="{ t().pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.heading }">
+<docs-callout
+  kind="warning"
+  heading="{ translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.heading }"
+>
   <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.p1") />
   <docs-code snippet="patterns/sanitize.ts" />
 </docs-callout>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.htmlRendering.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.htmlRendering.edgeCases.callout1.heading }" @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.htmlRendering.edgeCases.callout2.heading }" @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout2.body") />
+  <docs-callout
+    @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.htmlRendering.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.htmlRendering.edgeCases.callout2.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.patterns.htmlRendering.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.patterns.htmlRendering.apiSummary.th1") /><th @@i18n(key="pages.patterns.htmlRendering.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.patterns.htmlRendering.apiSummary.th1") />
+        <th @@i18n(key="pages.patterns.htmlRendering.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{'{ html() }'}</code></td><td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td1") /></tr>
-      <tr><td><code>{'@@exInnerHtml(html="{ html() }")'}</code></td><td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td2") /></tr>
+      <tr>
+        <td>
+          <code>{'{ html() }'}</code>
+        </td>
+        <td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@@exInnerHtml(html="{ html() }")'}</code>
+        </td>
+        <td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td2") />
+      </tr>
     </tbody>
   </table>
 </div>

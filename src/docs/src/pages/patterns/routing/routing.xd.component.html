@@ -4,12 +4,15 @@
 @import { MiniRouterComponent } from '../../../examples/patterns/routing/mini-router/mini-router.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.patterns.routing.eyebrow") />
+<span @@i18n(key="pages.patterns.routing.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.routing.title") />
-<p class="lead" @@i18n(key="pages.patterns.routing.lead") />
+<p @@i18n(key="pages.patterns.routing.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.routing.aRouterInA.title") />
-<docs-example name="patterns/routing/mini-router" heading="{ t().pages.patterns.routing.aRouterInA.example1 }">
+<docs-example
+  name="patterns/routing/mini-router"
+  heading="{ translations().pages.patterns.routing.aRouterInA.example1 }"
+>
   <ex-mini-router />
 </docs-example>
 <p @@i18n(key="pages.patterns.routing.aRouterInA.p1") />
@@ -23,20 +26,51 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.routing.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.routing.edgeCases.callout1.heading }" @@i18n(key="pages.patterns.routing.edgeCases.callout1.body") />
-  <docs-callout kind="edge" heading="{ t().pages.patterns.routing.edgeCases.callout2.heading }" @@i18n(key="pages.patterns.routing.edgeCases.callout2.body") />
-  <docs-callout kind="tip" heading="{ t().pages.patterns.routing.edgeCases.callout3.heading }" @@i18n(key="pages.patterns.routing.edgeCases.callout3.body") />
+  <docs-callout
+    @@i18n(key="pages.patterns.routing.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.routing.edgeCases.callout1.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.patterns.routing.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.patterns.routing.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.patterns.routing.edgeCases.callout3.body")
+    kind="tip"
+    heading="{ translations().pages.patterns.routing.edgeCases.callout3.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.patterns.routing.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.patterns.routing.apiSummary.th1") /><th @@i18n(key="pages.patterns.routing.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.patterns.routing.apiSummary.th1") />
+        <th @@i18n(key="pages.patterns.routing.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.patterns.routing.apiSummary.td1") /><td @@i18n(key="pages.patterns.routing.apiSummary.td2") /></tr>
-      <tr><td @@i18n(key="pages.patterns.routing.apiSummary.td3") /><td @@i18n(key="pages.patterns.routing.apiSummary.td4") /></tr>
-      <tr><td @@i18n(key="pages.patterns.routing.apiSummary.td5") /><td><code>{'@switch (route().name)'}</code></td></tr>
-      <tr><td @@i18n(key="pages.patterns.routing.apiSummary.td6") /><td @@i18n(key="pages.patterns.routing.apiSummary.td7") /></tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td1") />
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td3") />
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td5") />
+        <td>
+          <code>{'@switch (route().name)'}</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td6") />
+        <td @@i18n(key="pages.patterns.routing.apiSummary.td7") />
+      </tr>
     </tbody>
   </table>
 </div>

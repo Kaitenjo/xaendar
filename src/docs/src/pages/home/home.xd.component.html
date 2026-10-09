@@ -3,25 +3,25 @@
 @import { I18nDirective } from '../../directives/i18n.directive.ts'
 
 <section class="hero">
-  <span class="eyebrow" @@i18n(key="pages.home.eyebrow") />
+  <span @@i18n(key="pages.home.eyebrow") class="eyebrow" />
   <h1 @@i18n(key="pages.home.title") />
-  <p class="lead" @@i18n(key="pages.home.lead") />
-  <div class="actions" @@i18n(key="pages.home.div1") />
+  <p @@i18n(key="pages.home.lead") class="lead" />
+  <div @@i18n(key="pages.home.div1") class="actions" />
 </section>
 
-<docs-example name="home/counter" heading="{ t().pages.home.example1 }">
+<docs-example name="home/counter" heading="{ translations().pages.home.example1 }">
   <ex-home-counter />
 </docs-example>
 
 <h2 @@i18n(key="pages.home.whyXaendar.title") />
 <div class="cards">
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div1") />
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div2") />
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div3") />
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div4") />
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div5") />
-  <div class="card" @@i18n(key="pages.home.whyXaendar.div6") />
+  <div @@i18n(key="pages.home.whyXaendar.div1") class="card" />
+  <div @@i18n(key="pages.home.whyXaendar.div2") class="card" />
+  <div @@i18n(key="pages.home.whyXaendar.div3") class="card" />
+  <div @@i18n(key="pages.home.whyXaendar.div4") class="card" />
+  <div @@i18n(key="pages.home.whyXaendar.div5") class="card" />
+  <div @@i18n(key="pages.home.whyXaendar.div6") class="card" />
 </div>
 
 <h2 @@i18n(key="pages.home.exploreTheDocumentation.title") />
-<div class="cards" @@i18n(key="pages.home.exploreTheDocumentation.div1") />
+<div @@i18n(key="pages.home.exploreTheDocumentation.div1") class="cards" />

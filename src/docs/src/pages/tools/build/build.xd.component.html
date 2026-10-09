@@ -2,9 +2,9 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.tools.build.eyebrow") />
+<span @@i18n(key="pages.tools.build.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.tools.build.title") />
-<p class="lead" @@i18n(key="pages.tools.build.lead") />
+<p @@i18n(key="pages.tools.build.lead") class="lead" />
 
 <h2 @@i18n(key="pages.tools.build.configuration.title") />
 <docs-code snippet="installation/vite.config.ts" />
@@ -30,25 +30,66 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.tools.build.edgeCases.title") />
-  <docs-callout kind="issue" heading="{ t().pages.tools.build.edgeCases.callout1.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.tools.build.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.tools.build.edgeCases.callout1.p1") />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.tools.build.edgeCases.callout2.heading }" @@i18n(key="pages.tools.build.edgeCases.callout2.body") />
-  <docs-callout kind="issue" heading="{ t().pages.tools.build.edgeCases.callout3.heading }" @@i18n(key="pages.tools.build.edgeCases.callout3.body") />
-  <docs-callout kind="edge" heading="{ t().pages.tools.build.edgeCases.callout4.heading }" @@i18n(key="pages.tools.build.edgeCases.callout4.body") />
-  <docs-callout kind="unsupported" heading="{ t().pages.tools.build.edgeCases.callout5.heading }" @@i18n(key="pages.tools.build.edgeCases.callout5.body") />
+  <docs-callout
+    @@i18n(key="pages.tools.build.edgeCases.callout2.body")
+    kind="issue"
+    heading="{ translations().pages.tools.build.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.tools.build.edgeCases.callout3.body")
+    kind="issue"
+    heading="{ translations().pages.tools.build.edgeCases.callout3.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.tools.build.edgeCases.callout4.body")
+    kind="edge"
+    heading="{ translations().pages.tools.build.edgeCases.callout4.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.tools.build.edgeCases.callout5.body")
+    kind="unsupported"
+    heading="{ translations().pages.tools.build.edgeCases.callout5.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.tools.build.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.tools.build.apiSummary.th1") /><th @@i18n(key="pages.tools.build.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.tools.build.apiSummary.th1") />
+        <th @@i18n(key="pages.tools.build.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>xaendarPlugin()</code></td><td @@i18n(key="pages.tools.build.apiSummary.td1") /></tr>
-      <tr><td @@i18n(key="pages.tools.build.apiSummary.td2") /><td @@i18n(key="pages.tools.build.apiSummary.td3") /></tr>
-      <tr><td @@i18n(key="pages.tools.build.apiSummary.td4") /><td><code>virtual:xaendar-template:…</code>, <code>virtual:xaendar-style?…</code></td></tr>
-      <tr><td @@i18n(key="pages.tools.build.apiSummary.td5") /><td @@i18n(key="pages.tools.build.apiSummary.td6") /></tr>
-      <tr><td @@i18n(key="pages.tools.build.apiSummary.td7") /><td @@i18n(key="pages.tools.build.apiSummary.td8") /></tr>
+      <tr>
+        <td>
+          <code>xaendarPlugin()</code>
+        </td>
+        <td @@i18n(key="pages.tools.build.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.build.apiSummary.td2") />
+        <td @@i18n(key="pages.tools.build.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.build.apiSummary.td4") />
+        <td>
+          <code>virtual:xaendar-template:…</code>,
+          <code>virtual:xaendar-style?…</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.build.apiSummary.td5") />
+        <td @@i18n(key="pages.tools.build.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.tools.build.apiSummary.td7") />
+        <td @@i18n(key="pages.tools.build.apiSummary.td8") />
+      </tr>
     </tbody>
   </table>
 </div>

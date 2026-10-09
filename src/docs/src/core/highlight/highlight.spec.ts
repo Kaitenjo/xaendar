@@ -13,7 +13,7 @@ const tokens = (html: string): string[] => [...html.matchAll(/<span class="tok-(
 
 const SAMPLES: Array<[Parameters<typeof highlight>[1], string]> = [
   ['ts', `import { signal } from '@xaendar/core/signals';\n@WebComponent({ selector: 'x-a' })\nexport class A extends CustomElement {\n  // comment\n  public readonly count = signal(0x1F);\n  /* block */ s = \`t \${1}\`;\n}`],
-  ['html', `@import { A } from './a.ts'\n<!-- c -->\n<div class="a" title="{ x() }" (click)="go($event)" @@tip(text="{t}") *when(ok="{ok()}") @if (a()) { hidden } disabled />\n@for (i of items(); track i.id) {\n  <li>{ i.name } & <b>x</b></li>\n} @empty`],
+  ['html', `@import { Card } from './card.ts'\n<!-- c -->\n<div class="a" title="{ x() }" (click)="go($event)" @@tip(text="{t}") *when(ok="{ok()}") @if (a()) { hidden } disabled />\n@for (i of items(); track i.id) {\n  <li>{ i.name } & <b>x</b></li>\n} @empty`],
   ['css', `:host { display: block; }\n@media (min-width: 600px) {\n  .a:hover > b { color: #fff !important; width: calc(100% - 2px); --x: 1em; }\n}\n/* c */ a::after { content: "}"; }`],
   ['json', `{ "a": 1, "b": [true, null, "x<y"], "c": -2.5e3 }`],
   ['bash', `npm i -D @xaendar/core # install\nxd new my-app --style css\n$ echo "hi" 'there'`],
@@ -40,29 +40,29 @@ describe('highlight', () => {
   });
 
   it('highlights the template syntax', () => {
-    expect(tokens(highlight(`<b class="x" title="{ t() }" (click)="go($event)" @@tip(text="a") *when(ok="{ok}") disabled />`, 'html'))).toEqual([
-      'punc:<', 'tag:b', 'attr:class', 'punc:=', 'str:"x"', 'attr:title', 'punc:=', 'punc:"', 'interp:{', 'fn:t', 'interp:}', 'punc:"',
+    expect(tokens(highlight(`<b class="x" title="{ tip() }" (click)="go($event)" @@tip(text="a") *when(ok="{ok}") disabled />`, 'html'))).toEqual([
+      'punc:<', 'tag:b', 'attr:class', 'punc:=', 'str:"x"', 'attr:title', 'punc:=', 'punc:"', 'interp:{', 'fn:tip', 'interp:}', 'punc:"',
       'evt:(click)', 'punc:=', 'punc:"', 'fn:go', 'punc:"', 'dir:@@tip', 'punc:(', 'attr:text', 'punc:=', 'str:"a"', 'punc:)',
       'dir:*when', 'punc:(', 'attr:ok', 'punc:=', 'punc:"', 'interp:{', 'interp:}', 'punc:"', 'punc:)', 'attr:disabled', 'punc:/>'
     ]);
   });
 
   it('highlights control flow and interpolations', () => {
-    expect(tokens(highlight(`@if (a()) {\n<i>{ b }</i>\n} @else {\n}`, 'html'))).toEqual([
-      'ctl:@if', 'punc:(', 'fn:a', 'punc:)', 'punc:{', 'punc:<', 'tag:i', 'punc:>', 'interp:{', 'interp:}', 'punc:</', 'tag:i', 'punc:>',
+    expect(tokens(highlight(`@if (ready()) {\n<i>{ label }</i>\n} @else {\n}`, 'html'))).toEqual([
+      'ctl:@if', 'punc:(', 'fn:ready', 'punc:)', 'punc:{', 'punc:<', 'tag:i', 'punc:>', 'interp:{', 'interp:}', 'punc:</', 'tag:i', 'punc:>',
       'punc:}', 'ctl:@else', 'punc:{', 'punc:}'
     ]);
   });
 
   it('highlights conditional bindings inside a tag', () => {
-    expect(tokens(highlight(`<a @if (x()) { href="b" } @else { (click)="c()" }>`, 'html'))).toEqual([
-      'punc:<', 'tag:a', 'ctl:@if', 'punc:(', 'fn:x', 'punc:)', 'punc:{', 'attr:href', 'punc:=', 'str:"b"', 'punc:}',
-      'ctl:@else', 'punc:{', 'evt:(click)', 'punc:=', 'punc:"', 'fn:c', 'punc:"', 'punc:}', 'punc:>'
+    expect(tokens(highlight(`<a @if (linked()) { href="/home" } @else { (click)="edit()" }>`, 'html'))).toEqual([
+      'punc:<', 'tag:a', 'ctl:@if', 'punc:(', 'fn:linked', 'punc:)', 'punc:{', 'attr:href', 'punc:=', 'str:"/home"', 'punc:}',
+      'ctl:@else', 'punc:{', 'evt:(click)', 'punc:=', 'punc:"', 'fn:edit', 'punc:"', 'punc:}', 'punc:>'
     ]);
   });
 
   it('highlights imports and comments in templates', () => {
-    expect(tokens(highlight(`@import { A } from './a.ts'\n<!-- note -->`, 'html'))).toEqual(['ctl:@import', 'type:A', 'kw:from', 'str:\'./a.ts\'', 'com:<!-- note -->']);
+    expect(tokens(highlight(`@import { Card } from './card.ts'\n<!-- note -->`, 'html'))).toEqual(['ctl:@import', 'type:Card', 'kw:from', 'str:\'./card.ts\'', 'com:<!-- note -->']);
   });
 
   it('highlights CSS', () => {

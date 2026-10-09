@@ -4,6 +4,9 @@
 <ex-styled-panel class="{ highlighted() ? 'highlighted' : '' }">
   <span slot="title">Release notes</span>
   <strong>A direct child: matched by ::slotted(strong)</strong>
-  <p>A paragraph with <strong>a nested strong</strong>: ::slotted does not reach it.</p>
+  <p>
+    A paragraph with
+    <strong>a nested strong</strong>: ::slotted does not reach it.
+  </p>
   <p class="note">Styled by both stylesheets: the outer one wins.</p>
 </ex-styled-panel>

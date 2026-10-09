@@ -1,8 +1,15 @@
 @import { BindValueDirective } from './bind-value.directive.ts'
 
-<label>Attribute <input type="text" value="{ text() }" (input)="type($event)" /></label>
-<label>Directive <input type="text" @@exBindValue(value="{ text() }") (input)="type($event)" /></label>
-<label>Size
+<label>
+  Attribute
+  <input type="text" value="{ text() }" (input)="type($event)" />
+</label>
+<label>
+  Directive
+  <input @@exBindValue(value="{ text() }") type="text" (input)="type($event)" />
+</label>
+<label>
+  Size
   <select @@exBindValue(value="{ size() }") (change)="choose($event)">
     <option value="s">Small</option>
     <option value="m">Medium</option>

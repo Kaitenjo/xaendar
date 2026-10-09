@@ -6,13 +6,13 @@
 @import { SwitchEvaluationsComponent } from '../../../examples/templates/switch/switch-evaluations/switch-evaluations.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.templates.switch.eyebrow") />
+<span @@i18n(key="pages.templates.switch.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.templates.switch.title") />
-<p class="lead" @@i18n(key="pages.templates.switch.lead") />
+<p @@i18n(key="pages.templates.switch.lead") class="lead" />
 
 <h2 @@i18n(key="pages.templates.switch.cases.title") />
 <docs-code snippet="templates/switch-syntax.html" />
-<docs-example name="templates/switch/order-status" heading="{ t().pages.templates.switch.cases.example1 }">
+<docs-example name="templates/switch/order-status" heading="{ translations().pages.templates.switch.cases.example1 }">
   <ex-order-status />
 </docs-example>
 <p @@i18n(key="pages.templates.switch.cases.p1") />
@@ -20,15 +20,23 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.switch.edgeCases.title") />
-  <docs-example name="templates/switch/default-first" heading="{ t().pages.templates.switch.edgeCases.example1 }" kind="edge">
+  <docs-example
+    name="templates/switch/default-first"
+    heading="{ translations().pages.templates.switch.edgeCases.example1 }"
+    kind="edge"
+  >
     <ex-default-first />
   </docs-example>
   <p @@i18n(key="pages.templates.switch.edgeCases.p1") />
-  <docs-example name="templates/switch/switch-evaluations" heading="{ t().pages.templates.switch.edgeCases.example2 }" kind="edge">
+  <docs-example
+    name="templates/switch/switch-evaluations"
+    heading="{ translations().pages.templates.switch.edgeCases.example2 }"
+    kind="edge"
+  >
     <ex-switch-evaluations />
   </docs-example>
   <p @@i18n(key="pages.templates.switch.edgeCases.p2") />
-  <docs-callout kind="edge" heading="{ t().pages.templates.switch.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.templates.switch.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.templates.switch.edgeCases.callout1.p1") />
     <docs-code snippet="templates/switch-case-member.txt" />
   </docs-callout>
@@ -37,12 +45,37 @@
 <h2 @@i18n(key="pages.templates.switch.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.templates.switch.apiSummary.th1") /><th @@i18n(key="pages.templates.switch.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.switch.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.switch.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>{'@switch (value) { … }'}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td1") /></tr>
-      <tr><td><code>{"@case ('a') { … }"}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td2") /></tr>
-      <tr><td><code>{"@case ('a') @case ('b') { … }"}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td3") /></tr>
-      <tr><td><code>{'@default { … }'}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td4") /></tr>
+      <tr>
+        <td>
+          <code>{'@switch (value) { … }'}</code>
+        </td>
+        <td @@i18n(key="pages.templates.switch.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{"@case ('a') { … }"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.switch.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{"@case ('a') @case ('b') { … }"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.switch.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>{'@default { … }'}</code>
+        </td>
+        <td @@i18n(key="pages.templates.switch.apiSummary.td4") />
+      </tr>
     </tbody>
   </table>
 </div>

@@ -1,9 +1,18 @@
 <button (click)="raise()">Raise the level</button>
 <dl>
   <dt>shared = level</dt>
-  <dd><progress max="10" value="{ shared() }"></progress> text: { shared() }</dd>
+  <dd>
+    <progress max="10" value="{ shared() }"></progress>
+    text: { shared() }
+  </dd>
   <dt>fromHelper = readLevel()</dt>
-  <dd><progress max="10" value="{ fromHelper() }"></progress> text: { fromHelper() }</dd>
+  <dd>
+    <progress max="10" value="{ fromHelper() }"></progress>
+    text: { fromHelper() }
+  </dd>
   <dt>{ 'wrapped = computed(() => readLevel()())' }</dt>
-  <dd><progress max="10" value="{ wrapped() }"></progress> text: { wrapped() }</dd>
+  <dd>
+    <progress max="10" value="{ wrapped() }"></progress>
+    text: { wrapped() }
+  </dd>
 </dl>

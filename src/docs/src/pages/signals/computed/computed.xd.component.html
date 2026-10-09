@@ -8,32 +8,38 @@
 @import { ComputedCircularComponent } from '../../../examples/signals/computed/circular/circular.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.signals.computed.eyebrow") />
+<span @@i18n(key="pages.signals.computed.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.computed.title") />
-<p class="lead" @@i18n(key="pages.signals.computed.lead") />
+<p @@i18n(key="pages.signals.computed.lead") class="lead" />
 
 <h2 @@i18n(key="pages.signals.computed.lazyAndCached.title") />
 <p @@i18n(key="pages.signals.computed.lazyAndCached.p1") />
-<docs-example name="signals/computed/lazy" heading="{ t().pages.signals.computed.lazyAndCached.example1 }">
+<docs-example name="signals/computed/lazy" heading="{ translations().pages.signals.computed.lazyAndCached.example1 }">
   <ex-computed-lazy />
 </docs-example>
 <p @@i18n(key="pages.signals.computed.lazyAndCached.p2") />
 
 <h2 @@i18n(key="pages.signals.computed.dynamicDependencies.title") />
 <p @@i18n(key="pages.signals.computed.dynamicDependencies.p1") />
-<docs-example name="signals/computed/dynamic-dependencies" heading="{ t().pages.signals.computed.dynamicDependencies.example1 }">
+<docs-example
+  name="signals/computed/dynamic-dependencies"
+  heading="{ translations().pages.signals.computed.dynamicDependencies.example1 }"
+>
   <ex-computed-dynamic />
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.computed.glitchFreeUpdates.title") />
 <p @@i18n(key="pages.signals.computed.glitchFreeUpdates.p1") />
-<docs-example name="signals/computed/diamond" heading="{ t().pages.signals.computed.glitchFreeUpdates.example1 }">
+<docs-example
+  name="signals/computed/diamond"
+  heading="{ translations().pages.signals.computed.glitchFreeUpdates.example1 }"
+>
   <ex-computed-diamond />
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.computed.errors.title") />
 <p @@i18n(key="pages.signals.computed.errors.p1") />
-<docs-example name="signals/computed/errors" heading="{ t().pages.signals.computed.errors.example1 }">
+<docs-example name="signals/computed/errors" heading="{ translations().pages.signals.computed.errors.example1 }">
   <ex-computed-errors />
 </docs-example>
 
@@ -43,23 +49,60 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.computed.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout1.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout1.body") />
-  <docs-example name="signals/computed/circular" kind="edge" heading="{ t().pages.signals.computed.edgeCases.example1 }">
+  <docs-callout
+    @@i18n(key="pages.signals.computed.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.signals.computed.edgeCases.callout1.heading }"
+  />
+  <docs-example
+    name="signals/computed/circular"
+    kind="edge"
+    heading="{ translations().pages.signals.computed.edgeCases.example1 }"
+  >
     <ex-computed-circular />
   </docs-example>
-  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout2.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout2.body") />
-  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout3.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout3.body") />
-  <docs-callout kind="unsupported" heading="{ t().pages.signals.computed.edgeCases.callout4.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout4.body") />
+  <docs-callout
+    @@i18n(key="pages.signals.computed.edgeCases.callout2.body")
+    kind="edge"
+    heading="{ translations().pages.signals.computed.edgeCases.callout2.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.computed.edgeCases.callout3.body")
+    kind="edge"
+    heading="{ translations().pages.signals.computed.edgeCases.callout3.heading }"
+  />
+  <docs-callout
+    @@i18n(key="pages.signals.computed.edgeCases.callout4.body")
+    kind="unsupported"
+    heading="{ translations().pages.signals.computed.edgeCases.callout4.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.signals.computed.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.signals.computed.apiSummary.th1") /><th @@i18n(key="pages.signals.computed.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.signals.computed.apiSummary.th1") />
+        <th @@i18n(key="pages.signals.computed.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td @@i18n(key="pages.signals.computed.apiSummary.td1") /><td @@i18n(key="pages.signals.computed.apiSummary.td2") /></tr>
-      <tr><td><code>c()</code>, <code>c.get()</code></td><td @@i18n(key="pages.signals.computed.apiSummary.td3") /></tr>
-      <tr><td @@i18n(key="pages.signals.computed.apiSummary.td4") /><td @@i18n(key="pages.signals.computed.apiSummary.td5") /></tr>
+      <tr>
+        <td @@i18n(key="pages.signals.computed.apiSummary.td1") />
+        <td @@i18n(key="pages.signals.computed.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>c()</code>,
+          <code>c.get()</code>
+        </td>
+        <td @@i18n(key="pages.signals.computed.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.computed.apiSummary.td4") />
+        <td @@i18n(key="pages.signals.computed.apiSummary.td5") />
+      </tr>
     </tbody>
   </table>
 </div>

@@ -2,25 +2,31 @@
 
 <nav>
   <button
-    (click)="goBack()"
     @if (!canGoBack()) {
       disabled
     }
-  >← Back</button>
+    (click)="goBack()"
+  >
+    ← Back
+  </button>
   <a
-    href="/"
-    (click)="follow($event)"
     @if (route().name === 'home') {
       aria-current="page"
     }
-  >Home</a>
-  <a
-    href="/users"
+    href="/"
     (click)="follow($event)"
+  >
+    Home
+  </a>
+  <a
     @if (route().name === 'users' || route().name === 'user') {
       aria-current="page"
     }
-  >Users</a>
+    href="/users"
+    (click)="follow($event)"
+  >
+    Users
+  </a>
   <a href="/nowhere" (click)="follow($event)">A broken link</a>
   <code>{ path() }</code>
 </nav>
@@ -34,7 +40,9 @@
       <h3>Users</h3>
       <ul>
         @for (user of users; track user.id) {
-          <li><a href="{`/users/${user.id}`}" (click)="follow($event)">{ user.name }</a></li>
+          <li>
+            <a href="{`/users/${user.id}`}" (click)="follow($event)">{ user.name }</a>
+          </li>
         }
       </ul>
     }

@@ -7,41 +7,49 @@
 @import { TodoStep5Component } from '../../examples/tutorial/step-5/step-5.xd.component.ts'
 @import { I18nDirective } from '../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.tutorial.eyebrow") />
+<span @@i18n(key="pages.tutorial.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.tutorial.title") />
-<p class="lead" @@i18n(key="pages.tutorial.lead") />
+<p @@i18n(key="pages.tutorial.lead") class="lead" />
 
 <h2 @@i18n(key="pages.tutorial.step1AStatic.title") />
 <p @@i18n(key="pages.tutorial.step1AStatic.p1") />
-<docs-example name="tutorial/step-1" heading="{ t().pages.tutorial.step1AStatic.example1 }">
+<docs-example name="tutorial/step-1" heading="{ translations().pages.tutorial.step1AStatic.example1 }">
   <ex-todo-step-1 />
 </docs-example>
 
 <h2 @@i18n(key="pages.tutorial.step2StateIn.title") />
 <p @@i18n(key="pages.tutorial.step2StateIn.p1") />
-<docs-example name="tutorial/step-2" heading="{ t().pages.tutorial.step2StateIn.example1 }">
+<docs-example name="tutorial/step-2" heading="{ translations().pages.tutorial.step2StateIn.example1 }">
   <ex-todo-step-2 />
 </docs-example>
 
 <h2 @@i18n(key="pages.tutorial.step3AddingTodos.title") />
 <p @@i18n(key="pages.tutorial.step3AddingTodos.p1") />
-<docs-example name="tutorial/step-3" heading="{ t().pages.tutorial.step3AddingTodos.example1 }">
+<docs-example name="tutorial/step-3" heading="{ translations().pages.tutorial.step3AddingTodos.example1 }">
   <ex-todo-step-3 />
 </docs-example>
 
 <h2 @@i18n(key="pages.tutorial.step4CompletingAnd.title") />
 <p @@i18n(key="pages.tutorial.step4CompletingAnd.p1") />
-<docs-example name="tutorial/step-4" heading="{ t().pages.tutorial.step4CompletingAnd.example1 }">
+<docs-example name="tutorial/step-4" heading="{ translations().pages.tutorial.step4CompletingAnd.example1 }">
   <ex-todo-step-4 />
 </docs-example>
-<docs-callout kind="edge" heading="{ t().pages.tutorial.step4CompletingAnd.callout1.heading }" @@i18n(key="pages.tutorial.step4CompletingAnd.callout1.body") />
+<docs-callout
+  @@i18n(key="pages.tutorial.step4CompletingAnd.callout1.body")
+  kind="edge"
+  heading="{ translations().pages.tutorial.step4CompletingAnd.callout1.heading }"
+/>
 
 <h2 @@i18n(key="pages.tutorial.step5AChild.title") />
 <p @@i18n(key="pages.tutorial.step5AChild.p1") />
-<docs-example name="tutorial/step-5" heading="{ t().pages.tutorial.step5AChild.example1 }">
+<docs-example name="tutorial/step-5" heading="{ translations().pages.tutorial.step5AChild.example1 }">
   <ex-todo-step-5 />
 </docs-example>
-<docs-callout kind="edge" heading="{ t().pages.tutorial.step5AChild.callout1.heading }" @@i18n(key="pages.tutorial.step5AChild.callout1.body") />
+<docs-callout
+  @@i18n(key="pages.tutorial.step5AChild.callout1.body")
+  kind="edge"
+  heading="{ translations().pages.tutorial.step5AChild.callout1.heading }"
+/>
 
 <h2 @@i18n(key="pages.tutorial.whereToGoFrom.title") />
 <p @@i18n(key="pages.tutorial.whereToGoFrom.p1") />

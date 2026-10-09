@@ -818,7 +818,7 @@
         "structuralDirectives": {
           "title": "Direttive strutturali",
           "example1": "Una direttiva strutturale aggiunta da una condizione",
-          "p1": "Il paragrafo ha sempre <code>exIsEven</code>, e <code>exPositive</code> solo finché la casella è spuntata. La regola non cambia: l’elemento viene renderizzato finché ogni direttiva applicata in quel momento restituisce <code>true</code>. Spunta la casella mentre <code>n</code> è negativo e pari: <code>exPositive</code> si aggiunge e il paragrafo sparisce; togli la spunta e il paragrafo torna. Entrambe le direttive sono definite in <a href=\"#/it/directives/structural\">Direttive strutturali</a>."
+          "p1": "Il paragrafo ha sempre <code>exIsEven</code>, e <code>exPositive</code> solo finché la casella è spuntata. La regola non cambia: l’elemento viene renderizzato finché ogni direttiva applicata in quel momento restituisce <code>true</code>. Spunta la casella mentre <code>value</code> è negativo e pari: <code>exPositive</code> si aggiunge e il paragrafo sparisce; togli la spunta e il paragrafo torna. Entrambe le direttive sono definite in <a href=\"#/it/directives/structural\">Direttive strutturali</a>."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2196,13 +2196,13 @@
         },
         "repeatingANumberOf": {
           "title": "Ripetere un certo numero di volte",
-          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (n of count())</code> con <code>n</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
+          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
           "example1": "Cinque punti e una valutazione"
         },
         "nestedLoops": {
           "title": "Cicli annidati",
           "example1": "Una tavola pitagorica",
-          "p1": "Il ciclo interno vede le variabili di quello esterno. Entrambi hanno il proprio <code>$index</code>, e quello interno nasconde quello esterno: l’alias <code>r = $index</code> mantiene raggiungibile dalle celle l’indice della riga."
+          "p1": "Il ciclo interno vede le variabili di quello esterno. Entrambi hanno il proprio <code>$index</code>, e quello interno nasconde quello esterno: l’alias <code>rowIndex = $index</code> mantiene raggiungibile dalle celle l’indice della riga."
         },
         "emptyLists": {
           "title": "Liste vuote",
@@ -2228,7 +2228,7 @@
           "th2": "Descrizione",
           "td1": "Una riga per ogni elemento, identificata dalla sua chiave.",
           "td2": "La chiave è l’elemento stesso.",
-          "td3": "Ripete il blocco, con <code>n</code> da <code>0</code>.",
+          "td3": "Ripete il blocco, con <code>step</code> da <code>0</code>.",
           "td4": "La posizione della riga, come signal.",
           "td5": "Un alias per una variabile di contesto."
         }
@@ -2863,7 +2863,7 @@
     },
     "[Parser] 'let i' is not a valid alias identifier.": {
       "cause": "Un alias di @for scritto con let.",
-      "fix": "Scrivi l’alias come i = $index."
+      "fix": "Scrivi l’alias come index = $index."
     },
     "[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template": {
       "cause": "Un tag con trattino che non è un componente Xaendar importato dal template: un @import mancante, o un custom element di un’altra libreria.",
@@ -3125,8 +3125,8 @@
     },
     "a-space-between-two-interpolations-disappears": {
       "title": "Lo spazio tra due interpolazioni sparisce",
-      "details": "{ a } { b } renderizza i due valori uniti.",
-      "workaround": "Scrivi {`${a} ${b}`}, o metti altro testo tra le due."
+      "details": "{ first } { second } renderizza i due valori uniti.",
+      "workaround": "Scrivi {`${first} ${second}`}, o metti altro testo tra le due."
     },
     "a-shorthand-object-in-an-interpolation": {
       "title": "Un oggetto abbreviato in un’interpolazione non renderizza nulla",

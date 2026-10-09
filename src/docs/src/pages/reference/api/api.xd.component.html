@@ -2,8 +2,12 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.reference.api.eyebrow") />
+<span @@i18n(key="pages.reference.api.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.reference.api.title") />
-<p class="lead" @@i18n(key="pages.reference.api.lead") />
-<docs-callout kind="note" heading="{ t().pages.reference.api.callout1.heading }" @@i18n(key="pages.reference.api.callout1.body") />
+<p @@i18n(key="pages.reference.api.lead") class="lead" />
+<docs-callout
+  @@i18n(key="pages.reference.api.callout1.body")
+  kind="note"
+  heading="{ translations().pages.reference.api.callout1.heading }"
+/>
 <docs-api-list />

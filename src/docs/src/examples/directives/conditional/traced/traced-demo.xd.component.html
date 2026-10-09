@@ -8,7 +8,9 @@
   @if (applied()) {
     @@exTraced(color="#fde68a")
   }
->The directive is applied by a condition.</p>
+>
+  The directive is applied by a condition.
+</p>
 <p
   @@exTraced(
     @if (warm()) {
@@ -17,7 +19,9 @@
       color="#bfdbfe"
     }
   )
->The input of the directive is bound by a condition.</p>
+>
+  The input of the directive is bound by a condition.
+</p>
 <ol class="log">
   @for (line of trace(); track line.id) {
     <li>{ line.text }</li>

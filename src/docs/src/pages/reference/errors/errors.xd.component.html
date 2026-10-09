@@ -2,8 +2,12 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.reference.errors.eyebrow") />
+<span @@i18n(key="pages.reference.errors.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.reference.errors.title") />
-<p class="lead" @@i18n(key="pages.reference.errors.lead") />
-<docs-callout kind="tip" heading="{ t().pages.reference.errors.callout1.heading }" @@i18n(key="pages.reference.errors.callout1.body") />
+<p @@i18n(key="pages.reference.errors.lead") class="lead" />
+<docs-callout
+  @@i18n(key="pages.reference.errors.callout1.body")
+  kind="tip"
+  heading="{ translations().pages.reference.errors.callout1.heading }"
+/>
 <docs-error-list />

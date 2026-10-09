@@ -1,6 +1,8 @@
 <div class="controls">
   @for (option of statuses; track option) {
-    <button class="{ option === status() ? 'option option--active' : 'option' }" (click)="choose(option)">{ option }</button>
+    <button class="{ option === status() ? 'option option--active' : 'option' }" (click)="choose(option)">
+      { option }
+    </button>
   }
 </div>
 @switch (status()) {

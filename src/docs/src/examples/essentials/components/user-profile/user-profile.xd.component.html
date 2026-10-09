@@ -2,5 +2,8 @@
 
 <ex-user-badge name="Ada Lovelace" online="{ adaOnline() }" (wave)="onWave($event)" />
 <ex-user-badge name="Alan Turing" (wave)="onWave($event)" />
-<p>Last wave from: <strong>{ lastWave() }</strong></p>
+<p>
+  Last wave from:
+  <strong>{ lastWave() }</strong>
+</p>
 <button (click)="toggle()">Toggle Ada’s status</button>

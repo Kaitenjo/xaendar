@@ -15,7 +15,10 @@
       <p class="error">{ error() }</p>
     }
     @case ('ready') {
-      <p><strong>{ user()?.name }</strong> — { user()?.email }</p>
+      <p>
+        <strong>{ user()?.name }</strong>
+        — { user()?.email }
+      </p>
     }
   }
 </div>

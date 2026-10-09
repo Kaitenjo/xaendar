@@ -5,13 +5,16 @@
 @import { ValueRenderingComponent } from '../../../examples/templates/text-interpolation/value-rendering/value-rendering.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
-<span class="eyebrow" @@i18n(key="pages.templates.textInterpolation.eyebrow") />
+<span @@i18n(key="pages.templates.textInterpolation.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.templates.textInterpolation.title") />
-<p class="lead" @@i18n(key="pages.templates.textInterpolation.lead") />
+<p @@i18n(key="pages.templates.textInterpolation.lead") class="lead" />
 
 <h2 @@i18n(key="pages.templates.textInterpolation.interpolatingValues.title") />
 <docs-code snippet="templates/interpolation-forms.html" />
-<docs-example name="templates/text-interpolation/interpolation-basics" heading="{ t().pages.templates.textInterpolation.interpolatingValues.example1 }">
+<docs-example
+  name="templates/text-interpolation/interpolation-basics"
+  heading="{ translations().pages.templates.textInterpolation.interpolatingValues.example1 }"
+>
   <ex-interpolation-basics />
 </docs-example>
 <p @@i18n(key="pages.templates.textInterpolation.interpolatingValues.p1") />
@@ -19,44 +22,80 @@
 
 <h2 @@i18n(key="pages.templates.textInterpolation.whatAValueBecomes.title") />
 <p @@i18n(key="pages.templates.textInterpolation.whatAValueBecomes.p1") />
-<docs-example name="templates/text-interpolation/value-rendering" heading="{ t().pages.templates.textInterpolation.whatAValueBecomes.example1 }">
+<docs-example
+  name="templates/text-interpolation/value-rendering"
+  heading="{ translations().pages.templates.textInterpolation.whatAValueBecomes.example1 }"
+>
   <ex-value-rendering />
 </docs-example>
 <p @@i18n(key="pages.templates.textInterpolation.whatAValueBecomes.p2") />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.textInterpolation.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ t().pages.templates.textInterpolation.edgeCases.callout1.heading }" @@i18n(key="pages.templates.textInterpolation.edgeCases.callout1.body") />
-  <docs-callout kind="issue" heading="{ t().pages.templates.textInterpolation.edgeCases.callout2.heading }">
+  <docs-callout
+    @@i18n(key="pages.templates.textInterpolation.edgeCases.callout1.body")
+    kind="edge"
+    heading="{ translations().pages.templates.textInterpolation.edgeCases.callout1.heading }"
+  />
+  <docs-callout kind="issue" heading="{ translations().pages.templates.textInterpolation.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.templates.textInterpolation.edgeCases.callout2.p1") />
     <docs-code snippet="templates/brace-in-string-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.templates.textInterpolation.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{ translations().pages.templates.textInterpolation.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.templates.textInterpolation.edgeCases.callout3.p1") />
     <docs-code snippet="templates/unbalanced-brace-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.templates.textInterpolation.edgeCases.callout4.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.templates.textInterpolation.edgeCases.callout4.heading }">
     <p @@i18n(key="pages.templates.textInterpolation.edgeCases.callout4.p1") />
     <docs-code snippet="components/template-literal-class.html" />
     <docs-code snippet="components/template-literal-error.txt" />
   </docs-callout>
-  <docs-callout kind="issue" heading="{ t().pages.templates.textInterpolation.edgeCases.callout5.heading }">
+  <docs-callout kind="issue" heading="{ translations().pages.templates.textInterpolation.edgeCases.callout5.heading }">
     <p @@i18n(key="pages.templates.textInterpolation.edgeCases.callout5.p1") />
     <docs-code snippet="templates/nested-template-literal-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ t().pages.templates.textInterpolation.edgeCases.callout6.heading }" @@i18n(key="pages.templates.textInterpolation.edgeCases.callout6.body") />
+  <docs-callout
+    @@i18n(key="pages.templates.textInterpolation.edgeCases.callout6.body")
+    kind="edge"
+    heading="{ translations().pages.templates.textInterpolation.edgeCases.callout6.heading }"
+  />
 </section>
 
 <h2 @@i18n(key="pages.templates.textInterpolation.apiSummary.title") />
 <div class="table-wrap">
   <table class="api-summary">
-    <thead><tr><th @@i18n(key="pages.templates.textInterpolation.apiSummary.th1") /><th @@i18n(key="pages.templates.textInterpolation.apiSummary.th2") /></tr></thead>
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.textInterpolation.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.textInterpolation.apiSummary.th2") />
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><code>null</code>, <code>undefined</code></td><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td1") /></tr>
-      <tr><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td2") /><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td3") /></tr>
-      <tr><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td4") /><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td5") /></tr>
-      <tr><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td6") /><td><code>[object Object]</code></td></tr>
-      <tr><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td7") /><td @@i18n(key="pages.templates.textInterpolation.apiSummary.td8") /></tr>
+      <tr>
+        <td>
+          <code>null</code>,
+          <code>undefined</code>
+        </td>
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td2") />
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td4") />
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td5") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td6") />
+        <td>
+          <code>[object Object]</code>
+        </td>
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td7") />
+        <td @@i18n(key="pages.templates.textInterpolation.apiSummary.td8") />
+      </tr>
     </tbody>
   </table>
 </div>

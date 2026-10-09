@@ -24,7 +24,7 @@ export class DocsTopbarComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = translations;
+  public readonly translations = translations;
   /**
    * The current language.
    */

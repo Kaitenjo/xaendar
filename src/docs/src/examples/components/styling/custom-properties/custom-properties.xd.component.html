@@ -4,10 +4,15 @@
   @for (color of accents; track color) {
     <button class="swatch" style="{`background: ${color}`}" aria-label="{ color }" (click)="pickAccent(color)"></button>
   }
-  <label><input type="checkbox" checked (change)="toggleRounded()" /> Rounded</label>
+  <label>
+    <input type="checkbox" checked (change)="toggleRounded()" />
+    Rounded
+  </label>
 </div>
 <div class="themed" style="{ theme() }">
   <ex-themed-button>Save</ex-themed-button>
   <ex-themed-button>Cancel</ex-themed-button>
 </div>
-<p><code>{ theme() }</code></p>
+<p>
+  <code>{ theme() }</code>
+</p>
