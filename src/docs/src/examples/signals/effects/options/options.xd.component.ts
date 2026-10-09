@@ -14,31 +14,28 @@ export class EffectOptionsComponent extends CustomElement {
    * The dependency of the effect.
    */
   public readonly count = signal(0);
-
   /**
    * Whether the effect is alive.
    */
   public readonly running = signal(false);
-
   /**
    * What happened, in order.
    */
   public readonly log = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * Disposes the effect.
    */
-  private stop: (() => void) | undefined;
+  private _stop: (() => void) | undefined;
 
   /**
    * Creates the effect. Its first run, with its hooks, happens synchronously.
    */
   public start(): void {
     this.clear();
-    this.stop = this.effect(() => this.write(`run: count = ${this.count()}`), {
-      onBeforeRun: () => this.write('onBeforeRun'),
-      onAfterRun: () => this.write('onAfterRun'),
-      onCleanup: () => this.write('onCleanup')
+    this._stop = this.effect(() => this._write(`run: count = ${this.count()}`), {
+      onBeforeRun: () => this._write('onBeforeRun'),
+      onAfterRun: () => this._write('onAfterRun'),
+      onCleanup: () => this._write('onCleanup')
     });
     this.running.set(true);
   }
@@ -54,8 +51,8 @@ export class EffectOptionsComponent extends CustomElement {
    * Disposes the effect: the cleanup runs now.
    */
   public dispose(): void {
-    this.stop?.();
-    this.stop = undefined;
+    this._stop?.();
+    this._stop = undefined;
     this.running.set(false);
   }
 
@@ -71,7 +68,7 @@ export class EffectOptionsComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private write(text: string): void {
+  private _write(text: string): void {
     this.log.update(log => [...log, { id: log.length, text }]);
   }
 }

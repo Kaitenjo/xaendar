@@ -21,14 +21,11 @@ export class HighlightDirective extends CustomDirective<HTMLElement> {
    */
   @Property('')
   public accessor code!: InputSignal<string>;
-
   /**
-   * The language of the code. The union of {@link CodeLang} is written inline in the type of the
-   * accessor because that type is copied as text in the type-check code of the templates binding
-   * it, where an imported type alias would not be found.
+   * The language of the code.
    */
   @Property<InputSignal<CodeLang>>('ts')
-  public accessor lang!: InputSignal<'ts' | 'html' | 'css' | 'json' | 'bash' | 'text'>;
+  public accessor lang!: InputSignal<CodeLang>;
 
   /**
    * Starts rendering the code: the properties already hold their bound values here.

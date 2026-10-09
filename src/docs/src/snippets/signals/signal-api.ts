@@ -1,7 +1,13 @@
 import { signal } from '@xaendar/core/signals';
 
-const count = signal(0);                 // Signal<number>
-const user = signal<User | null>(null);  // explicit type when the initial value is not enough
+/**
+ * A Signal<number>, typed by its initial value.
+ */
+const count = signal(0);
+/**
+ * An explicit type, when the initial value is not enough.
+ */
+const user = signal<User | null>(null);
 
 count();                  // read (tracked inside computed signals, effects and templates)
 count.get();              // the same

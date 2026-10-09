@@ -15,7 +15,6 @@ export class ValueAttributeComponent extends CustomElement {
    * The text of the fields.
    */
   public readonly text = signal('Edit me');
-
   /**
    * The second field.
    */

@@ -14,48 +14,30 @@ export class SignupFormComponent extends CustomElement {
    * The name typed.
    */
   public readonly name = signal('');
-
   /**
    * The email typed.
    */
   public readonly email = signal('');
-
   /**
    * The plan chosen.
    */
   public readonly plan = signal('free');
-
   /**
    * Whether the terms are accepted.
    */
   public readonly terms = signal(false);
-
   /**
    * Whether the user tried to submit: errors are shown from then on.
    */
   public readonly attempted = signal(false);
-
   /**
    * The data sent by the last valid submit.
    */
   public readonly sent = signal('');
-
   /**
    * The problems of the form, recomputed whenever a field changes.
    */
-  public readonly errors = computed(() => {
-    const errors = new Array<string>();
-    if (this.name().trim().length < 2) {
-      errors.push('The name needs at least 2 characters.');
-    }
-    if (!/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(this.email())) {
-      errors.push('The email is not valid.');
-    }
-    if (!this.terms()) {
-      errors.push('The terms must be accepted.');
-    }
-    return errors;
-  });
+  public readonly errors = computed(() => this._computeErrors());
 
   /**
    * Stores the name.
@@ -104,5 +86,24 @@ export class SignupFormComponent extends CustomElement {
     if (this.errors().length === 0) {
       this.sent.set(JSON.stringify({ name: this.name().trim(), email: this.email(), plan: this.plan() }));
     }
+  }
+
+  /**
+   * Computes the value of `errors`.
+   *
+   * @returns The problems of the form.
+   */
+  private _computeErrors(): string[] {
+    const errors = new Array<string>();
+    if (this.name().trim().length < 2) {
+      errors.push('The name needs at least 2 characters.');
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(this.email())) {
+      errors.push('The email is not valid.');
+    }
+    if (!this.terms()) {
+      errors.push('The terms must be accepted.');
+    }
+    return errors;
   }
 }

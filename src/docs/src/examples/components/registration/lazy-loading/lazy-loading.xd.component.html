@@ -2,8 +2,19 @@
 
 <div class="controls">
   <button (click)="increment()">count + 1</button>
-  <button (click)="load()" @if (loaded()) { disabled }>Load the panel</button>
-  <span class="status">@if (loaded()) { Defined: reload the page to start over } @else { Not defined yet }</span>
+  <button
+    (click)="load()"
+    @if (loaded()) {
+      disabled
+    }
+  >Load the panel</button>
+  <span class="status">
+    @if (loaded()) {
+      Defined: reload the page to start over
+    } @else {
+      Not defined yet
+    }
+  </span>
 </div>
 <div class="columns">
   <section>

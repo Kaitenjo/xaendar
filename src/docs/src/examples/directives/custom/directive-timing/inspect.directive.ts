@@ -12,7 +12,6 @@ export class InspectDirective extends CustomDirective<HTMLElement> {
    */
   @Property('default')
   public accessor label!: InputSignal<string>;
-
   /**
    * Emitted with a line to log.
    */

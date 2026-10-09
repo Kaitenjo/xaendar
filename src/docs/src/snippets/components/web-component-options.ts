@@ -1,3 +1,6 @@
+/**
+ * A five-star rating.
+ */
 @WebComponent({
   selector: 'ex-rating',                      // the custom element name: lowercase, with a hyphen, unique
   templateUrl: './rating.xd.component.html',  // required, relative to this file

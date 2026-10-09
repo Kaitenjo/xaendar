@@ -36,16 +36,14 @@ export class ShoppingListComponent extends CustomElement {
     { id: 2, name: 'Bread', done: true },
     { id: 3, name: 'Coffee', done: false }
   ]);
-
   /**
    * How many items are still to buy.
    */
-  public readonly remaining = computed(() => this.items().filter(item => !item.done).length);
-
+  public readonly remaining = computed(() => this._computeRemaining());
   /**
    * The identifier of the next item.
    */
-  private nextId = 4;
+  private _nextId = 4;
 
   /**
    * Adds the item typed in the form.
@@ -57,7 +55,7 @@ export class ShoppingListComponent extends CustomElement {
     const form = event.target as HTMLFormElement;
     const name = new FormData(form).get('item')?.toString().trim();
     if (name) {
-      this.items.update(items => [...items, { id: this.nextId++, name, done: false }]);
+      this.items.update(items => [...items, { id: this._nextId++, name, done: false }]);
     }
     form.reset();
   }
@@ -76,5 +74,14 @@ export class ShoppingListComponent extends CustomElement {
    */
   public clear(): void {
     this.items.set([]);
+  }
+
+  /**
+   * Computes the value of `remaining`.
+   *
+   * @returns How many items are still to buy.
+   */
+  private _computeRemaining(): number {
+    return this.items().filter(item => !item.done).length;
   }
 }

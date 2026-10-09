@@ -14,7 +14,6 @@ export class SlotTimingComponent extends CustomElement {
    * Whether the list is in the page.
    */
   public readonly shown = signal(false);
-
   /**
    * The projected items.
    */
@@ -31,6 +30,6 @@ export class SlotTimingComponent extends CustomElement {
    * Projects one more item.
    */
   public add(): void {
-    this.items.update(items => [...items, 'Item ' + (items.length + 1)]);
+    this.items.update(items => [...items, `Item ${(items.length + 1)}`]);
   }
 }

@@ -34,6 +34,13 @@
   computed che legge due input: gli input sono signal come gli altri, quindi tutto ciò che si basa su di loro è
   reattivo.
 </p>
+<p>
+  Il tipo dell’input può essere qualsiasi, anche importato: i template che lo legano vengono controllati rispetto a
+  esso. TypeScript ricava il tipo del decoratore dal valore di default, quindi un default come <code>'ts'</code>,
+  <code>[]</code> o <code>null</code> dà un tipo che non corrisponde all’accessor. Passa il tipo del signal anche al
+  decoratore, invece di allargare l’accessor e fare un cast del valore dove lo leggi.
+</p>
+<docs-code snippet="components/property-type.ts" />
 
 <h2>Valori statici ed espressioni</h2>
 <p>
@@ -133,15 +140,6 @@
       numero statico. Usa transform che mantengono il tipo, e lega espressioni.
     </p>
     <docs-code snippet="components/transform-type.ts" />
-  </docs-callout>
-  <docs-callout kind="issue" heading="Il tipo di un input viene copiato come testo">
-    <p>
-      Per controllare i template dei padri, il compilatore copia il tipo dell’input così come è scritto, senza i suoi
-      import. Un tipo importato nel file del componente è sconosciuto nei file dei suoi padri. Scrivi il tipo inline,
-      oppure usa tipi primitivi.
-    </p>
-    <docs-code snippet="components/property-type-text.ts" />
-    <docs-code snippet="components/property-type-error.txt" />
   </docs-callout>
   <docs-callout kind="issue" heading="Gli input ereditati non vengono controllati">
     Il compilatore dei template vede solo gli input dichiarati nella classe del componente, non quelli ereditati da una

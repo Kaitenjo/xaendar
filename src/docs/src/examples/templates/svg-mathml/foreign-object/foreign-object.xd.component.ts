@@ -17,9 +17,17 @@ export class ForeignObjectComponent extends CustomElement {
    */
   @Query('foreignObject p')
   public accessor paragraph!: QuerySignal<HTMLElement | null>;
-
   /**
    * The namespace the paragraph was created in.
    */
-  public readonly namespace = computed(() => this.paragraph()?.namespaceURI ?? 'not found yet');
+  public readonly namespace = computed(() => this._computeNamespace());
+
+  /**
+   * Computes the value of `namespace`.
+   *
+   * @returns The namespace the paragraph was created in.
+   */
+  private _computeNamespace(): string {
+    return this.paragraph()?.namespaceURI ?? 'not found yet';
+  }
 }

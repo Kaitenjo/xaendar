@@ -84,7 +84,7 @@ function highlightTs(code: string): string {
       }
     }
   }
-  return out + escapeHtml(code.slice(last));
+  return `${out}${escapeHtml(code.slice(last))}`;
 }
 
 /**
@@ -141,12 +141,12 @@ function highlightTemplate(code: string): string {
     const space = /^\s*/.exec(code.slice(i))![0];
     if (code[i + space.length] === '(') {
       const end = findClosing(code, i + space.length, '(', ')');
-      out += escapeHtml(space) + token('punc', '(') + highlightTs(code.slice(i + space.length + 1, end)) + token('punc', code[end] ?? '');
+      out += `${escapeHtml(space)}${token('punc', '(')}${highlightTs(code.slice(i + space.length + 1, end))}${token('punc', code[end] ?? '')}`;
       i = end + 1;
     }
     const after = /^\s*/.exec(code.slice(i))![0];
     if (code[i + after.length] === '{') {
-      out += escapeHtml(after) + token('punc', '{');
+      out += `${escapeHtml(after)}${token('punc', '{')}`;
       i += after.length + 1;
     }
   };
@@ -156,7 +156,7 @@ function highlightTemplate(code: string): string {
    */
   const tag = (): void => {
     const name = /^<\/?\s*[^\s/>]*/.exec(code.slice(i))![0];
-    out += token('punc', name.startsWith('</') ? '</' : '<') + token('tag', name.replace(/^<\/?/, ''));
+    out += `${token('punc', name.startsWith('</') ? '</' : '<')}${token('tag', name.replace(/^<\/?/, ''))}`;
     i += name.length;
     // Whether the next quoted value is the handler of an event binding
     let handler = false;
@@ -187,11 +187,11 @@ function highlightTemplate(code: string): string {
         const value = match[1] ?? '';
         const closing = match[0].endsWith('"') && match[0].length > 1 ? '"' : '';
         if (handler) {
-          out += token('punc', '"') + highlightTs(value) + token('punc', closing);
+          out += `${token('punc', '"')}${highlightTs(value)}${token('punc', closing)}`;
         } else if (value.trimStart().startsWith('{')) {
           const open = value.indexOf('{');
           const close = value.lastIndexOf('}');
-          out += token('punc', '"') + escapeHtml(value.slice(0, open)) + token('interp', '{') + highlightTs(value.slice(open + 1, close < 0 ? value.length : close)) + token('interp', close < 0 ? '' : '}') + escapeHtml(close < 0 ? '' : value.slice(close + 1)) + token('punc', closing);
+          out += `${token('punc', '"')}${escapeHtml(value.slice(0, open))}${token('interp', '{')}${highlightTs(value.slice(open + 1, close < 0 ? value.length : close))}${token('interp', close < 0 ? '' : '}')}${escapeHtml(close < 0 ? '' : value.slice(close + 1))}${token('punc', closing)}`;
         } else {
           out += token('str', match[0]);
         }
@@ -221,7 +221,7 @@ function highlightTemplate(code: string): string {
       tag();
     } else if ((match = /^@import\b[^\n]*/.exec(rest))) {
       flushText();
-      out += token('ctl', '@import') + highlightTs(match[0].slice('@import'.length));
+      out += `${token('ctl', '@import')}${highlightTs(match[0].slice('@import'.length))}`;
       i += match[0].length;
     } else if ((match = CONTROL_FLOW_RE.exec(rest))) {
       flushText();
@@ -231,7 +231,7 @@ function highlightTemplate(code: string): string {
     } else if (rest[0] === '{') {
       flushText();
       const end = findClosing(code, i, '{', '}');
-      out += token('interp', '{') + highlightTs(code.slice(i + 1, end)) + token('interp', code[end] ?? '');
+      out += `${token('interp', '{')}${highlightTs(code.slice(i + 1, end))}${token('interp', code[end] ?? '')}`;
       i = end + 1;
     } else if (rest[0] === '}') {
       flushText();
@@ -281,7 +281,7 @@ function highlightCss(code: string): string {
     } else if (!inDeclarations && !pendingAtRule && (match = /^[^{}@/'"]+/.exec(rest))) {
       const selector = match[0];
       const trimmed = selector.trim();
-      out += trimmed ? escapeHtml(selector.slice(0, selector.indexOf(trimmed))) + token('sel', trimmed) + escapeHtml(selector.slice(selector.indexOf(trimmed) + trimmed.length)) : escapeHtml(selector);
+      out += trimmed ? `${escapeHtml(selector.slice(0, selector.indexOf(trimmed)))}${token('sel', trimmed)}${escapeHtml(selector.slice(selector.indexOf(trimmed) + trimmed.length))}` : escapeHtml(selector);
     } else if (inDeclarations && (match = /^(--[\w-]+|-?[a-zA-Z][\w-]*)(?=\s*:)/.exec(rest)) && /(^|[;{]\s*)$/.test(out.replace(/<[^>]*>/g, '').slice(-200))) {
       out += token('prop', match[0]);
     } else if ((match = /^#[\da-fA-F]{3,8}\b|^-?\d*\.?\d+(?:%|[a-zA-Z]+)?/.exec(rest))) {
@@ -311,7 +311,7 @@ function highlightCss(code: string): string {
 function highlightJson(code: string): string {
   return code.replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)|([&<>])/g, (all, string: string | undefined, colon: string | undefined, literal: string | undefined, number: string | undefined) => {
     if (string) {
-      return colon ? token('attr', string) + colon : token('str', string);
+      return colon ? `${token('attr', string)}${colon}` : token('str', string);
     }
     if (literal) {
       return token('kw', literal);
@@ -352,7 +352,7 @@ function highlightBash(code: string): string {
       }
       return all;
     });
-    return highlighted + (comment ? escapeHtml(comment[1]!) + token('com', comment[0].slice(comment[1]!.length)) : '');
+    return comment ? `${highlighted}${escapeHtml(comment[1]!)}${token('com', comment[0].slice(comment[1]!.length))}` : highlighted;
   }).join('\n');
 }
 

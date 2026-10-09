@@ -17,28 +17,24 @@ export class ViewQueryComponent extends CustomElement {
    */
   @Query<HTMLInputElement>('input')
   public accessor field!: QuerySignal<HTMLInputElement | null>;
-
   /**
    * The badge: queried by its class, it is typed as an instance of the component.
    */
   @Query(CounterBadgeComponent)
   public accessor badge!: QuerySignal<CounterBadgeComponent | null>;
-
   /**
    * Every row of the list, in document order.
    */
   @Query.all('.row')
   public accessor rows!: QuerySignal<HTMLElement[]>;
-
   /**
    * The texts of the list.
    */
   public readonly items = signal(['Signals', 'Components']);
-
   /**
    * What the query sees of the rows.
    */
-  public readonly found = computed(() => this.rows().map(row => row.textContent).join(', '));
+  public readonly found = computed(() => this._computeFound());
 
   /**
    * Focuses the text field and selects its content.
@@ -59,5 +55,14 @@ export class ViewQueryComponent extends CustomElement {
       this.badge()?.increment();
       field.value = '';
     }
+  }
+
+  /**
+   * Computes the value of `found`.
+   *
+   * @returns What the query sees of the rows.
+   */
+  private _computeFound(): string {
+    return this.rows().map(row => row.textContent).join(', ');
   }
 }

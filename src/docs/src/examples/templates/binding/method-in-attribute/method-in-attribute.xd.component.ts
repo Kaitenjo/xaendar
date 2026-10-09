@@ -14,11 +14,10 @@ export class MethodInAttributeComponent extends CustomElement {
    * The level, from 0 to 10.
    */
   public readonly level = signal(3);
-
   /**
    * The level as a percentage, computed.
    */
-  public readonly percent = computed(() => this.level() * 10);
+  public readonly percent = computed(() => this._computePercent());
 
   /**
    * The level as a percentage, from a method.
@@ -34,5 +33,14 @@ export class MethodInAttributeComponent extends CustomElement {
    */
   public raise(): void {
     this.level.update(level => level >= 10 ? 0 : level + 1);
+  }
+
+  /**
+   * Computes the value of `percent`.
+   *
+   * @returns The level as a percentage.
+   */
+  private _computePercent(): number {
+    return this.level() * 10;
   }
 }

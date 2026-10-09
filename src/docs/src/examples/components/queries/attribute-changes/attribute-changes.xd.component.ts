@@ -19,28 +19,24 @@ export class AttributeChangesComponent extends CustomElement {
     { id: 2, title: 'Fix the tests' },
     { id: 3, title: 'Release' }
   ]);
-
   /**
    * The identifiers of the selected tasks. Kept apart from the tasks, so that selecting one changes only a class,
    * not the rows of the list.
    */
   public readonly selectedIds = signal([1]);
-
   /**
    * The elements of the selected tasks, found by their class.
    */
   @Query.all('.selected')
   public accessor selectedElements!: QuerySignal<HTMLElement[]>;
-
   /**
    * The titles of the selected tasks, according to the query.
    */
-  public readonly fromQuery = computed(() => this.selectedElements().map(element => element.textContent).join(', ') || 'none');
-
+  public readonly fromQuery = computed(() => this._computeFromQuery());
   /**
    * The titles of the selected tasks, according to the state.
    */
-  public readonly fromState = computed(() => this.tasks().filter(task => this.selectedIds().includes(task.id)).map(task => task.title).join(', ') || 'none');
+  public readonly fromState = computed(() => this._computeFromState());
 
   /**
    * Selects or deselects a task.
@@ -55,6 +51,24 @@ export class AttributeChangesComponent extends CustomElement {
    * Adds a task, which changes the children of the list.
    */
   public addTask(): void {
-    this.tasks.update(tasks => [...tasks, { id: tasks.length + 1, title: 'Task ' + (tasks.length + 1) }]);
+    this.tasks.update(tasks => [...tasks, { id: tasks.length + 1, title: `Task ${tasks.length + 1}` }]);
+  }
+
+  /**
+   * Computes the value of `fromQuery`.
+   *
+   * @returns The titles of the selected tasks, according to the query.
+   */
+  private _computeFromQuery(): string {
+    return this.selectedElements().map(element => element.textContent).join(', ') || 'none';
+  }
+
+  /**
+   * Computes the value of `fromState`.
+   *
+   * @returns The titles of the selected tasks, according to the state.
+   */
+  private _computeFromState(): string {
+    return this.tasks().filter(task => this.selectedIds().includes(task.id)).map(task => task.title).join(', ') || 'none';
   }
 }

@@ -14,7 +14,6 @@ export class BindValueDemoComponent extends CustomElement {
    * The text of both fields.
    */
   public readonly text = signal('Ada');
-
   /**
    * The size chosen.
    */

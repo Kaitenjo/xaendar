@@ -1,4 +1,7 @@
-// tint.directive.ts — the decorator registers the class under its selector when the module is evaluated
+// tint.directive.ts
+/**
+ * Registered under its selector by the decorator, when the module is evaluated.
+ */
 @Directive({ selector: 'exTint' })
 export class TintDirective extends CustomDirective<HTMLElement> {}
 

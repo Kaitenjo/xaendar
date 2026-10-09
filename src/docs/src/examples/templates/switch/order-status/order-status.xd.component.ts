@@ -14,7 +14,6 @@ export class OrderStatusComponent extends CustomElement {
    * The statuses to choose from: the last one is not handled by any case.
    */
   public readonly statuses = ['pending', 'paid', 'shipped', 'delivered', 'lost'];
-
   /**
    * The status of the order.
    */

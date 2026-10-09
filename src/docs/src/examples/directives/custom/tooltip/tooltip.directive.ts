@@ -12,34 +12,31 @@ export class TooltipDirective extends CustomDirective<HTMLElement> {
    */
   @Property('')
   public accessor text!: InputSignal<string>;
-
   /**
    * The tooltip, created once and attached while it is shown.
    */
-  private readonly tip = document.createElement('div');
-
+  private readonly _tip = document.createElement('div');
   /**
    * Shows the tooltip, above the element.
    */
-  private readonly show = (): void => {
+  private readonly _show = (): void => {
     const box = this.element.getBoundingClientRect();
-    this.tip.style.left = `${box.left + box.width / 2}px`;
-    this.tip.style.top = `${box.top - 8}px`;
-    document.body.append(this.tip);
+    this._tip.style.left = `${box.left + box.width / 2}px`;
+    this._tip.style.top = `${box.top - 8}px`;
+    document.body.append(this._tip);
   };
-
   /**
    * Hides the tooltip.
    */
-  private readonly hide = (): void => {
-    this.tip.remove();
+  private readonly _hide = (): void => {
+    this._tip.remove();
   };
 
   /**
    * Styles the tooltip, keeps its text in sync and starts listening to the element.
    */
   public onInit(): void {
-    Object.assign(this.tip.style, {
+    Object.assign(this._tip.style, {
       position: 'fixed',
       transform: 'translate(-50%, -100%)',
       padding: '0.3rem 0.55rem',
@@ -50,25 +47,25 @@ export class TooltipDirective extends CustomDirective<HTMLElement> {
       pointerEvents: 'none',
       zIndex: '1000'
     });
-    this.tip.setAttribute('role', 'tooltip');
+    this._tip.setAttribute('role', 'tooltip');
     this.effect(() => {
-      this.tip.textContent = this.text();
+      this._tip.textContent = this.text();
     });
 
-    this.element.addEventListener('pointerenter', this.show);
-    this.element.addEventListener('pointerleave', this.hide);
-    this.element.addEventListener('focus', this.show);
-    this.element.addEventListener('blur', this.hide);
+    this.element.addEventListener('pointerenter', this._show);
+    this.element.addEventListener('pointerleave', this._hide);
+    this.element.addEventListener('focus', this._show);
+    this.element.addEventListener('blur', this._hide);
   }
 
   /**
    * Stops listening and removes the tooltip: it lives outside the element, so it would outlive it.
    */
   public onDestroy(): void {
-    this.element.removeEventListener('pointerenter', this.show);
-    this.element.removeEventListener('pointerleave', this.hide);
-    this.element.removeEventListener('focus', this.show);
-    this.element.removeEventListener('blur', this.hide);
-    this.hide();
+    this.element.removeEventListener('pointerenter', this._show);
+    this.element.removeEventListener('pointerleave', this._hide);
+    this.element.removeEventListener('focus', this._show);
+    this.element.removeEventListener('blur', this._hide);
+    this._hide();
   }
 }

@@ -1,5 +1,7 @@
+/**
+ * ✗ Creates the query after the connection: it is null until the element is connected again.
+ */
 public afterRender(): void {
-  // ✗ created after the connection: null until the element is connected again
   this.late = query(this, 'input');
 }
 

@@ -14,11 +14,10 @@ export class DefineRulesComponent extends CustomElement {
    * The calls made, with the outcome of each one.
    */
   public readonly attempts = signal<Array<{ id: number; call: string; outcome: string }>>([]);
-
   /**
    * How many new names were defined, to build a different one each time.
    */
-  private defined = 0;
+  private _defined = 0;
 
   /**
    * Tries to define an empty custom element with the given name.
@@ -26,21 +25,21 @@ export class DefineRulesComponent extends CustomElement {
    * @param name - The name to try.
    */
   public define(name: string): void {
-    this.attempt(`define('${name}', class extends HTMLElement {})`, () => customElements.define(name, class extends HTMLElement {}));
+    this._attempt(`define('${name}', class extends HTMLElement {})`, () => customElements.define(name, class extends HTMLElement {}));
   }
 
   /**
    * Tries a name never used before.
    */
   public defineNew(): void {
-    this.define(`ex-runtime-${++this.defined}`);
+    this.define(`ex-runtime-${++this._defined}`);
   }
 
   /**
    * Tries to define this very class a second time, under another name.
    */
   public defineClassAgain(): void {
-    this.attempt("define('ex-define-rules-copy', DefineRulesComponent)", () => customElements.define('ex-define-rules-copy', DefineRulesComponent));
+    this._attempt("define('ex-define-rules-copy', DefineRulesComponent)", () => customElements.define('ex-define-rules-copy', DefineRulesComponent));
   }
 
   /**
@@ -49,7 +48,7 @@ export class DefineRulesComponent extends CustomElement {
    * @param call - The call, as shown.
    * @param run - Makes the call.
    */
-  private attempt(call: string, run: () => void): void {
+  private _attempt(call: string, run: () => void): void {
     let outcome = 'Defined';
     try {
       run();

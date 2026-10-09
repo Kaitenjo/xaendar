@@ -64,17 +64,6 @@ export const ISSUES: readonly IssueEntry[] = [
   {
     area: 'Compiler',
     kind: 'bug',
-    title: { en: 'Types of inputs and outputs are copied as text', it: 'I tipi di input e output vengono copiati come testo' },
-    details: {
-      en: 'The type argument of a @Property or @Event accessor is pasted into the check of the templates using the component, where the names it uses do not exist: Cannot find name.',
-      it: 'L’argomento di tipo di un accessor @Property o @Event viene incollato nel controllo dei template che usano il componente, dove i nomi che usa non esistono: Cannot find name.'
-    },
-    workaround: { en: 'Write the types inline in the generic argument.', it: 'Scrivi i tipi inline nell’argomento generico.' },
-    page: 'components/inputs'
-  },
-  {
-    area: 'Compiler',
-    kind: 'bug',
     title: { en: 'Inherited inputs and outputs are ignored by the type checker', it: 'Input e output ereditati vengono ignorati dal type checker' },
     details: {
       en: 'An @Event declared by a base class is reported as unknown on the tag of the subclass, and an inherited @Property is not type-checked.',
@@ -190,7 +179,7 @@ export const ISSUES: readonly IssueEntry[] = [
       en: '{ a } { b } renders the two values joined.',
       it: '{ a } { b } renderizza i due valori uniti.'
     },
-    workaround: { en: "Write { a + ' ' + b }, or put other text between them.", it: "Scrivi { a + ' ' + b }, o metti altro testo tra le due." },
+    workaround: { en: 'Write {`${a} ${b}`}, or put other text between them.', it: 'Scrivi {`${a} ${b}`}, o metti altro testo tra le due.' },
     page: 'templates/text-interpolation'
   },
   {

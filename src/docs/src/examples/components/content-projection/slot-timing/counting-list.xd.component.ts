@@ -12,33 +12,31 @@ import type { QuerySignal } from '@xaendar/core/signals';
 })
 export class CountingListComponent extends CustomElement {
   /**
+   * What the list saw, step by step.
+   */
+  public readonly seen = signal<Array<{ id: number; text: string }>>([]);
+  /**
    * The slot of the items.
    */
   @Query('slot')
   public accessor slotElement!: QuerySignal<HTMLSlotElement | null>;
-
-  /**
-   * What the list saw, step by step.
-   */
-  public readonly seen = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * The identifier of the next line.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Counts the items right after the render.
    */
   public afterRender(): void {
-    this.write('afterRender: ' + this.count() + ' items');
+    this._write(`afterRender: ${this._count()} items`);
   }
 
   /**
    * Counts the items when the assigned elements change.
    */
   public onSlotChange(): void {
-    this.write('slotchange: ' + this.count() + ' items');
+    this._write(`slotchange: ${this._count()} items`);
   }
 
   /**
@@ -46,7 +44,7 @@ export class CountingListComponent extends CustomElement {
    *
    * @returns The number of elements.
    */
-  private count(): number {
+  private _count(): number {
     return this.slotElement()?.assignedElements().length ?? 0;
   }
 
@@ -55,7 +53,7 @@ export class CountingListComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private write(text: string): void {
-    this.seen.update(lines => [...lines, { id: this.nextId++, text }]);
+  private _write(text: string): void {
+    this.seen.update(lines => [...lines, { id: this._nextId++, text }]);
   }
 }

@@ -15,32 +15,27 @@ export class GranularUpdatesComponent extends CustomElement {
    * How many times the button was clicked.
    */
   public readonly count = signal(0);
-
   /**
    * The name being greeted.
    */
   public readonly name = signal('Ada');
-
   /**
    * The DOM mutations observed so far, most recent first. Each entry has a unique id to be tracked by.
    */
   public readonly mutations = signal<Array<{ id: number; text: string }>>([]);
-
-  /**
-   * The id of the next logged mutation.
-   */
-  private nextId = 0;
-
   /**
    * The card whose mutations are observed.
    */
   @Query('.card')
   public accessor card!: QuerySignal<HTMLElement | null>;
-
+  /**
+   * The id of the next logged mutation.
+   */
+  private _nextId = 0;
   /**
    * Observes the card.
    */
-  private observer: MutationObserver | undefined;
+  private _observer: MutationObserver | undefined;
 
   /**
    * Starts observing the card, once it is rendered.
@@ -51,7 +46,7 @@ export class GranularUpdatesComponent extends CustomElement {
       return;
     }
 
-    this.observer = new MutationObserver(records => {
+    this._observer = new MutationObserver(records => {
       const entries = records.map(record => {
         const target = record.target;
         // Flashing uses the Web Animations API, which does not mutate the DOM
@@ -60,18 +55,11 @@ export class GranularUpdatesComponent extends CustomElement {
         const text = record.type === 'attributes'
           ? `attribute "${record.attributeName}" of <${(target as Element).localName}> → "${(target as Element).getAttribute(record.attributeName!)}"`
           : `text node in <${target.parentElement?.localName}> → "${target.textContent}"`;
-        return { id: this.nextId++, text };
+        return { id: this._nextId++, text };
       });
       this.mutations.update(list => [...entries, ...list].slice(0, 6));
     });
-    this.observer.observe(card, { subtree: true, characterData: true, attributes: true, childList: true });
-  }
-
-  /**
-   * Stops observing the card.
-   */
-  public onDestroy(): void {
-    this.observer?.disconnect();
+    this._observer.observe(card, { subtree: true, characterData: true, attributes: true, childList: true });
   }
 
   /**
@@ -86,5 +74,12 @@ export class GranularUpdatesComponent extends CustomElement {
    */
   public rename(): void {
     this.name.update(name => name === 'Ada' ? 'Grace' : 'Ada');
+  }
+
+  /**
+   * Stops observing the card.
+   */
+  public onDestroy(): void {
+    this._observer?.disconnect();
   }
 }

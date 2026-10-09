@@ -14,7 +14,6 @@ export class KeyFilterComponent extends CustomElement {
    * How many times each field saw Enter.
    */
   public readonly withModifier = signal(0);
-
   /**
    * How many times the second field saw Enter.
    */

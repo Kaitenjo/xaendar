@@ -1,0 +1,17 @@
+{
+  "name": "xaendar",
+  "owner": {
+    "name": "Kaitenjo"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for building applications with the Xaendar framework"
+  },
+  "plugins": [
+    {
+      "name": "xaendar",
+      "source": "./plugins/xaendar",
+      "description": "Xaendar template language and API knowledge, xd CLI commands, a component reviewer and the Xaendar language server",
+      "category": "development"
+    }
+  ]
+}

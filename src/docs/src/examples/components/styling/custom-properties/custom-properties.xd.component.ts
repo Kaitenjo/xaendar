@@ -14,21 +14,18 @@ export class CustomPropertiesComponent extends CustomElement {
    * The accent colors to choose from.
    */
   public readonly accents = ['#6750a4', '#00796b', '#d32f2f'];
-
   /**
    * The chosen accent color.
    */
   public readonly accent = signal('#6750a4');
-
   /**
    * Whether the buttons are fully rounded.
    */
   public readonly rounded = signal(true);
-
   /**
    * The custom properties set on the container of the buttons.
    */
-  public readonly theme = computed(() => '--accent: ' + this.accent() + '; --radius: ' + (this.rounded() ? '999px' : '4px'));
+  public readonly theme = computed(() => this._computeTheme());
 
   /**
    * Chooses an accent color.
@@ -44,5 +41,14 @@ export class CustomPropertiesComponent extends CustomElement {
    */
   public toggleRounded(): void {
     this.rounded.update(rounded => !rounded);
+  }
+
+  /**
+   * Computes the value of `theme`.
+   *
+   * @returns The custom properties set on the container of the buttons.
+   */
+  private _computeTheme(): string {
+    return `--accent: ${this.accent()}; --radius: ${this.rounded() ? '999px' : '4px'}`;
   }
 }

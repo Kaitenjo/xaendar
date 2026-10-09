@@ -13,17 +13,14 @@ export class ShadowedGlobalsComponent extends CustomElement {
    * The history of an order.
    */
   public readonly history = 'created → paid → shipped';
-
   /**
    * Where the order is.
    */
   public readonly location = 'Milan warehouse';
-
   /**
    * The name of the order.
    */
   public readonly name = 'Order 42';
-
   /**
    * The state of the order.
    */

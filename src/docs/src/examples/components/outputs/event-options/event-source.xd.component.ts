@@ -15,13 +15,11 @@ export class EventSourceComponent extends CustomElement {
    */
   @Event()
   public accessor plain!: Output<string>;
-
   /**
    * Bubbles through the ancestors of the host, within the shadow root that contains it.
    */
   @Event({ bubbles: true })
   public accessor bubbling!: Output<string>;
-
   /**
    * Bubbles and crosses the shadow roots, up to the document.
    */

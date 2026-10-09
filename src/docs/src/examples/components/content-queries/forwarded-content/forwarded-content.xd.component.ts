@@ -19,6 +19,6 @@ export class ForwardedContentComponent extends CustomElement {
    * Adds an item.
    */
   public add(): void {
-    this.items.update(items => [...items, 'Item ' + (items.length + 1)]);
+    this.items.update(items => [...items, `Item ${(items.length + 1)}`]);
   }
 }

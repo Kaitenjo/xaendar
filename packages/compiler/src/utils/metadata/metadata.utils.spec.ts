@@ -5,6 +5,8 @@ import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromS
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
 const component = (body = '', decorator = '@WebComponent({ selector: \'my-el\', templateUrl: \'./t.xaendar\' })') => `${decorator}\nclass MyEl {\n${body}\n}`;
+const propertyType = (className: string, member: string, module = 'component') => `ReturnType<import('${module}').${className}['${member}']>`;
+const eventType = (className: string, member: string) => `(import('component').${className}['${member}'] extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 
 describe('extractComponentsMetadataFromSourceFile', () => {
   describe('component declarations', () => {
@@ -89,12 +91,19 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       `)))?.get('MyEl')?.properties;
 
       expect([...properties!.keys()]).toEqual(['a', 'plain', 'noOptions', 'otherOption', 'dynamicAlias', 'notAnObject', 'bar', 'r']);
-      expect(properties?.get('a')).toMatchObject({ name: 'foo', type: 'string', alias: 'a', defaultValue: '\'x\'', required: false });
+      expect(properties?.get('a')).toMatchObject({ name: 'foo', type: propertyType('MyEl', 'foo'), alias: 'a', defaultValue: '\'x\'', required: false });
       expect(properties?.get('plain')).toMatchObject({ type: 'any', defaultValue: undefined });
       expect(properties?.get('noOptions')).toMatchObject({ type: 'any', defaultValue: '\'y\'' });
       expect(properties?.get('otherOption')).toMatchObject({ type: 'any', alias: undefined });
-      expect(properties?.get('bar')).toMatchObject({ type: 'number', required: true });
-      expect(properties?.get('r')).toMatchObject({ name: 'baz', type: 'boolean', required: true, alias: 'r' });
+      expect(properties?.get('bar')).toMatchObject({ type: propertyType('MyEl', 'bar'), required: true });
+      expect(properties?.get('r')).toMatchObject({ name: 'baz', type: propertyType('MyEl', 'baz'), required: true, alias: 'r' });
+    });
+
+    it('references the types through the accessors of the class, from the module declaring it', async () => {
+      const sourceFile = createSourceFile('C:\\src\\my-el.xd.component.ts', component('@Property(\'ts\') accessor lang!: InputSignal<CodeLang>;'), ScriptTarget.Latest, true);
+      const properties = (await extractComponentsMetadataFromSourceFile(sourceFile))?.get('MyEl')?.properties;
+
+      expect(properties?.get('lang')?.type).toBe(propertyType('MyEl', 'lang', 'C:/src/my-el.xd.component'));
     });
 
     it('ignores members that are not decorated properties', async () => {
@@ -125,14 +134,16 @@ describe('extractComponentsMetadataFromSourceFile', () => {
         @Event() accessor done!: OutputEvent<boolean>;
         @Event accessor bare;
         @Event() accessor untyped!: Foo;
+        @Event() accessor empty!: OutputEvent<void>;
         @Event() ['computed']!: OutputEvent<number>;
         @Other() accessor other!: OutputEvent<number>;
       `)))?.get('MyEl')?.events;
 
       expect(Object.fromEntries(events!)).toEqual({
-        done: { type: 'boolean' },
+        done: { type: eventType('MyEl', 'done') },
         bare: { type: 'void' },
-        untyped: { type: 'void' }
+        untyped: { type: 'void' },
+        empty: { type: 'void' }
       });
     });
   });
@@ -156,9 +167,9 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
     });
     expect(metadata).not.toHaveProperty('templateUrl');
     expect(metadata).not.toHaveProperty('styleUrl');
-    expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: '\'block\' | \'none\'', required: false, defaultValue: '\'block\'' });
-    expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: 'boolean', required: true });
-    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: 'boolean' } });
+    expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: propertyType('MyDirective', 'display'), required: false, defaultValue: '\'block\'' });
+    expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: propertyType('MyDirective', 'visible'), required: true });
+    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: eventType('MyDirective', 'toggled') } });
     expect(metadata?.typescriptNodes.klass.name.text).toBe('MyDirective');
   });
 

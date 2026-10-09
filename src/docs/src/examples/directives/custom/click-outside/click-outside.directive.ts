@@ -11,14 +11,13 @@ export class ClickOutsideDirective extends CustomDirective<HTMLElement> {
    */
   @Event()
   public accessor outside!: Output;
-
   /**
    * Checks where the pointer was pressed. The path is used instead of the target, since the target
    * of an event coming out of a shadow root is the host of that root.
    *
    * @param event - The pointerdown event, as seen by the document.
    */
-  private readonly check = (event: PointerEvent): void => {
+  private readonly _check = (event: PointerEvent): void => {
     if (!event.composedPath().includes(this.element)) {
       this.outside.emit();
     }
@@ -28,13 +27,13 @@ export class ClickOutsideDirective extends CustomDirective<HTMLElement> {
    * Starts listening to the whole document.
    */
   public onInit(): void {
-    document.addEventListener('pointerdown', this.check);
+    document.addEventListener('pointerdown', this._check);
   }
 
   /**
    * Stops listening: the document outlives the element.
    */
   public onDestroy(): void {
-    document.removeEventListener('pointerdown', this.check);
+    document.removeEventListener('pointerdown', this._check);
   }
 }

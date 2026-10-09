@@ -1,0 +1,11 @@
+{
+  "name": "xaendar",
+  "displayName": "Xaendar",
+  "version": "0.12.0",
+  "description": "Write Xaendar Web Components: template language and API knowledge, xd CLI commands, a component reviewer and the Xaendar language server",
+  "author": {
+    "name": "Kaitenjo"
+  },
+  "license": "MIT",
+  "keywords": ["xaendar", "web-components", "signals", "templates"]
+}

@@ -14,12 +14,10 @@ export class EffectBatchingComponent extends CustomElement {
    * First dependency.
    */
   public readonly a = signal(0);
-
   /**
    * Second dependency.
    */
   public readonly b = signal(0);
-
   /**
    * The runs of the effect, most recent first.
    */

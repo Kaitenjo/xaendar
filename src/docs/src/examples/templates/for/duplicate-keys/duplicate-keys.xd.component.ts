@@ -14,12 +14,10 @@ export class DuplicateKeysComponent extends CustomElement {
    * The lists to show, one after the other.
    */
   public readonly lists = [['a', 'b', 'a'], ['b', 'a'], ['a', 'b', 'c']];
-
   /**
    * The position of the current list.
    */
   public readonly step = signal(0);
-
   /**
    * The current list.
    */

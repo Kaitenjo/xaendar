@@ -15,28 +15,25 @@ export class RaceComponent extends CustomElement {
    * The user asked for last.
    */
   public readonly selected = signal(0);
-
   /**
    * The user shown by the naive loader.
    */
   public readonly naive = signal('—');
-
   /**
    * The user shown by the loader aborting stale requests.
    */
   public readonly safe = signal('—');
-
   /**
    * Aborts the request in progress of the second loader.
    */
-  private controller: AbortController | null = null;
+  private _controller: AbortController | null = null;
 
   /**
    * Asks for the slow user 1, then for user 2 right away.
    */
   public race(): void {
-    this.ask(1);
-    this.ask(2);
+    this._ask(1);
+    this._ask(2);
   }
 
   /**
@@ -44,12 +41,12 @@ export class RaceComponent extends CustomElement {
    *
    * @param id - The id of the user.
    */
-  private ask(id: number): void {
+  private _ask(id: number): void {
     this.selected.set(id);
     this.naive.set('loading…');
     this.safe.set('loading…');
-    void this.loadNaive(id);
-    void this.loadSafe(id);
+    void this._loadNaive(id);
+    void this._loadSafe(id);
   }
 
   /**
@@ -57,7 +54,7 @@ export class RaceComponent extends CustomElement {
    *
    * @param id - The id of the user.
    */
-  private async loadNaive(id: number): Promise<void> {
+  private async _loadNaive(id: number): Promise<void> {
     const user = await fetchUser(id);
     this.naive.set(user.name);
   }
@@ -67,10 +64,10 @@ export class RaceComponent extends CustomElement {
    *
    * @param id - The id of the user.
    */
-  private async loadSafe(id: number): Promise<void> {
-    this.controller?.abort();
+  private async _loadSafe(id: number): Promise<void> {
+    this._controller?.abort();
     const controller = new AbortController();
-    this.controller = controller;
+    this._controller = controller;
     try {
       const user = await fetchUser(id, controller.signal);
       this.safe.set(user.name);

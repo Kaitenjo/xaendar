@@ -15,26 +15,22 @@ export class EventArgumentsComponent extends CustomElement {
    * Two counters, changed by the same method.
    */
   public readonly apples = signal(0);
-
   /**
    * The second counter.
    */
   public readonly pears = signal(0);
-
   /**
    * The colors to choose from.
    */
   public readonly colors = [{ id: 1, name: 'red' }, { id: 2, name: 'green' }, { id: 3, name: 'blue' }];
-
   /**
    * The calls received, latest first.
    */
   public readonly calls = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * The identifier of the next line.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Receives literal arguments.
@@ -43,7 +39,7 @@ export class EventArgumentsComponent extends CustomElement {
    * @param times - A number.
    */
   public greet(name: string, times: number): void {
-    this.record('greet(' + JSON.stringify(name) + ', ' + times + ')');
+    this._record(`greet(${JSON.stringify(name)}, ${times})`);
   }
 
   /**
@@ -53,7 +49,7 @@ export class EventArgumentsComponent extends CustomElement {
    * @param event - The click event.
    */
   public inspect(source: string, event: MouseEvent): void {
-    this.record('inspect(' + JSON.stringify(source) + ', ' + event.type + ' at ' + event.clientX + ',' + event.clientY + ')');
+    this._record(`inspect(${JSON.stringify(source)}, ${event.type} at ${event.clientX},${event.clientY})`);
   }
 
   /**
@@ -62,7 +58,7 @@ export class EventArgumentsComponent extends CustomElement {
    * @param id - The identifier.
    */
   public pick(id: number): void {
-    this.record('pick(' + id + ')');
+    this._record(`pick(${id})`);
   }
 
   /**
@@ -72,7 +68,7 @@ export class EventArgumentsComponent extends CustomElement {
    */
   public bump(counter: Signal<number>): void {
     counter.update(value => value + 1);
-    this.record('bump(signal) → ' + counter());
+    this._record(`bump(signal) → ${counter()}`);
   }
 
   /**
@@ -81,7 +77,7 @@ export class EventArgumentsComponent extends CustomElement {
    * @param event - The input event.
    */
   public onInput(event: Event): void {
-    this.record('onInput → ' + JSON.stringify((event.target as HTMLInputElement).value));
+    this._record(`onInput → ${JSON.stringify((event.target as HTMLInputElement).value)}`);
   }
 
   /**
@@ -89,7 +85,7 @@ export class EventArgumentsComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private record(text: string): void {
-    this.calls.update(lines => [{ id: this.nextId++, text }, ...lines].slice(0, 5));
+  private _record(text: string): void {
+    this.calls.update(lines => [{ id: this._nextId++, text }, ...lines].slice(0, 5));
   }
 }

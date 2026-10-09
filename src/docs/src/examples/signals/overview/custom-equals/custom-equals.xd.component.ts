@@ -16,7 +16,6 @@ export class SignalCustomEqualsComponent extends CustomElement {
   public readonly name = signal('Ada', {
     equals: (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
   });
-
   /**
    * A name compared with the default equality, Object.is.
    */

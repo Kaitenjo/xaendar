@@ -17,19 +17,16 @@ export class ClosableNoteComponent extends CustomElement {
    */
   @Property('emit')
   public accessor mode!: InputSignal<string>;
-
   /**
    * Emitted before closing, with the mode as detail. Declared in both modes, so that templates can listen to it; it
    * has a detail because a template passes $event only to the events that carry one.
    */
   @Event({ cancelable: true })
   public accessor closing!: Output<string>;
-
   /**
    * Whether the note is open.
    */
   public readonly open = signal(true);
-
   /**
    * What happened on the last attempt to close.
    */

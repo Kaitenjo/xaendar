@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, ClassElement, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, NodeArray, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
 import { ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
@@ -55,7 +55,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       selector,
       styleUrl,
       templateUrl,
-      ...extractBindingsMetadata(klass.members, sourceFile, 'component'),
+      ...extractBindingsMetadata(klass, sourceFile, 'component'),
       typescriptNodes: declarations[i]
     });
   }
@@ -87,7 +87,7 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
       type: 'directive',
       className,
       selector,
-      ...extractBindingsMetadata(klass.members, sourceFile, 'directive'),
+      ...extractBindingsMetadata(klass, sourceFile, 'directive'),
       typescriptNodes: declarations[i]
     });
   }
@@ -98,13 +98,15 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
 /**
  * Extracts the metadata of the `@Property` and `@Event` accessors declared by a component or a directive.
  *
- * @param members - The members of the class declaring the accessors.
- * @param sourceFile - The source file declaring the class, used in the error messages.
+ * @param klass - The class declaring the accessors.
+ * @param sourceFile - The source file declaring the class, used in the error messages and to reference the types of the accessors.
  * @param kind - Whether the class is a component or a directive, used in the error messages.
  * @returns The properties, keyed by their alias or name, and the events, keyed by name.
  * @throws If two properties resolve to the same name.
  */
-function extractBindingsMetadata(members: NodeArray<ClassElement>, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type']): Pick<ComponentMetadata, 'properties' | 'events'> {
+function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type']): Pick<ComponentMetadata, 'properties' | 'events'> {
+  const members = klass.members;
+  const accessorOwner = getAccessorOwnerType(klass, sourceFile);
   const properties = new Map<string, ComponentPropertyMetadataWishSpan>();
   const events = new Map<string, ComponentEventMetadata>();
 
@@ -128,7 +130,7 @@ function extractBindingsMetadata(members: NodeArray<ClassElement>, sourceFile: S
       const nameNode = getNameOfDeclaration(member);
       if (nameNode && isIdentifier(nameNode)) {
         const propName = nameNode.text;
-        const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required);
+        const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required, accessorOwner);
         const actualPropName = metadata.alias ?? propName;
         const conflictingProperty = properties.get(actualPropName);
         if (!conflictingProperty) {
@@ -149,7 +151,7 @@ function extractBindingsMetadata(members: NodeArray<ClassElement>, sourceFile: S
       const nameNode = getNameOfDeclaration(member);
       const eventName = nameNode && isIdentifier(nameNode) ? nameNode.text : undefined;
       if (eventName) {
-        events.set(eventName, extractEventMetadata(eventDecorator));
+        events.set(eventName, extractEventMetadata(member, eventName, accessorOwner));
       }
     }
   }
@@ -330,8 +332,16 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
 
 /**
  * Extracts property metadata from @Property or @Property.required decorator.
+ *
+ * @param property - The accessor decorated with `@Property`.
+ * @param nameNode - The name of the accessor.
+ * @param name - The text of the name of the accessor.
+ * @param decorator - The `@Property` decorator of the accessor.
+ * @param required - Whether the decorator is `@Property.required`.
+ * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @returns The metadata of the property, with the span of its name or of its alias.
  */
-function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean): ComponentPropertyMetadataWishSpan {
+function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean, accessorOwner: string): ComponentPropertyMetadataWishSpan {
   // Property decorators are always call expressions (`@Property(...)`, `@Property.required(...)`)
   const args = decorator.expression.arguments;
   /*
@@ -339,7 +349,7 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
     We need to store the span where the propName is present, if an alias is declared
     these values will be overwritten
   */
-  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, name, extractGenericArgument(property.type));
+  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
 
   let options: Expression;
@@ -380,35 +390,61 @@ function isEventDecorator(modifier: ModifierLike): modifier is EventDecorator {
 
 /**
  * Extracts event metadata from @Event decorator.
+ *
+ * @param event - The accessor decorated with `@Event`.
+ * @param name - The name of the accessor.
+ * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @returns The metadata of the event.
  */
-function extractEventMetadata(decorator: EventDecorator): ComponentEventMetadata {
-  // Event decorators are always applied to property declarations
+function extractEventMetadata(event: PropertyDeclaration, name: string, accessorOwner: string): ComponentEventMetadata {
   return {
-    type: extractGenericArgument(decorator.parent.type, true)
+    type: extractBindingType(event, name, accessorOwner, true)
   };
 }
 
 /**
- * Given a TypeNode like Output<boolean>, returns "boolean".
- * If there's no generic argument, returns "void".
+ * References the type of a class from any file, through an `import()` type of the file declaring it.
+ *
+ * @param klass - The class to reference.
+ * @param sourceFile - The source file declaring the class.
+ * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`.
  */
-function extractGenericArgument(typeNode: TypeNode | undefined, event = false): string {
+function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: SourceFile): string {
+  const modulePath = sourceFile.fileName.replaceAll('\\', '/').replace(/\.ts$/, '');
+  return `import('${modulePath}').${klass.name.text}`;
+}
+
+/**
+ * Builds the type of the value carried by a `@Property` or `@Event` accessor: the `T` of `InputSignal<T>` or `Output<T>`.
+ *
+ * The type is not copied as written: the templates binding the accessor are type-checked in other files, where the
+ * names it uses (imported aliases, types local to its file) do not exist. It is referenced instead through the accessor
+ * of its class, so that TypeScript resolves it in the scope of the file declaring it, however deep its type graph goes.
+ *
+ * @example
+ * // @Property('ts') accessor lang!: InputSignal<CodeLang>;
+ * ReturnType<import('/src/x.xd.component').XComponent['lang']>
+ * // @Event() accessor picked!: Output<Item>;
+ * (import('/src/x.xd.component').XComponent['picked'] extends import('@xaendar/core').Output<infer Value> ? Value : never)
+ *
+ * @param member - The decorated accessor.
+ * @param name - The name of the accessor.
+ * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param event - Whether the accessor is an `@Event`.
+ * @returns The type of the value, `any` for a property and `void` for an event when the accessor declares no type argument.
+ */
+function extractBindingType(member: PropertyDeclaration, name: string, accessorOwner: string, event: boolean): string {
   const defaultValue = event ? 'void' : 'any';
-
-  /*
-    If no type has been provided we assume it's 
-    - Void for Events
-    - any for Properties
-  */
-  if (!typeNode || !isTypeReferenceNode(typeNode)) {
+  const typeNode = member.type;
+  if (!typeNode || !isTypeReferenceNode(typeNode) || !typeNode.typeArguments?.length) {
     return defaultValue;
   }
 
-  // No generics
-  const typeArgs = typeNode.typeArguments;
-  if (!typeArgs || typeArgs.length === 0) {
-    return defaultValue;
+  const accessor = `${accessorOwner}['${name}']`;
+  if (!event) {
+    return `ReturnType<${accessor}>`;
   }
 
-  return typeArgs[0].getText();
+  // An explicit `Output<void>` emits no payload, like an `Output` without a type argument
+  return typeNode.typeArguments[0].kind === SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }

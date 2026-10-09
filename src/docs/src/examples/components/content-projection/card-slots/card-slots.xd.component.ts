@@ -14,7 +14,6 @@ export class CardSlotsComponent extends CustomElement {
    * Whether the first card gets a footer.
    */
   public readonly withFooter = signal(true);
-
   /**
    * How many times the button in the footer was pressed.
    */

@@ -1,7 +1,5 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import type { Signal } from '@xaendar/core/signals';
 import { clear, lines } from './cart.store';
-import type { CartLine } from './cart.store';
 
 /**
  * Shows the shared cart. It knows nothing about the products component: they only share the store.
@@ -15,7 +13,7 @@ export class CartSummaryComponent extends CustomElement {
   /**
    * The lines of the cart.
    */
-  public readonly lines: Signal<CartLine[]> = lines;
+  public readonly lines = lines;
 
   /**
    * Empties the cart.

@@ -14,30 +14,22 @@ export class ComputedLazyComponent extends CustomElement {
    * The first name.
    */
   public readonly first = signal('Ada');
-
   /**
    * The last name.
    */
   public readonly last = signal('Lovelace');
-
   /**
    * Whether the full name is displayed.
    */
   public readonly visible = signal(true);
-
   /**
    * How many times `fullName` was evaluated. A plain field: it is shown when something else re-renders.
    */
   public evaluations = 0;
-
   /**
    * Derived from `first` and `last`.
    */
-  public readonly fullName = computed(() => {
-    this.evaluations++;
-    return `${this.first()} ${this.last()}`;
-  });
-
+  public readonly fullName = computed(() => this._computeFullName());
   /**
    * The evaluations, refreshed on demand.
    */
@@ -81,5 +73,15 @@ export class ComputedLazyComponent extends CustomElement {
    */
   public refresh(): void {
     queueMicrotask(() => this.shownEvaluations.set(this.evaluations));
+  }
+
+  /**
+   * Computes the value of `fullName`.
+   *
+   * @returns The full name, made of `first` and `last`.
+   */
+  private _computeFullName(): string {
+    this.evaluations++;
+    return `${this.first()} ${this.last()}`;
   }
 }

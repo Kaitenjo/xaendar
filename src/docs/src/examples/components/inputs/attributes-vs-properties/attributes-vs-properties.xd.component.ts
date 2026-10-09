@@ -17,7 +17,6 @@ export class AttributesVsPropertiesComponent extends CustomElement {
    */
   @Query('ex-value-type')
   public accessor first!: QuerySignal<HTMLElement | null>;
-
   /**
    * The attributes of the first component, as they are in the DOM.
    */

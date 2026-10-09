@@ -3,8 +3,12 @@
   <button (click)="clear()">Clear the log</button>
 </div>
 <div class="boxes">
-  <div class="box box--a"><span class="name">Box A</span></div>
-  <div class="box box--b"><span class="name">Box B</span></div>
+  <div class="box box--a">
+    <span class="name">Box A</span>
+  </div>
+  <div class="box box--b">
+    <span class="name">Box B</span>
+  </div>
 </div>
 <ol class="log">
   @for (line of log(); track line.id) {

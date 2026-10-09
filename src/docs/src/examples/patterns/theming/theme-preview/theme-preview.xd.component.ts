@@ -14,7 +14,6 @@ export class ThemePreviewComponent extends CustomElement {
    * The current theme.
    */
   public readonly theme = signal('light');
-
   /**
    * The accent color.
    */

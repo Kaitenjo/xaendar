@@ -26,6 +26,6 @@ export class ForEmptyComponent extends CustomElement {
    * Adds a message.
    */
   public receive(): void {
-    this.messages.update(messages => [...messages, 'Message ' + (messages.length + 1)]);
+    this.messages.update(messages => [...messages, `Message ${messages.length + 1}`]);
   }
 }

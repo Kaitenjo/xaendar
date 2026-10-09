@@ -14,35 +14,22 @@ export class MathmlFormulaComponent extends CustomElement {
    * The coefficient of x².
    */
   public readonly a = signal(1);
-
   /**
    * The coefficient of x.
    */
   public readonly b = signal(-3);
-
   /**
    * The constant term.
    */
   public readonly c = signal(2);
-
   /**
    * The discriminant.
    */
-  public readonly delta = computed(() => this.b() * this.b() - 4 * this.a() * this.c());
-
+  public readonly delta = computed(() => this._computeDelta());
   /**
    * The real solutions, or a note when there are none.
    */
-  public readonly solutions = computed(() => {
-    const delta = this.delta();
-    if (delta < 0) {
-      return 'no real solutions';
-    }
-    const root = Math.sqrt(delta);
-    const first = (-this.b() + root) / (2 * this.a());
-    const second = (-this.b() - root) / (2 * this.a());
-    return 'x = ' + first.toFixed(2) + ', x = ' + second.toFixed(2);
-  });
+  public readonly solutions = computed(() => this._computeSolutions());
 
   /**
    * Reads the slider of b.
@@ -51,5 +38,30 @@ export class MathmlFormulaComponent extends CustomElement {
    */
   public setB(event: Event): void {
     this.b.set(Number((event.target as HTMLInputElement).value));
+  }
+
+  /**
+   * Computes the value of `delta`.
+   *
+   * @returns The discriminant.
+   */
+  private _computeDelta(): number {
+    return this.b() * this.b() - 4 * this.a() * this.c();
+  }
+
+  /**
+   * Computes the value of `solutions`.
+   *
+   * @returns The real solutions, or a note when there are none.
+   */
+  private _computeSolutions(): string {
+    const delta = this.delta();
+    if (delta < 0) {
+      return 'no real solutions';
+    }
+    const root = Math.sqrt(delta);
+    const first = (-this.b() + root) / (2 * this.a());
+    const second = (-this.b() - root) / (2 * this.a());
+    return `x = ${first.toFixed(2)}, x = ${second.toFixed(2)}`;
   }
 }

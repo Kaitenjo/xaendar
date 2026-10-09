@@ -6,7 +6,20 @@ import type { Signal } from '@xaendar/core/signals';
  * A row of the inventory. The quantity is a signal of its own, so changing it updates one cell,
  * without replacing the row.
  */
-type Item = { id: number; name: string; quantity: Signal<number> };
+type Item = {
+  /**
+   * The identifier of the row, used as the key of the list.
+   */
+  readonly id: number;
+  /**
+   * The name of the product.
+   */
+  readonly name: string;
+  /**
+   * How many pieces are in stock.
+   */
+  readonly quantity: Signal<number>;
+};
 
 /**
  * An inventory with additions, removals, edits, sorting and filtering.
@@ -18,49 +31,29 @@ type Item = { id: number; name: string; quantity: Signal<number> };
 })
 export class InventoryComponent extends CustomElement {
   /**
-   * The id of the next item: ids are never reused, so the keys of the list stay unique.
-   */
-  private nextId = 1;
-
-  /**
    * The items, in insertion order.
    */
-  public readonly items = signal([this.create('Pens', 12), this.create('Notebooks', 4), this.create('Staplers', 1)]);
-
+  public readonly items = signal([this._create('Pens', 12), this._create('Notebooks', 4), this._create('Staplers', 1)]);
   /**
    * The text filtering the items.
    */
   public readonly filter = signal('');
-
   /**
    * Whether the items are sorted by name.
    */
   public readonly sorted = signal(false);
-
   /**
    * The items shown: filtered, then sorted when asked.
    */
-  public readonly visible = computed(() => {
-    const filter = this.filter().trim().toLowerCase();
-    const shown = this.items().filter(item => item.name.toLowerCase().includes(filter));
-    return this.sorted() ? [...shown].sort((a, b) => a.name.localeCompare(b.name)) : shown;
-  });
-
+  public readonly visible = computed(() => this._computeVisible());
   /**
    * The total quantity, recomputed when any quantity changes.
    */
-  public readonly total = computed(() => this.items().reduce((sum, item) => sum + item.quantity(), 0));
-
+  public readonly total = computed(() => this._computeTotal());
   /**
-   * Creates an item.
-   *
-   * @param name - The name of the item.
-   * @param quantity - The initial quantity.
-   * @returns The item.
+   * The id of the next item: ids are never reused, so the keys of the list stay unique.
    */
-  private create(name: string, quantity: number): Item {
-    return { id: this.nextId++, name, quantity: signal(quantity) };
-  }
+  private _nextId = 1;
 
   /**
    * Adds the item described by the form, then clears the form.
@@ -72,7 +65,7 @@ export class InventoryComponent extends CustomElement {
     const form = event.target as HTMLFormElement;
     const name = String(new FormData(form).get('name') ?? '').trim();
     if (name) {
-      this.items.update(items => [...items, this.create(name, 1)]);
+      this.items.update(items => [...items, this._create(name, 1)]);
       // reset() restores the initial values of the fields: there is no value attribute to fight with
       form.reset();
     }
@@ -82,7 +75,7 @@ export class InventoryComponent extends CustomElement {
    * Inserts an item at a random position.
    */
   public insertRandom(): void {
-    const item = this.create(`Item ${this.nextId}`, 1);
+    const item = this._create(`Item ${this._nextId}`, 1);
     this.items.update(items => {
       const index = Math.floor(Math.random() * (items.length + 1));
       return [...items.slice(0, index), item, ...items.slice(index)];
@@ -122,5 +115,36 @@ export class InventoryComponent extends CustomElement {
    */
   public toggleSort(): void {
     this.sorted.update(sorted => !sorted);
+  }
+
+  /**
+   * Computes the value of `visible`.
+   *
+   * @returns The items shown: filtered, then sorted when asked.
+   */
+  private _computeVisible(): Item[] {
+    const filter = this.filter().trim().toLowerCase();
+    const shown = this.items().filter(item => item.name.toLowerCase().includes(filter));
+    return this.sorted() ? [...shown].sort((a, b) => a.name.localeCompare(b.name)) : shown;
+  }
+
+  /**
+   * Computes the value of `total`.
+   *
+   * @returns The total quantity.
+   */
+  private _computeTotal(): number {
+    return this.items().reduce((sum, item) => sum + item.quantity(), 0);
+  }
+
+  /**
+   * Creates an item.
+   *
+   * @param name - The name of the item.
+   * @param quantity - The initial quantity.
+   * @returns The item.
+   */
+  private _create(name: string, quantity: number): Item {
+    return { id: this._nextId++, name, quantity: signal(quantity) };
   }
 }

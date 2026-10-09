@@ -16,35 +16,32 @@ export class QueryTimingComponent extends CustomElement {
    */
   @Query.all('.item')
   public accessor listItems!: QuerySignal<HTMLElement[]>;
-
   /**
    * The items to render.
    */
   public readonly items = signal([1, 2]);
-
   /**
    * What happened, step by step.
    */
   public readonly log = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * The identifier of the next line.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Logs the query before the render, and follows it with an effect.
    */
   public onInit(): void {
-    this.write('onInit: ' + this.listItems().length + ' items');
-    this.effect(() => this.write('effect: ' + this.listItems().length + ' items'));
+    this._write(`onInit: ${this.listItems().length} items`);
+    this.effect(() => this._write(`effect: ${this.listItems().length} items`));
   }
 
   /**
    * Logs the query after the render.
    */
   public afterRender(): void {
-    this.write('afterRender: ' + this.listItems().length + ' items');
+    this._write(`afterRender: ${this.listItems().length} items`);
   }
 
   /**
@@ -52,11 +49,11 @@ export class QueryTimingComponent extends CustomElement {
    */
   public async add(): Promise<void> {
     this.items.update(items => [...items, items.length + 1]);
-    this.write('right after the change: ' + this.listItems().length + ' items');
+    this._write(`right after the change: ${this.listItems().length} items`);
     await Promise.resolve();
-    this.write('after one microtask: ' + this.listItems().length + ' items');
+    this._write(`after one microtask: ${this.listItems().length} items`);
     await Promise.resolve();
-    this.write('after two microtasks: ' + this.listItems().length + ' items');
+    this._write(`after two microtasks: ${this.listItems().length} items`);
   }
 
   /**
@@ -64,7 +61,7 @@ export class QueryTimingComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private write(text: string): void {
-    this.log.update(lines => [...lines, { id: this.nextId++, text }]);
+  private _write(text: string): void {
+    this.log.update(lines => [...lines, { id: this._nextId++, text }]);
   }
 }

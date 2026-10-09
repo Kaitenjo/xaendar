@@ -11,11 +11,10 @@ export class ResizeDirective extends CustomDirective<HTMLElement> {
    */
   @Event()
   public accessor resized!: Output<{ width: number; height: number }>;
-
   /**
    * Observes the element.
    */
-  private readonly observer = new ResizeObserver(([entry]) => {
+  private readonly _observer = new ResizeObserver(([entry]) => {
     if (entry) {
       const { width, height } = entry.contentRect;
       this.resized.emit({ width: Math.round(width), height: Math.round(height) });
@@ -26,13 +25,13 @@ export class ResizeDirective extends CustomDirective<HTMLElement> {
    * Starts observing the element.
    */
   public onInit(): void {
-    this.observer.observe(this.element);
+    this._observer.observe(this.element);
   }
 
   /**
    * Stops observing.
    */
   public onDestroy(): void {
-    this.observer.disconnect();
+    this._observer.disconnect();
   }
 }

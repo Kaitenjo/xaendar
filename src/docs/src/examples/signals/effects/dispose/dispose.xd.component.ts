@@ -14,12 +14,10 @@ export class EffectDisposeComponent extends CustomElement {
    * The dependency of the effects.
    */
   public readonly count = signal(0);
-
   /**
    * What happened with the standalone effect.
    */
   public readonly standaloneOutcome = signal('');
-
   /**
    * What happened with the effect bound to the component.
    */

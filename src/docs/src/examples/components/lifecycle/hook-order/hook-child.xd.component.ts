@@ -29,8 +29,8 @@ export class HookChildComponent extends CustomElement {
    * Logs the connection, and starts an effect that logs the label and its own disposal.
    */
   public onInit(): void {
-    write('child · onInit, label ' + this.label());
-    this.effect(() => write('child · effect, label ' + this.label()), {
+    write(`child · onInit, label ${this.label()}`);
+    this.effect(() => write(`child · effect, label ${this.label()}`), {
       onCleanup: () => write('child · effect disposed')
     });
   }
@@ -39,7 +39,7 @@ export class HookChildComponent extends CustomElement {
    * Logs the end of the render.
    */
   public afterRender(): void {
-    write('child · afterRender, label ' + this.label());
+    write(`child · afterRender, label ${this.label()}`);
   }
 
   /**

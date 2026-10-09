@@ -46,7 +46,7 @@
   <h2>Edge cases</h2>
   <docs-callout kind="edge" heading="The space between two interpolations">
     <code>{"{ first() } { last() }"}</code> renders the two values without the space, because the compiler drops text
-    made only of whitespace. Write <code>{"{ first() + ' ' + last() }"}</code>, or <code>{"{' '}"}</code> between
+    made only of whitespace. Write <code>{'{`${first()} ${last()}`}'}</code>, or <code>{"{' '}"}</code> between
     them. See <a href="#/en/templates/overview">Template syntax</a>.
   </docs-callout>
   <docs-callout kind="issue" heading="A closing brace inside a string">
@@ -67,7 +67,7 @@
   <docs-callout kind="issue" heading="A template literal right after a space">
     <p>
       An expression that starts with a backtick after the space following the brace is not parsed. Write the backtick
-      right after the brace, as in the example, or build the string with <code>+</code>.
+      right after the brace, as in the example.
     </p>
     <docs-code snippet="components/template-literal-class.html" />
     <docs-code snippet="components/template-literal-error.txt" />

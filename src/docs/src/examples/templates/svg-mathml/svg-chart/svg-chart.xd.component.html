@@ -10,4 +10,10 @@
     <text x="{ bar.x + 20 }" y="125" text-anchor="middle">{ bar.day }</text>
   }
 </svg>
-<p>@if (hovered()) { { hovered() } } @else { Point at a bar }</p>
+<p>
+  @if (hovered()) {
+    { hovered() }
+  } @else {
+    Point at a bar
+  }
+</p>

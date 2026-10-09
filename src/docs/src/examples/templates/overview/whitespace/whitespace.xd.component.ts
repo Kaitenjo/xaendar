@@ -14,7 +14,6 @@ export class WhitespaceComponent extends CustomElement {
    * A first name.
    */
   public readonly first = signal('Ada');
-
   /**
    * A last name.
    */

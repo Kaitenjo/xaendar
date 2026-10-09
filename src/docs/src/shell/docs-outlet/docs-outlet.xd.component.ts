@@ -1,5 +1,4 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import type { Computed } from '@xaendar/core/signals';
 import { path } from '../../core/router/router';
 
 /**
@@ -16,5 +15,5 @@ export class DocsOutletComponent extends CustomElement {
   /**
    * The path of the page being read.
    */
-  public readonly path: Computed<string> = path;
+  public readonly path = path;
 }

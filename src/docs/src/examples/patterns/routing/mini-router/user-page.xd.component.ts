@@ -17,9 +17,17 @@ export class UserPageComponent extends CustomElement {
    */
   @Property('', { alias: 'user' })
   public accessor userId!: InputSignal<string>;
-
   /**
    * The user, or undefined when the id is unknown.
    */
-  public readonly person = computed(() => USERS.find(user => String(user.id) === this.userId()));
+  public readonly person = computed(() => this._computePerson());
+
+  /**
+   * Computes the value of `person`.
+   *
+   * @returns The user, or undefined when the id is unknown.
+   */
+  private _computePerson(): (typeof USERS)[number] | undefined {
+    return USERS.find(user => String(user.id) === this.userId());
+  }
 }

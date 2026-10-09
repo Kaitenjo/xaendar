@@ -12,7 +12,6 @@ export abstract class StepperBase extends CustomElement {
    */
   @Property(1)
   public accessor step!: InputSignal<number>;
-
   /**
    * The count.
    */

@@ -13,20 +13,18 @@ import { TabPanelComponent } from './tab-panel.xd.component';
 })
 export class TabGroupComponent extends CustomElement {
   /**
+   * The index of the active panel.
+   */
+  public readonly activeIndex = signal(0);
+  /**
    * The projected panels, typed as instances of the component.
    */
   @Query.content.all(TabPanelComponent)
   public accessor panels!: QuerySignal<TabPanelComponent[]>;
-
-  /**
-   * The index of the active panel.
-   */
-  public readonly activeIndex = signal(0);
-
   /**
    * One tab for each panel, with the label the panel received from its parent.
    */
-  public readonly tabs = computed(() => this.panels().map((panel, index) => ({ index, label: panel.label() })));
+  public readonly tabs = computed(() => this._computeTabs());
 
   /**
    * Shows the active panel and hides the others, whenever the panels or the active index change.
@@ -45,5 +43,14 @@ export class TabGroupComponent extends CustomElement {
    */
   public select(index: number): void {
     this.activeIndex.set(index);
+  }
+
+  /**
+   * Computes the value of `tabs`.
+   *
+   * @returns One tab for each panel, with the label the panel received from its parent.
+   */
+  private _computeTabs(): Array<{ index: number; label: string }> {
+    return this.panels().map((panel, index) => ({ index, label: panel.label() }));
   }
 }

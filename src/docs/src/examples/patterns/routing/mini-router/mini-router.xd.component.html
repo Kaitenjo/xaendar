@@ -34,7 +34,7 @@
       <h3>Users</h3>
       <ul>
         @for (user of users; track user.id) {
-          <li><a href="{ '/users/' + user.id }" (click)="follow($event)">{ user.name }</a></li>
+          <li><a href="{`/users/${user.id}`}" (click)="follow($event)">{ user.name }</a></li>
         }
       </ul>
     }

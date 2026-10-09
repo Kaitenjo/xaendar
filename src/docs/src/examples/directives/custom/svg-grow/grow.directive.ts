@@ -12,40 +12,37 @@ export class GrowDirective extends CustomDirective<SVGCircleElement> {
    */
   @Property(1.5)
   public accessor scale!: InputSignal<number>;
-
   /**
    * The radius the circle was rendered with.
    */
-  private radius = 0;
-
+  private _radius = 0;
   /**
    * Grows the circle.
    */
-  private readonly grow = (): void => {
-    this.element.r.baseVal.value = this.radius * this.scale();
+  private readonly _grow = (): void => {
+    this.element.r.baseVal.value = this._radius * this.scale();
   };
-
   /**
    * Brings the circle back to its size.
    */
-  private readonly shrink = (): void => {
-    this.element.r.baseVal.value = this.radius;
+  private readonly _shrink = (): void => {
+    this.element.r.baseVal.value = this._radius;
   };
 
   /**
    * Reads the radius and starts listening.
    */
   public onInit(): void {
-    this.radius = this.element.r.baseVal.value;
-    this.element.addEventListener('pointerenter', this.grow);
-    this.element.addEventListener('pointerleave', this.shrink);
+    this._radius = this.element.r.baseVal.value;
+    this.element.addEventListener('pointerenter', this._grow);
+    this.element.addEventListener('pointerleave', this._shrink);
   }
 
   /**
    * Stops listening.
    */
   public onDestroy(): void {
-    this.element.removeEventListener('pointerenter', this.grow);
-    this.element.removeEventListener('pointerleave', this.shrink);
+    this.element.removeEventListener('pointerenter', this._grow);
+    this.element.removeEventListener('pointerleave', this._shrink);
   }
 }

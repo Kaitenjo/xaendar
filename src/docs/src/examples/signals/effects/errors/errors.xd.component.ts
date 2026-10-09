@@ -15,25 +15,22 @@ export class EffectErrorsComponent extends CustomElement {
    * The dependency of the effect: odd values make it throw.
    */
   public readonly value = signal(0);
-
   /**
    * What happened, in order.
    */
   public readonly log = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * Whether the effect reacting to `value` was created.
    */
   public readonly created = signal(false);
-
   /**
    * Reports the errors that escape the effect: they reach the global error handler.
    */
-  private readonly onUncaughtError = (event: ErrorEvent): void => {
+  private readonly _onUncaughtError = (event: ErrorEvent): void => {
     if (String(event.message).includes('odd value')) {
       // Marks the error as handled, so that the browser does not log it
       event.preventDefault();
-      this.write(`uncaught: ${event.message}`);
+      this._write(`uncaught: ${event.message}`);
     }
   };
 
@@ -41,14 +38,7 @@ export class EffectErrorsComponent extends CustomElement {
    * Starts listening to uncaught errors.
    */
   public onInit(): void {
-    window.addEventListener('error', this.onUncaughtError);
-  }
-
-  /**
-   * Stops listening to uncaught errors.
-   */
-  public onDestroy(): void {
-    window.removeEventListener('error', this.onUncaughtError);
+    window.addEventListener('error', this._onUncaughtError);
   }
 
   /**
@@ -61,7 +51,7 @@ export class EffectErrorsComponent extends CustomElement {
         throw new Error('failed on the first run');
       });
     } catch (error) {
-      this.write(`effect() threw: ${(error as Error).message}`);
+      this._write(`effect() threw: ${(error as Error).message}`);
     }
   }
 
@@ -74,7 +64,7 @@ export class EffectErrorsComponent extends CustomElement {
       if (value % 2 === 1) {
         throw new Error(`odd value ${value}`);
       }
-      this.write(`run with value ${value}`);
+      this._write(`run with value ${value}`);
     });
     this.created.set(true);
   }
@@ -91,7 +81,14 @@ export class EffectErrorsComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private write(text: string): void {
+  private _write(text: string): void {
     this.log.update(log => [...log, { id: log.length, text }]);
+  }
+
+  /**
+   * Stops listening to uncaught errors.
+   */
+  public onDestroy(): void {
+    window.removeEventListener('error', this._onUncaughtError);
   }
 }

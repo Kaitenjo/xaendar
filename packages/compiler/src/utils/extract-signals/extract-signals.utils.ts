@@ -1,10 +1,12 @@
 import { readFileSync, statSync } from 'node:fs';
-import { ClassDeclaration, ClassLikeDeclaration, CompilerOptions, EntityName, Expression, ImportDeclaration, ModuleKind, ModuleResolutionKind, PropertyDeclaration, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, forEachChild, isCallExpression, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, resolveModuleName, sys } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Declaration, EntityName, Expression, ImportDeclaration, ModuleKind, ModuleResolutionKind, PropertyDeclaration, ScriptTarget, SourceFile, Statement, SyntaxKind, VariableDeclaration, createSourceFile, forEachChild, isCallExpression, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement, resolveModuleName, sys } from 'typescript';
 import type { SignalMembers } from '../../types/signal-members/signal-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
 import type { CachedSourceFile } from './types/cached-source-file.type';
 import type { ResolutionContext } from './types/resolution-context.type';
+import type { DeclarationFinder } from './types/declaration-finder.type';
 import type { ResolvedClass } from './types/resolved-class.type';
+import type { ResolvedDeclaration } from './types/resolved-declaration.type';
 import type { SignalImportBindings } from './types/signal-import-bindings.type';
 
 /**
@@ -21,6 +23,22 @@ const SIGNAL_MODULE_SPECIFIERS: ReadonlySet<string> = new Set(['@xaendar/core/si
 const DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
   module: ModuleKind.ESNext,
   moduleResolution: ModuleResolutionKind.Bundler
+};
+
+/**
+ * Finds the class declarations of a file: the base classes of a component.
+ */
+const CLASS_FINDER: DeclarationFinder<ClassDeclaration> = {
+  local: (statement, localName) => isClassDeclaration(statement) && statement.name?.text === localName ? statement : undefined,
+  exported: (statement, exportedName) => isClassDeclaration(statement) && isClassExportedAs(statement, exportedName) ? statement : undefined
+};
+
+/**
+ * Finds the module-level variable declarations of a file: the module signals a member can be initialised with.
+ */
+const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
+  local: (statement, localName) => findVariable(statement, localName),
+  exported: (statement, exportedName) => isVariableStatement(statement) && statement.modifiers?.some(modifier => modifier.kind === SyntaxKind.ExportKeyword) ? findVariable(statement, exportedName) : undefined
 };
 
 /**
@@ -45,6 +63,12 @@ const sourceFileCache = new Map<string, CachedSourceFile>();
  * so for them only the explicit type-annotation shape
  * (`declare x: Signal<T>` / `accessor x: InputSignal<T>`) is meaningful —
  * which `isSignalMember` already handles.
+ *
+ * A member initialised with a module-level signal (`count = count`,
+ * `count = store.count`) is a signal member too: the variable is resolved
+ * the same way, through imports and re-exports, and must be initialised
+ * through a signal function, typed as a signal, or itself initialised
+ * with a module-level signal. No annotation is needed on the member.
  *
  * Unresolvable ancestors (missing file, class expressions, mixins, etc.) are
  * skipped silently: this can only ever produce a false negative for THAT
@@ -84,7 +108,7 @@ function collectSignalMembers(klass: ResolvedClass, context: ResolutionContext):
     inherited = collectSignalMembers(base, context);
   }
 
-  const own = extractOwnSignalMembers(klass.declaration, collectSignalImportBindings(klass.sourceFile));
+  const own = extractOwnSignalMembers(klass, context);
   return [...inherited, ...own];
 }
 
@@ -102,16 +126,32 @@ function resolveBaseClass({ sourceFile, declaration }: ResolvedClass, context: R
     return;
   }
 
+  return resolveReference(sourceFile, expression, CLASS_FINDER, context, new Set());
+}
+
+/**
+ * Resolves the declaration an expression of `sourceFile` refers to: a local name
+ * (`Base`, `count`) or a member of a namespace import (`ns.Base`, `store.count`).
+ *
+ * @param sourceFile - The file containing the expression.
+ * @param expression - The expression referring to the declaration.
+ * @param finder - Finds the declarations of the searched kind.
+ * @param context - State of the current extraction.
+ * @param visitedExports - Exports already visited while resolving the declaration,
+ *   to stop on circular re-exports.
+ * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
+ */
+function resolveReference<D extends Declaration>(sourceFile: SourceFile, expression: Expression, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
   // class Cmp extends Base {}
   if (isIdentifier(expression)) {
-    return resolveLocalClass(sourceFile, expression.text, context, new Set());
+    return resolveLocal(sourceFile, expression.text, finder, context, visitedExports);
   }
 
   // import * as ns from './base'; class Cmp extends ns.Base {}
   if (isPropertyAccessExpression(expression) && isIdentifier(expression.expression)) {
     const importDeclaration = findNamespaceImport(sourceFile, expression.expression.text);
     if (importDeclaration) {
-      return resolveImportedClass(sourceFile, importDeclaration.moduleSpecifier, expression.name.text, context, new Set());
+      return resolveImported(sourceFile, importDeclaration.moduleSpecifier, expression.name.text, finder, context, visitedExports);
     }
   }
 
@@ -130,26 +170,28 @@ function getBaseClassExpression(declaration: ClassDeclaration): Expression | und
 }
 
 /**
- * Resolves the class bound to `localName` in the scope of `sourceFile`:
+ * Resolves the declaration bound to `localName` in the scope of `sourceFile`:
  * either declared in the file itself, or imported into it.
  *
  * @param sourceFile - The file in whose scope `localName` is looked up.
- * @param localName - The local name the class is bound to.
+ * @param localName - The local name the declaration is bound to.
+ * @param finder - Finds the declarations of the searched kind.
  * @param context - State of the current extraction.
- * @param visitedExports - Exports already visited while resolving the class,
+ * @param visitedExports - Exports already visited while resolving the declaration,
  *   to stop on circular re-exports.
- * @returns The class with the file declaring it, or `undefined` if it can't be resolved.
+ * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
  */
-function resolveLocalClass(sourceFile: SourceFile, localName: string, context: ResolutionContext, visitedExports: Set<string>): ResolvedClass | undefined {
+function resolveLocal<D extends Declaration>(sourceFile: SourceFile, localName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
   for (const statement of sourceFile.statements) {
-    if (isClassDeclaration(statement) && statement.name?.text === localName) {
-      return { sourceFile, declaration: statement };
+    const declaration = finder.local(statement, localName);
+    if (declaration) {
+      return { sourceFile, declaration };
     }
 
     if (isImportDeclaration(statement)) {
       const importedName = getImportedName(statement, localName);
       if (importedName) {
-        return resolveImportedClass(sourceFile, statement.moduleSpecifier, importedName, context, visitedExports);
+        return resolveImported(sourceFile, statement.moduleSpecifier, importedName, finder, context, visitedExports);
       }
     }
   }
@@ -196,39 +238,41 @@ function findNamespaceImport(sourceFile: SourceFile, namespace: string): ImportD
 }
 
 /**
- * Resolves the class exported as `exportedName` by the module `moduleSpecifier`
+ * Resolves the declaration exported as `exportedName` by the module `moduleSpecifier`
  * refers to, when imported from `sourceFile`.
  *
  * @param sourceFile - The file importing the module.
  * @param moduleSpecifier - The module specifier of the import or re-export.
- * @param exportedName - The name the class is exported as.
+ * @param exportedName - The name the declaration is exported as.
+ * @param finder - Finds the declarations of the searched kind.
  * @param context - State of the current extraction.
- * @param visitedExports - Exports already visited while resolving the class,
+ * @param visitedExports - Exports already visited while resolving the declaration,
  *   to stop on circular re-exports.
- * @returns The class with the file declaring it, or `undefined` if it can't be resolved.
+ * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
  */
-function resolveImportedClass(sourceFile: SourceFile, moduleSpecifier: Expression, exportedName: string, context: ResolutionContext, visitedExports: Set<string>): ResolvedClass | undefined {
+function resolveImported<D extends Declaration>(sourceFile: SourceFile, moduleSpecifier: Expression, exportedName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
   if (!isStringLiteralLike(moduleSpecifier)) {
     return;
   }
 
   const { resolvedModule } = resolveModuleName(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, sys);
   const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
-  return moduleSourceFile ? resolveExportedClass(moduleSourceFile, exportedName, context, visitedExports) : undefined;
+  return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : undefined;
 }
 
 /**
- * Resolves the class exported by `sourceFile` as `exportedName`, following
+ * Resolves the declaration exported by `sourceFile` as `exportedName`, following
  * re-exports to the file actually declaring it.
  *
- * @param sourceFile - The module exporting the class.
- * @param exportedName - The name the class is exported as.
+ * @param sourceFile - The module exporting the declaration.
+ * @param exportedName - The name the declaration is exported as.
+ * @param finder - Finds the declarations of the searched kind.
  * @param context - State of the current extraction.
- * @param visitedExports - Exports already visited while resolving the class,
+ * @param visitedExports - Exports already visited while resolving the declaration,
  *   to stop on circular re-exports.
- * @returns The class with the file declaring it, or `undefined` if it can't be resolved.
+ * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
  */
-function resolveExportedClass(sourceFile: SourceFile, exportedName: string, context: ResolutionContext, visitedExports: Set<string>): ResolvedClass | undefined {
+function resolveExported<D extends Declaration>(sourceFile: SourceFile, exportedName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
   // Guards against circular re-exports
   const key = `${sourceFile.fileName}#${exportedName}`;
   if (visitedExports.has(key)) {
@@ -238,14 +282,15 @@ function resolveExportedClass(sourceFile: SourceFile, exportedName: string, cont
 
   const wildcardSpecifiers = new Array<Expression>();
   for (const statement of sourceFile.statements) {
-    // export class X {} / export default class X {}
-    if (isClassDeclaration(statement) && isClassExportedAs(statement, exportedName)) {
-      return { sourceFile, declaration: statement };
+    // export class X {} / export default class X {} / export const x = ...
+    const declaration = finder.exported(statement, exportedName);
+    if (declaration) {
+      return { sourceFile, declaration };
     }
 
     // class X {}; export default X;
     if (isExportAssignment(statement) && !statement.isExportEquals && exportedName === 'default' && isIdentifier(statement.expression)) {
-      return resolveLocalClass(sourceFile, statement.expression.text, context, visitedExports);
+      return resolveLocal(sourceFile, statement.expression.text, finder, context, visitedExports);
     }
 
     if (isExportDeclaration(statement)) {
@@ -262,8 +307,8 @@ function resolveExportedClass(sourceFile: SourceFile, exportedName: string, cont
         if (element) {
           const name = (element.propertyName ?? element.name).text;
           return moduleSpecifier
-            ? resolveImportedClass(sourceFile, moduleSpecifier, name, context, visitedExports)
-            : resolveLocalClass(sourceFile, name, context, visitedExports);
+            ? resolveImported(sourceFile, moduleSpecifier, name, finder, context, visitedExports)
+            : resolveLocal(sourceFile, name, finder, context, visitedExports);
         }
       }
     }
@@ -275,7 +320,7 @@ function resolveExportedClass(sourceFile: SourceFile, exportedName: string, cont
   }
 
   for (const moduleSpecifier of wildcardSpecifiers) {
-    const resolved = resolveImportedClass(sourceFile, moduleSpecifier, exportedName, context, visitedExports);
+    const resolved = resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports);
     if (resolved) {
       return resolved;
     }
@@ -297,6 +342,21 @@ function isClassExportedAs(declaration: ClassDeclaration, exportedName: string):
   }
 
   return declaration.name?.text === exportedName;
+}
+
+/**
+ * Finds the variable named `name` declared by `statement`.
+ *
+ * @param statement - The statement to inspect.
+ * @param name - The name of the variable.
+ * @returns The variable declaration, or `undefined` if `statement` doesn't declare it.
+ */
+function findVariable(statement: Statement, name: string): VariableDeclaration | undefined {
+  if (!isVariableStatement(statement)) {
+    return;
+  }
+
+  return statement.declarationList.declarations.find(declaration => isIdentifier(declaration.name) && declaration.name.text === name);
 }
 
 /**
@@ -363,16 +423,17 @@ function collectSignalImportBindings(sourceFile: SourceFile): SignalImportBindin
 }
 
 /**
- * Extracts the signal members declared by `classDecl` itself, ignoring inherited ones.
+ * Extracts the signal members declared by a class itself, ignoring inherited ones.
  *
- * @param classDecl - The class whose members are inspected.
- * @param bindings - The signal module bindings of the file declaring the class.
+ * @param klass - The class whose members are inspected, with the file declaring it.
+ * @param context - State of the current extraction.
  * @returns The names of the own signal members.
  */
-function extractOwnSignalMembers(classDecl: ClassLikeDeclaration, bindings: SignalImportBindings): string[] {
+function extractOwnSignalMembers({ sourceFile, declaration }: ResolvedClass, context: ResolutionContext): string[] {
+  const bindings = collectSignalImportBindings(sourceFile);
   const result = new Array<string>();
-  for (const member of classDecl.members) {
-    if (isPropertyDeclaration(member) && isIdentifier(member.name) && isSignalMember(member, bindings)) {
+  for (const member of declaration.members) {
+    if (isPropertyDeclaration(member) && isIdentifier(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
       result.push(member.name.text);
     }
   }
@@ -380,13 +441,16 @@ function extractOwnSignalMembers(classDecl: ClassLikeDeclaration, bindings: Sign
 }
 
 /**
- * Checks whether `member` is initialised through a signal function or typed as a signal.
+ * Checks whether `member` is initialised through a signal function, typed as a signal,
+ * or initialised with a module-level signal (`count = count`, `count = store.count`).
  *
  * @param member - The property declaration to check.
+ * @param sourceFile - The file declaring the member.
  * @param bindings - The signal module bindings of the file declaring the member.
+ * @param context - State of the current extraction.
  * @returns `true` if the member is backed by a signal.
  */
-function isSignalMember(member: PropertyDeclaration, bindings: SignalImportBindings): boolean {
+function isSignalMember(member: PropertyDeclaration, sourceFile: SourceFile, bindings: SignalImportBindings, context: ResolutionContext): boolean {
   // Handle initialization by function: input, computed, etc...
   if (member.initializer && isCallExpression(member.initializer)) {
     return resolvesToSignalBinding(member.initializer.expression, bindings);
@@ -400,7 +464,47 @@ function isSignalMember(member: PropertyDeclaration, bindings: SignalImportBindi
     return resolvesEntityNameToSignalBinding(member.type.typeName, bindings);
   }
 
-  return false;
+  /*
+    import { count } from './cart.store';
+
+    class Foo {
+      count = count;
+    }
+  */
+  return !!member.initializer && isSignalReference(sourceFile, member.initializer, context, new Set());
+}
+
+/**
+ * Checks whether `expression` refers to a module-level signal: a variable, declared in the file
+ * or imported into it, initialised through a signal function, typed as a signal, or itself
+ * initialised with a module-level signal.
+ *
+ * @param sourceFile - The file containing the expression.
+ * @param expression - The expression to check.
+ * @param context - State of the current extraction.
+ * @param visitedVariables - Variables already visited, to stop on circular initialisations.
+ * @returns `true` if `expression` refers to a module-level signal.
+ */
+function isSignalReference(sourceFile: SourceFile, expression: Expression, context: ResolutionContext, visitedVariables: Set<VariableDeclaration>): boolean {
+  const variable = resolveReference(sourceFile, expression, VARIABLE_FINDER, context, new Set());
+  if (!variable || visitedVariables.has(variable.declaration)) {
+    return false;
+  }
+  visitedVariables.add(variable.declaration);
+
+  const { declaration } = variable;
+  const bindings = collectSignalImportBindings(variable.sourceFile);
+  if (declaration.type) {
+    return isTypeReferenceNode(declaration.type) && resolvesEntityNameToSignalBinding(declaration.type.typeName, bindings);
+  }
+
+  if (!declaration.initializer) {
+    return false;
+  }
+
+  return isCallExpression(declaration.initializer)
+    ? resolvesToSignalBinding(declaration.initializer.expression, bindings)
+    : isSignalReference(variable.sourceFile, declaration.initializer, context, visitedVariables);
 }
 
 /**

@@ -1,11 +1,25 @@
+/**
+ * The base class, declaring the input its methods read.
+ */
 export abstract class CounterBase extends CustomElement {
-  public abstract accessor step: InputSignal<number>;   // a signal member, recognized by its type
+  /**
+   * A signal member, recognized by its type.
+   */
+  public abstract accessor step: InputSignal<number>;
 }
 
+/**
+ * The component, declaring the input with its default.
+ */
 export class StepperComponent extends CounterBase {
+  /**
+   * ✗ The same signal member, declared again.
+   */
   @Property(1)
-  public accessor step!: InputSignal<number>;           // ✗ the same signal member, declared again
+  public accessor step!: InputSignal<number>;
 }
 
-// ✓ in the base class, use a type that is not a signal type
+/**
+ * ✓ In the base class, a type that is not a signal type.
+ */
 public abstract accessor step: () => number;

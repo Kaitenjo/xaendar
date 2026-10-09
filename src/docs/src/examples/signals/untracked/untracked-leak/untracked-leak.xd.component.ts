@@ -14,27 +14,22 @@ export class UntrackedLeakComponent extends CustomElement {
    * Source of a computed signal.
    */
   public readonly price = signal(10);
-
   /**
    * A computed signal, read inside the untracked block.
    */
-  public readonly total = computed(() => this.price() * 2);
-
+  public readonly total = computed(() => this._computeTotal());
   /**
    * Read after `total`, inside the untracked block: it should not be a dependency.
    */
   public readonly note = signal(0);
-
   /**
    * Read alone inside the untracked block of the second effect.
    */
   public readonly other = signal(0);
-
   /**
    * Runs of the effect reading `total` then `note` untracked.
    */
   public readonly leakingRuns = signal(0);
-
   /**
    * Runs of the effect reading only `other` untracked.
    */
@@ -69,5 +64,14 @@ export class UntrackedLeakComponent extends CustomElement {
    */
   public changeOther(): void {
     this.other.update(other => other + 1);
+  }
+
+  /**
+   * Computes the value of `total`.
+   *
+   * @returns Twice the price.
+   */
+  private _computeTotal(): number {
+    return this.price() * 2;
   }
 }

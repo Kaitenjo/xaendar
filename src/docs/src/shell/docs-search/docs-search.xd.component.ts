@@ -1,11 +1,10 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import type { Computed, QuerySignal } from '@xaendar/core/signals';
+import type { QuerySignal } from '@xaendar/core/signals';
 import { t } from '../../core/i18n/i18n';
-import type { Messages } from '../../core/i18n/messages';
-import type { Lang } from '../../core/router/route-hash.utils';
 import { lang, navigate } from '../../core/router/router';
 import { searchPages } from '../../core/routes/routes';
+import type { DocsPage } from '../../core/routes/routes';
 
 /**
  * Searches the pages of the documentation by title and keywords. Pressing `/` anywhere focuses it.
@@ -21,41 +20,34 @@ export class DocsSearchComponent extends CustomElement {
    */
   @Query<HTMLInputElement>('input')
   public accessor input!: QuerySignal<HTMLInputElement | null>;
-
   /**
    * The texts of the user interface.
    */
-  public readonly t: Computed<Messages> = t;
-
+  public readonly t = t;
   /**
    * The current language.
    */
-  public readonly currentLang: Computed<Lang> = lang;
-
+  public readonly currentLang = lang;
   /**
    * The text typed by the reader.
    */
   public readonly query = signal('');
-
   /**
    * Whether the results are shown.
    */
   public readonly expanded = signal(false);
-
   /**
    * The index of the highlighted result.
    */
   public readonly active = signal(0);
-
   /**
    * The pages matching the query.
    */
-  public readonly results = computed(() => searchPages(this.query(), this.currentLang()));
-
+  public readonly results = computed(() => this._computeResults());
   /**
    * Focuses the search field when `/` is pressed outside of a text field.
    */
-  private readonly onShortcut = (event: KeyboardEvent): void => {
+  private readonly _onShortcut = (event: KeyboardEvent): void => {
     const target = event.composedPath()[0];
     const typing = target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
     if (event.key === '/' && !typing) {
@@ -68,14 +60,7 @@ export class DocsSearchComponent extends CustomElement {
    * Starts listening to the keyboard shortcut.
    */
   public onInit(): void {
-    document.addEventListener('keydown', this.onShortcut);
-  }
-
-  /**
-   * Stops listening to the keyboard shortcut.
-   */
-  public onDestroy(): void {
-    document.removeEventListener('keydown', this.onShortcut);
+    document.addEventListener('keydown', this._onShortcut);
   }
 
   /**
@@ -113,7 +98,7 @@ export class DocsSearchComponent extends CustomElement {
         break;
       }
       case 'Escape':
-        this.reset();
+        this._reset();
         break;
     }
   }
@@ -139,7 +124,7 @@ export class DocsSearchComponent extends CustomElement {
    */
   public go(target: string): void {
     navigate(target);
-    this.reset();
+    this._reset();
   }
 
   /**
@@ -153,9 +138,18 @@ export class DocsSearchComponent extends CustomElement {
   }
 
   /**
+   * Computes the value of `results`.
+   *
+   * @returns The pages matching the query.
+   */
+  private _computeResults(): DocsPage[] {
+    return searchPages(this.query(), this.currentLang());
+  }
+
+  /**
    * Clears the search and leaves the field.
    */
-  private reset(): void {
+  private _reset(): void {
     const input = this.input();
     if (input) {
       // The value is a property of the field: binding the "value" attribute would not clear what was typed
@@ -164,5 +158,12 @@ export class DocsSearchComponent extends CustomElement {
     }
     this.query.set('');
     this.expanded.set(false);
+  }
+
+  /**
+   * Stops listening to the keyboard shortcut.
+   */
+  public onDestroy(): void {
+    document.removeEventListener('keydown', this._onShortcut);
   }
 }

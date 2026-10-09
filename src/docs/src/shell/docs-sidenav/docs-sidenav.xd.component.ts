@@ -1,7 +1,5 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal, untracked } from '@xaendar/core/signals';
-import type { Computed } from '@xaendar/core/signals';
-import type { Lang } from '../../core/router/route-hash.utils';
 import { lang, path } from '../../core/router/router';
 import { NAV } from '../../core/routes/routes';
 import type { NavItem } from '../../core/routes/routes';
@@ -20,17 +18,14 @@ export class DocsSidenavComponent extends CustomElement {
    * The sections of the navigation.
    */
   public readonly sections = NAV;
-
   /**
    * The current language.
    */
-  public readonly currentLang: Computed<Lang> = lang;
-
+  public readonly currentLang = lang;
   /**
    * The path of the page being read.
    */
-  public readonly path: Computed<string> = path;
-
+  public readonly path = path;
   /**
    * The groups currently expanded, by English title.
    */

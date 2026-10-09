@@ -33,6 +33,13 @@
   <code>100</code> and <code>show-value</code> stays <code>true</code>. Inside the meter, <code>percent</code> is a
   computed signal reading two inputs: inputs are signals like any other, so everything built on them is reactive.
 </p>
+<p>
+  The type of the input can be any type, imported ones included: the templates binding it are checked against it.
+  TypeScript infers the type of the decorator from the default value, so a default such as <code>'ts'</code>,
+  <code>[]</code> or <code>null</code> gives a type that does not match the accessor. Pass the type of the signal to
+  the decorator too, instead of widening the accessor and casting the value where you read it.
+</p>
+<docs-code snippet="components/property-type.ts" />
 
 <h2>Static values and expressions</h2>
 <p>
@@ -129,15 +136,6 @@
       static number. Use transforms that keep the type, and bind expressions.
     </p>
     <docs-code snippet="components/transform-type.ts" />
-  </docs-callout>
-  <docs-callout kind="issue" heading="The type of an input is copied as text">
-    <p>
-      To check the templates of the parents, the compiler copies the type of the input as written, without its imports.
-      A type imported in the file of the component is unknown in the files of its parents. Write the type inline, or
-      use primitives.
-    </p>
-    <docs-code snippet="components/property-type-text.ts" />
-    <docs-code snippet="components/property-type-error.txt" />
   </docs-callout>
   <docs-callout kind="issue" heading="Inherited inputs are not checked">
     The template compiler only sees the inputs declared in the class of the component, not those inherited from a base

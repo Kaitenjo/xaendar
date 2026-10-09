@@ -1,3 +1,6 @@
+/**
+ * Tries to reset an input from inside the component.
+ */
 public reset(): void {
   this.count.set(0);
   // ✗ Property 'set' does not exist on type 'InputSignal<number>'.

@@ -14,7 +14,6 @@ export class DirectiveBasicsComponent extends CustomElement {
    * The color painted by the custom directive.
    */
   public readonly color = signal('#fde68a');
-
   /**
    * Whether the structural directive renders its element.
    */

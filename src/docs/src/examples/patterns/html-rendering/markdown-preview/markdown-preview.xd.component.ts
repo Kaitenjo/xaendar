@@ -15,12 +15,10 @@ export class MarkdownPreviewComponent extends CustomElement {
    * The Markdown source.
    */
   public readonly source = signal('# Release notes\n\nSignals are **faster** and *smaller*.\n\n- New `untracked` helper\n- Fewer re-renders\n\nTry <b>raw HTML</b>: it is escaped.');
-
   /**
    * The HTML of the preview.
    */
-  public readonly html = computed(() => renderMarkdown(this.source()));
-
+  public readonly html = computed(() => this._computeHtml());
   /**
    * Whether the generated HTML is shown as text.
    */
@@ -40,5 +38,14 @@ export class MarkdownPreviewComponent extends CustomElement {
    */
   public toggleSource(): void {
     this.showSource.update(shown => !shown);
+  }
+
+  /**
+   * Computes the value of `html`.
+   *
+   * @returns The HTML of the preview.
+   */
+  private _computeHtml(): string {
+    return renderMarkdown(this.source());
   }
 }

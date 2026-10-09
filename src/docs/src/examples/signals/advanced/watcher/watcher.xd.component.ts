@@ -12,46 +12,44 @@ import { signal } from '@xaendar/core/signals';
 })
 export class SignalWatcherComponent extends CustomElement {
   /**
-   * A raw State: the Signal.subtle API only accepts the TC39 objects, not the functions returned by signal().
-   */
-  private readonly count = new Signal.State(0);
-
-  /**
    * What happened, in order.
    */
   public readonly log = signal<Array<{ id: number; text: string }>>([]);
-
+  /**
+   * A raw State: the Signal.subtle API only accepts the TC39 objects, not the functions returned by signal().
+   */
+  private readonly _count = new Signal.State(0);
   /**
    * The watcher, once created.
    */
-  private watcher: Signal.subtle.Watcher | undefined;
+  private _watcher: Signal.subtle.Watcher | undefined;
 
   /**
    * Builds the effect and runs it once.
    */
   public start(): void {
-    if (this.watcher) {
+    if (this._watcher) {
       return;
     }
 
     const work = new Signal.Computed(() => {
-      const value = this.count.get();
-      this.write(`computed ran with count = ${value}`);
+      const value = this._count.get();
+      this._write(`computed ran with count = ${value}`);
     });
 
-    this.watcher = new Signal.subtle.Watcher(() => {
+    this._watcher = new Signal.subtle.Watcher(() => {
       // Runs synchronously inside count.set(), with every signal frozen: it can only schedule work
-      this.write('notify: scheduling a microtask');
+      this._write('notify: scheduling a microtask');
       queueMicrotask(() => {
-        for (const pending of this.watcher!.getPending()) {
+        for (const pending of this._watcher!.getPending()) {
           pending.get();
         }
         // A Watcher notifies once, then waits: watch() re-arms it
-        this.watcher!.watch();
+        this._watcher!.watch();
       });
     });
 
-    this.watcher.watch(work);
+    this._watcher.watch(work);
     work.get();
   }
 
@@ -59,8 +57,8 @@ export class SignalWatcherComponent extends CustomElement {
    * Changes the State twice in a row: one notification, one run.
    */
   public incrementTwice(): void {
-    this.count.set(this.count.get() + 1);
-    this.count.set(this.count.get() + 1);
+    this._count.set(this._count.get() + 1);
+    this._count.set(this._count.get() + 1);
   }
 
   /**
@@ -68,7 +66,7 @@ export class SignalWatcherComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private write(text: string): void {
+  private _write(text: string): void {
     queueMicrotask(() => this.log.update(log => [...log, { id: log.length, text }]));
   }
 
@@ -76,6 +74,6 @@ export class SignalWatcherComponent extends CustomElement {
    * Stops watching when the component leaves the page.
    */
   public onDestroy(): void {
-    this.watcher?.unwatch(...Signal.subtle.introspectSources(this.watcher));
+    this._watcher?.unwatch(...Signal.subtle.introspectSources(this._watcher));
   }
 }

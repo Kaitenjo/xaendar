@@ -14,7 +14,6 @@ export class ConditionalStructuralComponent extends CustomElement {
    * The number checked by the directives.
    */
   public readonly n = signal(-2);
-
   /**
    * Whether the number must also be positive.
    */

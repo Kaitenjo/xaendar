@@ -14,16 +14,14 @@ export class DirectiveTimingComponent extends CustomElement {
    * The label bound to the directive.
    */
   public readonly label = signal('first');
-
   /**
    * The lines reported by the directive.
    */
   public readonly lines = signal(new Array<{ id: number; text: string }>());
-
   /**
    * The id of the next line.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Logs a line reported by the directive.
@@ -31,7 +29,7 @@ export class DirectiveTimingComponent extends CustomElement {
    * @param event - The report event.
    */
   public log(event: CustomEvent<string>): void {
-    const line = { id: this.nextId++, text: event.detail };
+    const line = { id: this._nextId++, text: event.detail };
     this.lines.update(lines => [...lines, line]);
   }
 

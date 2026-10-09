@@ -141,6 +141,87 @@ describe('extractSignalMembers', () => {
     });
   });
 
+  describe('members initialised with module-level signals', () => {
+    const STORE = `${SIGNALS_IMPORT}import { Signal } from '@xaendar/core/signals';
+      export const count = signal(0);
+      export const double = computed(() => count() * 2);
+      export const typed: Signal<number> = make();
+      export const untyped = 5;
+      export const declared: number;
+      export let uninitialised;
+      export const aliased = count;
+      const hidden = signal(0);
+      export { hidden as renamed };
+      export let a = b, b = a;
+    `;
+    const withStore = (source: string, files: Record<string, string> = {}) => setup(source, dir => {
+      write(join(dir, 'store.ts'), STORE);
+      Object.entries(files).forEach(([file, content]) => write(join(dir, file), content));
+    });
+
+    it('detects members initialised with an imported signal, without annotation', () => {
+      expect(withStore(`
+        import { count, double, typed, untyped, declared, uninitialised, aliased, renamed, missing, a } from './store';
+        import { count as other } from './store';
+        class Cmp {
+          count = count;
+          double = double;
+          typed = typed;
+          untyped = untyped;
+          declared = declared;
+          uninitialised = uninitialised;
+          aliased = aliased;
+          renamed = renamed;
+          missing = missing;
+          a = a;
+          other = other;
+          literal = 'x';
+        }
+      `)).toEqual(['count', 'double', 'typed', 'aliased', 'renamed', 'other']);
+    });
+
+    it('detects members initialised with a signal of a namespace import, or of a re-exporting barrel', () => {
+      expect(withStore(`
+        import * as store from './store';
+        import { count } from './barrel';
+        class Cmp {
+          a = store.count;
+          b = store.untyped;
+          c = unknown.count;
+          d = count;
+        }
+      `, { 'barrel.ts': 'export * from \'./store\';' })).toEqual(['a', 'd']);
+    });
+
+    it('detects members initialised with a signal declared in the same file', () => {
+      expect(setup(`
+        ${SIGNALS_IMPORT}
+        import * as s from '@xaendar/core/signals';
+        const local = signal(0);
+        const viaNamespace = s.signal(0);
+        const plain = other();
+        const typed: s.Signal<number> = make();
+        const notSignalType: Other = make();
+        const notReference: Array<number> = [];
+        class Cmp {
+          local = local;
+          viaNamespace = viaNamespace;
+          plain = plain;
+          typed = typed;
+          notSignalType = notSignalType;
+          notReference = notReference;
+        }
+      `)).toEqual(['local', 'viaNamespace', 'typed']);
+    });
+
+    it('reports the files read to resolve the signals', () => {
+      const { members, dependencies, dir } = extract('import { count } from \'./store\';\nclass Cmp { count = count; }', dir => write(join(dir, 'store.ts'), STORE));
+
+      expect(members).toEqual(['count']);
+      expect(dependencies).toEqual([`${dir}/store.ts`]);
+    });
+  });
+
   describe('inheritance', () => {
     it('returns nothing inherited for classes without heritage, with implements only or with an unsupported base expression', () => {
       expect(setup(`${SIGNALS_IMPORT} class Cmp { a = signal(1); }`)).toEqual(['a']);

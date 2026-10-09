@@ -14,7 +14,6 @@ export class SwitchEvaluationsComponent extends CustomElement {
    * The day of the week, from 1 to 7.
    */
   public readonly day = signal(1);
-
   /**
    * How many times dayName ran.
    */

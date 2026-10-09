@@ -35,16 +35,14 @@ export class TodoStep4Component extends CustomElement {
     { id: 1, title: 'Learn Xaendar', done: true },
     { id: 2, title: 'Build an app', done: false }
   ]);
-
   /**
    * How many todos are not done yet.
    */
-  public readonly remaining = computed(() => this.todos().filter(todo => !todo.done).length);
-
+  public readonly remaining = computed(() => this._computeRemaining());
   /**
    * The identifier of the next todo.
    */
-  private nextId = 3;
+  private _nextId = 3;
 
   /**
    * Adds the todo typed in the form.
@@ -56,7 +54,7 @@ export class TodoStep4Component extends CustomElement {
     const form = event.target as HTMLFormElement;
     const title = new FormData(form).get('title')?.toString().trim();
     if (title) {
-      this.todos.update(todos => [...todos, { id: this.nextId++, title, done: false }]);
+      this.todos.update(todos => [...todos, { id: this._nextId++, title, done: false }]);
     }
     form.reset();
   }
@@ -77,5 +75,14 @@ export class TodoStep4Component extends CustomElement {
    */
   public removeTodo(id: number): void {
     this.todos.update(todos => todos.filter(todo => todo.id !== id));
+  }
+
+  /**
+   * Computes the value of `remaining`.
+   *
+   * @returns How many todos are not done yet.
+   */
+  private _computeRemaining(): number {
+    return this.todos().filter(todo => !todo.done).length;
   }
 }

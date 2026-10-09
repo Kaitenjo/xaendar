@@ -47,7 +47,7 @@
   <h2>Casi limite</h2>
   <docs-callout kind="edge" heading="Lo spazio tra due interpolazioni">
     <code>{"{ first() } { last() }"}</code> mostra i due valori senza lo spazio, perché il compilatore elimina il testo
-    fatto solo di spazi. Scrivi <code>{"{ first() + ' ' + last() }"}</code>, oppure <code>{"{' '}"}</code> tra le due.
+    fatto solo di spazi. Scrivi <code>{'{`${first()} ${last()}`}'}</code>, oppure <code>{"{' '}"}</code> tra le due.
     Vedi <a href="#/it/templates/overview">Sintassi dei template</a>.
   </docs-callout>
   <docs-callout kind="issue" heading="Una graffa chiusa dentro una stringa">
@@ -68,7 +68,7 @@
   <docs-callout kind="issue" heading="Un template literal subito dopo uno spazio">
     <p>
       Un’espressione che inizia con un backtick dopo lo spazio che segue la graffa non viene analizzata. Scrivi il
-      backtick subito dopo la graffa, come nell’esempio, oppure costruisci la stringa con <code>+</code>.
+      backtick subito dopo la graffa, come nell’esempio.
     </p>
     <docs-code snippet="components/template-literal-class.html" />
     <docs-code snippet="components/template-literal-error.txt" />

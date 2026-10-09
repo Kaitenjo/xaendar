@@ -401,19 +401,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: "Cannot find name 'Todo'.",
-    cause: {
-      en: 'An input or output typed with a name imported in the file of the component: the type is copied as text into the check of the templates using it.',
-      it: 'Un input o un output tipizzato con un nome importato nel file del componente: il tipo viene copiato come testo nel controllo dei template che lo usano.'
-    },
-    fix: {
-      en: 'Write the type inline in the generic argument.',
-      it: 'Scrivi il tipo inline nell’argomento generico.'
-    },
-    page: 'components/inputs'
-  },
-  {
-    phase: 'TypeChecker',
     message: "Property 'secret' is private and only accessible within class 'XCard'.",
     cause: {
       en: 'A private or protected member read by the template.',

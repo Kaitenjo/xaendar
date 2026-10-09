@@ -16,9 +16,17 @@ export class ItemCounterComponent extends CustomElement {
    */
   @Query.content.all('li')
   public accessor items!: QuerySignal<HTMLElement[]>;
-
   /**
    * The texts of the items found.
    */
-  public readonly texts = computed(() => this.items().map(item => item.textContent).join(', '));
+  public readonly texts = computed(() => this._computeTexts());
+
+  /**
+   * Computes the value of `texts`.
+   *
+   * @returns The texts of the items found.
+   */
+  private _computeTexts(): string {
+    return this.items().map(item => item.textContent).join(', ');
+  }
 }

@@ -1,5 +1,8 @@
 @import { ClosableNoteComponent } from './closable-note.xd.component.ts'
 
-<label><input type="checkbox" checked (change)="toggleKeepOpen()" /> Keep the notes open: preventDefault()</label>
+<label>
+  <input type="checkbox" checked (change)="toggleKeepOpen()" /> 
+  Keep the notes open: preventDefault()
+</label>
 <ex-closable-note mode="emit" (closing)="onClosing($event)">Closes with emit()</ex-closable-note>
 <ex-closable-note mode="dispatch" (closing)="onClosing($event)">Closes with dispatchEvent()</ex-closable-note>

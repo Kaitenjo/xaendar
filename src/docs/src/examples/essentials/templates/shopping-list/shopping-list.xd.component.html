@@ -8,7 +8,13 @@
     @for (item of items(); track item) {
       <li class="{ item.done ? 'done' : '' }">
         <label>
-          <input type="checkbox" (change)="toggle(item.id)" @if (item.done) { checked } />
+          <input
+            type="checkbox"
+            (change)="toggle(item.id)"
+            @if (item.done) {
+              checked
+            }
+          />
           { item.name }
         </label>
       </li>

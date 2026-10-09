@@ -14,5 +14,14 @@ export class InheritedStepperComponent extends StepperBase {
   /**
    * The type of the value the input received.
    */
-  public readonly stepType = computed(() => typeof this.step());
+  public readonly stepType = computed(() => this._computeStepType());
+
+  /**
+   * Computes the value of `stepType`.
+   *
+   * @returns The type of the value the input received.
+   */
+  private _computeStepType(): string {
+    return typeof this.step();
+  }
 }

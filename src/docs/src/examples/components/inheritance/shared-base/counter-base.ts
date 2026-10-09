@@ -12,16 +12,14 @@ export abstract class CounterBase extends CustomElement {
    * class too, and the components redeclaring it would not compile.
    */
   public abstract accessor step: () => number;
-
   /**
    * The count.
    */
   public readonly count = signal(0);
-
   /**
    * Whether the count is back to zero.
    */
-  public readonly atZero = computed(() => this.count() === 0);
+  public readonly atZero = computed(() => this._computeAtZero());
 
   /**
    * Adds one step.
@@ -42,5 +40,14 @@ export abstract class CounterBase extends CustomElement {
    */
   public reset(): void {
     this.count.set(0);
+  }
+
+  /**
+   * Computes the value of `atZero`.
+   *
+   * @returns Whether the count is back to zero.
+   */
+  private _computeAtZero(): boolean {
+    return this.count() === 0;
   }
 }

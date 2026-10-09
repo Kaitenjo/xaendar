@@ -5,8 +5,7 @@ import { MESSAGES } from './messages';
 /**
  * The texts of the user interface in the current language.
  *
- * Components expose it as a member annotated with its signal type
- * (`readonly t: Computed<Messages> = t;`): the template compiler recognizes signal members
- * syntactically, so the annotation is what makes attribute bindings reading it reactive.
+ * Components expose it as a member (`readonly t = t;`): the template compiler follows the
+ * member to this declaration, so attribute bindings reading it are reactive.
  */
 export const t = computed(() => MESSAGES[lang()]);

@@ -17,7 +17,6 @@ export class ThirdPartyComponent extends CustomElement {
    */
   @Query('.host')
   public accessor host!: QuerySignal<HTMLElement | null>;
-
   /**
    * The level shown by the gauge.
    */
@@ -30,9 +29,7 @@ export class ThirdPartyComponent extends CustomElement {
   public afterRender(): void {
     const gauge = new VanillaGauge();
     this.host()?.append(gauge);
-    this.effect(() => {
-      gauge.value = this.level();
-    });
+    this.effect(() => gauge.value = this.level());
   }
 
   /**

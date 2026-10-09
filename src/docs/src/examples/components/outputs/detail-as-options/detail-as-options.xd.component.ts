@@ -14,11 +14,10 @@ export class DetailAsOptionsComponent extends CustomElement {
    * The events received.
    */
   public readonly received = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * The identifier of the next line of the log.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Logs the booked event.
@@ -26,7 +25,7 @@ export class DetailAsOptionsComponent extends CustomElement {
    * @param event - The event, whose detail should be the booking.
    */
   public onBooked(event: CustomEvent<{ date: string; cancelable: boolean }>): void {
-    this.record('booked → detail ' + JSON.stringify(event.detail) + ', event.cancelable ' + event.cancelable);
+    this._record(`booked → detail ${JSON.stringify(event.detail)}, event.cancelable ${event.cancelable}`);
   }
 
   /**
@@ -35,7 +34,7 @@ export class DetailAsOptionsComponent extends CustomElement {
    * @param event - The event, whose detail wraps the booking.
    */
   public onBookedWrapped(event: CustomEvent<{ booking: { date: string; cancelable: boolean } }>): void {
-    this.record('bookedWrapped → detail ' + JSON.stringify(event.detail));
+    this._record(`bookedWrapped → detail ${JSON.stringify(event.detail)}`);
   }
 
   /**
@@ -43,7 +42,7 @@ export class DetailAsOptionsComponent extends CustomElement {
    *
    * @param text - The line.
    */
-  private record(text: string): void {
-    this.received.update(lines => [...lines, { id: this.nextId++, text }].slice(-4));
+  private _record(text: string): void {
+    this.received.update(lines => [...lines, { id: this._nextId++, text }].slice(-4));
   }
 }

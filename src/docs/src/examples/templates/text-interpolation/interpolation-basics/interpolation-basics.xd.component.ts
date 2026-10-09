@@ -15,21 +15,18 @@ export class InterpolationBasicsComponent extends CustomElement {
    * The name of the product.
    */
   public readonly product = signal('notebook');
-
   /**
    * How many pieces are in the cart.
    */
   public readonly quantity = signal(1);
-
   /**
    * The price of one piece.
    */
   public readonly price = 4.5;
-
   /**
    * The total, as a computed signal.
    */
-  public readonly total = computed(() => this.quantity() * this.price);
+  public readonly total = computed(() => this._computeTotal());
 
   /**
    * The total, formatted by a method. Text interpolations are reactive even when they call a method that reads
@@ -38,7 +35,7 @@ export class InterpolationBasicsComponent extends CustomElement {
    * @returns The total with its currency.
    */
   public formattedTotal(): string {
-    return this.total().toFixed(2) + ' €';
+    return `${this.total().toFixed(2)} €`;
   }
 
   /**
@@ -53,5 +50,14 @@ export class InterpolationBasicsComponent extends CustomElement {
    */
   public switchProduct(): void {
     this.product.update(product => product === 'notebook' ? 'pencil' : 'notebook');
+  }
+
+  /**
+   * Computes the value of `total`.
+   *
+   * @returns The total.
+   */
+  private _computeTotal(): number {
+    return this.quantity() * this.price;
   }
 }

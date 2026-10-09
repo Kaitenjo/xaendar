@@ -1,8 +1,13 @@
-@Event()                                       // a CustomEvent named valueChange, carrying a number
+/**
+ * A CustomEvent named valueChange, carrying a number.
+ */
+@Event()
 public accessor valueChange!: Output<number>;
-
-@Event({ bubbles: true, composed: true })      // the default options of every emission
-public accessor closed!: Output;               // Output<void>: no detail
+/**
+ * An Output<void>, with no detail. The options are the defaults of every emission.
+ */
+@Event({ bubbles: true, composed: true })
+public accessor closed!: Output;
 
 this.valueChange.emit(3);                      // detail 3, default options
 this.valueChange.emit(3, { bubbles: true });   // detail 3, options for this emission only

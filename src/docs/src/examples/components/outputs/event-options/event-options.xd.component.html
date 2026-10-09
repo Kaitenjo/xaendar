@@ -8,13 +8,13 @@
     <thead>
       <tr>
         <th>Emission</th>
-        @for (level of levels; track level) {
+        @for (level of levels) {
           <th>{ level }</th>
         }
       </tr>
     </thead>
     <tbody>
-      @for (row of rows(); track row) {
+      @for (row of rows()) {
         <tr>
           <th>{ row.emission }</th>
           @for (cell of row.cells; track $index) {

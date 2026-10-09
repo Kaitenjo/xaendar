@@ -11,22 +11,17 @@ import { computed, signal } from '@xaendar/core/signals';
 })
 export class CitySearchComponent extends CustomElement {
   /**
-   * The cities to search.
-   */
-  private readonly cities = ['Milan', 'Rome', 'Turin', 'Naples', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Bari', 'Venice'];
-
-  /**
    * The text typed.
    */
   public readonly query = signal('');
-
   /**
    * The cities containing the text.
    */
-  public readonly results = computed(() => {
-    const query = this.query().trim().toLowerCase();
-    return this.cities.filter(city => city.toLowerCase().includes(query));
-  });
+  public readonly results = computed(() => this._computeResults());
+  /**
+   * The cities to search.
+   */
+  private readonly _cities = ['Milan', 'Rome', 'Turin', 'Naples', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Bari', 'Venice'];
 
   /**
    * Stores the text typed.
@@ -35,5 +30,15 @@ export class CitySearchComponent extends CustomElement {
    */
   public type(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Computes the value of `results`.
+   *
+   * @returns The cities containing the text.
+   */
+  private _computeResults(): string[] {
+    const query = this.query().trim().toLowerCase();
+    return this._cities.filter(city => city.toLowerCase().includes(query));
   }
 }

@@ -14,7 +14,6 @@ export class UserProfileComponent extends CustomElement {
    * Whether Ada is online.
    */
   public readonly adaOnline = signal(true);
-
   /**
    * The name carried by the last `wave` event.
    */

@@ -3,7 +3,16 @@ import { computed, signal } from '@xaendar/core/signals';
 /**
  * A route matched by the router, with the parameters read from the path.
  */
-export type Route = { name: 'home' | 'users' | 'user' | 'not-found'; params: Record<string, string> };
+export type Route = {
+  /**
+   * The name of the matched route.
+   */
+  readonly name: 'home' | 'users' | 'user' | 'not-found';
+  /**
+   * The parameters read from the path, by name.
+   */
+  readonly params: Record<string, string>;
+};
 
 /**
  * The patterns of the application, in order of priority. A segment starting with a colon is a parameter.

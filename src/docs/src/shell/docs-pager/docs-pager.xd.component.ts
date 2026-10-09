@@ -1,11 +1,9 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import type { Computed } from '@xaendar/core/signals';
 import { t } from '../../core/i18n/i18n';
-import type { Messages } from '../../core/i18n/messages';
-import type { Lang } from '../../core/router/route-hash.utils';
 import { lang, path } from '../../core/router/router';
 import { findNeighbours } from '../../core/routes/routes';
+import type { DocsPage } from '../../core/routes/routes';
 
 /**
  * Links to the previous and the next page, in reading order.
@@ -19,20 +17,35 @@ export class DocsPagerComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t: Computed<Messages> = t;
-
+  public readonly t = t;
   /**
    * The current language.
    */
-  public readonly currentLang: Computed<Lang> = lang;
-
+  public readonly currentLang = lang;
   /**
    * The page before the one being read.
    */
-  public readonly previous = computed(() => findNeighbours(path()).previous);
-
+  public readonly previous = computed(() => this._computePrevious());
   /**
    * The page after the one being read.
    */
-  public readonly next = computed(() => findNeighbours(path()).next);
+  public readonly next = computed(() => this._computeNext());
+
+  /**
+   * Computes the value of `previous`.
+   *
+   * @returns The page before the one being read.
+   */
+  private _computePrevious(): DocsPage | undefined {
+    return findNeighbours(path()).previous;
+  }
+
+  /**
+   * Computes the value of `next`.
+   *
+   * @returns The page after the one being read.
+   */
+  private _computeNext(): DocsPage | undefined {
+    return findNeighbours(path()).next;
+  }
 }

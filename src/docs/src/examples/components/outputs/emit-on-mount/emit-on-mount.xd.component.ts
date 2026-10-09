@@ -14,16 +14,14 @@ export class EmitOnMountComponent extends CustomElement {
    * Whether the child is in the page.
    */
   public readonly shown = signal(false);
-
   /**
    * The events received.
    */
   public readonly received = signal<Array<{ id: number; text: string }>>([]);
-
   /**
    * The identifier of the next line of the log.
    */
-  private nextId = 0;
+  private _nextId = 0;
 
   /**
    * Adds or removes the child.
@@ -38,7 +36,7 @@ export class EmitOnMountComponent extends CustomElement {
    * @param event - The event: its detail names the step that emitted it.
    */
   public onStage(event: CustomEvent<string>): void {
-    this.received.update(lines => [...lines, { id: this.nextId++, text: 'received: ' + event.detail }]);
+    this.received.update(lines => [...lines, { id: this._nextId++, text: `received: ${event.detail}` }]);
   }
 
   /**

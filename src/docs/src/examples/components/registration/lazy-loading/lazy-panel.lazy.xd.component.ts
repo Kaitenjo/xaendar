@@ -15,7 +15,6 @@ export class LazyPanelComponent extends CustomElement {
    */
   @Property(0)
   public accessor count!: InputSignal<number>;
-
   /**
    * A label bound by the parent.
    */

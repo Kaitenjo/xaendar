@@ -14,11 +14,10 @@ export class TransformEqualsComponent extends CustomElement {
    * The tags, as typed by a user.
    */
   public readonly raw = signal(['  Signals', 'COMPONENTS ', '']);
-
   /**
    * The raw tags, as code.
    */
-  public readonly rawText = computed(() => JSON.stringify(this.raw()));
+  public readonly rawText = computed(() => this._computeRawText());
 
   /**
    * Sends a new array that normalizes to the current tags.
@@ -32,5 +31,14 @@ export class TransformEqualsComponent extends CustomElement {
    */
   public sendOther(): void {
     this.raw.set([' Templates', 'directives  ', 'SIGNALS']);
+  }
+
+  /**
+   * Computes the value of `rawText`.
+   *
+   * @returns The raw tags, as code.
+   */
+  private _computeRawText(): string {
+    return JSON.stringify(this.raw());
   }
 }

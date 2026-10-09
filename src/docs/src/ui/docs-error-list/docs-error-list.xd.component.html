@@ -6,7 +6,7 @@
       <option value="{ name }">{ name }</option>
     }
   </select>
-  <span class="count">{ entries().length + ' ' + t().reference.results }</span>
+  <span class="count">{`${entries().length} ${t().reference.results}`}</span>
 </div>
 @if (entries().length > 0) {
   <ul class="entries">

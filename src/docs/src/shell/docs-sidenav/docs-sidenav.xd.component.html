@@ -6,7 +6,7 @@
         @for (item of section.items; track item.title.en) {
           <li>
             @if (item.page) {
-              <a class="{ item.page.path === path() ? 'link link--active' : 'link' }" href="{ '#/' + currentLang() + '/' + item.page.path }">{ item.title[currentLang()] }</a>
+              <a class="{ item.page.path === path() ? 'link link--active' : 'link' }" href="{`#/${currentLang()}/${item.page.path}`}">{ item.title[currentLang()] }</a>
             } @else if (isExpanded(item)) {
               <button class="group group--open" type="button" aria-expanded="true" (click)="toggle(item)">
                 <span>{ item.title[currentLang()] }</span>
@@ -15,7 +15,7 @@
               <ul class="list list--nested">
                 @for (page of item.pages ?? []; track page.path) {
                   <li>
-                    <a class="{ page.path === path() ? 'link link--nested link--active' : 'link link--nested' }" href="{ '#/' + currentLang() + '/' + page.path }">{ page.title[currentLang()] }</a>
+                    <a class="{ page.path === path() ? 'link link--nested link--active' : 'link link--nested' }" href="{`#/${currentLang()}/${page.path}`}">{ page.title[currentLang()] }</a>
                   </li>
                 }
               </ul>

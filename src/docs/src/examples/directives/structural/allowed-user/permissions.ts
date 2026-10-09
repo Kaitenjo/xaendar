@@ -3,7 +3,16 @@ import { signal } from '@xaendar/core/signals';
 /**
  * A line of the log of the permission checks.
  */
-export type CheckLine = { id: number; text: string };
+export type CheckLine = {
+  /**
+   * The identifier of the line, used as the key of the list.
+   */
+  readonly id: number;
+  /**
+   * What the line says.
+   */
+  readonly text: string;
+};
 
 /**
  * The log of the permission checks.

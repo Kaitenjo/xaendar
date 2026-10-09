@@ -15,7 +15,6 @@ export class TabPanelComponent extends CustomElement {
    */
   @Property('Tab')
   public accessor label!: InputSignal<string>;
-
   /**
    * Whether the panel is shown. Set by the tab group, which holds the instance.
    */

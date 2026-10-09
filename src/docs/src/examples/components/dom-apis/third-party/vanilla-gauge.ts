@@ -6,7 +6,7 @@ export class VanillaGauge extends HTMLElement {
   /**
    * The value, from 0 to 100.
    */
-  private current = 0;
+  private _current = 0;
 
   /**
    * The value shown.
@@ -14,7 +14,7 @@ export class VanillaGauge extends HTMLElement {
    * @returns The value.
    */
   public get value(): number {
-    return this.current;
+    return this._current;
   }
 
   /**
@@ -23,25 +23,28 @@ export class VanillaGauge extends HTMLElement {
    * @param value - The value, from 0 to 100.
    */
   public set value(value: number) {
-    this.current = value;
-    this.render();
+    this._current = value;
+    this._render();
   }
 
   /**
    * Renders the gauge when it is connected.
    */
   public connectedCallback(): void {
-    this.render();
+    this._render();
   }
 
   /**
    * Writes the markup of the gauge.
    */
-  private render(): void {
+  private _render(): void {
     this.style.display = 'block';
-    this.innerHTML = '<div style="height:0.8rem;border-radius:999px;background:rgba(127,127,127,.2);overflow:hidden">'
-      + '<div style="height:100%;width:' + this.current + '%;background:#f5a524"></div></div>'
-      + '<small>vanilla-gauge, value = ' + this.current + '</small>';
+    this.innerHTML = `
+      <div style="height:0.8rem;border-radius:999px;background:rgba(127,127,127,.2);overflow:hidden">
+        <div style="height:100%;width:${this._current}%;background:#f5a524"></div>
+      </div>
+      <small>vanilla-gauge, value = ${this._current}</small>
+    `;
   }
 }
 

@@ -1,11 +1,20 @@
-@Query('input')                                   // the first match, or null
+/**
+ * The first match, or null.
+ */
+@Query('input')
 public accessor field!: QuerySignal<HTMLElement | null>;
-
-@Query<HTMLInputElement>('input[type=search]')    // the type argument narrows the element
+/**
+ * The type argument narrows the element.
+ */
+@Query<HTMLInputElement>('input[type=search]')
 public accessor search!: QuerySignal<HTMLInputElement | null>;
-
-@Query(CounterBadgeComponent)                     // a component class: its selector, typed as its instance
+/**
+ * A component class: its selector, typed as its instance.
+ */
+@Query(CounterBadgeComponent)
 public accessor badge!: QuerySignal<CounterBadgeComponent | null>;
-
-@Query.all('.row')                                // every match, in document order: [] when there is none
+/**
+ * Every match, in document order: [] when there is none.
+ */
+@Query.all('.row')
 public accessor rows!: QuerySignal<HTMLElement[]>;

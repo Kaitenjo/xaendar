@@ -1,3 +1,6 @@
+/**
+ * A number, converted by transform from the string it receives.
+ */
 @Property(0, { transform: (value: string) => Number(value) })
 public accessor size!: InputSignal<number>;
 

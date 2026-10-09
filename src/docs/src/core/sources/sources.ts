@@ -5,13 +5,13 @@ import type { SourceFile } from './source-files.utils';
  * The raw source of every live example, keyed by path. Examples are real components: the code
  * shown next to them is exactly the code that runs.
  */
-const EXAMPLES = import.meta.glob<string>('../../examples/**/*', { query: '?raw', import: 'default', eager: true });
+const EXAMPLES = import.meta.glob('../../examples/**/*', { query: '?raw', import: 'default', eager: true });
 
 /**
  * The raw source of every snippet, keyed by path. Snippets are code that is shown but not run:
  * configuration files, or code that does not compile on purpose.
  */
-const SNIPPETS = import.meta.glob<string>('../../snippets/**/*', { query: '?raw', import: 'default', eager: true });
+const SNIPPETS = import.meta.glob('../../snippets/**/*', { query: '?raw', import: 'default', eager: true });
 
 /**
  * Collects the source files of a live example.

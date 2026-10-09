@@ -6,7 +6,16 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * A line of the trace.
  */
-export type TraceLine = { id: number; text: string };
+export type TraceLine = {
+  /**
+   * The identifier of the line, used as the key of the list.
+   */
+  readonly id: number;
+  /**
+   * What the line says.
+   */
+  readonly text: string;
+};
 
 /**
  * The trace written by every instance of the directive.
@@ -14,9 +23,13 @@ export type TraceLine = { id: number; text: string };
 export const trace = signal(new Array<TraceLine>());
 
 /**
- * The id of the next line, and of the next instance.
+ * The id of the next line.
  */
 let nextLine = 0;
+
+/**
+ * The number of the next instance of the directive.
+ */
 let nextInstance = 1;
 
 /**
@@ -35,23 +48,22 @@ function write(text: string): void {
 @Directive({ selector: 'exTraced' })
 export class TracedDirective extends CustomDirective<HTMLElement> {
   /**
-   * The number of this instance.
-   */
-  private readonly instance = nextInstance++;
-
-  /**
    * A label, shown as the background color of the element.
    */
   @Property('none')
   public accessor color!: InputSignal<string>;
+  /**
+   * The number of this instance.
+   */
+  private readonly _instance = nextInstance++;
 
   /**
    * Starts tracing.
    */
   public onInit(): void {
-    write(`#${this.instance} onInit`);
+    write(`#${this._instance} onInit`);
     this.effect(() => {
-      write(`#${this.instance} color=${this.color()}`);
+      write(`#${this._instance} color=${this.color()}`);
       this.element.style.backgroundColor = this.color() === 'none' ? '' : this.color();
     });
   }
@@ -60,7 +72,7 @@ export class TracedDirective extends CustomDirective<HTMLElement> {
    * Clears the background, since the element outlives the directive.
    */
   public onDestroy(): void {
-    write(`#${this.instance} onDestroy`);
+    write(`#${this._instance} onDestroy`);
     this.element.style.backgroundColor = '';
   }
 }

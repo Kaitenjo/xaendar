@@ -14,12 +14,10 @@ export class UntrackedReadComponent extends CustomElement {
    * The message to send: a tracked dependency.
    */
   public readonly message = signal('Hello');
-
   /**
    * The current user: read without tracking.
    */
   public readonly user = signal('Ada');
-
   /**
    * The messages "sent" by the effect.
    */

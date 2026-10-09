@@ -14,24 +14,23 @@ export class ForContextComponent extends CustomElement {
    * The tasks.
    */
   public readonly tasks = signal([{ id: 1, title: 'Write' }, { id: 2, title: 'Review' }, { id: 3, title: 'Ship' }]);
-
   /**
    * The identifier of the next task.
    */
-  private nextId = 4;
+  private _nextId = 4;
 
   /**
    * Adds a task at the top.
    */
   public prepend(): void {
-    this.tasks.update(tasks => [{ id: this.nextId, title: 'Task ' + this.nextId++ }, ...tasks]);
+    this.tasks.update(tasks => [{ id: this._nextId, title: `Task ${this._nextId++}` }, ...tasks]);
   }
 
   /**
    * Adds a task at the bottom.
    */
   public append(): void {
-    this.tasks.update(tasks => [...tasks, { id: this.nextId, title: 'Task ' + this.nextId++ }]);
+    this.tasks.update(tasks => [...tasks, { id: this._nextId, title: `Task ${this._nextId++}` }]);
   }
 
   /**

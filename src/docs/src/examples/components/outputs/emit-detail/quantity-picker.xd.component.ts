@@ -16,13 +16,11 @@ export class QuantityPickerComponent extends CustomElement {
    */
   @Property(0)
   public accessor value!: InputSignal<number>;
-
   /**
    * Asks for a new quantity, carried by the detail of the event.
    */
   @Event()
   public accessor valueChange!: Output<number>;
-
   /**
    * Tells that the quantity was cleared. An Output without a type argument carries no detail.
    */

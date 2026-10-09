@@ -14,14 +14,10 @@ export class BranchCollisionComponent extends CustomElement {
    * The temperature, in degrees.
    */
   public readonly degrees = signal(5);
-
   /**
    * The range the temperature falls in.
    */
-  public readonly level = computed(() => {
-    const degrees = this.degrees();
-    return degrees < 0 ? 'freezing' : degrees < 15 ? 'cold' : degrees < 25 ? 'mild' : 'hot';
-  });
+  public readonly level = computed(() => this._computeLevel());
 
   /**
    * Reads the slider.
@@ -30,5 +26,15 @@ export class BranchCollisionComponent extends CustomElement {
    */
   public setDegrees(event: Event): void {
     this.degrees.set(Number((event.target as HTMLInputElement).value));
+  }
+
+  /**
+   * Computes the value of `level`.
+   *
+   * @returns The range the temperature falls in.
+   */
+  private _computeLevel(): string {
+    const degrees = this.degrees();
+    return degrees < 0 ? 'freezing' : degrees < 15 ? 'cold' : degrees < 25 ? 'mild' : 'hot';
   }
 }

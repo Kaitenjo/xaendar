@@ -14,7 +14,6 @@ export class DropdownMenuComponent extends CustomElement {
    * Whether the menu is open.
    */
   public readonly open = signal(false);
-
   /**
    * The last item picked.
    */

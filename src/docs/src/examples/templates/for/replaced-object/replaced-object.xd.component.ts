@@ -15,7 +15,6 @@ export class ReplacedObjectComponent extends CustomElement {
    * The fruits.
    */
   public readonly fruits = signal([{ id: 1, name: 'apple' }, { id: 2, name: 'pear' }]);
-
   /**
    * The same fruits, with the name in a signal: renaming one changes the signal, not the object.
    */

@@ -14,7 +14,6 @@ export class SignalFrozenComponent extends CustomElement {
    * Another signal, touched from inside the callback.
    */
   public readonly other = signal(0);
-
   /**
    * A signal whose `watched` callback tries to write and read another signal.
    */
@@ -34,12 +33,10 @@ export class SignalFrozenComponent extends CustomElement {
       queueMicrotask(() => this.outcomes.set(outcomes));
     }
   });
-
   /**
    * What happened inside the callback.
    */
   public readonly outcomes = signal<string[]>([]);
-
   /**
    * Whether the template depends on `watchedSignal`.
    */

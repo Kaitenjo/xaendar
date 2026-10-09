@@ -1,7 +1,20 @@
 /**
  * A user returned by the fake server.
  */
-export type User = { id: number; name: string; email: string };
+export type User = {
+  /**
+   * The identifier of the user.
+   */
+  readonly id: number;
+  /**
+   * The full name.
+   */
+  readonly name: string;
+  /**
+   * The e-mail address.
+   */
+  readonly email: string;
+};
 
 /**
  * The users known by the fake server.

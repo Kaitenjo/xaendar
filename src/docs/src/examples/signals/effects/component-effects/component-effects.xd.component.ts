@@ -1,6 +1,5 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
-import type { Signal } from '@xaendar/core/signals';
 import { leaked, log } from './clock';
 
 /**
@@ -16,12 +15,10 @@ export class ComponentEffectsComponent extends CustomElement {
    * Whether the child is in the page.
    */
   public readonly mounted = signal(false);
-
   /**
-   * What the effects logged. Typed, so that the template compiler knows it is a signal.
+   * What the effects logged.
    */
-  public readonly log: Signal<Array<{ id: number; text: string }>> = log;
-
+  public readonly log = log;
   /**
    * How many standalone effects are still alive.
    */

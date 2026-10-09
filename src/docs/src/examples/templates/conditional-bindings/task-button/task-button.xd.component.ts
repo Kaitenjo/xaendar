@@ -14,17 +14,14 @@ export class TaskButtonComponent extends CustomElement {
    * Whether the task is locked.
    */
   public readonly locked = signal(false);
-
   /**
    * Whether clicking the task edits it.
    */
   public readonly editable = signal(true);
-
   /**
    * The priority of the task.
    */
   public readonly priority = signal('low');
-
   /**
    * How many times the task was edited.
    */

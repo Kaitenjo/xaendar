@@ -9,13 +9,25 @@
 @for (item of items(); track item.id) {
   <li>{ $index() + 1 }. { item.name } { $first() ? '(first)' : '' }</li>
 }
-@for (row of rows(); track row.id; i = $index) { … }    <!-- alias -->
-@for (5) { <span>★</span> }                             <!-- a number of times -->
-@for (n of count()) { <span>{ n }</span> }              <!-- 0 … count() - 1 -->
+@for (row of rows(); track row.id; i = $index) {        <!-- alias -->
+  …
+}
+@for (5) {                                               <!-- a number of times -->
+  <span>★</span>
+}
+@for (n of count()) {                                    <!-- 0 … count() - 1 -->
+  <span>{ n }</span>
+}
 
 @switch (status()) {
   @case ('draft')
-  @case ('review') { <p>In progress</p> }
-  @case ('done') { <p>Done</p> }
-  @default { <p>Unknown</p> }
+  @case ('review') {
+    <p>In progress</p>
+  }
+  @case ('done') {
+    <p>Done</p>
+  }
+  @default {
+    <p>Unknown</p>
+  }
 }

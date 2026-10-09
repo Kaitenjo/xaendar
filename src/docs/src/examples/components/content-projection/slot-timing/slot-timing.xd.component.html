@@ -1,7 +1,13 @@
 @import { CountingListComponent } from './counting-list.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggle()">@if (shown()) { Remove the list } @else { Add the list }</button>
+  <button (click)="toggle()">
+    @if (shown()) {
+      Remove the list
+    } @else {
+      Add the list
+    }
+  </button>
   <button (click)="add()">Add an item</button>
 </div>
 @if (shown()) {

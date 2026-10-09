@@ -14,21 +14,14 @@ export class SvgChartComponent extends CustomElement {
    * The visits of each day.
    */
   public readonly visits = signal([{ day: 'Mon', value: 40 }, { day: 'Tue', value: 75 }, { day: 'Wed', value: 55 }, { day: 'Thu', value: 90 }, { day: 'Fri', value: 30 }]);
-
   /**
    * The day under the pointer.
    */
   public readonly hovered = signal('');
-
   /**
    * The bars, with their geometry: the chart is 300 wide and 120 high.
    */
-  public readonly bars = computed(() => this.visits().map((visit, index) => ({
-    ...visit,
-    x: index * 60 + 10,
-    y: 110 - visit.value,
-    height: visit.value
-  })));
+  public readonly bars = computed(() => this._computeBars());
 
   /**
    * Shows the value of a day.
@@ -51,5 +44,19 @@ export class SvgChartComponent extends CustomElement {
    */
   public shuffle(): void {
     this.visits.update(visits => visits.map(visit => ({ ...visit, value: Math.round(10 + Math.random() * 90) })));
+  }
+
+  /**
+   * Computes the value of `bars`.
+   *
+   * @returns The bars, with their geometry: the chart is 300 wide and 120 high.
+   */
+  private _computeBars(): Array<{ day: string; value: number; x: number; y: number; height: number }> {
+    return this.visits().map((visit, index) => ({
+      ...visit,
+      x: index * 60 + 10,
+      y: 110 - visit.value,
+      height: visit.value
+    }));
   }
 }

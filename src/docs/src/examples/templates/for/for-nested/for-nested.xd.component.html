@@ -4,7 +4,7 @@
       @for (row of factors; track row; r = $index) {
         <tr>
           @for (column of factors; track column) {
-            <td title="{ 'row ' + r() + ', column ' + $index() }">{ row * column }</td>
+            <td title="{`row ${r()}, column ${$index()}`}">{ row * column }</td>
           }
         </tr>
       }

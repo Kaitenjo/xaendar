@@ -14,12 +14,10 @@ export class PropertyBasicsComponent extends CustomElement {
    * How many tasks are done.
    */
   public readonly done = signal(3);
-
   /**
    * How many tasks there are.
    */
   public readonly total = signal(8);
-
   /**
    * Whether the meters show their figures.
    */

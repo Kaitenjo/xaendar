@@ -1,5 +1,8 @@
 import { effect } from '@xaendar/core/signals';
 
+/**
+ * Stops the effect for good when called.
+ */
 const dispose = effect(() => {
   console.log('count is', count());   // runs now, then after every change of count
 }, {
@@ -8,4 +11,4 @@ const dispose = effect(() => {
   onCleanup: () => {}                // once, when the effect is disposed
 });
 
-dispose();                           // stops it for good
+dispose();

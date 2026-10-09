@@ -1,7 +1,5 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import type { Computed, Signal } from '@xaendar/core/signals';
 import { back, canGoBack, navigate, path, route } from './router';
-import type { Route } from './router';
 import { USERS } from './users';
 
 /**
@@ -16,18 +14,15 @@ export class MiniRouterComponent extends CustomElement {
   /**
    * The current path.
    */
-  public readonly path: Signal<string> = path;
-
+  public readonly path = path;
   /**
    * The current route.
    */
-  public readonly route: Computed<Route> = route;
-
+  public readonly route = route;
   /**
    * Whether there is a page to go back to.
    */
-  public readonly canGoBack: Computed<boolean> = canGoBack;
-
+  public readonly canGoBack = canGoBack;
   /**
    * The users listed by the users page.
    */

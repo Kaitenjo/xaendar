@@ -16,17 +16,14 @@ export class CanvasChartComponent extends CustomElement {
    */
   @Query<HTMLCanvasElement>('canvas')
   public accessor canvas!: QuerySignal<HTMLCanvasElement | null>;
-
   /**
    * The values of the bars, from 0 to 100.
    */
   public readonly values = signal([40, 75, 30, 90, 55]);
-
   /**
    * The color of the bars.
    */
   public readonly color = signal('#6750a4');
-
   /**
    * How many times the chart was drawn.
    */
@@ -43,6 +40,7 @@ export class CanvasChartComponent extends CustomElement {
       if (!canvas || !context) {
         return;
       }
+
       const values = this.values();
       const width = canvas.width / values.length;
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -59,7 +57,7 @@ export class CanvasChartComponent extends CustomElement {
    * Gives the bars new random values.
    */
   public shuffle(): void {
-    this.values.set(this.values().map(() => Math.round(10 + Math.random() * 90)));
+    this.values.update(values => values.map(() => Math.round(10 + Math.random() * 90)));
   }
 
   /**

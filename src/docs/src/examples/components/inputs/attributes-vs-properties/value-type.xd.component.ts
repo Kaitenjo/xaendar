@@ -15,9 +15,17 @@ export class ValueTypeComponent extends CustomElement {
    */
   @Property<InputSignal<unknown>>(null)
   public accessor value!: InputSignal<unknown>;
-
   /**
    * The value as code, followed by its type.
    */
-  public readonly description = computed(() => JSON.stringify(this.value()) + ' (' + typeof this.value() + ')');
+  public readonly description = computed(() => this._computeDescription());
+
+  /**
+   * Computes the value of `description`.
+   *
+   * @returns The value as code, followed by its type.
+   */
+  private _computeDescription(): string {
+    return `${JSON.stringify(this.value())} (${typeof this.value()})`;
+  }
 }

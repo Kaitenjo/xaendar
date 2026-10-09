@@ -20,7 +20,6 @@ export class TagListComponent extends CustomElement {
     equals: (a: string[], b: string[]) => a.join() === b.join()
   })
   public accessor tags!: InputSignal<string[]>;
-
   /**
    * How many times the readers of the input were notified.
    */

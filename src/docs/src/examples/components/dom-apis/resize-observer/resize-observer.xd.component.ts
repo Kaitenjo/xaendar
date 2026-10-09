@@ -16,16 +16,14 @@ export class ResizeObserverComponent extends CustomElement {
    */
   @Query('.box')
   public accessor box!: QuerySignal<HTMLElement | null>;
-
   /**
    * The width of the box, in pixels.
    */
   public readonly width = signal(0);
-
   /**
    * The observer, created once and connected to the box of each render.
    */
-  private readonly observer = new ResizeObserver(([entry]) => {
+  private readonly _observer = new ResizeObserver(([entry]) => {
     if (entry) {
       this.width.set(Math.round(entry.contentRect.width));
     }
@@ -37,7 +35,7 @@ export class ResizeObserverComponent extends CustomElement {
   public afterRender(): void {
     const box = this.box();
     if (box) {
-      this.observer.observe(box);
+      this._observer.observe(box);
     }
   }
 
@@ -45,6 +43,6 @@ export class ResizeObserverComponent extends CustomElement {
    * Stops observing: the box is about to be removed.
    */
   public onDestroy(): void {
-    this.observer.disconnect();
+    this._observer.disconnect();
   }
 }

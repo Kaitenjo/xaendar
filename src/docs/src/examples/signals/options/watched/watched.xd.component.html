@@ -1,4 +1,10 @@
-<button (click)="toggle()">@if (visible()) { Hide the clock } @else { Show the clock }</button>
+<button (click)="toggle()">
+  @if (visible()) {
+    Hide the clock
+  } @else {
+    Show the clock
+  }
+</button>
 @if (visible()) {
   <p class="clock">{ now() }</p>
 } @else {

@@ -1,11 +1,9 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import type { Computed } from '@xaendar/core/signals';
 import { t } from '../../core/i18n/i18n';
-import type { Messages } from '../../core/i18n/messages';
 import { lang } from '../../core/router/router';
-import type { Lang } from '../../core/router/route-hash.utils';
 import { ISSUES } from '../../pages/reference/known-issues/known-issues.data';
+import type { IssueEntry } from '../../pages/reference/known-issues/known-issues.data';
 
 /**
  * The searchable list of the known issues.
@@ -19,46 +17,27 @@ export class DocsIssueListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t: Computed<Messages> = t;
-
+  public readonly t = t;
   /**
    * The language of the texts.
    */
-  public readonly currentLang: Computed<Lang> = lang;
-
+  public readonly currentLang = lang;
   /**
    * The areas offered by the filter.
    */
   public readonly areas = [...new Set(ISSUES.map(entry => entry.area))];
-
   /**
    * The text typed in the filter.
    */
   public readonly query = signal('');
-
   /**
    * The area chosen, or an empty string for every area.
    */
   public readonly area = signal('');
-
   /**
    * The entries matching the filters, with their texts in the current language.
    */
-  public readonly entries = computed(() => {
-    const query = this.query().trim().toLowerCase();
-    const area = this.area();
-    const current = this.currentLang();
-    return ISSUES
-      .filter(entry => !area || entry.area === area)
-      .map(entry => ({
-        ...entry,
-        titleText: entry.title[current],
-        detailsText: entry.details[current],
-        workaroundText: entry.workaround[current],
-        href: `#/${current}/${entry.page}`
-      }))
-      .filter(entry => !query || `${entry.titleText} ${entry.detailsText} ${entry.workaroundText}`.toLowerCase().includes(query));
-  });
+  public readonly entries = computed(() => this._computeEntries());
 
   /**
    * Stores the text typed in the filter.
@@ -76,5 +55,26 @@ export class DocsIssueListComponent extends CustomElement {
    */
   public pickArea(event: Event): void {
     this.area.set((event.target as HTMLSelectElement).value);
+  }
+
+  /**
+   * Computes the value of `entries`.
+   *
+   * @returns The entries matching the filters, with their texts in the current language.
+   */
+  private _computeEntries(): Array<IssueEntry & { titleText: string; detailsText: string; workaroundText: string; href: string }> {
+    const query = this.query().trim().toLowerCase();
+    const area = this.area();
+    const current = this.currentLang();
+    return ISSUES
+      .filter(entry => !area || entry.area === area)
+      .map(entry => ({
+        ...entry,
+        titleText: entry.title[current],
+        detailsText: entry.details[current],
+        workaroundText: entry.workaround[current],
+        href: `#/${current}/${entry.page}`
+      }))
+      .filter(entry => !query || `${entry.titleText} ${entry.detailsText} ${entry.workaroundText}`.toLowerCase().includes(query));
   }
 }

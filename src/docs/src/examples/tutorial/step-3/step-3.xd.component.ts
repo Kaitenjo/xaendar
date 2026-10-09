@@ -35,11 +35,10 @@ export class TodoStep3Component extends CustomElement {
     { id: 1, title: 'Learn Xaendar', done: true },
     { id: 2, title: 'Build an app', done: false }
   ]);
-
   /**
    * The identifier of the next todo.
    */
-  private nextId = 3;
+  private _nextId = 3;
 
   /**
    * Adds the todo typed in the form.
@@ -52,7 +51,7 @@ export class TodoStep3Component extends CustomElement {
     const title = new FormData(form).get('title')?.toString().trim();
     if (title) {
       // Signals are immutable values: a new array notifies the template, push() would not
-      this.todos.update(todos => [...todos, { id: this.nextId++, title, done: false }]);
+      this.todos.update(todos => [...todos, { id: this._nextId++, title, done: false }]);
     }
     form.reset();
   }

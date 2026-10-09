@@ -14,7 +14,6 @@ export class ConditionalResetComponent extends CustomElement {
    * Whether the level is bound.
    */
   public readonly linked = signal(true);
-
   /**
    * The level to bind.
    */

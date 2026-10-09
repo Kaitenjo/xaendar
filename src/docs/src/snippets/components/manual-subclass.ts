@@ -1,4 +1,6 @@
-// A subclass registered by hand, without @WebComponent: it has no render function of its own
+/**
+ * A subclass registered by hand, without @WebComponent: it has no render function of its own.
+ */
 class PlainStepper extends StepperComponent {}
 customElements.define('plain-stepper', PlainStepper);
 

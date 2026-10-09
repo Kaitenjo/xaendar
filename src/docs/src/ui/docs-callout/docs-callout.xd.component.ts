@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import type { Computed, InputSignal } from '@xaendar/core/signals';
+import type { InputSignal } from '@xaendar/core/signals';
 import { t } from '../../core/i18n/i18n';
 import type { Messages } from '../../core/i18n/messages';
 
@@ -25,20 +25,26 @@ export class DocsCalloutComponent extends CustomElement {
    */
   @Property('note')
   public accessor kind!: InputSignal<string>;
-
   /**
    * An optional title, shown after the label of the kind.
    */
   @Property('')
   public accessor heading!: InputSignal<string>;
-
   /**
    * The texts of the user interface.
    */
-  public readonly t: Computed<Messages> = t;
-
+  public readonly t = t;
   /**
    * The label of the kind.
    */
-  public readonly label = computed(() => this.t().callout[this.kind() as CalloutKind] ?? this.kind());
+  public readonly label = computed(() => this._computeLabel());
+
+  /**
+   * Computes the value of `label`.
+   *
+   * @returns The label of the kind.
+   */
+  private _computeLabel(): string {
+    return this.t().callout[this.kind() as CalloutKind] ?? this.kind();
+  }
 }

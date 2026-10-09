@@ -11,7 +11,6 @@ export class MinLengthDirective extends StructuralDirective {
    */
   @Property('')
   public accessor text!: InputSignal<string>;
-
   /**
    * The minimum length.
    */

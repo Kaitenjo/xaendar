@@ -16,12 +16,10 @@ export class AutoFocusComponent extends CustomElement {
    */
   @Query<HTMLInputElement>('input')
   public accessor field!: QuerySignal<HTMLInputElement | null>;
-
   /**
    * Whether the title is being edited.
    */
   public readonly editing = signal(false);
-
   /**
    * The title.
    */
@@ -51,11 +49,13 @@ export class AutoFocusComponent extends CustomElement {
    * @param event - The keydown event of the field.
    */
   public onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      this.heading.set((event.target as HTMLInputElement).value);
-      this.editing.set(false);
-    } else if (event.key === 'Escape') {
-      this.editing.set(false);
+    switch (event.key) {
+      case 'Enter': 
+        this.heading.set((event.target as HTMLInputElement).value);
+
+      // Break is missing on purpose, both cases should set editing to false
+      case 'Escape':
+        this.editing.set(false);
     }
   }
 }

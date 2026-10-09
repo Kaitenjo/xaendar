@@ -9,7 +9,13 @@
     @for (todo of todos(); track todo) {
       <li>
         <label class="{ todo.done ? 'done' : '' }">
-          <input type="checkbox" (change)="toggle(todo.id)" @if (todo.done) { checked } />
+          <input
+            type="checkbox"
+            (change)="toggle(todo.id)"
+            @if (todo.done) {
+              checked
+            }
+          />
           { todo.title }
         </label>
         <button (click)="removeTodo(todo.id)">✕</button>

@@ -1,7 +1,13 @@
 // volume.xd.component.ts
+/**
+ * The volume when nothing is bound.
+ */
 const DEFAULT_LEVEL = 50;
 
-@Property(DEFAULT_LEVEL)                 // the default, written as an identifier
+/**
+ * The volume, with a default written as an identifier.
+ */
+@Property(DEFAULT_LEVEL)
 public accessor level!: InputSignal<number>;
 
 // player.xd.component.html

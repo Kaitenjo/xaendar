@@ -16,13 +16,11 @@ export class UserBadgeComponent extends CustomElement {
    */
   @Property.required()
   public accessor name!: InputSignal<string>;
-
   /**
    * Whether the user is online: an optional input, `false` by default.
    */
   @Property(false)
   public accessor online!: InputSignal<boolean>;
-
   /**
    * An output: a `wave` event carrying the name of the user.
    */

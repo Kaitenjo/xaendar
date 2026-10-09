@@ -1,7 +1,13 @@
 @import { StageReporterComponent } from './stage-reporter.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggle()">@if (shown()) { Remove the child } @else { Add the child }</button>
+  <button (click)="toggle()">
+    @if (shown()) { 
+      Remove the child 
+    } @else { 
+      Add the child 
+    }
+  </button>
   <button (click)="clear()">Clear the log</button>
 </div>
 @if (shown()) {

@@ -4,7 +4,7 @@ import { computed, signal } from '@xaendar/core/signals';
 /**
  * A todo.
  */
-type Todo = {
+export type Todo = {
   /**
    * Unique identifier.
    */
@@ -41,29 +41,22 @@ export class TodoStep5Component extends CustomElement {
     { id: 2, title: 'Build an app', done: false },
     { id: 3, title: 'Write the docs', done: false }
   ]);
-
   /**
    * The current filter.
    */
   public readonly filter = signal<Filter>('all');
-
   /**
    * The todos matching the filter.
    */
-  public readonly visible = computed(() => {
-    const filter = this.filter();
-    return this.todos().filter(todo => filter === 'all' || (filter === 'done') === todo.done);
-  });
-
+  public readonly visible = computed(() => this._computeVisible());
   /**
    * How many todos are not done yet.
    */
-  public readonly remaining = computed(() => this.todos().filter(todo => !todo.done).length);
-
+  public readonly remaining = computed(() => this._computeRemaining());
   /**
    * The identifier of the next todo.
    */
-  private nextId = 4;
+  private _nextId = 4;
 
   /**
    * Adds the todo typed in the form.
@@ -75,7 +68,7 @@ export class TodoStep5Component extends CustomElement {
     const form = event.target as HTMLFormElement;
     const title = new FormData(form).get('title')?.toString().trim();
     if (title) {
-      this.todos.update(todos => [...todos, { id: this.nextId++, title, done: false }]);
+      this.todos.update(todos => [...todos, { id: this._nextId++, title, done: false }]);
     }
     form.reset();
   }
@@ -105,5 +98,24 @@ export class TodoStep5Component extends CustomElement {
    */
   public show(filter: Filter): void {
     this.filter.set(filter);
+  }
+
+  /**
+   * Computes the value of `visible`.
+   *
+   * @returns The todos matching the filter.
+   */
+  private _computeVisible(): Todo[] {
+    const filter = this.filter();
+    return this.todos().filter(todo => filter === 'all' || (filter === 'done') === todo.done);
+  }
+
+  /**
+   * Computes the value of `remaining`.
+   *
+   * @returns How many todos are not done yet.
+   */
+  private _computeRemaining(): number {
+    return this.todos().filter(todo => !todo.done).length;
   }
 }

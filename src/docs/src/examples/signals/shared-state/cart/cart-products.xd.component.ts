@@ -1,5 +1,4 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import type { Computed } from '@xaendar/core/signals';
 import { add, count } from './cart.store';
 
 /**
@@ -15,11 +14,10 @@ export class CartProductsComponent extends CustomElement {
    * The products on sale.
    */
   public readonly products = ['Coffee', 'Tea', 'Cocoa'];
-
   /**
    * The size of the cart, exposed to the template as a member.
    */
-  public readonly count: Computed<number> = count;
+  public readonly count = count;
 
   /**
    * Adds a product to the cart.

@@ -16,11 +16,19 @@ export class AvatarComponent extends CustomElement {
    */
   @Property('', { alias: 'full-name' })
   public accessor fullName!: InputSignal<string>;
-
   /**
    * The initials.
    */
-  public readonly initials = computed(() => this.fullName().split(' ').map(word => word.charAt(0)).join('').toUpperCase());
+  public readonly initials = computed(() => this._computeInitials());
+
+  /**
+   * Computes the value of `initials`.
+   *
+   * @returns The initials.
+   */
+  private _computeInitials(): string {
+    return this.fullName().split(' ').map(word => word.charAt(0)).join('').toUpperCase();
+  }
 }
 
 /**

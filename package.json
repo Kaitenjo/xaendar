@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build:projects": "npm run build-projects --prefix schematics",
+    "build:claude-plugin": "npm run build:schematics && npm run build-claude-plugin --prefix schematics",
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
     "build:src": "npm run build --prefix src/docs",

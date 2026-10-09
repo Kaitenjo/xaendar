@@ -14,7 +14,6 @@ export class SignalIdentityComponent extends CustomElement {
    * A list of fruits.
    */
   public readonly fruits = signal(['apple']);
-
   /**
    * How many times the effect reading `fruits` ran.
    */

@@ -6,7 +6,15 @@
 >…</p>
 
 <!-- Its inputs can be conditional too: the instance stays, only the binding changes -->
-<p @@exTint(@if (warm()) { color="#fecaca" } @else { color="#bfdbfe" })>…</p>
+<p
+  @@exTint(
+    @if (warm()) {
+      color="#fecaca"
+    } @else {
+      color="#bfdbfe"
+    }
+  )
+>…</p>
 
 <!-- A structural directive applied by a condition, next to an unconditional one -->
 <p

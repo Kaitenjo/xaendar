@@ -16,26 +16,22 @@ export class UserLoaderComponent extends CustomElement {
    * The ids offered, the last one unknown to the server.
    */
   public readonly ids = [1, 2, 3, 4];
-
   /**
    * The state of the request.
    */
   public readonly status = signal<'idle' | 'loading' | 'error' | 'ready'>('idle');
-
   /**
    * The user loaded.
    */
   public readonly user = signal<User | null>(null);
-
   /**
    * The error of the last request.
    */
   public readonly error = signal('');
-
   /**
    * Aborts the request in progress.
    */
-  private controller: AbortController | null = null;
+  private _controller: AbortController | null = null;
 
   /**
    * Loads a user, aborting the request in progress.
@@ -43,9 +39,9 @@ export class UserLoaderComponent extends CustomElement {
    * @param id - The id of the user.
    */
   public async load(id: number): Promise<void> {
-    this.controller?.abort();
+    this._controller?.abort();
     const controller = new AbortController();
-    this.controller = controller;
+    this._controller = controller;
     this.status.set('loading');
 
     try {
@@ -64,6 +60,6 @@ export class UserLoaderComponent extends CustomElement {
    * Aborts the request in progress: its answer would arrive after the component is gone.
    */
   public onDestroy(): void {
-    this.controller?.abort();
+    this._controller?.abort();
   }
 }
