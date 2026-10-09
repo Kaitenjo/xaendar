@@ -1,0 +1,65 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DefineRulesComponent } from '../../../examples/components/registration/define-rules/define-rules.xd.component.ts'
+@import { LazyLoadingComponent } from '../../../examples/components/registration/lazy-loading/lazy-loading.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.components.registration.eyebrow") />
+<h1 @@i18n(key="pages.components.registration.title") />
+<p class="lead" @@i18n(key="pages.components.registration.lead") />
+
+<h2 @@i18n(key="pages.components.registration.choosingASelector.title") />
+<p @@i18n(key="pages.components.registration.choosingASelector.p1") />
+<docs-example name="components/registration/define-rules" heading="{ t().pages.components.registration.choosingASelector.example1 }">
+  <ex-define-rules />
+</docs-example>
+<p @@i18n(key="pages.components.registration.choosingASelector.p2") />
+<docs-code snippet="components/invalid-selector-error.txt" />
+
+<h2 @@i18n(key="pages.components.registration.oneNameOneClass.title") />
+<p @@i18n(key="pages.components.registration.oneNameOneClass.p1") />
+<docs-code snippet="components/duplicate-selector-error.txt" />
+
+<h2 @@i18n(key="pages.components.registration.usingAComponentIn.title") />
+<p @@i18n(key="pages.components.registration.usingAComponentIn.p1") />
+<ol class="steps">
+  <li>
+    <span @@i18n(key="pages.components.registration.usingAComponentIn.li1") /><docs-code snippet="components/import-component.html" />
+  </li>
+  <li>
+    <span @@i18n(key="pages.components.registration.usingAComponentIn.li2") /><docs-code snippet="components/main-glob.ts" />
+  </li>
+</ol>
+<p @@i18n(key="pages.components.registration.usingAComponentIn.p2") />
+<docs-code snippet="components/not-imported-error.txt" />
+
+<h2 @@i18n(key="pages.components.registration.loadingAComponentOn.title") />
+<p @@i18n(key="pages.components.registration.loadingAComponentOn.p1") />
+<docs-example name="components/registration/lazy-loading" heading="{ t().pages.components.registration.loadingAComponentOn.example1 }" kind="edge">
+  <ex-lazy-loading />
+</docs-example>
+<p @@i18n(key="pages.components.registration.loadingAComponentOn.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.components.registration.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.components.registration.edgeCases.callout1.heading }" @@i18n(key="pages.components.registration.edgeCases.callout1.body") />
+  <docs-callout kind="unsupported" heading="{ t().pages.components.registration.edgeCases.callout2.heading }">
+    <p @@i18n(key="pages.components.registration.edgeCases.callout2.p1") />
+    <docs-code snippet="components/foreign-element-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.components.registration.edgeCases.callout3.heading }" @@i18n(key="pages.components.registration.edgeCases.callout3.body") />
+</section>
+
+<h2 @@i18n(key="pages.components.registration.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.components.registration.apiSummary.th1") /><th @@i18n(key="pages.components.registration.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td @@i18n(key="pages.components.registration.apiSummary.td1") /><td @@i18n(key="pages.components.registration.apiSummary.td2") /></tr>
+      <tr><td @@i18n(key="pages.components.registration.apiSummary.td3") /><td @@i18n(key="pages.components.registration.apiSummary.td4") /></tr>
+      <tr><td @@i18n(key="pages.components.registration.apiSummary.td5") /><td @@i18n(key="pages.components.registration.apiSummary.td6") /></tr>
+      <tr><td><code>:defined</code>, <code>:not(:defined)</code></td><td @@i18n(key="pages.components.registration.apiSummary.td7") /></tr>
+    </tbody>
+  </table>
+</div>

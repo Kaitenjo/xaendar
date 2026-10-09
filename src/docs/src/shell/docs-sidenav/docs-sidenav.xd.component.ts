@@ -1,8 +1,9 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal, untracked } from '@xaendar/core/signals';
+import { translations } from '../../core/i18n/i18n';
 import { lang, path } from '../../core/router/router';
-import { NAV } from '../../core/routes/routes';
-import type { NavItem } from '../../core/routes/routes';
+import { itemTitle, NAV, pageTitle } from '../../core/routes/routes';
+import type { DocsPage, NavItem } from '../../core/routes/routes';
 
 /**
  * The navigation of the documentation: titled sections of links and collapsible groups.
@@ -19,6 +20,10 @@ export class DocsSidenavComponent extends CustomElement {
    */
   public readonly sections = NAV;
   /**
+   * The texts of the user interface.
+   */
+  public readonly t = translations;
+  /**
    * The current language.
    */
   public readonly currentLang = lang;
@@ -27,7 +32,7 @@ export class DocsSidenavComponent extends CustomElement {
    */
   public readonly path = path;
   /**
-   * The groups currently expanded, by English title.
+   * The groups currently expanded, by key.
    */
   public readonly expanded = signal<ReadonlySet<string>>(new Set());
 
@@ -37,9 +42,9 @@ export class DocsSidenavComponent extends CustomElement {
   public onInit(): void {
     this.effect(() => {
       const current = this.path();
-      const group = NAV.flatMap(section => section.items).find(item => item.pages?.some(page => page.path === current));
+      const group = NAV.flatMap(section => section.items).find(item => item.pages?.some(page => page.path === current))?.group;
       if (group) {
-        untracked(() => this.expanded.update(expanded => new Set(expanded).add(group.title.en)));
+        untracked(() => this.expanded.update(expanded => new Set(expanded).add(group)));
       }
     });
   }
@@ -51,7 +56,27 @@ export class DocsSidenavComponent extends CustomElement {
    * @returns `true` if the pages of the group are shown.
    */
   public isExpanded(item: NavItem): boolean {
-    return this.expanded().has(item.title.en);
+    return !!item.group && this.expanded().has(item.group);
+  }
+
+  /**
+   * Reads the label of an entry, in the current language.
+   *
+   * @param item - The entry.
+   * @returns The title of the page of a link, or the label of a group.
+   */
+  public titleOf(item: NavItem): string {
+    return itemTitle(item, this.t());
+  }
+
+  /**
+   * Reads the title of a page of a group, in the current language.
+   *
+   * @param page - The page.
+   * @returns The title of the page.
+   */
+  public pageTitleOf(page: DocsPage): string {
+    return pageTitle(page, this.t());
   }
 
   /**
@@ -60,10 +85,14 @@ export class DocsSidenavComponent extends CustomElement {
    * @param item - The group.
    */
   public toggle(item: NavItem): void {
+    const key = item.group;
+    if (!key) {
+      return;
+    }
     this.expanded.update(expanded => {
       const next = new Set(expanded);
-      if (!next.delete(item.title.en)) {
-        next.add(item.title.en);
+      if (!next.delete(key)) {
+        next.add(key);
       }
       return next;
     });

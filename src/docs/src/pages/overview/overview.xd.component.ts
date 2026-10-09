@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../core/i18n/i18n';
 
 /**
- * The "What is Xaendar?" page, in English.
+ * The "What is Xaendar?" page.
  */
 @WebComponent({
-  selector: 'page-overview-en',
-  templateUrl: './overview.en.xd.component.html',
+  selector: 'page-overview',
+  templateUrl: './overview.xd.component.html',
   styleUrl: '../page.css'
 })
-export class OverviewPageEn extends CustomElement {}
-
-/**
- * The "What is Xaendar?" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-overview-it',
-  templateUrl: './overview.it.xd.component.html',
-  styleUrl: '../page.css'
-})
-export class OverviewPageIt extends CustomElement {}
+export class OverviewPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

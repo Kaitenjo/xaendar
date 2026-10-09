@@ -1,0 +1,56 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { EventArgumentsComponent } from '../../../examples/templates/events/event-arguments/event-arguments.xd.component.ts'
+@import { KeyFilterComponent } from '../../../examples/templates/events/key-filter/key-filter.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.templates.events.eyebrow") />
+<h1 @@i18n(key="pages.templates.events.title") />
+<p class="lead" @@i18n(key="pages.templates.events.lead") />
+
+<h2 @@i18n(key="pages.templates.events.callingAMethod.title") />
+<docs-code snippet="templates/event-forms.html" />
+<docs-example name="templates/events/event-arguments" heading="{ t().pages.templates.events.callingAMethod.example1 }">
+  <ex-event-arguments />
+</docs-example>
+<p @@i18n(key="pages.templates.events.callingAMethod.p1") />
+<ul>
+  <li @@i18n(key="pages.templates.events.callingAMethod.li1") />
+  <li @@i18n(key="pages.templates.events.callingAMethod.li2") />
+  <li @@i18n(key="pages.templates.events.callingAMethod.li3") />
+  <li @@i18n(key="pages.templates.events.callingAMethod.li4") />
+</ul>
+<p @@i18n(key="pages.templates.events.callingAMethod.p2") />
+
+<h2 @@i18n(key="pages.templates.events.whatAHandlerCannot.title") />
+<p @@i18n(key="pages.templates.events.whatAHandlerCannot.p1") />
+<docs-code snippet="templates/event-argument-errors.txt" />
+<p @@i18n(key="pages.templates.events.whatAHandlerCannot.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.events.edgeCases.title") />
+  <docs-example name="templates/events/key-filter" heading="{ t().pages.templates.events.edgeCases.example1 }" kind="edge">
+    <ex-key-filter />
+  </docs-example>
+  <p @@i18n(key="pages.templates.events.edgeCases.p1") />
+  <docs-callout kind="issue" heading="{ t().pages.templates.events.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.templates.events.edgeCases.callout1.p1") />
+    <docs-code snippet="templates/member-call.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.templates.events.edgeCases.callout2.heading }" @@i18n(key="pages.templates.events.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.events.edgeCases.callout3.heading }" @@i18n(key="pages.templates.events.edgeCases.callout3.body") />
+</section>
+
+<h2 @@i18n(key="pages.templates.events.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.templates.events.apiSummary.th1") /><th @@i18n(key="pages.templates.events.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>(event)="method()"</code></td><td @@i18n(key="pages.templates.events.apiSummary.td1") /></tr>
+      <tr><td><code>(event)="method($event)"</code></td><td @@i18n(key="pages.templates.events.apiSummary.td2") /></tr>
+      <tr><td><code>(event)="method('a', 1, item.id, aSignal)"</code></td><td @@i18n(key="pages.templates.events.apiSummary.td3") /></tr>
+      <tr><td><code>{'@if (condition) { (event)="method()" }'}</code></td><td @@i18n(key="pages.templates.events.apiSummary.td4") /></tr>
+    </tbody>
+  </table>
+</div>

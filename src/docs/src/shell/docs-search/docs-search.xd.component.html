@@ -10,7 +10,7 @@
       @for (page of results(); track page.path; i = $index) {
         <li>
           <a class="{ i() === active() ? 'result result--active' : 'result' }" href="{ linkTo(page.path) }" (mousedown)="go(page.path)">
-            <span class="result__title">{ page.title[currentLang()] }</span>
+            <span class="result__title">{ titleOf(page) }</span>
             <span class="result__path">{ page.path }</span>
           </a>
         </li>

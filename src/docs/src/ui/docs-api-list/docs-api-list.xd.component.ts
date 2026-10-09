@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { lang } from '../../core/router/router';
 import { API } from '../../pages/reference/api/api.data';
 import type { ApiEntry } from '../../pages/reference/api/api.data';
@@ -17,9 +17,9 @@ export class DocsApiListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
-   * The language of the descriptions.
+   * The language of the links.
    */
   public readonly currentLang = lang;
   /**
@@ -66,9 +66,10 @@ export class DocsApiListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const module = this.module();
     const current = this.currentLang();
+    const descriptions = this.t().api;
     return API
       .filter(entry => !module || entry.module === module)
-      .map(entry => ({ ...entry, text: entry.description[current], href: `#/${current}/${entry.page}` }))
+      .map(entry => ({ ...entry, text: descriptions[entry.name], href: `#/${current}/${entry.page}` }))
       .filter(entry => !query || `${entry.name} ${entry.signature} ${entry.text}`.toLowerCase().includes(query));
   }
 }

@@ -4,11 +4,6 @@
 export type Lang = 'en' | 'it';
 
 /**
- * A value available in every documentation language.
- */
-export type Localized<T = string> = Readonly<Record<Lang, T>>;
-
-/**
  * Every documentation language, in the order they are offered to the reader.
  */
 export const LANGS: readonly Lang[] = ['en', 'it'];

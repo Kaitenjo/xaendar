@@ -1,0 +1,9 @@
+@import { DocsErrorListComponent } from '../../../ui/docs-error-list/docs-error-list.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.reference.errors.eyebrow") />
+<h1 @@i18n(key="pages.reference.errors.title") />
+<p class="lead" @@i18n(key="pages.reference.errors.lead") />
+<docs-callout kind="tip" heading="{ t().pages.reference.errors.callout1.heading }" @@i18n(key="pages.reference.errors.callout1.body") />
+<docs-error-list />

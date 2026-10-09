@@ -1,0 +1,65 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SignalCounterComponent } from '../../../examples/signals/overview/counter/counter.xd.component.ts'
+@import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
+@import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.signals.overview.eyebrow") />
+<h1 @@i18n(key="pages.signals.overview.title") />
+<p class="lead" @@i18n(key="pages.signals.overview.lead") />
+
+<h2 @@i18n(key="pages.signals.overview.creatingAndReadingA.title") />
+<p @@i18n(key="pages.signals.overview.creatingAndReadingA.p1") />
+<docs-code snippet="signals/signal-api.ts" />
+<docs-example name="signals/overview/counter" heading="{ t().pages.signals.overview.creatingAndReadingA.example1 }">
+  <ex-signal-counter />
+</docs-example>
+
+<h2 @@i18n(key="pages.signals.overview.writing.title") />
+<ul>
+  <li @@i18n(key="pages.signals.overview.writing.li1") />
+  <li @@i18n(key="pages.signals.overview.writing.li2") />
+</ul>
+<p @@i18n(key="pages.signals.overview.writing.p1") />
+
+<h2 @@i18n(key="pages.signals.overview.equality.title") />
+<p @@i18n(key="pages.signals.overview.equality.p1") />
+<docs-example name="signals/overview/identity" kind="edge" heading="{ t().pages.signals.overview.equality.example1 }">
+  <ex-signal-identity />
+</docs-example>
+<p @@i18n(key="pages.signals.overview.equality.p2") />
+<h3 @@i18n(key="pages.signals.overview.equality.subtitle1") />
+<p @@i18n(key="pages.signals.overview.equality.p3") />
+<docs-example name="signals/overview/custom-equals" heading="{ t().pages.signals.overview.equality.example2 }">
+  <ex-signal-custom-equals />
+</docs-example>
+
+<h2 @@i18n(key="pages.signals.overview.types.title") />
+<docs-code snippet="signals/types.ts" />
+<p @@i18n(key="pages.signals.overview.types.p1") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.signals.overview.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.overview.edgeCases.callout1.heading }" @@i18n(key="pages.signals.overview.edgeCases.callout1.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.overview.edgeCases.callout2.heading }" @@i18n(key="pages.signals.overview.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.overview.edgeCases.callout3.heading }" @@i18n(key="pages.signals.overview.edgeCases.callout3.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.overview.edgeCases.callout4.heading }" @@i18n(key="pages.signals.overview.edgeCases.callout4.body") />
+  <docs-callout kind="issue" heading="{ t().pages.signals.overview.edgeCases.callout5.heading }" @@i18n(key="pages.signals.overview.edgeCases.callout5.body") />
+</section>
+
+<h2 @@i18n(key="pages.signals.overview.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.signals.overview.apiSummary.th1") /><th @@i18n(key="pages.signals.overview.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td @@i18n(key="pages.signals.overview.apiSummary.td1") /><td @@i18n(key="pages.signals.overview.apiSummary.td2") /></tr>
+      <tr><td><code>sig()</code>, <code>sig.get()</code></td><td @@i18n(key="pages.signals.overview.apiSummary.td3") /></tr>
+      <tr><td @@i18n(key="pages.signals.overview.apiSummary.td4") /><td @@i18n(key="pages.signals.overview.apiSummary.td5") /></tr>
+      <tr><td><code>sig.update(fn)</code></td><td @@i18n(key="pages.signals.overview.apiSummary.td6") /></tr>
+      <tr><td @@i18n(key="pages.signals.overview.apiSummary.td7") /><td @@i18n(key="pages.signals.overview.apiSummary.td8") /></tr>
+      <tr><td @@i18n(key="pages.signals.overview.apiSummary.td9") /><td @@i18n(key="pages.signals.overview.apiSummary.td10") /></tr>
+    </tbody>
+  </table>
+</div>

@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Forms" page, in English.
+ * The "Forms" page.
  */
 @WebComponent({
-  selector: 'page-patterns-forms-en',
-  templateUrl: './forms.en.xd.component.html',
+  selector: 'page-patterns-forms',
+  templateUrl: './forms.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class PatternsFormsPageEn extends CustomElement {}
-
-/**
- * The "Forms" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-patterns-forms-it',
-  templateUrl: './forms.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class PatternsFormsPageIt extends CustomElement {}
+export class PatternsFormsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

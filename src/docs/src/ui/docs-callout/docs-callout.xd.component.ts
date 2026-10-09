@@ -1,8 +1,8 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
-import type { Messages } from '../../core/i18n/messages';
+import { translations } from '../../core/i18n/i18n';
+import type { Messages } from '../../core/i18n/i18n';
 
 /**
  * Kinds of callout.
@@ -33,7 +33,7 @@ export class DocsCalloutComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
    * The label of the kind.
    */

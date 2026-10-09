@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Sharing state" page, in English.
+ * The "Sharing state" page.
  */
 @WebComponent({
-  selector: 'page-signals-shared-state-en',
-  templateUrl: './shared-state.en.xd.component.html',
+  selector: 'page-signals-shared-state',
+  templateUrl: './shared-state.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class SignalsSharedStatePageEn extends CustomElement {}
-
-/**
- * The "Sharing state" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-signals-shared-state-it',
-  templateUrl: './shared-state.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class SignalsSharedStatePageIt extends CustomElement {}
+export class SignalsSharedStatePage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

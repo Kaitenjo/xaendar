@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "API reference" page, in English.
+ * The "API reference" page.
  */
 @WebComponent({
-  selector: 'page-reference-api-en',
-  templateUrl: './api.en.xd.component.html',
+  selector: 'page-reference-api',
+  templateUrl: './api.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ReferenceApiPageEn extends CustomElement {}
-
-/**
- * The "API reference" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-reference-api-it',
-  templateUrl: './api.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ReferenceApiPageIt extends CustomElement {}
+export class ReferenceApiPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

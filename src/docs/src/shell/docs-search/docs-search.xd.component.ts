@@ -1,9 +1,9 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { lang, navigate } from '../../core/router/router';
-import { searchPages } from '../../core/routes/routes';
+import { pageTitle, searchPages } from '../../core/routes/routes';
 import type { DocsPage } from '../../core/routes/routes';
 
 /**
@@ -23,7 +23,7 @@ export class DocsSearchComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
    * The current language.
    */
@@ -138,12 +138,22 @@ export class DocsSearchComponent extends CustomElement {
   }
 
   /**
+   * Reads the title of a page, in the current language.
+   *
+   * @param page - The page.
+   * @returns The title of the page.
+   */
+  public titleOf(page: DocsPage): string {
+    return pageTitle(page, this.t());
+  }
+
+  /**
    * Computes the value of `results`.
    *
    * @returns The pages matching the query.
    */
   private _computeResults(): DocsPage[] {
-    return searchPages(this.query(), this.currentLang());
+    return searchPages(this.query(), this.t());
   }
 
   /**

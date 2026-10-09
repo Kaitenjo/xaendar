@@ -1,0 +1,47 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.reference.comingFromAngular.eyebrow") />
+<h1 @@i18n(key="pages.reference.comingFromAngular.title") />
+<p class="lead" @@i18n(key="pages.reference.comingFromAngular.lead") />
+
+<h2 @@i18n(key="pages.reference.comingFromAngular.theSameComponent.title") />
+<docs-code snippet="reference/angular-component.ts" />
+
+<h2 @@i18n(key="pages.reference.comingFromAngular.correspondences.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.reference.comingFromAngular.correspondences.th1") /><th @@i18n(key="pages.reference.comingFromAngular.correspondences.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Component'}</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td1") /></tr>
+      <tr><td><code>input()</code>, <code>{'@Input'}</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td2") /></tr>
+      <tr><td><code>input.required()</code></td><td><code>{'@Property.required()'}</code></td></tr>
+      <tr><td><code>output()</code>, <code>{'@Output'}</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td3") /></tr>
+      <tr><td><code>signal</code>, <code>computed</code>, <code>effect</code>, <code>untracked</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td4") /></tr>
+      <tr><td><code>viewChild</code>, <code>viewChildren</code></td><td><code>{'@Query'}</code>, <code>{'@Query.all'}</code></td></tr>
+      <tr><td><code>contentChild</code>, <code>contentChildren</code></td><td><code>{'@Query.content'}</code>, <code>{'@Query.content.all'}</code></td></tr>
+      <tr><td><code>{'<ng-content select>'}</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td5") /></tr>
+      <tr><td><code>ngOnInit</code>, <code>ngAfterViewInit</code>, <code>ngOnDestroy</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td6") /></tr>
+      <tr><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td7") /><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td8") /></tr>
+      <tr><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td9") /><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td10") /></tr>
+      <tr><td><code>{'{{ expr }}'}</code></td><td><code>{'{ expr }'}</code></td></tr>
+      <tr><td><code>[attr]="expr"</code></td><td><code>{'attr="{ expr }"'}</code></td></tr>
+      <tr><td><code>[class.x]</code>, <code>[style.x]</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td11") /></tr>
+      <tr><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td12") /><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td13") /></tr>
+      <tr><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td14") /><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td15") /></tr>
+      <tr><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td16") /><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td17") /></tr>
+      <tr><td><code>styleUrls</code>, <code>:host</code>, <code>::ng-deep</code></td><td @@i18n(key="pages.reference.comingFromAngular.correspondences.td18") /></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.title") />
+<ul>
+  <li @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.li1") />
+  <li @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.li2") />
+  <li @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.li3") />
+  <li @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.li4") />
+</ul>
+
+<docs-callout kind="unsupported" heading="{ t().pages.reference.comingFromAngular.whatWorksDifferently.callout1.heading }" @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.callout1.body") />

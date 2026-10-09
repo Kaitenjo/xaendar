@@ -25,7 +25,7 @@ npm start                  # `xd start` of the documentation site (Vite dev serv
 npm test --prefix src/docs # vitest specs of the docs site's own utilities (router, highlighter, routes)
 ```
 
-`src/docs` is the framework's documentation/storybook site, written in Xaendar itself and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally). It is a separate npm project (own `package.json`/lockfile/`tsconfig.json`, whose `paths` point at the packages' sources). Live examples live in `src/docs/src/examples/**` and are shown with their exact source via `?raw` globs (`src/docs/src/core/sources`); pages are bilingual (`*.en.xd.component.html` / `*.it.xd.component.html`).
+`src/docs` is the framework's documentation/storybook site, written in Xaendar itself and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally). It is a separate npm project (own `package.json`/lockfile/`tsconfig.json`, whose `paths` point at the packages' sources). Live examples live in `src/docs/src/examples/**` and are shown with their exact source via `?raw` globs (`src/docs/src/core/sources`); pages are bilingual: one template per page, whose texts (HTML strings) live in `src/docs/src/i18n/en.json` / `it.json`, fetched at runtime (`core/i18n/i18n.ts`) and rendered with `@@i18n(key="pages.…")` or bound as `{ t().pages.… }`. Both files must have the same keys (`i18n/messages.spec.ts`).
 
 Package-level build/publish is driven from `schematics/` (its own TS project, built with `npm run build:schematics`), not from per-package npm scripts — the individual `packages/*/package.json` files have no scripts of their own:
 

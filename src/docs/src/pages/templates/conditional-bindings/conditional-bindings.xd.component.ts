@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Conditional bindings" page, in English.
+ * The "Conditional bindings" page.
  */
 @WebComponent({
-  selector: 'page-templates-conditional-bindings-en',
-  templateUrl: './conditional-bindings.en.xd.component.html',
+  selector: 'page-templates-conditional-bindings',
+  templateUrl: './conditional-bindings.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class TemplatesConditionalBindingsPageEn extends CustomElement {}
-
-/**
- * The "Conditional bindings" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-templates-conditional-bindings-it',
-  templateUrl: './conditional-bindings.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class TemplatesConditionalBindingsPageIt extends CustomElement {}
+export class TemplatesConditionalBindingsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

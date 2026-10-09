@@ -1,0 +1,65 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { AttributeBindingComponent } from '../../../examples/templates/binding/attribute-binding/attribute-binding.xd.component.ts'
+@import { MethodInAttributeComponent } from '../../../examples/templates/binding/method-in-attribute/method-in-attribute.xd.component.ts'
+@import { BooleanAttributesComponent } from '../../../examples/templates/binding/boolean-attributes/boolean-attributes.xd.component.ts'
+@import { ValueAttributeComponent } from '../../../examples/templates/binding/value-attribute/value-attribute.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.templates.binding.eyebrow") />
+<h1 @@i18n(key="pages.templates.binding.title") />
+<p class="lead" @@i18n(key="pages.templates.binding.lead") />
+
+<h2 @@i18n(key="pages.templates.binding.bindingAttributes.title") />
+<docs-code snippet="templates/binding-forms.html" />
+<docs-example name="templates/binding/attribute-binding" heading="{ t().pages.templates.binding.bindingAttributes.example1 }">
+  <ex-attribute-binding />
+</docs-example>
+<p @@i18n(key="pages.templates.binding.bindingAttributes.p1") />
+
+<h2 @@i18n(key="pages.templates.binding.whichExpressionsAreReactive.title") />
+<p @@i18n(key="pages.templates.binding.whichExpressionsAreReactive.p1") />
+<docs-example name="templates/binding/method-in-attribute" heading="{ t().pages.templates.binding.whichExpressionsAreReactive.example1 }">
+  <ex-method-in-attribute />
+</docs-example>
+<p @@i18n(key="pages.templates.binding.whichExpressionsAreReactive.p2") />
+
+<h2 @@i18n(key="pages.templates.binding.bindingTheInputsOf.title") />
+<p @@i18n(key="pages.templates.binding.bindingTheInputsOf.p1") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.binding.edgeCases.title") />
+  <docs-example name="templates/binding/boolean-attributes" heading="{ t().pages.templates.binding.edgeCases.example1 }" kind="edge">
+    <ex-boolean-attributes />
+  </docs-example>
+  <p @@i18n(key="pages.templates.binding.edgeCases.p1") />
+  <docs-example name="templates/binding/value-attribute" heading="{ t().pages.templates.binding.edgeCases.example2 }" kind="edge">
+    <ex-value-attribute />
+  </docs-example>
+  <p @@i18n(key="pages.templates.binding.edgeCases.p2") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.binding.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.templates.binding.edgeCases.callout1.p1") />
+    <docs-code snippet="templates/mixed-attribute.html" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.templates.binding.edgeCases.callout2.heading }" @@i18n(key="pages.templates.binding.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.binding.edgeCases.callout3.heading }">
+    <p @@i18n(key="pages.templates.binding.edgeCases.callout3.p1") />
+    <docs-code snippet="templates/bound-twice-error.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.templates.binding.edgeCases.callout4.heading }" @@i18n(key="pages.templates.binding.edgeCases.callout4.body") />
+</section>
+
+<h2 @@i18n(key="pages.templates.binding.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.templates.binding.apiSummary.th1") /><th @@i18n(key="pages.templates.binding.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>name="text"</code></td><td @@i18n(key="pages.templates.binding.apiSummary.td1") /></tr>
+      <tr><td><code>{'name="{ expression }"'}</code></td><td @@i18n(key="pages.templates.binding.apiSummary.td2") /></tr>
+      <tr><td><code>{'name="{`…${expression}…`}"'}</code></td><td @@i18n(key="pages.templates.binding.apiSummary.td3") /></tr>
+      <tr><td><code>{'@if (condition) { name }'}</code></td><td @@i18n(key="pages.templates.binding.apiSummary.td4") /></tr>
+      <tr><td @@i18n(key="pages.templates.binding.apiSummary.td5") /><td @@i18n(key="pages.templates.binding.apiSummary.td6") /></tr>
+    </tbody>
+  </table>
+</div>

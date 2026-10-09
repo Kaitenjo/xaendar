@@ -1,0 +1,67 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ViewQueryComponent } from '../../../examples/components/queries/view-query/view-query.xd.component.ts'
+@import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
+@import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
+@import { QueryFunctionsComponent } from '../../../examples/components/queries/query-functions/query-functions.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.components.queries.eyebrow") />
+<h1 @@i18n(key="pages.components.queries.title") />
+<p class="lead" @@i18n(key="pages.components.queries.lead") />
+
+<h2 @@i18n(key="pages.components.queries.queryingTheTemplate.title") />
+<docs-code snippet="components/query-decorators.ts" />
+<p @@i18n(key="pages.components.queries.queryingTheTemplate.p1") />
+<docs-example name="components/queries/view-query" heading="{ t().pages.components.queries.queryingTheTemplate.example1 }">
+  <ex-view-query />
+</docs-example>
+<p @@i18n(key="pages.components.queries.queryingTheTemplate.p2") />
+<p @@i18n(key="pages.components.queries.queryingTheTemplate.p3") />
+
+<h2 @@i18n(key="pages.components.queries.whenTheResultIs.title") />
+<p @@i18n(key="pages.components.queries.whenTheResultIs.p1") />
+<docs-example name="components/queries/query-timing" heading="{ t().pages.components.queries.whenTheResultIs.example1 }">
+  <ex-query-timing />
+</docs-example>
+<p @@i18n(key="pages.components.queries.whenTheResultIs.p2") />
+
+<h2 @@i18n(key="pages.components.queries.queriesWithoutDecorators.title") />
+<p @@i18n(key="pages.components.queries.queriesWithoutDecorators.p1") />
+<docs-code snippet="components/query-functions.ts" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.components.queries.edgeCases.title") />
+  <docs-example name="components/queries/attribute-changes" heading="{ t().pages.components.queries.edgeCases.example1 }" kind="edge">
+    <ex-attribute-changes />
+  </docs-example>
+  <p @@i18n(key="pages.components.queries.edgeCases.p1") />
+  <docs-example name="components/queries/query-functions" heading="{ t().pages.components.queries.edgeCases.example2 }" kind="edge">
+    <ex-query-functions />
+  </docs-example>
+  <p @@i18n(key="pages.components.queries.edgeCases.p2") />
+  <docs-callout kind="issue" heading="{ t().pages.components.queries.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.components.queries.edgeCases.callout1.p1") />
+    <docs-code snippet="components/late-query.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.components.queries.edgeCases.callout2.heading }" @@i18n(key="pages.components.queries.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.components.queries.edgeCases.callout3.heading }">
+    <p @@i18n(key="pages.components.queries.edgeCases.callout3.p1") />
+    <docs-code snippet="components/query-undecorated-error.txt" />
+  </docs-callout>
+</section>
+
+<h2 @@i18n(key="pages.components.queries.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.components.queries.apiSummary.th1") /><th @@i18n(key="pages.components.queries.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'@Query(target)'}</code></td><td @@i18n(key="pages.components.queries.apiSummary.td1") /></tr>
+      <tr><td><code>{'@Query.all(target)'}</code></td><td @@i18n(key="pages.components.queries.apiSummary.td2") /></tr>
+      <tr><td><code>query(this, target)</code>, <code>queryAll(this, target)</code></td><td @@i18n(key="pages.components.queries.apiSummary.td3") /></tr>
+      <tr><td><code>target</code></td><td @@i18n(key="pages.components.queries.apiSummary.td4") /></tr>
+      <tr><td><code>{'QuerySignal<T>'}</code></td><td @@i18n(key="pages.components.queries.apiSummary.td5") /></tr>
+    </tbody>
+  </table>
+</div>

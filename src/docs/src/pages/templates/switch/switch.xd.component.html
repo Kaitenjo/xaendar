@@ -1,0 +1,48 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { OrderStatusComponent } from '../../../examples/templates/switch/order-status/order-status.xd.component.ts'
+@import { DefaultFirstComponent } from '../../../examples/templates/switch/default-first/default-first.xd.component.ts'
+@import { SwitchEvaluationsComponent } from '../../../examples/templates/switch/switch-evaluations/switch-evaluations.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.templates.switch.eyebrow") />
+<h1 @@i18n(key="pages.templates.switch.title") />
+<p class="lead" @@i18n(key="pages.templates.switch.lead") />
+
+<h2 @@i18n(key="pages.templates.switch.cases.title") />
+<docs-code snippet="templates/switch-syntax.html" />
+<docs-example name="templates/switch/order-status" heading="{ t().pages.templates.switch.cases.example1 }">
+  <ex-order-status />
+</docs-example>
+<p @@i18n(key="pages.templates.switch.cases.p1") />
+<p @@i18n(key="pages.templates.switch.cases.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.switch.edgeCases.title") />
+  <docs-example name="templates/switch/default-first" heading="{ t().pages.templates.switch.edgeCases.example1 }" kind="edge">
+    <ex-default-first />
+  </docs-example>
+  <p @@i18n(key="pages.templates.switch.edgeCases.p1") />
+  <docs-example name="templates/switch/switch-evaluations" heading="{ t().pages.templates.switch.edgeCases.example2 }" kind="edge">
+    <ex-switch-evaluations />
+  </docs-example>
+  <p @@i18n(key="pages.templates.switch.edgeCases.p2") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.switch.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.templates.switch.edgeCases.callout1.p1") />
+    <docs-code snippet="templates/switch-case-member.txt" />
+  </docs-callout>
+</section>
+
+<h2 @@i18n(key="pages.templates.switch.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.templates.switch.apiSummary.th1") /><th @@i18n(key="pages.templates.switch.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'@switch (value) { … }'}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td1") /></tr>
+      <tr><td><code>{"@case ('a') { … }"}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td2") /></tr>
+      <tr><td><code>{"@case ('a') @case ('b') { … }"}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td3") /></tr>
+      <tr><td><code>{'@default { … }'}</code></td><td @@i18n(key="pages.templates.switch.apiSummary.td4") /></tr>
+    </tbody>
+  </table>
+</div>

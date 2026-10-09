@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Custom directives" page, in English.
+ * The "Custom directives" page.
  */
 @WebComponent({
-  selector: 'page-directives-custom-en',
-  templateUrl: './custom.en.xd.component.html',
+  selector: 'page-directives-custom',
+  templateUrl: './custom.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class DirectivesCustomPageEn extends CustomElement {}
-
-/**
- * The "Custom directives" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-directives-custom-it',
-  templateUrl: './custom.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class DirectivesCustomPageIt extends CustomElement {}
+export class DirectivesCustomPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

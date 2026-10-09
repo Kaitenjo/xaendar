@@ -1,0 +1,40 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ShoppingListComponent } from '../../../examples/essentials/templates/shopping-list/shopping-list.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.essentials.templates.eyebrow") />
+<h1 @@i18n(key="pages.essentials.templates.title") />
+<p class="lead" @@i18n(key="pages.essentials.templates.lead") />
+
+<h2 @@i18n(key="pages.essentials.templates.theSyntaxAtA.title") />
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th @@i18n(key="pages.essentials.templates.theSyntaxAtA.th1") /><th @@i18n(key="pages.essentials.templates.theSyntaxAtA.th2") /></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>{'{ count() }'}</code></td><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td1") /></tr>
+      <tr><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td2") /><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td3") /></tr>
+      <tr><td><code>{'title="{ label() }"'}</code></td><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td4") /></tr>
+      <tr><td><code>(click)="save()"</code></td><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td5") /></tr>
+      <tr><td><code>{'@if (cond) { … } @else { … }'}</code></td><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td6") /></tr>
+      <tr><td><code>{'@for (item of items(); track item.id) { … }'}</code></td><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td7") /></tr>
+      <tr><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td8") /><td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td9") /></tr>
+    </tbody>
+  </table>
+</div>
+
+<docs-example name="essentials/templates/shopping-list" heading="{ t().pages.essentials.templates.theSyntaxAtA.example1 }">
+  <ex-shopping-list />
+</docs-example>
+
+<h2 @@i18n(key="pages.essentials.templates.expressions.title") />
+<p @@i18n(key="pages.essentials.templates.expressions.p1") />
+<docs-callout kind="warning" @@i18n(key="pages.essentials.templates.expressions.callout1.body") />
+
+<h2 @@i18n(key="pages.essentials.templates.specialCharacters.title") />
+<p @@i18n(key="pages.essentials.templates.specialCharacters.p1") />
+
+<h2 @@i18n(key="pages.essentials.templates.next.title") />
+<p @@i18n(key="pages.essentials.templates.next.p1") />

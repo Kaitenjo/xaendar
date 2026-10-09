@@ -1,6 +1,6 @@
 <div class="toolbar">
   <input type="search" placeholder="{ t().reference.filter }" aria-label="{ t().reference.filter }" (input)="search($event)" />
-  <select aria-label="Module" (change)="pickModule($event)">
+  <select aria-label="{ t().reference.module }" (change)="pickModule($event)">
     <option value="">{ t().reference.all }</option>
     @for (name of modules) {
       <option value="{ name }">{ name }</option>

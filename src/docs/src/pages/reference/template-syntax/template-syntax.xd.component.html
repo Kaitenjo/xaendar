@@ -1,0 +1,48 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.reference.templateSyntax.eyebrow") />
+<h1 @@i18n(key="pages.reference.templateSyntax.title") />
+<p class="lead" @@i18n(key="pages.reference.templateSyntax.lead") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.text.title") />
+<docs-code snippet="reference/cheat-text.html" />
+<p @@i18n(key="pages.reference.templateSyntax.text.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.bindingsAndEvents.title") />
+<docs-code snippet="reference/cheat-bindings.html" />
+<p @@i18n(key="pages.reference.templateSyntax.bindingsAndEvents.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.controlFlow.title") />
+<docs-code snippet="reference/cheat-control-flow.html" />
+<p @@i18n(key="pages.reference.templateSyntax.controlFlow.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.conditionalBindings.title") />
+<docs-code snippet="reference/cheat-conditional.html" />
+<p @@i18n(key="pages.reference.templateSyntax.conditionalBindings.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.directives.title") />
+<docs-code snippet="reference/cheat-directives.html" />
+<p @@i18n(key="pages.reference.templateSyntax.directives.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.imports.title") />
+<docs-code snippet="reference/cheat-imports.html" />
+<p @@i18n(key="pages.reference.templateSyntax.imports.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.expressions.title") />
+<docs-code snippet="reference/cheat-expressions.txt" />
+<p @@i18n(key="pages.reference.templateSyntax.expressions.p1") />
+
+<h2 @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.th1") /><th @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'{{ expr }}'}</code></td><td><code>{'{ expr }'}</code></td></tr>
+      <tr><td><code>[prop]="…"</code>, <code>[(ngModel)]</code></td><td @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.td1") /></tr>
+      <tr><td><code>(keydown.enter)</code></td><td @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.td2") /></tr>
+      <tr><td><code>{'@empty'}</code>, <code>{'@let'}</code>, <code>{'@defer'}</code></td><td @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.td3") /></tr>
+      <tr><td @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.td4") /><td @@i18n(key="pages.reference.templateSyntax.whatDoesNotExist.td5") /></tr>
+    </tbody>
+  </table>
+</div>

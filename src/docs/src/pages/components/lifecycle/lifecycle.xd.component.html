@@ -1,0 +1,86 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
+@import { MoveComponent } from '../../../examples/components/lifecycle/move/move.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.components.lifecycle.eyebrow") />
+<h1 @@i18n(key="pages.components.lifecycle.title") />
+<p class="lead" @@i18n(key="pages.components.lifecycle.lead") />
+
+<h2 @@i18n(key="pages.components.lifecycle.theHooks.title") />
+<docs-code snippet="components/lifecycle-hooks.ts" />
+<div class="table-wrap">
+  <table>
+    <thead><tr><th @@i18n(key="pages.components.lifecycle.theHooks.th1") /><th @@i18n(key="pages.components.lifecycle.theHooks.th2") /><th @@i18n(key="pages.components.lifecycle.theHooks.th3") /></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>constructor</code></td>
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td1") />
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td2") />
+      </tr>
+      <tr>
+        <td><code>onInit()</code></td>
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td3") />
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td4") />
+      </tr>
+      <tr>
+        <td><code>afterRender()</code></td>
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td5") />
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td6") />
+      </tr>
+      <tr>
+        <td><code>onDestroy()</code></td>
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td7") />
+        <td @@i18n(key="pages.components.lifecycle.theHooks.td8") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p @@i18n(key="pages.components.lifecycle.theHooks.p1") />
+<docs-code snippet="components/lifecycle-order.txt" />
+
+<h2 @@i18n(key="pages.components.lifecycle.parentsAndChildren.title") />
+<p @@i18n(key="pages.components.lifecycle.parentsAndChildren.p1") />
+<docs-example name="components/lifecycle/hook-order" heading="{ t().pages.components.lifecycle.parentsAndChildren.example1 }">
+  <ex-hook-order />
+</docs-example>
+<p @@i18n(key="pages.components.lifecycle.parentsAndChildren.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.components.lifecycle.edgeCases.title") />
+  <docs-example name="components/lifecycle/move" heading="{ t().pages.components.lifecycle.edgeCases.example1 }" kind="edge">
+    <ex-move />
+  </docs-example>
+  <p @@i18n(key="pages.components.lifecycle.edgeCases.p1") />
+  <ul>
+    <li @@i18n(key="pages.components.lifecycle.edgeCases.li1") />
+    <li @@i18n(key="pages.components.lifecycle.edgeCases.li2") />
+    <li @@i18n(key="pages.components.lifecycle.edgeCases.li3") />
+    <li @@i18n(key="pages.components.lifecycle.edgeCases.li4") />
+  </ul>
+  <docs-callout kind="edge" heading="{ t().pages.components.lifecycle.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.components.lifecycle.edgeCases.callout1.p1") />
+    <docs-code snippet="components/effect-in-field.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.components.lifecycle.edgeCases.callout2.heading }">
+    <p @@i18n(key="pages.components.lifecycle.edgeCases.callout2.p1") />
+    <docs-code snippet="components/connected-callback.ts" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.components.lifecycle.edgeCases.callout3.heading }" @@i18n(key="pages.components.lifecycle.edgeCases.callout3.body") />
+  <docs-callout kind="note" heading="{ t().pages.components.lifecycle.edgeCases.callout4.heading }" @@i18n(key="pages.components.lifecycle.edgeCases.callout4.body") />
+</section>
+
+<h2 @@i18n(key="pages.components.lifecycle.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.components.lifecycle.apiSummary.th1") /><th @@i18n(key="pages.components.lifecycle.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>onInit()</code></td><td @@i18n(key="pages.components.lifecycle.apiSummary.td1") /></tr>
+      <tr><td><code>afterRender()</code></td><td @@i18n(key="pages.components.lifecycle.apiSummary.td2") /></tr>
+      <tr><td><code>onDestroy()</code></td><td @@i18n(key="pages.components.lifecycle.apiSummary.td3") /></tr>
+      <tr><td><code>this.effect(fn, options?)</code></td><td @@i18n(key="pages.components.lifecycle.apiSummary.td4") /></tr>
+    </tbody>
+  </table>
+</div>

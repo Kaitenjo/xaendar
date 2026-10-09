@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Content queries" page, in English.
+ * The "Content queries" page.
  */
 @WebComponent({
-  selector: 'page-components-content-queries-en',
-  templateUrl: './content-queries.en.xd.component.html',
+  selector: 'page-components-content-queries',
+  templateUrl: './content-queries.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsContentQueriesPageEn extends CustomElement {}
-
-/**
- * The "Content queries" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-content-queries-it',
-  templateUrl: './content-queries.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsContentQueriesPageIt extends CustomElement {}
+export class ComponentsContentQueriesPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

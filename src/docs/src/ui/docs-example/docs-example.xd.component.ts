@@ -1,7 +1,7 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { getExampleFiles } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
 
@@ -45,7 +45,7 @@ export class DocsExampleComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
    * Whether the source files are shown, `undefined` until the reader toggles them.
    */

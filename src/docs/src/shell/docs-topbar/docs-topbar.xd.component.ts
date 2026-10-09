@@ -1,7 +1,7 @@
 import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { LANGS } from '../../core/router/route-hash.utils';
 import type { Lang } from '../../core/router/route-hash.utils';
 import { href, lang, switchLang } from '../../core/router/router';
@@ -24,7 +24,7 @@ export class DocsTopbarComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
    * The current language.
    */

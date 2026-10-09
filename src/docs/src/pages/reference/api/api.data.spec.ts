@@ -1,6 +1,8 @@
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { PAGES } from '../../../core/routes/routes';
+import en from '../../../i18n/en.json';
+import it_ from '../../../i18n/it.json';
 import { API } from './api.data';
 
 /**
@@ -59,8 +61,12 @@ describe('API reference', () => {
   it('links every entry to a page and describes it in every language', () => {
     for (const entry of API) {
       expect(PAGES.some(page => page.path === entry.page)).toBe(true);
-      expect(entry.description.en.trim()).not.toBe('');
-      expect(entry.description.it.trim()).not.toBe('');
+      expect(en.api[entry.name].trim()).not.toBe('');
+      expect(it_.api[entry.name].trim()).not.toBe('');
     }
+  });
+
+  it('describes only documented entries', () => {
+    expect(Object.keys(en.api).sort()).toEqual(API.map(entry => entry.name).sort());
   });
 });

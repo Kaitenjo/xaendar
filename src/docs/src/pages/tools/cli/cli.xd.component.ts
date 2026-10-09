@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "CLI" page, in English.
+ * The "CLI" page.
  */
 @WebComponent({
-  selector: 'page-tools-cli-en',
-  templateUrl: './cli.en.xd.component.html',
+  selector: 'page-tools-cli',
+  templateUrl: './cli.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ToolsCliPageEn extends CustomElement {}
-
-/**
- * The "CLI" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-tools-cli-it',
-  templateUrl: './cli.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ToolsCliPageIt extends CustomElement {}
+export class ToolsCliPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

@@ -1,0 +1,37 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CartProductsComponent } from '../../../examples/signals/shared-state/cart/cart-products.xd.component.ts'
+@import { CartSummaryComponent } from '../../../examples/signals/shared-state/cart/cart-summary.xd.component.ts'
+@import { SignalMembersComponent } from '../../../examples/signals/shared-state/signal-members/signal-members.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.signals.sharedState.eyebrow") />
+<h1 @@i18n(key="pages.signals.sharedState.title") />
+<p class="lead" @@i18n(key="pages.signals.sharedState.lead") />
+
+<h2 @@i18n(key="pages.signals.sharedState.aStoreIsA.title") />
+<p @@i18n(key="pages.signals.sharedState.aStoreIsA.p1") />
+<docs-example name="signals/shared-state/cart" heading="{ t().pages.signals.sharedState.aStoreIsA.example1 }">
+  <ex-cart-products />
+  <ex-cart-summary />
+</docs-example>
+
+<h3 @@i18n(key="pages.signals.sharedState.aStoreIsA.subtitle1") />
+<p @@i18n(key="pages.signals.sharedState.aStoreIsA.p2") />
+<docs-code snippet="signals/store.ts" />
+
+<h2 @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.title") />
+<p @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.p1") />
+<docs-example name="signals/shared-state/signal-members" kind="edge" heading="{ t().pages.signals.sharedState.exposingSharedSignalsTo.example1 }">
+  <ex-signal-members />
+</docs-example>
+<p @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.p2") />
+<docs-code snippet="signals/members.ts" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.signals.sharedState.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.sharedState.edgeCases.callout1.heading }" @@i18n(key="pages.signals.sharedState.edgeCases.callout1.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.sharedState.edgeCases.callout2.heading }" @@i18n(key="pages.signals.sharedState.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.sharedState.edgeCases.callout3.heading }" @@i18n(key="pages.signals.sharedState.edgeCases.callout3.body") />
+</section>

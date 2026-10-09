@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Using DOM APIs" page, in English.
+ * The "Using DOM APIs" page.
  */
 @WebComponent({
-  selector: 'page-components-dom-apis-en',
-  templateUrl: './dom-apis.en.xd.component.html',
+  selector: 'page-components-dom-apis',
+  templateUrl: './dom-apis.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsDomApisPageEn extends CustomElement {}
-
-/**
- * The "Using DOM APIs" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-dom-apis-it',
-  templateUrl: './dom-apis.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsDomApisPageIt extends CustomElement {}
+export class ComponentsDomApisPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

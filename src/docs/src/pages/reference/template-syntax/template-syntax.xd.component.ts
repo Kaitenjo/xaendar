@@ -1,21 +1,11 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 
 /**
- * The "Template syntax cheat sheet" page, in English.
+ * The "Template syntax cheat sheet" page.
  */
 @WebComponent({
-  selector: 'page-reference-template-syntax-en',
-  templateUrl: './template-syntax.en.xd.component.html',
+  selector: 'page-reference-template-syntax',
+  templateUrl: './template-syntax.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ReferenceTemplateSyntaxPageEn extends CustomElement {}
-
-/**
- * The "Template syntax cheat sheet" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-reference-template-syntax-it',
-  templateUrl: './template-syntax.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ReferenceTemplateSyntaxPageIt extends CustomElement {}
+export class ReferenceTemplateSyntaxPage extends CustomElement {}

@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Branching with @switch" page, in English.
+ * The "Branching with @switch" page.
  */
 @WebComponent({
-  selector: 'page-templates-switch-en',
-  templateUrl: './switch.en.xd.component.html',
+  selector: 'page-templates-switch',
+  templateUrl: './switch.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class TemplatesSwitchPageEn extends CustomElement {}
-
-/**
- * The "Branching with @switch" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-templates-switch-it',
-  templateUrl: './switch.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class TemplatesSwitchPageIt extends CustomElement {}
+export class TemplatesSwitchPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

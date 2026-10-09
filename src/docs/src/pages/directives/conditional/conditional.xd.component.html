@@ -1,0 +1,49 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TracedDemoComponent } from '../../../examples/directives/conditional/traced/traced-demo.xd.component.ts'
+@import { ConditionalStructuralComponent } from '../../../examples/directives/conditional/conditional-structural/conditional-structural.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.directives.conditional.eyebrow") />
+<h1 @@i18n(key="pages.directives.conditional.title") />
+<p class="lead" @@i18n(key="pages.directives.conditional.lead") />
+<docs-code snippet="directives/conditional-directive-syntax.html" />
+
+<h2 @@i18n(key="pages.directives.conditional.customDirectives.title") />
+<docs-example name="directives/conditional/traced" heading="{ t().pages.directives.conditional.customDirectives.example1 }">
+  <ex-traced-demo />
+</docs-example>
+<p @@i18n(key="pages.directives.conditional.customDirectives.p1") />
+<p @@i18n(key="pages.directives.conditional.customDirectives.p2") />
+
+<h2 @@i18n(key="pages.directives.conditional.structuralDirectives.title") />
+<docs-example name="directives/conditional/conditional-structural" heading="{ t().pages.directives.conditional.structuralDirectives.example1 }">
+  <ex-conditional-structural />
+</docs-example>
+<p @@i18n(key="pages.directives.conditional.structuralDirectives.p1") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.directives.conditional.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.directives.conditional.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.directives.conditional.edgeCases.callout1.p1") />
+    <docs-code snippet="directives/structural-errors.txt" />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.directives.conditional.edgeCases.callout2.heading }">
+    <p @@i18n(key="pages.directives.conditional.edgeCases.callout2.p1") />
+    <docs-code snippet="directives/nested-directives-error.txt" />
+  </docs-callout>
+</section>
+
+<h2 @@i18n(key="pages.directives.conditional.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.directives.conditional.apiSummary.th1") /><th @@i18n(key="pages.directives.conditional.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'@if (c) { @@dir(…) }'}</code></td><td @@i18n(key="pages.directives.conditional.apiSummary.td1") /></tr>
+      <tr><td><code>{'@@dir(@if (c) { input="…" })'}</code></td><td @@i18n(key="pages.directives.conditional.apiSummary.td2") /></tr>
+      <tr><td><code>{'@if (c) { *dir(…) }'}</code></td><td @@i18n(key="pages.directives.conditional.apiSummary.td3") /></tr>
+      <tr><td><code>{'*dir(@if (c) { input="…" })'}</code></td><td @@i18n(key="pages.directives.conditional.apiSummary.td4") /></tr>
+    </tbody>
+  </table>
+</div>

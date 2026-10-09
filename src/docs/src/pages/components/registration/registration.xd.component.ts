@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Selectors and registration" page, in English.
+ * The "Selectors and registration" page.
  */
 @WebComponent({
-  selector: 'page-components-registration-en',
-  templateUrl: './registration.en.xd.component.html',
+  selector: 'page-components-registration',
+  templateUrl: './registration.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsRegistrationPageEn extends CustomElement {}
-
-/**
- * The "Selectors and registration" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-registration-it',
-  templateUrl: './registration.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsRegistrationPageIt extends CustomElement {}
+export class ComponentsRegistrationPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

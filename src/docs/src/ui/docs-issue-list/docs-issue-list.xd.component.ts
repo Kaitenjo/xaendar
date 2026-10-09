@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { lang } from '../../core/router/router';
 import { ISSUES } from '../../pages/reference/known-issues/known-issues.data';
 import type { IssueEntry } from '../../pages/reference/known-issues/known-issues.data';
@@ -17,9 +17,9 @@ export class DocsIssueListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
-   * The language of the texts.
+   * The language of the links.
    */
   public readonly currentLang = lang;
   /**
@@ -66,13 +66,14 @@ export class DocsIssueListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const area = this.area();
     const current = this.currentLang();
+    const texts = this.t().issues;
     return ISSUES
       .filter(entry => !area || entry.area === area)
       .map(entry => ({
         ...entry,
-        titleText: entry.title[current],
-        detailsText: entry.details[current],
-        workaroundText: entry.workaround[current],
+        titleText: texts[entry.id].title,
+        detailsText: texts[entry.id].details,
+        workaroundText: texts[entry.id].workaround,
         href: `#/${current}/${entry.page}`
       }))
       .filter(entry => !query || `${entry.titleText} ${entry.detailsText} ${entry.workaroundText}`.toLowerCase().includes(query));

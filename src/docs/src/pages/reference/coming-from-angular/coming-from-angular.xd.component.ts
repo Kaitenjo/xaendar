@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Coming from Angular" page, in English.
+ * The "Coming from Angular" page.
  */
 @WebComponent({
-  selector: 'page-reference-coming-from-angular-en',
-  templateUrl: './coming-from-angular.en.xd.component.html',
+  selector: 'page-reference-coming-from-angular',
+  templateUrl: './coming-from-angular.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ReferenceComingFromAngularPageEn extends CustomElement {}
-
-/**
- * The "Coming from Angular" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-reference-coming-from-angular-it',
-  templateUrl: './coming-from-angular.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ReferenceComingFromAngularPageIt extends CustomElement {}
+export class ReferenceComingFromAngularPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

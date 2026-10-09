@@ -1,0 +1,40 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TemperatureComponent } from '../../../examples/essentials/signals/temperature/temperature.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.essentials.signals.eyebrow") />
+<h1 @@i18n(key="pages.essentials.signals.title") />
+<p class="lead" @@i18n(key="pages.essentials.signals.lead") />
+
+<h2 @@i18n(key="pages.essentials.signals.threePrimitives.title") />
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th @@i18n(key="pages.essentials.signals.threePrimitives.th1") /><th @@i18n(key="pages.essentials.signals.threePrimitives.th2") /><th @@i18n(key="pages.essentials.signals.threePrimitives.th3") /></tr>
+    </thead>
+    <tbody>
+      <tr><td @@i18n(key="pages.essentials.signals.threePrimitives.td1") /><td @@i18n(key="pages.essentials.signals.threePrimitives.td2") /><td @@i18n(key="pages.essentials.signals.threePrimitives.td3") /></tr>
+      <tr><td><code>computed(fn)</code></td><td @@i18n(key="pages.essentials.signals.threePrimitives.td4") /><td @@i18n(key="pages.essentials.signals.threePrimitives.td5") /></tr>
+      <tr><td><code>effect(fn)</code></td><td @@i18n(key="pages.essentials.signals.threePrimitives.td6") /><td @@i18n(key="pages.essentials.signals.threePrimitives.td7") /></tr>
+    </tbody>
+  </table>
+</div>
+<p @@i18n(key="pages.essentials.signals.threePrimitives.p1") />
+
+<docs-example name="essentials/signals/temperature" heading="{ t().pages.essentials.signals.threePrimitives.example1 }">
+  <ex-temperature />
+</docs-example>
+
+<h2 @@i18n(key="pages.essentials.signals.readingAndWriting.title") />
+<p @@i18n(key="pages.essentials.signals.readingAndWriting.p1") />
+<docs-callout kind="warning" @@i18n(key="pages.essentials.signals.readingAndWriting.callout1.body") />
+
+<h2 @@i18n(key="pages.essentials.signals.signalsInTemplates.title") />
+<p @@i18n(key="pages.essentials.signals.signalsInTemplates.p1") />
+
+<h2 @@i18n(key="pages.essentials.signals.effectsOfAComponent.title") />
+<p @@i18n(key="pages.essentials.signals.effectsOfAComponent.p1") />
+
+<h2 @@i18n(key="pages.essentials.signals.next.title") />
+<p @@i18n(key="pages.essentials.signals.next.p1") />

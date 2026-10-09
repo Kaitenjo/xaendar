@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Computed signals" page, in English.
+ * The "Computed signals" page.
  */
 @WebComponent({
-  selector: 'page-signals-computed-en',
-  templateUrl: './computed.en.xd.component.html',
+  selector: 'page-signals-computed',
+  templateUrl: './computed.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class SignalsComputedPageEn extends CustomElement {}
-
-/**
- * The "Computed signals" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-signals-computed-it',
-  templateUrl: './computed.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class SignalsComputedPageIt extends CustomElement {}
+export class SignalsComputedPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

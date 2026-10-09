@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "SVG and MathML" page, in English.
+ * The "SVG and MathML" page.
  */
 @WebComponent({
-  selector: 'page-templates-svg-mathml-en',
-  templateUrl: './svg-mathml.en.xd.component.html',
+  selector: 'page-templates-svg-mathml',
+  templateUrl: './svg-mathml.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class TemplatesSvgMathmlPageEn extends CustomElement {}
-
-/**
- * The "SVG and MathML" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-templates-svg-mathml-it',
-  templateUrl: './svg-mathml.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class TemplatesSvgMathmlPageIt extends CustomElement {}
+export class TemplatesSvgMathmlPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import { t } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 import { lang } from '../../core/router/router';
 import { ERRORS } from '../../pages/reference/errors/errors.data';
 import type { ErrorEntry } from '../../pages/reference/errors/errors.data';
@@ -17,9 +17,9 @@ export class DocsErrorListComponent extends CustomElement {
   /**
    * The texts of the user interface.
    */
-  public readonly t = t;
+  public readonly t = translations;
   /**
-   * The language of the explanations.
+   * The language of the links.
    */
   public readonly currentLang = lang;
   /**
@@ -66,9 +66,10 @@ export class DocsErrorListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const phase = this.phase();
     const current = this.currentLang();
+    const texts = this.t().errors;
     return ERRORS
       .filter(entry => !phase || entry.phase === phase)
-      .map(entry => ({ ...entry, causeText: entry.cause[current], fixText: entry.fix[current], href: `#/${current}/${entry.page}` }))
+      .map(entry => ({ ...entry, causeText: texts[entry.message].cause, fixText: texts[entry.message].fix, href: `#/${current}/${entry.page}` }))
       .filter(entry => !query || `${entry.message} ${entry.causeText} ${entry.fixText}`.toLowerCase().includes(query));
   }
 }

@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Outputs with @Event" page, in English.
+ * The "Outputs with @Event" page.
  */
 @WebComponent({
-  selector: 'page-components-outputs-en',
-  templateUrl: './outputs.en.xd.component.html',
+  selector: 'page-components-outputs',
+  templateUrl: './outputs.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsOutputsPageEn extends CustomElement {}
-
-/**
- * The "Outputs with @Event" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-outputs-it',
-  templateUrl: './outputs.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsOutputsPageIt extends CustomElement {}
+export class ComponentsOutputsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

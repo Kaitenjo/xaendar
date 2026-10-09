@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Inputs with @Property" page, in English.
+ * The "Inputs with @Property" page.
  */
 @WebComponent({
-  selector: 'page-components-inputs-en',
-  templateUrl: './inputs.en.xd.component.html',
+  selector: 'page-components-inputs',
+  templateUrl: './inputs.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsInputsPageEn extends CustomElement {}
-
-/**
- * The "Inputs with @Property" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-inputs-it',
-  templateUrl: './inputs.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsInputsPageIt extends CustomElement {}
+export class ComponentsInputsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

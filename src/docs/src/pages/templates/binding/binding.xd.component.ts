@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Attribute and property binding" page, in English.
+ * The "Attribute and property binding" page.
  */
 @WebComponent({
-  selector: 'page-templates-binding-en',
-  templateUrl: './binding.en.xd.component.html',
+  selector: 'page-templates-binding',
+  templateUrl: './binding.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class TemplatesBindingPageEn extends CustomElement {}
-
-/**
- * The "Attribute and property binding" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-templates-binding-it',
-  templateUrl: './binding.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class TemplatesBindingPageIt extends CustomElement {}
+export class TemplatesBindingPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

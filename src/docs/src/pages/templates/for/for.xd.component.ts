@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Lists with @for" page, in English.
+ * The "Lists with @for" page.
  */
 @WebComponent({
-  selector: 'page-templates-for-en',
-  templateUrl: './for.en.xd.component.html',
+  selector: 'page-templates-for',
+  templateUrl: './for.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class TemplatesForPageEn extends CustomElement {}
-
-/**
- * The "Lists with @for" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-templates-for-it',
-  templateUrl: './for.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class TemplatesForPageIt extends CustomElement {}
+export class TemplatesForPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

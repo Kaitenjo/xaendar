@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Dynamic templates" page, in English.
+ * The "Dynamic templates" page.
  */
 @WebComponent({
-  selector: 'page-essentials-templates-en',
-  templateUrl: './templates.en.xd.component.html',
+  selector: 'page-essentials-templates',
+  templateUrl: './templates.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class EssentialsTemplatesPageEn extends CustomElement {}
-
-/**
- * The "Dynamic templates" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-essentials-templates-it',
-  templateUrl: './templates.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class EssentialsTemplatesPageIt extends CustomElement {}
+export class EssentialsTemplatesPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

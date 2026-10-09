@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Reactivity with signals" page, in English.
+ * The "Reactivity with signals" page.
  */
 @WebComponent({
-  selector: 'page-essentials-signals-en',
-  templateUrl: './signals.en.xd.component.html',
+  selector: 'page-essentials-signals',
+  templateUrl: './signals.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class EssentialsSignalsPageEn extends CustomElement {}
-
-/**
- * The "Reactivity with signals" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-essentials-signals-it',
-  templateUrl: './signals.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class EssentialsSignalsPageIt extends CustomElement {}
+export class EssentialsSignalsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

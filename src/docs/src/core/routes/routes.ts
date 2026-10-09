@@ -1,19 +1,21 @@
-import type { Lang, Localized } from '../router/route-hash.utils';
+import type { Messages } from '../i18n/i18n';
+
+/**
+ * The path of a page listed in the navigation, e.g. `signals/computed`: the key of its title
+ * in the `nav.pages` texts.
+ */
+export type PagePath = keyof Messages['nav']['pages'];
 
 /**
  * A page of the documentation.
  */
 export type DocsPage = {
   /**
-   * The path of the page, e.g. `signals/computed`.
+   * The path of the page, `''` for the home page.
    */
-  readonly path: string;
+  readonly path: PagePath | '';
   /**
-   * The title of the page, shown in the navigation and in search results.
-   */
-  readonly title: Localized;
-  /**
-   * Extra words the page is found by when searching, in any language.
+   * Extra words the page is found by when searching.
    */
   readonly keywords?: string;
 };
@@ -23,17 +25,30 @@ export type DocsPage = {
  */
 export type NavItem = {
   /**
-   * The label of the entry.
+   * The page the entry links to; the entry is labelled with its title.
    */
-  readonly title: Localized;
+  readonly page: DocsPage;
   /**
-   * The page the entry links to. Missing for groups.
+   * Missing for links.
    */
-  readonly page?: DocsPage;
+  readonly group?: undefined;
   /**
-   * The pages of a group. Missing for links.
+   * Missing for links.
    */
-  readonly pages?: readonly DocsPage[];
+  readonly pages?: undefined;
+} | {
+  /**
+   * The key of the label of the group in the `nav.groups` texts.
+   */
+  readonly group: keyof Messages['nav']['groups'];
+  /**
+   * The pages of the group.
+   */
+  readonly pages: readonly DocsPage[];
+  /**
+   * Missing for groups.
+   */
+  readonly page?: undefined;
 };
 
 /**
@@ -41,9 +56,9 @@ export type NavItem = {
  */
 export type NavSection = {
   /**
-   * The title of the section.
+   * The key of the title of the section in the `nav.sections` texts.
    */
-  readonly title: Localized;
+  readonly key: keyof Messages['nav']['sections'];
   /**
    * The entries of the section, in order.
    */
@@ -54,13 +69,11 @@ export type NavSection = {
  * Creates a page.
  *
  * @param path - The path of the page.
- * @param en - The English title.
- * @param it - The Italian title.
  * @param keywords - Extra words the page is found by when searching.
  * @returns The page.
  */
-function page(path: string, en: string, it: string, keywords?: string): DocsPage {
-  return { path, title: { en, it }, keywords };
+function page(path: PagePath | '', keywords?: string): DocsPage {
+  return { path, keywords };
 }
 
 /**
@@ -70,114 +83,135 @@ function page(path: string, en: string, it: string, keywords?: string): DocsPage
  * @returns The entry, labelled with the title of the page.
  */
 function link(target: DocsPage): NavItem {
-  return { title: target.title, page: target };
+  return { page: target };
 }
 
 /**
  * Creates a group entry.
  *
- * @param en - The English label.
- * @param it - The Italian label.
+ * @param key - The key of the label of the group.
  * @param pages - The pages of the group.
  * @returns The entry.
  */
-function group(en: string, it: string, pages: readonly DocsPage[]): NavItem {
-  return { title: { en, it }, pages };
+function group(key: keyof Messages['nav']['groups'], pages: readonly DocsPage[]): NavItem {
+  return { group: key, pages };
+}
+
+/**
+ * Reads the title of a page.
+ *
+ * @param target - The page.
+ * @param messages - The texts of the language to read it in.
+ * @returns The title, shown in the navigation, in the pager and in search results.
+ */
+export function pageTitle(target: DocsPage, messages: Messages): string {
+  return target.path ? messages.nav.pages[target.path] : messages.nav.home;
+}
+
+/**
+ * Reads the label of a navigation entry.
+ *
+ * @param item - The entry.
+ * @param messages - The texts of the language to read it in.
+ * @returns The title of the page of a link, or the label of a group.
+ */
+export function itemTitle(item: NavItem, messages: Messages): string {
+  return item.page ? pageTitle(item.page, messages) : messages.nav.groups[item.group];
 }
 
 /**
  * The home page, reached from the logo: it is not listed in the navigation.
  */
-export const HOME_PAGE = page('', 'Home', 'Home');
+export const HOME_PAGE = page('');
 
 /**
  * The navigation of the documentation, modeled on the one of angular.dev.
  */
 export const NAV: readonly NavSection[] = [
   {
-    title: { en: 'Introduction', it: 'Introduzione' },
+    key: 'introduction',
     items: [
-      link(page('overview', 'What is Xaendar?', 'Cos’è Xaendar?', 'introduction granular reactivity virtual dom')),
-      link(page('installation', 'Installation', 'Installazione', 'setup install loadSignals tsconfig babel decorators vite')),
-      group('Essentials', 'Fondamenti', [
-        page('essentials/components', 'Components', 'Componenti', 'WebComponent CustomElement'),
-        page('essentials/signals', 'Reactivity with signals', 'Reattività con i signal', 'signal computed effect'),
-        page('essentials/templates', 'Dynamic templates', 'Template dinamici', 'interpolation binding events if for'),
-        page('essentials/next-steps', 'Next steps', 'Prossimi passi')
+      link(page('overview', 'introduction granular reactivity virtual dom')),
+      link(page('installation', 'setup install loadSignals tsconfig babel decorators vite')),
+      group('essentials', [
+        page('essentials/components', 'WebComponent CustomElement'),
+        page('essentials/signals', 'signal computed effect'),
+        page('essentials/templates', 'interpolation binding events if for'),
+        page('essentials/next-steps')
       ]),
-      link(page('tutorial', 'Tutorial: a todo app', 'Tutorial: una todo app', 'tutorial todo list step'))
+      link(page('tutorial', 'tutorial todo list step'))
     ]
   },
   {
-    title: { en: 'In-depth guides', it: 'Guide approfondite' },
+    key: 'inDepthGuides',
     items: [
-      group('Signals', 'Signal', [
-        page('signals/overview', 'Overview', 'Panoramica', 'signal set update get equals'),
-        page('signals/computed', 'Computed signals', 'Signal derivati (computed)', 'computed derived lazy cache diamond circular'),
-        page('signals/effects', 'Effects', 'Effetti', 'effect batching microtask dispose onCleanup onBeforeRun onAfterRun'),
-        page('signals/untracked', 'Reading without tracking', 'Lettura senza tracciamento', 'untracked'),
-        page('signals/options', 'Signal options', 'Opzioni dei signal', 'equals watched unwatched frozen'),
-        page('signals/advanced', 'Advanced: Signal.subtle', 'Avanzato: Signal.subtle', 'watcher introspect subtle tc39 devMode'),
-        page('signals/shared-state', 'Sharing state', 'Stato condiviso', 'store service module singleton dependency injection')
+      group('signals', [
+        page('signals/overview', 'signal set update get equals'),
+        page('signals/computed', 'computed derived lazy cache diamond circular'),
+        page('signals/effects', 'effect batching microtask dispose onCleanup onBeforeRun onAfterRun'),
+        page('signals/untracked', 'untracked'),
+        page('signals/options', 'equals watched unwatched frozen'),
+        page('signals/advanced', 'watcher introspect subtle tc39 devMode'),
+        page('signals/shared-state', 'store service module singleton dependency injection')
       ]),
-      group('Components', 'Componenti', [
-        page('components/anatomy', 'Anatomy of a component', 'Anatomia di un componente', 'WebComponent CustomElement templateUrl styleUrl'),
-        page('components/registration', 'Selectors and registration', 'Selettori e registrazione', 'selector customElements define import order'),
-        page('components/styling', 'Styling', 'Stili', 'css shadow dom host slotted part custom properties'),
-        page('components/inputs', 'Inputs with @Property', 'Input con @Property', 'Property input alias transform required InputSignal'),
-        page('components/outputs', 'Outputs with @Event', 'Output con @Event', 'Event output emit CustomEvent detail bubbles composed'),
-        page('components/lifecycle', 'Lifecycle', 'Ciclo di vita', 'onInit afterRender onDestroy connectedCallback'),
-        page('components/content-projection', 'Content projection with slots', 'Proiezione di contenuto con gli slot', 'slot ng-content fallback named'),
-        page('components/queries', 'View queries', 'Query sulla vista', 'Query viewChild querySelector'),
-        page('components/content-queries', 'Content queries', 'Query sul contenuto', 'Query.content contentChild slots lightDom'),
-        page('components/dom-apis', 'Using DOM APIs', 'Usare le API del DOM', 'afterRender canvas focus ResizeObserver'),
-        page('components/inheritance', 'Inheritance', 'Ereditarietà', 'extends base class subclass')
+      group('components', [
+        page('components/anatomy', 'WebComponent CustomElement templateUrl styleUrl'),
+        page('components/registration', 'selector customElements define import order'),
+        page('components/styling', 'css shadow dom host slotted part custom properties'),
+        page('components/inputs', 'Property input alias transform required InputSignal'),
+        page('components/outputs', 'Event output emit CustomEvent detail bubbles composed'),
+        page('components/lifecycle', 'onInit afterRender onDestroy connectedCallback'),
+        page('components/content-projection', 'slot ng-content fallback named'),
+        page('components/queries', 'Query viewChild querySelector'),
+        page('components/content-queries', 'Query.content contentChild slots lightDom'),
+        page('components/dom-apis', 'afterRender canvas focus ResizeObserver'),
+        page('components/inheritance', 'extends base class subclass')
       ]),
-      group('Templates', 'Template', [
-        page('templates/overview', 'Template syntax', 'Sintassi dei template', 'whitespace self-closing comments special characters escape'),
-        page('templates/text-interpolation', 'Text interpolation', 'Interpolazione del testo', 'interpolation braces'),
-        page('templates/binding', 'Attribute and property binding', 'Binding di attributi e proprietà', 'binding attribute property class style'),
-        page('templates/events', 'Event listeners', 'Gestione degli eventi', 'event click $event handler'),
-        page('templates/if', 'Conditionals with @if', 'Condizioni con @if', 'if else conditional'),
-        page('templates/for', 'Lists with @for', 'Liste con @for', 'for track $index $first $last $even $odd loop'),
-        page('templates/switch', 'Branching with @switch', 'Diramazioni con @switch', 'switch case default'),
-        page('templates/conditional-bindings', 'Conditional bindings', 'Binding condizionali', 'conditional binding attribute if switch tag'),
-        page('templates/expressions', 'Expression syntax', 'Sintassi delle espressioni', 'expression allowed forbidden globals'),
-        page('templates/imports', 'Importing components', 'Importare componenti', 'import'),
-        page('templates/svg-mathml', 'SVG and MathML', 'SVG e MathML', 'svg mathml namespace chart')
+      group('templates', [
+        page('templates/overview', 'whitespace self-closing comments special characters escape'),
+        page('templates/text-interpolation', 'interpolation braces'),
+        page('templates/binding', 'binding attribute property class style'),
+        page('templates/events', 'event click $event handler'),
+        page('templates/if', 'if else conditional'),
+        page('templates/for', 'for track $index $first $last $even $odd loop'),
+        page('templates/switch', 'switch case default'),
+        page('templates/conditional-bindings', 'conditional binding attribute if switch tag'),
+        page('templates/expressions', 'expression allowed forbidden globals'),
+        page('templates/imports', 'import'),
+        page('templates/svg-mathml', 'svg mathml namespace chart')
       ]),
-      group('Directives', 'Direttive', [
-        page('directives/overview', 'Overview', 'Panoramica', 'Directive selector registry'),
-        page('directives/custom', 'Custom directives', 'Direttive custom', 'CustomDirective attribute directive @@'),
-        page('directives/structural', 'Structural directives', 'Direttive strutturali', 'StructuralDirective shouldRender async *'),
-        page('directives/conditional', 'Conditional directives', 'Direttive condizionali', 'conditional directive if switch')
+      group('directives', [
+        page('directives/overview', 'Directive selector registry'),
+        page('directives/custom', 'CustomDirective attribute directive @@'),
+        page('directives/structural', 'StructuralDirective shouldRender async *'),
+        page('directives/conditional', 'conditional directive if switch')
       ]),
-      group('Patterns', 'Pattern', [
-        page('patterns/forms', 'Forms', 'Form', 'form input checkbox select validation two-way'),
-        page('patterns/async-data', 'Async data', 'Dati asincroni', 'fetch loading error abort race'),
-        page('patterns/routing', 'Routing', 'Routing', 'router hash navigation'),
-        page('patterns/html-rendering', 'Rendering HTML', 'Renderizzare HTML', 'innerHTML markdown sanitize'),
-        page('patterns/theming', 'Theming', 'Temi', 'theme dark light css variables'),
-        page('patterns/lists', 'Lists and CRUD', 'Liste e CRUD', 'table crud add remove')
+      group('patterns', [
+        page('patterns/forms', 'form input checkbox select validation two-way'),
+        page('patterns/async-data', 'fetch loading error abort race'),
+        page('patterns/routing', 'router hash navigation'),
+        page('patterns/html-rendering', 'innerHTML markdown sanitize'),
+        page('patterns/theming', 'theme dark light css variables'),
+        page('patterns/lists', 'table crud add remove')
       ])
     ]
   },
   {
-    title: { en: 'Developer tools', it: 'Strumenti' },
+    key: 'developerTools',
     items: [
-      link(page('tools/cli', 'CLI', 'CLI', 'xd new start build generate')),
-      link(page('tools/build', 'Build and Vite plugin', 'Build e plugin Vite', 'vite plugin xaendarPlugin babel hmr')),
-      link(page('tools/language-service', 'Language service and VS Code', 'Language service e VS Code', 'vscode extension language server diagnostics'))
+      link(page('tools/cli', 'xd new start build generate')),
+      link(page('tools/build', 'vite plugin xaendarPlugin babel hmr')),
+      link(page('tools/language-service', 'vscode extension language server diagnostics'))
     ]
   },
   {
-    title: { en: 'Reference', it: 'Riferimento' },
+    key: 'reference',
     items: [
-      link(page('reference/api', 'API reference', 'Riferimento API', 'api exports')),
-      link(page('reference/template-syntax', 'Template syntax cheat sheet', 'Prontuario della sintassi', 'cheat sheet syntax')),
-      link(page('reference/errors', 'Error encyclopedia', 'Enciclopedia degli errori', 'error message lexer parser type checker runtime')),
-      link(page('reference/known-issues', 'Known issues', 'Problemi noti', 'bug issue limitation')),
-      link(page('reference/coming-from-angular', 'Coming from Angular', 'Arrivando da Angular', 'angular migration comparison'))
+      link(page('reference/api', 'api exports')),
+      link(page('reference/template-syntax', 'cheat sheet syntax')),
+      link(page('reference/errors', 'error message lexer parser type checker runtime')),
+      link(page('reference/known-issues', 'bug issue limitation')),
+      link(page('reference/coming-from-angular', 'angular migration comparison'))
     ]
   }
 ];
@@ -217,22 +251,22 @@ export function findNeighbours(path: string): { previous: DocsPage | undefined; 
 }
 
 /**
- * Searches the pages whose title (in any language), path or keywords contain every word of a query.
+ * Searches the pages whose title, path or keywords contain every word of a query.
  *
  * @param query - The words to search, in any order.
- * @param lang - The language whose title matches rank first.
+ * @param messages - The texts of the language the titles are searched in; title matches rank first.
  * @param limit - The maximum number of results.
  * @returns The matching pages, best matches first.
  */
-export function searchPages(query: string, lang: Lang, limit = 8): DocsPage[] {
+export function searchPages(query: string, messages: Messages, limit = 8): DocsPage[] {
   const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 0);
   if (!words.length) {
     return [];
   }
 
   const scored = PAGES.map(candidate => {
-    const title = candidate.title[lang].toLowerCase();
-    const haystack = `${candidate.title.en} ${candidate.title.it} ${candidate.path} ${candidate.keywords ?? ''}`.toLowerCase();
+    const title = pageTitle(candidate, messages).toLowerCase();
+    const haystack = `${title} ${candidate.path} ${candidate.keywords ?? ''}`.toLowerCase();
     if (!words.every(word => haystack.includes(word))) {
       return { candidate, score: -1 };
     }

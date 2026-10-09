@@ -1,0 +1,34 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { UserProfileComponent } from '../../../examples/essentials/components/user-profile/user-profile.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.essentials.components.eyebrow") />
+<h1 @@i18n(key="pages.essentials.components.title") />
+<p class="lead" @@i18n(key="pages.essentials.components.lead") />
+
+<h2 @@i18n(key="pages.essentials.components.definingAComponent.title") />
+<p @@i18n(key="pages.essentials.components.definingAComponent.p1") />
+<ul>
+  <li @@i18n(key="pages.essentials.components.definingAComponent.li1") />
+  <li @@i18n(key="pages.essentials.components.definingAComponent.li2") />
+  <li @@i18n(key="pages.essentials.components.definingAComponent.li3") />
+</ul>
+<p @@i18n(key="pages.essentials.components.definingAComponent.p2") />
+<docs-example name="essentials/components/user-profile" heading="{ t().pages.essentials.components.definingAComponent.example1 }">
+  <ex-user-profile />
+</docs-example>
+
+<h2 @@i18n(key="pages.essentials.components.inputs.title") />
+<p @@i18n(key="pages.essentials.components.inputs.p1") />
+<p @@i18n(key="pages.essentials.components.inputs.p2") />
+
+<h2 @@i18n(key="pages.essentials.components.outputs.title") />
+<p @@i18n(key="pages.essentials.components.outputs.p1") />
+
+<h2 @@i18n(key="pages.essentials.components.usingAComponent.title") />
+<p @@i18n(key="pages.essentials.components.usingAComponent.p1") />
+<docs-callout kind="tip" @@i18n(key="pages.essentials.components.usingAComponent.callout1.body") />
+
+<h2 @@i18n(key="pages.essentials.components.next.title") />
+<p @@i18n(key="pages.essentials.components.next.p1") />

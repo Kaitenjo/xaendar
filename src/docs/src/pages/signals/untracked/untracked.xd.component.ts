@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Reading without tracking" page, in English.
+ * The "Reading without tracking" page.
  */
 @WebComponent({
-  selector: 'page-signals-untracked-en',
-  templateUrl: './untracked.en.xd.component.html',
+  selector: 'page-signals-untracked',
+  templateUrl: './untracked.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class SignalsUntrackedPageEn extends CustomElement {}
-
-/**
- * The "Reading without tracking" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-signals-untracked-it',
-  templateUrl: './untracked.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class SignalsUntrackedPageIt extends CustomElement {}
+export class SignalsUntrackedPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

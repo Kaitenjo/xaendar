@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Styling" page, in English.
+ * The "Styling" page.
  */
 @WebComponent({
-  selector: 'page-components-styling-en',
-  templateUrl: './styling.en.xd.component.html',
+  selector: 'page-components-styling',
+  templateUrl: './styling.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsStylingPageEn extends CustomElement {}
-
-/**
- * The "Styling" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-styling-it',
-  templateUrl: './styling.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsStylingPageIt extends CustomElement {}
+export class ComponentsStylingPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

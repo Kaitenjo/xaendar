@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Error encyclopedia" page, in English.
+ * The "Error encyclopedia" page.
  */
 @WebComponent({
-  selector: 'page-reference-errors-en',
-  templateUrl: './errors.en.xd.component.html',
+  selector: 'page-reference-errors',
+  templateUrl: './errors.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ReferenceErrorsPageEn extends CustomElement {}
-
-/**
- * The "Error encyclopedia" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-reference-errors-it',
-  templateUrl: './errors.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ReferenceErrorsPageIt extends CustomElement {}
+export class ReferenceErrorsPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

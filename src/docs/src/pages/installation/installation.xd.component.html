@@ -1,0 +1,59 @@
+@import { DocsCodeComponent } from '../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { I18nDirective } from '../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.installation.eyebrow") />
+<h1 @@i18n(key="pages.installation.title") />
+<p class="lead" @@i18n(key="pages.installation.lead") />
+
+<h2 @@i18n(key="pages.installation.createAProjectWith.title") />
+<docs-code snippet="installation/new-project.sh" />
+<p @@i18n(key="pages.installation.createAProjectWith.p1") />
+<docs-code snippet="installation/structure.txt" />
+<p @@i18n(key="pages.installation.createAProjectWith.p2") />
+<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle1") />
+<docs-code snippet="installation/index.html" />
+<p @@i18n(key="pages.installation.createAProjectWith.p3") />
+<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle2") />
+<docs-code snippet="installation/signals.ts" />
+<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle3") />
+<docs-code snippet="installation/main.ts" />
+<p @@i18n(key="pages.installation.createAProjectWith.p4") />
+
+<h2 @@i18n(key="pages.installation.addXaendarToA.title") />
+<ol class="steps">
+  <li><span @@i18n(key="pages.installation.addXaendarToA.li1") /><docs-code snippet="installation/manual-install.sh" />
+  </li>
+  <li><span @@i18n(key="pages.installation.addXaendarToA.li2") /><docs-code snippet="installation/vite.config.ts" />
+  </li>
+  <li><span @@i18n(key="pages.installation.addXaendarToA.li3") /><docs-code snippet="installation/tsconfig.json" />
+  </li>
+  <li @@i18n(key="pages.installation.addXaendarToA.li4") />
+</ol>
+
+<h2 @@i18n(key="pages.installation.yourFirstComponent.title") />
+<p @@i18n(key="pages.installation.yourFirstComponent.p1") />
+<docs-code snippet="installation/my-app-root.xd.component.ts" />
+<p @@i18n(key="pages.installation.yourFirstComponent.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.installation.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.installation.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.installation.edgeCases.callout1.p1") />
+    <docs-code snippet="installation/missing-signals.txt" />
+    <p @@i18n(key="pages.installation.edgeCases.callout1.p2") />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.installation.edgeCases.callout2.heading }">
+    <p @@i18n(key="pages.installation.edgeCases.callout2.p1") />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.installation.edgeCases.callout3.heading }">
+    <p @@i18n(key="pages.installation.edgeCases.callout3.p1") />
+  </docs-callout>
+  <docs-callout kind="edge" heading="{ t().pages.installation.edgeCases.callout4.heading }">
+    <p @@i18n(key="pages.installation.edgeCases.callout4.p1") />
+    <docs-code snippet="installation/plugin-order-error.txt" />
+  </docs-callout>
+  <docs-callout kind="issue" heading="{ t().pages.installation.edgeCases.callout5.heading }">
+    <p @@i18n(key="pages.installation.edgeCases.callout5.p1") />
+  </docs-callout>
+</section>

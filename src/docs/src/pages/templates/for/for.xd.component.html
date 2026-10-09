@@ -1,0 +1,75 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ForContextComponent } from '../../../examples/templates/for/for-context/for-context.xd.component.ts'
+@import { ForNumbersComponent } from '../../../examples/templates/for/for-numbers/for-numbers.xd.component.ts'
+@import { ForNestedComponent } from '../../../examples/templates/for/for-nested/for-nested.xd.component.ts'
+@import { ForEmptyComponent } from '../../../examples/templates/for/for-empty/for-empty.xd.component.ts'
+@import { KeyedStateComponent } from '../../../examples/templates/for/keyed-state/keyed-state.xd.component.ts'
+@import { ReplacedObjectComponent } from '../../../examples/templates/for/replaced-object/replaced-object.xd.component.ts'
+@import { DuplicateKeysComponent } from '../../../examples/templates/for/duplicate-keys/duplicate-keys.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.templates.for.eyebrow") />
+<h1 @@i18n(key="pages.templates.for.title") />
+<p class="lead" @@i18n(key="pages.templates.for.lead") />
+
+<h2 @@i18n(key="pages.templates.for.itemsKeysAndContext.title") />
+<docs-code snippet="templates/for-syntax.html" />
+<docs-example name="templates/for/for-context" heading="{ t().pages.templates.for.itemsKeysAndContext.example1 }">
+  <ex-for-context />
+</docs-example>
+<p @@i18n(key="pages.templates.for.itemsKeysAndContext.p1") />
+<p @@i18n(key="pages.templates.for.itemsKeysAndContext.p2") />
+
+<h2 @@i18n(key="pages.templates.for.repeatingANumberOf.title") />
+<p @@i18n(key="pages.templates.for.repeatingANumberOf.p1") />
+<docs-example name="templates/for/for-numbers" heading="{ t().pages.templates.for.repeatingANumberOf.example1 }">
+  <ex-for-numbers />
+</docs-example>
+
+<h2 @@i18n(key="pages.templates.for.nestedLoops.title") />
+<docs-example name="templates/for/for-nested" heading="{ t().pages.templates.for.nestedLoops.example1 }">
+  <ex-for-nested />
+</docs-example>
+<p @@i18n(key="pages.templates.for.nestedLoops.p1") />
+
+<h2 @@i18n(key="pages.templates.for.emptyLists.title") />
+<p @@i18n(key="pages.templates.for.emptyLists.p1") />
+<docs-example name="templates/for/for-empty" heading="{ t().pages.templates.for.emptyLists.example1 }">
+  <ex-for-empty />
+</docs-example>
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.for.edgeCases.title") />
+  <docs-example name="templates/for/keyed-state" heading="{ t().pages.templates.for.edgeCases.example1 }" kind="edge">
+    <ex-keyed-state />
+  </docs-example>
+  <p @@i18n(key="pages.templates.for.edgeCases.p1") />
+  <docs-example name="templates/for/replaced-object" heading="{ t().pages.templates.for.edgeCases.example2 }" kind="edge">
+    <ex-replaced-object />
+  </docs-example>
+  <p @@i18n(key="pages.templates.for.edgeCases.p2") />
+  <docs-example name="templates/for/duplicate-keys" heading="{ t().pages.templates.for.edgeCases.example3 }" kind="edge">
+    <ex-duplicate-keys />
+  </docs-example>
+  <p @@i18n(key="pages.templates.for.edgeCases.p3") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.for.edgeCases.callout1.heading }">
+    <p @@i18n(key="pages.templates.for.edgeCases.callout1.p1") />
+    <docs-code snippet="templates/for-errors.txt" />
+  </docs-callout>
+</section>
+
+<h2 @@i18n(key="pages.templates.for.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.templates.for.apiSummary.th1") /><th @@i18n(key="pages.templates.for.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td><code>{'@for (item of items(); track item.id) { … }'}</code></td><td @@i18n(key="pages.templates.for.apiSummary.td1") /></tr>
+      <tr><td><code>{'@for (item of items()) { … }'}</code></td><td @@i18n(key="pages.templates.for.apiSummary.td2") /></tr>
+      <tr><td><code>{'@for (5) { … }'}</code>, <code>{'@for (n of count()) { … }'}</code></td><td @@i18n(key="pages.templates.for.apiSummary.td3") /></tr>
+      <tr><td><code>$index()</code>, <code>$first()</code>, <code>$last()</code>, <code>$even()</code>, <code>$odd()</code></td><td @@i18n(key="pages.templates.for.apiSummary.td4") /></tr>
+      <tr><td><code>{'…; track item.id; i = $index'}</code></td><td @@i18n(key="pages.templates.for.apiSummary.td5") /></tr>
+    </tbody>
+  </table>
+</div>

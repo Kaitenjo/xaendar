@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Structural directives" page, in English.
+ * The "Structural directives" page.
  */
 @WebComponent({
-  selector: 'page-directives-structural-en',
-  templateUrl: './structural.en.xd.component.html',
+  selector: 'page-directives-structural',
+  templateUrl: './structural.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class DirectivesStructuralPageEn extends CustomElement {}
-
-/**
- * The "Structural directives" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-directives-structural-it',
-  templateUrl: './structural.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class DirectivesStructuralPageIt extends CustomElement {}
+export class DirectivesStructuralPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Routing" page, in English.
+ * The "Routing" page.
  */
 @WebComponent({
-  selector: 'page-patterns-routing-en',
-  templateUrl: './routing.en.xd.component.html',
+  selector: 'page-patterns-routing',
+  templateUrl: './routing.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class PatternsRoutingPageEn extends CustomElement {}
-
-/**
- * The "Routing" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-patterns-routing-it',
-  templateUrl: './routing.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class PatternsRoutingPageIt extends CustomElement {}
+export class PatternsRoutingPage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

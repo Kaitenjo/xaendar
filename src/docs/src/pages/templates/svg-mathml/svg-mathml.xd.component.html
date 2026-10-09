@@ -1,0 +1,45 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SvgChartComponent } from '../../../examples/templates/svg-mathml/svg-chart/svg-chart.xd.component.ts'
+@import { MathmlFormulaComponent } from '../../../examples/templates/svg-mathml/mathml-formula/mathml-formula.xd.component.ts'
+@import { ForeignObjectComponent } from '../../../examples/templates/svg-mathml/foreign-object/foreign-object.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.templates.svgMathml.eyebrow") />
+<h1 @@i18n(key="pages.templates.svgMathml.title") />
+<p class="lead" @@i18n(key="pages.templates.svgMathml.lead") />
+
+<h2 @@i18n(key="pages.templates.svgMathml.svg.title") />
+<docs-code snippet="templates/svg-syntax.html" />
+<docs-example name="templates/svg-mathml/svg-chart" heading="{ t().pages.templates.svgMathml.svg.example1 }">
+  <ex-svg-chart />
+</docs-example>
+<p @@i18n(key="pages.templates.svgMathml.svg.p1") />
+
+<h2 @@i18n(key="pages.templates.svgMathml.mathml.title") />
+<docs-example name="templates/svg-mathml/mathml-formula" heading="{ t().pages.templates.svgMathml.mathml.example1 }">
+  <ex-mathml-formula />
+</docs-example>
+<p @@i18n(key="pages.templates.svgMathml.mathml.p1") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.svgMathml.edgeCases.title") />
+  <docs-example name="templates/svg-mathml/foreign-object" heading="{ t().pages.templates.svgMathml.edgeCases.example1 }" kind="edge">
+    <ex-foreign-object />
+  </docs-example>
+  <p @@i18n(key="pages.templates.svgMathml.edgeCases.p1") />
+  <docs-callout kind="edge" heading="{ t().pages.templates.svgMathml.edgeCases.callout1.heading }" @@i18n(key="pages.templates.svgMathml.edgeCases.callout1.body") />
+</section>
+
+<h2 @@i18n(key="pages.templates.svgMathml.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.templates.svgMathml.apiSummary.th1") /><th @@i18n(key="pages.templates.svgMathml.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td @@i18n(key="pages.templates.svgMathml.apiSummary.td1") /><td><code>http://www.w3.org/2000/svg</code></td></tr>
+      <tr><td @@i18n(key="pages.templates.svgMathml.apiSummary.td2") /><td><code>http://www.w3.org/1998/Math/MathML</code></td></tr>
+      <tr><td @@i18n(key="pages.templates.svgMathml.apiSummary.td3") /><td @@i18n(key="pages.templates.svgMathml.apiSummary.td4") /></tr>
+    </tbody>
+  </table>
+</div>

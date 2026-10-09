@@ -1,21 +1,17 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
+import { translations } from '../../../core/i18n/i18n';
 
 /**
- * The "Lifecycle" page, in English.
+ * The "Lifecycle" page.
  */
 @WebComponent({
-  selector: 'page-components-lifecycle-en',
-  templateUrl: './lifecycle.en.xd.component.html',
+  selector: 'page-components-lifecycle',
+  templateUrl: './lifecycle.xd.component.html',
   styleUrl: '../../page.css'
 })
-export class ComponentsLifecyclePageEn extends CustomElement {}
-
-/**
- * The "Lifecycle" page, in Italian.
- */
-@WebComponent({
-  selector: 'page-components-lifecycle-it',
-  templateUrl: './lifecycle.it.xd.component.html',
-  styleUrl: '../../page.css'
-})
-export class ComponentsLifecyclePageIt extends CustomElement {}
+export class ComponentsLifecyclePage extends CustomElement {
+  /**
+   * The texts of the documentation, in the current language.
+   */
+  public readonly t = translations;
+}

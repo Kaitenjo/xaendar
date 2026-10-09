@@ -1,0 +1,65 @@
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ComputedLazyComponent } from '../../../examples/signals/computed/lazy/lazy.xd.component.ts'
+@import { ComputedDynamicComponent } from '../../../examples/signals/computed/dynamic-dependencies/dynamic-dependencies.xd.component.ts'
+@import { ComputedDiamondComponent } from '../../../examples/signals/computed/diamond/diamond.xd.component.ts'
+@import { ComputedErrorsComponent } from '../../../examples/signals/computed/errors/errors.xd.component.ts'
+@import { ComputedCircularComponent } from '../../../examples/signals/computed/circular/circular.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span class="eyebrow" @@i18n(key="pages.signals.computed.eyebrow") />
+<h1 @@i18n(key="pages.signals.computed.title") />
+<p class="lead" @@i18n(key="pages.signals.computed.lead") />
+
+<h2 @@i18n(key="pages.signals.computed.lazyAndCached.title") />
+<p @@i18n(key="pages.signals.computed.lazyAndCached.p1") />
+<docs-example name="signals/computed/lazy" heading="{ t().pages.signals.computed.lazyAndCached.example1 }">
+  <ex-computed-lazy />
+</docs-example>
+<p @@i18n(key="pages.signals.computed.lazyAndCached.p2") />
+
+<h2 @@i18n(key="pages.signals.computed.dynamicDependencies.title") />
+<p @@i18n(key="pages.signals.computed.dynamicDependencies.p1") />
+<docs-example name="signals/computed/dynamic-dependencies" heading="{ t().pages.signals.computed.dynamicDependencies.example1 }">
+  <ex-computed-dynamic />
+</docs-example>
+
+<h2 @@i18n(key="pages.signals.computed.glitchFreeUpdates.title") />
+<p @@i18n(key="pages.signals.computed.glitchFreeUpdates.p1") />
+<docs-example name="signals/computed/diamond" heading="{ t().pages.signals.computed.glitchFreeUpdates.example1 }">
+  <ex-computed-diamond />
+</docs-example>
+
+<h2 @@i18n(key="pages.signals.computed.errors.title") />
+<p @@i18n(key="pages.signals.computed.errors.p1") />
+<docs-example name="signals/computed/errors" heading="{ t().pages.signals.computed.errors.example1 }">
+  <ex-computed-errors />
+</docs-example>
+
+<h2 @@i18n(key="pages.signals.computed.optionsAndThis.title") />
+<p @@i18n(key="pages.signals.computed.optionsAndThis.p1") />
+<docs-code snippet="signals/computed-this.ts" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.signals.computed.edgeCases.title") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout1.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout1.body") />
+  <docs-example name="signals/computed/circular" kind="edge" heading="{ t().pages.signals.computed.edgeCases.example1 }">
+    <ex-computed-circular />
+  </docs-example>
+  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout2.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout2.body") />
+  <docs-callout kind="edge" heading="{ t().pages.signals.computed.edgeCases.callout3.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout3.body") />
+  <docs-callout kind="unsupported" heading="{ t().pages.signals.computed.edgeCases.callout4.heading }" @@i18n(key="pages.signals.computed.edgeCases.callout4.body") />
+</section>
+
+<h2 @@i18n(key="pages.signals.computed.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead><tr><th @@i18n(key="pages.signals.computed.apiSummary.th1") /><th @@i18n(key="pages.signals.computed.apiSummary.th2") /></tr></thead>
+    <tbody>
+      <tr><td @@i18n(key="pages.signals.computed.apiSummary.td1") /><td @@i18n(key="pages.signals.computed.apiSummary.td2") /></tr>
+      <tr><td><code>c()</code>, <code>c.get()</code></td><td @@i18n(key="pages.signals.computed.apiSummary.td3") /></tr>
+      <tr><td @@i18n(key="pages.signals.computed.apiSummary.td4") /><td @@i18n(key="pages.signals.computed.apiSummary.td5") /></tr>
+    </tbody>
+  </table>
+</div>
