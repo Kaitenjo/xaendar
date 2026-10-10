@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### A query created after the connection (bug)
-
-query() called after the component is connected stays null until the next connection, and the next disconnection throws TypeError: stop is not a function, skipping the other hooks.
-
-**Workaround:** Create queries in field initializers.
-
 ### An effect created in the constructor dies at the first disconnection (bug)
 
 Effects created in field initializers or in the constructor are disposed when the component is disconnected, and never created again.

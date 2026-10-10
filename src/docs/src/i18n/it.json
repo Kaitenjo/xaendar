@@ -631,10 +631,6 @@
           "p1": "L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa: aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.",
           "example2": "queryAll in un binding di attributo",
           "p2": "Il compilatore dei template riconosce un membro signal dalla funzione che lo inizializza, che deve venire da <code>@xaendar/core/signals</code>. <code>queryAll</code> viene da <code>@xaendar/core</code>, quindi in un attributo <code>rows</code> viene letto una volta sola, al render, quando la query è ancora vuota: il primo indicatore non si muove mai, e un’annotazione di tipo non aiuta, perché con una chiamata come inizializzatore conta solo la funzione. Leggi la query tramite un <code>computed</code>, oppure usa il decoratore, il cui accessor viene riconosciuto dal tipo. Le interpolazioni nel testo sono sempre reattive. Vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>.",
-          "callout1": {
-            "heading": "Una query creata dopo il collegamento",
-            "p1": "Una query inizia a osservare quando l’elemento viene collegato, quindi una creata più tardi, per esempio in <code>afterRender</code>, resta <code>null</code> finché l’elemento non viene ricollegato, e lancia un errore al successivo scollegamento. Crea le query nei campi, oppure con i decoratori."
-          },
           "callout2": {
             "heading": "Ricollegamento: onInit vede i vecchi elementi",
             "body": "Quando l’elemento viene spostato, il template viene renderizzato di nuovo da zero, ma la query viene aggiornata solo dopo il render: in <code>onInit</code> contiene ancora gli elementi del render precedente, ormai staccati dal documento."
@@ -2667,7 +2663,7 @@
     "CustomElement": "Classe base dei componenti: una shadow root aperta, gli hook del ciclo di vita, e effect eliminati alla disconnessione.",
     "CustomDirective": "Classe base delle direttive che agiscono sull’elemento a cui sono applicate.",
     "StructuralDirective": "Classe base delle direttive che decidono se l’elemento a cui sono applicate viene renderizzato.",
-    "query": "La forma funzione di @Query, per l’inizializzatore di un campo. Va creata prima che il componente sia connesso.",
+    "query": "La forma funzione di @Query, di solito per l’inizializzatore di un campo. Creata quando il componente è già connesso, parte subito.",
     "queryAll": "La forma funzione di @Query.all.",
     "querySlot": "La forma funzione di @Query.content.",
     "querySlotAll": "La forma funzione di @Query.content.all.",
@@ -2896,10 +2892,6 @@
       "cause": "this.effect chiamato nel costruttore di una direttiva, prima che esista il suo contesto.",
       "fix": "Crea gli effect in onInit."
     },
-    "TypeError: stop is not a function": {
-      "cause": "Una query creata con query() dopo la connessione del componente, lanciato alla disconnessione successiva.",
-      "fix": "Crea le query negli inizializzatori dei campi."
-    },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Due classi definite con lo stesso selettore a runtime.",
       "fix": "Rinominane una."
@@ -2979,11 +2971,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "a-query-created-after-the-connection": {
-      "title": "Una query creata dopo la connessione",
-      "details": "query() chiamata dopo la connessione del componente resta null fino alla connessione successiva, e la disconnessione seguente lancia TypeError: stop is not a function, saltando gli altri hook.",
-      "workaround": "Crea le query negli inizializzatori dei campi."
     },
     "an-effect-created-in-the-constructor": {
       "title": "Un effect creato nel costruttore muore alla prima disconnessione",

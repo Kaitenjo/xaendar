@@ -262,11 +262,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** this.effect called in the constructor of a directive, before its context exists.
 - **Fix:** Create effects in onInit.
 
-### `TypeError: stop is not a function`
-
-- **Cause:** A query created with query() after the component was connected, thrown at the next disconnection.
-- **Fix:** Create queries in field initializers.
-
 ### `NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "x-card" has already been used with this registry`
 
 - **Cause:** Two classes defined with the same selector at runtime.

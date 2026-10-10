@@ -1,5 +1,5 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { CONNECTED_HOOKS, CONNECTED_HOOKS_RUN, DISCONNECTED_HOOKS } from '../../costants';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QuerySignal } from '../types/query-signal.type';
@@ -59,11 +59,17 @@ export function createQuerySignal<Value>(
   const update = () => signal.set(read(shadowRoot));
 
   let stop: NoArgsVoidFunction;
-  element[CONNECTED_HOOKS].push(() => {
+  const start = () => {
     stop = observe(element, update);
     update();
-  });
+  };
+  element[CONNECTED_HOOKS].push(start);
   element[DISCONNECTED_HOOKS].push(() => stop());
+
+  // Created once the element is connected and rendered, as in afterRender or in a listener: it starts at once
+  if (element[CONNECTED_HOOKS_RUN]) {
+    start();
+  }
 
   return Object.assign(getter, {
     get: signal.get.bind(signal)

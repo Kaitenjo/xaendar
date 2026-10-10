@@ -280,11 +280,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: 'TypeError: stop is not a function',
-    page: 'components/queries'
-  },
-  {
-    phase: 'Runtime',
     message: "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry",
     page: 'components/registration'
   },

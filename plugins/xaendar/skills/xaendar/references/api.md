@@ -106,7 +106,7 @@ Base class of the directives deciding whether the element they are applied to is
 query(this, '.selector' | ComponentClass): QuerySignal<E | null>
 ```
 
-The function form of @Query, for a field initializer. It must be created before the component is connected.
+The function form of @Query, usually for a field initializer. Created once the component is connected, it starts at once.
 
 ### queryAll (function)
 

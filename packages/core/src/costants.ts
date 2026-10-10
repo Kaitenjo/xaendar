@@ -37,3 +37,8 @@ export const CONNECTED_HOOKS = Symbol('ConnectedHooks');
  * Key of the internal list of callbacks a `CustomElement` invokes each time it is disconnected.
  */
 export const DISCONNECTED_HOOKS = Symbol('DisconnectedHooks');
+/**
+ * Key of the internal flag telling whether a `CustomElement` has invoked the callbacks of its current connection:
+ * set once they have run, and cleared when the element is disconnected.
+ */
+export const CONNECTED_HOOKS_RUN = Symbol('ConnectedHooksRun');

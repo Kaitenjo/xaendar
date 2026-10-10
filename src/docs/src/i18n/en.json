@@ -631,10 +631,6 @@
           "p1": "The observer watches elements being added and removed, not their attributes. Selecting a task changes only its class, so the query on <code>.selected</code> keeps its old result until the list itself changes: add a task and it catches up. Use queries to find elements, and keep the state in signals.",
           "example2": "queryAll in an attribute binding",
           "p2": "The template compiler recognizes a signal member by the function that initializes it, which must come from <code>@xaendar/core/signals</code>. <code>queryAll</code> comes from <code>@xaendar/core</code>, so in an attribute <code>rows</code> is read once, at the render, when the query is still empty: the first meter never moves, and a type annotation does not help, since with a call as initializer only the function counts. Read the query through a <code>computed</code>, or use the decorator, whose accessor is recognized by its type. Text interpolations are always reactive. See <a href=\"#/en/signals/shared-state\">Shared state</a>.",
-          "callout1": {
-            "heading": "A query created after the connection",
-            "p1": "A query starts observing when the element is connected, so one created later, for example in <code>afterRender</code>, stays <code>null</code> until the element is connected again, and throws at the next disconnection. Create queries in fields, or with the decorators."
-          },
           "callout2": {
             "heading": "Reconnection: onInit sees the old elements",
             "body": "When the element is moved, the template is rendered again from scratch, but the query is refreshed only after the render: in <code>onInit</code> it still holds the elements of the previous render, now detached from the document."
@@ -2667,7 +2663,7 @@
     "CustomElement": "Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection.",
     "CustomDirective": "Base class of the directives acting on the element they are applied to.",
     "StructuralDirective": "Base class of the directives deciding whether the element they are applied to is rendered.",
-    "query": "The function form of @Query, for a field initializer. It must be created before the component is connected.",
+    "query": "The function form of @Query, usually for a field initializer. Created once the component is connected, it starts at once.",
     "queryAll": "The function form of @Query.all.",
     "querySlot": "The function form of @Query.content.",
     "querySlotAll": "The function form of @Query.content.all.",
@@ -2896,10 +2892,6 @@
       "cause": "this.effect called in the constructor of a directive, before its context exists.",
       "fix": "Create effects in onInit."
     },
-    "TypeError: stop is not a function": {
-      "cause": "A query created with query() after the component was connected, thrown at the next disconnection.",
-      "fix": "Create queries in field initializers."
-    },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Two classes defined with the same selector at runtime.",
       "fix": "Rename one of them."
@@ -2979,11 +2971,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "a-query-created-after-the-connection": {
-      "title": "A query created after the connection",
-      "details": "query() called after the component is connected stays null until the next connection, and the next disconnection throws TypeError: stop is not a function, skipping the other hooks.",
-      "workaround": "Create queries in field initializers."
     },
     "an-effect-created-in-the-constructor": {
       "title": "An effect created in the constructor dies at the first disconnection",

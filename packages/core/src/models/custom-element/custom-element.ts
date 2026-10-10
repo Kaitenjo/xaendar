@@ -1,5 +1,5 @@
 import { NoArgsVoidFunction } from '@xaendar/types';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { CONNECTED_HOOKS, CONNECTED_HOOKS_RUN, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import { _Context } from '../../utils/context/context.util';
@@ -32,6 +32,11 @@ export class CustomElement extends HTMLElement {
    * after the context is cleared. They are never cleared, so they survive the reconnections.
    */
   public readonly [DISCONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
+  /**
+   * Whether the connected hooks of the current connection have run: a callback registered afterwards
+   * has to start on its own, since it will only be invoked by the next connection.
+   */
+  public [CONNECTED_HOOKS_RUN] = false;
 
   /**
    * Optional lifecycle hook, invoked each time the element is inserted into the DOM, before the render:
@@ -114,6 +119,7 @@ export class CustomElement extends HTMLElement {
     this._context = render.call(this);
     this._context.addUnlistener(...unwatchFns);
     this[CONNECTED_HOOKS].forEach(hook => hook());
+    this[CONNECTED_HOOKS_RUN] = true;
     this.afterRender?.();
   }
 
@@ -126,6 +132,7 @@ export class CustomElement extends HTMLElement {
    * and finally invokes the internal disconnected hooks.
    */
   private disconnectedCallback(): void {
+    this[CONNECTED_HOOKS_RUN] = false;
     this.onDestroy?.();
     this._context.clear();
     this[DISCONNECTED_HOOKS].forEach(hook => hook());
