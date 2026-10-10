@@ -1177,10 +1177,6 @@
         "callout4": {
           "heading": "L’ordine dei plugin Vite conta",
           "p1": "Il plugin di Xaendar inserisce il template nel blocco statico generato dalla trasformazione dei decorator. Se la trasformazione viene eseguita dopo, la build fallisce con:"
-        },
-        "callout5": {
-          "heading": "Un errore nel template non fa fallire la build",
-          "p1": "Gli errori di un template vengono stampati, ma <code>xd build</code> termina comunque con exit code 0. Il componente il cui template è fallito finisce nel bundle senza funzione di render, e lancia un errore quando viene connesso: <code>MyAppRootComponent does not seems to have a Render Function</code>. Leggi sempre l’output della build, e vedi <a href=\"#/it/reference/known-issues\">Problemi noti</a>."
         }
       }
     },
@@ -2418,7 +2414,7 @@
         },
         "errors": {
           "title": "Errori",
-          "p1": "Gli errori di un template vengono stampati dal dev server e dalla build, con la posizione nel template e l’estratto coinvolto. Il componente a cui appartengono resta senza funzione di render, e lancia un errore quando viene connesso. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi."
+          "p1": "Gli errori di un template vengono stampati dal dev server e dalla build, con la posizione nel template e l’estratto coinvolto. Fanno fallire la build. Nel dev server, il componente a cui appartengono resta senza funzione di render, e lancia un errore quando viene connesso. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi."
         },
         "devServer": {
           "title": "Dev server",
@@ -2426,10 +2422,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Gli errori dei template non fanno fallire la build",
-            "p1": "Gli errori di type check e di sintassi vengono registrati, ma la build termina con exit code 0, e il componente rotto finisce nel bundle. Gli errori del generatore di codice, come un signal dichiarato due volte da una classe e dalla sua base, sono l’eccezione: fermano la build. Vedi <a href=\"#/it/tools/cli\">CLI</a> per un controllo da aggiungere alle pipeline automatiche."
-          },
           "callout2": {
             "heading": "Le classi non passano il type check",
             "body": "Il plugin controlla i template, non il TypeScript delle classi: un membro in conflitto con una proprietà di <code>HTMLElement</code>, come <code>title</code> o <code>remove</code>, arriva nel bundle senza segnalazioni. Esegui anche <code>tsc --noEmit</code>."
@@ -2501,10 +2493,6 @@
           "callout5": {
             "heading": "I pacchetti pubblicati sono più vecchi di questa documentazione",
             "p1": "I pacchetti pubblicati su npm come 0.12.0 precedono l’API descritta in questo sito: il loro <code>@xaendar/core</code> esporta <code>BaseWebComponent</code> invece di <code>CustomElement</code>. Un progetto creato da una CLI compilata dal repository li installa, e la sua build fallisce. Fino al prossimo rilascio, lavora dentro il repository, come fa questo sito."
-          },
-          "callout6": {
-            "heading": "xd build esce con 0 se un template ha errori",
-            "p1": "Un template che non compila viene segnalato, ma la build prosegue e termina con successo: il componente arriva nel bundle senza funzione di render. Controlla l’output nelle pipeline automatiche."
           }
         },
         "commandSummary": {
@@ -2822,6 +2810,10 @@
       "cause": "I decoratori non sono stati compilati prima del plugin Xaendar.",
       "fix": "Metti il plugin Babel prima di xaendarPlugin()."
     },
+    "Failed to compile component - <path>": {
+      "cause": "In una build, un componente che non può essere compilato: i suoi errori sono stampati prima di questo messaggio.",
+      "fix": "Correggi gli errori stampati prima."
+    },
     "Error: Unable to resolve module path for \"Nope\".": {
       "cause": "Un @import il cui percorso non si risolve: sono supportati solo percorsi relativi a file o cartelle.",
       "fix": "Usa un percorso relativo; pacchetti e alias del tsconfig non vengono risolti."
@@ -2929,11 +2921,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "template-errors-do-not-fail-the": {
-      "title": "Gli errori dei template non fanno fallire la build",
-      "details": "xd build esce con 0, e il componente arriva nel bundle senza funzione di render.",
-      "workaround": "Fai fallire la pipeline sui messaggi Xaendar:."
     },
     "classes-are-not-type-checked": {
       "title": "Le classi non passano il type check",

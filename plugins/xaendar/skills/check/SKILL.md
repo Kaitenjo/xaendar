@@ -1,6 +1,6 @@
 ---
 name: check
-description: Compile and type-check a Xaendar project the way the build cannot on its own — xd build reports template errors but exits 0, and never type-checks component classes. Use after editing Xaendar components or templates, or before committing them.
+description: Compile and type-check a Xaendar project the way the build cannot on its own — xd build reports template errors but never type-checks component classes. Use after editing Xaendar components or templates, or before committing them.
 argument-hint: [project folder]
 allowed-tools: Bash(npx xd build*), Bash(npx tsc *), Read, Grep, Glob
 ---
@@ -9,7 +9,7 @@ allowed-tools: Bash(npx xd build*), Bash(npx tsc *), Read, Grep, Glob
 
 Arguments: `$ARGUMENTS` (the project folder, the one containing `vite.config.ts` and `tsconfig.json`; the current folder when empty).
 
-`xd build` prints template errors in red, prefixed by `Xaendar:`, and then **exits 0**. The broken component reaches the bundle without a render function. Component classes are never type-checked by the build. Run both checks below. Do not trust the exit codes; read the output.
+`xd build` prints template errors in red, prefixed by `Xaendar:`, and fails. Component classes are never type-checked by the build. Run both checks below and read the output.
 
 1. **Templates**: from the project folder, run:
    ```bash

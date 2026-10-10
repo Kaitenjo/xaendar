@@ -220,6 +220,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The decorators were not compiled before the Xaendar plugin ran.
 - **Fix:** Put the Babel plugin before xaendarPlugin().
 
+### `Failed to compile component - <path>`
+
+- **Cause:** In a build, a component that cannot be compiled: its errors are printed before this message.
+- **Fix:** Fix the errors printed before it.
+
 ### `Error: Unable to resolve module path for "Nope".`
 
 - **Cause:** An @import whose path does not resolve: only relative paths to files or folders are supported.

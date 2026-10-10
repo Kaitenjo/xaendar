@@ -44,6 +44,7 @@ function createState(files: Record<string, string>): XaendarPluginState {
     compilerOptions: {},
     projectFileNames: [],
     minifyStyles: false,
+    isBuild: false,
     setLogger: vi.fn(),
     logError: vi.fn()
   };

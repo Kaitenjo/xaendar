@@ -127,20 +127,22 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: ['/project/src/globals.d.ts'],
     minifyStyles: false,
+    isBuild: false,
     setLogger: vi.fn(),
     logError: vi.fn()
   };
 }
 
 /**
- * Builds a mocked `transform` hook plugin context (`warn`/`addWatchFile`).
+ * Builds a mocked `transform` hook plugin context (`warn`/`addWatchFile`/`error`, which throws as Vite's does).
  *
  * @returns The mocked plugin context.
  */
 function createPluginContext(): TransformPluginContext {
   return {
     warn: vi.fn(),
-    addWatchFile: vi.fn()
+    addWatchFile: vi.fn(),
+    error: vi.fn((message: string) => { throw new Error(message); })
   } as unknown as TransformPluginContext;
 }
 
@@ -480,5 +482,47 @@ describe('createTransformHook()', () => {
     const result = await hook.call(createPluginContext(), sourceCode, COMPONENT_PATH, undefined);
 
     expect(result).toEqual({ code: '@Component()\nexport class FooComponent {}', map: expect.anything() });
+  });
+
+  describe('in a build', () => {
+    it.each([
+      ['the selector is not a valid custom element name', () => vi.mocked(isValidCustomElementName).mockReturnValue(false)],
+      ['the selector is already used by another component', () => vi.mocked(claimSelectors).mockResolvedValue('selector conflict')],
+      ['the template cannot be found', () => undefined, () => false],
+      ['the template compilation throws', () => vi.mocked(compile).mockRejectedValue(new Error('boom'))],
+      ['injecting the template throws', () => vi.mocked(injectTemplate).mockImplementation(() => { throw new Error('inject failed'); })],
+      ['the template has type errors', () => vi.mocked(getLanguageService).mockReturnValue({
+        getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1'])
+      } as unknown as ReturnType<typeof getLanguageService>)]
+    ])('fails when %s', async (_name, arrange, fileExists = () => true) => {
+      vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+      vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+      arrange();
+      const ctx = createPluginContext();
+      const hook = createTransformHook({ ...createState({ fileExists }), isBuild: true });
+
+      await expect(hook.call(ctx, 'original code', COMPONENT_PATH, undefined)).rejects.toThrow(`Failed to compile component - ${COMPONENT_PATH}`);
+      expect(ctx.error).toHaveBeenCalledOnce();
+    });
+
+    it('does not fail when the component compiles', async () => {
+      vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+      vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+      const ctx = createPluginContext();
+      const hook = createTransformHook({ ...createState(), isBuild: true });
+
+      expect(await hook.call(ctx, 'original code', COMPONENT_PATH, undefined)).toEqual({ code: 'original code', map: expect.anything() });
+      expect(ctx.error).not.toHaveBeenCalled();
+    });
+  });
+
+  it('does not fail outside a build, where the errors are only reported', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    vi.mocked(compile).mockRejectedValue(new Error('boom'));
+    const ctx = createPluginContext();
+
+    expect(await createTransformHook(createState()).call(ctx, 'original code', COMPONENT_PATH, undefined)).toBeNull();
+    expect(ctx.error).not.toHaveBeenCalled();
   });
 });

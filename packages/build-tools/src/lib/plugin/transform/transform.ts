@@ -22,6 +22,9 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
  * template against the component class, and injects the render function/stylesheet imports and
  * registration into the transpiled output.
  *
+ * A component that cannot be compiled is left without its render function: its errors are logged and,
+ * in a build, the build fails.
+ *
  * @param state - The shared plugin state (compiler host, project compiler options/file names, logger).
  * @returns The `transform` hook handler.
  */
@@ -30,6 +33,19 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
       return code;
     }
+
+    /**
+     * Leaves the component without its render function, once its errors are reported, failing the build
+     * when the plugin runs in one.
+     *
+     * @returns `null`, leaving the code untouched.
+     */
+    const fail = (): null => {
+      if (state.isBuild) {
+        this.error(`Failed to compile component - ${componentPath}`);
+      }
+      return null;
+    };
 
     const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
     const metadatas = await extractComponentsMetadataFromSourceFile(tsSource, state.compilerOptions);
@@ -61,14 +77,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       const { selector, styleUrl, templateUrl } = metadata;
       if (!isValidCustomElementName(selector)) {
         state.logError('', `Invalid custom element name "${selector}" in component ${componentPath}`);
-        return null;
+        return fail();
       }
 
       // A selector can be defined only once at runtime: it must not be shared with any other component
       const selectorConflict = await claimSelectors(metadata);
       if (selectorConflict) {
         state.logError('', selectorConflict);
-        return null;
+        return fail();
       }
 
       // TODO className is not unique, we can't use it as a key for the metadata cache
@@ -82,7 +98,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       const templatePath = resolvePosixPath(folder, templateUrl);
       if (!templatePath || !state.host.fileExists(templatePath)) {
         this.warn(`Could not find template at ${templatePath}`);
-        return null;
+        return fail();
       }
 
       this.addWatchFile(templatePath);
@@ -126,7 +142,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         });
       } catch (err) {
         state.logError(err, `Failed to compile template - ${templatePath}`);
-        return null;
+        return fail();
       }
 
       /*
@@ -143,7 +159,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, signals.members), styleModuleSpecifier);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
-        return null;
+        return fail();
       }
 
       registerRealFile(componentPath);
@@ -156,9 +172,8 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
       }
 
-      // After logging every diagnostics we have to return null to raise an error
       if (diagnostics.length) {
-        return null;
+        return fail();
       }
     }
 

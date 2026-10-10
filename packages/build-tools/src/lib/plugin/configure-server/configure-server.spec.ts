@@ -58,6 +58,7 @@ function createState(): XaendarPluginState {
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: [],
     minifyStyles: false,
+    isBuild: false,
     setLogger: vi.fn(),
     logError: vi.fn()
   };

@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { createConfigResolvedHook } from './config-resolved';
 
-function resolve(command: 'build' | 'serve', cssMinify: ResolvedConfig['build']['cssMinify']): boolean {
-  const state = { minifyStyles: false } as XaendarPluginState;
+function resolveState(command: 'build' | 'serve', cssMinify: ResolvedConfig['build']['cssMinify']): XaendarPluginState {
+  const state = { minifyStyles: false, isBuild: false } as XaendarPluginState;
   createConfigResolvedHook(state)({ command, build: { cssMinify } } as ResolvedConfig);
-  return state.minifyStyles;
+  return state;
+}
+
+function resolve(command: 'build' | 'serve', cssMinify: ResolvedConfig['build']['cssMinify']): boolean {
+  return resolveState(command, cssMinify).minifyStyles;
 }
 
 describe('createConfigResolvedHook()', () => {
@@ -21,5 +25,10 @@ describe('createConfigResolvedHook()', () => {
 
   it('keeps it disabled in dev', () => {
     expect(resolve('serve', 'lightningcss')).toBe(false);
+  });
+
+  it('records whether the plugin runs in a build', () => {
+    expect(resolveState('build', false).isBuild).toBe(true);
+    expect(resolveState('serve', 'lightningcss').isBuild).toBe(false);
   });
 });

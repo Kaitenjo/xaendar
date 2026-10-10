@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'template-errors-do-not-fail-the',
-    area: 'Build',
-    kind: 'bug',
-    page: 'tools/build'
-  },
-  {
     id: 'classes-are-not-type-checked',
     area: 'Build',
     kind: 'limitation',

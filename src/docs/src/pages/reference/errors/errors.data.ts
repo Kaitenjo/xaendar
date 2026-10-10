@@ -240,6 +240,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
+    message: 'Failed to compile component - <path>',
+    page: 'tools/build'
+  },
+  {
+    phase: 'Build',
     message: 'Error: Unable to resolve module path for "Nope".',
     page: 'templates/imports'
   },

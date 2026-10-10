@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Build
 
-### Template errors do not fail the build (bug)
-
-xd build exits with 0, and the component reaches the bundle without a render function.
-
-**Workaround:** Fail the pipeline on the Xaendar: messages.
-
 ### Classes are not type-checked (limitation)
 
 Only templates are checked: members clashing with HTMLElement, such as title, lang, remove or matches, go unnoticed.

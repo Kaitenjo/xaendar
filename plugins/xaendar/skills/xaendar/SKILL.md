@@ -160,7 +160,7 @@ Follow these in every template you write or edit:
 
 ## Verifying work
 
-The build does **not** fail on template errors. `xd build` exits 0 even when a template does not compile; the error is printed in red with the prefix `Xaendar:`, and the component ships without a render function. Component classes are not type-checked by the build at all. After changing components, run both checks and read the output:
+`xd build` fails on template errors, printed in red with the prefix `Xaendar:`. Component classes are not type-checked by the build at all. After changing components, run both checks and read the output:
 
 ```bash
 npx xd build 2>&1 | grep -A6 "Xaendar:"   # template compile/type errors (empty = OK)

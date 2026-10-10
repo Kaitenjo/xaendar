@@ -24,6 +24,11 @@ export type XaendarPluginState = {
    */
   minifyStyles: boolean;
   /**
+   * Whether the plugin runs in a build, which must fail when a component cannot be compiled.
+   * Set once the Vite config is resolved.
+   */
+  isBuild: boolean;
+  /**
    * Sets the active Vite logger used by hook-level error reporting.
    */
   setLogger(logger: Logger | undefined): void;
