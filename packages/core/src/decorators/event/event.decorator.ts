@@ -4,8 +4,25 @@ import { EventOptions } from '../../types/event/event-options.type';
 import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
 import { Output } from '../../types/event/output.type';
 
+/**
+ * The keys of the options of an event.
+ */
+const EVENT_OPTION_KEYS: ReadonlyArray<string> = ['bubbles', 'cancelable', 'composed'] satisfies Array<keyof EventOptions>;
+
+/**
+ * Tells whether the only argument of an emission is the options of the event: an object holding
+ * nothing but option keys. Any other value, an object with another key included, is the detail.
+ *
+ * @param value - The only argument of the emission.
+ * @returns `true` if the value is the options of the event, `false` if it is its detail.
+ */
 function isEventOptions(value: EventOptions | unknown): value is EventOptions {
-  return !!value && typeof value === 'object' && ('bubbles' in value || 'cancelable' in value || 'composed' in value);
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const keys = Object.keys(value);
+  return !!keys.length && keys.every(key => EVENT_OPTION_KEYS.includes(key));
 }
 
 /**
@@ -41,10 +58,12 @@ export function Event<
     return {
       init(): Output<Data> {
         return {
-          emit: (valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
-            const eventOptions: CustomEventInit<Data> = isEventOptions(valueOrOverrideOptions)
+          emit: (...args: [valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions]) => {
+            const [valueOrOverrideOptions, overrideOptions] = args;
+            // With two arguments the first one is always the detail: the options come second
+            const eventOptions: CustomEventInit<Data> = args.length === 1 && isEventOptions(valueOrOverrideOptions)
               ? { ...options, ...valueOrOverrideOptions }
-              : { ...options, ...overrideOptions, detail: valueOrOverrideOptions };
+              : { ...options, ...overrideOptions, detail: valueOrOverrideOptions as Data };
 
             const event = new CustomEvent(name, eventOptions);
             this.dispatchEvent(event);

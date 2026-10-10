@@ -34,7 +34,7 @@ Declares an input that every use of the component must bind, in every branch of 
 @Event({ bubbles?, cancelable?, composed? }) accessor name!: Output<T>
 ```
 
-Declares an output. emit(detail?, options?) dispatches a CustomEvent named after the accessor on the host element.
+Declares an output. emit(detail?, options?) dispatches a CustomEvent named after the accessor on the host element. A single argument made only of option keys is taken for the options.
 
 ### Query (decorator)
 

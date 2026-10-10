@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'a-detail-with-option-keys-is',
-    area: 'Runtime',
-    kind: 'bug',
-    page: 'components/outputs'
-  },
-  {
     id: 'input-deletes-the-transform-of-its',
     area: 'Runtime',
     kind: 'bug',

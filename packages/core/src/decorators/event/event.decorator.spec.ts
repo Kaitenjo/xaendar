@@ -112,4 +112,29 @@ describe('Event decorator', () => {
     expect(event[key]).toBe(true);
     expect(event.detail).toBeNull();
   });
+
+  it('treats an object with option keys and other keys as detail', () => {
+    const { emit, listener } = setup('clicked', { bubbles: false });
+    emit({ bubbles: true, value: 1 });
+
+    const event = lastEvent(listener);
+    expect(event.detail).toEqual({ bubbles: true, value: 1 });
+    expect(event.bubbles).toBe(false);
+  });
+
+  it('treats the first of two arguments as detail, even when it holds only option keys', () => {
+    const { emit, listener } = setup('clicked', { bubbles: false });
+    emit({ composed: true }, { cancelable: true });
+
+    const event = lastEvent(listener);
+    expect(event.detail).toEqual({ composed: true });
+    expect([event.composed, event.cancelable]).toEqual([false, true]);
+  });
+
+  it('treats an empty object as detail', () => {
+    const { emit, listener } = setup();
+    emit({});
+
+    expect(lastEvent(listener).detail).toEqual({});
+  });
 });

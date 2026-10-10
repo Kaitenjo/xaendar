@@ -564,7 +564,7 @@
           "example1": "Eventi emessi mentre il figlio viene montato",
           "p1": "Il padre collega i propri listener prima di inserire il figlio, quindi ogni evento del figlio arriva: quelli emessi da <code>onInit</code> e <code>afterRender</code>, e quello emesso da <code>onDestroy</code>, perché i listener sono ancora al loro posto mentre il figlio viene rimosso.",
           "example2": "Un detail che sembra un oggetto di opzioni",
-          "p2": "<code>emit</code> distingue un detail dalle opzioni cercando una chiave chiamata <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>. Un detail con una di queste chiavi viene preso per le opzioni, qualunque sia il valore della chiave: l’evento non ha detail, e la chiave imposta l’opzione. Avvolgi il valore in un altro oggetto, come fa <code>bookedWrapped</code>. Il comportamento è elencato in <a href=\"#/it/reference/known-issues\">Problemi noti</a>.",
+          "p2": "<code>emit</code> prende il suo unico argomento per le opzioni quando contiene soltanto le chiavi <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>. La prenotazione ha anche una <code>date</code>, quindi è il detail, come quella avvolta di <code>bookedWrapped</code>. Con due argomenti il primo è sempre il detail: passa le opzioni per seconde per un detail fatto solo di chiavi di opzioni.",
           "example3": "Un evento annullabile",
           "p3": "<code>emit</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento ha un detail, la modalità della nota, perché il padre riceva <code>$event</code> e possa annullarlo.",
           "callout1": {
@@ -2963,11 +2963,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "a-detail-with-option-keys-is": {
-      "title": "Un detail con chiavi di opzioni viene preso per le opzioni",
-      "details": "emit({ bubbles: true, value: 1 }) emette un evento con detail null, e bubbles a true.",
-      "workaround": "Avvolgi il detail in un altro oggetto."
     },
     "input-deletes-the-transform-of-its": {
       "title": "input() cancella il transform dalle sue opzioni",

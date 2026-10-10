@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### A detail with option keys is taken for options (bug)
-
-emit({ bubbles: true, value: 1 }) dispatches an event with a null detail, and bubbles set to true.
-
-**Workaround:** Wrap the detail in another object.
-
 ### input() deletes the transform of its options (bug)
 
 The options object passed to input() loses its transform: reused for a second input, it applies none. @Property is not affected, since it builds a new object each time.
