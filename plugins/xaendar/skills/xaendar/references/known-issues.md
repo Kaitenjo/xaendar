@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A non-literal default is copied into the parent (bug)
-
-When a parent binds an input conditionally, the default written in @Property is pasted into the code of the parent, where the names it uses are undefined: ReferenceError at render.
-
-**Workaround:** Write defaults as literals.
-
 ### A listener calling a method of a member fails at runtime (bug)
 
 (click)="helper.run()" compiles, then throws TypeError: Cannot read properties of undefined (reading 'bind') at the click.

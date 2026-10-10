@@ -31,7 +31,6 @@ Check at least the following:
 
 **Type and build problems the build does not report**
 - Members whose names clash with `HTMLElement`.
-- Non-literal `@Property` defaults.
 - An `Output` without a type whose parent needs `$event`.
 - Non-`.css` stylesheets, `@import` in a component stylesheet, and relative `url()`.
 - Private or protected members, or module constants, used in a template.

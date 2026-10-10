@@ -11,7 +11,8 @@ import { assertPrivateContext } from './input-set.symbol';
  * restricted to internal callers (identified by the private symbol) and
  * accepts an optional `transform` function that converts incoming values
  * (e.g. raw HTML attribute strings) into the internally stored type before
- * updating the signal.
+ * updating the signal. The internal `reset` method sets it back to its initial
+ * value, without applying the `transform`.
  *
  * @param value - The initial value of the signal.
  * @param options - Optional configuration including an equality function,
@@ -32,6 +33,10 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
       assertPrivateContext(symbol);
       const transformedValue = transform ? transform(newValue) : newValue;
       originalSet.call(signal, transformedValue as ActualValue);
+    },
+    reset(symbol: symbol): void {
+      assertPrivateContext(symbol);
+      originalSet.call(signal, value as ActualValue);
     },
     get: signal.get.bind(signal),
     [INPUT_SIGNAL_INSTANCE_SYMBOL]: true

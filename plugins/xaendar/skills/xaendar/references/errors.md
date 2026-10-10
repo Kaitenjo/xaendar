@@ -277,11 +277,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A query created with query() after the component was connected, thrown at the next disconnection.
 - **Fix:** Create queries in field initializers.
 
-### `ReferenceError: DEFAULT_LEVEL is not defined`
-
-- **Cause:** An input whose default is not a literal, bound conditionally by a parent: the default is copied into the code of the parent.
-- **Fix:** Write the default as a literal.
-
 ### `NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "x-card" has already been used with this registry`
 
 - **Cause:** Two classes defined with the same selector at runtime.

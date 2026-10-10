@@ -43,6 +43,18 @@ describe('input', () => {
     expect(state()).toBe(42);
   });
 
+  it('resets to the initial value with the internal symbol, without applying the transform', () => {
+    const state = input<string, string>('initial', { transform: value => value.toUpperCase() }) as unknown as { set(v: string, s: symbol): void, reset(s: symbol): void, (): string };
+    state.set('updated', INPUT_SIGNAL_SET_SYMBOL);
+    state.reset(INPUT_SIGNAL_SET_SYMBOL);
+    expect(state()).toBe('initial');
+  });
+
+  it('rejects reset() with a wrong symbol', () => {
+    const state = input(1) as unknown as { reset(s: symbol): void };
+    expect(() => state.reset(Symbol('wrong'))).toThrow('Invalid symbol for InputSignal set method');
+  });
+
   it('does not forward the transform to the underlying state', () => {
     const options = { transform: (value: string) => Number(value) };
     input<number, string>(0, options);

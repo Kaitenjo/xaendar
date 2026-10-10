@@ -81,7 +81,7 @@ describe('extractComponentsMetadataFromSourceFile', () => {
   });
 
   describe('properties', () => {
-    it('extracts types, default values, requirement and aliases', async () => {
+    it('extracts types, requirement and aliases', async () => {
       const properties = (await extract(component(`
         @Property('x', { alias: 'a' }) accessor foo!: InputSignal<string>;
         @Property() accessor plain!: string;
@@ -94,9 +94,9 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       `)))?.get('MyEl')?.properties;
 
       expect([...properties!.keys()]).toEqual(['a', 'plain', 'noOptions', 'otherOption', 'dynamicAlias', 'notAnObject', 'bar', 'r']);
-      expect(properties?.get('a')).toMatchObject({ name: 'foo', type: propertyType('MyEl', 'foo'), alias: 'a', defaultValue: '\'x\'', required: false });
-      expect(properties?.get('plain')).toMatchObject({ type: 'any', defaultValue: undefined });
-      expect(properties?.get('noOptions')).toMatchObject({ type: 'any', defaultValue: '\'y\'' });
+      expect(properties?.get('a')).toMatchObject({ name: 'foo', type: propertyType('MyEl', 'foo'), alias: 'a', required: false });
+      expect(properties?.get('plain')).toMatchObject({ type: 'any' });
+      expect(properties?.get('noOptions')).toMatchObject({ type: 'any', alias: undefined });
       expect(properties?.get('otherOption')).toMatchObject({ type: 'any', alias: undefined });
       expect(properties?.get('bar')).toMatchObject({ type: propertyType('MyEl', 'bar'), required: true });
       expect(properties?.get('r')).toMatchObject({ name: 'baz', type: propertyType('MyEl', 'baz'), required: true, alias: 'r' });
@@ -166,7 +166,7 @@ describe('extractComponentsMetadataFromSourceFile', () => {
 
       expect([...metadata!.properties.keys()]).toEqual(['id', 'caption']);
       expect(metadata?.properties.get('id')).toMatchObject({ name: 'id', type: propertyType('MyEl', 'id'), required: true });
-      expect(metadata?.properties.get('caption')).toMatchObject({ name: 'label', type: propertyType('MyEl', 'label'), alias: 'caption', defaultValue: '\'x\'' });
+      expect(metadata?.properties.get('caption')).toMatchObject({ name: 'label', type: propertyType('MyEl', 'label'), alias: 'caption' });
       expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: eventType('MyEl', 'picked') }, done: { type: eventType('MyEl', 'done') } });
     });
 
@@ -176,11 +176,11 @@ describe('extractComponentsMetadataFromSourceFile', () => {
           @Property('a', { alias: 'caption' }) accessor label!: InputSignal<string>;
           @Event() accessor picked!: Output<number>;
         }
-        ${subclass('extends Base', '@Property(\'b\') accessor label!: InputSignal<string>;\n@Event() accessor picked!: Output<void>;')}
+        ${subclass('extends Base', '@Property.required() accessor label!: InputSignal<string>;\n@Event() accessor picked!: Output<void>;')}
       `))?.get('MyEl');
 
       expect([...metadata!.properties.keys()]).toEqual(['label']);
-      expect(metadata?.properties.get('label')).toMatchObject({ defaultValue: '\'b\'', alias: undefined });
+      expect(metadata?.properties.get('label')).toMatchObject({ required: true, alias: undefined });
       expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: 'void' } });
     });
 
@@ -255,7 +255,7 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
     });
     expect(metadata).not.toHaveProperty('templateUrl');
     expect(metadata).not.toHaveProperty('styleUrl');
-    expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: propertyType('MyDirective', 'display'), required: false, defaultValue: '\'block\'' });
+    expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: propertyType('MyDirective', 'display'), required: false });
     expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: propertyType('MyDirective', 'visible'), required: true });
     expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: eventType('MyDirective', 'toggled') } });
     expect(metadata?.typescriptNodes.klass.name.text).toBe('MyDirective');

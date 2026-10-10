@@ -15,6 +15,7 @@ const {
   _createSVGElement,
   _removeAttribute,
   _renderElement,
+  _resetProperty,
   _setExpressionProperty,
   _setProperty,
   _setReactiveProperty
@@ -252,6 +253,41 @@ describe('property setters', () => {
       expect(element.getAttribute('custom')).toBe('value');
     });
   });
+
+  describe('_resetProperty', () => {
+    it('sets an input signal back to its initial value, without applying the transform', () => {
+      const element = document.createElement('div') as unknown as HTMLElement & { label: ReturnType<typeof input<string>> };
+      element.label = input<string>('initial', { transform: value => value.toUpperCase() });
+      _setProperty(createRoot(), element, 'label', 'updated');
+      expect(element.label()).toBe('UPDATED');
+
+      _resetProperty(createRoot(), element, 'label');
+
+      expect(element.label()).toBe('initial');
+    });
+
+    it('resolves the alias of a directive property through the class metadata', () => {
+      const directive = new LabelDirective();
+      _setProperty(createRoot(), directive, 'label', 'updated');
+
+      _resetProperty(createRoot(), directive, 'my-label');
+
+      expect(directive.label()).toBe('initial');
+    });
+
+    it('throws when a directive does not declare the property', () => {
+      expect(() => _resetProperty(createRoot(), new LabelDirective(), 'missing')).toThrow('LabelDirective does not declare a property named "missing"');
+    });
+
+    it('removes the attribute of a property that is not an input signal', () => {
+      const element = document.createElement('div');
+      element.setAttribute('custom', 'value');
+
+      _resetProperty(createRoot(), element, 'custom');
+
+      expect(element.hasAttribute('custom')).toBe(false);
+    });
+  });
 });
 
 describe('_renderElement', () => {
@@ -328,16 +364,16 @@ describe('_renderElement', () => {
       expect(element.hasAttribute('title')).toBe(false);
     });
 
-    it('restores the default value on destroy when unbind is _setExpressionProperty', () => {
+    it('resets the property on destroy when unbind is _resetProperty', () => {
       const context = createRoot();
       const element = render(document.createElement('div'), context, {
-        attributes: [{ name: 'title', value: () => 'hi', setter: _setExpressionProperty, unbind: _setExpressionProperty, defaultValue: 'default' }]
+        attributes: [{ name: 'title', value: () => 'hi', setter: _setExpressionProperty, unbind: _resetProperty }]
       });
       expect(element.getAttribute('title')).toBe('hi');
 
       context.clear();
 
-      expect(element.getAttribute('title')).toBe('default');
+      expect(element.hasAttribute('title')).toBe(false);
     });
   });
 
@@ -771,7 +807,7 @@ describe('_renderElement', () => {
   describe('directives', () => {
     const directive = (overrides: Record<string, unknown> = {}) => ({ selector: 'label', attributes: [], events: [], conditionalBindings: [], ...overrides });
     const branch = (overrides: Record<string, unknown> = {}) => ({ attributes: [], events: [], conditionalBindings: [], ...overrides });
-    const label = (value: string) => ({ name: 'label', value, setter: _setProperty, unbind: _setExpressionProperty, defaultValue: 'default' });
+    const label = (value: string) => ({ name: 'label', value, setter: _setProperty, unbind: _resetProperty });
     const lastInstance = () => LabelDirective.instances.at(-1)!;
 
     it('instantiates the directive registered for the selector on the element', () => {
@@ -841,7 +877,7 @@ describe('_renderElement', () => {
 
       enabled.set(false);
       await flush();
-      expect(instance.label()).toBe('default');
+      expect(instance.label()).toBe('initial');
       expect(LabelDirective.instances.at(-1)).toBe(instance);
     });
 

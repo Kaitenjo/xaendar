@@ -1,4 +1,4 @@
-import type { _removeAttribute } from '../utils';
+import type { _resetProperty } from '../utils';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
 import type { RenderElementAttribute } from './render-element-attribute.type';
 import type { RenderElementEvent } from './render-element-event.type';
@@ -15,7 +15,7 @@ export type RenderElementDirective = {
    * The list of directive properties to be bound: the attributes of an element, except the ones
    * unbound by removing the attribute, since a directive has no underlying attribute to remove.
    */
-  attributes: Exclude<RenderElementAttribute, { unbind: typeof _removeAttribute }>[],
+  attributes: Array<Omit<RenderElementAttribute, 'unbind'> & { unbind?: typeof _resetProperty }>,
   /**
    * The list of event listeners to be attached: the events of a directive are listened to on the element the directive is applied to.
    */

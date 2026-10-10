@@ -81,7 +81,6 @@ export class CounterComponent extends CustomElement {
 
 **Class**
 - Extend `CustomElement` (components) or `CustomDirective<E>` / `StructuralDirective` (directives). Inputs are `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>`. Outputs are `@Event()` on `public accessor x!: Output<T>`. Queries are `@Query`, `@Query.all`, `@Query.content`, `@Query.content.all` on `accessor x!: QuerySignal<…>`.
-- Keep `@Property` defaults literal: a default is copied as written into the templates that bind the input conditionally.
 - Give an `@Event` that the parent reads a type argument. `Output` without one gives no `$event`.
 - Never name a member after an `HTMLElement` member (`title`, `lang`, `hidden`, `remove`, `click`, `attributes`, `matches`, `id`, `style`, …). It causes TS2416 and cascading decorator errors, and the build does not catch it. Rename the member, and use `alias` to keep the attribute name: `@Property('ts', { alias: 'lang' }) accessor language`.
 - Members used by the template must be `public`. Expose module constants as members.

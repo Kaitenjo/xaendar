@@ -131,7 +131,7 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
   const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-  bindings.properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
+  bindings.properties.entries().forEach(([propName, { name, type, required, alias }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias })));
 
   return {
     properties: mappedProperties,
@@ -416,16 +416,8 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
   const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
 
-  let options: Expression;
-
-  if (!required) {
-    metadata.defaultValue = args[0]?.getText();
-    options = args[1];
-  } else {
-    options = args[0];
-  }
-
   if (args.length) {
+    const options = required ? args[0] : args[1];
     const aliasNode = options && isObjectLiteralExpression(options) && options?.properties?.find((prop): prop is Omit<PropertyAssignment, 'initializer'> & { initializer: StringLiteral } => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias' && isStringLiteral(prop.initializer));
     if (aliasNode) {
       const initializer = aliasNode.initializer;

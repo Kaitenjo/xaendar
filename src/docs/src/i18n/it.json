@@ -2050,10 +2050,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Un valore di default che non è un letterale",
-            "p1": "Per ripristinare il default quando un binding condizionale viene rimosso, il compilatore copia il default dell’input, così come è scritto nel decoratore, nel codice del template che lo lega. Un default scritto come identificatore, o come qualsiasi espressione che dipende dal file del componente, lì non esiste, e il template del padre smette di renderizzare."
-          },
           "callout2": {
             "heading": "Input obbligatori in ogni ramo",
             "p1": "Un input obbligatorio legato in modo condizionale deve essere legato in ogni ramo, compreso un <code>@else</code> o un <code>@default</code>, oppure fuori dalla condizione."
@@ -2972,10 +2968,6 @@
       "cause": "Una query creata con query() dopo la connessione del componente, lanciato alla disconnessione successiva.",
       "fix": "Crea le query negli inizializzatori dei campi."
     },
-    "ReferenceError: DEFAULT_LEVEL is not defined": {
-      "cause": "Un input il cui default non è un letterale, legato in modo condizionale da un padre: il default viene copiato nel codice del padre.",
-      "fix": "Scrivi il default come letterale."
-    },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Due classi definite con lo stesso selettore a runtime.",
       "fix": "Rinominane una."
@@ -3026,11 +3018,6 @@
     }
   },
   "issues": {
-    "a-non-literal-default-is-copied": {
-      "title": "Un default non letterale viene copiato nel padre",
-      "details": "Quando un padre lega un input in modo condizionale, il default scritto in @Property viene incollato nel codice del padre, dove i nomi che usa non sono definiti: ReferenceError al render.",
-      "workaround": "Scrivi i default come letterali."
-    },
     "a-listener-calling-a-method-of": {
       "title": "Un listener che chiama un metodo di un membro fallisce a runtime",
       "details": "(click)=\"helper.run()\" compila, poi lancia TypeError: Cannot read properties of undefined (reading 'bind') al clic.",

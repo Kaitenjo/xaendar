@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-non-literal-default-is-copied',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/conditional-bindings'
-  },
-  {
     id: 'a-listener-calling-a-method-of',
     area: 'Compiler',
     kind: 'bug',

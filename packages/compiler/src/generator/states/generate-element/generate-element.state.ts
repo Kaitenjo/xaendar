@@ -55,12 +55,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, '${tagName}',`);
 
-  appendArgument(retVal.code, attributes);
-  appendArgument(retVal.code, events);
-  appendArgument(retVal.code, conditionalBindings);
-  appendArgument(retVal.code, directives);
-  appendArgument(retVal.code, structuralDirectives);
-  appendArgument(retVal.code, structuralConditionalBindings);
+  for (const member of [attributes, events, conditionalBindings, directives, structuralDirectives, structuralConditionalBindings]) {
+    appendArgument(retVal.code, member);
+  }
 
   hasChildren
     ? retVal.code.push(
@@ -113,8 +110,9 @@ function appendArgument(code: string[], lines: string[]): void {
  * Maps attribute nodes to their corresponding generated code lines.
  *
  * Attributes declared inside a conditional binding also get the `unbind` applied when their
- * branch is no longer the selected one: a property of a custom element or of a directive is reset
- * to its default value, read from the metadata of its owner, any other attribute is removed.
+ * branch is no longer the selected one: a property of a custom element or of a directive, known from
+ * the metadata of its owner, is reset at runtime to the default value its owner declares, any other
+ * attribute is removed.
  * A required property gets no `unbind`, since the branch selected next binds it again.
  *
  * @param attributes - The attribute nodes to map onto the element or the directive.
@@ -164,7 +162,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
         */
         if (!propertyMetadata.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
-          extra.push('unbind: _setExpressionProperty,', `defaultValue: ${propertyMetadata.defaultValue}`);
+          extra.push('unbind: _resetProperty');
         }
       } else if (isDirective) {
         /*
@@ -258,7 +256,7 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
  * @param isDirective - Whether the owner is a directive.
  * @returns Array of generated code lines, one descriptor per conditional binding.
  */
-async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean = false, isDirective = false): Promise<string[]> {
+async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, owner: string, isCustomElement = false, isDirective = false): Promise<string[]> {
   return mapConditionalBindingDescriptors(conditionalBindings, compilerContext, isEmptyBranch, (branch, condition) => mapBranch(branch, condition, compilerContext, owner, isCustomElement, isDirective));
 }
 

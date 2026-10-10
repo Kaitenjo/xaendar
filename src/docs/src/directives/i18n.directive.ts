@@ -23,6 +23,9 @@ export class I18nDirective extends CustomDirective<HTMLElement> {
   @Property.required()
   public accessor key!: InputSignal<string>;
 
+  @Property()
+  public accessor a!: InputSignal<string>;
+
   /**
    * Starts rendering the text: the properties already hold their bound values here.
    */

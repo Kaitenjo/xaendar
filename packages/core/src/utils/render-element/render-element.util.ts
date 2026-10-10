@@ -6,7 +6,7 @@ import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { signal } from '../../signals/signal/signal';
-import { InputSignal } from '../../signals/types/input-signal.type';
+import type { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
 import type { Signal as SignalType } from '../../signals/types/signal.type';
 import { untracked } from '../../signals/untracked';
 import type { BindingHost } from '../../types/binding-host.type';
@@ -131,9 +131,9 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
  */
 function bindAttributes(element: Element, context: _Context, attributes: RenderElementAttribute[]): void {
   for (let i = 0; i < attributes.length; i++) {
-    const { name, value, setter, unbind, defaultValue } = attributes[i];
+    const { name, value, setter, unbind } = attributes[i];
     setter(context, element, name, value);
-    unbind && context.addUnlistener(() => unbind(context, element, name, () => defaultValue));
+    unbind && context.addUnlistener(() => unbind(context, element, name));
   }
 }
 
@@ -162,9 +162,9 @@ function bindEvents(element: Element, context: _Context, events: RenderElementEv
  */
 function bindDirectiveProperties(directive: CustomDirective | StructuralDirective, context: _Context, properties: RenderElementDirective['attributes']): void {
   for (let i = 0; i < properties.length; i++) {
-    const { name, value, setter, unbind, defaultValue } = properties[i];
+    const { name, value, setter, unbind } = properties[i];
     setter(context, directive, name, value);
-    unbind && context.addUnlistener(() => unbind(context, directive, name, () => defaultValue));
+    unbind && context.addUnlistener(() => unbind(context, directive, name));
   }
 }
 
@@ -496,8 +496,22 @@ export function _setReactiveProperty(context: _Context, target: Element | Bindin
  * @param element - The element to remove the attribute from.
  * @param name - The name of the attribute to remove.
  */
-export function _removeAttribute(_context: _Context, element: Element, name: string, _value?: unknown): void {
+export function _removeAttribute(_context: _Context, element: Element, name: string): void {
   element.removeAttribute(name);
+}
+
+/**
+ * Resets a property of a custom element or of a directive to the default value declared by its `@Property`,
+ * evaluated where the property is declared. On an element without such a property, e.g. a custom element
+ * not defined yet, the attribute is removed.
+ *
+ * @param _context - The current template execution scope.
+ * @param target - The element or the directive whose property is reset.
+ * @param name - The name, or the alias, of the property to reset.
+ * @throws When the target is a directive not declaring the property.
+ */
+export function _resetProperty(_context: _Context, target: Element | BindingHost, name: string): void {
+  withProperty(target, name, property => property.reset(INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => element.removeAttribute(attribute));
 }
 
 /**
@@ -509,16 +523,29 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
  * @throws When the target is a directive not declaring the property.
  */
 function updateProperty(target: Element | BindingHost, name: string, newValue: unknown): void {
-  const componentOrDirective = target as unknown as Record<string, unknown> & { [name]: string | InputSignal };
+  withProperty(target, name, property => property.set(newValue, INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => element.setAttribute(attribute, String(newValue)));
+}
+
+/**
+ * Resolves the property of an HTML element or of a directive named, or aliased, `name`, and hands it to `onInputSignal`
+ * when it is an InputSignal, or the element and the attribute name to `onAttribute` otherwise.
+ * @param target - The HTML element or the directive owning the property.
+ * @param name - The name, or the alias, of the property.
+ * @param onInputSignal - Callback receiving the InputSignal backing the property.
+ * @param onAttribute - Callback receiving the element and the attribute name, when no InputSignal backs the property.
+ * @throws When the target is a directive not declaring the property.
+ */
+function withProperty(target: Element | BindingHost, name: string, onInputSignal: Function<[property: SettableInputSignal], void>, onAttribute: Function<[element: Element, attribute: string], void>): void {
+  const componentOrDirective = target as unknown as Record<string, unknown>;
   const constructor = target.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
   name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
   const property = componentOrDirective[name];
 
   if (property && isInputSignal(property)) {
-    property.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
+    onInputSignal(property);
   } else if (target instanceof CustomDirective || target instanceof StructuralDirective) {
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   } else {
-    target.setAttribute(name, String(newValue));
+    onAttribute(target, name);
   }
 }

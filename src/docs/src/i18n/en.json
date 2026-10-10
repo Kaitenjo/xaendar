@@ -2050,10 +2050,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "A default value that is not a literal",
-            "p1": "To restore the default when a conditional binding is removed, the compiler copies the default of the input, as it is written in the decorator, into the code of the template binding it. A default written as an identifier, or as any expression that depends on the file of the component, does not exist there, and the template of the parent stops rendering."
-          },
           "callout2": {
             "heading": "Required inputs in every branch",
             "p1": "A required input bound conditionally must be bound in every branch, including an <code>@else</code> or a <code>@default</code>, or outside the condition."
@@ -2972,10 +2968,6 @@
       "cause": "A query created with query() after the component was connected, thrown at the next disconnection.",
       "fix": "Create queries in field initializers."
     },
-    "ReferenceError: DEFAULT_LEVEL is not defined": {
-      "cause": "An input whose default is not a literal, bound conditionally by a parent: the default is copied into the code of the parent.",
-      "fix": "Write the default as a literal."
-    },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Two classes defined with the same selector at runtime.",
       "fix": "Rename one of them."
@@ -3026,11 +3018,6 @@
     }
   },
   "issues": {
-    "a-non-literal-default-is-copied": {
-      "title": "A non-literal default is copied into the parent",
-      "details": "When a parent binds an input conditionally, the default written in @Property is pasted into the code of the parent, where the names it uses are undefined: ReferenceError at render.",
-      "workaround": "Write defaults as literals."
-    },
     "a-listener-calling-a-method-of": {
       "title": "A listener calling a method of a member fails at runtime",
       "details": "(click)=\"helper.run()\" compiles, then throws TypeError: Cannot read properties of undefined (reading 'bind') at the click.",

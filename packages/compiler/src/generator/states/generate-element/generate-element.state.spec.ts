@@ -344,12 +344,12 @@ describe('generateElement', () => {
 
     it('uses the component metadata to describe known optional properties', async () => {
       const context = new CompilerContext();
-      context.cache = cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: false, defaultValue: '\'d\'' }) });
+      context.cache = cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: false }) });
       const { code } = await run('<my-el @if (cond()) { title="x" } @else { title="y" }></my-el>', context);
       const output = code.join('\n');
 
-      expect(output.match(/unbind: _setExpressionProperty,/g)).toHaveLength(2);
-      expect(output.match(/defaultValue: 'd'/g)).toHaveLength(2);
+      expect(output.match(/unbind: _resetProperty/g)).toHaveLength(2);
+      expect(output).not.toContain('defaultValue');
     });
 
     it('separates the descriptors of several conditional bindings', async () => {
@@ -363,7 +363,7 @@ describe('generateElement', () => {
       const context = new CompilerContext();
       context.cache = cacheWith({
         title: new ComponentPropertyMetadata('title', 'string', { required: true }),
-        label: new ComponentPropertyMetadata('label', 'string', { required: false, defaultValue: '\'d\'' })
+        label: new ComponentPropertyMetadata('label', 'string', { required: false })
       });
       const { code } = await run('<my-el @if (cond()) { title="x" label="l" } @else { title="y" }></my-el>', context);
 
@@ -384,8 +384,7 @@ describe('generateElement', () => {
         '              name: \'label\',',
         '              value: \'l\',',
         '              setter: _setProperty,',
-        '              unbind: _setExpressionProperty,',
-        '              defaultValue: \'d\'',
+        '              unbind: _resetProperty',
         '            },',
         '          ],',
         '          events: [],',
@@ -438,8 +437,8 @@ describe('generateElement', () => {
           selectors.push(selector);
           return {
             properties: new Map([
-              ['display', new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' })],
-              ['title', new ComponentPropertyMetadata('title', 'string', { required: false, defaultValue: '\'t\'' })]
+              ['display', new ComponentPropertyMetadata('display', 'string', { required: false })],
+              ['title', new ComponentPropertyMetadata('title', 'string', { required: false })]
             ])
           } as never;
         },
@@ -471,8 +470,7 @@ describe('generateElement', () => {
         '                  name: \'display\',',
         '                  value: () => this.mode(),',
         '                  setter: _setReactiveProperty,',
-        '                  unbind: _setExpressionProperty,',
-        '                  defaultValue: \'d\'',
+        '                  unbind: _resetProperty',
         '                },',
         '              ],',
         '              events: [',
@@ -492,8 +490,7 @@ describe('generateElement', () => {
         '                          name: \'title\',',
         '                          value: \'z\',',
         '                          setter: _setProperty,',
-        '                          unbind: _setExpressionProperty,',
-        '                          defaultValue: \'t\'',
+        '                          unbind: _resetProperty',
         '                        },',
         '                      ],',
         '                      events: [],',
@@ -509,8 +506,7 @@ describe('generateElement', () => {
         '                  name: \'display\',',
         '                  value: \'none\',',
         '                  setter: _setProperty,',
-        '                  unbind: _setExpressionProperty,',
-        '                  defaultValue: \'d\'',
+        '                  unbind: _resetProperty',
         '                },',
         '              ],',
         '              events: [],',
@@ -527,7 +523,7 @@ describe('generateElement', () => {
 
     it('generates the expression and the branches of a @switch declared in a directive', async () => {
       const context = new CompilerContext();
-      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' }) });
+      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) });
       const { code } = await run('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { (toggled)="onToggled()" } })></div>', context);
       const output = code.join('\n');
 
@@ -552,7 +548,7 @@ describe('generateElement', () => {
     it('generates the properties and events of a directive, without unbind information', async () => {
       const context = new CompilerContext();
       context.addSignalClassField('mode');
-      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false, defaultValue: '\'d\'' }) });
+      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) });
       const { code } = await run('<my-el @@myDirective(display="block" mode="{mode}" (toggled)="onToggled($event)")></my-el>', context);
       const output = code.join('\n');
 

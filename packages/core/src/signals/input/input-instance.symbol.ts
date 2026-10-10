@@ -1,5 +1,4 @@
-import { Beautify } from '@xaendar/types';
-import { InputSignal } from '../types/input-signal.type';
+import type { SettableInputSignal } from '../types/settable-input-signal.type';
 
 /**
  * Unique symbol used to mark an object as a valid `InputSignal` instance.
@@ -22,6 +21,6 @@ export const INPUT_SIGNAL_INSTANCE_SYMBOL = Symbol('InputSignalInstance');
  * @param instance - The value to inspect.
  * @returns `true` if `instance` is an `InputSignal`, `false` otherwise.
  */
-export function isInputSignal(instance: unknown): instance is Beautify<InputSignal & { set: (newValue: unknown, symbol: symbol) => void }> {
+export function isInputSignal(instance: unknown): instance is SettableInputSignal {
   return typeof instance === 'function' && INPUT_SIGNAL_INSTANCE_SYMBOL in instance;
 }
