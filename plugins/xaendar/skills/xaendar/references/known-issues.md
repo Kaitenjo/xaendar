@@ -4,24 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### An expression starting with a backtick after a space (bug)
-
-{ `text` } in text or in an attribute is not parsed: Expected closing tag, or Attribute value missing.
-
-**Workaround:** Write the backtick right after the brace, or start with another operand.
-
-### Braces inside strings of an interpolation (bug)
-
-The braces are counted even inside strings: { '}' } produces invalid code (Unterminated string constant), { '{' } an unclosed element.
-
-**Workaround:** Use { '\x7B' } and { '\x7D' }; balanced braces are fine.
-
-### Nested template literals (bug)
-
-A template literal inside another one is rejected as more than one expression, with a duplicated backtick in the message.
-
-**Workaround:** Build the inner string in a method.
-
 ### An unclosed comment truncates the template silently (bug)
 
 Everything after <!-- without --> disappears, with no error.

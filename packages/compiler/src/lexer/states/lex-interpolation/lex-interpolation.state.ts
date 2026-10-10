@@ -1,17 +1,14 @@
-import { GRAVE_ACCENT } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 
 /**
- * Dispatches between an expression and a literal interpolation after the opening `{`.
- * Advances past `{` and any leading spaces, then inspects the next character:
- * a backtick routes to INTERPOLATION_LITERAL, a JS identifier start routes to INTERPOLATION_EXPRESSION.
+ * Opens an interpolation: advances past `{` and any leading spaces, then transitions to INTERPOLATION_EXPRESSION.
  *
  * @param cursor - The lexer cursor positioned on the `{` character.
  * @param _context - Unused lexer context.
- * @returns Transition result with the appropriate interpolation sub-state.
+ * @returns Transition result with the INTERPOLATION_EXPRESSION state.
  */
 export function lexInterpolation(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   // Consume '{' characters
@@ -22,8 +19,6 @@ export function lexInterpolation(cursor: LexerCursor, _context: LexerTransitionF
     Ex: '{         label}
   */
   cursor.skipSpaces();
-  
-  return cursor.peek() === GRAVE_ACCENT 
-    ? { state: LexerState.INTERPOLATION_LITERAL } 
-    : { state: LexerState.INTERPOLATION_EXPRESSION };
+
+  return { state: LexerState.INTERPOLATION_EXPRESSION };
 }

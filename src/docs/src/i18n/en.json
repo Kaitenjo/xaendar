@@ -747,10 +747,6 @@
           "title": "Edge cases",
           "example1": "An object bound to style",
           "p1": "A binding on a native element sets an attribute, and an attribute is a string: an object becomes <code>[object Object]</code>, and the browser ignores it. Build the string yourself.",
-          "callout1": {
-            "heading": "A template literal at the start of an expression",
-            "p1": "An expression that starts with a backtick, after the space following the brace, is not parsed. Remove the space."
-          },
           "callout2": {
             "heading": "Preprocessors",
             "p1": "Only <code>.css</code> files are supported: Sass, Less and the others are rejected."
@@ -2334,8 +2330,7 @@
           "td2": "closing brace",
           "td3": "&lt;",
           "td4": "a whole snippet",
-          "td5": "{ count() }",
-          "p2": "A string may contain braces only in pairs, as in the last row: an unpaired brace inside a string still counts when the compiler looks for the end of the interpolation, hence the <code>\\x7B</code> and <code>\\x7D</code> escapes."
+          "td5": "{ count() }"
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -2454,22 +2449,6 @@
           "callout1": {
             "heading": "The space between two interpolations",
             "body": "<code>{ first() } { last() }</code> renders the two values without the space, because the compiler drops text made only of whitespace. Write <code>{`${first()} ${last()}`}</code>, or <code>{' '}</code> between them. See <a href=\"#/en/templates/overview\">Template syntax</a>."
-          },
-          "callout2": {
-            "heading": "A closing brace inside a string",
-            "p1": "The compiler ends the interpolation at the first closing brace it finds, even inside a string, and generates invalid code. The error comes from the JavaScript parser that reads the generated code, not from the template compiler, and the module of the template fails to load."
-          },
-          "callout3": {
-            "heading": "An opening brace inside a string",
-            "p1": "An unpaired opening brace makes the compiler look for its closing brace up to the end of the file. Braces in pairs are fine; for a single one use <code>{'\\x7B'}</code>."
-          },
-          "callout4": {
-            "heading": "A template literal right after a space",
-            "p1": "An expression that starts with a backtick after the space following the brace is not parsed. Write the backtick right after the brace, as in the example."
-          },
-          "callout5": {
-            "heading": "Nested template literals",
-            "p1": "A template literal inside the placeholder of another one is split in the wrong place. Build the inner string in a computed signal or a method."
           },
           "callout6": {
             "heading": "An object literal in braces",
@@ -2793,8 +2772,8 @@
       "fix": "Write the listener on the tag, outside the directive."
     },
     "[Parser] Expected closing tag input while file is over": {
-      "cause": "An element never closed: a void element without />, an unclosed template literal, an interpolation such as { '{' }, or an expression starting with a backtick after a space.",
-      "fix": "Self-close void elements (<input />), use { '\\x7B' } for a brace, and write a template literal right after the brace."
+      "cause": "An element never closed: a void element without />, or a string or template literal never closed in an interpolation.",
+      "fix": "Self-close void elements (<input />), and close every string and template literal."
     },
     "[Parser] Expected closing tag div, found DIV": {
       "cause": "A closing tag written with a different case.",
@@ -2805,8 +2784,8 @@
       "fix": "Put the @else right after the closing brace of the @if."
     },
     "[Parser] Attribute value missing for hidden in: hidden": {
-      "cause": "A valueless attribute right before a structural directive, or an attribute bound to an expression starting with a backtick after a space.",
-      "fix": "Move the attribute after the directive, or give it an empty value; write the backtick right after the brace."
+      "cause": "A valueless attribute right before a structural directive.",
+      "fix": "Move the attribute after the directive, or give it an empty value."
     },
     "[Parser] Attribute \"title\" is bound more than once on <p>": {
       "cause": "The same attribute written both outside and inside a conditional binding.",
@@ -2928,10 +2907,6 @@
       "cause": "An @import naming a class the file does not declare, or a type.",
       "fix": "Import the component or directive class by its exact name."
     },
-    "Unterminated string constant": {
-      "cause": "Reported by Babel on the generated code for an interpolation such as { '}' }: the brace inside the string ends the interpolation.",
-      "fix": "Write { '\\x7D' }."
-    },
     "XCard does not seems to have a Render Function": {
       "cause": "The template of the component did not compile, its templateUrl is not a string literal, its file does not end with .xd.component.ts, or the class is a subclass without its own @WebComponent.",
       "fix": "Look for the compiler message printed before it."
@@ -3010,21 +2985,6 @@
     }
   },
   "issues": {
-    "an-expression-starting-with-a-backtick": {
-      "title": "An expression starting with a backtick after a space",
-      "details": "{ `text` } in text or in an attribute is not parsed: Expected closing tag, or Attribute value missing.",
-      "workaround": "Write the backtick right after the brace, or start with another operand."
-    },
-    "braces-inside-strings-of-an-interpolation": {
-      "title": "Braces inside strings of an interpolation",
-      "details": "The braces are counted even inside strings: { '}' } produces invalid code (Unterminated string constant), { '{' } an unclosed element.",
-      "workaround": "Use { '\\x7B' } and { '\\x7D' }; balanced braces are fine."
-    },
-    "nested-template-literals": {
-      "title": "Nested template literals",
-      "details": "A template literal inside another one is rejected as more than one expression, with a duplicated backtick in the message.",
-      "workaround": "Build the inner string in a method."
-    },
     "an-unclosed-comment-truncates-the-template": {
       "title": "An unclosed comment truncates the template silently",
       "details": "Everything after <!-- without --> disappears, with no error.",

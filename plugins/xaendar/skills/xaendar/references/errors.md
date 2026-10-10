@@ -58,8 +58,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Parser] Expected closing tag input while file is over`
 
-- **Cause:** An element never closed: a void element without />, an unclosed template literal, an interpolation such as { '{' }, or an expression starting with a backtick after a space.
-- **Fix:** Self-close void elements (<input />), use { '\x7B' } for a brace, and write a template literal right after the brace.
+- **Cause:** An element never closed: a void element without />, or a string or template literal never closed in an interpolation.
+- **Fix:** Self-close void elements (<input />), and close every string and template literal.
 
 ### `[Parser] Expected closing tag div, found DIV`
 
@@ -73,8 +73,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Parser] Attribute value missing for hidden in: hidden`
 
-- **Cause:** A valueless attribute right before a structural directive, or an attribute bound to an expression starting with a backtick after a space.
-- **Fix:** Move the attribute after the directive, or give it an empty value; write the backtick right after the brace.
+- **Cause:** A valueless attribute right before a structural directive.
+- **Fix:** Move the attribute after the directive, or give it an empty value.
 
 ### `[Parser] Attribute "title" is bound more than once on <p>`
 
@@ -229,11 +229,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** An @import naming a class the file does not declare, or a type.
 - **Fix:** Import the component or directive class by its exact name.
-
-### `Unterminated string constant`
-
-- **Cause:** Reported by Babel on the generated code for an interpolation such as { '}' }: the brace inside the string ends the interpolation.
-- **Fix:** Write { '\x7D' }.
 
 ## Runtime
 

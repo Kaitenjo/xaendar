@@ -249,11 +249,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/imports'
   },
   {
-    phase: 'Build',
-    message: 'Unterminated string constant',
-    page: 'templates/text-interpolation'
-  },
-  {
     phase: 'Runtime',
     message: 'XCard does not seems to have a Render Function',
     page: 'components/registration'

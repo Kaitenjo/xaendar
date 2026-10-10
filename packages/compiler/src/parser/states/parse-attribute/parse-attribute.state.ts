@@ -12,7 +12,6 @@ import { ElseToken } from '../../../lexer/types/tokens/else-token.type';
 import { EventToken } from '../../../lexer/types/tokens/event-token.type';
 import { IfToken } from '../../../lexer/types/tokens/if-token.type';
 import { InterpolationExpressionToken } from '../../../lexer/types/tokens/interpolation-expression-token.type';
-import { InterpolationLiteralToken } from '../../../lexer/types/tokens/interpolation-literal-token.type';
 import { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
 import { TagCloseNameToken } from '../../../lexer/types/tokens/tag-close-name-token.type';
 import { TagCloseToken } from '../../../lexer/types/tokens/tag-close-token.type';
@@ -47,7 +46,6 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     | EventToken 
     | TagCloseNameToken 
     | InterpolationExpressionToken 
-    | InterpolationLiteralToken
     | TagCloseToken
     | TagSelfCloseToken
     | IfToken
@@ -73,7 +71,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     };
   }
 
-  if (nextToken.type === TokenType.INTERPOLATION_EXPRESSION || nextToken.type === TokenType.INTERPOLATION_LITERAL) {
+  if (nextToken.type === TokenType.INTERPOLATION_EXPRESSION) {
     const interpolation = parseInterpolation(cursor, parseNode, nextToken);
     return {
       type: ASTNodeType.Attribute,

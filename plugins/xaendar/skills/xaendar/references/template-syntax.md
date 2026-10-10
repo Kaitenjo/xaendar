@@ -7,11 +7,11 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 ```html
 <!-- Interpolation: any expression, always reactive, always a text node -->
 <p>Hello { name() }, you have { count() + 1 } messages</p>
-<p>{`${count()} items`}</p>                 <!-- template literal: no space before the backtick -->
+<p>{`${count()} items`}</p>                 <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
 <!-- Characters with a meaning: write them through an interpolation -->
-<p>{ '@' } { '<' } { '\x7B' } { '\x7D' }</p>
+<p>{ '@' } { '<' } { '{' } { '}' }</p>
 
 <!-- Elements without content are self-closed, native ones included; attribute values always in double quotes -->
 <input type="text" />
@@ -21,11 +21,9 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 - Interpolations are single braces `{ expr }`, never `{{ expr }}`.
 - Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it.
-- A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '\x7B' }`, `{ '\x7D' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
-- A brace inside a string still counts for the lexer: `{ '}' }` breaks; use `{ '\x7D' }`.
+- A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
 - HTML entities (`&lt;`, `&amp;`, …) are not decoded and newlines are removed.
 - Whitespace-only text is dropped: `{ first } { second }` renders the two values joined. Use `{ ' ' }` between them, or a single expression such as a template literal.
-- Template literals: write the backtick right after the brace (`{`…`}`); `{ `…` }` with a space is not parsed. Nested template literals are not supported.
 
 ## Bindings and events
 

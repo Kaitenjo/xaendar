@@ -20,7 +20,6 @@ import { IfToken } from './tokens/if-token.type';
 import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
 import { InterpolationExpressionToken } from './tokens/interpolation-expression-token.type';
-import { InterpolationLiteralToken } from './tokens/interpolation-literal-token.type';
 import { StructuralDirectiveToken } from './tokens/structural-directive-token.type';
 import { SwitchToken } from './tokens/switch-token.type';
 import { TagCloseNameToken } from './tokens/tag-close-name-token.type';
@@ -44,7 +43,6 @@ export type Token =
   | EventParAmeterToken
   | TextToken
   | InterpolationExpressionToken
-  | InterpolationLiteralToken
   | IfToken
   | ElseIfToken
   | ElseToken
@@ -74,7 +72,6 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<EventParAmeterToken>
   | MaybeTokenWithSpan<TextToken>
   | MaybeTokenWithSpan<InterpolationExpressionToken>
-  | MaybeTokenWithSpan<InterpolationLiteralToken>
   | MaybeTokenWithSpan<IfToken>
   | MaybeTokenWithSpan<ElseIfToken>
   | MaybeTokenWithSpan<ElseToken>

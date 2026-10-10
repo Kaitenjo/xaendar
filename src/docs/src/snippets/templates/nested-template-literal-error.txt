@@ -1,5 +1,0 @@
-<p>{`a ${`b ${count()}`} c`}</p>
-
-Xaendar: Failed to compile template - /src/label/label.xd.component.html
-[Parser] [Ln 1, Col 6] - '`a ${``b ${count()}`' must be a single expression, got 'b ${count()}`' after '`a ${``'.
- ---> `a ${`b ${count()}`} c`}

@@ -43,11 +43,8 @@ describe('parseAttribute', () => {
     expect(node).toMatchObject({ name: 'disabled', value: 'abc', span: { start: 0, end: 12 } });
   });
 
-  it.each([
-    ['expression', TokenType.INTERPOLATION_EXPRESSION],
-    ['literal', TokenType.INTERPOLATION_LITERAL]
-  ])('parses an interpolated %s value', (_name, type) => {
-    const node = run({ type, parts: ['value'], span: { start: 9, end: 16 } } as Token);
+  it('parses an interpolated value', () => {
+    const node = run({ type: TokenType.INTERPOLATION_EXPRESSION, parts: ['value'], span: { start: 9, end: 16 } });
     expect(node).toMatchObject({
       name: 'disabled',
       value: { type: ASTNodeType.Interpolation },

@@ -43,10 +43,6 @@ export enum TokenType {
    */
   EVENT_PARAMETER,
   /**
-   * A template-literal interpolation string enclosed in `` {`...`} ``.
-   */
-  INTERPOLATION_LITERAL,
-  /**
    * A JavaScript expression interpolation enclosed in `{ }`.
    */
   INTERPOLATION_EXPRESSION,

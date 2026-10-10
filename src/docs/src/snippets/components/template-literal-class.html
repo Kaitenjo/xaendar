@@ -1,6 +1,0 @@
-<!-- ✗ an expression starting with a backtick after a space is not parsed -->
-<div class="{ `bar bar--${status()}` }" />
-
-<!-- ✓ no space before the backtick, or an expression that does not start with it -->
-<div class="{`bar bar--${status()}`}" />
-<div class="{ status() ? `bar bar--${status()}` : 'bar' }" />

@@ -33,6 +33,18 @@ describe('compile', () => {
     expect(result).toMatchObject({ javascript: expect.stringContaining('() => this.count'), typescript: { text: expect.stringContaining('root.count;') } });
   });
 
+  it('compiles template literals and strings holding braces, in text and in attributes', async () => {
+    const template = '<p title="{ `t ${count}` }">{ `a` + count } { \'}\' } { "{" } { `x ${ `y ${count}` }` }</p>';
+    const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
+
+    expect(javascript).toContain('value: () => `t ${this.count}`,');
+    expect(javascript).toContain('() => `a` + this.count,');
+    expect(javascript).toContain('() => \'}\',');
+    expect(javascript).toContain('() => "{",');
+    expect(javascript).toContain('() => `x ${ `y ${this.count}` }`,');
+    expect(typescript.text).toContain('`x ${ `y ${root.count}` }`;');
+  });
+
   it('compiles a tag spanning multiple lines exactly like the same tag on a single line', async () => {
     const lines = ['<div', 'class="a"', 'title="{name}"', '(click)="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
     const compileBoth = (template: string) => compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });

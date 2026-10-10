@@ -1,3 +1,0 @@
-Xaendar: Failed to compile template - /src/progress/progress.xd.component.html
-[Parser] [Ln 2, Col 1] - Attribute value missing for class in: class
- ---> <div class="{ `bar bar--${status()}` }" />

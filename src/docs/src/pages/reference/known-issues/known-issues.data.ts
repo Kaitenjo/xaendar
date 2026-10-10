@@ -32,24 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'an-expression-starting-with-a-backtick',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/text-interpolation'
-  },
-  {
-    id: 'braces-inside-strings-of-an-interpolation',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/text-interpolation'
-  },
-  {
-    id: 'nested-template-literals',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/text-interpolation'
-  },
-  {
     id: 'an-unclosed-comment-truncates-the-template',
     area: 'Compiler',
     kind: 'bug',

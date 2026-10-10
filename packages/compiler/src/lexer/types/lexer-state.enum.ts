@@ -61,17 +61,13 @@ export enum LexerState {
    */
   ATTRIBUTE_VALUE = 'attribute-value',
   /**
-   * Dispatching between an expression or literal interpolation after `{`.
+   * Opening an interpolation after `{`.
    */
   INTERPOLATION = 'interpolation',
   /**
    * Consuming a JavaScript expression inside `{ }`.
    */
   INTERPOLATION_EXPRESSION = 'interpolation-expression',
-  /**
-   * Consuming a template-literal string inside {`...`}.
-   */
-  INTERPOLATION_LITERAL = 'interpolation-literal',
   /**
    * Consuming an import statement `@import { X, Y, ... }
    */

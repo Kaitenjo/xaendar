@@ -36,7 +36,6 @@ export class Parser {
   private readonly _states: ParserStates = {
     [TokenType.TEXT]: parseText,
     [TokenType.INTERPOLATION_EXPRESSION]: parseInterpolation,
-    [TokenType.INTERPOLATION_LITERAL]: parseInterpolation,
     [TokenType.TAG_OPEN_NAME]: parseElement,
     [TokenType.IF]: parseIfControlFlow,
     [TokenType.FOR]: parseForControlFlow,

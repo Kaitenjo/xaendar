@@ -17,7 +17,6 @@ import { lexFlowControlBlock } from '../states/lex-flow-control-block/lex-flow-c
 import { lexImportPath } from '../states/lex-import-path/lex-import-path.state';
 import { lexImport } from '../states/lex-import/lex-import.state';
 import { lexInterpolationExpression } from '../states/lex-interpolation-expression/lex-interpolation-expression.state';
-import { lexInterpolationliteral } from '../states/lex-interpolation-literal/lex-interpolation-literal.state';
 import { lexInterpolation } from '../states/lex-interpolation/lex-interpolation.state';
 import { lexTagBody } from '../states/lex-tag-body/lex-tag-body.state';
 import { lexTagClose } from '../states/lex-tag-close/lex-tag-close.state';
@@ -73,7 +72,6 @@ export class Lexer {
     [LexerState.FLOW_CONTROL_BLOCK]: lexFlowControlBlock,
     [LexerState.INTERPOLATION]: lexInterpolation,
     [LexerState.INTERPOLATION_EXPRESSION]: lexInterpolationExpression,
-    [LexerState.INTERPOLATION_LITERAL]: lexInterpolationliteral,
     [LexerState.IMPORT]: lexImport,
     [LexerState.IMPORT_PATH]: lexImportPath,
     [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody,

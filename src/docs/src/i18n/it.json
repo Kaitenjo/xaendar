@@ -747,10 +747,6 @@
           "title": "Casi limite",
           "example1": "Un oggetto legato a style",
           "p1": "Un binding su un elemento nativo imposta un attributo, e un attributo è una stringa: un oggetto diventa <code>[object Object]</code>, che il browser ignora. Costruisci tu la stringa.",
-          "callout1": {
-            "heading": "Un template literal all’inizio di un’espressione",
-            "p1": "Un’espressione che inizia con un backtick, dopo lo spazio che segue la graffa, non viene analizzata. Togli lo spazio."
-          },
           "callout2": {
             "heading": "Preprocessori",
             "p1": "Sono supportati solo i file <code>.css</code>: Sass, Less e gli altri vengono rifiutati."
@@ -2334,8 +2330,7 @@
           "td2": "graffa chiusa",
           "td3": "&lt;",
           "td4": "un intero frammento",
-          "td5": "{ count() }",
-          "p2": "Una stringa può contenere graffe solo a coppie, come nell’ultima riga: una graffa spaiata dentro una stringa conta comunque quando il compilatore cerca la fine dell’interpolazione, da cui gli escape <code>\\x7B</code> e <code>\\x7D</code>."
+          "td5": "{ count() }"
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2454,22 +2449,6 @@
           "callout1": {
             "heading": "Lo spazio tra due interpolazioni",
             "body": "<code>{ first() } { last() }</code> mostra i due valori senza lo spazio, perché il compilatore elimina il testo fatto solo di spazi. Scrivi <code>{`${first()} ${last()}`}</code>, oppure <code>{' '}</code> tra le due. Vedi <a href=\"#/it/templates/overview\">Sintassi dei template</a>."
-          },
-          "callout2": {
-            "heading": "Una graffa chiusa dentro una stringa",
-            "p1": "Il compilatore chiude l’interpolazione alla prima graffa chiusa che trova, anche dentro una stringa, e genera codice non valido. L’errore viene dal parser JavaScript che legge il codice generato, non dal compilatore dei template, e il modulo del template non si carica."
-          },
-          "callout3": {
-            "heading": "Una graffa aperta dentro una stringa",
-            "p1": "Una graffa aperta spaiata fa cercare al compilatore la sua graffa chiusa fino alla fine del file. Le graffe a coppie vanno bene; per una sola usa <code>{'\\x7B'}</code>."
-          },
-          "callout4": {
-            "heading": "Un template literal subito dopo uno spazio",
-            "p1": "Un’espressione che inizia con un backtick dopo lo spazio che segue la graffa non viene analizzata. Scrivi il backtick subito dopo la graffa, come nell’esempio."
-          },
-          "callout5": {
-            "heading": "Template literal annidati",
-            "p1": "Un template literal dentro il segnaposto di un altro viene spezzato nel punto sbagliato. Costruisci la stringa interna in un computed o in un metodo."
           },
           "callout6": {
             "heading": "Un oggetto letterale tra graffe",
@@ -2793,8 +2772,8 @@
       "fix": "Scrivi il listener sul tag, fuori dalla direttiva."
     },
     "[Parser] Expected closing tag input while file is over": {
-      "cause": "Un elemento mai chiuso: un elemento void senza />, un template literal non chiuso, un’interpolazione come { '{' }, o un’espressione che inizia con un backtick dopo uno spazio.",
-      "fix": "Chiudi gli elementi void (<input />), usa { '\\x7B' } per una graffa, e scrivi un template literal subito dopo la graffa."
+      "cause": "Un elemento mai chiuso: un elemento void senza />, o una stringa o un template literal mai chiusi in un’interpolazione.",
+      "fix": "Chiudi gli elementi void (<input />), e chiudi ogni stringa e template literal."
     },
     "[Parser] Expected closing tag div, found DIV": {
       "cause": "Un tag di chiusura scritto con maiuscole diverse.",
@@ -2805,8 +2784,8 @@
       "fix": "Metti l’@else subito dopo la graffa di chiusura dell’@if."
     },
     "[Parser] Attribute value missing for hidden in: hidden": {
-      "cause": "Un attributo senza valore subito prima di una direttiva strutturale, o un attributo legato a un’espressione che inizia con un backtick dopo uno spazio.",
-      "fix": "Sposta l’attributo dopo la direttiva, o dagli un valore vuoto; scrivi il backtick subito dopo la graffa."
+      "cause": "Un attributo senza valore subito prima di una direttiva strutturale.",
+      "fix": "Sposta l’attributo dopo la direttiva, o dagli un valore vuoto."
     },
     "[Parser] Attribute \"title\" is bound more than once on <p>": {
       "cause": "Lo stesso attributo scritto sia fuori sia dentro un binding condizionale.",
@@ -2928,10 +2907,6 @@
       "cause": "Un @import che nomina una classe che il file non dichiara, o un tipo.",
       "fix": "Importa la classe del componente o della direttiva con il suo nome esatto."
     },
-    "Unterminated string constant": {
-      "cause": "Segnalato da Babel sul codice generato per un’interpolazione come { '}' }: la graffa nella stringa chiude l’interpolazione.",
-      "fix": "Scrivi { '\\x7D' }."
-    },
     "XCard does not seems to have a Render Function": {
       "cause": "Il template del componente non è stato compilato, il suo templateUrl non è una stringa letterale, il suo file non termina con .xd.component.ts, o la classe è una sottoclasse senza un proprio @WebComponent.",
       "fix": "Cerca il messaggio del compilatore stampato prima."
@@ -3010,21 +2985,6 @@
     }
   },
   "issues": {
-    "an-expression-starting-with-a-backtick": {
-      "title": "Un’espressione che inizia con un backtick dopo uno spazio",
-      "details": "{ `testo` } nel testo o in un attributo non viene analizzato: Expected closing tag, o Attribute value missing.",
-      "workaround": "Scrivi il backtick subito dopo la graffa, o inizia con un altro operando."
-    },
-    "braces-inside-strings-of-an-interpolation": {
-      "title": "Graffe dentro le stringhe di un’interpolazione",
-      "details": "Le graffe vengono contate anche dentro le stringhe: { '}' } produce codice non valido (Unterminated string constant), { '{' } un elemento non chiuso.",
-      "workaround": "Usa { '\\x7B' } e { '\\x7D' }; le graffe bilanciate vanno bene."
-    },
-    "nested-template-literals": {
-      "title": "Template literal annidati",
-      "details": "Un template literal dentro un altro viene rifiutato come più di un’espressione, con un backtick duplicato nel messaggio.",
-      "workaround": "Costruisci la stringa interna in un metodo."
-    },
     "an-unclosed-comment-truncates-the-template": {
       "title": "Un commento non chiuso tronca il template in silenzio",
       "details": "Tutto ciò che segue <!-- senza --> sparisce, senza errori.",

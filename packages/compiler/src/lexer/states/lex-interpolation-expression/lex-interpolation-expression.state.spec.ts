@@ -55,4 +55,23 @@ describe('lexInterpolationExpression', () => {
       popState: true
     });
   });
+
+  it.each([
+    ['a template literal followed by a space', '`text` }', '`text`'],
+    ['a template literal followed by other operands', '`a` + b }', '`a` + b'],
+    ['a closing brace in a single-quoted string', '\'}\' }', '\'}\''],
+    ['an opening brace in a double-quoted string', '"{" }', '"{"'],
+    ['an escaped quote in a string', '\'\\\'}\' }', '\'\\\'}\''],
+    ['the other quote in a string', '"it\'s }" }', '"it\'s }"'],
+    ['braces and quotes in a template literal', '`} { \' "` }', '`} { \' "`'],
+    ['an escaped backtick and dollar in a template literal', '`\\` \\${x}` }', '`\\` \\${x}`'],
+    ['a dollar not starting a substitution', '`$ {` }', '`$ {`'],
+    ['a substitution', '`a ${ b } c` }', '`a ${ b } c`'],
+    ['an object literal in a substitution', '`${ { a: 1 }.a }` }', '`${ { a: 1 }.a }`'],
+    ['a nested template literal', '`a ${ `b ${ c }` } d` }', '`a ${ `b ${ c }` } d`'],
+    ['a string with a brace in a substitution', '`${ \'}\' }` }', '`${ \'}\' }`']
+  ])('reads %s as part of the expression', (_name, input, expression) => {
+    const context: LexerTransitionFunctionContext = { history: [LexerState.TEXT], tokens: [] };
+    expect(lexInterpolationExpression(new LexerCursor(input), context).tokens).toEqual([{ type: TokenType.INTERPOLATION_EXPRESSION, parts: [expression] }]);
+  });
 });

@@ -1,4 +1,0 @@
-<p>{ '}' }</p>
-
-[vite] Internal server error: [BabelError] …/price.xd.component.html?signals=&lang.js: Unterminated string constant. (17:33)
-> 17 |   _renderText(p0, context, () => ', null);
