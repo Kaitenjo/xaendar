@@ -23,7 +23,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it.
 - A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
 - HTML entities (`&lt;`, `&amp;`, …) are not decoded and newlines are removed.
-- Whitespace-only text is dropped: `{ first } { second }` renders the two values joined. Use `{ ' ' }` between them, or a single expression such as a template literal.
+- Whitespace-only text holding a line break is dropped: elements or interpolations on separate lines render joined (write `{ ' ' }` between them). A space between them on the same line stays: `{ first } { second }`.
 
 ## Bindings and events
 

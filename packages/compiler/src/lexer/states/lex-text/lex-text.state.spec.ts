@@ -103,4 +103,38 @@ describe('lexText', () => {
 
     expect(() => lexText(fakeCursor, context)).toThrow(boom);
   });
+
+  describe('whitespace between inline nodes', () => {
+    const after = (type: TokenType): LexerTransitionFunctionContext => ({ history: [], tokens: [{ type, parts: [], span: { start: 0, end: 1 } } as never] });
+
+    it.each([
+      ['two interpolations', TokenType.INTERPOLATION_EXPRESSION, ' {b}'],
+      ['an interpolation and an element', TokenType.INTERPOLATION_EXPRESSION, ' <b>'],
+      ['a closed element and an interpolation', TokenType.TAG_CLOSE_NAME, ' {b}'],
+      ['a self-closed element and an element', TokenType.TAG_SELF_CLOSE, '\t<b>']
+    ])('keeps the whitespace separating %s on the same line', (_name, previous, input) => {
+      expect(lexInput(input, after(previous)).tokens).toEqual([{ type: TokenType.TEXT, parts: [input[0]] }]);
+    });
+
+    it.each([
+      ['it holds a line break', TokenType.INTERPOLATION_EXPRESSION, ' \n {b}'],
+      ['it follows the start of an element', TokenType.TAG_OPEN_END, ' {b}'],
+      ['it follows a block', TokenType.BLOCK_CLOSE, ' <b>'],
+      ['it precedes a closing tag', TokenType.INTERPOLATION_EXPRESSION, ' </p>'],
+      ['it precedes a flow-control keyword', TokenType.INTERPOLATION_EXPRESSION, ' @if']
+    ])('drops the whitespace when %s', (_name, previous, input) => {
+      expect(lexInput(input, after(previous)).tokens).toBeUndefined();
+    });
+
+    it('drops the whitespace at the start of the template', () => {
+      expect(lexInput(' {b}', context).tokens).toBeUndefined();
+    });
+  });
 });
+
+/**
+ * Runs `lexText` over the input.
+ */
+function lexInput(input: string, lexerContext: LexerTransitionFunctionContext) {
+  return lexText(new LexerCursor(input), lexerContext);
+}

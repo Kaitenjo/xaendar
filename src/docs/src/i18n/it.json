@@ -2307,13 +2307,13 @@
         },
         "whitespace": {
           "title": "Spazi",
-          "p1": "Il compilatore elimina gli a capo del testo, invece di trasformarli in spazi, ed elimina il testo fatto solo di spazi, tra due tag o tra due interpolazioni. L’indentazione resta, e il browser la riduce a un solo spazio.",
+          "p1": "Il compilatore elimina gli a capo del testo, invece di trasformarli in spazi, ed elimina il testo fatto solo di spazi quando contiene un a capo, come tra tag su righe diverse. Uno spazio tra due tag o due interpolazioni sulla stessa riga resta. L’indentazione resta, e il browser la riduce a un solo spazio.",
           "example1": "Sei modi di scrivere due parole",
           "li1": "l’a capo sparisce, e le due parole si toccano;",
           "li2": "l’indentazione della seconda riga diventa lo spazio: indenta le righe di testo che vai a capo;",
-          "li3": "lo spazio tra due tag viene eliminato;",
+          "li3": "l’a capo tra due tag viene eliminato, insieme all’indentazione intorno;",
           "li4": "<code>{' '}</code> scrive uno spazio che resta;",
-          "li5": "anche lo spazio tra due interpolazioni viene eliminato;",
+          "li5": "lo spazio tra due interpolazioni sulla stessa riga resta;",
           "li6": "costruire il testo in un’unica espressione lo mantiene."
         },
         "specialCharacters": {
@@ -2355,7 +2355,7 @@
           "td2": "Valori degli attributi",
           "td3": "Solo doppi apici",
           "td4": "Uno spazio che deve restare",
-          "td5": "<code>{' '}</code>, oppure il testo costruito in un’unica espressione",
+          "td5": "<code>{' '}</code>, uno spazio sulla stessa riga, oppure il testo costruito in un’unica espressione",
           "td6": "<code>@</code>, graffe, <code>&lt;</code> nel testo",
           "td7": "Entità",
           "td8": "Il carattere stesso: →, —, ’, ©"
@@ -2441,10 +2441,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Lo spazio tra due interpolazioni",
-            "body": "<code>{ first() } { last() }</code> mostra i due valori senza lo spazio, perché il compilatore elimina il testo fatto solo di spazi. Scrivi <code>{`${first()} ${last()}`}</code>, oppure <code>{' '}</code> tra le due. Vedi <a href=\"#/it/templates/overview\">Sintassi dei template</a>."
-          },
           "callout6": {
             "heading": "Un oggetto letterale tra graffe",
             "body": "<code>{ { value } }</code> compila e non mostra nulla: le graffe interne non vengono lette come un oggetto. Per mostrare un oggetto convertilo, per esempio con <code>JSON.stringify</code>."
@@ -2980,11 +2976,6 @@
     }
   },
   "issues": {
-    "a-space-between-two-interpolations-disappears": {
-      "title": "Lo spazio tra due interpolazioni sparisce",
-      "details": "{ first } { second } renderizza i due valori uniti.",
-      "workaround": "Scrivi {`${first} ${second}`}, o metti altro testo tra le due."
-    },
     "a-shorthand-object-in-an-interpolation": {
       "title": "Un oggetto abbreviato in un’interpolazione non renderizza nulla",
       "details": "{ {b} } compila, e renderizza un testo vuoto.",

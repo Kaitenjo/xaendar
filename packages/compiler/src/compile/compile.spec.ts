@@ -45,6 +45,12 @@ describe('compile', () => {
     expect(typescript.text).toContain('`x ${ `y ${root.count}` }`;');
   });
 
+  it('keeps the space between two interpolations, and drops the whitespace holding a line break', async () => {
+    const javascript = await compile('<p>{ first } { second }</p>\n<p>\n  { first }\n  { second }\n</p>', { signals: [], cache: createCache() });
+
+    expect(javascript.match(/_renderLiteralText\([^)]*' '/g)).toHaveLength(1);
+  });
+
   it('compiles a tag spanning multiple lines exactly like the same tag on a single line', async () => {
     const lines = ['<div', 'class="a"', 'title="{name}"', '(click)="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
     const compileBoth = (template: string) => compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });

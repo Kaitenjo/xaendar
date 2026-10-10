@@ -5,12 +5,13 @@ import { LexerState } from '../../types/lexer-state.enum.js';
 import { TokenType } from '../../types/token-type.enum.js';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type.js';
-import { TokenWithOptionalSpan } from '../../types/token.type.js';
+import { Token, TokenWithOptionalSpan } from '../../types/token.type.js';
 
 /**
  * Consumes plain text content, accumulating characters until a structural boundary
  * is reached: `<` (tag open/close), `{` (interpolation), `@` (flow-control),
- * or `}` (block close). Emits a TEXT token if non-blank text was accumulated.
+ * or `}` (block close). Emits a TEXT token if non-blank text was accumulated, or whitespace separating
+ * two inline nodes on the same line (see {@link separatesInlineNodes}).
  *
  * @param cursor - The lexer cursor positioned at the start of text content.
  * @param context - The lexer context used to detect flow-control block boundaries.
@@ -19,6 +20,7 @@ import { TokenWithOptionalSpan } from '../../types/token.type.js';
 export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let text = '';
+  let lineBreak = false;
   let retVal!: LexerTransitionFunctionReturnType
 
   try {
@@ -70,6 +72,7 @@ export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionCon
         case LF:
         case CR:
           cursor.advance();
+          lineBreak = true;
           break;
   
         default:
@@ -109,9 +112,59 @@ export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionCon
     Or an interpolation:
       `{ myVariable }`
   */
-  retVal.tokens ??= (isNotBlank(text)
+  retVal.tokens ??= (isNotBlank(text) || separatesInlineNodes(text, lineBreak, context.tokens.at(-1), retVal.state)
     ? [{ type: TokenType.TEXT, parts: [text] }]
     : undefined);
 
   return retVal
+}
+
+/**
+ * Tells whether a whitespace-only text separates two inline nodes on the same line: an interpolation or an element
+ * before it, and an interpolation or an element after it. That space is part of the content, as in `{ first } { second }`,
+ * while the whitespace laying out the template, which holds a line break, is dropped.
+ *
+ * @param text - The whitespace-only text, without its line breaks.
+ * @param lineBreak - Whether the text holds a line break.
+ * @param previousToken - The token emitted before the text, if any.
+ * @param nextState - The state following the text.
+ * @returns `true` if the text has to be kept, `false` otherwise.
+ */
+function separatesInlineNodes(text: string, lineBreak: boolean, previousToken: Token | undefined, nextState: LexerState): boolean {
+  return !!text && !lineBreak && !!previousToken && isInlineNodeEnd(previousToken.type) && isInlineNodeStart(nextState);
+}
+
+/**
+ * Tells whether a token ends an inline node: an interpolation, or an element closed by its closing tag or self-closed.
+ *
+ * @param type - The type of the token.
+ * @returns `true` if the token ends an inline node, `false` otherwise.
+ */
+function isInlineNodeEnd(type: TokenType): boolean {
+  switch (type) {
+    case TokenType.INTERPOLATION_EXPRESSION:
+    case TokenType.TAG_CLOSE_NAME:
+    case TokenType.TAG_SELF_CLOSE:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+/**
+ * Tells whether a state starts an inline node: an interpolation or an opening tag.
+ *
+ * @param state - The state following a text.
+ * @returns `true` if the state starts an inline node, `false` otherwise.
+ */
+function isInlineNodeStart(state: LexerState): boolean {
+  switch (state) {
+    case LexerState.INTERPOLATION:
+    case LexerState.TAG_OPEN_NAME:
+      return true;
+
+    default:
+      return false;
+  }
 }

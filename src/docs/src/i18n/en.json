@@ -2307,13 +2307,13 @@
         },
         "whitespace": {
           "title": "Whitespace",
-          "p1": "The compiler drops the line breaks of the text, instead of turning them into spaces, and drops the text made only of whitespace, between two tags or two interpolations. Indentation is kept, and the browser collapses it into one space.",
+          "p1": "The compiler drops the line breaks of the text, instead of turning them into spaces, and drops the text made only of whitespace when it holds a line break, as between tags on separate lines. A space between two tags or two interpolations on the same line stays. Indentation is kept, and the browser collapses it into one space.",
           "example1": "Six ways of writing two words",
           "li1": "the line break disappears, and the two words touch;",
           "li2": "the indentation of the second line becomes the space: indent the lines of text you wrap;",
-          "li3": "the space between two tags is dropped;",
+          "li3": "the line break between two tags is dropped, with the indentation around it;",
           "li4": "<code>{' '}</code> writes a space that stays;",
-          "li5": "the space between two interpolations is dropped too;",
+          "li5": "the space between two interpolations on the same line stays;",
           "li6": "building the text in one expression keeps it."
         },
         "specialCharacters": {
@@ -2355,7 +2355,7 @@
           "td2": "Attribute values",
           "td3": "Double quotes only",
           "td4": "A space that must stay",
-          "td5": "<code>{' '}</code>, or the text built in one expression",
+          "td5": "<code>{' '}</code>, a space on the same line, or the text built in one expression",
           "td6": "<code>@</code>, braces, <code>&lt;</code> in text",
           "td7": "Entities",
           "td8": "The character itself: →, —, ’, ©"
@@ -2441,10 +2441,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "The space between two interpolations",
-            "body": "<code>{ first() } { last() }</code> renders the two values without the space, because the compiler drops text made only of whitespace. Write <code>{`${first()} ${last()}`}</code>, or <code>{' '}</code> between them. See <a href=\"#/en/templates/overview\">Template syntax</a>."
-          },
           "callout6": {
             "heading": "An object literal in braces",
             "body": "<code>{ { value } }</code> compiles and renders nothing at all: the inner braces are not read as an object. To show an object, convert it, for example with <code>JSON.stringify</code>."
@@ -2980,11 +2976,6 @@
     }
   },
   "issues": {
-    "a-space-between-two-interpolations-disappears": {
-      "title": "A space between two interpolations disappears",
-      "details": "{ first } { second } renders the two values joined.",
-      "workaround": "Write {`${first} ${second}`}, or put other text between them."
-    },
     "a-shorthand-object-in-an-interpolation": {
       "title": "A shorthand object in an interpolation renders nothing",
       "details": "{ {b} } compiles, and renders an empty text.",

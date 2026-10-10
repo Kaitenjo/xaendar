@@ -156,7 +156,7 @@ Follow these in every template you write or edit:
   - An element containing only text and interpolations stays on one line (`<span>{ total() } items</span>`) while its opening tag is short and the line stays within about 120 characters. Otherwise the text goes on its own indented line, unless it already touches both tags (`<x-card>Text</x-card>`): on its own line it would gain spaces at both ends, visible when the content flows inline (e.g. slotted).
   - An opening tag that does not fit on one line, or contains a conditional block, has one item per line and ends with `>` / `/>` on its own line.
   - Control-flow blocks are never inline.
-  - Xaendar removes newlines from text and drops whitespace-only text between two elements: write `{ ' ' }` between two elements that need a space, and keep punctuation on the line of the element it follows (`<code>a</code>,`).
+  - Xaendar removes newlines from text and drops whitespace-only text holding a line break: write `{ ' ' }` between two elements on separate lines that need a space, and keep punctuation on the line of the element it follows (`<code>a</code>,`).
 
 ## Verifying work
 

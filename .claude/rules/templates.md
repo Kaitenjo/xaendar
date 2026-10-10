@@ -96,7 +96,7 @@ Self-close every element without content, native ones included: `<div class="spa
 - An opening tag that does not fit on one line, or contains a conditional block, has one item per line, indented one level, and ends with `>` (or `/>`) on its own line, as in the example above.
 - Control-flow blocks, inside a tag or between elements, are never inline: one block per line, with its content indented.
 
-Xaendar removes the newlines from text and drops whitespace-only text between two elements. As a result:
+Xaendar removes the newlines from text and drops whitespace-only text holding a line break; a space between two elements or interpolations on the same line stays. As a result:
 - indented lines of text still keep their words apart;
 - two elements separated only by a line break render joined: write `{ ' ' }` between them when the space matters;
 - punctuation that follows an element stays on that element's line (`<code>a</code>,`). On a line of its own, it would get a space before it.

@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A space between two interpolations disappears (bug)
-
-{ first } { second } renders the two values joined.
-
-**Workaround:** Write {`${first} ${second}`}, or put other text between them.
-
 ### A shorthand object in an interpolation renders nothing (bug)
 
 { {b} } compiles, and renders an empty text.
