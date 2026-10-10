@@ -5,19 +5,19 @@
   }
 </ul>
 <p>
-  <meter min="0" max="5" value="{ rows().length }"></meter>
+  <meter min="0" max="5" value="{ rows().length }" />
   rows = queryAll(…)
 </p>
 <p>
-  <meter min="0" max="5" value="{ typedRows().length }"></meter>
+  <meter min="0" max="5" value="{ typedRows().length }" />
   typedRows: QuerySignal = queryAll(…)
 </p>
 <p>
-  <meter min="0" max="5" value="{ rowCount() }"></meter>
+  <meter min="0" max="5" value="{ rowCount() }" />
   rowCount = computed(…)
 </p>
 <p>
-  <meter min="0" max="5" value="{ decoratedRows().length }"></meter>
+  <meter min="0" max="5" value="{ decoratedRows().length }" />
   {'@Query.all'} decoratedRows
 </p>
 <p class="text">In the text: { rows().length } rows</p>

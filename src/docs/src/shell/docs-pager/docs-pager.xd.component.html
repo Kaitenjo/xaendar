@@ -6,7 +6,7 @@
         <span class="card__title">{ titleOf(previous()) }</span>
       </a>
     } @else {
-      <span></span>
+      <span />
     }
     @if (next()) {
       <a class="card card--next" href="{`#/${currentLang()}/${next()?.path}`}">

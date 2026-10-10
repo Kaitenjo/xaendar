@@ -90,7 +90,7 @@ export class CounterComponent extends CustomElement {
 - In a directive, `this.element` and `this.effect` are unavailable in the constructor. Do the setup in `onInit`.
 
 **Template**: see [references/template-syntax.md](references/template-syntax.md). The essentials:
-- Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `{ '@' }`, `{ '<' }`, `{ '\x7B' }`, `{ '\x7D' }`. Use double quotes around every attribute value, and self-close void elements (`<input />`).
+- Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `{ '@' }`, `{ '<' }`, `{ '\x7B' }`, `{ '\x7D' }`. Use double quotes around every attribute value. Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
 - An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`. No space before the backtick.
 - A listener is one method call with simple arguments: no inline logic, no `(keydown.enter)` modifiers.
 - Add or remove boolean attributes (`disabled`, `checked`) with a conditional binding inside the tag, not with `="{ false }"`.

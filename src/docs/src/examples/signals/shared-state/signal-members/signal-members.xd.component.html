@@ -2,17 +2,17 @@
 <dl>
   <dt>shared = level</dt>
   <dd>
-    <progress max="10" value="{ shared() }"></progress>
+    <progress max="10" value="{ shared() }" />
     text: { shared() }
   </dd>
   <dt>fromHelper = readLevel()</dt>
   <dd>
-    <progress max="10" value="{ fromHelper() }"></progress>
+    <progress max="10" value="{ fromHelper() }" />
     text: { fromHelper() }
   </dd>
   <dt>{ 'wrapped = computed(() => readLevel()())' }</dt>
   <dd>
-    <progress max="10" value="{ wrapped() }"></progress>
+    <progress max="10" value="{ wrapped() }" />
     text: { wrapped() }
   </dd>
 </dl>

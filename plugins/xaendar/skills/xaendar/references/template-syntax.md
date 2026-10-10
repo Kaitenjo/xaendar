@@ -13,12 +13,14 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 <!-- Characters with a meaning: write them through an interpolation -->
 <p>{ '@' } { '<' } { '\x7B' } { '\x7D' }</p>
 
-<!-- Void elements are always self-closed; attribute values always in double quotes -->
+<!-- Elements without content are self-closed, native ones included; attribute values always in double quotes -->
 <input type="text" />
 <br />
+<div class="spacer" />
 ```
 
 - Interpolations are single braces `{ expr }`, never `{{ expr }}`.
+- Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it.
 - A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '\x7B' }`, `{ '\x7D' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
 - A brace inside a string still counts for the lexer: `{ '}' }` breaks; use `{ '\x7D' }`.
 - HTML entities (`&lt;`, `&amp;`, …) are not decoded and newlines are removed.

@@ -76,6 +76,10 @@ Between elements and inside a tag alike:
 
 Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row.id; index = $index)`, not `r` / `i`).
 
+## Self-closing tags
+
+Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it (`<input />`).
+
 ## Line breaks
 
 - `<pre>` keeps its content exactly as written: never reformat inside it.

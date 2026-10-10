@@ -2,7 +2,7 @@
 
 <div class="controls">
   @for (color of accents; track color) {
-    <button class="swatch" style="{`background: ${color}`}" aria-label="{ color }" (click)="pickAccent(color)"></button>
+    <button class="swatch" style="{`background: ${color}`}" aria-label="{ color }" (click)="pickAccent(color)" />
   }
   <label>
     <input type="checkbox" checked (change)="toggleRounded()" />

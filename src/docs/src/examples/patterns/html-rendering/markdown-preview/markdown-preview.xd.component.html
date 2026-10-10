@@ -2,7 +2,7 @@
 
 <div class="panes">
   <textarea rows="9" (input)="edit($event)">{ source() }</textarea>
-  <div @@exInnerHtml(html="{ html() }") class="preview"></div>
+  <div @@exInnerHtml(html="{ html() }") class="preview" />
 </div>
 <button (click)="toggleSource()">{ showSource() ? 'Hide' : 'Show' } the generated HTML</button>
 @if (showSource()) {
