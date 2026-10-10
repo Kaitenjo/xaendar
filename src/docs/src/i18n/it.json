@@ -2394,9 +2394,9 @@
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Un @default prima dei case",
-          "p1": "I blocchi vengono provati nell’ordine in cui sono scritti, e <code>@default</code> corrisponde sempre: scritto per primo, nasconde ogni case che lo segue. Tienilo per ultimo.",
+          "p1": "Come in JavaScript, <code>@default</code> viene renderizzato solo quando nessun case corrisponde, ovunque sia scritto: nella seconda colonna viene per primo, e il case che corrisponde vince comunque. Scriverlo per ultimo rende il template più facile da leggere.",
           "example2": "Quante volte viene letto il valore",
-          "p2": "L’espressione dello switch viene eseguita una volta per ogni case con cui viene confrontata: una volta per il lunedì, cinque volte per il weekend. Un metodo con effetti collaterali, o lento, viene eseguito altrettante volte. Fai lo switch su un signal o su un computed, che leggono il valore già calcolato. È elencato in <a href=\"#/it/reference/known-issues\">Problemi noti</a>.",
+          "p2": "L’espressione dello switch viene eseguita una volta ogni volta che lo switch viene valutato, qualunque case corrisponda: una volta per il lunedì, e una volta anche per il weekend. Un metodo con effetti collaterali, o lento, non viene ripetuto per ogni case con cui viene confrontato.",
           "callout1": {
             "heading": "I valori dei case sono letterali",
             "p1": "Il valore di un case non può leggere i membri del componente. Confronta con dei letterali, oppure sposta la logica in un computed che ne restituisce uno."
@@ -2409,7 +2409,7 @@
           "td1": "Confronta il valore con i case, in ordine.",
           "td2": "Renderizzato quando il valore è <code>=== 'a'</code>.",
           "td3": "Un blocco per più valori.",
-          "td4": "Renderizzato quando nessun case corrisponde. Tienilo per ultimo."
+          "td4": "Renderizzato quando nessun case corrisponde, ovunque sia scritto."
         }
       },
       "textInterpolation": {
@@ -2979,11 +2979,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "switch-evaluates-its-expression-once-per": {
-      "title": "@switch valuta la sua espressione una volta per case",
-      "details": "L’espressione viene rieseguita per ogni @case finché uno corrisponde: effetti collaterali e chiamate costose si ripetono.",
-      "workaround": "Fai lo switch su un signal o su un computed."
     },
     "a-query-created-after-the-connection": {
       "title": "Una query creata dopo la connessione",

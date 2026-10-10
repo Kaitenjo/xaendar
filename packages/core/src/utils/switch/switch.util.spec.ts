@@ -110,4 +110,40 @@ describe('_switch', () => {
 
     expect(text(parent)).toEqual(['two-three']);
   });
+
+  it('evaluates the expression once per run, whatever case matches', async () => {
+    const value = signal(4);
+    const expression = vi.fn(() => value());
+    _switch(document.createElement('div'), createRoot(), null, expression, blocks);
+    expect(expression).toHaveBeenCalledOnce();
+
+    value.set(3);
+    await flush();
+    expect(expression).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders the default only when no case matches, wherever it is declared', async () => {
+    const parent = document.createElement('div');
+    const value = signal(2);
+    _switch(parent, createRoot(), null, () => value(), [
+      { condition: null, block: block('default') },
+      { condition: [2], block: block('two') }
+    ]);
+    expect(text(parent)).toEqual(['two']);
+
+    value.set(5);
+    await flush();
+    expect(text(parent)).toEqual(['default']);
+  });
+
+  it('renders nothing when no case matches and there is no default', async () => {
+    const parent = document.createElement('div');
+    const value = signal(1);
+    _switch(parent, createRoot(), null, () => value(), blocks.slice(0, 2));
+    expect(text(parent)).toEqual(['one']);
+
+    value.set(9);
+    await flush();
+    expect(text(parent)).toEqual([]);
+  });
 });

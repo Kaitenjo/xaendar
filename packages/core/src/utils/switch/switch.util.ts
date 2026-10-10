@@ -6,11 +6,13 @@ import { _if } from '../if/if.util';
  * Creates a reactive switch/case structure by converting it into an if/else-if chain
  * and delegating to {@link _if}.
  *
- * Each case block's condition values are compared against the result of the
- * `expression` function using strict equality (`===`). A block with
- * `condition: null` acts as the `default` branch (mapped to the `else` branch
- * in the underlying if/else-if chain). Multiple values per case are supported
- * (e.g. fall-through cases) and matched with `Array.some`.
+ * Each run evaluates the `expression` function once, and selects the first block one of whose
+ * condition values is strictly equal (`===`) to the result, or else the block with
+ * `condition: null`, the `default` branch, wherever it is declared. Multiple values per case
+ * are supported (e.g. fall-through cases) and matched with `Array.some`.
+ *
+ * The condition of the first block of the underlying chain makes the selection, since `_if` always evaluates
+ * it first, and the others only compare their position with the selected one.
  *
  * Because it delegates to `_if`, the switch benefits from the same optimisation:
  * the active branch is only re-rendered when it actually changes.
@@ -30,16 +32,23 @@ export function _switch(
   parentContext: _Context,
   anchor: Comment | null,
   expression: NoArgsFunction<unknown>,
-  blocks: Array<{ 
-    condition: unknown[] | null, 
-    block: Function<[HTMLElement, _Context, Node | null], _Context> 
+  blocks: Array<{
+    condition: unknown[] | null,
+    block: Function<[HTMLElement, _Context, Node | null], _Context>
   }>
 ): void {
-  _if(parentNode, parentContext, anchor, blocks.map(({ condition, block }) => ({
-    condition: condition 
-      ? () => condition.some(condition => condition === expression())
-      : undefined,
+  // The position of the block selected by the current run, -1 when none matches and there is no default
+  let selected = -1;
+  const select = (): number => {
+    const value = expression();
+    const matching = blocks.findIndex(({ condition }) => condition?.some(candidate => candidate === value));
+    return matching !== -1 ? matching : blocks.findIndex(({ condition }) => !condition);
+  };
+
+  _if(parentNode, parentContext, anchor, blocks.map(({ block }, index) => ({
+    condition: index === 0
+      ? () => (selected = select()) === index
+      : () => selected === index,
     block
   })));
 }
-  

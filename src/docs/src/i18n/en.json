@@ -2394,9 +2394,9 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "A @default before the cases",
-          "p1": "The blocks are tried in the order they are written, and <code>@default</code> always matches: written first, it hides every case after it. Keep it last.",
+          "p1": "As in JavaScript, <code>@default</code> is rendered only when no case matches, wherever it is written: in the second column it comes first, and the matching case still wins. Writing it last keeps the template easier to read.",
           "example2": "How many times the value is read",
-          "p2": "The expression of the switch runs once for each case it is compared with: once for Monday, five times for the weekend. A method with side effects, or a slow one, runs as many times. Switch on a signal or a computed signal, which read their cached value. This is listed in <a href=\"#/en/reference/known-issues\">Known issues</a>.",
+          "p2": "The expression of the switch runs once each time the switch is evaluated, whatever case matches: once for Monday, and once for the weekend too. A method with side effects, or a slow one, is not repeated for every case it is compared with.",
           "callout1": {
             "heading": "Case values are literals",
             "p1": "The value of a case cannot read the members of the component. Compare with literals, or move the logic into a computed signal that returns one of them."
@@ -2409,7 +2409,7 @@
           "td1": "Compares the value with the cases, in order.",
           "td2": "Rendered when the value is <code>=== 'a'</code>.",
           "td3": "One block for several values.",
-          "td4": "Rendered when no case matches. Keep it last."
+          "td4": "Rendered when no case matches, wherever it is written."
         }
       },
       "textInterpolation": {
@@ -2979,11 +2979,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "switch-evaluates-its-expression-once-per": {
-      "title": "@switch evaluates its expression once per case",
-      "details": "The expression runs again for each @case until one matches: side effects and costly calls are repeated.",
-      "workaround": "Switch over a signal or a computed signal."
     },
     "a-query-created-after-the-connection": {
       "title": "A query created after the connection",

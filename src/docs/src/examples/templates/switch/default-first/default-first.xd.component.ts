@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * The same switch written twice: with @default last and with @default first.
+ * The same switch written twice, with @default last and with @default first: both render the matching case.
  */
 @WebComponent({
   selector: 'ex-default-first',

@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### @switch evaluates its expression once per case (bug)
-
-The expression runs again for each @case until one matches: side effects and costly calls are repeated.
-
-**Workaround:** Switch over a signal or a computed signal.
-
 ### A query created after the connection (bug)
 
 query() called after the component is connected stays null until the next connection, and the next disconnection throws TypeError: stop is not a function, skipping the other hooks.
