@@ -1,6 +1,7 @@
 // Type-only: brings the `Array.prototype.removeItem` declaration into scope, the extension itself is installed at runtime by `@xaendar/signals` importing `@xaendar/common`
 import type {} from '@xaendar/common';
 import { Function, NoArgsVoidFunction } from '@xaendar/types';
+import { trackNode } from '../track-node/track-node.util';
 
 /**
  * Tracks identifier scope during run time template function execution
@@ -18,7 +19,7 @@ export class _Context {
    */
   private _variables = new Map<string, unknown>();
   /**
-   * DOM nodes directly mounted into this scope via {@link mountNode} (does not
+   * DOM nodes directly mounted into this scope via {@link mountNode} or {@link trackNode} (does not
    * include nodes owned by child contexts). Used to determine, for a given
    * context, which DOM nodes belong to it — for example so `_for`'s keyed
    * diffing can move a reused item's nodes to a new position without
@@ -212,16 +213,10 @@ export class _Context {
  *   as `Node.insertBefore`). If `null`, the node is appended at the end of `parentNode`.
  */
 export function mountNode(node: Node, parentNode: Element, context: _Context, referenceNode: Comment | null = null): void {
-  context.addNode(node);
+  trackNode(node, parentNode, context);
   parentNode.insertBefore(node, referenceNode);
-
-  context.addUnlistener(() => {
-    context.removeNode(node);
-    if (node.parentNode === parentNode) {
-      parentNode.removeChild(node);
-    }
-  });
 }
+
 
 /**
  * Creates a Comment node used as a positional placeholder for dynamic content

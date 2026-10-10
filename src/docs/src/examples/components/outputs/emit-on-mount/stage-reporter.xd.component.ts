@@ -2,7 +2,7 @@ import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 
 /**
- * Emits an event from each lifecycle hook, and one more a microtask after the render.
+ * Emits an event from each lifecycle hook.
  */
 @WebComponent({
   selector: 'ex-stage-reporter',
@@ -23,11 +23,10 @@ export class StageReporterComponent extends CustomElement {
   }
 
   /**
-   * Emits after the render, then again a microtask later.
+   * Emits after the render.
    */
   public afterRender(): void {
     this.stage.emit('afterRender');
-    queueMicrotask(() => this.stage.emit('a microtask after afterRender'));
   }
 
   /**

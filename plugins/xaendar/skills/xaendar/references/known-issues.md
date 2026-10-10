@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### A child is rendered before the bindings of its parent (bug)
-
-In onInit, and in the first render, inputs hold their defaults and required ones are undefined. An exception in the first run of a binding stops the rest of the template of the child for good. Events emitted in onInit or afterRender are lost.
-
-**Workaround:** Read inputs reactively, use ?. on required ones, and emit after a microtask.
-
 ### Rows of @for keep the item they were created with (bug)
 
 A new object with the same key does not update its row, and track $index shows stale rows when items are prepended. Duplicate keys corrupt the list.

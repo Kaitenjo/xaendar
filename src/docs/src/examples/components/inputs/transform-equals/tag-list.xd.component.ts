@@ -26,7 +26,7 @@ export class TagListComponent extends CustomElement {
   public readonly notifications = signal(0);
 
   /**
-   * Counts the notifications. The first run reads the default value, before the parent binds the input.
+   * Counts the notifications. The first run reads the value bound by the parent.
    */
   public onInit(): void {
     this.effect(() => {

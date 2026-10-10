@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'a-child-is-rendered-before-the',
-    area: 'Runtime',
-    kind: 'bug',
-    page: 'components/inputs'
-  },
-  {
     id: 'rows-of-for-keep-the-item',
     area: 'Runtime',
     kind: 'bug',

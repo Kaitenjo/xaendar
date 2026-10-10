@@ -3,7 +3,7 @@ element connected to the document
  ├─ onInit()
  ├─ the template is rendered
  │    └─ each child component is connected here, and runs this same sequence to the end
- │       before the parent binds its inputs and its events
+ │       with its inputs and its events already bound by the parent
  ├─ the view queries start observing the shadow root
  └─ afterRender()
 

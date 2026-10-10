@@ -52,6 +52,7 @@ class LabelDirective extends CustomDirective {
   public readonly label = input<string>('initial');
   public readonly seen = new Array<string>();
   public readonly destroyed = vi.fn();
+  public mounted?: boolean;
 
   constructor() {
     super();
@@ -59,6 +60,7 @@ class LabelDirective extends CustomDirective {
   }
 
   public onInit(): void {
+    this.mounted = !!this.element.parentNode;
     this.effect(() => { this.seen.push(this.label()); });
   }
 
@@ -801,6 +803,62 @@ describe('_renderElement', () => {
       await flush();
 
       expect(element.getAttributeNames()).toEqual([]);
+    });
+  });
+
+  describe('mounting', () => {
+    /**
+     * Custom element recording, when it is connected, the attribute it finds and an event it dispatches.
+     */
+    class MountProbe extends HTMLElement {
+      public found: Array<string | null> = [];
+
+      public connectedCallback(): void {
+        this.found = [this.getAttribute('data-static'), this.getAttribute('data-conditional')];
+        this.dispatchEvent(new Event('ready'));
+      }
+
+      public disconnectedCallback(): void {
+        this.dispatchEvent(new Event('gone'));
+      }
+    }
+    customElements.define('x-mount-probe', MountProbe);
+
+    it('removes the element before its listeners, which still receive the events it emits while it is removed', () => {
+      const onGone = vi.fn();
+      const parent = document.body.appendChild(document.createElement('div'));
+      const context = createRoot();
+      _renderElement(parent, context, null, 'x-mount-probe', [], [{ name: 'gone', handler: onGone }], [], [], [], [], null);
+
+      context.clear();
+
+      expect(parent.firstChild).toBeNull();
+      expect(onGone).toHaveBeenCalledOnce();
+      parent.remove();
+    });
+
+    it('applies the attributes, the listeners and the conditional bindings before mounting the element', () => {
+      const onReady = vi.fn();
+      const onConditionalReady = vi.fn();
+      const parent = document.body.appendChild(document.createElement('div'));
+      _renderElement(parent, createRoot(), null, 'x-mount-probe', [{ name: 'data-static', value: 'a', setter: _setProperty }] as never, [{ name: 'ready', handler: onReady }], [{
+        branches: [{ condition: () => true, attributes: [{ name: 'data-conditional', value: 'b', setter: _setProperty, unbind: _removeAttribute }], events: [{ name: 'ready', handler: onConditionalReady }], conditionalBindings: [], directives: [] }]
+      }] as never, [], [], [], null);
+
+      expect((parent.firstChild as MountProbe).found).toEqual(['a', 'b']);
+      expect(onReady).toHaveBeenCalledOnce();
+      expect(onConditionalReady).toHaveBeenCalledOnce();
+      parent.remove();
+    });
+
+    it('connects the directives, including the ones of a conditional binding selected on creation, once the element is mounted', () => {
+      const directive = { selector: 'label', attributes: [], events: [], conditionalBindings: [] };
+      render(document.createElement('div'), createRoot(), {
+        conditionalBindings: [{ branches: [{ condition: () => true, attributes: [], events: [], conditionalBindings: [], directives: [directive] }] }],
+        directives: [directive]
+      });
+
+      expect(LabelDirective.instances.slice(-2).map(instance => instance.mounted)).toEqual([true, true]);
     });
   });
 

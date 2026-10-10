@@ -435,7 +435,7 @@
           "title": "Normalizzare e confrontare: transform ed equals",
           "p1": "<code>transform</code> viene eseguita su ogni valore legato dal padre, prima che venga memorizzato. <code>equals</code> confronta il risultato con il valore corrente: quando restituisce <code>true</code> l’input mantiene il suo valore e non notifica nessuno. Per default il confronto è <code>Object.is</code>, quindi un nuovo array con lo stesso contenuto conta come un cambiamento.",
           "example1": "Tag ripuliti, in minuscolo e confrontati per contenuto",
-          "p2": "<em>Send the same tags</em> lega un nuovo array, ma una volta normalizzato ha gli stessi tag di quello corrente: il conteggio delle esecuzioni non si muove. <em>Send other tags</em> lo fa avanzare di uno. La prima esecuzione dell’effect avviene in <code>onInit</code>, prima che il padre leghi qualcosa, e legge la lista vuota di default: la prossima sezione spiega perché."
+          "p2": "<em>Send the same tags</em> lega un nuovo array, ma una volta normalizzato ha gli stessi tag di quello corrente: il conteggio delle esecuzioni non si muove. <em>Send other tags</em> lo fa avanzare di uno. La prima esecuzione dell’effect avviene in <code>onInit</code>, e legge i tag già legati dal padre."
         },
         "requiredInputs": {
           "title": "Input obbligatori",
@@ -443,11 +443,10 @@
         },
         "whenTheValuesArrive": {
           "title": "Quando arrivano i valori",
-          "p1": "Il figlio viene renderizzato appena il padre lo crea, prima che il padre ne leghi gli input. Quindi in <code>onInit</code>, nel primo render e in <code>afterRender</code> ogni input ha ancora il suo default, e un input obbligatorio è <code>undefined</code>. I valori legati arrivano subito dopo, e tutto ciò che legge gli input in modo reattivo si aggiorna.",
+          "p1": "Il padre lega gli input di un figlio, e i listener dei suoi eventi, prima di inserirlo nella pagina. Quindi in <code>onInit</code>, nel primo render e in <code>afterRender</code> ogni input ha già il valore legato, compresi quelli obbligatori. Quando un valore legato cambia in seguito, tutto ciò che legge l’input in modo reattivo si aggiorna.",
           "example1": "Cosa vede la card, passo per passo",
-          "p2": "Aggiungi la card e leggi il log: <code>onInit</code> e <code>afterRender</code> vedono <code>undefined</code>, l’effect viene eseguito una volta con <code>undefined</code> e di nuovo con il nome legato. Rename riesegue solo l’effect e il testo della card. Da qui due regole:",
-          "li1": "leggi gli input in modo <strong>reattivo</strong>: nel template, nei computed e negli effect, mai una volta sola in un hook;",
-          "li2": "nel template di un componente con un input obbligatorio gestisci <code>undefined</code>, come fa la card con <code>name() ?? '…'</code>: un’eccezione lanciata dal primo render rompe il template per sempre. Vedi <a href=\"#/it/reference/known-issues\">Problemi noti</a>."
+          "p2": "Aggiungi la card e leggi il log: <code>onInit</code>, l’effect e <code>afterRender</code> vedono tutti il nome legato. Rename riesegue solo l’effect e il testo della card. Da qui la regola:",
+          "li1": "leggi gli input in modo <strong>reattivo</strong>: nel template, nei computed e negli effect, mai una volta sola in un hook;"
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -504,9 +503,9 @@
         },
         "parentsAndChildren": {
           "title": "Padri e figli",
-          "p1": "Un componente figlio viene collegato mentre il padre renderizza il proprio template. Quindi il figlio esegue tutta la sua sequenza, da <code>onInit</code> ad <code>afterRender</code>, nel mezzo della sequenza del padre, e prima che il padre gli leghi qualcosa.",
+          "p1": "Un componente figlio viene collegato mentre il padre renderizza il proprio template, dopo che il padre ne ha legato gli input e i listener. Quindi il figlio esegue tutta la sua sequenza, da <code>onInit</code> ad <code>afterRender</code>, nel mezzo della sequenza del padre, vedendo già i valori legati.",
           "example1": "Gli hook di un padre e del suo figlio",
-          "p2": "Aggiungi il padre e leggi il log dall’alto: il padre inizia, il figlio esegue tutti i suoi hook con l’etichetta di default, poi il padre finisce. L’effect del figlio viene rieseguito un attimo dopo, quando arriva l’etichetta legata: è l’unico punto in cui il figlio la vede. Cambiare l’etichetta riesegue solo l’effect. Rimuovere il padre chiama <code>onDestroy</code> prima sul padre, poi sul figlio, ed elimina l’effect del figlio."
+          "p2": "Aggiungi il padre e leggi il log dall’alto: il padre inizia, il figlio esegue tutti i suoi hook e il suo effect con l’etichetta legata, poi il padre finisce. Cambiare l’etichetta riesegue solo l’effect. Rimuovere il padre chiama <code>onDestroy</code> prima sul padre, poi sul figlio, ed elimina l’effect del figlio."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -567,7 +566,7 @@
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Eventi emessi mentre il figlio viene montato",
-          "p1": "Il figlio viene collegato, inizializzato e renderizzato prima che il padre colleghi i propri listener, quindi gli eventi che emette da <code>onInit</code> e <code>afterRender</code> non raggiungono nessuno. Un evento emesso un microtask dopo arriva, e arriva anche quello emesso da <code>onDestroy</code>: i listener sono ancora al loro posto mentre il figlio viene rimosso. Per dire al padre che il figlio è pronto, emetti dopo un microtask, oppure lascia che il padre legga lo stato del figlio con una <a href=\"#/it/components/queries\">query</a>.",
+          "p1": "Il padre collega i propri listener prima di inserire il figlio, quindi ogni evento del figlio arriva: quelli emessi da <code>onInit</code> e <code>afterRender</code>, e quello emesso da <code>onDestroy</code>, perché i listener sono ancora al loro posto mentre il figlio viene rimosso.",
           "example2": "Un detail che sembra un oggetto di opzioni",
           "p2": "<code>emit</code> distingue un detail dalle opzioni cercando una chiave chiamata <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>. Un detail con una di queste chiavi viene preso per le opzioni, qualunque sia il valore della chiave: l’evento non ha detail, e la chiave imposta l’opzione. Avvolgi il valore in un altro oggetto, come fa <code>bookedWrapped</code>. Il comportamento è elencato in <a href=\"#/it/reference/known-issues\">Problemi noti</a>.",
           "example3": "Un evento annullabile",
@@ -847,7 +846,7 @@
           "title": "Casi limite",
           "example1": "Cosa vede una direttiva in onInit",
           "p1": "Una direttiva parte quando l’elemento ha i suoi attributi ed è nel documento, ma prima che i suoi figli vengano renderizzati: <code>onInit</code> vede l’<code>id</code> e la label legata, ma nessuna voce della lista, e le voci compaiono un microtask dopo. Il codice che ha bisogno dei figli può attendere un microtask, oppure osservarli con un <code>MutationObserver</code>.",
-          "p2": "A differenza di un componente, una direttiva riceve i suoi input <strong>prima</strong> di <code>onInit</code>: la label è già <code>first</code>, non il default. Un componente figlio, invece, ha ancora i default nel suo <code>onInit</code>, come mostrato in <a href=\"#/it/components/inputs\">Input</a>.",
+          "p2": "Una direttiva riceve i suoi input <strong>prima</strong> di <code>onInit</code>: la label è già <code>first</code>, non il default. Lo stesso vale per un componente figlio, come mostrato in <a href=\"#/it/components/inputs\">Input</a>.",
           "callout1": {
             "heading": "Nel costruttore non c’è ancora niente",
             "p1": "L’elemento e il contesto della direttiva vengono impostati dopo il costruttore. Lì <code>this.element</code> è <code>undefined</code> e <code>this.effect</code> lancia un errore: la configurazione va in <code>onInit</code>."
@@ -1281,10 +1280,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "La prima esecuzione dell’effect vede il default",
-            "body": "In <code>onInit</code> gli input di un componente hanno ancora i valori di default: l’effect avvia una richiesta per il default, e il valore legato, che arriva subito dopo, ne avvia un’altra. Annullare la richiesta in corso rende innocua la prima; in alternativa, l’effect può ignorare il valore di default."
-          },
           "callout2": {
             "heading": "Leggere signal dopo un await",
             "body": "Il codice dopo un <code>await</code> gira fuori dall’effect che lo ha avviato, quindi i signal che legge non vengono tracciati. Leggi ciò da cui dipende la richiesta prima del primo <code>await</code>. La stessa regola vale per le <a href=\"#/it/directives/structural\">direttive strutturali</a> asincrone."
@@ -1542,7 +1537,6 @@
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
-          "li1": "<strong>Gli input arrivano dopo il primo render.</strong> Un figlio viene renderizzato appena connesso, e i suoi input vengono impostati subito dopo: <code>onInit</code> vede i default. Leggi gli input in modo reattivo. Vedi <a href=\"#/it/components/inputs\">Input</a>.",
           "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita, e <code>disabled=\"{ false }\"</code> disabilita comunque. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
           "li3": "<strong>Spostare un elemento lo renderizza di nuovo.</strong> La disconnessione distrugge il contenuto della shadow root, e la connessione successiva lo renderizza di nuovo. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
@@ -2661,11 +2655,7 @@
       "step5AChild": {
         "title": "Passo 5 — Un componente figlio e un filtro",
         "p1": "La riga diventa un componente a sé, <code>ex-todo-item</code>. Riceve il todo tramite un input obbligatorio e comunica cosa succede tramite due output, <code>doneChange</code> e <code>removed</code>. Il padre mantiene lo stato e aggiunge un filtro: un signal, una lista <code>computed</code> dei todo visibili, e uno <code>@switch</code> per il piè di pagina.",
-        "example1": "Passo 5: input, output e @switch",
-        "callout1": {
-          "heading": "Perché todo()?.title invece di todo().title?",
-          "body": "Un componente figlio viene renderizzato appena è inserito nella pagina, e il padre lega i suoi input subito dopo. Durante quel primo render <code>todo()</code> è ancora <code>undefined</code>, anche se l’input è obbligatorio: leggere <code>todo().title</code> lancerebbe un errore, interrompendo il render del resto del template del figlio. L’optional chaining rende sicuro il primo render; i binding si aggiornano appena l’input viene impostato. Vedi <a href=\"#/it/components/inputs\">Input con @Property</a>."
-        }
+        "example1": "Passo 5: input, output e @switch"
       },
       "whereToGoFrom": {
         "title": "Dove andare ora",
@@ -2998,11 +2988,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "a-child-is-rendered-before-the": {
-      "title": "Un figlio viene renderizzato prima dei binding del padre",
-      "details": "In onInit, e nel primo render, gli input hanno i default e quelli required sono undefined. Un’eccezione nella prima esecuzione di un binding ferma per sempre il resto del template del figlio. Gli eventi emessi in onInit o afterRender vanno persi.",
-      "workaround": "Leggi gli input in modo reattivo, usa ?. su quelli required, ed emetti dopo un microtask."
     },
     "rows-of-for-keep-the-item": {
       "title": "Le righe di @for mantengono l’elemento con cui sono state create",

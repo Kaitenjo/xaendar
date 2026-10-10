@@ -21,8 +21,6 @@ export class UserCardComponent extends CustomElement {
    * Loads the user again whenever userId changes.
    */
   public onInit(): void {
-    // In onInit the input still holds its default value:
-    // the bound one arrives right after, and its request aborts this first one.
     this.effect(() => {
       const id = this.userId();
       untracked(() => this._load(id));

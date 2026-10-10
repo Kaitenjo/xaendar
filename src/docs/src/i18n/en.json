@@ -435,7 +435,7 @@
           "title": "Normalizing and comparing: transform and equals",
           "p1": "<code>transform</code> runs on every value the parent binds, before it is stored. <code>equals</code> compares the result with the current value: when it returns <code>true</code> the input keeps its value and notifies nobody. By default the comparison is <code>Object.is</code>, so a new array with the same content counts as a change.",
           "example1": "Tags trimmed, lowercased and compared by content",
-          "p2": "<em>Send the same tags</em> binds a new array, but once normalized it has the same tags as the current one: the count of runs does not move. <em>Send other tags</em> moves it by one. The first run of the effect happens in <code>onInit</code>, before the parent binds anything, and reads the default empty list: the next section explains why."
+          "p2": "<em>Send the same tags</em> binds a new array, but once normalized it has the same tags as the current one: the count of runs does not move. <em>Send other tags</em> moves it by one. The first run of the effect happens in <code>onInit</code>, and reads the tags already bound by the parent."
         },
         "requiredInputs": {
           "title": "Required inputs",
@@ -443,11 +443,10 @@
         },
         "whenTheValuesArrive": {
           "title": "When the values arrive",
-          "p1": "The child is rendered as soon as the parent creates it, before the parent binds its inputs. So in <code>onInit</code>, in the first render and in <code>afterRender</code>, every input still has its default, and a required input is <code>undefined</code>. The bound values arrive right after, and everything that reads the inputs reactively updates.",
+          "p1": "The parent binds the inputs of a child, and the listeners of its events, before inserting it in the page. So in <code>onInit</code>, in the first render and in <code>afterRender</code>, every input already has its bound value, required ones included. When a bound value changes later, everything that reads the input reactively updates.",
           "example1": "What the card sees, step by step",
-          "p2": "Add the card and read the log: <code>onInit</code> and <code>afterRender</code> see <code>undefined</code>, the effect runs once with <code>undefined</code> and again with the bound name. Rename re-runs only the effect, and the text of the card. Hence two rules:",
-          "li1": "read inputs <strong>reactively</strong>: in the template, in computed signals and in effects, never once in a hook;",
-          "li2": "in the template of a component with a required input, handle <code>undefined</code>, as the card does with <code>name() ?? '…'</code>: an exception thrown by the first render breaks the template for good. See <a href=\"#/en/reference/known-issues\">Known issues</a>."
+          "p2": "Add the card and read the log: <code>onInit</code>, the effect and <code>afterRender</code> all see the bound name. Rename re-runs only the effect, and the text of the card. Hence the rule:",
+          "li1": "read inputs <strong>reactively</strong>: in the template, in computed signals and in effects, never once in a hook;"
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -504,9 +503,9 @@
         },
         "parentsAndChildren": {
           "title": "Parents and children",
-          "p1": "A child component is connected while its parent renders its template. So the child runs its whole sequence, from <code>onInit</code> to <code>afterRender</code>, in the middle of the sequence of the parent, and before the parent binds anything to it.",
+          "p1": "A child component is connected while its parent renders its template, once the parent has bound its inputs and its listeners. So the child runs its whole sequence, from <code>onInit</code> to <code>afterRender</code>, in the middle of the sequence of the parent, already seeing the bound values.",
           "example1": "The hooks of a parent and its child",
-          "p2": "Add the parent and read the log from the top: the parent starts, the child runs all its hooks with the default label, then the parent finishes. The effect of the child runs again a moment later, when the bound label arrives: it is the only place where the child sees it. Changing the label re-runs only the effect. Removing the parent calls <code>onDestroy</code> on the parent first, then on the child, and disposes the effect of the child."
+          "p2": "Add the parent and read the log from the top: the parent starts, the child runs all its hooks and its effect with the bound label, then the parent finishes. Changing the label re-runs only the effect. Removing the parent calls <code>onDestroy</code> on the parent first, then on the child, and disposes the effect of the child."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -567,7 +566,7 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "Events emitted while the child is mounted",
-          "p1": "The child is connected, initialized and rendered before the parent attaches its listeners, so the events it emits from <code>onInit</code> and <code>afterRender</code> reach nobody. An event emitted a microtask later arrives, and so does the one emitted from <code>onDestroy</code>: the listeners are still in place while the child is removed. To tell the parent that the child is ready, emit after a microtask, or let the parent read the state of the child through a <a href=\"#/en/components/queries\">query</a>.",
+          "p1": "The parent attaches its listeners before inserting the child, so every event of the child arrives: the ones emitted from <code>onInit</code> and <code>afterRender</code>, and the one emitted from <code>onDestroy</code>, since the listeners are still in place while the child is removed.",
           "example2": "A detail that looks like options",
           "p2": "<code>emit</code> tells a detail from the options by looking for a key named <code>bubbles</code>, <code>cancelable</code> or <code>composed</code>. A detail with one of those keys is taken as the options, whatever the value of the key: the event has no detail, and the key sets the option. Wrap the value in another object, as <code>bookedWrapped</code> does. The behavior is listed in <a href=\"#/en/reference/known-issues\">Known issues</a>.",
           "example3": "A cancelable event",
@@ -847,7 +846,7 @@
           "title": "Edge cases",
           "example1": "What a directive sees in onInit",
           "p1": "A directive starts once the element has its attributes and is in the document, but before its children are rendered: <code>onInit</code> sees the <code>id</code> and the bound label, yet no list item, and the items appear a microtask later. Code that needs the children can wait for a microtask, or watch them with a <code>MutationObserver</code>.",
-          "p2": "Unlike a component, a directive receives its inputs <strong>before</strong> <code>onInit</code>: the label is already <code>first</code>, not the default. A child component, instead, still has its defaults in its own <code>onInit</code>, as shown in <a href=\"#/en/components/inputs\">Inputs</a>.",
+          "p2": "A directive receives its inputs <strong>before</strong> <code>onInit</code>: the label is already <code>first</code>, not the default. So does a child component, as shown in <a href=\"#/en/components/inputs\">Inputs</a>.",
           "callout1": {
             "heading": "Nothing is ready in the constructor",
             "p1": "The element and the context of the directive are set after the constructor. There, <code>this.element</code> is <code>undefined</code> and <code>this.effect</code> throws: the setup belongs in <code>onInit</code>."
@@ -1281,10 +1280,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "The first run of the effect sees the default",
-            "body": "In <code>onInit</code>, the inputs of a component still hold their default values: the effect starts a request for the default, and the bound value, arriving right after, starts another one. Aborting the request in progress makes the first one harmless; alternatively, the effect can skip the default value."
-          },
           "callout2": {
             "heading": "Reading signals after an await",
             "body": "Code after an <code>await</code> runs outside of the effect that started it, so the signals it reads are not tracked. Read what the request depends on before the first <code>await</code>. The same rule applies to asynchronous <a href=\"#/en/directives/structural\">structural directives</a>."
@@ -1542,7 +1537,6 @@
         },
         "whatWorksDifferently": {
           "title": "What works differently",
-          "li1": "<strong>Inputs arrive after the first render.</strong> A child renders as soon as it is connected, and its inputs are set right after: <code>onInit</code> sees the defaults. Read inputs reactively. See <a href=\"#/en/components/inputs\">Inputs</a>.",
           "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types, and <code>disabled=\"{ false }\"</code> still disables. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
           "li3": "<strong>Moving an element re-renders it.</strong> Disconnection destroys the content of the shadow root, and the next connection renders it again. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
@@ -2661,11 +2655,7 @@
       "step5AChild": {
         "title": "Step 5 — A child component and a filter",
         "p1": "The row moves into its own component, <code>ex-todo-item</code>. It receives the todo through a required input and reports what happens through two outputs, <code>doneChange</code> and <code>removed</code>. The parent keeps the state and adds a filter: a signal, a <code>computed</code> list of the visible todos, and a <code>@switch</code> for the footer.",
-        "example1": "Step 5: inputs, outputs and @switch",
-        "callout1": {
-          "heading": "Why todo()?.title instead of todo().title?",
-          "body": "A child component is rendered as soon as it is inserted in the page, and the parent binds its inputs right after. During that first render <code>todo()</code> is still <code>undefined</code>, even though the input is required: reading <code>todo().title</code> would throw, and stop the rest of the child template from rendering. Optional chaining keeps the first render safe; the bindings update as soon as the input is set. See <a href=\"#/en/components/inputs\">Inputs with @Property</a>."
-        }
+        "example1": "Step 5: inputs, outputs and @switch"
       },
       "whereToGoFrom": {
         "title": "Where to go from here",
@@ -2998,11 +2988,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "a-child-is-rendered-before-the": {
-      "title": "A child is rendered before the bindings of its parent",
-      "details": "In onInit, and in the first render, inputs hold their defaults and required ones are undefined. An exception in the first run of a binding stops the rest of the template of the child for good. Events emitted in onInit or afterRender are lost.",
-      "workaround": "Read inputs reactively, use ?. on required ones, and emit after a microtask."
     },
     "rows-of-for-keep-the-item": {
       "title": "Rows of @for keep the item they were created with",

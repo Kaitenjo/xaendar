@@ -1,4 +1,4 @@
-import type { AbstractConstructor, Constructor, Dictionary, Function, NoArgsFunction, VoidFunction } from '@xaendar/types';
+import type { AbstractConstructor, Constructor, Dictionary, Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';
@@ -15,8 +15,9 @@ import type { RenderElementAttribute } from '../../types/render-element-attribut
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
-import { _Context, createAnchor, mountNode } from '../context/context.util';
+import { _Context, createAnchor } from '../context/context.util';
 import { _getDirective } from '../directive-registry/directive-registry.util';
+import { trackNode } from '../track-node/track-node.util';
 
 /**
  * Renders the children of an element, as the compiler-generated render code does: it receives the element
@@ -111,14 +112,34 @@ export function _renderElement(
  */
 function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], children: RenderChildren | null): void {
   const element = context.createElement(tagName);
-  mountNode(element, parentNode, context, anchor)
+  // The directives of the branches selected before the element is mounted, applied once it is
+  const pendingDirectives = new Array<NoArgsVoidFunction>();
+  let mounted = false;
+
+  // Its removal is registered first, so that the element leaves the document while its listeners still receive the events it emits
+  trackNode(element, parentNode, context);
+
+  /*
+    The bindings are applied before mounting the element: a component is connected, and renders, as soon as it is
+    mounted, so it receives its inputs and the listeners of its events before its `onInit`
+  */
   bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
   bindConditionalBindings(context, conditionalBindings, (branchContext, branch) => {
     bindAttributes(element, branchContext, branch.attributes);
     bindEvents(element, branchContext, branch.events);
-    bindDirectives(element, branchContext, branch.directives);
+    mounted
+      ? bindDirectives(element, branchContext, branch.directives)
+      : pendingDirectives.push(() => bindDirectives(element, branchContext, branch.directives));
   });
+
+  // The directives are connected once the element is mounted, so that their `onInit` finds it in the document
+  parentNode.insertBefore(element, anchor);
+  mounted = true;
+  for (let i = 0; i < pendingDirectives.length; i++) {
+    pendingDirectives[i]();
+  }
+
   bindDirectives(element, context, directives);
   children && context.addChild(children(element, context));
 }
