@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Signals
 
-### watched and unwatched fire on every run of the only dependent (bug)
-
-The sinks are removed before each recomputation, so a signal with one dependent is unwatched and watched again every time it runs. computed() ignores both callbacks.
-
-**Workaround:** Make the callbacks idempotent; use Signal.Computed for computed ones.
-
 ### signal() and computed() are not instances of the proposal classes (bug)
 
 They return wrapper functions: instanceof Signal.State is false, and Signal.subtle.introspectSinks throws signal.getSinks is not a function.

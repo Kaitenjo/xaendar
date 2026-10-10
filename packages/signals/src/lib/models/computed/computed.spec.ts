@@ -461,11 +461,132 @@ describe('Computed', () => {
       expect(computed.getSources(PRIVATE)).toContain(state);
     });
 
-    it('adds itself as a sink of the source', () => {
+    it('adds itself as a sink of the source only while it has sinks', () => {
       const computed = new Computed(() => 1);
       const state = new State(1);
       computed.addSource(state, PRIVATE);
-      expect(state.getSinks(PRIVATE)).toContain(computed);
+      expect(state.getSinks(PRIVATE)).toEqual([]);
+
+      computed.addSink(makeMockWatcher(), PRIVATE);
+      expect(state.getSinks(PRIVATE)).toEqual([computed]);
+    });
+  });
+
+  describe('watched / unwatched', () => {
+    it('keeps a source watched across the evaluations of its only sink', () => {
+      const watched = vi.fn();
+      const unwatched = vi.fn();
+      const state = new State(1, { watched, unwatched });
+      const computed = new Computed(() => state.get());
+      const watcher = new Watcher(() => undefined);
+      watcher.watch(computed);
+      computed.get();
+
+      for (let value = 2; value < 5; value++) {
+        state.set(value);
+        computed.get();
+      }
+      expect([watched.mock.calls.length, unwatched.mock.calls.length]).toEqual([1, 0]);
+
+      watcher.unwatch(computed);
+      expect(unwatched).toHaveBeenCalledOnce();
+    });
+
+    it('unwatches a source no longer read, and watches a new one', () => {
+      const useFirst = new State(true);
+      const firstUnwatched = vi.fn();
+      const secondWatched = vi.fn();
+      const first = new State('a', { unwatched: firstUnwatched });
+      const second = new State('b', { watched: secondWatched });
+      const computed = new Computed(() => useFirst.get() ? first.get() : second.get());
+      new Watcher(() => undefined).watch(computed);
+      computed.get();
+
+      useFirst.set(false);
+      computed.get();
+
+      expect(firstUnwatched).toHaveBeenCalledOnce();
+      expect(secondWatched).toHaveBeenCalledOnce();
+    });
+
+    it('does not watch the sources of a Computed read without sinks', () => {
+      const watched = vi.fn();
+      const state = new State(1, { watched });
+      new Computed(() => state.get()).get();
+
+      expect(watched).not.toHaveBeenCalled();
+    });
+
+    it('invokes its own callbacks, with this bound to it, while the signals are frozen', () => {
+      const calls = new Array<[string, unknown, boolean]>();
+      const computed: Computed<number> = new Computed(() => 1, {
+        watched(this: unknown) { calls.push(['watched', this, GLOBAL_STATE.frozen]); },
+        unwatched(this: unknown) { calls.push(['unwatched', this, GLOBAL_STATE.frozen]); }
+      });
+      const watcher = new Watcher(() => undefined);
+
+      watcher.watch(computed);
+      watcher.unwatch(computed);
+
+      expect(calls).toEqual([['watched', computed, true], ['unwatched', computed, true]]);
+      expect(GLOBAL_STATE.frozen).toBe(false);
+    });
+
+    it('rethrows an error of its callbacks, logging it in dev mode, and unfreezes the signals', () => {
+      const error = new Error('boom');
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      setDevMode(true);
+      const computed = new Computed(() => 1, { watched: () => { throw error; } });
+
+      expect(() => computed.addSink(makeMockWatcher(), PRIVATE)).toThrow(error);
+      expect(consoleError).toHaveBeenCalled();
+      expect(GLOBAL_STATE.frozen).toBe(false);
+
+      setDevMode(false);
+      consoleError.mockRestore();
+    });
+
+    it('rethrows an error of its callbacks without logging it outside dev mode', () => {
+      const error = new Error('boom');
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const computed = new Computed(() => 1, { watched: () => { throw error; } });
+
+      expect(() => computed.addSink(makeMockWatcher(), PRIVATE)).toThrow(error);
+      expect(consoleError).not.toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
+    it('does not unwatch its sources when removing a sink it does not have', () => {
+      const unwatched = vi.fn();
+      const state = new State(1, { unwatched });
+      const computed = new Computed(() => state.get());
+      computed.get();
+
+      computed.removeSink(makeMockWatcher(), PRIVATE);
+
+      expect(unwatched).not.toHaveBeenCalled();
+    });
+
+    it('trusts its cached value on the first read after getting a sink, when no source changed', () => {
+      const cb = vi.fn(() => 1);
+      const computed = new Computed(cb);
+      computed.get();
+
+      new Watcher(() => undefined).watch(computed);
+      computed.get();
+
+      expect(cb).toHaveBeenCalledOnce();
+    });
+
+    it('evaluates again on the first read after getting a sink, when a source changed meanwhile', () => {
+      const state = new State(1);
+      const computed = new Computed(() => state.get());
+      computed.get();
+      state.set(2);
+
+      new Watcher(() => undefined).watch(computed);
+
+      expect(computed.get()).toBe(2);
     });
   });
 

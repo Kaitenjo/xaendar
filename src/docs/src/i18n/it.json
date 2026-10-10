@@ -1687,10 +1687,6 @@
           "callout3": {
             "heading": "È in sola lettura",
             "body": "La funzione restituita da <code>computed()</code> ha <code>get()</code> ma non <code>set()</code> né <code>update()</code>. Per cambiarne il valore, cambia le sue dipendenze."
-          },
-          "callout4": {
-            "heading": "watched e unwatched",
-            "body": "Il tipo delle opzioni accetta <code>watched</code> e <code>unwatched</code>, ma i signal derivati li ignorano: li chiamano solo i signal scrivibili. Vedi <a href=\"#/it/signals/options\">Opzioni dei signal</a>."
           }
         },
         "apiSummary": {
@@ -1790,18 +1786,10 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Vengono rieseguite a ogni aggiornamento dell’unico dipendente",
-            "p1": "Osserva i contatori mentre l’orologio è visibile: ogni tick aggiunge un <code>unwatched</code> e un <code>watched</code>. Quando un dipendente viene rieseguito, annulla la sottoscrizione a tutte le sue sorgenti prima di sottoscriversi di nuovo a quelle che legge; se è l’unico dipendente, il signal resta per un istante non osservato. Rendi le callback economiche e idempotenti — qui il timer viene fermato e riavviato a ogni tick."
-          },
           "example1": "I signal sono congelati dentro watched e unwatched",
           "callout2": {
             "heading": "Rimanda le scritture",
             "body": "Le callback vengono eseguite mentre il grafo reattivo è in aggiornamento, con tutti i signal congelati: leggerne o scriverne uno lancia un errore. Programma invece il lavoro — <code>queueMicrotask</code>, un timer, un evento — come fa l’orologio."
-          },
-          "callout3": {
-            "heading": "I signal derivati le ignorano",
-            "body": "<code>computed(fn, opzioni)</code> accetta lo stesso tipo di opzioni, ma usa solo <code>equals</code>."
           },
           "callout4": {
             "heading": "Gli input hanno un’opzione in più",
@@ -2953,11 +2941,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "watched-and-unwatched-fire-on-every": {
-      "title": "watched e unwatched scattano a ogni esecuzione dell’unico dipendente",
-      "details": "I sink vengono rimossi prima di ogni ricalcolo, quindi un signal con un solo dipendente viene unwatched e watched di nuovo a ogni esecuzione. computed() ignora entrambe le callback.",
-      "workaround": "Rendi idempotenti le callback; usa Signal.Computed per quelli derivati."
     },
     "signal-and-computed-are-not-instances": {
       "title": "signal() e computed() non sono istanze delle classi della proposta",

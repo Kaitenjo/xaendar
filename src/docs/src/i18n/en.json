@@ -1687,10 +1687,6 @@
           "callout3": {
             "heading": "It is read-only",
             "body": "The function returned by <code>computed()</code> has <code>get()</code> but no <code>set()</code> or <code>update()</code>. To change the value, change its dependencies."
-          },
-          "callout4": {
-            "heading": "watched and unwatched",
-            "body": "The options type accepts <code>watched</code> and <code>unwatched</code>, but computed signals ignore them: only writable signals call them. See <a href=\"#/en/signals/options\">Signal options</a>."
           }
         },
         "apiSummary": {
@@ -1790,18 +1786,10 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "They run again around every update of the only dependent",
-            "p1": "Watch the counters while the clock is displayed: every tick adds one <code>unwatched</code> and one <code>watched</code>. When a dependent re-runs, it unsubscribes from all its sources before subscribing again to the ones it reads; if it is the only dependent, the signal is briefly unwatched. Make the callbacks cheap and idempotent — here the timer is cleared and started again at each tick."
-          },
           "example1": "Signals are frozen inside watched and unwatched",
           "callout2": {
             "heading": "Defer the writes",
             "body": "The callbacks run while the reactive graph is being updated, with every signal frozen: reading or writing one throws. Schedule the work instead — <code>queueMicrotask</code>, a timer, an event — as the clock does."
-          },
-          "callout3": {
-            "heading": "Computed signals ignore them",
-            "body": "<code>computed(fn, options)</code> accepts the same options type, but only <code>equals</code> is used."
           },
           "callout4": {
             "heading": "Inputs have one more option",
@@ -2953,11 +2941,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "watched-and-unwatched-fire-on-every": {
-      "title": "watched and unwatched fire on every run of the only dependent",
-      "details": "The sinks are removed before each recomputation, so a signal with one dependent is unwatched and watched again every time it runs. computed() ignores both callbacks.",
-      "workaround": "Make the callbacks idempotent; use Signal.Computed for computed ones."
     },
     "signal-and-computed-are-not-instances": {
       "title": "signal() and computed() are not instances of the proposal classes",

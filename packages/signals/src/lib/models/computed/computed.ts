@@ -7,6 +7,7 @@ import { SignalOptions } from '../../types/signal-options.type';
 import { State } from '../state/state';
 import { Watcher } from '../watcher/watcher';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
+import type { NoArgsVoidFunction } from '@xaendar/types';
 
 /**
  * A read-only Signal whose value is derived lazily from other Signals.
@@ -160,6 +161,25 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Signal.Computed internal slots"
    */
   #callback: (this: Computed<T>) => T;
+  /**
+   * Invoked when this Signal gets its first sink, becoming reachable from a `Watcher`.
+   *
+   * @internalSlot
+   */
+  #watched?: NoArgsVoidFunction;
+  /**
+   * Invoked when this Signal loses its last sink.
+   *
+   * @internalSlot
+   */
+  #unwatched?: NoArgsVoidFunction;
+  /**
+   * Whether this Signal just got its first sink: its state was not kept up to date while it had none,
+   * so the next read checks the versions of its sources before trusting it.
+   *
+   * @internalSlot
+   */
+  #unverified = false;
 
   /**
    * Creates a new `Computed` signal.
@@ -171,12 +191,15 @@ export class Computed<T = any> {
    *   Receives the `Computed` instance as `this`.
    * @param options - Optional configuration:
    *   - `equals` — custom equality function; defaults to `Object.is`.
+   *   - `watched` / `unwatched` — invoked when the Signal gets its first sink and loses its last one.
    *
    * @see Signal algorithms — "Signal.Computed Constructor"
    */
   constructor(cb: (this: Computed<T>) => T, options?: SignalOptions<T>) {
     this.#callback = cb;
     this.#equals = options?.equals ?? Object.is;
+    this.#watched = options?.watched;
+    this.#unwatched = options?.unwatched;
     this.#sources = new Set;
     this.#sinks = new Set;
     this.#state = 'dirty';
@@ -238,7 +261,9 @@ export class Computed<T = any> {
   public addSource(source: State | Computed, symbol: symbol) {
     assertPrivateContext(symbol);
     this.#sources.add(source);
-    source.addSink(this, PRIVATE)
+    if (this.#sinks.size) {
+      source.addSink(this, PRIVATE);
+    }
   }
 
   /**
@@ -303,12 +328,16 @@ export class Computed<T = any> {
    */
   public addSink(sink: Computed<unknown> | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
-    if (this.#sinks.size === 0) {
+    const first = this.#sinks.size === 0;
+    this.#sinks.add(sink);
+
+    if (first) {
+      this.#unverified = true;
       for (const source of this.#sources) {
         source.addSink(this, PRIVATE);
       }
+      this.#invoke(this.#watched);
     }
-    this.#sinks.add(sink);
   }
 
   /**
@@ -324,23 +353,53 @@ export class Computed<T = any> {
    */
   public removeSink(sink: Computed | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
-    this.#sinks.delete(sink);
 
-    if (this.#sinks.size === 0) {
+    if (this.#sinks.delete(sink) && this.#sinks.size === 0) {
       for (const source of this.#sources) {
         source.removeSink(this, PRIVATE);
       }
+      this.#invoke(this.#unwatched);
+    }
+  }
+
+  /**
+   * Invokes a `watched` or `unwatched` callback with `this` bound to this Signal, while the signals are frozen.
+   *
+   * @param callback - The callback to invoke, if declared.
+   * @throws The exception thrown by the callback.
+   */
+  #invoke(callback: NoArgsVoidFunction | undefined): void {
+    if (!callback) {
+      return;
+    }
+
+    GLOBAL_STATE.frozen = true;
+    try {
+      callback.call(this);
+    } catch (error) {
+      // This log is not present in the TC39 spec, could be removed in next versions
+      if (isDevMode()) {
+        console.error('Error thrown while running a Computed Signal watched or unwatched callback:', error);
+      }
+      throw error;
+    } finally {
+      GLOBAL_STATE.frozen = false;
     }
   }
 
   /**
    * Brings the cached value up to date, evaluating `#callback` only when needed: with sinks, while the state
-   * is `~dirty~` or `~checked~`; without sinks, when it was never evaluated or a source changed version.
+   * is `~dirty~` or `~checked~`; without sinks, or right after getting the first one, when it was never evaluated
+   * or a source changed version.
    */
   #refresh(): void {
-    if (this.#sinks.size === 0) {
+    if (this.#sinks.size === 0 || this.#unverified) {
+      this.#unverified = false;
       if (!this.#hasValue || this.#sourcesChanged()) {
         this.#computeValue();
+      } else {
+        // The cached value is up to date, whatever state was left by notifications received before
+        this.#state = 'clean';
       }
     } else {
       while (this.#state === 'dirty' || this.#state === 'checked') {
@@ -404,10 +463,12 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Algorithm: recalculate dirty computed Signal"
    */
   #computeValue(): void {
-    for (const source of this.#sources) {
-      source.removeSink(this, PRIVATE);
-    }
-    this.#sources.clear();
+    /*
+      The sources are collected again, but the ones read again stay linked: unlinking them before the evaluation
+      would make a source with this Signal as its only sink lose it, and get it back, at every evaluation
+    */
+    const previousSources = this.#sources;
+    this.#sources = new Set;
 
     pushComputed(this);
     this.setState('computing', PRIVATE);
@@ -432,6 +493,14 @@ export class Computed<T = any> {
     const outcome = thrown ? this.#setError(error) : this.#setValue(newValue);
     if (outcome === 'dirty') {
       this.#version++;
+    }
+
+    if (this.#sinks.size) {
+      for (const source of previousSources) {
+        if (!this.#sources.has(source)) {
+          source.removeSink(this, PRIVATE);
+        }
+      }
     }
 
     this.#sourceVersions.clear();
