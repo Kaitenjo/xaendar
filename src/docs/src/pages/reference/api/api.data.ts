@@ -216,6 +216,13 @@ export const API: readonly ApiEntry[] = [
     page: 'signals/untracked'
   },
   {
+    name: 'isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending',
+    module: '@xaendar/core/signals',
+    kind: 'function',
+    signature: 'isState(value), isComputed(value), introspectSources(node), introspectSinks(signal), hasSources(node), hasSinks(signal), watch(watcher, ...signals), unwatch(watcher, ...signals), getPending(watcher)',
+    page: 'signals/advanced'
+  },
+  {
     name: 'input',
     module: '@xaendar/core/signals',
     kind: 'function',

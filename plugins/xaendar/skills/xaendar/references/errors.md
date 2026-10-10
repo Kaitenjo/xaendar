@@ -294,11 +294,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The disposer of a standalone effect called twice.
 - **Fix:** Call it once.
 
-### `TypeError: signal.getSinks is not a function`
-
-- **Cause:** Signal.subtle.introspectSinks given the function returned by signal() or computed().
-- **Fix:** Use Signal.State and Signal.Computed for introspection.
-
 ## CLI
 
 ### `error: unknown command 'generate'`

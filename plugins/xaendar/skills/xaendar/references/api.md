@@ -198,6 +198,14 @@ untracked<T>(fn: () => T): T
 
 Runs a function without tracking the signals it reads.
 
+### isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending (function)
+
+```ts
+isState(value), isComputed(value), introspectSources(node), introspectSinks(signal), hasSources(node), hasSinks(signal), watch(watcher, ...signals), unwatch(watcher, ...signals), getPending(watcher)
+```
+
+Signal.subtle and instanceof for the functions returned by signal(), computed(), input() and the queries, which Signal.subtle rejects. They accept the proposal nodes too, and return the functions in place of the nodes they wrap.
+
 ### input (function)
 
 ```ts

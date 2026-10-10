@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'signal-and-computed-are-not-instances',
-    area: 'Signals',
-    kind: 'bug',
-    page: 'signals/advanced'
-  },
-  {
     id: 'template-errors-do-not-fail-the',
     area: 'Build',
     kind: 'bug',

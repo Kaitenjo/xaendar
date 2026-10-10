@@ -1,4 +1,5 @@
 import { InputSignalOptions } from '../types/input-signal.options.type';
+import { wrapNode } from '../signal-node/signal-node';
 import { InputSignal } from '../types/input-signal.type';
 import { INPUT_SIGNAL_INSTANCE_SYMBOL } from './input-instance.symbol';
 import { assertPrivateContext } from './input-set.symbol';
@@ -28,7 +29,7 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
 
   const getter = function () { return signal.get(); }
 
-  return Object.assign(getter, {
+  return wrapNode(Object.assign(getter, {
     set(newValue: IncomingValue, symbol: symbol): void {
       assertPrivateContext(symbol);
       const transformedValue = transform ? transform(newValue) : newValue;
@@ -40,5 +41,5 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
     },
     get: signal.get.bind(signal),
     [INPUT_SIGNAL_INSTANCE_SYMBOL]: true
-  });
+  }), signal);
 }

@@ -309,11 +309,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'signals/effects'
   },
   {
-    phase: 'Signals',
-    message: 'TypeError: signal.getSinks is not a function',
-    page: 'signals/advanced'
-  },
-  {
     phase: 'CLI',
     message: "error: unknown command 'generate'",
     page: 'tools/cli'

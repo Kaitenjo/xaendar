@@ -40,14 +40,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 **Workaround:** Create foreign elements in code; listen to native events on a wrapper.
 
-## Signals
-
-### signal() and computed() are not instances of the proposal classes (bug)
-
-They return wrapper functions: instanceof Signal.State is false, and Signal.subtle.introspectSinks throws signal.getSinks is not a function.
-
-**Workaround:** Use Signal.State and Signal.Computed for introspection.
-
 ## Build
 
 ### Template errors do not fail the build (bug)

@@ -1,2 +1,0 @@
-TypeError: signal.getSinks is not a function
-    at Object.introspectSinks (subtle.ts)
