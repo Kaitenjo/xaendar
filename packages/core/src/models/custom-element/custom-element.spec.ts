@@ -329,5 +329,58 @@ describe('CustomElement', () => {
       expect(() => dispose()).not.toThrow();
       expect(onCleanup).toHaveBeenCalledOnce();
     });
+
+    describe('created outside of a connection', () => {
+      it('is stopped by each disconnection and started again by each following connection', async () => {
+        const { element } = createWithHooks({});
+        const source = new Signal.State(0);
+        const seen = new Array<number>();
+        element.effect(() => { seen.push(source.get()); });
+        document.body.appendChild(element);
+
+        source.set(1);
+        await flush();
+        element.remove();
+        source.set(2);
+        await flush();
+        expect(seen).toEqual([0, 1]);
+
+        document.body.appendChild(element);
+        source.set(3);
+        await flush();
+        expect(seen).toEqual([0, 1, 2, 3]);
+        element.remove();
+      });
+
+      it('is not started twice when it is created while the element is disconnected', async () => {
+        const { element } = createWithHooks({});
+        document.body.appendChild(element);
+        element.remove();
+
+        const source = new Signal.State(0);
+        const run = vi.fn(() => source.get());
+        element.effect(run);
+        document.body.appendChild(element);
+        source.set(1);
+        await flush();
+
+        expect(run).toHaveBeenCalledTimes(2);
+        element.remove();
+      });
+
+      it('is disposed for good by its disposer', () => {
+        const onCleanup = vi.fn();
+        const run = vi.fn();
+        const { element } = createWithHooks({});
+        const dispose = element.effect(run, { onCleanup });
+
+        dispose();
+        document.body.appendChild(element);
+
+        expect(run).toHaveBeenCalledOnce();
+        expect(onCleanup).toHaveBeenCalledOnce();
+        element.remove();
+      });
+    });
   });
 });

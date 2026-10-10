@@ -23,7 +23,7 @@ Check at least the following:
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
 - Whitespace between interpolations that is expected to render (`{ first } { second }`).
 - `track $index` on lists whose rows hold state (fields, focus) and get inserted or prepended items.
-- Effects created in the constructor or a field initializer, instead of with `this.effect` in `onInit`. Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.
+- Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.
 - `(keydown.enter)`-style modifiers. Listeners with logic, nested calls or `$event.x`.
 - `history`/`location` as member names.
 - Components or directives that are never loaded at runtime (not matched by the `main.ts` glob or imports), or not `@import`ed by a template that uses them.

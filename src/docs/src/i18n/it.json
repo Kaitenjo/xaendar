@@ -514,11 +514,7 @@
           "li1": "<code>onDestroy</code>, <code>onInit</code> e <code>afterRender</code> vengono rieseguiti, come mostra il log;",
           "li2": "il template viene renderizzato da zero: il testo digitato nel campo va perso, perché viveva nel vecchio DOM;",
           "li3": "i signal dell’istanza sopravvivono: il contatore mantiene il suo valore;",
-          "li4": "l’effect creato in un campo viene eliminato al primo spostamento e non viene più ricreato, quindi smette di seguire il contatore, mentre quello creato in <code>onInit</code> viene ricreato a ogni collegamento.",
-          "callout1": {
-            "heading": "Effect creati nei campi o nel costruttore",
-            "p1": "Funzionano fino al primo scollegamento, poi spariscono per sempre. Crea gli effect in <code>onInit</code>, a meno che l’elemento non venga mai spostato o ricollegato."
-          },
+          "li4": "l’effect creato in un campo viene fermato a ogni spostamento e riavviato dal collegamento che segue, come quello creato in <code>onInit</code>: entrambi continuano a seguire il contatore.",
           "callout2": {
             "heading": "connectedCallback e disconnectedCallback sono già usati",
             "p1": "La classe base usa le callback dei custom element per renderizzare il template, e le tiene private. Definirle in un componente non compila, e a runtime sostituirebbe quelle della classe base: il template non verrebbe mai renderizzato. Usa gli hook."
@@ -1762,10 +1758,6 @@
             "heading": "Scrivere un signal letto dall’effetto crea un ciclo infinito",
             "p1": "Scrivere signal dentro un effetto è permesso, ma scriverne uno che l’effetto legge programma ogni volta una nuova esecuzione: la coda dei microtask non si svuota mai e la pagina si blocca. <code>update()</code> legge senza tracciare, quindi è sicuro per i signal che l’effetto non legge altrimenti."
           },
-          "callout4": {
-            "heading": "Effetti creati nel costruttore",
-            "body": "<code>this.effect()</code> funziona nel costruttore, ma un effetto così viene eliminato la prima volta che il componente viene rimosso, e il costruttore non viene rieseguito quando il componente viene reinserito. Crea gli effetti in <code>onInit</code>. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>."
-          },
           "callout5": {
             "heading": "Documentazione non allineata",
             "body": "Il JSDoc di <code>onCleanup</code> dice che viene eseguita prima di ogni riesecuzione, e il README di <code>@xaendar/signals</code> mostra due scritture sincrone che producono due esecuzioni. Entrambi sono sbagliati: il comportamento è quello descritto in questa pagina."
@@ -2971,11 +2963,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "an-effect-created-in-the-constructor": {
-      "title": "Un effect creato nel costruttore muore alla prima disconnessione",
-      "details": "Gli effect creati negli inizializzatori dei campi o nel costruttore vengono eliminati alla disconnessione del componente, e mai ricreati.",
-      "workaround": "Crea gli effect in onInit o afterRender."
     },
     "a-detail-with-option-keys-is": {
       "title": "Un detail con chiavi di opzioni viene preso per le opzioni",

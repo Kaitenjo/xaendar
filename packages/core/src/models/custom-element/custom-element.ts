@@ -6,6 +6,24 @@ import { _Context } from '../../utils/context/context.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
+ * An effect created outside of a connection, which lives as long as the element.
+ */
+type LifetimeEffect = {
+  /**
+   * Whether the effect is running: the disconnection of the element stops it.
+   */
+  running: boolean,
+  /**
+   * Starts the effect, in the context of the element.
+   */
+  start: NoArgsVoidFunction,
+  /**
+   * Stops the effect started last.
+   */
+  stop: NoArgsVoidFunction
+};
+
+/**
  * Base class for all custom elements registered via `@WebComponent`.
  *
  * Extends `HTMLElement` with Shadow DOM support and the lifecycle hooks
@@ -13,15 +31,6 @@ import { _getRender } from '../../utils/render-registry/render-registry.util';
  * extend this class and be decorated with `@WebComponent`.
  */
 export class CustomElement extends HTMLElement {
-  /**
-   * The active template execution context for this component instance,
-   * holding all identifier bindings and registered cleanup functions.
-   */
-  private _context = new _Context({} as unknown as _Context);
-  /**
-   * The root of the Web Component, where the content is rendered
-   */
-  private readonly _root = this.attachShadow({ mode: 'open' });
   /**
    * Internal callbacks invoked by the runtime each time the element is inserted into the DOM,
    * right after the render. They are never cleared, so they survive the reconnections.
@@ -37,6 +46,24 @@ export class CustomElement extends HTMLElement {
    * has to start on its own, since it will only be invoked by the next connection.
    */
   public [CONNECTED_HOOKS_RUN] = false;
+  /**
+   * The effects created outside of a connection, as in the constructor or in a field initializer:
+   * each disconnection stops them, and each following connection starts them again.
+   */
+  private readonly _lifetimeEffects = new Array<LifetimeEffect>();
+  /**
+   * Whether the element is between its connection and its disconnection.
+   */
+  private _connected = false;
+  /**
+   * The active template execution context for this component instance,
+   * holding all identifier bindings and registered cleanup functions.
+   */
+  private _context = new _Context({} as unknown as _Context);
+  /**
+   * The root of the Web Component, where the content is rendered
+   */
+  private readonly _root = this.attachShadow({ mode: 'open' });
 
   /**
    * Optional lifecycle hook, invoked each time the element is inserted into the DOM, before the render:
@@ -51,36 +78,37 @@ export class CustomElement extends HTMLElement {
   public afterRender?(): void;
 
   /**
-   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
-   * created via {@link effect} are disposed and the rendered content is removed.
-   */
-  public onDestroy?(): void;
-
-  /**
    * Creates a signal effect bound to the lifecycle of this component:
    * it is disposed automatically when the component is disconnected.
    * It can be called at any time, even in `onInit` before the first render.
    *
+   * An effect created outside of a connection, as in the constructor or in a field initializer, lives as long
+   * as the element: each disconnection stops it, and each following connection starts it again, before `onInit`.
+   *
    * @param fn - The side-effectful function to run. Any Signal read inside it
    *   is tracked as a dependency.
    * @param options - Optional settings forwarded to the underlying effect.
-   * @returns A function that disposes the effect ahead of the disconnection.
+   * @returns A function that disposes the effect ahead of the disconnection, for good.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
-    const stop = effect(fn, options);
-    let active = true;
-    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
-    const dispose = () => {
-      if (active) {
-        active = false;
-        stop();
-      }
+    if (this._connected) {
+      return this._startEffect(fn, options);
+    }
+
+    const run = (): NoArgsVoidFunction => this._startEffect(fn, options, () => lifetimeEffect.running = false);
+    const lifetimeEffect: LifetimeEffect = {
+      running: true,
+      start: () => {
+        lifetimeEffect.running = true;
+        lifetimeEffect.stop = run();
+      },
+      stop: run()
     };
-    this._context.addUnlistener(dispose);
+    this._lifetimeEffects.push(lifetimeEffect);
 
     return () => {
-      this._context.removeUnlistener(dispose);
-      dispose();
+      this._lifetimeEffects.splice(this._lifetimeEffects.indexOf(lifetimeEffect), 1);
+      lifetimeEffect.stop();
     };
   }
 
@@ -114,6 +142,14 @@ export class CustomElement extends HTMLElement {
       We create a temporaney context on field initialize and move his unlistener functions
       to the real context when render has ended
     */
+    this._connected = true;
+    for (let i = 0; i < this._lifetimeEffects.length; i++) {
+      const lifetimeEffect = this._lifetimeEffects[i];
+      if (!lifetimeEffect.running) {
+        lifetimeEffect.start();
+      }
+    }
+
     this.onInit?.();
     const unwatchFns = this._context.getUnlistenFns();
     this._context = render.call(this);
@@ -135,6 +171,40 @@ export class CustomElement extends HTMLElement {
     this[CONNECTED_HOOKS_RUN] = false;
     this.onDestroy?.();
     this._context.clear();
+    this._connected = false;
     this[DISCONNECTED_HOOKS].forEach(hook => hook());
   }
+
+  /**
+   * Starts a signal effect in the context of this component, which disposes it when it is cleared.
+   *
+   * @param fn - The side-effectful function to run.
+   * @param options - Optional settings forwarded to the underlying effect.
+   * @param onDispose - Invoked once the effect is disposed, by the returned function or by the clearing of the context.
+   * @returns A function that disposes the effect.
+   */
+  private _startEffect(fn: NoArgsVoidFunction, options?: EffectOptions, onDispose?: NoArgsVoidFunction): NoArgsVoidFunction {
+    const stop = effect(fn, options);
+    let active = true;
+    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
+    const dispose = () => {
+      if (active) {
+        active = false;
+        stop();
+        onDispose?.();
+      }
+    };
+    this._context.addUnlistener(dispose);
+
+    return () => {
+      this._context.removeUnlistener(dispose);
+      dispose();
+    };
+  }
+
+  /**
+   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
+   * created via {@link effect} are disposed and the rendered content is removed.
+   */
+  public onDestroy?(): void;
 }

@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'an-effect-created-in-the-constructor',
-    area: 'Runtime',
-    kind: 'bug',
-    page: 'components/lifecycle'
-  },
-  {
     id: 'a-detail-with-option-keys-is',
     area: 'Runtime',
     kind: 'bug',

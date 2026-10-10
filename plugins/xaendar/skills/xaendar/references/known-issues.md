@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### An effect created in the constructor dies at the first disconnection (bug)
-
-Effects created in field initializers or in the constructor are disposed when the component is disconnected, and never created again.
-
-**Workaround:** Create effects in onInit or afterRender.
-
 ### A detail with option keys is taken for options (bug)
 
 emit({ bubbles: true, value: 1 }) dispatches an event with a null detail, and bubbles set to true.

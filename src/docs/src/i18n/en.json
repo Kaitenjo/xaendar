@@ -514,11 +514,7 @@
           "li1": "<code>onDestroy</code>, <code>onInit</code> and <code>afterRender</code> run again, as the log shows;",
           "li2": "the template is rendered from scratch: the text typed in the field is lost, because it lived in the old DOM;",
           "li3": "the signals of the instance survive: the counter keeps its value;",
-          "li4": "the effect created in a field is disposed at the first move and never created again, so it stops following the counter, while the one created in <code>onInit</code> is created again at every connection.",
-          "callout1": {
-            "heading": "Effects created in fields or in the constructor",
-            "p1": "They work until the first disconnection, then they are gone for good. Create effects in <code>onInit</code>, unless the element is never moved or reattached."
-          },
+          "li4": "the effect created in a field is stopped by each move and started again by the connection that follows, like the one created in <code>onInit</code>: both keep following the counter.",
           "callout2": {
             "heading": "connectedCallback and disconnectedCallback are taken",
             "p1": "The base class uses the callbacks of custom elements to render the template, and keeps them private. Defining them in a component does not compile, and at run time would replace the ones of the base class: the template would never be rendered. Use the hooks."
@@ -1762,10 +1758,6 @@
             "heading": "Writing a signal the effect reads loops forever",
             "p1": "Writing signals inside an effect is allowed, but writing one the effect also reads schedules a new run every time: the microtask queue never empties and the page freezes. <code>update()</code> reads without tracking, so it is safe for signals the effect does not otherwise read."
           },
-          "callout4": {
-            "heading": "Effects created in the constructor",
-            "body": "<code>this.effect()</code> works in the constructor, but such an effect is disposed the first time the component is removed, and the constructor does not run again when it is re-inserted. Create effects in <code>onInit</code>. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>."
-          },
           "callout5": {
             "heading": "Documentation mismatches",
             "body": "The JSDoc of <code>onCleanup</code> says it runs before each re-run, and the README of <code>@xaendar/signals</code> shows two synchronous writes producing two runs. Both are wrong: the behavior is the one described on this page."
@@ -2971,11 +2963,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "an-effect-created-in-the-constructor": {
-      "title": "An effect created in the constructor dies at the first disconnection",
-      "details": "Effects created in field initializers or in the constructor are disposed when the component is disconnected, and never created again.",
-      "workaround": "Create effects in onInit or afterRender."
     },
     "a-detail-with-option-keys-is": {
       "title": "A detail with option keys is taken for options",
