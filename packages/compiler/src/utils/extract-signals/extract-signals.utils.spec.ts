@@ -291,6 +291,14 @@ describe('extractSignalMembers', () => {
       expect(members).toEqual(['b', 'a', 'own']);
     });
 
+    it('lists a member declared again once, as a signal member only if the class declaring it again makes it one', () => {
+      const prepare = (dir: string) => write(join(dir, 'base.ts'), 'import { InputSignal, signal } from \'@xaendar/core/signals\';\nexport class Base { accessor step: InputSignal<number>; a = signal(1); b = signal(1); plain = 1; }');
+
+      expect(setup('import { InputSignal } from \'@xaendar/core/signals\';\nimport { Base } from \'./base\';\nclass Cmp extends Base { accessor step: InputSignal<number>; }', prepare)).toEqual(['a', 'b', 'step']);
+      expect(setup(`${SIGNALS_IMPORT}import { Base } from './base';\nclass Cmp extends Base { a = 1; plain = signal(1); }`, prepare)).toEqual(['step', 'b', 'plain']);
+      expect(setup(`${SIGNALS_IMPORT}class Cmp { a = signal(1); a = signal(2); }`)).toEqual(['a']);
+    });
+
     it('stops on circular inheritance', () => {
       const members = setup('import { A } from \'./a\';\nclass Cmp extends A {}', dir => {
         write(join(dir, 'a.d.ts'), 'import { Signal } from \'@xaendar/core/signals\';\nimport { B } from \'./b\';\nexport declare class A extends B { a: Signal<number>; }');

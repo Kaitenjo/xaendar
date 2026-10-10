@@ -188,13 +188,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.
 - **Fix:** Use ?. or ??, or a precise type.
 
-## Generator
-
-### `[Generator] Signal field "step" is already declared in this scope.`
-
-- **Cause:** A signal member declared both by a class and by the class it extends.
-- **Fix:** Declare it once; in the base class, type it as a function.
-
 ## Build
 
 ### `Invalid custom element name "laberr" in component <path>`

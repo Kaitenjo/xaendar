@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A signal declared again in a subclass breaks the template (bug)
-
-The signal is listed twice: [Generator] Signal field "x" is already declared in this scope. Unlike other template errors, it stops xd build.
-
-**Workaround:** In the base class, type the member as a function.
-
 ### A non-literal default is copied into the parent (bug)
 
 When a parent binds an input conditionally, the default written in @Property is pasted into the code of the parent, where the names it uses are undefined: ReferenceError at render.

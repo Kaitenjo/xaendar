@@ -386,10 +386,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Un membro signal dichiarato di nuovo in una sottoclasse",
-            "p1": "Il compilatore raccoglie i membri signal di tutta la catena di classi senza eliminare i duplicati, quindi un membro che è un signal nella classe base e viene dichiarato di nuovo nel componente rompe il template. A differenza degli errori di tipo, fa fallire la build. Nella classe base, dai al membro un tipo che non sia un tipo signal."
-          },
           "callout3": {
             "heading": "Una sottoclasse senza decoratore non ha template",
             "p1": "La funzione di render appartiene alla classe decorata, e non viene cercata lungo la catena dei prototipi. Una sottoclasse registrata a mano, senza <code>@WebComponent</code>, lancia un errore quando viene collegata."
@@ -2908,10 +2904,6 @@
       "cause": "Le opzioni strict di tsconfig.json, come noUncheckedIndexedAccess, valgono anche per i template.",
       "fix": "Usa ?. o ??, o un tipo preciso."
     },
-    "[Generator] Signal field \"step\" is already declared in this scope.": {
-      "cause": "Un membro signal dichiarato sia da una classe sia dalla classe che estende.",
-      "fix": "Dichiaralo una volta; nella classe base, tipizzalo come funzione."
-    },
     "Invalid custom element name \"laberr\" in component <path>": {
       "cause": "Un selettore che non è un nome valido per un custom element.",
       "fix": "Usa lettere minuscole e almeno un trattino."
@@ -3034,11 +3026,6 @@
     }
   },
   "issues": {
-    "a-signal-declared-again-in-a": {
-      "title": "Un signal ridichiarato in una sottoclasse rompe il template",
-      "details": "Il signal viene elencato due volte: [Generator] Signal field \"x\" is already declared in this scope. A differenza degli altri errori dei template, ferma xd build.",
-      "workaround": "Nella classe base, tipizza il membro come funzione."
-    },
     "a-non-literal-default-is-copied": {
       "title": "Un default non letterale viene copiato nel padre",
       "details": "Quando un padre lega un input in modo condizionale, il default scritto in @Property viene incollato nel codice del padre, dove i nomi che usa non sono definiti: ReferenceError al render.",

@@ -386,10 +386,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "A signal member declared again in a subclass",
-            "p1": "The compiler collects the signal members of the whole class chain without removing duplicates, so a member that is a signal in the base class and is declared again in the component breaks the template. Unlike type errors, it makes the build fail. In the base class, give the member a type that is not a signal type."
-          },
           "callout3": {
             "heading": "A subclass without a decorator has no template",
             "p1": "The render function belongs to the decorated class, and it is not looked up along the prototype chain. A subclass registered by hand, without <code>@WebComponent</code>, throws when it is connected."
@@ -2908,10 +2904,6 @@
       "cause": "The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.",
       "fix": "Use ?. or ??, or a precise type."
     },
-    "[Generator] Signal field \"step\" is already declared in this scope.": {
-      "cause": "A signal member declared both by a class and by the class it extends.",
-      "fix": "Declare it once; in the base class, type it as a function."
-    },
     "Invalid custom element name \"laberr\" in component <path>": {
       "cause": "A selector that is not a valid custom element name.",
       "fix": "Use lowercase letters and at least one dash."
@@ -3034,11 +3026,6 @@
     }
   },
   "issues": {
-    "a-signal-declared-again-in-a": {
-      "title": "A signal declared again in a subclass breaks the template",
-      "details": "The signal is listed twice: [Generator] Signal field \"x\" is already declared in this scope. Unlike other template errors, it stops xd build.",
-      "workaround": "In the base class, type the member as a function."
-    },
     "a-non-literal-default-is-copied": {
       "title": "A non-literal default is copied into the parent",
       "details": "When a parent binds an input conditionally, the default written in @Property is pasted into the code of the parent, where the names it uses are undefined: ReferenceError at render.",

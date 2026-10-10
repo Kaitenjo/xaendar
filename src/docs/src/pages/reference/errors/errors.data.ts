@@ -209,11 +209,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/expressions'
   },
   {
-    phase: 'Generator',
-    message: '[Generator] Signal field "step" is already declared in this scope.',
-    page: 'components/inheritance'
-  },
-  {
     phase: 'Build',
     message: 'Invalid custom element name "laberr" in component <path>',
     page: 'components/registration'

@@ -3,8 +3,7 @@
  */
 export type SignalMembers = {
   /**
-   * Names of the class members backed by a signal, inherited ones first so
-   * that own members correctly shadow them.
+   * Names of the class members backed by a signal, each listed once, inherited ones first.
    */
   readonly members: readonly string[];
   /**

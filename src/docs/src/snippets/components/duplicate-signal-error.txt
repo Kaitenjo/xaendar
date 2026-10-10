@@ -1,2 +1,0 @@
-Failed to compile template - /src/stepper/stepper.xd.component.html
-Error: [Generator] Signal field "step" is already declared in this scope.

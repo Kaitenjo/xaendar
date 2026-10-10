@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-signal-declared-again-in-a',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'components/inheritance'
-  },
-  {
     id: 'a-non-literal-default-is-copied',
     area: 'Compiler',
     kind: 'bug',

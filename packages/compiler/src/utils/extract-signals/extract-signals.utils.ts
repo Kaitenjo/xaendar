@@ -52,8 +52,7 @@ const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
  * @param classDeclaration - Declaration of the class to be compiled.
  * @param compilerOptions - Project compiler options, driving how the modules
  *   declaring the base classes are resolved (e.g. `paths` aliases).
- * @returns The signal members, own members last so they correctly shadow
- *   inherited ones, and the files read to resolve them.
+ * @returns The signal members, each listed once, and the files read to resolve them.
  */
 export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: ClassDeclarationWithName, compilerOptions = DEFAULT_COMPILER_OPTIONS): SignalMembers {
   const context: ResolutionContext = {
@@ -67,11 +66,12 @@ export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: C
 }
 
 /**
- * Collects the signal members of `klass`, walking its whole inheritance chain.
+ * Collects the signal members of `klass`, walking its whole inheritance chain. A member declared again
+ * overrides the inherited one: it is a signal member only if the class declaring it again makes it one.
  *
  * @param klass - The class to collect the signal members of.
  * @param context - State of the current extraction.
- * @returns The signal members, inherited ones first.
+ * @returns The signal members, each listed once, inherited ones first.
  */
 function collectSignalMembers(klass: ResolvedClass, context: ResolutionContext): string[] {
   const base = resolveBaseClass(klass, context);
@@ -81,8 +81,9 @@ function collectSignalMembers(klass: ResolvedClass, context: ResolutionContext):
     inherited = collectSignalMembers(base, context);
   }
 
+  const declared = new Set(klass.declaration.members.flatMap(member => isPropertyDeclaration(member) && isIdentifier(member.name) ? [member.name.text] : []));
   const own = extractOwnSignalMembers(klass, context);
-  return [...inherited, ...own];
+  return [...new Set([...inherited.filter(name => !declared.has(name)), ...own])];
 }
 
 /**
