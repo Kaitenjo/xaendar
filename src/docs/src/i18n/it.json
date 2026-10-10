@@ -2964,11 +2964,6 @@
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
     },
-    "input-deletes-the-transform-of-its": {
-      "title": "input() cancella il transform dalle sue opzioni",
-      "details": "L’oggetto di opzioni passato a input() perde il suo transform: riusato per un secondo input, non ne applica nessuno. @Property non è colpito, perché costruisce ogni volta un oggetto nuovo.",
-      "workaround": "Passa un nuovo oggetto di opzioni a ogni chiamata."
-    },
     "untracked-does-not-survive-a-computed": {
       "title": "untracked non sopravvive a un computed valutato al suo interno",
       "details": "Dopo che un computed viene valutato dentro untracked, le letture successive vengono di nuovo tracciate dall’effect esterno.",

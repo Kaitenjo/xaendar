@@ -2964,11 +2964,6 @@
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
     },
-    "input-deletes-the-transform-of-its": {
-      "title": "input() deletes the transform of its options",
-      "details": "The options object passed to input() loses its transform: reused for a second input, it applies none. @Property is not affected, since it builds a new object each time.",
-      "workaround": "Pass a new options object to each call."
-    },
     "untracked-does-not-survive-a-computed": {
       "title": "untracked does not survive a computed evaluated inside it",
       "details": "After a computed signal is evaluated inside untracked, the following reads are tracked again by the outer effect.",

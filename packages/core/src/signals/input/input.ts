@@ -20,10 +20,10 @@ import { assertPrivateContext } from './input-set.symbol';
  * @returns A new `InputSignal` instance.
  */
 export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue>): InputSignal<ActualValue> {
-  const transform = options?.transform;
-  delete options?.transform;
+  // The transform is kept apart from the options of the signal, leaving the object of the caller untouched
+  const { transform, ...signalOptions } = options ?? {};
 
-  const signal = new Signal.State<ActualValue>(value as ActualValue, options);
+  const signal = new Signal.State<ActualValue>(value as ActualValue, signalOptions);
   const originalSet = signal.set;
 
   const getter = function () { return signal.get(); }

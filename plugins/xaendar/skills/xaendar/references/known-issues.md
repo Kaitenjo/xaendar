@@ -40,14 +40,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 **Workaround:** Create foreign elements in code; listen to native events on a wrapper.
 
-## Runtime
-
-### input() deletes the transform of its options (bug)
-
-The options object passed to input() loses its transform: reused for a second input, it applies none. @Property is not affected, since it builds a new object each time.
-
-**Workaround:** Pass a new options object to each call.
-
 ## Signals
 
 ### untracked does not survive a computed evaluated inside it (bug)

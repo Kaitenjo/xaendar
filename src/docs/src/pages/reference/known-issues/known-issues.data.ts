@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'input-deletes-the-transform-of-its',
-    area: 'Runtime',
-    kind: 'bug',
-    page: 'components/inputs'
-  },
-  {
     id: 'untracked-does-not-survive-a-computed',
     area: 'Signals',
     kind: 'bug',
