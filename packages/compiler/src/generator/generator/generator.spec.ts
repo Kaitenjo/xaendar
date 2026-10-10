@@ -54,6 +54,28 @@ describe('Generator', () => {
     expect(code).toContain('_renderElement(root, context, null, \'p\',');
   });
 
+  it('names the branches of an @if nested directly in an @else after the outer branch', async () => {
+    const code = await generate('@if (a) { <b></b> } @else { @if (c) { <i></i> } @else { <u></u> } }');
+
+    expect(code).toContain('_if(else0, context, anchor, [');
+    expect(code).toContain('block: else0__if0.bind(this)');
+    expect(code).toContain('block: else0__else0.bind(this)');
+    expect(code.match(/function if0\(/g)).toHaveLength(1);
+    expect(code.match(/function else0\(/g)).toHaveLength(1);
+    expect(code).toContain('_renderElement(else0__if0, context, anchor, \'i\',');
+    expect(code).toContain('_renderElement(else0__else0, context, anchor, \'u\',');
+  });
+
+  it('names the content of the @else if and @else branches after their own branch', async () => {
+    const code = await generate('<p></p>@if (a) { <b>x</b> } @else if (c) { <b>y</b> } @else { <b>z</b> }');
+
+    expect(code).toContain('_renderElement(elseIf1_0, context, anchor, \'b\',');
+    expect(code).toContain('_renderElement(else1, context, anchor, \'b\',');
+    expect(code).toContain('_renderLiteralText(if1__b0, context, \'x\', null);');
+    expect(code).toContain('_renderLiteralText(elseIf1_0__b0, context, \'y\', null);');
+    expect(code).toContain('_renderLiteralText(else1__b0, context, \'z\', null);');
+  });
+
   it('skips nodes that generate no code', async () => {
     const code = await generate('@import { A } from \'./a\'\n<div>@import { B } from \'./b\'<span></span></div>');
     expect(code).not.toContain('import');

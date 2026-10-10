@@ -1,4 +1,5 @@
 import { startI18n } from './core/i18n/i18n';
+import { DocsAppComponent } from './shell/docs-app/docs-app.xd.component';
 
 /*
   Registers every component and directive of the site before anything is rendered: a component
@@ -7,6 +8,7 @@ import { startI18n } from './core/i18n/i18n';
   language are loaded. The *.lazy.xd.component.ts files are left out on purpose: the examples
   about lazy loading import them on demand.
 */
-import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts', '!./**/*.lazy.xd.component.ts', '!./snippets/**'], { eager: true });
+// import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts', '!./**/*.lazy.xd.component.ts', '!./snippets/**'], { eager: true });
 
 startI18n().then(() => document.body.append(document.createElement('docs-app')));
+DocsAppComponent

@@ -2240,7 +2240,7 @@
         "branches": {
           "title": "Rami",
           "example1": "Una temperatura in quattro rami",
-          "p1": "Le condizioni vengono provate dall’alto, e vince la prima truthy. Come le interpolazioni nel testo, le condizioni sono sempre reattive, anche quando chiamano un metodo. Un blocco può contenere tutto ciò che può contenere un template: elementi, testo, componenti e altro control flow. Qui i rami contengono solo testo, dentro un unico paragrafo: una catena i cui rami iniziano con lo stesso elemento incontra un bug del compilatore, descritto nei casi limite."
+          "p1": "Le condizioni vengono provate dall’alto, e vince la prima truthy. Come le interpolazioni nel testo, le condizioni sono sempre reattive, anche quando chiamano un metodo. Un blocco può contenere tutto ciò che può contenere un template: elementi, testo, componenti e altro control flow."
         },
         "whenABranchIs": {
           "title": "Quando un ramo viene renderizzato di nuovo",
@@ -2250,16 +2250,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "Rami che iniziano con lo stesso elemento",
-          "p1": "Muovi lo slider: a sinistra i colori sono giusti, ma ogni ramo dopo il primo mostra il testo dell’ultimo. Il compilatore dà agli elementi dei rami <code>@else if</code> ed <code>@else</code> i nomi che avrebbero se fossero fratelli dell’<code>@if</code>, quindi elementi con lo stesso tag nella stessa posizione condividono il codice generato, tra loro e con i fratelli del blocco. È un problema noto; finché non viene corretto:",
-          "li1": "fai lo switch su un computed, come a destra: i rami di <code>@switch</code> non sono colpiti;",
-          "li2": "tieni solo testo nei rami, come nel primo esempio;",
-          "li3": "scrivi blocchi <code>@if</code> separati, con condizioni che si escludono a vicenda;",
-          "li4": "un semplice <code>@if</code> con un solo <code>@else</code> è sicuro, purché nessun fratello del blocco abbia lo stesso tag nella stessa posizione.",
-          "callout1": {
-            "heading": "Un @if con @else direttamente dentro un @else",
-            "p1": "Le funzioni generate per il blocco interno e per quello esterno ricevono gli stessi nomi: viene renderizzato il ramo sbagliato, e il template finisce in una ricorsione infinita. Usa <code>@else if</code>, oppure avvolgi il blocco interno in un elemento."
-          },
           "callout2": {
             "heading": "Errori di sintassi",
             "p1": "Lo spazio dopo <code>@if</code> è obbligatorio, un <code>@else</code> deve seguire un blocco, e non esiste <code>as</code> per dare un nome al valore della condizione: rileggilo dentro il blocco, oppure tienilo in un computed."
@@ -2446,8 +2436,7 @@
         "cases": {
           "title": "I case",
           "example1": "Lo stato di un ordine",
-          "p1": "Il confronto è stretto, <code>===</code>: <code>@case (1)</code> non corrisponde alla stringa <code>'1'</code>. I case scritti uno dopo l’altro senza blocco condividono il blocco dell’ultimo, come fanno <em>pending</em> e <em>paid</em>. Come per <code>@if</code>, il blocco viene renderizzato di nuovo solo quando vince un altro case.",
-          "p2": "Uno <code>@switch</code> su un computed è anche il modo per aggirare un bug delle catene di <code>@else if</code> i cui rami iniziano con lo stesso elemento: vedi i casi limite di <a href=\"#/it/templates/if\">@if</a>."
+          "p1": "Il confronto è stretto, <code>===</code>: <code>@case (1)</code> non corrisponde alla stringa <code>'1'</code>. I case scritti uno dopo l’altro senza blocco condividono il blocco dell’ultimo, come fanno <em>pending</em> e <em>paid</em>. Come per <code>@if</code>, il blocco viene renderizzato di nuovo solo quando vince un altro case."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -3005,10 +2994,6 @@
       "cause": "Una query creata con query() dopo la connessione del componente, lanciato alla disconnessione successiva.",
       "fix": "Crea le query negli inizializzatori dei campi."
     },
-    "RangeError: Maximum call stack size exceeded": {
-      "cause": "Un @if con un @else annidato direttamente dentro un @else.",
-      "fix": "Usa @else if, o avvolgi il blocco annidato in un elemento."
-    },
     "ReferenceError: DEFAULT_LEVEL is not defined": {
       "cause": "Un input il cui default non è un letterale, legato in modo condizionale da un padre: il default viene copiato nel codice del padre.",
       "fix": "Scrivi il default come letterale."
@@ -3063,16 +3048,6 @@
     }
   },
   "issues": {
-    "an-if-else-nested-directly-in": {
-      "title": "Un @if/@else annidato direttamente in un @else ricorre all’infinito",
-      "details": "Le funzioni generate dei rami interni prendono gli stessi nomi di quelli esterni: vengono mostrati i rami sbagliati, poi RangeError: Maximum call stack size exceeded.",
-      "workaround": "Usa @else if, o avvolgi il blocco interno in un elemento."
-    },
-    "branches-of-else-if-and-else": {
-      "title": "I rami di @else if e @else condividono i nomi generati",
-      "details": "Gli elementi di primo livello di quei rami prendono il nome dal genitore del blocco: rami con lo stesso tag nella stessa posizione mostrano il testo dell’ultimo ramo, e un elemento può collidere con un fratello del blocco.",
-      "workaround": "Usa @switch, dai tag diversi ai rami, o avvolgi il blocco in un elemento."
-    },
     "inherited-inputs-and-outputs-are-ignored": {
       "title": "Input e output ereditati vengono ignorati dal type checker",
       "details": "Un @Event dichiarato da una classe base viene segnalato come sconosciuto sul tag della sottoclasse, e una @Property ereditata non viene controllata.",

@@ -32,18 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'an-if-else-nested-directly-in',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/if'
-  },
-  {
-    id: 'branches-of-else-if-and-else',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/if'
-  },
-  {
     id: 'inherited-inputs-and-outputs-are-ignored',
     area: 'Compiler',
     kind: 'bug',

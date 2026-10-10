@@ -22,7 +22,6 @@ Check at least the following:
 - Boolean attributes bound to an expression (`disabled="{ x() }"`, `checked="{ … }"`). They are always present.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
 - Whitespace between interpolations that is expected to render (`{ first } { second }`).
-- `@else if`/`@else` branches whose top-level elements share a tag in the same position, and `@if/@else` directly inside an `@else`.
 - `@for` rows that replace items with new objects under the same key, or `track $index` on lists that get inserted or prepended items.
 - A child's `onInit` or first render reading a required input without guarding against `undefined`/defaults.
 - Effects created in the constructor or a field initializer, instead of with `this.effect` in `onInit`. Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.

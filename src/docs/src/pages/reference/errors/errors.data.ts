@@ -300,11 +300,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: 'RangeError: Maximum call stack size exceeded',
-    page: 'templates/if'
-  },
-  {
-    phase: 'Runtime',
     message: 'ReferenceError: DEFAULT_LEVEL is not defined',
     page: 'templates/conditional-bindings'
   },

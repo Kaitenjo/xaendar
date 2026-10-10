@@ -91,8 +91,6 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - The `@for` context variables `$index`, `$first`, `$last`, `$even`, `$odd` are signals: call them (`$index()`). Aliases are signals too.
 - `@for` keeps the item each row was created with: replacing an object with a new one that has the same key does not refresh the row. Change the key, or keep per-item state in signals. Avoid `track $index` on lists that get items inserted or prepended.
 - Write control-flow blocks on multiple lines, one block per line, with the content indented.
-- Do not put an `@if`/`@else` directly inside an `@else` (infinite recursion): use `@else if`, or wrap the inner block in an element.
-- Top-level elements of `@else if`/`@else` branches with the same tag in the same position share generated code (all branches show the last one's content). Prefer `@switch`, give the branches different tags, or wrap the block in an element.
 
 ## Conditional bindings
 

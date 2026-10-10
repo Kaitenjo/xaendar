@@ -31,20 +31,20 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   let i = 0;
   while (alt?.type === ASTNodeType.ElseIf) {
     const elseIfContext = new CompilerContext(compilerContext);
-    const keyElseIf = getBlockIdentifier('elseIf', parentNode, `${index}_${i}`);
+    const elseIfKey = getBlockIdentifier('elseIf', parentNode, `${index}_${i}`);
     const conditionNode = alt.conditionNode;
 
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`condition: () => ${resolveExpression(conditionNode, compilerContext).expression},`, `block: ${keyElseIf}.bind(this)`]),
+        ...indent([`condition: () => ${resolveExpression(conditionNode, compilerContext).expression},`, `block: ${elseIfKey}.bind(this)`]),
         '},'
       ])
     );
 
-    retVal.functionsToProcess!.set(keyElseIf, {
-      fn: { node: alt, parentNode, context: elseIfContext, anchor: 'anchor' },
-      args: [parentNode, 'parentContext', 'anchor']
+    retVal.functionsToProcess!.set(elseIfKey, {
+      fn: { node: alt, parentNode: elseIfKey, context: elseIfContext, anchor: 'anchor' },
+      args: [elseIfKey, 'parentContext', 'anchor']
     });
     alt = alt.alternate;
     i++;
@@ -52,18 +52,18 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
 
   if (alt) {
     const elseContext = new CompilerContext(compilerContext);
-    const keyElse = getBlockIdentifier('else', parentNode, index);
+    const elseKey = getBlockIdentifier('else', parentNode, index);
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`block: ${keyElse}.bind(this)`]),
+        ...indent([`block: ${elseKey}.bind(this)`]),
         '},'
       ])
     );
 
-    retVal.functionsToProcess!.set(keyElse, {
-      fn: { node: alt, parentNode, context: elseContext, anchor: 'anchor' },
-      args: [parentNode, 'parentContext', 'anchor']
+    retVal.functionsToProcess!.set(elseKey, {
+      fn: { node: alt, parentNode: elseKey, context: elseContext, anchor: 'anchor' },
+      args: [elseKey, 'parentContext', 'anchor']
     });
   }
 

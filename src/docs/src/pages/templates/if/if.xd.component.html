@@ -3,7 +3,6 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { IfElseChainComponent } from '../../../examples/templates/if/if-else-chain/if-else-chain.xd.component.ts'
 @import { BranchStateComponent } from '../../../examples/templates/if/branch-state/branch-state.xd.component.ts'
-@import { BranchCollisionComponent } from '../../../examples/templates/if/branch-collision/branch-collision.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.templates.if.eyebrow") class="eyebrow" />
@@ -26,24 +25,6 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.if.edgeCases.title") />
-  <docs-example
-    name="templates/if/branch-collision"
-    heading="{ translations().pages.templates.if.edgeCases.example1 }"
-    kind="edge"
-  >
-    <ex-branch-collision />
-  </docs-example>
-  <p @@i18n(key="pages.templates.if.edgeCases.p1") />
-  <ul>
-    <li @@i18n(key="pages.templates.if.edgeCases.li1") />
-    <li @@i18n(key="pages.templates.if.edgeCases.li2") />
-    <li @@i18n(key="pages.templates.if.edgeCases.li3") />
-    <li @@i18n(key="pages.templates.if.edgeCases.li4") />
-  </ul>
-  <docs-callout kind="issue" heading="{ translations().pages.templates.if.edgeCases.callout1.heading }">
-    <p @@i18n(key="pages.templates.if.edgeCases.callout1.p1") />
-    <docs-code snippet="templates/nested-else.html" />
-  </docs-callout>
   <docs-callout kind="edge" heading="{ translations().pages.templates.if.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.templates.if.edgeCases.callout2.p1") />
     <docs-code snippet="templates/if-errors.txt" />

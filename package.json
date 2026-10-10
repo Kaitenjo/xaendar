@@ -42,7 +42,7 @@
     "@eslint/js": "^10.0.1",
     "@microsoft/api-extractor": "^7.59.4",
     "@types/convert-source-map": "^2.0.3",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "@types/vscode": "^1.140.0",
     "@vitest/coverage-v8": "^5.0.3",
     "depcheck": "^1.4.7",

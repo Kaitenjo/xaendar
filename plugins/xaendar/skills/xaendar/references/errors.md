@@ -284,11 +284,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A query created with query() after the component was connected, thrown at the next disconnection.
 - **Fix:** Create queries in field initializers.
 
-### `RangeError: Maximum call stack size exceeded`
-
-- **Cause:** An @if with an @else nested directly inside an @else.
-- **Fix:** Use @else if, or wrap the nested block in an element.
-
 ### `ReferenceError: DEFAULT_LEVEL is not defined`
 
 - **Cause:** An input whose default is not a literal, bound conditionally by a parent: the default is copied into the code of the parent.

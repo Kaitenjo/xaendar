@@ -4,18 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### An @if/@else nested directly in an @else recurses forever (bug)
-
-The generated functions of the inner branches get the same names as the outer ones: the wrong branches are shown, then RangeError: Maximum call stack size exceeded.
-
-**Workaround:** Use @else if, or wrap the inner block in an element.
-
-### Branches of @else if and @else share generated names (bug)
-
-Top-level elements of those branches are named after the parent of the block: branches with the same tag in the same position show the text of the last branch, and an element can clash with a sibling of the block.
-
-**Workaround:** Use @switch, give the branches different tags, or wrap the block in an element.
-
 ### Inherited inputs and outputs are ignored by the type checker (bug)
 
 An @Event declared by a base class is reported as unknown on the tag of the subclass, and an inherited @Property is not type-checked.

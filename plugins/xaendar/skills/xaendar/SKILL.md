@@ -96,7 +96,7 @@ export class CounterComponent extends CustomElement {
 - A listener is one method call with simple arguments: no inline logic, no `(keydown.enter)` modifiers.
 - Add or remove boolean attributes (`disabled`, `checked`) with a conditional binding inside the tag, not with `="{ false }"`.
 - Import every component and directive used, at the top of the template, with `@import { X } from './relative/path.xd.component.ts'`.
-- Write control flow as `@if (x) {` with a space, one block per line, and no `@if/@else` directly inside an `@else`.
+- Write control flow as `@if (x) {` with a space, one block per line.
 
 **Styles**: use plain `.css` only. A stylesheet's `@import` is dropped, and a relative `url()` resolves against the page. Page styles and resets do not enter shadow roots. Use `:host` (custom elements are `display: inline` by default), `::slotted()`, `::part()` and CSS custom properties for theming.
 

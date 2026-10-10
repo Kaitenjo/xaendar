@@ -33,6 +33,15 @@ describe('generateIf', () => {
     expect(output).toContain('block: elseIf0_1.bind(this)');
     expect(output).toContain('block: else0.bind(this)');
     expect([...functionsToProcess?.keys() ?? []]).toEqual(['if0', 'elseIf0_0', 'elseIf0_1', 'else0']);
-    expect(functionsToProcess?.get('else0')?.args).toEqual(['root', 'parentContext', 'anchor']);
+  });
+
+  it('makes every branch the parent of its own content', async () => {
+    const template = '@if (a) { <b></b> } @else if (b) { <i></i> } @else { <s></s> }';
+    const { functionsToProcess } = await generateIf(parse(template), 'root', '0', new CompilerContext(), null);
+
+    for (const key of ['if0', 'elseIf0_0', 'else0']) {
+      expect(functionsToProcess?.get(key)?.fn.parentNode).toBe(key);
+      expect(functionsToProcess?.get(key)?.args).toEqual([key, 'parentContext', 'anchor']);
+    }
   });
 });

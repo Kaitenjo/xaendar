@@ -2240,7 +2240,7 @@
         "branches": {
           "title": "Branches",
           "example1": "A temperature in four branches",
-          "p1": "The conditions are tried from the top, and the first truthy one wins. Like text interpolations, conditions are always reactive, even when they call a method. A block can contain anything a template can: elements, text, components and other control flow. Here the branches hold only text, inside one paragraph: a chain whose branches start with the same element hits a bug of the compiler, described in the edge cases."
+          "p1": "The conditions are tried from the top, and the first truthy one wins. Like text interpolations, conditions are always reactive, even when they call a method. A block can contain anything a template can: elements, text, components and other control flow."
         },
         "whenABranchIs": {
           "title": "When a branch is rendered again",
@@ -2250,16 +2250,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "Branches starting with the same element",
-          "p1": "Move the slider: on the left the colors are right, but every branch after the first one shows the text of the last branch. The compiler names the elements of the <code>@else if</code> and <code>@else</code> branches as if they were siblings of the <code>@if</code>, so elements with the same tag in the same position share their generated code, with each other and with the siblings of the block. It is a known issue; until it is fixed:",
-          "li1": "switch on a computed signal, as on the right: the branches of <code>@switch</code> are not affected;",
-          "li2": "keep only text in the branches, as in the first example;",
-          "li3": "write separate <code>@if</code> blocks with conditions that exclude each other;",
-          "li4": "a plain <code>@if</code> with one <code>@else</code> is safe, as long as no sibling of the block has the same tag in the same position.",
-          "callout1": {
-            "heading": "An @if with @else directly inside an @else",
-            "p1": "The functions generated for the inner and the outer block get the same names: the wrong branch is rendered, and the template ends in an endless recursion. Use <code>@else if</code>, or wrap the inner block in an element."
-          },
           "callout2": {
             "heading": "Syntax errors",
             "p1": "The space after <code>@if</code> is required, an <code>@else</code> must follow a block, and there is no <code>as</code> to name the value of the condition: read it again inside the block, or keep it in a computed signal."
@@ -2446,8 +2436,7 @@
         "cases": {
           "title": "Cases",
           "example1": "The status of an order",
-          "p1": "The comparison is strict, <code>===</code>: <code>@case (1)</code> does not match the string <code>'1'</code>. Cases written one after the other without a block share the block of the last one, as <em>pending</em> and <em>paid</em> do. As with <code>@if</code>, the block is rendered again only when another case wins.",
-          "p2": "A <code>@switch</code> on a computed signal is also the way around a bug of <code>@else if</code> chains whose branches start with the same element: see the edge cases of <a href=\"#/en/templates/if\">@if</a>."
+          "p1": "The comparison is strict, <code>===</code>: <code>@case (1)</code> does not match the string <code>'1'</code>. Cases written one after the other without a block share the block of the last one, as <em>pending</em> and <em>paid</em> do. As with <code>@if</code>, the block is rendered again only when another case wins."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -3005,10 +2994,6 @@
       "cause": "A query created with query() after the component was connected, thrown at the next disconnection.",
       "fix": "Create queries in field initializers."
     },
-    "RangeError: Maximum call stack size exceeded": {
-      "cause": "An @if with an @else nested directly inside an @else.",
-      "fix": "Use @else if, or wrap the nested block in an element."
-    },
     "ReferenceError: DEFAULT_LEVEL is not defined": {
       "cause": "An input whose default is not a literal, bound conditionally by a parent: the default is copied into the code of the parent.",
       "fix": "Write the default as a literal."
@@ -3063,16 +3048,6 @@
     }
   },
   "issues": {
-    "an-if-else-nested-directly-in": {
-      "title": "An @if/@else nested directly in an @else recurses forever",
-      "details": "The generated functions of the inner branches get the same names as the outer ones: the wrong branches are shown, then RangeError: Maximum call stack size exceeded.",
-      "workaround": "Use @else if, or wrap the inner block in an element."
-    },
-    "branches-of-else-if-and-else": {
-      "title": "Branches of @else if and @else share generated names",
-      "details": "Top-level elements of those branches are named after the parent of the block: branches with the same tag in the same position show the text of the last branch, and an element can clash with a sibling of the block.",
-      "workaround": "Use @switch, give the branches different tags, or wrap the block in an element."
-    },
     "inherited-inputs-and-outputs-are-ignored": {
       "title": "Inherited inputs and outputs are ignored by the type checker",
       "details": "An @Event declared by a base class is reported as unknown on the tag of the subclass, and an inherited @Property is not type-checked.",
