@@ -14,11 +14,15 @@ export const GLOBAL_STATE: GlobalState = {
   frozen: false
 };
 
-const computingStack = new Stack<Computed>;
+/**
+ * The value `GLOBAL_STATE.computing` had when each running `Computed` started computing, innermost last:
+ * `null` included, as for a `Computed` evaluated inside `untrack`.
+ */
+const computingStack = new Stack<Computed | null>;
 
 /**
- * Pushes a `Computed` instance onto the computing stack and sets it as the
- * currently active computation in `GLOBAL_STATE`.
+ * Saves the currently active computation onto the computing stack and sets the
+ * `Computed` instance as the currently active computation in `GLOBAL_STATE`.
  *
  * Should be called before executing a computed function to register
  * dependency tracking.
@@ -27,19 +31,18 @@ const computingStack = new Stack<Computed>;
  * @internal
  */
 export function pushComputed(computed: Computed): void {
-  computingStack.push(computed);
+  computingStack.push(GLOBAL_STATE.computing);
   GLOBAL_STATE.computing = computed;
 }
 
 /**
- * Pops the most recent `Computed` instance from the computing stack and
- * restores the previous one as the active computation in `GLOBAL_STATE`.
+ * Restores, as the active computation in `GLOBAL_STATE`, the one saved by the last
+ * {@link pushComputed}: the computation it interrupted, or `null` if there was none.
  *
  * Should be called after a computed function finishes executing.
  *
  * @internal
  */
 export function popComputed(): void {
-  computingStack.pop();
-  GLOBAL_STATE.computing = computingStack[computingStack.length - 1] ?? null;
+  GLOBAL_STATE.computing = computingStack.pop() ?? null;
 }

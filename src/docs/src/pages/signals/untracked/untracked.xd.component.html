@@ -1,7 +1,6 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { UntrackedReadComponent } from '../../../examples/signals/untracked/untracked-read/untracked-read.xd.component.ts'
-@import { UntrackedLeakComponent } from '../../../examples/signals/untracked/untracked-leak/untracked-leak.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.signals.untracked.eyebrow") class="eyebrow" />
@@ -27,17 +26,6 @@
     kind="edge"
     heading="{ translations().pages.signals.untracked.edgeCases.callout1.heading }"
   />
-  <docs-example
-    name="signals/untracked/untracked-leak"
-    kind="edge"
-    heading="{ translations().pages.signals.untracked.edgeCases.example1 }"
-  >
-    <ex-untracked-leak />
-  </docs-example>
-  <docs-callout kind="issue" heading="{ translations().pages.signals.untracked.edgeCases.callout2.heading }">
-    <p @@i18n(key="pages.signals.untracked.edgeCases.callout2.p1") />
-    <p @@i18n(key="pages.signals.untracked.edgeCases.callout2.p2") />
-  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.signals.untracked.apiSummary.title") />

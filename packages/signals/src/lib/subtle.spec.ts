@@ -50,6 +50,23 @@ describe('subtle', () => {
       expect(sources).not.toContain(untracked);
     });
 
+    it('keeps the reads untracked after a computed evaluated inside the callback', () => {
+      const inner = new Computed(() => 1);
+      const after = new State('b');
+
+      const computed = new Computed(() => {
+        untrack(() => {
+          inner.get();
+          after.get();
+        });
+        return null;
+      });
+
+      computed.get();
+
+      expect(introspectSources(computed)).toHaveLength(0);
+    });
+
     it('restores the previous computing context after execution', () => {
       const outer = new Computed(() => {
         untrack(() => {});

@@ -56,6 +56,21 @@ describe('globals', () => {
       expect(GLOBAL_STATE.computing).toBeNull();
     });
 
+    it('should restore the computation it interrupted, even when none was active', () => {
+      const a = mockComputed('a');
+      const b = mockComputed('b');
+      pushComputed(a);
+      // As inside untrack: no computation is active while b computes
+      GLOBAL_STATE.computing = null;
+      pushComputed(b);
+      popComputed();
+      expect(GLOBAL_STATE.computing).toBeNull();
+
+      GLOBAL_STATE.computing = a;
+      popComputed();
+      expect(GLOBAL_STATE.computing).toBeNull();
+    });
+
     it('should handle popping an already empty stack gracefully', () => {
       expect(() => popComputed()).not.toThrow();
       expect(GLOBAL_STATE.computing).toBeNull();

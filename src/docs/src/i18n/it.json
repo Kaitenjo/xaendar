@@ -1931,12 +1931,6 @@
           "callout1": {
             "heading": "Solo le letture dentro fn non sono tracciate",
             "body": "Le letture fatte prima o dopo la chiamata vengono tracciate normalmente. E sono le letture a non essere tracciate, non i signal: lo stesso signal letto altrove nello stesso effetto resta una dipendenza."
-          },
-          "example1": "Problema noto: un signal derivato letto dentro untracked() riattiva il tracciamento",
-          "callout2": {
-            "heading": "Il tracciamento riprende dopo la valutazione di un signal derivato",
-            "p1": "Quando un signal derivato viene valutato dentro <code>untracked</code>, i signal letti dopo di esso, nella stessa chiamata a <code>untracked</code>, tornano a essere tracciati dal calcolo esterno: <code>note</code> diventa una dipendenza del primo effetto. Il polyfill, alla fine del calcolo annidato, ripristina il calcolo esterno invece dello stato non tracciato.",
-            "p2": "<strong>Workaround:</strong> usa una chiamata a <code>untracked</code> per ogni lettura — <code>untracked(() =&gt; total()); untracked(() =&gt; note());</code> — oppure leggi il signal derivato fuori da essa. Lo stesso bug fa sì che template e hook del ciclo di vita traccino a volte signal letti durante il render; vedi <a href=\"#/it/reference/known-issues\">Problemi noti</a>."
           }
         },
         "apiSummary": {
@@ -2963,11 +2957,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "untracked-does-not-survive-a-computed": {
-      "title": "untracked non sopravvive a un computed valutato al suo interno",
-      "details": "Dopo che un computed viene valutato dentro untracked, le letture successive vengono di nuovo tracciate dall’effect esterno.",
-      "workaround": "Usa un untracked per ogni lettura."
     },
     "an-unwatched-computed-signal-is-evaluated": {
       "title": "Un computed non osservato viene valutato a ogni lettura",
