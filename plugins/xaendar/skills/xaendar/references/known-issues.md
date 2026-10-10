@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### An unclosed comment truncates the template silently (bug)
-
-Everything after <!-- without --> disappears, with no error.
-
-**Workaround:** Close every comment.
-
 ### A valueless attribute before a structural directive (bug)
 
 <span hidden *dir(…)> fails with Attribute value missing for hidden.

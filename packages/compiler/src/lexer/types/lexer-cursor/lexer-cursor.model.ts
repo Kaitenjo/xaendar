@@ -1,7 +1,7 @@
 import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
 import { CR, EOF, LF, SPACE, TAB } from '../../../costants/chars.constants';
-import { COMMENT_START } from '../../../costants/comment.costants';
+import { COMMENT_END, COMMENT_START } from '../../../costants/comment.costants';
 import { Cursor } from '../../../models/cursor/cursor';
 import { CurrentChar } from '../current-char.type';
 
@@ -54,10 +54,6 @@ export class LexerCursor extends Cursor {
    * Value: Unicode code point
    */
   private readonly _peekCache = new Map<number, number>();
-  /**
-   * Flag indicating whether the cursor is currently consuming a comment block.
-   */
-  private consumingComment = false;
 
   /**
    * Creates a new cursor for the given input source.
@@ -209,23 +205,24 @@ export class LexerCursor extends Cursor {
     return charCode;
   }
 
+  /**
+   * Consumes the HTML comments starting right after the current character, up to their closing `-->`,
+   * so that peeking never sees them.
+   *
+   * @throws When a comment is never closed.
+   */
   private consumeComment(): void {
-    if (!this.consumingComment && this.currentChar.index < this.input.length - 7) {
-      this.consumingComment = true;
+    let start = this._currentChar.index + 1;
 
-      if (this.peekMatch(COMMENT_START)) {
-        this.advance(4);
-  
-        while (!this.peekMatch('-->') && this.currentChar.index < this.input.length - 3) {
-          this.advance();
-        }
-  
-        // Consume the closing '-->'
-        this.advance(3);
-        this.consumingComment = false;
-      } else {
-        this.consumingComment = false;
+    while (this.input.startsWith(COMMENT_START, start)) {
+      const end = this.input.indexOf(COMMENT_END, start + COMMENT_START.length);
+      if (end === -1) {
+        throw `Comment never closed: '${COMMENT_START}' without '${COMMENT_END}'`;
       }
+
+      // Lands on the last character of the closing '-->'
+      this.advance(end + COMMENT_END.length - start);
+      start = this._currentChar.index + 1;
     }
   }
 

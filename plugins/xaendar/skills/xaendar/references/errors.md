@@ -9,6 +9,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.
 - **Fix:** Write a space after the keyword, and an interpolation such as { '@' } for a literal @.
 
+### `[Lexer] Comment never closed: '<!--' without '-->'`
+
+- **Cause:** An HTML comment opened with <!-- and never closed.
+- **Fix:** Close the comment with -->.
+
 ### `[Lexer] Unexpected character 'p' after '/': expected '>' to close self-closing tag`
 
 - **Cause:** A literal < in text, as in 1 < 2, is read as the start of a tag.

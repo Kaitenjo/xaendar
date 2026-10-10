@@ -160,20 +160,34 @@ describe('LexerCursor', () => {
       expect(cursor.peek()).toBe('x'.charCodeAt(0));
     });
 
-    it('does not attempt comment consumption near the end of the input', () => {
-      const cursor = new LexerCursor('abcdefghij');
-      cursor.advance(6);
-      expect(cursor.peek()).toBe('g'.charCodeAt(0));
+    it('skips consecutive comments', () => {
+      const cursor = new LexerCursor('<!--a--><!--b-->x');
+      expect(cursor.peek()).toBe('x'.charCodeAt(0));
     });
 
-    it('leaves the cursor untouched when the guard allows a check but no comment is present', () => {
+    it('skips a comment closing the input, then reaches its end', () => {
+      const cursor = new LexerCursor('a<!---->');
+      cursor.advance();
+      expect(() => cursor.peek()).toThrow(expect.objectContaining({ cause: endOfFile }));
+    });
+
+    it('leaves the cursor untouched when no comment is present', () => {
       const cursor = new LexerCursor('abcdefgh');
       expect(cursor.peek()).toBe('a'.charCodeAt(0));
+      expect(cursor.currentChar.index).toBe(-1);
     });
 
-    it('throws an EOF error for an unterminated comment', () => {
-      const cursor = new LexerCursor('<!-- unterminated');
-      expect(() => cursor.peek()).toThrow();
+    it.each([
+      ['an unclosed comment', '<!-- unterminated'],
+      ['an unclosed comment near the end of the input', 'a<!--'],
+      ['a comment whose closing overlaps its opening', '<!-->']
+    ])('throws for %s', (_name, input) => {
+      const cursor = new LexerCursor(input);
+      expect(() => {
+        cursor.peek();
+        cursor.advance();
+        cursor.peek();
+      }).toThrow('Comment never closed: \'<!--\' without \'-->\'');
     });
   });
 });

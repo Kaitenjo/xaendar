@@ -2343,8 +2343,8 @@
             "p1": "<code>&lt;</code> always opens a tag, and the error points somewhere after it. <code>&gt;</code> is safe."
           },
           "callout3": {
-            "heading": "An unclosed comment hides the rest of the template",
-            "p1": "HTML comments are allowed and are not rendered, but one that is never closed swallows everything after it, without any error."
+            "heading": "An unclosed comment",
+            "p1": "HTML comments are allowed and are not rendered. One that is never closed stops the compilation with <code>Comment never closed</code>."
           },
           "callout4": {
             "heading": "Upper-case tags",
@@ -2735,6 +2735,10 @@
       "cause": "An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.",
       "fix": "Write a space after the keyword, and an interpolation such as { '@' } for a literal @."
     },
+    "[Lexer] Comment never closed: '<!--' without '-->'": {
+      "cause": "An HTML comment opened with <!-- and never closed.",
+      "fix": "Close the comment with -->."
+    },
     "[Lexer] Unexpected character 'p' after '/': expected '>' to close self-closing tag": {
       "cause": "A literal < in text, as in 1 < 2, is read as the start of a tag.",
       "fix": "Write { '<' }."
@@ -2985,11 +2989,6 @@
     }
   },
   "issues": {
-    "an-unclosed-comment-truncates-the-template": {
-      "title": "An unclosed comment truncates the template silently",
-      "details": "Everything after <!-- without --> disappears, with no error.",
-      "workaround": "Close every comment."
-    },
     "a-valueless-attribute-before-a-structural": {
       "title": "A valueless attribute before a structural directive",
       "details": "<span hidden *dir(…)> fails with Attribute value missing for hidden.",

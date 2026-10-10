@@ -35,6 +35,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Lexer',
+    message: "[Lexer] Comment never closed: '<!--' without '-->'",
+    page: 'templates/overview'
+  },
+  {
+    phase: 'Lexer',
     message: "[Lexer] Unexpected character 'p' after '/': expected '>' to close self-closing tag",
     page: 'templates/overview'
   },

@@ -339,6 +339,10 @@ describe('Lexer', () => {
     });
   });
 
+  it('rejects an unclosed comment instead of dropping the rest of the template', () => {
+    expect(() => new Lexer('<p>a</p>\n<!-- note\n<p>b</p>').tokenize()).toThrow('Comment never closed: \'<!--\' without \'-->\'');
+  });
+
   it('formats a thrown Error with position and source context', () => {
     let caught: unknown;
     try {

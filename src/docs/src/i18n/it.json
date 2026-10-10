@@ -2343,8 +2343,8 @@
             "p1": "<code>&lt;</code> apre sempre un tag, e l’errore indica un punto successivo. <code>&gt;</code> è sicuro."
           },
           "callout3": {
-            "heading": "Un commento non chiuso nasconde il resto del template",
-            "p1": "I commenti HTML sono ammessi e non vengono renderizzati, ma uno che non viene mai chiuso inghiotte tutto ciò che lo segue, senza alcun errore."
+            "heading": "Un commento non chiuso",
+            "p1": "I commenti HTML sono ammessi e non vengono renderizzati. Uno che non viene mai chiuso ferma la compilazione con <code>Comment never closed</code>."
           },
           "callout4": {
             "heading": "Tag in maiuscolo",
@@ -2735,6 +2735,10 @@
       "cause": "Una @ nel testo apre un blocco: una keyword senza spazio prima della parentesi (@if(…)), una keyword inesistente (@unless, @empty), o una semplice @, come in un indirizzo email.",
       "fix": "Scrivi uno spazio dopo la keyword, e un’interpolazione come { '@' } per una @ letterale."
     },
+    "[Lexer] Comment never closed: '<!--' without '-->'": {
+      "cause": "Un commento HTML aperto con <!-- e mai chiuso.",
+      "fix": "Chiudi il commento con -->."
+    },
     "[Lexer] Unexpected character 'p' after '/': expected '>' to close self-closing tag": {
       "cause": "Un < letterale nel testo, come in 1 < 2, viene letto come l’inizio di un tag.",
       "fix": "Scrivi { '<' }."
@@ -2985,11 +2989,6 @@
     }
   },
   "issues": {
-    "an-unclosed-comment-truncates-the-template": {
-      "title": "Un commento non chiuso tronca il template in silenzio",
-      "details": "Tutto ciò che segue <!-- senza --> sparisce, senza errori.",
-      "workaround": "Chiudi ogni commento."
-    },
     "a-valueless-attribute-before-a-structural": {
       "title": "Un attributo senza valore prima di una direttiva strutturale",
       "details": "<span hidden *dir(…)> fallisce con Attribute value missing for hidden.",

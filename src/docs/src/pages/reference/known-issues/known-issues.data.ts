@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'an-unclosed-comment-truncates-the-template',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/overview'
-  },
-  {
     id: 'a-valueless-attribute-before-a-structural',
     area: 'Compiler',
     kind: 'bug',
