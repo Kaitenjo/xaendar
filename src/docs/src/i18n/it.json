@@ -1388,14 +1388,9 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Sostituire un elemento con lo stesso id",
-            "p1": "Un nuovo oggetto con la stessa chiave non aggiorna la sua riga: la riga continua a mostrare l’oggetto con cui è stata creata. Per questo la quantità è un signal.",
-            "p2": "I dettagli, e le altre insidie delle chiavi, sono in <a href=\"#/it/templates/for\">@for</a>."
-          },
           "callout2": {
             "heading": "Chiavi che si ripetono",
-            "body": "Due elementi con la stessa chiave corrompono la lista. Ricava le chiavi da un contatore o dagli id del server, mai dalla posizione o da un campo modificabile dagli utenti, come il nome."
+            "body": "Due elementi con la stessa chiave si distinguono solo per il loro ordine, quindi lo stato delle loro righe può scambiarsi quando la lista cambia. Ricava le chiavi da un contatore o dagli id del server, mai dalla posizione o da un campo modificabile dagli utenti, come il nome."
           }
         },
         "apiSummary": {
@@ -2172,11 +2167,11 @@
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Righe che si spostano",
-          "p1": "Scrivi delle note accanto ad Ada in entrambe le colonne, poi sposta l’ultima persona in cima. Con la chiave sull’identificatore, la riga di Ada si sposta con il suo campo e le sue note. Con la chiave sull’indice non cambia nulla: l’elemento di una riga viene fissato quando la riga viene creata, quindi le righe mantengono i vecchi nomi. Usa come chiave un identificatore stabile, mai l’indice.",
+          "p1": "Scrivi delle note accanto ad Ada in entrambe le colonne, poi sposta l’ultima persona in cima. Con la chiave sull’identificatore, la riga di Ada si sposta con il suo campo e le sue note. Con la chiave sull’indice ogni riga resta dov’è e mostra la persona che ora occupa la sua posizione: i nomi si spostano, ma le note restano al loro posto, accanto a qualcun altro. Usa come chiave un identificatore stabile, mai l’indice, quando le righe hanno uno stato.",
           "example2": "Un elemento sostituito da una copia",
-          "p2": "Per lo stesso motivo, sostituire un elemento con un nuovo oggetto con la stessa chiave lascia la riga com’era: la prima colonna continua a mostrare <em>apple</em>. Usare come chiave l’elemento stesso crea una nuova riga per il nuovo oggetto, perdendo lo stato di quella vecchia. Quando gli elementi cambiano sul posto, tieni i valori che cambiano in signal dentro gli elementi, come nella terza colonna: il testo che li legge si aggiorna senza toccare la riga. È elencato in <a href=\"#/it/reference/known-issues\">Problemi noti</a>.",
+          "p2": "Sostituire un elemento con un nuovo oggetto con la stessa chiave aggiorna la sua riga sul posto: la prima colonna mostra <em>APPLE</em>, nello stesso elemento. Usare come chiave l’elemento stesso crea una nuova riga per il nuovo oggetto, perdendo lo stato di quella vecchia. Un signal dentro l’elemento, come nella terza colonna, aggiorna il testo senza sostituire affatto l’elemento.",
           "example3": "Due elementi con la stessa chiave",
-          "p3": "Le chiavi devono essere uniche. Con un duplicato le righe smettono di corrispondere all’array, e ogni cambiamento peggiora le cose: premi il pulsante qualche volta. Nessuno lo segnala.",
+          "p3": "Una chiave ripetuta nella lista ha una riga per ogni occorrenza, abbinate in ordine, quindi le righe seguono l’array a ogni cambiamento: premi il pulsante qualche volta. Le righe con la stessa chiave si distinguono solo per il loro ordine, quindi le chiavi uniche restano la scelta sicura quando le righe hanno uno stato.",
           "callout1": {
             "heading": "Cosa si può iterare, e cosa no",
             "p1": "Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array. L’espressione di <code>track</code> può leggere solo l’elemento e il contesto, non i membri del componente. Un numero negativo non renderizza nulla."
@@ -2646,11 +2641,7 @@
       "step4CompletingAnd": {
         "title": "Passo 4 — Completare e rimuovere",
         "p1": "Ogni riga ottiene una checkbox e un pulsante di rimozione. Un <strong>binding condizionale</strong>, <code>@if (todo.done) { checked }</code> scritto dentro il tag, aggiunge l’attributo <code>checked</code> solo ai todo completati. Un signal <code>computed</code> conta i todo rimanenti, e <code>@if</code> mostra un messaggio quando la lista è vuota.",
-        "example1": "Passo 4: signal derivati e condizioni",
-        "callout1": {
-          "heading": "Perché track todo invece di todo.id?",
-          "body": "Completare un todo lo sostituisce con un nuovo oggetto che ha lo stesso id. <code>@for</code> riusa la riga di una chiave che conosce già, e la riga continua a mostrare l’oggetto con cui è stata creata: tracciato per <code>todo.id</code>, un todo completato non verrebbe ridisegnato. Tracciare l’oggetto stesso renderizza una nuova riga per il nuovo oggetto. Vedi <a href=\"#/it/templates/for\">Liste con @for</a>."
-        }
+        "example1": "Passo 4: signal derivati e condizioni"
       },
       "step5AChild": {
         "title": "Passo 5 — Un componente figlio e un filtro",
@@ -2988,11 +2979,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "rows-of-for-keep-the-item": {
-      "title": "Le righe di @for mantengono l’elemento con cui sono state create",
-      "details": "Un nuovo oggetto con la stessa chiave non aggiorna la sua riga, e track $index mostra righe stantie quando si antepongono elementi. Chiavi duplicate corrompono la lista.",
-      "workaround": "Traccia per identità, o tieni in signal i campi che cambiano; usa chiavi uniche."
     },
     "switch-evaluates-its-expression-once-per": {
       "title": "@switch valuta la sua espressione una volta per case",

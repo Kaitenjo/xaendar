@@ -28,21 +28,24 @@ type ForEntry = {
  */
 export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: Function<[unknown, number], string | number>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
   const anchor = createAnchor('for', parentNode, parentContext, referenceNode);
-  let entries = new Map<string | number, ForEntry>();
+  // The entries of each key, in the order of the items: a key repeated in the items has an entry per occurrence
+  let entries = new Map<string | number, ForEntry[]>();
 
   const unlistener = effect(() => {
     const iterable = condition();
     const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
     const newKeys = items.map((item, i) => trackExpression(item, i));
-    const newKeySet = new Set(newKeys);
+    const occurrences = countOccurrences(newKeys);
 
     untracked(() => {
-      const newEntries = new Map<string | number, ForEntry>();
+      const newEntries = new Map<string | number, ForEntry[]>();
 
-      for (const [key, entry] of entries) {
-        if (!newKeySet.has(key)) {
-          entry.context.clear();
-          parentContext.removeChild(entry.context);
+      // The entries of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
+      for (const [key, keyEntries] of entries) {
+        const kept = occurrences.counts.get(key) ?? 0;
+        for (let i = kept; i < keyEntries.length; i++) {
+          keyEntries[i].context.clear();
+          parentContext.removeChild(keyEntries[i].context);
         }
       }
 
@@ -50,7 +53,8 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
 
       for (let i = items.length - 1; i >= 0; i--) {
         const key = newKeys[i];
-        const existing = entries.get(key);
+        const occurrence = occurrences.indexes[i];
+        const existing = entries.get(key)?.[occurrence];
 
         let entry: ForEntry;
         let nodes: Node[];
@@ -72,7 +76,9 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
           entry = created;
         }
 
-        newEntries.set(key, entry);
+        const keyEntries = newEntries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
+        keyEntries[occurrence] = entry;
+        newEntries.set(key, keyEntries);
         nextReference = nodes[0] ?? nextReference;
       }
 
@@ -81,6 +87,23 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
   });
 
   parentContext.addUnlistener(unlistener);
+}
+
+/**
+ * Numbers the occurrences of each key: a key may be repeated in the items, and each occurrence keeps its own entry.
+ *
+ * @param keys - The keys of the items, in order.
+ * @returns For each item, the index of its occurrence among the items with the same key, and the count of the occurrences of each key.
+ */
+function countOccurrences(keys: Array<string | number>): { indexes: number[], counts: Map<string | number, number> } {
+  const counts = new Map<string | number, number>();
+  const indexes = keys.map(key => {
+    const occurrence = counts.get(key) ?? 0;
+    counts.set(key, occurrence + 1);
+    return occurrence;
+  });
+
+  return { indexes, counts };
 }
 
 /**
@@ -145,13 +168,12 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
 
 /**
  * Builds a record of iteration context variables for a given index in the loop.
- * `item` is a plain value (identity-stable across moves thanks to the key),
- * while `$index`/`$first`/`$last`/`$even`/`$odd` are signals: when an item is
- * moved to a different position in the array, `update()` writes the new
- * values into these signals in place, instead of recreating the item's
- * template output. Anything bound to these variables re-runs reactively;
- * everything else in the item's subtree (state, subscriptions, pending
- * requests) is left completely untouched.
+ * The item and `$index`/`$first`/`$last`/`$even`/`$odd` are signals: when a row is
+ * reused, for an item moved to a different position in the array or for a new item
+ * with the same key, `update()` writes the new values into these signals in place,
+ * instead of recreating the item's template output. Anything bound to these variables
+ * re-runs reactively; everything else in the item's subtree (state, subscriptions,
+ * pending requests) is left completely untouched.
  *
  * @param items - The full array being iterated.
  * @param index - The current iteration index.
@@ -165,6 +187,7 @@ export function _iterationVariables(context: _Context, items: unknown[], index: 
   const $last = signal(index === items.length - 1);
   const $even = signal(index % 2 === 0);
   const $odd = signal(index % 2 !== 0);
+  const item = signal(items[index]);
 
   const retVal: IterationVariablesHandle = {
     vars: {
@@ -180,11 +203,12 @@ export function _iterationVariables(context: _Context, items: unknown[], index: 
       $last.set(newIndex === newItems.length - 1);
       $even.set(newIndex % 2 === 0);
       $odd.set(newIndex % 2 !== 0);
+      item.set(newItems[newIndex]);
     }
   };
 
   if (itemName !== undefined) {
-    retVal.vars[itemName] = items[index]
+    retVal.vars[itemName] = item;
   }
 
   const entries = Object.entries(retVal.vars);

@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'rows-of-for-keep-the-item',
-    area: 'Runtime',
-    kind: 'bug',
-    page: 'templates/for'
-  },
-  {
     id: 'switch-evaluates-its-expression-once-per',
     area: 'Runtime',
     kind: 'bug',

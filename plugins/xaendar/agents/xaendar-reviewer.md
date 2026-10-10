@@ -22,7 +22,7 @@ Check at least the following:
 - Boolean attributes bound to an expression (`disabled="{ x() }"`, `checked="{ … }"`). They are always present.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
 - Whitespace between interpolations that is expected to render (`{ first } { second }`).
-- `@for` rows that replace items with new objects under the same key, or `track $index` on lists that get inserted or prepended items.
+- `track $index` on lists whose rows hold state (fields, focus) and get inserted or prepended items.
 - Effects created in the constructor or a field initializer, instead of with `this.effect` in `onInit`. Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.
 - `(keydown.enter)`-style modifiers. Listeners with logic, nested calls or `$event.x`.
 - `history`/`location` as member names.

@@ -6,7 +6,7 @@
 @if (todos().length) {
   <ul>
     <!-- Tracked by identity: toggling replaces the todo, so its row is rendered again -->
-    @for (todo of todos(); track todo) {
+    @for (todo of todos(); track todo.id) {
       <li>
         <label class="{ todo.done ? 'done' : '' }">
           <input

@@ -89,7 +89,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 - A space is required between the keyword and its parenthesis: `@if (x)`, never `@if(x)`.
 - The `@for` context variables `$index`, `$first`, `$last`, `$even`, `$odd` are signals: call them (`$index()`). Aliases are signals too.
-- `@for` keeps the item each row was created with: replacing an object with a new one that has the same key does not refresh the row. Change the key, or keep per-item state in signals. Avoid `track $index` on lists that get items inserted or prepended.
+- A row reused for a new item with the same key shows the new item and keeps its DOM state (typed text, focus): with `track $index` that state stays at its position. Track a stable id when rows hold state.
 - Write control-flow blocks on multiple lines, one block per line, with the content indented.
 
 ## Conditional bindings

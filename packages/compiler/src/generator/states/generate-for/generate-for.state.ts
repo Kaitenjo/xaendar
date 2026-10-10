@@ -56,8 +56,9 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   const oddName = resolveImplicit(node, '$odd');
   const forContext = new CompilerContext(compilerContext);
 
+  // The item is a signal, updated when the row is reused for a new item with the same key, and read as a plain value
   if (node.itemAlias) {
-    forContext.addIdentifier(node.itemAlias);
+    forContext.addIdentifier(node.itemAlias, 'reactive-value');
   }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
   for (let i = 0; i < identifiers.length; i++) {

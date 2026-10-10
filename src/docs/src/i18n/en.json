@@ -1388,14 +1388,9 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "Replacing an item with the same id",
-            "p1": "A new object with the same key does not update its row: the row keeps showing the object it was created with. This is why the quantity is a signal.",
-            "p2": "The details, and the other pitfalls of keys, are in <a href=\"#/en/templates/for\">@for</a>."
-          },
           "callout2": {
             "heading": "Keys that repeat",
-            "body": "Two items with the same key corrupt the list. Derive keys from a counter or from the ids of the server, never from the position or from a field that users can edit, such as the name."
+            "body": "Two items with the same key are told apart only by their order, so the state of their rows can swap when the list changes. Derive keys from a counter or from the ids of the server, never from the position or from a field that users can edit, such as the name."
           }
         },
         "apiSummary": {
@@ -2172,11 +2167,11 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "Rows that move",
-          "p1": "Type notes next to Ada in both columns, then move the last person to the top. Tracked by identifier, the row of Ada moves with its field and its notes. Tracked by index, nothing changes at all: the item of a row is fixed when the row is created, so the rows keep their old names. Track by a stable identifier, never by index.",
+          "p1": "Type notes next to Ada in both columns, then move the last person to the top. Tracked by identifier, the row of Ada moves with its field and its notes. Tracked by index, each row stays where it is and shows the person now at its position: the names move, but the notes stay in place, next to someone else. Track by a stable identifier, never by index, when the rows hold state.",
           "example2": "An item replaced by a copy",
-          "p2": "For the same reason, replacing an item with a new object with the same key leaves its row as it was: the first column keeps showing <em>apple</em>. Tracking the item itself creates a new row for the new object, losing the state of the old one. When items change in place, keep the changing values in signals inside the items, as in the third column: the text reading them updates without touching the row. This is listed in <a href=\"#/en/reference/known-issues\">Known issues</a>.",
+          "p2": "Replacing an item with a new object with the same key updates its row in place: the first column shows <em>APPLE</em>, in the same element. Tracking the item itself creates a new row for the new object, losing the state of the old one. A signal inside the item, as in the third column, updates the text without replacing the item at all.",
           "example3": "Two items with the same key",
-          "p3": "Keys must be unique. With a duplicate the rows stop matching the array, and every change makes it worse: press the button a few times. Nothing reports it.",
+          "p3": "A key repeated in the list gets a row per occurrence, matched in order, so the rows follow the array at every change: press the button a few times. Rows with the same key are told apart only by their order, so unique keys remain the safe choice when rows hold state.",
           "callout1": {
             "heading": "What can be iterated, and what cannot",
             "p1": "Arrays and numbers only: a <code>Set</code>, a <code>Map</code> or a string must be converted to an array first, for example with <code>[...set]</code> in a computed signal. There is no <code>$count</code>: use the length of the array. The expression of <code>track</code> can only read the item and the context, not the members of the component. A negative number renders nothing."
@@ -2646,11 +2641,7 @@
       "step4CompletingAnd": {
         "title": "Step 4 — Completing and removing",
         "p1": "Each row gets a checkbox and a remove button. A <strong>conditional binding</strong>, <code>@if (todo.done) { checked }</code> written inside the tag, adds the <code>checked</code> attribute only to the done todos. A <code>computed</code> signal counts the remaining todos, and <code>@if</code> shows a message when the list is empty.",
-        "example1": "Step 4: computed signals and conditionals",
-        "callout1": {
-          "heading": "Why track todo instead of todo.id?",
-          "body": "Toggling a todo replaces it with a new object that has the same id. <code>@for</code> reuses the row of a key it already knows, and the row keeps showing the object it was created with: tracked by <code>todo.id</code>, a toggled todo would not be redrawn. Tracking by the object itself renders a new row for the new object. See <a href=\"#/en/templates/for\">Lists with @for</a>."
-        }
+        "example1": "Step 4: computed signals and conditionals"
       },
       "step5AChild": {
         "title": "Step 5 — A child component and a filter",
@@ -2988,11 +2979,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "rows-of-for-keep-the-item": {
-      "title": "Rows of @for keep the item they were created with",
-      "details": "A new object with the same key does not update its row, and track $index shows stale rows when items are prepended. Duplicate keys corrupt the list.",
-      "workaround": "Track by identity, or keep the changing fields in signals; use unique keys."
     },
     "switch-evaluates-its-expression-once-per": {
       "title": "@switch evaluates its expression once per case",

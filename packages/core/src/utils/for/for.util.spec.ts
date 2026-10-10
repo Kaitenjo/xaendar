@@ -85,6 +85,19 @@ describe('_for', () => {
     expect(forFn).toHaveBeenCalledTimes(3);
   });
 
+  it('keeps an entry per occurrence of a repeated key', async () => {
+    const { texts, forFn, change } = setup(['a', 'a', 'b']);
+    expect(texts()).toEqual(['a', 'a', 'b']);
+
+    await change(['b', 'a', 'a', 'a']);
+    expect(texts()).toEqual(['b', 'a', 'a', 'a']);
+    expect(forFn).toHaveBeenCalledTimes(4);
+
+    await change(['a', 'b']);
+    expect(texts()).toEqual(['a', 'b']);
+    expect(forFn).toHaveBeenCalledTimes(4);
+  });
+
   it('renders nothing for an empty list', () => {
     expect(setup([]).texts()).toEqual([]);
   });
@@ -268,7 +281,7 @@ describe('_iterationVariables', () => {
     const context = createRoot();
     const { vars } = _iterationVariables(context, ['a', 'b', 'c'], 1, 'item', aliases);
 
-    expect(vars.item).toBe('b');
+    expect((vars.item as () => string)()).toBe('b');
     expect((vars.$index as () => number)()).toBe(1);
     expect((vars.$first as () => boolean)()).toBe(false);
     expect((vars.$last as () => boolean)()).toBe(false);
@@ -289,7 +302,7 @@ describe('_iterationVariables', () => {
     const context = createRoot();
     _iterationVariables(context, ['a'], 0, 'x', { ...aliases, $index: 'i' });
 
-    expect(context.get('x')).toBe('a');
+    expect((context.get('x') as () => string)()).toBe('a');
     expect(context.get('i')).toBeDefined();
     expect(context.get('$first')).toBeDefined();
   });
@@ -315,5 +328,17 @@ describe('_iterationVariables', () => {
     expect((handle.vars.$last as () => boolean)()).toBe(true);
     expect((handle.vars.$even as () => boolean)()).toBe(true);
     expect((handle.vars.$odd as () => boolean)()).toBe(false);
+    expect((handle.vars.item as () => string)()).toBe('c');
+  });
+
+  it('updates the item when the row is reused for a new item with the same key', async () => {
+    const handle = _iterationVariables(createRoot(), [{ id: 1, name: 'old' }], 0, 'item', aliases);
+    const seen = new Array<string>();
+    effect(() => { seen.push((handle.vars.item as () => { name: string })().name); });
+
+    handle.update(0, [{ id: 1, name: 'new' }]);
+    await flush();
+
+    expect(seen).toEqual(['old', 'new']);
   });
 });

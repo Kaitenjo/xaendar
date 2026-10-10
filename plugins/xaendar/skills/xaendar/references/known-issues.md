@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Runtime
 
-### Rows of @for keep the item they were created with (bug)
-
-A new object with the same key does not update its row, and track $index shows stale rows when items are prepended. Duplicate keys corrupt the list.
-
-**Workaround:** Track by identity, or keep the changing fields in signals; use unique keys.
-
 ### @switch evaluates its expression once per case (bug)
 
 The expression runs again for each @case until one matches: side effects and costly calls are repeated.
