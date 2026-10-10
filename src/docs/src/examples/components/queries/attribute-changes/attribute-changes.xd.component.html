@@ -1,7 +1,7 @@
 <ul>
-  @for (task of tasks(); track task.id) {
-    <li class="{ selectedIds().includes(task.id) ? 'task selected' : 'task' }" (click)="toggle(task.id)">
-      { task.title }
+  @for (task of tasks(); track task().id) {
+    <li class="{ selectedIds().includes(task().id) ? 'task selected' : 'task' }" (click)="toggle(task().id)">
+      { task().title }
     </li>
   }
 </ul>

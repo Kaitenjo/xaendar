@@ -6,19 +6,19 @@
 @if (todos().length) {
   <ul>
     <!-- Tracked by identity: toggling replaces the todo, so its row is rendered again -->
-    @for (todo of todos(); track todo.id) {
+    @for (todo of todos(); track todo().id) {
       <li>
-        <label class="{ todo.done ? 'done' : '' }">
+        <label class="{ todo().done ? 'done' : '' }">
           <input
-            @if (todo.done) {
+            @if (todo().done) {
               checked
             }
             type="checkbox"
-            (change)="toggle(todo.id)"
+            (change)="toggle(todo().id)"
           />
-          { todo.title }
+          { todo().title }
         </label>
-        <button (click)="removeTodo(todo.id)">✕</button>
+        <button (click)="removeTodo(todo().id)">✕</button>
       </li>
     }
   </ul>

@@ -4,8 +4,8 @@
   <button>Add</button>
 </form>
 <ul>
-  @for (todo of todos(); track todo.id) {
-    <li>{ todo.title }</li>
+  @for (todo of todos(); track todo().id) {
+    <li>{ todo().title }</li>
   }
 </ul>
 <p>{ todos().length } todos</p>

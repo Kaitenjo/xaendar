@@ -17,12 +17,12 @@
       </tr>
     </thead>
     <tbody>
-      @for (row of rows(); track row) {
+      @for (row of rows(); track row()) {
         <tr>
           <td>
-            <code>{ row.query }</code>
+            <code>{ row().query }</code>
           </td>
-          <td>{ row.found }</td>
+          <td>{ row().found }</td>
         </tr>
       }
     </tbody>

@@ -3,11 +3,11 @@
   <button (click)="append()">Add at the bottom</button>
 </div>
 <ol>
-  @for (task of tasks(); track task.id; position = $index) {
+  @for (task of tasks(); track task().id; position = $index) {
     <li class="{ $even() ? 'row row--even' : 'row' }">
-      <span class="title">{ task.title }</span>
+      <span class="title">{ task().title }</span>
       <code>$index { position() } · $first { $first() } · $last { $last() } · $even { $even() } · $odd { $odd() }</code>
-      <button aria-label="Remove" (click)="removeTask(task.id)">✕</button>
+      <button aria-label="Remove" (click)="removeTask(task().id)">✕</button>
     </li>
   }
 </ol>

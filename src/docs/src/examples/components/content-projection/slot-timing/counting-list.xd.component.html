@@ -2,7 +2,7 @@
   <slot (slotchange)="onSlotChange()" />
 </ul>
 <ol class="seen">
-  @for (line of seen(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of seen(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

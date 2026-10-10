@@ -3,8 +3,8 @@
   <button (click)="inspect('button', $event)">inspect('button', $event)</button>
 </div>
 <div class="row">
-  @for (color of colors; track color.id) {
-    <button (click)="pick(color.id)">pick({ color.name })</button>
+  @for (color of colors; track color().id) {
+    <button (click)="pick(color().id)">pick({ color().name })</button>
   }
 </div>
 <div class="row">
@@ -13,7 +13,7 @@
   <input type="text" placeholder="onInput($event)" aria-label="Type here" (input)="onInput($event)" />
 </div>
 <ol class="log">
-  @for (line of calls(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of calls(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

@@ -72,7 +72,7 @@ Between elements and inside a tag alike:
 
 ## Names
 
-Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row.id; index = $index)`, not `r` / `i`).
+Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row().id; index = $index)`, not `r` / `i`).
 
 ## Self-closing tags
 

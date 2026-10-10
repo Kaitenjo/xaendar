@@ -29,11 +29,11 @@ describe('generateFor', () => {
     expect(body?.fn.precode).toContain('const { item, $index, $first, $last, $even, $odd } = vars;');
   });
 
-  it('declares the item as a reactive value of the body, and the implicit variables as signals', async () => {
+  it('declares the item and the implicit variables as signals of the body', async () => {
     const { functionsToProcess } = await generateFor(parse('@for (item of items; track item.id; i = $index) { <li></li> }'), 'root', '0', new CompilerContext(), null);
     const context = functionsToProcess!.get('for0')!.fn.context;
 
-    expect(context.getIdentifierKind('item')).toBe('reactive-value');
+    expect(context.getIdentifierKind('item')).toBe('signal');
     expect(context.getIdentifierKind('i')).toBe('signal');
   });
 

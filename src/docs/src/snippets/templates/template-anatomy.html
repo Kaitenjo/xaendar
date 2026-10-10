@@ -5,8 +5,8 @@
 
 @if (todos().length) {                                                  <!-- control flow -->
   <ul>
-    @for (todo of todos(); track todo.id) {
-      <ex-todo-item todo="{ todo }" (removed)="remove($event)" />      <!-- inputs and outputs -->
+    @for (todo of todos(); track todo().id) {
+      <ex-todo-item todo="{ todo() }" (removed)="remove($event)" />      <!-- inputs and outputs -->
     }
   </ul>
 } @else {

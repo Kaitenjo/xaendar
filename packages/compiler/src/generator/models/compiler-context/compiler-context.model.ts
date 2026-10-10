@@ -1,13 +1,12 @@
 import type { CompilerCache } from '../../../types/compiler-cache.type';
 
 /**
- * Whether a declared identifier holds a plain value, a signal read by calling it in the template,
- * or a signal read as a plain value (`reactive-value`, as the item of a `@for`).
+ * Whether a declared identifier holds a plain value or a signal.
  * Used by `resolveExpression`/`resolveIdentifier` to decide, at compile
  * time, whether generated access code needs a trailing `()` to unwrap the
  * signal — no runtime type detection is ever needed.
  */
-export type IdentifierKind = 'value' | 'signal' | 'reactive-value';
+export type IdentifierKind = 'value' | 'signal';
 
 /**
  * Tracks identifier scope during render code generation.
@@ -31,8 +30,8 @@ export class CompilerContext {
   private readonly _componentSignalsFields = new Set<string>();
   /**
    * Identifiers declared directly in this scope, mapped to whether they
-   * hold a plain value or a signal (e.g. `@for` implicit variables like
-   * `$index` are signals; the loop item is a signal read as a plain value).
+   * hold a plain value or a signal (e.g. the item of a `@for` and its implicit
+   * variables like `$index` are signals).
    */
   private readonly _identifiers = new Map<string, IdentifierKind>();
   /**

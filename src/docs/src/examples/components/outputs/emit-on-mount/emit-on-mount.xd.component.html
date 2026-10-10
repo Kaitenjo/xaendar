@@ -14,7 +14,7 @@
   <ex-stage-reporter (stage)="onStage($event)" />
 }
 <ol>
-  @for (line of received(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of received(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

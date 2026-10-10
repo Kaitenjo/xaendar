@@ -14,13 +14,13 @@
   <docs-search class="search" />
   <div class="actions">
     <div class="langs" role="group" aria-label="{ translations().topbar.language }">
-      @for (code of langs; track code) {
+      @for (code of langs; track code()) {
         <button
-          class="{ code === currentLang() ? 'lang lang--active' : 'lang' }"
+          class="{ code() === currentLang() ? 'lang lang--active' : 'lang' }"
           type="button"
-          (click)="switchTo(code)"
+          (click)="switchTo(code())"
         >
-          { code.toUpperCase() }
+          { code().toUpperCase() }
         </button>
       }
     </div>

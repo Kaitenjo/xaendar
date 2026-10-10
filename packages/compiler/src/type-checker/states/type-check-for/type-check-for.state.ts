@@ -16,6 +16,13 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
 const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T extends number ? number[] : T => iterable as never)';
 
 /**
+ * Name of the variable of the `for...of` loop holding each value of the iterable: the item alias is declared
+ * in the body as a signal of its type, like the implicit variables. It starts with `$`, as the implicit
+ * variables do, so that it cannot clash with an alias.
+ */
+const FOR_VALUE = '$$item';
+
+/**
  * Type-checks an `@for` block using a real `for...of` loop.
  *
  * This replaces the previous "synthetic function with a `typeof array`
@@ -24,8 +31,9 @@ const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T e
  * TypeScript infer `item`'s type correctly as the array's element type —
  * exactly like it would for a loop written by hand — with no synthetic
  * function boundary needed. The iterable goes through {@link FOR_ITERABLE}
- * so that a numeric iterable is accepted too; without an `item of` part
- * the loop variable is `_`.
+ * so that a numeric iterable is accepted too. The item alias and the implicit
+ * variables are declared in the body as signals, as they are at runtime: the
+ * item is a signal of the type of the loop variable.
  *
  * @param node - The `ForNode` to type-check.
  * @param processNode - Callback emitting the lines of each child node.
@@ -41,7 +49,7 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   const oddName = resolveImplicit(node, '$odd');
 
   if (node.itemAlias) {
-    forContext.addUnresolvableIdentifier(node.itemAlias);
+    forContext.addUnresolvableIdentifier(node.itemAlias, 'signal');
   }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
   for (let i = 0; i < identifiers.length; i++) {
@@ -56,9 +64,10 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   // è un buon segnale per aggiungerlo: senza, l'errore su "root.foo non
   // esiste" punterebbe sempre all'intero blocco invece che al solo nome.
   const iterable = resolveExpression(node.iterableExpression, context, { resolver: 'root' }).expression;
-  lines.push(line(`for (const ${node.itemAlias ?? '_'} of ${FOR_ITERABLE}(`, mapped(iterable, node.span), ')) {'));
+  lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mapped(iterable, node.span), ')) {'));
 
   lines.push(...indentLines([
+    ...(node.itemAlias ? [plain(`let ${node.itemAlias}!: Signal<typeof ${FOR_VALUE}>;`)] : []),
     plain(`let ${indexName}!: Signal<number>;`),
     plain(`let ${firstName}!: Signal<boolean>;`),
     plain(`let ${lastName}!: Signal<boolean>;`),

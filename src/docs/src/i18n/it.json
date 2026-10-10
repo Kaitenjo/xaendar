@@ -1369,7 +1369,7 @@
         "anInventory": {
           "title": "Un inventario",
           "example1": "Aggiungere, rimuovere, modificare, filtrare, ordinare",
-          "p1": "<code>items</code> non viene mai mutato: aggiungere, inserire e rimuovere scrivono tutti un nuovo array, dato che i signal confrontano i valori con <code>Object.is</code>, come spiegato in <a href=\"#/it/signals/overview\">Signal</a>. Il <code>@for</code> traccia <code>item.id</code>: quando l’array cambia, le righe degli elementi ancora presenti vengono mantenute e spostate, e solo quelle nuove vengono create. Inserisci un elemento a caso, o ordina la lista: le righe esistenti si spostano, intatte.",
+          "p1": "<code>items</code> non viene mai mutato: aggiungere, inserire e rimuovere scrivono tutti un nuovo array, dato che i signal confrontano i valori con <code>Object.is</code>, come spiegato in <a href=\"#/it/signals/overview\">Signal</a>. Il <code>@for</code> traccia <code>item().id</code>: quando l’array cambia, le righe degli elementi ancora presenti vengono mantenute e spostate, e solo quelle nuove vengono create. Inserisci un elemento a caso, o ordina la lista: le righe esistenti si spostano, intatte.",
           "p2": "<code>visible</code> filtra e ordina gli elementi in un computed, e il template si limita a renderizzarlo; l’ordine originale resta in <code>items</code>. Gli id vengono da un contatore e non vengono mai riusati, quindi le chiavi restano uniche anche dopo le rimozioni.",
           "p3": "La quantità di ogni elemento è un signal a sé. I pulsanti <strong>+</strong> e <strong>−</strong> la aggiornano sul posto: l’array non cambia, nessuna riga viene toccata, e vengono scritti solo la cella e il totale, un computed che legge ogni quantità.",
           "p4": "Il form viene letto con <code>FormData</code> e svuotato con <code>form.reset()</code>: il campo non ha un valore legato, quindi ripristinarne il valore iniziale lo svuota, senza bisogno di direttive. Vedi <a href=\"#/it/patterns/forms\">Form</a> per i campi guidati dallo stato."
@@ -1557,7 +1557,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "Le variabili di <code>@for</code> sono <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a> e <a href=\"#/it/templates/switch\">@switch</a>."
+          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a> e <a href=\"#/it/templates/switch\">@switch</a>."
         },
         "conditionalBindings": {
           "title": "Binding condizionali",
@@ -2014,7 +2014,7 @@
           "p1": "Gli argomenti possono essere:",
           "li1": "letterali: stringhe, numeri, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, l’evento stesso, in qualsiasi posizione;",
-          "li3": "membri del componente e variabili di un <code>@for</code>, con le loro proprietà, come in <code>color.id</code>;",
+          "li3": "membri del componente e variabili di un <code>@for</code>, con le loro proprietà, come in <code>color().id</code>;",
           "li4": "un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.",
           "p2": "Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile con il parametro del metodo."
         },
@@ -2099,12 +2099,12 @@
         "itemsKeysAndContext": {
           "title": "Elementi, chiavi e contesto",
           "example1": "Il contesto di ogni riga",
-          "p1": "Dentro il blocco, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code> descrivono la posizione della riga. Sono signal: chiamali, e si aggiornano quando vengono aggiunte o rimosse righe prima, come mostrano le righe alternate, senza renderizzare di nuovo la riga. <code>position = $index</code> dà a uno di essi un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
-          "p2": "La chiave è un’espressione dell’elemento: un identificatore, oppure l’elemento stesso con <code>track task</code>. Senza <code>track</code> la chiave è l’elemento stesso."
+          "p1": "Dentro il blocco, l’elemento e <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code> sono signal: chiamali, come in <code>task().title</code>. L’elemento si aggiorna quando la sua riga viene riusata per un nuovo oggetto con la stessa chiave, gli altri quando vengono aggiunte o rimosse righe prima, come mostrano le righe alternate, senza renderizzare di nuovo la riga. Passato a un metodo, <code>task()</code> dà l’elemento e <code>task</code> il signal. <code>position = $index</code> dà a una delle variabili della posizione un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
+          "p2": "La chiave è un’espressione dell’elemento, che <code>track</code> legge come il blocco: una proprietà, come in <code>track task().id</code>, oppure l’elemento stesso con <code>track task()</code>. Senza <code>track</code> la chiave è l’elemento stesso."
         },
         "repeatingANumberOf": {
           "title": "Ripetere un certo numero di volte",
-          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
+          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step()</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
           "example1": "Cinque punti e una valutazione"
         },
         "nestedLoops": {
@@ -2136,7 +2136,7 @@
           "th2": "Descrizione",
           "td1": "Una riga per ogni elemento, identificata dalla sua chiave.",
           "td2": "La chiave è l’elemento stesso.",
-          "td3": "Ripete il blocco, con <code>step</code> da <code>0</code>.",
+          "td3": "Ripete il blocco, con <code>step()</code> da <code>0</code>.",
           "td4": "La posizione della riga, come signal.",
           "td5": "Un alias per una variabile di contesto."
         }
@@ -2575,7 +2575,7 @@
       },
       "step2StateIn": {
         "title": "Passo 2 — Lo stato in un signal",
-        "p1": "I todo si spostano in un signal. Il template li renderizza con <code>@for</code>, e ne mostra il numero con un’interpolazione. <code>track todo.id</code> dice a <code>@for</code> come riconoscere un todo tra un cambiamento e l’altro, così da poterne riusare il DOM.",
+        "p1": "I todo si spostano in un signal. Il template li renderizza con <code>@for</code>, e ne mostra il numero con un’interpolazione. <code>track todo().id</code> dice a <code>@for</code> come riconoscere un todo tra un cambiamento e l’altro, così da poterne riusare il DOM.",
         "example1": "Passo 2: renderizzare un signal"
       },
       "step3AddingTodos": {

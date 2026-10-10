@@ -6,7 +6,7 @@
   <strong>{ quantity() }</strong>, at most { limit }
 </p>
 <ol class="log">
-  @for (line of received(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of received(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

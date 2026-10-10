@@ -1,7 +1,7 @@
 <button (click)="add()">Change the items</button>
 <ul>
-  @for (item of items(); track item) {
-    <li class="row">Item { item }</li>
+  @for (item of items(); track item()) {
+    <li class="row">Item { item() }</li>
   }
 </ul>
 <p>

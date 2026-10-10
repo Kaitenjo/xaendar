@@ -8,7 +8,7 @@
 </div>
 <p *exAllowedUser(user="{ user() }") class="panel">🔑 Admin panel</p>
 <ol class="log">
-  @for (line of checks(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of checks(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

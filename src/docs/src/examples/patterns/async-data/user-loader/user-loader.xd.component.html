@@ -1,6 +1,6 @@
 <div class="controls">
   @for (id of ids) {
-    <button (click)="load(id)">User { id }</button>
+    <button (click)="load(id())">User { id() }</button>
   }
 </div>
 <div class="state">

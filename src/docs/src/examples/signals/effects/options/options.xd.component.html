@@ -7,7 +7,7 @@
   }
 </div>
 <ol>
-  @for (line of log(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

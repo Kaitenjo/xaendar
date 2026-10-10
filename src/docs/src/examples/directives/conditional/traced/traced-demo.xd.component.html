@@ -23,7 +23,7 @@
   The input of the directive is bound by a condition.
 </p>
 <ol class="log">
-  @for (line of trace(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of trace(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

@@ -4,7 +4,7 @@
   <button (click)="changeAndRevert()">first++, first--</button>
 </div>
 <ol reversed>
-  @for (run of runs(); track run.id) {
-    <li>Run { run.id }: { run.text }</li>
+  @for (run of runs(); track run().id) {
+    <li>Run { run().id }: { run().text }</li>
   }
 </ol>

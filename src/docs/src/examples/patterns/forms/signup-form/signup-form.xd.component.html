@@ -23,7 +23,7 @@
 @if (attempted() && errors().length > 0) {
   <ul class="errors">
     @for (error of errors()) {
-      <li>{ error }</li>
+      <li>{ error() }</li>
     }
   </ul>
 }

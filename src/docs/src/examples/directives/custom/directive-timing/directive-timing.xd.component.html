@@ -7,7 +7,7 @@
   <li>Plum</li>
 </ul>
 <ol class="log">
-  @for (line of lines(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of lines(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

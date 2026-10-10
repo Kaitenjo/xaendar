@@ -7,6 +7,6 @@
   <ex-tab-panel label="Components">Custom elements with a template.</ex-tab-panel>
   <ex-tab-panel label="Templates">HTML with bindings and control flow.</ex-tab-panel>
   @for (number of extra()) {
-    <ex-tab-panel label="{`Extra ${number}`}">A panel added at run time.</ex-tab-panel>
+    <ex-tab-panel label="{`Extra ${number()}`}">A panel added at run time.</ex-tab-panel>
   }
 </ex-tab-group>

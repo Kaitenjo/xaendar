@@ -1369,7 +1369,7 @@
         "anInventory": {
           "title": "An inventory",
           "example1": "Add, remove, edit, filter, sort",
-          "p1": "<code>items</code> is never mutated: adding, inserting and removing all write a new array, as signals compare values with <code>Object.is</code>, explained in <a href=\"#/en/signals/overview\">Signals</a>. The <code>@for</code> tracks <code>item.id</code>: when the array changes, the rows of the items still present are kept and moved, and only the new ones are created. Insert an item at random, or sort the list: the existing rows move, untouched.",
+          "p1": "<code>items</code> is never mutated: adding, inserting and removing all write a new array, as signals compare values with <code>Object.is</code>, explained in <a href=\"#/en/signals/overview\">Signals</a>. The <code>@for</code> tracks <code>item().id</code>: when the array changes, the rows of the items still present are kept and moved, and only the new ones are created. Insert an item at random, or sort the list: the existing rows move, untouched.",
           "p2": "<code>visible</code> filters and sorts the items in a computed signal, and the template only renders it; the original order stays in <code>items</code>. The ids come from a counter and are never reused, so the keys stay unique even after removals.",
           "p3": "The quantity of each item is a signal of its own. The <strong>+</strong> and <strong>−</strong> buttons update it in place: the array does not change, no row is touched, and only the cell and the total, a computed signal reading every quantity, are written.",
           "p4": "The form is read with <code>FormData</code> and cleared with <code>form.reset()</code>: the field has no bound value, so restoring its initial value empties it, with no directive needed. See <a href=\"#/en/patterns/forms\">Forms</a> for fields driven by the state."
@@ -1557,7 +1557,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "The variables of <code>@for</code> are <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, all signals. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a> and <a href=\"#/en/templates/switch\">@switch</a>."
+          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, all signals. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a> and <a href=\"#/en/templates/switch\">@switch</a>."
         },
         "conditionalBindings": {
           "title": "Conditional bindings",
@@ -2014,7 +2014,7 @@
           "p1": "The arguments can be:",
           "li1": "literals: strings, numbers, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, the event itself, in any position;",
-          "li3": "members of the component and variables of an <code>@for</code>, with their properties, as in <code>color.id</code>;",
+          "li3": "members of the component and variables of an <code>@for</code>, with their properties, as in <code>color().id</code>;",
           "li4": "a signal without the call, which passes the signal itself: <code>bump</code> changes whichever counter it receives.",
           "p2": "The template is type-checked: <code>$event</code> has the type of the event, a <code>MouseEvent</code> for <code>click</code> or a <code>KeyboardEvent</code> for <code>keydown</code>, and each argument must fit the parameter of the method."
         },
@@ -2099,12 +2099,12 @@
         "itemsKeysAndContext": {
           "title": "Items, keys and context",
           "example1": "The context of each row",
-          "p1": "Inside the block, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code> describe the position of the row. They are signals: call them, and they update when rows are added or removed before, as the stripes show, without rendering the row again. <code>position = $index</code> gives one of them another name, which is the way to reach the index of an outer loop from an inner one.",
-          "p2": "The key is an expression of the item: an identifier, or the item itself with <code>track task</code>. Without <code>track</code> the item itself is the key."
+          "p1": "Inside the block, the item and <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code> are signals: call them, as in <code>task().title</code>. The item updates when its row is reused for a new object with the same key, the others when rows are added or removed before, as the stripes show, without rendering the row again. Passed to a method, <code>task()</code> gives the item and <code>task</code> the signal. <code>position = $index</code> gives one of the variables of the position another name, which is the way to reach the index of an outer loop from an inner one.",
+          "p2": "The key is an expression of the item, which <code>track</code> reads as the block does: a property, as in <code>track task().id</code>, or the item itself with <code>track task()</code>. Without <code>track</code> the item itself is the key."
         },
         "repeatingANumberOf": {
           "title": "Repeating a number of times",
-          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
+          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step()</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
           "example1": "Five dots and a rating"
         },
         "nestedLoops": {
@@ -2136,7 +2136,7 @@
           "th2": "Description",
           "td1": "A row for each item, identified by its key.",
           "td2": "The item itself is the key.",
-          "td3": "Repeats the block, with <code>step</code> from <code>0</code>.",
+          "td3": "Repeats the block, with <code>step()</code> from <code>0</code>.",
           "td4": "The position of the row, as signals.",
           "td5": "An alias for a context variable."
         }
@@ -2575,7 +2575,7 @@
       },
       "step2StateIn": {
         "title": "Step 2 — State in a signal",
-        "p1": "The todos move into a signal. The template renders them with <code>@for</code>, and shows their number with an interpolation. <code>track todo.id</code> tells <code>@for</code> how to recognise a todo across changes, so that its DOM can be reused.",
+        "p1": "The todos move into a signal. The template renders them with <code>@for</code>, and shows their number with an interpolation. <code>track todo().id</code> tells <code>@for</code> how to recognise a todo across changes, so that its DOM can be reused.",
         "example1": "Step 2: rendering a signal"
       },
       "step3AddingTodos": {

@@ -17,7 +17,7 @@
 </div>
 <p class="title">DOM mutations, most recent first:</p>
 <ol class="log">
-  @for (mutation of mutations(); track mutation.id) {
-    <li>{ mutation.text }</li>
+  @for (mutation of mutations(); track mutation().id) {
+    <li>{ mutation().text }</li>
   }
 </ol>

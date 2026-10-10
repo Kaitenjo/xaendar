@@ -67,7 +67,7 @@ function setup(initial: string[], { withNodes = true, withUpdate = true, body = 
     return { context: itemContext, update: withUpdate ? update : undefined };
   });
 
-  _for(parent, context, null, () => items(), item => item as string, forFn as never);
+  _for(parent, context, null, () => items(), item => item() as string, forFn as never);
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
   const change = async (next: string[]) => {
@@ -250,7 +250,7 @@ describe('_for', () => {
     });
     const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
 
-    _for(parent, createRoot(), null, () => count(), (_item, index) => index, forFn as never);
+    _for(parent, createRoot(), null, () => count(), (_item, index) => index(), forFn as never);
     expect(texts()).toEqual(['0', '1', '2']);
 
     count.set(5);

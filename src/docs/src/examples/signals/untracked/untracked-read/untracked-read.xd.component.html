@@ -5,7 +5,7 @@
 <button (click)="switchUser()">Switch user (untracked)</button>
 <button (click)="newMessage()">New message (tracked)</button>
 <ol>
-  @for (line of sent(); track line.id) {
-    <li>{ line.text }</li>
+  @for (line of sent(); track line().id) {
+    <li>{ line().text }</li>
   }
 </ol>

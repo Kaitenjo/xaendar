@@ -5,17 +5,17 @@
 @if (items().length) {
   <ul>
     <!-- Items are tracked by identity: a replaced item is rendered again -->
-    @for (item of items(); track item) {
-      <li class="{ item.done ? 'done' : '' }">
+    @for (item of items(); track item()) {
+      <li class="{ item().done ? 'done' : '' }">
         <label>
           <input
-            @if (item.done) {
+            @if (item().done) {
               checked
             }
             type="checkbox"
-            (change)="toggle(item.id)"
+            (change)="toggle(item().id)"
           />
-          { item.name }
+          { item().name }
         </label>
       </li>
     }

@@ -1,9 +1,9 @@
 <p class="sample" style="{ styles() }">Bound to an object</p>
 <p class="sample" style="{ css() }">Bound to a string</p>
 <ul>
-  @for (attribute of attributesProp(); track $index) {
+  @for (attribute of attributesProp(); track $index()) {
     <li>
-      <code>style="{ attribute }"</code>
+      <code>style="{ attribute() }"</code>
     </li>
   }
 </ul>

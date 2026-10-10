@@ -6,17 +6,17 @@
   <p>None</p>
 }
 
-@for (item of items(); track item.id) {
-  <li>{ $index() + 1 }. { item.name } { $first() ? '(first)' : '' }</li>
+@for (item of items(); track item().id) {
+  <li>{ $index() + 1 }. { item().name } { $first() ? '(first)' : '' }</li>
 }
-@for (row of rows(); track row.id; index = $index) {    <!-- alias -->
+@for (row of rows(); track row().id; index = $index) {    <!-- alias -->
   …
 }
 @for (5) {                                               <!-- a number of times -->
   <span>★</span>
 }
 @for (step of count()) {                                 <!-- 0 … count() - 1 -->
-  <span>{ step }</span>
+  <span>{ step() }</span>
 }
 
 @switch (status()) {

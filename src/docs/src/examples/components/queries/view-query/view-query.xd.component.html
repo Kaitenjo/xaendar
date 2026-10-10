@@ -7,8 +7,8 @@
   <ex-counter-badge />
 </div>
 <ul>
-  @for (item of items(); track item) {
-    <li class="row">{ item }</li>
+  @for (item of items(); track item()) {
+    <li class="row">{ item() }</li>
   }
 </ul>
 <p>Found by the query: { rows().length } rows: { found() }</p>

@@ -8,29 +8,29 @@
   <select aria-label="{ translations().reference.area }" (change)="pickArea($event)">
     <option value="">{ translations().reference.all }</option>
     @for (name of areas) {
-      <option value="{ name }">{ name }</option>
+      <option value="{ name() }">{ name() }</option>
     }
   </select>
   <span class="count">{`${entries().length} ${translations().reference.results}`}</span>
 </div>
 @if (entries().length > 0) {
   <ul class="entries">
-    @for (entry of entries(); track entry) {
+    @for (entry of entries(); track entry()) {
       <li class="entry">
         <div class="entry-head">
-          <h3 class="entry-title">{ entry.titleText }</h3>
-          <span class="{`badge ${entry.kind === 'bug' ? 'issue' : 'muted'}`}">
-            { translations().reference.issueKinds[entry.kind] }
+          <h3 class="entry-title">{ entry().titleText }</h3>
+          <span class="{`badge ${entry().kind === 'bug' ? 'issue' : 'muted'}`}">
+            { translations().reference.issueKinds[entry().kind] }
           </span>
-          <span class="module">{ entry.area }</span>
+          <span class="module">{ entry().area }</span>
         </div>
-        <p>{ entry.detailsText }</p>
+        <p>{ entry().detailsText }</p>
         <p>
           <span class="label">{ translations().reference.workaround }:</span>
-          { entry.workaroundText }
+          { entry().workaroundText }
         </p>
         <p>
-          <a href="{ entry.href }">{ translations().reference.readMore } →</a>
+          <a href="{ entry().href }">{ translations().reference.readMore } →</a>
         </p>
       </li>
     }

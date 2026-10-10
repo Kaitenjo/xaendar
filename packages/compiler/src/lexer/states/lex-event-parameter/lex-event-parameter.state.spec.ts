@@ -51,10 +51,16 @@ describe('lexEventParameter', () => {
     expect(result.tokens?.map(t => t.parts)).toEqual([['\'a,b\'']]);
   });
 
-  it('closes a parenthesis delimiter opened twice by the same character', () => {
-    const cursor = new LexerCursor('(()"');
+  it('keeps the calls inside a parameter, with their commas, as part of it', () => {
+    const cursor = new LexerCursor('item().id,format(a, b()),$event)"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['((']]);
+    expect(result.tokens?.map(t => t.parts)).toEqual([['item().id'], ['format(a, b())'], ['$event']]);
+  });
+
+  it('keeps the parentheses written in the strings inside a call as part of the parameter', () => {
+    const cursor = new LexerCursor('format(\'(\', \')\'))"');
+    const result = lexEventParameter(cursor, context);
+    expect(result.tokens?.map(t => t.parts)).toEqual([['format(\'(\', \')\')']]);
   });
 
   it('treats an unmatched closing parenthesis inside an open delimiter as a literal character', () => {

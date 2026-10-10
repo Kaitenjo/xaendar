@@ -17,6 +17,8 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
   let read = true;
   let eventParameter = '';
   let charDelimiter: '"' | "'" | '[' | '{' |'' = '';
+  // The parentheses opened by the calls inside the parameter, such as the read of a signal
+  let parenDepth = 0;
   let parameterStart = cursor.currentChar.index + 1;
 
   const retVal: LexerTransitionFunctionReturnType = {
@@ -32,7 +34,6 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
       case RIGHT_BRACE:
       case DOUBLE_QUOTE:
       case SINGLE_QUOTE:
-      case LPAREN:
         eventParameter = addCharacter(cursor, eventParameter);
         if (!charDelimiter) {
           // Safe assumption
@@ -42,8 +43,15 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
         }
         break;
 
+      case LPAREN:
+        eventParameter = addCharacter(cursor, eventParameter);
+        if (!isInString(charDelimiter)) {
+          parenDepth++;
+        }
+        break;
+
       case COMMA:
-        if (!charDelimiter) {
+        if (!charDelimiter && !parenDepth) {
           const parameterEnd = cursor.currentChar.index + 1;
           retVal.tokens!.push({
             type: TokenType.EVENT_PARAMETER,
@@ -63,6 +71,19 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
         break;
 
       case RPAREN:
+        // A parenthesis written in a string
+        if (isInString(charDelimiter)) {
+          eventParameter = addCharacter(cursor, eventParameter);
+          break;
+        }
+
+        // A parenthesis closing a call inside the parameter
+        if (parenDepth) {
+          eventParameter = addCharacter(cursor, eventParameter);
+          parenDepth--;
+          break;
+        }
+
         // Consume ')'
         cursor.advance();
         
@@ -96,6 +117,16 @@ export function lexEventParameter(cursor: LexerCursor, context: LexerTransitionF
   }
 
   return retVal;
+}
+
+/**
+ * Tells whether the parameter is being read inside a string literal.
+ *
+ * @param charDelimiter - The delimiter of the literal being read, if any.
+ * @returns `true` if the delimiter is a quote.
+ */
+function isInString(charDelimiter: string): boolean {
+  return charDelimiter === '"' || charDelimiter === '\'';
 }
 
 function addCharacter(cursor: LexerCursor, eventParameter: string): string {

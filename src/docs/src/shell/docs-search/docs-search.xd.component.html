@@ -18,15 +18,15 @@
   <kbd class="kbd">/</kbd>
   @if (expanded() && query()) {
     <ul class="results" role="listbox">
-      @for (page of results(); track page.path; index = $index) {
+      @for (page of results(); track page().path; index = $index) {
         <li>
           <a
             class="{ index() === active() ? 'result result--active' : 'result' }"
-            href="{ linkTo(page.path) }"
-            (mousedown)="go(page.path)"
+            href="{ linkTo(page().path) }"
+            (mousedown)="go(page().path)"
           >
-            <span class="result__title">{ titleOf(page) }</span>
-            <span class="result__path">{ page.path }</span>
+            <span class="result__title">{ titleOf(page()) }</span>
+            <span class="result__path">{ page().path }</span>
           </a>
         </li>
       }

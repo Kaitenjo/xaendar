@@ -1,8 +1,8 @@
-@for (task of tasks(); track task.id) {                   <!-- an array, and the key of each item -->
-  <li>{ $index() + 1 }. { task.title }</li>                <!-- context variables are signals: call them -->
+@for (task of tasks(); track task().id) {                   <!-- an array, and the key of each item -->
+  <li>{ $index() + 1 }. { task().title }</li>                <!-- context variables are signals: call them -->
 }
 
-@for (task of tasks(); track task.id; position = $index) { <!-- an alias: name = variable -->
+@for (task of tasks(); track task().id; position = $index) { <!-- an alias: name = variable -->
   <li>{ position() }</li>
 }
 
@@ -10,6 +10,6 @@
   <span class="dot" />
 }
 
-@for (step of count(); track step) {                      <!-- 0, 1, … count() - 1 -->
-  <span>{ step }</span>
+@for (step of count(); track step()) {                      <!-- 0, 1, … count() - 1 -->
+  <span>{ step() }</span>
 }

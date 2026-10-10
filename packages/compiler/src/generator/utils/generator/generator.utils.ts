@@ -344,14 +344,7 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
 
   if (compilerContext.hasIdentifier(text)) {
     const kind = compilerContext.getIdentifierKind(text);
-    switch (kind) {
-      // A signal the template reads as a plain value: the access unwraps it
-      case 'reactive-value':
-        return { expression: `context.get('${text}')()`, reactive: true };
-
-      default:
-        return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
-    }
+    return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
   }
 
   if (options.resolver) {

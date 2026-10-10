@@ -47,13 +47,6 @@ describe('resolveExpression', () => {
     expect(resolve('item', context)).toEqual({ expression: 'context.get(\'item\')', reactive });
   });
 
-  it('unwraps the reactive-value identifiers, read as plain values', () => {
-    const context = new CompilerContext();
-    context.addIdentifier('item', 'reactive-value');
-    expect(resolve('item.name', context)).toEqual({ expression: 'context.get(\'item\')().name', reactive: true });
-    expect(resolve('[{ item }]', context).expression).toBe('[{ item: context.get(\'item\')() }]');
-  });
-
   it('does not resolve globals or member names', () => {
     expect(resolve('Math.max(1, 2)')).toEqual({ expression: 'Math.max(1, 2)' });
     expect(resolve('user.name')).toEqual({ expression: 'this.user.name', reactive: undefined });
