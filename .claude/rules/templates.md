@@ -48,8 +48,6 @@ After the tag name, write the items of the opening tag in this order:
 </button>
 ```
 
-With the structural directives first, a valueless attribute never comes right before one: `<span hidden *exX>` does not parse.
-
 ## Conditions
 
 Between elements and inside a tag alike:

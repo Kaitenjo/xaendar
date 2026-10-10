@@ -981,10 +981,6 @@
           "callout2": {
             "heading": "Niente listener e niente input condizionali",
             "p1": "Una direttiva strutturale non ha un elemento su cui emettere eventi, dato che l’elemento potrebbe non esistere, quindi non accetta listener. Nemmeno i suoi input si possono legare in modo condizionale; la direttiva stessa, invece, si può applicare con una condizione, come mostrato in <a href=\"#/it/directives/conditional\">Direttive condizionali</a>."
-          },
-          "callout3": {
-            "heading": "Un attributo senza valore prima della direttiva",
-            "p1": "Un attributo senza valore, come <code>hidden</code>, scritto subito prima di una direttiva strutturale non viene analizzato. Spostarlo dopo la direttiva, o dargli un valore vuoto, aggira il problema."
           }
         },
         "apiSummary": {
@@ -2787,10 +2783,6 @@
       "cause": "Un @else che non segue un blocco @if.",
       "fix": "Metti l’@else subito dopo la graffa di chiusura dell’@if."
     },
-    "[Parser] Attribute value missing for hidden in: hidden": {
-      "cause": "Un attributo senza valore subito prima di una direttiva strutturale.",
-      "fix": "Sposta l’attributo dopo la direttiva, o dagli un valore vuoto."
-    },
     "[Parser] Attribute \"title\" is bound more than once on <p>": {
       "cause": "Lo stesso attributo scritto sia fuori sia dentro un binding condizionale.",
       "fix": "Legalo solo dentro la condizione, in ogni ramo che ne ha bisogno."
@@ -2989,11 +2981,6 @@
     }
   },
   "issues": {
-    "a-valueless-attribute-before-a-structural": {
-      "title": "Un attributo senza valore prima di una direttiva strutturale",
-      "details": "<span hidden *dir(…)> fallisce con Attribute value missing for hidden.",
-      "workaround": "Scrivi l’attributo dopo la direttiva, o come hidden=\"\"."
-    },
     "html-inside-foreignobject-is-created-as": {
       "title": "L’HTML dentro foreignObject viene creato come SVG",
       "details": "I figli di <foreignObject> restano nel namespace SVG, quindi il browser non li renderizza come HTML.",

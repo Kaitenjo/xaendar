@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A valueless attribute before a structural directive (bug)
-
-<span hidden *dir(…)> fails with Attribute value missing for hidden.
-
-**Workaround:** Write the attribute after the directive, or as hidden="".
-
 ### HTML inside foreignObject is created as SVG (bug)
 
 The children of <foreignObject> stay in the SVG namespace, so the browser does not render them as HTML.

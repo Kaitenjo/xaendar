@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-valueless-attribute-before-a-structural',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'directives/structural'
-  },
-  {
     id: 'html-inside-foreignobject-is-created-as',
     area: 'Compiler',
     kind: 'bug',

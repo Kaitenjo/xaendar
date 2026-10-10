@@ -119,6 +119,13 @@ describe('parseElement', () => {
       expect(node.structuralDirectives).toHaveLength(1);
     });
 
+    it('parses a valueless attribute followed by a structural directive, on the element and in a conditional binding', () => {
+      const [node] = parse('<span hidden *hasRole(role="admin") @if (cond()) { disabled *visible }></span>') as ElementNode[];
+      expect(node.attributes).toMatchObject([{ name: 'hidden', value: 'true' }]);
+      expect(node.structuralDirectives.map(({ selector }) => selector)).toEqual(['hasRole']);
+      expect(node.conditionalBindings[0].branches[0]).toMatchObject({ attributes: [{ name: 'disabled', value: 'true' }], structuralDirectives: [{ selector: 'visible' }] });
+    });
+
     it.each([
       ['on the element', '<div *hasRole *hasRole(role="admin")></div>'],
       ['on the element and inside a conditional binding', '<div *hasRole @if (cond()) { *hasRole }></div>'],

@@ -1,7 +1,0 @@
-<!-- A valueless attribute right before a structural directive -->
-<span hidden *exIsEven(value="{ value() }")>…</span>
-<!-- [Parser] [Ln 1, Col 2] - Attribute value missing for hidden in: hidden -->
-
-<!-- Compiles: the attribute after the directive, or with an empty value -->
-<span *exIsEven(value="{ value() }") hidden>…</span>
-<span hidden="" *exIsEven(value="{ value() }")>…</span>

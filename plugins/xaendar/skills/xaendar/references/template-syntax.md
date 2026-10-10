@@ -136,7 +136,6 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 >…</p>
 ```
 
-- A valueless attribute right before a structural directive fails to parse (`<span hidden *exX>`): put it after the directive, or write `hidden=""`.
 - A directive can be applied once per element.
 
 ## Imports

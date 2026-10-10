@@ -76,11 +76,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An @else not following an @if block.
 - **Fix:** Put the @else right after the closing brace of the @if.
 
-### `[Parser] Attribute value missing for hidden in: hidden`
-
-- **Cause:** A valueless attribute right before a structural directive.
-- **Fix:** Move the attribute after the directive, or give it an empty value.
-
 ### `[Parser] Attribute "title" is bound more than once on <p>`
 
 - **Cause:** The same attribute written both outside and inside a conditional binding.

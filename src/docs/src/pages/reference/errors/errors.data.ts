@@ -100,11 +100,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] Attribute value missing for hidden in: hidden',
-    page: 'directives/structural'
-  },
-  {
-    phase: 'Parser',
     message: '[Parser] Attribute "title" is bound more than once on <p>',
     page: 'templates/conditional-bindings'
   },

@@ -981,10 +981,6 @@
           "callout2": {
             "heading": "No listeners and no conditional inputs",
             "p1": "A structural directive has no element to dispatch events on, since the element may not exist, so it accepts no listeners. Its inputs cannot be bound conditionally either; the directive itself can be applied by a condition, as shown in <a href=\"#/en/directives/conditional\">Conditional directives</a>."
-          },
-          "callout3": {
-            "heading": "A valueless attribute before the directive",
-            "p1": "An attribute without a value, such as <code>hidden</code>, written right before a structural directive is not parsed. Moving it after the directive, or giving it an empty value, works around the problem."
           }
         },
         "apiSummary": {
@@ -2787,10 +2783,6 @@
       "cause": "An @else not following an @if block.",
       "fix": "Put the @else right after the closing brace of the @if."
     },
-    "[Parser] Attribute value missing for hidden in: hidden": {
-      "cause": "A valueless attribute right before a structural directive.",
-      "fix": "Move the attribute after the directive, or give it an empty value."
-    },
     "[Parser] Attribute \"title\" is bound more than once on <p>": {
       "cause": "The same attribute written both outside and inside a conditional binding.",
       "fix": "Bind it only inside the condition, in every branch that needs it."
@@ -2989,11 +2981,6 @@
     }
   },
   "issues": {
-    "a-valueless-attribute-before-a-structural": {
-      "title": "A valueless attribute before a structural directive",
-      "details": "<span hidden *dir(…)> fails with Attribute value missing for hidden.",
-      "workaround": "Write the attribute after the directive, or as hidden=\"\"."
-    },
     "html-inside-foreignobject-is-created-as": {
       "title": "HTML inside foreignObject is created as SVG",
       "details": "The children of <foreignObject> stay in the SVG namespace, so the browser does not render them as HTML.",
