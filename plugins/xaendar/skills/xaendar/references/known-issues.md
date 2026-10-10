@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### HTML inside foreignObject is created as SVG (bug)
-
-The children of <foreignObject> stay in the SVG namespace, so the browser does not render them as HTML.
-
-**Workaround:** Position HTML over the SVG with CSS, or create it in code.
-
 ### A space between two interpolations disappears (bug)
 
 { first } { second } renders the two values joined.

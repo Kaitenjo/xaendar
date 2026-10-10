@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'html-inside-foreignobject-is-created-as',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/svg-mathml'
-  },
-  {
     id: 'a-space-between-two-interpolations-disappears',
     area: 'Compiler',
     kind: 'bug',

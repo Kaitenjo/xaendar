@@ -16,6 +16,10 @@
   <ex-svg-chart />
 </docs-example>
 <p @@i18n(key="pages.templates.svgMathml.svg.p1") />
+<docs-example name="templates/svg-mathml/foreign-object" heading="{ translations().pages.templates.svgMathml.svg.example2 }">
+  <ex-foreign-object />
+</docs-example>
+<p @@i18n(key="pages.templates.svgMathml.svg.p2") />
 
 <h2 @@i18n(key="pages.templates.svgMathml.mathml.title") />
 <docs-example
@@ -28,14 +32,6 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.svgMathml.edgeCases.title") />
-  <docs-example
-    name="templates/svg-mathml/foreign-object"
-    heading="{ translations().pages.templates.svgMathml.edgeCases.example1 }"
-    kind="edge"
-  >
-    <ex-foreign-object />
-  </docs-example>
-  <p @@i18n(key="pages.templates.svgMathml.edgeCases.p1") />
   <docs-callout
     @@i18n(key="pages.templates.svgMathml.edgeCases.callout1.body")
     kind="edge"
@@ -67,7 +63,9 @@
       </tr>
       <tr>
         <td @@i18n(key="pages.templates.svgMathml.apiSummary.td3") />
-        <td @@i18n(key="pages.templates.svgMathml.apiSummary.td4") />
+        <td>
+          <code>http://www.w3.org/1999/xhtml</code>
+        </td>
       </tr>
     </tbody>
   </table>

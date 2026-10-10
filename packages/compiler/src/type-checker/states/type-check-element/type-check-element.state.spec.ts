@@ -177,6 +177,19 @@ describe('typeCheckElement', () => {
         ]);
       });
 
+      it('types the events of a <foreignObject> through SVGElementEventMap, and of its descendants through HTMLElementEventMap', () => {
+        expect(runTree('<svg><foreignObject (click)="f($event)"><div><button (click)="g($event)"></button></div></foreignObject></svg>')).toEqual([
+          '{',
+          '  let $event!: SVGElementEventMap[\'click\'];',
+          '  root.f($event);',
+          '}',
+          '{',
+          '  let $event!: HTMLElementEventMap[\'click\'];',
+          '  root.g($event);',
+          '}'
+        ]);
+      });
+
       it('types the events of the siblings of an <svg> through HTMLElementEventMap', () => {
         expect(runTree('<div><svg><svg></svg></svg><span (click)="f($event)"></span></div>')).toEqual([
           '{',

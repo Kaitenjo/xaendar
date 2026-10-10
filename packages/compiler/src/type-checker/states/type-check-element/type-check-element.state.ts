@@ -55,7 +55,8 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
 
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], node.tagName, eventMap, context));
 
-  const childrenContext = eventMap === context.eventMap ? context : new TypeCheckContext(context, eventMap);
+  const childrenEventMap = getChildrenEventMap(node.tagName, eventMap);
+  const childrenContext = childrenEventMap === context.eventMap ? context : new TypeCheckContext(context, childrenEventMap);
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
     lines.push(...processNode(children[i], childrenContext))
@@ -81,6 +82,23 @@ function getElementEventMap(tagName: string, context: TypeCheckContext): Element
       return 'MathMLElementEventMap';
     default:
       return context.eventMap;
+  }
+}
+
+/**
+ * Returns the event map of the children of an element, exactly like the generated render code creates them:
+ * in the namespace of the element, except for the children of a `<foreignObject>`, which are HTML elements.
+ *
+ * @param tagName - Tag name of the element.
+ * @param eventMap - Event map of the element.
+ * @returns The event map typing the native events of the children of the element.
+ */
+function getChildrenEventMap(tagName: string, eventMap: ElementEventMap): ElementEventMap {
+  switch (tagName) {
+    case 'foreignObject':
+      return 'HTMLElementEventMap';
+    default:
+      return eventMap;
   }
 }
 

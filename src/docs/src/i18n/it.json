@@ -2368,7 +2368,9 @@
         "svg": {
           "title": "SVG",
           "example1": "Un grafico a barre",
-          "p1": "Le barre sono veri <code>SVGRectElement</code>: un <code>@for</code> le renderizza, la loro geometria viene da un computed, e i loro listener sono tipizzati come per l’HTML, con un <code>MouseEvent</code> per <code>mouseenter</code>. I nomi scritti in camelCase, come <code>viewBox</code> o <code>linearGradient</code>, restano così come sono, come richiede SVG. Gli stili si applicano come al solito: il foglio di stile del componente colora le barre e quella sotto il puntatore."
+          "p1": "Le barre sono veri <code>SVGRectElement</code>: un <code>@for</code> le renderizza, la loro geometria viene da un computed, e i loro listener sono tipizzati come per l’HTML, con un <code>MouseEvent</code> per <code>mouseenter</code>. I nomi scritti in camelCase, come <code>viewBox</code> o <code>linearGradient</code>, restano così come sono, come richiede SVG. Gli stili si applicano come al solito: il foglio di stile del componente colora le barre e quella sotto il puntatore.",
+          "example2": "HTML dentro foreignObject",
+          "p2": "In SVG, <code>&lt;foreignObject&gt;</code> contiene HTML: il compilatore crea i suoi figli nel namespace HTML, quindi il paragrafo è un <code>HTMLParagraphElement</code> renderizzato come HTML, mentre il <code>&lt;foreignObject&gt;</code> stesso e gli elementi che lo seguono restano SVG."
         },
         "mathml": {
           "title": "MathML",
@@ -2377,8 +2379,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "HTML dentro foreignObject",
-          "p1": "In SVG, <code>&lt;foreignObject&gt;</code> contiene HTML. Il compilatore continua a creare i figli nel namespace SVG, quindi il paragrafo è un elemento SVG sconosciuto e il browser non lo renderizza. Posiziona l’HTML sopra l’SVG con il CSS, oppure crea il contenuto del <code>&lt;foreignObject&gt;</code> nel codice. È elencato in <a href=\"#/it/reference/known-issues\">Problemi noti</a>.",
           "callout1": {
             "heading": "Gli attributi sono stringhe",
             "body": "Come per l’HTML, un binding imposta un attributo con <code>setAttribute</code>: i numeri diventano stringhe, che SVG accetta per la geometria. Le proprietà degli elementi SVG, come i valori animati, vanno impostate nel codice."
@@ -2390,8 +2390,7 @@
           "th2": "Namespace",
           "td1": "<code>&lt;svg&gt;</code> e i suoi discendenti",
           "td2": "<code>&lt;math&gt;</code> e i suoi discendenti",
-          "td3": "Contenuto di <code>&lt;foreignObject&gt;</code>",
-          "td4": "Anch’esso SVG: un problema noto"
+          "td3": "Contenuto di <code>&lt;foreignObject&gt;</code>"
         }
       },
       "switch": {
@@ -2981,11 +2980,6 @@
     }
   },
   "issues": {
-    "html-inside-foreignobject-is-created-as": {
-      "title": "L’HTML dentro foreignObject viene creato come SVG",
-      "details": "I figli di <foreignObject> restano nel namespace SVG, quindi il browser non li renderizza come HTML.",
-      "workaround": "Posiziona l’HTML sopra l’SVG con il CSS, o crealo nel codice."
-    },
     "a-space-between-two-interpolations-disappears": {
       "title": "Lo spazio tra due interpolazioni sparisce",
       "details": "{ first } { second } renderizza i due valori uniti.",

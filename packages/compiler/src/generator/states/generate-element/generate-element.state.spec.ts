@@ -105,6 +105,12 @@ describe('generateElement', () => {
     expect(functionsToProcess?.get(`${tag}0Children`)?.fn.precode).toBe(precode);
   });
 
+  it('creates the children of a foreignObject as HTML elements, keeping the foreignObject in the namespace of its parent', async () => {
+    const { code, functionsToProcess } = await run('<foreignObject><div></div></foreignObject>');
+    expect(code.join('\n')).not.toContain('context.createElement');
+    expect(functionsToProcess?.get('foreignObject0Children')?.fn.precode).toBe('context.createElement = _createElement;');
+  });
+
   describe('conditional bindings', () => {
     it('skips the conditional bindings whose branches declare no binding', async () => {
       const { code } = await run('<div @if (cond()) { } @else { } @switch (mode()) { @case (1) { } } @switch (mode()) { }></div>');

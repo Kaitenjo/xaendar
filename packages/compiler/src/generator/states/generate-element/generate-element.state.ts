@@ -80,7 +80,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
         node,
         parentNode: nodeName,
         context: compilerContext,
-        precode: overrideCreateElement(tagName)
+        precode: overrideChildrenCreateElement(tagName)
       },
       args: [nodeName, 'parentContext', 'anchor']
     });
@@ -503,6 +503,13 @@ function mapList(name: string, lines: string[], separator: ',' | '' = ','): stri
     : [`${name}: []${separator}`];
 }
 
+/**
+ * Returns the code switching the element factory of the context to the namespace an element opens:
+ * an `<svg>` and a `<math>` element, and their descendants, are created in the SVG and the MathML namespace.
+ *
+ * @param tagName - The tag name of the element.
+ * @returns The code assigning the element factory, or an empty string when the element does not change namespace.
+ */
 function overrideCreateElement(tagName: string): string {
   switch (tagName) {
     case 'svg':
@@ -511,5 +518,22 @@ function overrideCreateElement(tagName: string): string {
       return 'context.createElement = _createMATHMLElement;';
     default:
       return '';
+  }
+}
+
+/**
+ * Returns the code switching the element factory of the context rendering the children of an element to their namespace:
+ * the namespace the element opens (see {@link overrideCreateElement}), or the HTML one for the children of a
+ * `<foreignObject>`, which embeds HTML in an SVG.
+ *
+ * @param tagName - The tag name of the element.
+ * @returns The code assigning the element factory, or an empty string when the children keep the namespace of the element.
+ */
+function overrideChildrenCreateElement(tagName: string): string {
+  switch (tagName) {
+    case 'foreignObject':
+      return 'context.createElement = _createElement;';
+    default:
+      return overrideCreateElement(tagName);
   }
 }

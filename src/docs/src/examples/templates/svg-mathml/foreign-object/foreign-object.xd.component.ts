@@ -3,7 +3,7 @@ import { computed } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
 
 /**
- * HTML inside a foreignObject: the elements are created in the SVG namespace.
+ * HTML inside a foreignObject: the elements are created in the HTML namespace.
  */
 @WebComponent({
   selector: 'ex-foreign-object',
@@ -12,8 +12,7 @@ import type { QuerySignal } from '@xaendar/core/signals';
 })
 export class ForeignObjectComponent extends CustomElement {
   /**
-   * The paragraph inside the foreignObject. Typed as HTMLElement, the type queries are declared with: here it is
-   * actually an SVG element.
+   * The paragraph inside the foreignObject.
    */
   @Query('foreignObject p')
   public accessor paragraph!: QuerySignal<HTMLElement | null>;
