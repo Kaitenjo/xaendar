@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### Inherited inputs and outputs are ignored by the type checker (bug)
-
-An @Event declared by a base class is reported as unknown on the tag of the subclass, and an inherited @Property is not type-checked.
-
-**Workaround:** Declare inputs and outputs in the decorated class.
-
 ### A signal declared again in a subclass breaks the template (bug)
 
 The signal is listed twice: [Generator] Signal field "x" is already declared in this scope. Unlike other template errors, it stops xd build.

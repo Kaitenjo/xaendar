@@ -372,13 +372,13 @@
       "inheritance": {
         "eyebrow": "Componenti",
         "title": "Ereditarietà",
-        "lead": "I componenti sono classi, quindi possono condividere logica tramite una classe base: signal, computed e metodi vengono ereditati come al solito, e i template possono leggerli. Due cose non vengono ereditate: il template, che appartiene a ogni classe decorata, e la conoscenza che il compilatore dei template ha di input ed eventi, che legge solo dalla classe del componente.",
+        "lead": "I componenti sono classi, quindi possono condividere logica tramite una classe base: signal, computed, metodi, input ed eventi vengono ereditati come al solito, e i template possono leggerli e legarli. Il template non viene ereditato: appartiene a ogni classe decorata.",
         "aBaseClassFor": {
           "title": "Una classe base per la logica condivisa",
           "p1": "La classe base estende <code>CustomElement</code> e non ha decoratore: non è un componente, e non viene mai registrata. Ogni componente la estende, con il proprio <code>@WebComponent</code> e il proprio template.",
           "example1": "Due contatori, una logica",
           "p2": "<code>count</code>, <code>atZero</code> e i tre metodi vivono in <code>CounterBase</code>; i due template li leggono come se fossero dichiarati nei componenti. I signal dichiarati in una classe base vengono riconosciuti anche nei binding degli attributi: il compilatore segue la catena degli <code>extends</code>, anche in altri file.",
-          "p3": "L’input è l’eccezione. La classe base ha bisogno di <code>step</code>, ma lo dichiara <code>abstract</code>, con il tipo di una semplice funzione, e ogni componente lo dichiara con <code>@Property</code>: così il compilatore lo vede, e controlla <code>step=\"{ 5 }\"</code> rispetto al suo tipo. Il tipo funzione è importante: vedi i casi limite."
+          "p3": "Anche input ed eventi vengono ereditati. <code>CounterBase</code> dichiara <code>step</code> con <code>@Property</code>, e il compilatore controlla <code>step=\"{ 5 }\"</code> rispetto al suo tipo, come se l’input fosse dichiarato nel componente."
         },
         "extendingAComponent": {
           "title": "Estendere un componente",
@@ -386,15 +386,9 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "Un input dichiarato nella classe base",
-          "p1": "Qui la classe base dichiara <code>step</code> con <code>@Property</code>, e il componente lo eredita. Il template del padre lega <code>step=\"2\"</code>, una stringa, e compila: il compilatore non conosce l’input, quindi non controlla nulla. A runtime l’input funziona, e riceve la stringa: ogni clic concatena invece di sommare. Dichiara gli input nella classe del componente, astratti nella classe base quando le servono.",
           "callout1": {
             "heading": "Un membro signal dichiarato di nuovo in una sottoclasse",
             "p1": "Il compilatore raccoglie i membri signal di tutta la catena di classi senza eliminare i duplicati, quindi un membro che è un signal nella classe base e viene dichiarato di nuovo nel componente rompe il template. A differenza degli errori di tipo, fa fallire la build. Nella classe base, dai al membro un tipo che non sia un tipo signal."
-          },
-          "callout2": {
-            "heading": "Gli eventi ereditati sono sconosciuti ai template",
-            "p1": "Un evento dichiarato con <code>@Event</code> in una classe base viene inviato come al solito, ma un template non può legarlo: il compilatore lo cerca solo nella classe del componente. Dichiara gli eventi nella classe del componente."
           },
           "callout3": {
             "heading": "Una sottoclasse senza decoratore non ha template",
@@ -416,10 +410,10 @@
           "td4": "Metodi",
           "td5": "sì",
           "td6": "sì",
-          "td7": "sì, a runtime",
-          "td8": "no: i binding non vengono controllati",
-          "td9": "sì, a runtime",
-          "td10": "no: i binding non compilano",
+          "td7": "sì",
+          "td8": "sì, controllati rispetto al loro tipo",
+          "td9": "sì",
+          "td10": "sì",
           "td11": "Template e foglio di stile",
           "td12": "no: ogni classe decorata ha i propri"
         }
@@ -474,10 +468,6 @@
           "callout3": {
             "heading": "transform non cambia il tipo controllato nei template",
             "p1": "I template sono controllati rispetto al tipo dell’<code>InputSignal</code>, non rispetto al parametro di <code>transform</code>: una transform da <code>string</code> a <code>number</code> non permette di scrivere un numero statico. Usa transform che mantengono il tipo, e lega espressioni."
-          },
-          "callout4": {
-            "heading": "Gli input ereditati non vengono controllati",
-            "body": "Il compilatore dei template vede solo gli input dichiarati nella classe del componente, non quelli ereditati da una classe base: i loro binding compilano senza alcun controllo dei tipi. Vedi <a href=\"#/it/components/inheritance\">Ereditarietà</a>."
           },
           "callout5": {
             "heading": "Un componente definito dopo il render del padre",
@@ -601,10 +591,6 @@
           "callout4": {
             "heading": "Eventi nativi sul tag di un componente",
             "p1": "Il tag di un componente accetta solo gli eventi che dichiara: <code>(click)</code> non compila. Ascolta su un elemento nativo che lo contiene, perché gli eventi nativi composed, come <code>click</code>, escono dallo shadow root del componente; oppure emetti un evento tuo dall’interno."
-          },
-          "callout5": {
-            "heading": "Gli eventi ereditati sono sconosciuti",
-            "body": "Il compilatore dei template vede solo gli eventi dichiarati nella classe del componente: legare un evento dichiarato in una classe base fallisce con lo stesso errore <em>Unknown event</em>. Vedi <a href=\"#/it/components/inheritance\">Ereditarietà</a>."
           },
           "callout6": {
             "heading": "Nomi già usati da HTMLElement",
@@ -2871,7 +2857,7 @@
       "fix": "Aggiungi un ramo @else o @default che lo lega, o legalo fuori dalla condizione."
     },
     "[TypeChecker] Unknown event \"valuechange\" on <x-picker> (XPicker has no @Event with this name).": {
-      "cause": "Un listener per un evento che il componente non dichiara: maiuscole diverse, un output ereditato da una classe base, o un evento nativo come click sul tag di un componente.",
+      "cause": "Un listener per un evento che il componente non dichiara: maiuscole diverse, o un evento nativo come click sul tag di un componente.",
       "fix": "Usa il nome esatto dell’accessor; ascolta gli eventi nativi su un elemento contenitore."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
@@ -3048,11 +3034,6 @@
     }
   },
   "issues": {
-    "inherited-inputs-and-outputs-are-ignored": {
-      "title": "Input e output ereditati vengono ignorati dal type checker",
-      "details": "Un @Event dichiarato da una classe base viene segnalato come sconosciuto sul tag della sottoclasse, e una @Property ereditata non viene controllata.",
-      "workaround": "Dichiara input e output nella classe decorata."
-    },
     "a-signal-declared-again-in-a": {
       "title": "Un signal ridichiarato in una sottoclasse rompe il template",
       "details": "Il signal viene elencato due volte: [Generator] Signal field \"x\" is already declared in this scope. A differenza degli altri errori dei template, ferma xd build.",

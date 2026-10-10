@@ -125,7 +125,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[TypeChecker] Unknown event "valuechange" on <x-picker> (XPicker has no @Event with this name).`
 
-- **Cause:** A listener for an event the component does not declare: a different case, an output inherited from a base class, or a native event such as click on a component tag.
+- **Cause:** A listener for an event the component does not declare: a different case, or a native event such as click on a component tag.
 - **Fix:** Match the name of the accessor; listen to native events on a wrapper element.
 
 ### `[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).`

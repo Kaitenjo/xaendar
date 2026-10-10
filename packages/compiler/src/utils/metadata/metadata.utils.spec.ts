@@ -1,5 +1,8 @@
-import { createSourceFile, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
-import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createSourceFile, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile } from './metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
@@ -147,6 +150,91 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       });
     });
   });
+
+  describe('inheritance', () => {
+    const subclass = (heritage: string, body = '') => `@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl ${heritage} {\n${body}\n}`;
+
+    it('inherits the properties and events of the whole inheritance chain, referenced through the class', async () => {
+      const metadata = (await extract(`
+        class Root { @Property.required() accessor id!: InputSignal<number>; }
+        class Base extends Root {
+          @Property('x', { alias: 'caption' }) accessor label!: InputSignal<string>;
+          @Event() accessor picked!: Output<number>;
+        }
+        ${subclass('extends Base', '@Event() accessor done!: Output<boolean>;')}
+      `))?.get('MyEl');
+
+      expect([...metadata!.properties.keys()]).toEqual(['id', 'caption']);
+      expect(metadata?.properties.get('id')).toMatchObject({ name: 'id', type: propertyType('MyEl', 'id'), required: true });
+      expect(metadata?.properties.get('caption')).toMatchObject({ name: 'label', type: propertyType('MyEl', 'label'), alias: 'caption', defaultValue: '\'x\'' });
+      expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: eventType('MyEl', 'picked') }, done: { type: eventType('MyEl', 'done') } });
+    });
+
+    it('lets the class override an inherited accessor, whatever its alias', async () => {
+      const metadata = (await extract(`
+        class Base {
+          @Property('a', { alias: 'caption' }) accessor label!: InputSignal<string>;
+          @Event() accessor picked!: Output<number>;
+        }
+        ${subclass('extends Base', '@Property(\'b\') accessor label!: InputSignal<string>;\n@Event() accessor picked!: Output<void>;')}
+      `))?.get('MyEl');
+
+      expect([...metadata!.properties.keys()]).toEqual(['label']);
+      expect(metadata?.properties.get('label')).toMatchObject({ defaultValue: '\'b\'', alias: undefined });
+      expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: 'void' } });
+    });
+
+    it('throws, pointing at the inherited property, when a property of the class resolves to its name', async () => {
+      await expect(extract(`
+        class Base {
+          @Property() accessor caption!: string;
+        }
+        ${subclass('extends Base', '@Property(\'a\', { alias: \'caption\' }) accessor label!: string;')}
+      `)).rejects.toMatch(/component\.ts\n\[Ln 3, Col 32\] - A property identified by name caption was already defined/);
+    });
+
+    it('stops on circular inheritance and skips the base classes it cannot resolve', async () => {
+      const circular = (await extract(`
+        class First extends Second { @Property() accessor first!: string; }
+        class Second extends First { @Property() accessor second!: string; }
+        ${subclass('extends First')}
+      `))?.get('MyEl');
+      const unresolved = (await extract(subclass('extends Missing', '@Property() accessor own!: string;')))?.get('MyEl');
+
+      expect([...circular!.properties.keys()]).toEqual(['second', 'first']);
+      expect([...unresolved!.properties.keys()]).toEqual(['own']);
+    });
+
+    describe('base classes declared in other files', () => {
+      let root: string;
+
+      beforeAll(() => {
+        root = mkdtempSync(join(tmpdir(), 'xaendar-metadata-')).replaceAll('\\', '/');
+        mkdirSync(`${root}/shared`);
+        writeFileSync(`${root}/shared/base.ts`, 'export class Base { @Property() accessor label!: InputSignal<string>; @Event() accessor picked!: Output<number>; }');
+      });
+
+      afterAll(() => {
+        rmSync(root, { recursive: true, force: true });
+      });
+
+      it('inherits the accessors of an imported base class', async () => {
+        const sourceFile = createSourceFile(`${root}/my-el.ts`, `import { Base } from './shared/base';\n${subclass('extends Base')}`, ScriptTarget.Latest, true);
+        const metadata = (await extractComponentsMetadataFromSourceFile(sourceFile))?.get('MyEl');
+
+        expect(metadata?.properties.get('label')?.type).toBe(propertyType('MyEl', 'label', `${root}/my-el`));
+        expect(metadata?.events.has('picked')).toBe(true);
+      });
+
+      it('resolves the base classes with the given compiler options', async () => {
+        const sourceFile = createSourceFile(`${root}/my-el.ts`, `import { Base } from '@shared/base';\n${subclass('extends Base')}`, ScriptTarget.Latest, true);
+        const compilerOptions = { module: ModuleKind.ESNext, moduleResolution: ModuleResolutionKind.Bundler, paths: { '@shared/*': [`${root}/shared/*`] } };
+
+        expect((await extractComponentsMetadataFromSourceFile(sourceFile))?.get('MyEl')?.properties.size).toBe(0);
+        expect((await extractComponentsMetadataFromSourceFile(sourceFile, compilerOptions))?.get('MyEl')?.properties.has('label')).toBe(true);
+      });
+    });
+  });
 });
 
 const extractDirectives = (code: string) => extractDirectivesMetadataFromSourceFile(sourceFileOf(code));
@@ -202,5 +290,15 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
       @Property('x', { alias: 'b' }) accessor a!: string;
       @Property() accessor b!: string;
     `))).rejects.toContain('Failed to extract metadata from an imported directive in the template');
+  });
+
+  it('inherits the properties and events of its base classes', async () => {
+    const metadata = (await extractDirectives(`
+      class Base { @Property('block') accessor display!: InputSignal<string>; @Event() accessor toggled!: Output<boolean>; }
+      ${directive('', '@Directive({ selector: \'myDirective\' })').replace('class MyDirective', 'class MyDirective extends Base')}
+    `))?.get('MyDirective');
+
+    expect(metadata?.properties.get('display')?.type).toBe(propertyType('MyDirective', 'display'));
+    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: eventType('MyDirective', 'toggled') } });
   });
 });

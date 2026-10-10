@@ -372,13 +372,13 @@
       "inheritance": {
         "eyebrow": "Components",
         "title": "Inheritance",
-        "lead": "Components are classes, so they can share logic through a base class: signals, computed signals and methods are inherited as usual, and templates can read them. Two things are not inherited: the template, which belongs to each decorated class, and the knowledge the template compiler has of inputs and events, which it reads only from the class of the component.",
+        "lead": "Components are classes, so they can share logic through a base class: signals, computed signals, methods, inputs and events are inherited as usual, and templates can read and bind them. The template is not inherited: it belongs to each decorated class.",
         "aBaseClassFor": {
           "title": "A base class for shared logic",
           "p1": "The base class extends <code>CustomElement</code> and has no decorator: it is not a component, and it is never registered. Each component extends it, with its own <code>@WebComponent</code> and its own template.",
           "example1": "Two counters, one logic",
           "p2": "<code>count</code>, <code>atZero</code> and the three methods live in <code>CounterBase</code>; the two templates read them as if they were declared in the components. Signals declared in a base class are recognized in attribute bindings too: the compiler follows the <code>extends</code> chain, also into other files.",
-          "p3": "The input is the exception. The base class needs <code>step</code>, but declares it <code>abstract</code>, typed as a plain function, and each component declares it with <code>@Property</code>: that way the compiler sees it, and checks <code>step=\"{ 5 }\"</code> against its type. The plain function type matters: see the edge cases."
+          "p3": "Inputs and events are inherited too. <code>CounterBase</code> declares <code>step</code> with <code>@Property</code>, and the compiler checks <code>step=\"{ 5 }\"</code> against its type, as if the input were declared in the component."
         },
         "extendingAComponent": {
           "title": "Extending a component",
@@ -386,15 +386,9 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "An input declared in the base class",
-          "p1": "Here the base class declares <code>step</code> with <code>@Property</code>, and the component inherits it. The template of the parent binds <code>step=\"2\"</code>, a string, and it compiles: the compiler does not know the input, so it checks nothing. At run time the input works, and receives the string: each click concatenates instead of adding. Declare inputs in the class of the component, abstract in the base class when it needs them.",
           "callout1": {
             "heading": "A signal member declared again in a subclass",
             "p1": "The compiler collects the signal members of the whole class chain without removing duplicates, so a member that is a signal in the base class and is declared again in the component breaks the template. Unlike type errors, it makes the build fail. In the base class, give the member a type that is not a signal type."
-          },
-          "callout2": {
-            "heading": "Inherited events are unknown to templates",
-            "p1": "An event declared with <code>@Event</code> in a base class is dispatched as usual, but a template cannot bind it: the compiler looks for it in the class of the component only. Declare events in the class of the component."
           },
           "callout3": {
             "heading": "A subclass without a decorator has no template",
@@ -416,10 +410,10 @@
           "td4": "Methods",
           "td5": "yes",
           "td6": "yes",
-          "td7": "yes, at run time",
-          "td8": "no: bindings are not checked",
-          "td9": "yes, at run time",
-          "td10": "no: bindings do not compile",
+          "td7": "yes",
+          "td8": "yes, checked against their type",
+          "td9": "yes",
+          "td10": "yes",
           "td11": "Template and stylesheet",
           "td12": "no: each decorated class has its own"
         }
@@ -474,10 +468,6 @@
           "callout3": {
             "heading": "transform does not change the type checked in templates",
             "p1": "Templates are checked against the type of the <code>InputSignal</code>, not against the parameter of <code>transform</code>: a transform from <code>string</code> to <code>number</code> does not let you write a static number. Use transforms that keep the type, and bind expressions."
-          },
-          "callout4": {
-            "heading": "Inherited inputs are not checked",
-            "body": "The template compiler only sees the inputs declared in the class of the component, not those inherited from a base class: their bindings compile without any type check. See <a href=\"#/en/components/inheritance\">Inheritance</a>."
           },
           "callout5": {
             "heading": "A component defined after its parent rendered",
@@ -601,10 +591,6 @@
           "callout4": {
             "heading": "Native events on a component tag",
             "p1": "The tag of a component accepts only the events it declares: <code>(click)</code> does not compile. Listen on a native element around it, since the native events that are composed, like <code>click</code>, leave the shadow root of the component; or emit an event of your own from inside."
-          },
-          "callout5": {
-            "heading": "Inherited events are unknown",
-            "body": "The template compiler only sees the events declared in the class of the component: binding an event declared in a base class fails with the same <em>Unknown event</em> error. See <a href=\"#/en/components/inheritance\">Inheritance</a>."
           },
           "callout6": {
             "heading": "Names already taken by HTMLElement",
@@ -2871,7 +2857,7 @@
       "fix": "Add an @else or @default branch binding it, or bind it outside the condition."
     },
     "[TypeChecker] Unknown event \"valuechange\" on <x-picker> (XPicker has no @Event with this name).": {
-      "cause": "A listener for an event the component does not declare: a different case, an output inherited from a base class, or a native event such as click on a component tag.",
+      "cause": "A listener for an event the component does not declare: a different case, or a native event such as click on a component tag.",
       "fix": "Match the name of the accessor; listen to native events on a wrapper element."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
@@ -3048,11 +3034,6 @@
     }
   },
   "issues": {
-    "inherited-inputs-and-outputs-are-ignored": {
-      "title": "Inherited inputs and outputs are ignored by the type checker",
-      "details": "An @Event declared by a base class is reported as unknown on the tag of the subclass, and an inherited @Property is not type-checked.",
-      "workaround": "Declare inputs and outputs in the decorated class."
-    },
     "a-signal-declared-again-in-a": {
       "title": "A signal declared again in a subclass breaks the template",
       "details": "The signal is listed twice: [Generator] Signal field \"x\" is already declared in this scope. Unlike other template errors, it stops xd build.",

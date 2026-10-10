@@ -1,10 +1,12 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
 import { ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import { Span } from '../../types/span.type';
+import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
+import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
 
 /**
  * Represents a component property with metadata from @Property decorator.
@@ -13,14 +15,29 @@ class ComponentPropertyMetadataWishSpan extends ComponentPropertyMetadata {
   /**
    * Creates an instance of ComponentPropertyMetadataWishSpan.
    * @param span The span information for the property in the source file.
+   * @param sourceFile The source file declaring the property: the class itself, or one of its base classes.
    * @param name The name of the property.
    * @param type The type of the property.
    * @param options Additional options for the property, such as whether it is required or has an alias.
    */
-  constructor(public span: Span, name: string, type: string, options?: { required?: boolean, alias?: string }) {
+  constructor(public span: Span, public sourceFile: SourceFile, name: string, type: string, options?: { required?: boolean, alias?: string }) {
     super(name, type, options);
   }
 }
+
+/**
+ * The `@Property` and `@Event` accessors of a class collected so far, own and inherited.
+ */
+type CollectedBindings = {
+  /**
+   * The properties, keyed by their alias or name.
+   */
+  readonly properties: Map<string, ComponentPropertyMetadataWishSpan>;
+  /**
+   * The events, keyed by name.
+   */
+  readonly events: Map<string, ComponentEventMetadata>;
+};
 
 /**
  * Class decorators identifying the classes metadata are extracted from.
@@ -33,11 +50,12 @@ type ClassDecoratorNode = WebComponentDecorator | DirectiveDecorator;
  *
  *
  * @param sourceFile - The source file declaring the components.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
  * @returns The metadata of every component declared in the file, keyed by class name, or `undefined`
  *   if the `@WebComponent` decorator of a component doesn't declare a literal selector and template url.
  * @throws If two properties of a component resolve to the same name.
  */
-export async function extractComponentsMetadataFromSourceFile(sourceFile: SourceFile): Promise<Map<string, ComponentMetadata> | undefined> {
+export async function extractComponentsMetadataFromSourceFile(sourceFile: SourceFile, compilerOptions?: CompilerOptions): Promise<Map<string, ComponentMetadata> | undefined> {
   const metadatas = new Map<string, ComponentMetadata>();
 
   const declarations = getDecoratedClassDeclarations<WebComponentDecorator>(sourceFile, 'WebComponent');
@@ -55,7 +73,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       selector,
       styleUrl,
       templateUrl,
-      ...extractBindingsMetadata(klass, sourceFile, 'component'),
+      ...extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions),
       typescriptNodes: declarations[i]
     });
   }
@@ -67,11 +85,12 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
  * Extracts directive metadata from a source file by parsing decorators.
  *
  * @param sourceFile - The source file declaring the directives.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
  * @returns The metadata of every directive declared in the file, keyed by class name, or `undefined`
  *   if the `@Directive` decorator of a directive doesn't declare a literal selector.
  * @throws If two properties of a directive resolve to the same name.
  */
-export async function extractDirectivesMetadataFromSourceFile(sourceFile: SourceFile): Promise<Map<string, DirectiveMetadata> | undefined> {
+export async function extractDirectivesMetadataFromSourceFile(sourceFile: SourceFile, compilerOptions?: CompilerOptions): Promise<Map<string, DirectiveMetadata> | undefined> {
   const metadatas = new Map<string, DirectiveMetadata>();
 
   const declarations = getDecoratedClassDeclarations<DirectiveDecorator>(sourceFile, 'Directive');
@@ -87,7 +106,7 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
       type: 'directive',
       className,
       selector,
-      ...extractBindingsMetadata(klass, sourceFile, 'directive'),
+      ...extractBindingsMetadata(klass, sourceFile, 'directive', compilerOptions),
       typescriptNodes: declarations[i]
     });
   }
@@ -96,19 +115,65 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
 }
 
 /**
- * Extracts the metadata of the `@Property` and `@Event` accessors declared by a component or a directive.
+ * Extracts the metadata of the `@Property` and `@Event` accessors of a component or a directive, inherited ones included.
  *
  * @param klass - The class declaring the accessors.
  * @param sourceFile - The source file declaring the class, used in the error messages and to reference the types of the accessors.
  * @param kind - Whether the class is a component or a directive, used in the error messages.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
  * @returns The properties, keyed by their alias or name, and the events, keyed by name.
  * @throws If two properties resolve to the same name.
  */
-function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type']): Pick<ComponentMetadata, 'properties' | 'events'> {
-  const members = klass.members;
+function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], compilerOptions: CompilerOptions | undefined): Pick<ComponentMetadata, 'properties' | 'events'> {
+  // Inherited accessors are referenced through the class too: its type exposes them, even when the base class isn't exported
   const accessorOwner = getAccessorOwnerType(klass, sourceFile);
-  const properties = new Map<string, ComponentPropertyMetadataWishSpan>();
-  const events = new Map<string, ComponentEventMetadata>();
+  const bindings: CollectedBindings = { properties: new Map(), events: new Map() };
+  collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
+
+  const mappedProperties = new Map<string, ComponentPropertyMetadata>();
+  bindings.properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
+
+  return {
+    properties: mappedProperties,
+    events: bindings.events
+  };
+}
+
+/**
+ * Collects the `@Property` and `@Event` accessors of a class, walking its inheritance chain: the accessors of
+ * the base classes first, so that an accessor declared again by a subclass overrides the inherited one.
+ *
+ * Base classes that can't be resolved are skipped, like those declared in `.d.ts` files, which carry no decorators.
+ *
+ * @param klass - The class to collect the accessors of, with the file declaring it.
+ * @param kind - Whether the class is a component or a directive, used in the error messages.
+ * @param accessorOwner - The type of the class the metadata are extracted for, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @param visitedClasses - Classes already walked, to stop on circular inheritance.
+ * @param bindings - The accessors collected so far, filled in place.
+ * @throws If two properties resolve to the same name.
+ */
+function collectBindingsMetadata(klass: ResolvedClass, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], accessorOwner: string, compilerOptions: CompilerOptions | undefined, visitedClasses: Set<ClassDeclaration>, bindings: CollectedBindings): void {
+  const base = resolveBaseClassOf(klass, compilerOptions);
+  if (base && !visitedClasses.has(base.declaration)) {
+    visitedClasses.add(base.declaration);
+    collectBindingsMetadata(base, kind, accessorOwner, compilerOptions, visitedClasses, bindings);
+  }
+
+  collectOwnBindingsMetadata(klass, kind, accessorOwner, bindings);
+}
+
+/**
+ * Collects the `@Property` and `@Event` accessors declared by a class itself.
+ *
+ * @param klass - The class declaring the accessors, with the file declaring it.
+ * @param kind - Whether the class is a component or a directive, used in the error messages.
+ * @param accessorOwner - The type of the class the metadata are extracted for, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param bindings - The accessors collected so far, filled in place.
+ * @throws If two properties resolve to the same name.
+ */
+function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], accessorOwner: string, { properties, events }: CollectedBindings): void {
+  const members = declaration.members;
 
   for (let i = 0; i < members.length; i++) {
     const member = members[i];
@@ -130,15 +195,21 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
       const nameNode = getNameOfDeclaration(member);
       if (nameNode && isIdentifier(nameNode)) {
         const propName = nameNode.text;
-        const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required, accessorOwner);
+        // An accessor declared again overrides the inherited one, whatever their aliases
+        const overridden = properties.entries().find(([, property]) => property.name === propName);
+        if (overridden) {
+          properties.delete(overridden[0]);
+        }
+
+        const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required, accessorOwner, sourceFile);
         const actualPropName = metadata.alias ?? propName;
         const conflictingProperty = properties.get(actualPropName);
         if (!conflictingProperty) {
           properties.set(actualPropName, metadata);
         } else {
-          const { start, end } = conflictingProperty.span;
-          const { line, character } = sourceFile.getLineAndCharacterOfPosition(start);
-          const { fileName, text } = sourceFile;
+          const { span: { start, end }, sourceFile: conflictingSourceFile } = conflictingProperty;
+          const { line, character } = conflictingSourceFile.getLineAndCharacterOfPosition(start);
+          const { fileName, text } = conflictingSourceFile;
           throw `Failed to extract metadata from an imported ${kind} in the template - ${fileName}\n[Ln ${line + 1}, Col ${character + 1}] - A property identified by name ${actualPropName} was already defined\n ---> ${slice(text, start - character, end)}`;
         }
       }
@@ -155,14 +226,6 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
       }
     }
   }
-
-  const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-  properties.entries().forEach(([propName, { name, type, required, alias, defaultValue }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, defaultValue })));
-
-  return {
-    properties: mappedProperties,
-    events
-  };
 }
 
 /**
@@ -338,10 +401,11 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
  * @param name - The text of the name of the accessor.
  * @param decorator - The `@Property` decorator of the accessor.
  * @param required - Whether the decorator is `@Property.required`.
- * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param accessorOwner - The type of the class the metadata are extracted for, which declares or inherits the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param sourceFile - The source file declaring the accessor.
  * @returns The metadata of the property, with the span of its name or of its alias.
  */
-function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean, accessorOwner: string): ComponentPropertyMetadataWishSpan {
+function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean, accessorOwner: string, sourceFile: SourceFile): ComponentPropertyMetadataWishSpan {
   // Property decorators are always call expressions (`@Property(...)`, `@Property.required(...)`)
   const args = decorator.expression.arguments;
   /*
@@ -349,7 +413,7 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
     We need to store the span where the propName is present, if an alias is declared
     these values will be overwritten
   */
-  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, name, extractBindingType(property, name, accessorOwner, false));
+  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
 
   let options: Expression;
@@ -393,7 +457,7 @@ function isEventDecorator(modifier: ModifierLike): modifier is EventDecorator {
  *
  * @param event - The accessor decorated with `@Event`.
  * @param name - The name of the accessor.
- * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param accessorOwner - The type of the class the metadata are extracted for, which declares or inherits the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
  * @returns The metadata of the event.
  */
 function extractEventMetadata(event: PropertyDeclaration, name: string, accessorOwner: string): ComponentEventMetadata {
@@ -429,7 +493,7 @@ function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: Sourc
  *
  * @param member - The decorated accessor.
  * @param name - The name of the accessor.
- * @param accessorOwner - The type of the class declaring the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param accessorOwner - The type of the class the metadata are extracted for, which declares or inherits the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
  * @param event - Whether the accessor is an `@Event`.
  * @returns The type of the value, `any` for a property and `void` for an event when the accessor declares no type argument.
  */

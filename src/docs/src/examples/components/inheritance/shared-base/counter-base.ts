@@ -1,5 +1,6 @@
-import { CustomElement } from '@xaendar/core';
+import { CustomElement, Property } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
+import type { InputSignal } from '@xaendar/core/signals';
 
 /**
  * The logic shared by two counters with different templates. It is not a component: it has no decorator and no
@@ -7,11 +8,10 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 export abstract class CounterBase extends CustomElement {
   /**
-   * How much each step adds. Abstract: every component declares it with its own decorator, so that the template
-   * compiler sees it. Typed as a plain function: typed as an InputSignal, it would be a signal member of the base
-   * class too, and the components redeclaring it would not compile.
+   * How much each step adds, an input of both components.
    */
-  public abstract accessor step: () => number;
+  @Property(1)
+  public accessor step!: InputSignal<number>;
   /**
    * The count.
    */

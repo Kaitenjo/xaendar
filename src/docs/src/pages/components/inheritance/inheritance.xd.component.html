@@ -2,7 +2,6 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { SharedBaseComponent } from '../../../examples/components/inheritance/shared-base/shared-base.xd.component.ts'
-@import { InheritedInputComponent } from '../../../examples/components/inheritance/inherited-input/inherited-input.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.components.inheritance.eyebrow") class="eyebrow" />
@@ -26,22 +25,10 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.inheritance.edgeCases.title") />
-  <docs-example
-    name="components/inheritance/inherited-input"
-    heading="{ translations().pages.components.inheritance.edgeCases.example1 }"
-    kind="edge"
-  >
-    <ex-inherited-input />
-  </docs-example>
-  <p @@i18n(key="pages.components.inheritance.edgeCases.p1") />
   <docs-callout kind="issue" heading="{ translations().pages.components.inheritance.edgeCases.callout1.heading }">
     <p @@i18n(key="pages.components.inheritance.edgeCases.callout1.p1") />
     <docs-code snippet="components/duplicate-signal.ts" />
     <docs-code snippet="components/duplicate-signal-error.txt" />
-  </docs-callout>
-  <docs-callout kind="issue" heading="{ translations().pages.components.inheritance.edgeCases.callout2.heading }">
-    <p @@i18n(key="pages.components.inheritance.edgeCases.callout2.p1") />
-    <docs-code snippet="components/inherited-event-error.txt" />
   </docs-callout>
   <docs-callout kind="edge" heading="{ translations().pages.components.inheritance.edgeCases.callout3.heading }">
     <p @@i18n(key="pages.components.inheritance.edgeCases.callout3.p1") />

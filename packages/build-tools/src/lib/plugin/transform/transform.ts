@@ -32,7 +32,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     }
 
     const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
-    const metadatas = await extractComponentsMetadataFromSourceFile(tsSource);
+    const metadatas = await extractComponentsMetadataFromSourceFile(tsSource, state.compilerOptions);
     if (!metadatas?.size) {
       /*
         The file match a xendar component file but no component metadata could be extracted.
@@ -120,7 +120,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         typecheckBody = await compile(templateSource, {
           baseDir: dirname(templatePath),
           cache: {
-            getOrInsert: getMetadataOrExtract,
+            getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
             set: registerMetadata
           }
         });

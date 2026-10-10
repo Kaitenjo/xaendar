@@ -1,5 +1,4 @@
-import { Property, WebComponent } from '@xaendar/core';
-import type { InputSignal } from '@xaendar/core/signals';
+import { WebComponent } from '@xaendar/core';
 import { CounterBase } from './counter-base';
 
 /**
@@ -10,10 +9,4 @@ import { CounterBase } from './counter-base';
   templateUrl: './stepper.xd.component.html',
   styleUrl: './counters.css'
 })
-export class StepperComponent extends CounterBase {
-  /**
-   * How much each step adds.
-   */
-  @Property(1)
-  public accessor step!: InputSignal<number>;
-}
+export class StepperComponent extends CounterBase {}

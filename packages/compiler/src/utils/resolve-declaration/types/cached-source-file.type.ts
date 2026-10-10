@@ -1,7 +1,7 @@
 import type { SourceFile } from 'typescript';
 
 /**
- * Entry of the cache of the parsed ancestor files.
+ * Entry of the cache of the parsed files declaring the resolved declarations.
  */
 export type CachedSourceFile = {
   /**

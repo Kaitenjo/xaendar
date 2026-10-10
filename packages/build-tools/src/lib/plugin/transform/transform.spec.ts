@@ -82,7 +82,7 @@ import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, injectTemplate } from '../plugin-utils/plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
 /**
@@ -336,6 +336,19 @@ describe('createTransformHook()', () => {
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
     expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
+  });
+
+  it('extracts the metadata of the component and of the imported ones with the project compiler options', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+    await vi.mocked(compile).mock.calls[0][1].cache?.getOrInsert('Bar', '/src/bar.ts');
+
+    expect(extractComponentsMetadataFromSourceFile).toHaveBeenCalledWith(expect.anything(), state.compilerOptions);
+    expect(getMetadataOrExtract).toHaveBeenCalledWith('Bar', '/src/bar.ts', state.compilerOptions);
   });
 
   it('extracts the signal members with the project compiler options, watching and registering the base class files they depend on', async () => {

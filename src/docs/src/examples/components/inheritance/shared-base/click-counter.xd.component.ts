@@ -1,5 +1,4 @@
-import { Property, WebComponent } from '@xaendar/core';
-import type { InputSignal } from '@xaendar/core/signals';
+import { WebComponent } from '@xaendar/core';
 import { CounterBase } from './counter-base';
 
 /**
@@ -10,10 +9,4 @@ import { CounterBase } from './counter-base';
   templateUrl: './click-counter.xd.component.html',
   styleUrl: './counters.css'
 })
-export class ClickCounterComponent extends CounterBase {
-  /**
-   * How much each click adds.
-   */
-  @Property(1)
-  public accessor step!: InputSignal<number>;
-}
+export class ClickCounterComponent extends CounterBase {}

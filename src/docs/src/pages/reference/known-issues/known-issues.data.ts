@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'inherited-inputs-and-outputs-are-ignored',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'components/inheritance'
-  },
-  {
     id: 'a-signal-declared-again-in-a',
     area: 'Compiler',
     kind: 'bug',

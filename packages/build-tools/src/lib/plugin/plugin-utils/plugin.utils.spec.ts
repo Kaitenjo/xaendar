@@ -595,6 +595,19 @@ describe('getMetadataOrExtract()', () => {
     expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
   });
 
+  it('extracts the metadata with the given compiler options, which resolve the base classes', async () => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(readFile).mockResolvedValue('export class FooDirective {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
+    vi.mocked(extractDirectivesMetadataFromSourceFile).mockResolvedValue(new Map([['FooDirective', createDirectiveMetadata('myFoo')]]));
+    const compilerOptions = { baseUrl: '/src' };
+
+    await getMetadataOrExtract('FooDirective', '/src/foo.ts', compilerOptions);
+
+    expect(extractComponentsMetadataFromSourceFile).toHaveBeenCalledWith(expect.anything(), compilerOptions);
+    expect(extractDirectivesMetadataFromSourceFile).toHaveBeenCalledWith(expect.anything(), compilerOptions);
+  });
+
   it('throws when the extracted metadata map has no entry for the requested symbol', async () => {
     vi.mocked(getMetadata).mockReturnValue(undefined);
     vi.mocked(readFile).mockResolvedValue('export class Foo {}');

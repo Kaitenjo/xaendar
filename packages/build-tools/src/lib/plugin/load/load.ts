@@ -23,7 +23,7 @@ export function createLoadHook(state: XaendarPluginState): LoadHook {
   return async function load(this, id) {
     const stylePath = parseStyleModuleId(id);
     if (stylePath !== undefined) {
-      return loadStyleModule(this, state, stylePath);
+      return loadStyleModule(this, stylePath);
     }
 
     const request = parseTemplateModuleId(id);
@@ -32,14 +32,13 @@ export function createLoadHook(state: XaendarPluginState): LoadHook {
     }
     
     return null;
-
 }
 
 /**
  * Compiles a style file into the module exporting its stylesheet, watching every file the
  * compiled CSS depends on: editing any of them invalidates the module.
  */
-function loadStyleModule(ctx: ThisParameterType<LoadHook>, state: XaendarPluginState, stylePath: string): ReturnType<LoadHook> {
+function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string): ReturnType<LoadHook> {
   let styleResult: StyleCompileResult;
   try {
     styleResult = compileStyle(stylePath, state.host);
@@ -47,11 +46,11 @@ function loadStyleModule(ctx: ThisParameterType<LoadHook>, state: XaendarPluginS
       styleResult.cssText = minifyCss(styleResult.cssText, stylePath);
     }
   } catch (err) {
-    return ctx.error(`Failed to compile style - ${stylePath}\n${err}`);
+    return context.error(`Failed to compile style - ${stylePath}\n${err}`);
   }
 
   for (let i = 0; i < styleResult.dependencyPaths.length; i++) {
-    ctx.addWatchFile(styleResult.dependencyPaths[i]);
+    context.addWatchFile(styleResult.dependencyPaths[i]);
   }
 
   // See the template module about the empty mappings map.
@@ -64,21 +63,21 @@ function loadStyleModule(ctx: ThisParameterType<LoadHook>, state: XaendarPluginS
 
 /**
  * Compiles a template into the module exporting its render function, watching the template and all imported components.
- * @param ctx The context object providing methods for adding watch files and reporting errors.
+ * @param context The context object providing methods for adding watch files and reporting errors.
  * @param request The template module request containing the template path and signals.
  * @returns A promise resolving to the module representing the compiled template, or an error if compilation fails.
  */
-async function loadTemplateModule(ctx: ThisParameterType<LoadHook>, request: TemplateModuleRequest): Promise<ReturnType<LoadHook>> {
+async function loadTemplateModule(context: ThisParameterType<LoadHook>, request: TemplateModuleRequest): Promise<ReturnType<LoadHook>> {
    const { templatePath, signals } = request;
 
     /*
       Watching the template, and the components it imports whose metadata shape the generated bindings,
       links them to this module: editing any of them invalidates the compiled render function.
     */
-    ctx.addWatchFile(templatePath);
+    context.addWatchFile(templatePath);
     const templateSource = state.host.readFile(templatePath);
     if (templateSource === undefined) {
-      return ctx.error(`Could not find template at ${templatePath}`);
+      return context.error(`Could not find template at ${templatePath}`);
     }
 
     /*
@@ -89,7 +88,7 @@ async function loadTemplateModule(ctx: ThisParameterType<LoadHook>, request: Tem
     for (let i = 0; i < importedComponentPaths.length; i++) {
       const importedPath = importedComponentPaths[i]
       if (state.host.fileExists(importedPath)) {
-        ctx.addWatchFile(importedPath);
+        context.addWatchFile(importedPath);
       }
     }
 
@@ -98,12 +97,12 @@ async function loadTemplateModule(ctx: ThisParameterType<LoadHook>, request: Tem
       compiledFunctions = await compile(templateSource, {
         signals,
         cache: {
-          getOrInsert: getMetadataOrExtract,
+          getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
           set: registerMetadata
         }
       });
     } catch (err) {
-      return ctx.error(`Failed to compile template - ${templatePath}\n${err}`);
+      return context.error(`Failed to compile template - ${templatePath}\n${err}`);
     }
 
     /*

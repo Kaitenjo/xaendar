@@ -1,3 +1,0 @@
-Xaendar: Failed to compile template - /src/cart/cart.xd.component.html
-[TypeChecker] Unknown event "countChange" on <ex-stepper> (StepperComponent has no @Event with this name).
-----> (countChange)="onCount($event)"

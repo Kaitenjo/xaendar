@@ -3,7 +3,7 @@ import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSour
 import type MagicString from 'magic-string';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { ClassDeclaration, ClassStaticBlockDeclaration, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
+import { ClassDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
 import { RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
@@ -266,11 +266,12 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  * Base implementation for getOrInsert Method of the plugin cache.
  * @param classNameOrSelector The name of the component or directive to retrieve metadata for.
  * @param path Optional path(s) to the source file(s) containing the component or directive.
+ * @param compilerOptions Project compiler options, driving how the modules declaring its base classes are resolved.
  * @returns The metadata for the specified component or directive.
  * @throws {Error} If the file declaring the symbol can't be resolved, the symbol's metadata
  *   can't be found in it, or its selector is already used by another component or directive.
  */
-export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[]): Promise<ComponentOrDirectiveMetadata> {
+export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[], compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata> {
   // Posix paths, to match the owner file keys of the metadata registry (TS source file names)
   const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolvePosixPath(path));
   let metadata = getMetadata(classNameOrSelector, resolvedPath) ?? getMetadata(classNameOrSelector);
@@ -287,7 +288,7 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
   }
 
   const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
-  metadata = await extractClassMetadata(sourceFile, className);
+  metadata = await extractClassMetadata(sourceFile, className, compilerOptions);
   if (!metadata) {
     throw `Class "${classNameOrSelector}" was not found in the import from ${Array.isArray(path) ? path[1] : filePath}`;
   }
@@ -400,11 +401,12 @@ async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, sel
  *
  * @param sourceFile - The source file declaring the class.
  * @param className - The name of the component or directive class.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring its base classes are resolved.
  * @returns The metadata of the class, or `undefined` if the file doesn't declare a component or a directive with that name.
  * @throws If the metadata of the class can't be extracted, e.g. two of its properties resolve to the same name.
  */
-async function extractClassMetadata(sourceFile: SourceFile, className: string): Promise<ComponentOrDirectiveMetadata | undefined> {
-  return (await extractComponentsMetadataFromSourceFile(sourceFile))?.get(className) ?? (await extractDirectivesMetadataFromSourceFile(sourceFile))?.get(className);
+async function extractClassMetadata(sourceFile: SourceFile, className: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | undefined> {
+  return (await extractComponentsMetadataFromSourceFile(sourceFile, compilerOptions))?.get(className) ?? (await extractDirectivesMetadataFromSourceFile(sourceFile, compilerOptions))?.get(className);
 }
 
 /**

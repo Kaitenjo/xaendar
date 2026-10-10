@@ -16,6 +16,14 @@ vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
   registerMetadata: vi.fn()
 }));
 
+vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../plugin-utils/plugin.utils')>();
+  return {
+    ...actual,
+    getMetadataOrExtract: vi.fn()
+  };
+});
+
 import { compile } from '@xaendar/compiler';
 import type { PluginContext } from 'rolldown';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -72,9 +80,18 @@ describe('createLoadHook()', () => {
 
     const result = await load(createState({ [TEMPLATE_PATH]: 'template source' }), ctx, TEMPLATE_MODULE_ID);
 
-    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], cache: { getOrInsert: getMetadataOrExtract, set: registerMetadata } });
+    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], cache: { getOrInsert: expect.any(Function), set: registerMetadata } });
     expect(result).toEqual({ code: expect.stringContaining('function render() {}\n\nexport { render };'), map: { mappings: '' }, moduleType: 'js' });
     expect(ctx.addWatchFile).toHaveBeenCalledWith(TEMPLATE_PATH);
+  });
+
+  it('extracts the metadata of the imported components with the project compiler options', async () => {
+    const state = { ...createState({ [TEMPLATE_PATH]: 'template source' }), compilerOptions: { baseUrl: '/src' } };
+
+    await load(state, createPluginContext(), TEMPLATE_MODULE_ID);
+    await vi.mocked(compile).mock.calls[0][1].cache?.getOrInsert('Foo', '/src/foo.ts');
+
+    expect(getMetadataOrExtract).toHaveBeenCalledWith('Foo', '/src/foo.ts', state.compilerOptions);
   });
 
   it('watches the imported components that exist on disk', async () => {
