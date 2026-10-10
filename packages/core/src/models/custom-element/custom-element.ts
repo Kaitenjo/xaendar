@@ -17,7 +17,7 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context = new _Context(this, {} as unknown as _Context);
+  private _context = new _Context({} as unknown as _Context);
   /**
    * The root of the Web Component, where the content is rendered
    */

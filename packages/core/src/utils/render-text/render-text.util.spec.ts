@@ -13,7 +13,7 @@ const { signal } = await import('../../signals');
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({} as never, { createElement: (tag: string) => document.createElement(tag) } as never);
+  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
 describe('_renderText', () => {

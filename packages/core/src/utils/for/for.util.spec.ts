@@ -14,7 +14,7 @@ const { effect, signal } = await import('../../signals');
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({} as never, { createElement: (tag: string) => document.createElement(tag) } as never);
+  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
 type Body = (parentNode: HTMLElement, itemContext: InstanceType<typeof _Context>, text: string, reference: Node | null) => void;
@@ -35,7 +35,7 @@ function nestedIf(depth: number, body: Body = renderItem, condition = () => true
     _if(parentNode, itemContext, reference as Comment | null, [{
       condition,
       block: (blockParent, blockContext, blockReference) => {
-        const branchContext = new _Context({} as never, blockContext);
+        const branchContext = new _Context(blockContext);
         nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
         return branchContext;
       }
@@ -60,7 +60,7 @@ function setup(initial: string[], { withNodes = true, withUpdate = true, body = 
   const items = signal(initial);
   const update = vi.fn();
   const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
-    const itemContext = new _Context({} as never, parentContext);
+    const itemContext = new _Context(parentContext);
     if (withNodes) {
       body(parentNode, itemContext, String(list[index]), reference);
     }
@@ -231,7 +231,7 @@ describe('_for', () => {
     const parent = document.createElement('ul');
     const count = signal(3);
     const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
-      const itemContext = new _Context({} as never, parentContext);
+      const itemContext = new _Context(parentContext);
       renderItem(parentNode, itemContext, String(list[index]), reference);
       return { context: itemContext };
     });

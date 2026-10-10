@@ -13,12 +13,12 @@ const { signal } = await import('../../signals');
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({} as never, { createElement: (tag: string) => document.createElement(tag) } as never);
+  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
 function branch(label: string, condition?: () => boolean) {
   const block = vi.fn((parent: HTMLElement, parentContext: InstanceType<typeof _Context>, reference: Node | null) => {
-    const context = new _Context({} as never, parentContext);
+    const context = new _Context(parentContext);
     const element = document.createElement('span');
     element.textContent = label;
     mountNode(element, parent, context, reference as Comment | null);

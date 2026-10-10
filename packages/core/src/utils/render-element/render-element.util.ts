@@ -145,9 +145,7 @@ function bindAttributes(element: Element, context: _Context, attributes: RenderE
  */
 function bindEvents(element: Element, context: _Context, events: RenderElementEvent[]): void {
   for (let i = 0; i < events.length; i++) {
-    const event = events[i];
-    const handler = ($event: Event) => context.getEventHandler(event.handler)(...event.parameters.map(event => event($event)));
-    const name = event.name;
+    const { name, handler } = events[i];
     element.addEventListener(name, handler);
     context.addUnlistener(() => element.removeEventListener(name, handler));
   }

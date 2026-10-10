@@ -27,8 +27,8 @@ const { _defineDirective } = await import('../directive-registry/directive-regis
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
-function createRoot(root: Record<string, unknown> = {}) {
-  return new _Context(root as never, { createElement: _createElement } as never);
+function createRoot() {
+  return new _Context({ createElement: _createElement } as never);
 }
 
 type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context>;
@@ -327,7 +327,7 @@ describe('_renderElement', () => {
     const unlisten = vi.fn();
     const children = vi.fn<Children>((element, parentContext) => {
       element.appendChild(document.createElement('span'));
-      const childrenContext = new _Context({} as never, parentContext);
+      const childrenContext = new _Context(parentContext);
       childrenContext.addUnlistener(unlisten);
       return childrenContext;
     });
@@ -378,10 +378,10 @@ describe('_renderElement', () => {
   });
 
   describe('events', () => {
-    it('calls the root handler with the evaluated parameters', () => {
+    it('calls the handler with the event', () => {
       const onClick = vi.fn();
-      const element = render(document.createElement('div'), createRoot({ onClick }), {
-        events: [{ name: 'click', handler: 'onClick', parameters: [(event: Event) => event.type, () => 'extra'] }]
+      const element = render(document.createElement('div'), createRoot(), {
+        events: [{ name: 'click', handler: ($event: Event) => onClick($event.type, 'extra') }]
       });
 
       element.dispatchEvent(new Event('click'));
@@ -391,9 +391,9 @@ describe('_renderElement', () => {
 
     it('detaches the listener when the context is destroyed', () => {
       const onClick = vi.fn();
-      const context = createRoot({ onClick });
+      const context = createRoot();
       const element = render(document.createElement('div'), context, {
-        events: [{ name: 'click', handler: 'onClick', parameters: [] }]
+        events: [{ name: 'click', handler: onClick }]
       });
 
       context.clear();
@@ -428,8 +428,8 @@ describe('_renderElement', () => {
     it('attaches events only while the condition is true', async () => {
       const onClick = vi.fn();
       const enabled = signal(true);
-      const element = render(document.createElement('div'), createRoot({ onClick }), {
-        conditionalBindings: [ifBinding(branch({ condition: () => enabled(), events: [{ name: 'click', handler: 'onClick', parameters: [] }] }))]
+      const element = render(document.createElement('div'), createRoot(), {
+        conditionalBindings: [ifBinding(branch({ condition: () => enabled(), events: [{ name: 'click', handler: onClick }] }))]
       });
 
       element.dispatchEvent(new Event('click'));
@@ -691,11 +691,11 @@ describe('_renderElement', () => {
       const setter = vi.fn(_setProperty);
       const unbind = vi.fn(_removeAttribute);
       const count = signal(1);
-      const element = render(document.createElement('div'), createRoot({ onClick }), {
+      const element = render(document.createElement('div'), createRoot(), {
         conditionalBindings: [ifBinding(branch({
           condition: () => count() > 0,
           attributes: [{ name: 'data-positive', value: 'on', setter, unbind }],
-          events: [{ name: 'click', handler: 'onClick', parameters: [] }]
+          events: [{ name: 'click', handler: onClick }]
         }))]
       });
 
@@ -839,8 +839,8 @@ describe('_renderElement', () => {
 
     it('listens to the directive events on the element', () => {
       const onChange = vi.fn();
-      render(document.createElement('div'), createRoot({ onChange }), {
-        directives: [directive({ events: [{ name: 'change', handler: 'onChange', parameters: [(event: Event) => event.type] }] })]
+      render(document.createElement('div'), createRoot(), {
+        directives: [directive({ events: [{ name: 'change', handler: ($event: Event) => onChange($event.type) }] })]
       });
 
       lastInstance().dispatchEvent(new Event('change'));
@@ -940,13 +940,13 @@ describe('_renderElement', () => {
     it('listens to the events of a conditional binding only while its condition is true', async () => {
       const onChange = vi.fn();
       const enabled = signal(true);
-      render(document.createElement('div'), createRoot({ onChange }), {
+      render(document.createElement('div'), createRoot(), {
         directives: [directive({
           conditionalBindings: [{
             branches: [branch({
               condition: () => enabled(),
-              events: [{ name: 'change', handler: 'onChange', parameters: [] }],
-              conditionalBindings: [{ branches: [branch({ condition: () => true, events: [{ name: 'nested', handler: 'onChange', parameters: [] }] })] }]
+              events: [{ name: 'change', handler: onChange }],
+              conditionalBindings: [{ branches: [branch({ condition: () => true, events: [{ name: 'nested', handler: onChange }] })] }]
             })]
           }]
         })]
@@ -1083,7 +1083,7 @@ describe('_renderElement', () => {
       const unlisten = vi.fn();
       const children = vi.fn<Children>((element, parentContext) => {
         element.appendChild(document.createElement('span'));
-        const childrenContext = new _Context({} as never, parentContext);
+        const childrenContext = new _Context(parentContext);
         childrenContext.addUnlistener(unlisten);
         return childrenContext;
       });

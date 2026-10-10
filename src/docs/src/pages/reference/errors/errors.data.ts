@@ -285,11 +285,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: "TypeError: Cannot read properties of undefined (reading 'bind')",
-    page: 'templates/events'
-  },
-  {
-    phase: 'Runtime',
     message: 'TypeError: stop is not a function',
     page: 'components/queries'
   },

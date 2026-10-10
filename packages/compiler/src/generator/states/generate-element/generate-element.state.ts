@@ -1,5 +1,6 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
 import type { AsyncFunction, Function } from '@xaendar/types';
+import { isIdentifier } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
@@ -8,6 +9,7 @@ import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
+import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
@@ -190,52 +192,32 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
 }
 
 /**
- * Generates code that attaches event listeners to a DOM element.
+ * Generates the descriptors of the event listeners of a DOM element.
  *
- * For each event node an `addEventListener` call is emitted, binding the event
- * to the component instance handler and exposing the native event as `$event`.
+ * The handler of each descriptor is an arrow function making the whole call of the template, with the
+ * method and its arguments resolved like any other expression: a method of a member (`cart.clear()`)
+ * is called on that member. The arrow function declares the native event as `$event` when the call passes it.
  *
  * @param events - The event nodes to bind to the element.
  * @param compilerContext - Current render scope context, used to resolve identifier references.
- * @returns Array of generated code lines, one per event listener.
+ * @returns Array of generated code lines, one descriptor per event listener.
  */
 function mapEvents(events: EventNode[], compilerContext: CompilerContext): string[] {
   compilerContext.addUnresolvableIdentifier('$event');
 
-  const mappedEvents = events.map(event => {
-    let parsedEventParameter = false;
-    const parameters = event.parameters.map(parameter => {
-      const resolvedParameter = resolveExpression(parameter, compilerContext).expression;
-      if (!parsedEventParameter && resolvedParameter === '$event') {
-        parsedEventParameter = true;
-        return `($event) => ${resolvedParameter},`
-      } else {
-        return `() => ${resolvedParameter},`
-      }
-    });
+  const mappedEvents = events.map(({ name, handler, parameters }) => {
+    const method = resolveExpression(validateExpression(handler).node, compilerContext).expression;
+    const args = parameters.map(parameter => resolveExpression(parameter, compilerContext).expression).join(', ');
+    const eventParameter = parameters.some(parameter => isIdentifier(parameter) && parameter.text === '$event') ? '$event' : '';
 
-    const eventCode = [
+    return [
       '{',
       ...indent([
-        `name: '${event.name}',`,
-        `handler: '${event.handler}',`,
-        'parameters: ['])
-    ]
-
-    if (parameters.length) {
-      eventCode.push(
-        ...indent([
-          ...indent(parameters),
-          ']'
-        ]),
-        '},'
-      );
-    } else {
-      eventCode[eventCode.length - 1] = `${eventCode[eventCode.length - 1]}]`;
-      eventCode.push('},');
-    }
-
-    return eventCode;
+        `name: '${name}',`,
+        `handler: (${eventParameter}) => ${method}(${args})`
+      ]),
+      '},'
+    ];
   }).flat();
 
   compilerContext.removeUnresolvabledIdentifier('$event');

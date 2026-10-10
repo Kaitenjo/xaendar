@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A listener calling a method of a member fails at runtime (bug)
-
-(click)="helper.run()" compiles, then throws TypeError: Cannot read properties of undefined (reading 'bind') at the click.
-
-**Workaround:** Call a method of the component.
-
 ### An expression starting with a backtick after a space (bug)
 
 { `text` } in text or in an attribute is not parsed: Expected closing tag, or Attribute value missing.

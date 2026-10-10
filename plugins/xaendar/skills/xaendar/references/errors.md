@@ -267,11 +267,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** this.effect called in the constructor of a directive, before its context exists.
 - **Fix:** Create effects in onInit.
 
-### `TypeError: Cannot read properties of undefined (reading 'bind')`
-
-- **Cause:** A listener calling a method of a member, such as (click)="helper.run()": it compiles, and fails at the click.
-- **Fix:** Call a method of the component, which calls the helper.
-
 ### `TypeError: stop is not a function`
 
 - **Cause:** A query created with query() after the component was connected, thrown at the next disconnection.

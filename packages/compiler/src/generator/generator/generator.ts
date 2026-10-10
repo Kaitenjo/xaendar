@@ -74,7 +74,7 @@ export class Generator {
         'function render() {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
-          'const context = new _Context(this, { createElement: document.createElement.bind(document), get: () => undefined });'
+          'const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined });'
         ])
       ]
 
@@ -97,7 +97,7 @@ export class Generator {
 
         generatedCode.push(
           `\nfunction ${key}(${fnData.args?.join(', ')}) {`,
-          ...indent(['const context = new _Context(this, parentContext);'])
+          ...indent(['const context = new _Context(parentContext);'])
         );
 
         if (precode) {

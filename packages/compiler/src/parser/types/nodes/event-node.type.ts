@@ -1,5 +1,4 @@
 import { Expression } from 'typescript';
-import { InterpolationNode } from './interpolation-node.type';
 import { ASTNodeType } from '../node.enum';
 import { ASTNodeWithSpan } from '../ast.type';
 
@@ -14,9 +13,9 @@ export type EventNode = ASTNodeWithSpan<{
    */
   name: string;
   /**
-   * The Event Handler, either a method name string or an interpolation node.
+   * The Event Handler: the method called, as written before its arguments (e.g. `save`, `cart.clear`).
    */
-  handler: string | InterpolationNode;
+  handler: string;
   /**
    * The Event Handler parameters
    */

@@ -2073,7 +2073,7 @@
       "events": {
         "eyebrow": "Template",
         "title": "Gestione degli eventi",
-        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente. L’handler è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
+        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente, o di uno dei suoi membri, come <code>cart.clear()</code>. L’handler è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
         "callingAMethod": {
           "title": "Chiamare un metodo",
           "example1": "Ogni tipo di argomento",
@@ -2093,10 +2093,6 @@
           "title": "Casi limite",
           "example1": "Niente modificatori degli eventi",
           "p1": "I template non hanno modificatori degli eventi: <code>(keydown.enter)</code> ascolta un evento che si chiama letteralmente <code>keydown.enter</code>, che il browser non invia mai, e il primo contatore non si muove. Filtra il tasto nel metodo, come fa il secondo campo. Lo stesso vale per <code>preventDefault()</code> e <code>stopPropagation()</code>: chiamali su <code>$event</code>.",
-          "callout1": {
-            "heading": "Un metodo di un altro oggetto",
-            "p1": "Un handler che chiama un metodo di un membro compila, ma fallisce al primo evento."
-          },
           "callout2": {
             "heading": "Le proprietà di $event",
             "body": "<code>$event</code> si può passare solo intero: <code>$event.target</code> o <code>$event.detail</code> in un handler non compilano. Leggile nel metodo."
@@ -2110,7 +2106,7 @@
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
-          "td1": "Chiama un metodo del componente per ogni evento.",
+          "td1": "Chiama un metodo del componente, o di uno dei suoi membri, per ogni evento.",
           "td2": "Passa l’evento, tipizzato in base al nome.",
           "td3": "Letterali, membri, variabili di un ciclo e le loro proprietà.",
           "td4": "Un listener attivo solo finché vale la condizione. Vedi <a href=\"#/it/templates/conditional-bindings\">Binding condizionali</a>."
@@ -2960,10 +2956,6 @@
       "cause": "this.effect chiamato nel costruttore di una direttiva, prima che esista il suo contesto.",
       "fix": "Crea gli effect in onInit."
     },
-    "TypeError: Cannot read properties of undefined (reading 'bind')": {
-      "cause": "Un listener che chiama un metodo di un membro, come (click)=\"helper.run()\": compila, e fallisce al clic.",
-      "fix": "Chiama un metodo del componente, che chiama l’helper."
-    },
     "TypeError: stop is not a function": {
       "cause": "Una query creata con query() dopo la connessione del componente, lanciato alla disconnessione successiva.",
       "fix": "Crea le query negli inizializzatori dei campi."
@@ -3018,11 +3010,6 @@
     }
   },
   "issues": {
-    "a-listener-calling-a-method-of": {
-      "title": "Un listener che chiama un metodo di un membro fallisce a runtime",
-      "details": "(click)=\"helper.run()\" compila, poi lancia TypeError: Cannot read properties of undefined (reading 'bind') al clic.",
-      "workaround": "Chiama un metodo del componente."
-    },
     "an-expression-starting-with-a-backtick": {
       "title": "Un’espressione che inizia con un backtick dopo uno spazio",
       "details": "{ `testo` } nel testo o in un attributo non viene analizzato: Expected closing tag, o Attribute value missing.",

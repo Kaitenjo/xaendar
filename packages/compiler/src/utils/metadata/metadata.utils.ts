@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, CompilerOptions, Decorator, Expression, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Decorator, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
 import { ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';

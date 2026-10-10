@@ -14,7 +14,7 @@ describe('Generator', () => {
     expect(code).toBe([
       'function render() {',
       '  const root = this._root;',
-      '  const context = new _Context(this, { createElement: document.createElement.bind(document), get: () => undefined });',
+      '  const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined });',
       '  _renderLiteralText(root, context, \'hello\', null);',
       '  return context;',
       '}'

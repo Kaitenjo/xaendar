@@ -33,7 +33,7 @@ function create<T extends CustomDirective>(Directive: new () => T, element = doc
  * returned context disconnects the directive and disposes its effects.
  */
 function connect(directive: CustomDirective): _Context {
-  const context = new _Context({} as never, {} as never);
+  const context = new _Context({} as never);
   context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
   directive[DIRECTIVE_CONNECT](context);
 

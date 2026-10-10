@@ -2,15 +2,14 @@
 // Installs `Array.prototype.removeItem`, loaded at runtime through `@xaendar/signals`
 import '@xaendar/common';
 import { describe, expect, it, vi } from 'vitest';
-import type { CustomElement } from '../../models/custom-element/custom-element';
 import { _Context, createAnchor, mountNode } from './context.util';
 
-function createRoot(root: Record<string, unknown> = {}): _Context {
+function createRoot(): _Context {
   const parent = {
     createElement: (tagName: string) => document.createElement(tagName),
     get: () => undefined
   } as unknown as _Context;
-  return new _Context(root as unknown as CustomElement, parent);
+  return new _Context(parent);
 }
 
 describe('_Context', () => {
@@ -58,14 +57,6 @@ describe('_Context', () => {
 
     it('returns undefined for unknown identifiers', () => {
       expect(createRoot().addChild().get('unknown')).toBeUndefined();
-    });
-  });
-
-  describe('getEventHandler', () => {
-    it('returns the root method bound to the root', () => {
-      const root = { value: 42, handler(this: { value: number }) { return this.value; } };
-      const handler = createRoot(root).getEventHandler('handler');
-      expect(handler()).toBe(42);
     });
   });
 

@@ -1,7 +1,6 @@
 // Type-only: brings the `Array.prototype.removeItem` declaration into scope, the extension itself is installed at runtime by `@xaendar/signals` importing `@xaendar/common`
 import type {} from '@xaendar/common';
-import { Function, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
-import { CustomElement } from '../../models/custom-element/custom-element';
+import { Function, NoArgsVoidFunction } from '@xaendar/types';
 
 /**
  * Tracks identifier scope during run time template function execution
@@ -40,13 +39,9 @@ export class _Context {
   /**
    * Creates a new scope context.
    *
-   * @param _root - Web component reference used to resolve property and method bindings.
    * @param _parent - Parent context used for outer-scope resolution.
    */
-  constructor(
-    private _root: CustomElement,
-    private _parent: _Context,
-  ) {
+  constructor(private _parent: _Context) {
     this.createElement = this._parent.createElement;
   }
 
@@ -87,24 +82,13 @@ export class _Context {
   }
 
   /**
-   * Returns the event handler method bound to the root component instance.
-   *
-   * @param handler - The name of the method on the root component to retrieve.
-   * @returns The handler function, bound to the root component so `this` is correct.
-   */
-  public getEventHandler(handler: string): VoidFunction {
-    // We do not check if the property exists beacuse it'll be done by TCB
-    return (this._root[handler as keyof CustomElement] as VoidFunction).bind(this._root);
-  }
-
-  /**
    * Registers a child context as a nested scope of this context.
    *
    * @param context - The child context to add. If omitted, a new one is created with this context as parent.
    * @returns The registered child context.
    */
   public addChild(context?: _Context): _Context {
-    context ??= new _Context(this._root, this);
+    context ??= new _Context(this);
     this._children.push(context);
     return context;
   }

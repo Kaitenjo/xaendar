@@ -2073,7 +2073,7 @@
       "events": {
         "eyebrow": "Templates",
         "title": "Event listeners",
-        "lead": "An attribute whose name is in parentheses listens to the event of that name and calls a method of the component. The handler is always one call to a method, with simple arguments: the logic lives in the class, where it can be read, typed and tested.",
+        "lead": "An attribute whose name is in parentheses listens to the event of that name and calls a method of the component, or of one of its members, such as <code>cart.clear()</code>. The handler is always one call to a method, with simple arguments: the logic lives in the class, where it can be read, typed and tested.",
         "callingAMethod": {
           "title": "Calling a method",
           "example1": "Every kind of argument",
@@ -2093,10 +2093,6 @@
           "title": "Edge cases",
           "example1": "No event modifiers",
           "p1": "Templates have no event modifiers: <code>(keydown.enter)</code> listens to an event whose name is literally <code>keydown.enter</code>, which the browser never dispatches, and the first counter never moves. Filter the key in the method, as the second field does. The same goes for <code>preventDefault()</code> and <code>stopPropagation()</code>: call them on <code>$event</code>.",
-          "callout1": {
-            "heading": "A method of another object",
-            "p1": "A handler calling a method of a member compiles, but fails at the first event."
-          },
           "callout2": {
             "heading": "The properties of $event",
             "body": "<code>$event</code> can only be passed whole: <code>$event.target</code> or <code>$event.detail</code> in a handler do not compile. Read them in the method."
@@ -2110,7 +2106,7 @@
           "title": "API summary",
           "th1": "Syntax",
           "th2": "Description",
-          "td1": "Calls a method of the component for each event.",
+          "td1": "Calls a method of the component, or of one of its members, for each event.",
           "td2": "Passes the event, typed by its name.",
           "td3": "Literals, members, variables of a loop and their properties.",
           "td4": "A listener active only while the condition holds. See <a href=\"#/en/templates/conditional-bindings\">Conditional bindings</a>."
@@ -2960,10 +2956,6 @@
       "cause": "this.effect called in the constructor of a directive, before its context exists.",
       "fix": "Create effects in onInit."
     },
-    "TypeError: Cannot read properties of undefined (reading 'bind')": {
-      "cause": "A listener calling a method of a member, such as (click)=\"helper.run()\": it compiles, and fails at the click.",
-      "fix": "Call a method of the component, which calls the helper."
-    },
     "TypeError: stop is not a function": {
       "cause": "A query created with query() after the component was connected, thrown at the next disconnection.",
       "fix": "Create queries in field initializers."
@@ -3018,11 +3010,6 @@
     }
   },
   "issues": {
-    "a-listener-calling-a-method-of": {
-      "title": "A listener calling a method of a member fails at runtime",
-      "details": "(click)=\"helper.run()\" compiles, then throws TypeError: Cannot read properties of undefined (reading 'bind') at the click.",
-      "workaround": "Call a method of the component."
-    },
     "an-expression-starting-with-a-backtick": {
       "title": "An expression starting with a backtick after a space",
       "details": "{ `text` } in text or in an attribute is not parsed: Expected closing tag, or Attribute value missing.",

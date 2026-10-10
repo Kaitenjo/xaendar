@@ -18,7 +18,7 @@ function create(render: (element: CustomElement) => void = () => undefined): Cus
   const klass = class extends CustomElement { };
   _defineRender(klass, function (this: CustomElement) {
     render(this);
-    return new _Context(this, {} as never);
+    return new _Context({} as never);
   });
   const name = `x-query-signal-${counter++}`;
   customElements.define(name, klass);

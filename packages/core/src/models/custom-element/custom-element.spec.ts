@@ -23,7 +23,7 @@ type TestElement = HTMLElement & {
  * registered on it) after invoking the optional `onClear` callback.
  */
 function createContext(onClear?: NoArgsVoidFunction): _Context {
-  const context = new _Context({} as never, {} as never);
+  const context = new _Context({} as never);
   const clear = context.clear.bind(context);
   vi.spyOn(context, 'clear').mockImplementation(() => {
     onClear?.();

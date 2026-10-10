@@ -57,11 +57,21 @@ describe('generateElement', () => {
     const { code } = await run('<div (click)="f($event, a, $event)" (focus)="g()"></div>');
     const output = code.join('\n');
 
-    expect(output).toContain('($event) => $event,');
-    expect(output).toContain('() => this.a,');
-    expect(output).toContain('() => $event,');
-    expect(output).toContain('handler: \'g\',');
-    expect(output).toContain('parameters: []');
+    expect(output).toContain('handler: ($event) => this.f($event, this.a, $event)');
+    expect(output).toContain('handler: () => this.g()');
+    expectValidJavascript(code);
+  });
+
+  it('calls a method of a member on that member', async () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('count');
+    const { code } = await run('<div (click)="helper.run($event)" (focus)="count.set(1)" (blur)="helper?.stop()"></div>', context);
+    const output = code.join('\n');
+
+    expect(output).toContain('handler: ($event) => this.helper.run($event)');
+    expect(output).toContain('handler: () => this.count.set(1)');
+    expect(output).toContain('handler: () => this.helper?.stop()');
+    expectValidJavascript(code);
   });
 
   it('does not leak $event into the context after generating events', async () => {
@@ -476,8 +486,7 @@ describe('generateElement', () => {
         '              events: [',
         '                {',
         '                  name: \'toggled\',',
-        '                  handler: \'onToggled\',',
-        '                  parameters: []',
+        '                  handler: () => this.onToggled()',
         '                },',
         '              ],',
         '              conditionalBindings: [',
@@ -555,8 +564,7 @@ describe('generateElement', () => {
       expect(output).toContain('selector: \'myDirective\',');
       expect(output).toContain('value: \'block\',');
       expect(output).toContain('setter: _setReactiveProperty');
-      expect(output).toContain('handler: \'onToggled\',');
-      expect(output).toContain('($event) => $event,');
+      expect(output).toContain('handler: ($event) => this.onToggled($event)');
       expect(output).not.toContain('unbind');
       expectValidJavascript(code);
     });

@@ -24,7 +24,7 @@ afterEach(() => document.body.replaceChildren());
  */
 function create(): CustomElement {
   const klass = class extends CustomElement { };
-  _defineRender(klass, () => new _Context({} as never, {} as never));
+  _defineRender(klass, () => new _Context({} as never));
   const name = `x-query-decorator-${counter++}`;
   customElements.define(name, klass);
   return document.createElement(name) as CustomElement;
@@ -37,7 +37,7 @@ function create(): CustomElement {
 function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
   const selector = `x-query-target-${counter++}`;
   const klass = class extends base { };
-  _defineRender(klass, () => new _Context({} as never, {} as never));
+  _defineRender(klass, () => new _Context({} as never));
   const metadata = {};
   WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: metadata });
@@ -361,7 +361,7 @@ function withSlots(...children: Element[]): CustomElement {
     const named = document.createElement('slot');
     named.name = 'a';
     this.shadowRoot!.append(document.createElement('slot'), named);
-    return new _Context(this, {} as never);
+    return new _Context({} as never);
   });
   const name = `x-query-decorator-${counter++}`;
   customElements.define(name, klass);

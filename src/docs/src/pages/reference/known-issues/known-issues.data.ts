@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-listener-calling-a-method-of',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/events'
-  },
-  {
     id: 'an-expression-starting-with-a-backtick',
     area: 'Compiler',
     kind: 'bug',
