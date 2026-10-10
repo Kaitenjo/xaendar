@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-shorthand-object-in-an-interpolation',
-    area: 'Compiler',
-    kind: 'bug',
-    page: 'templates/text-interpolation'
-  },
-  {
     id: 'newlines-are-removed-and-entities-are',
     area: 'Compiler',
     kind: 'limitation',

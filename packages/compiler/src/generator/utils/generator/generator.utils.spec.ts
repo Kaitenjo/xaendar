@@ -53,7 +53,24 @@ describe('resolveExpression', () => {
   });
 
   it('does not resolve object literal keys', () => {
-    expect(resolve('{ a: b }').expression).toBe('{ a: this.b }');
+    expect(resolve('[{ a: b }]').expression).toBe('[{ a: this.b }]');
+  });
+
+  it('keeps the name of a shorthand property, giving it the resolved value', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('count');
+    context.addUnresolvableIdentifier('$event');
+    expect(resolve('[{ b, count, $event, Math }]', context)).toEqual({ expression: '[{ b: this.b, count: this.count, $event, Math }]', reactive: true });
+    expect(resolve('[{ b }]', new CompilerContext(), { skipResolution: true }).expression).toBe('[{ b }]');
+  });
+
+  it.each([
+    ['an object literal', '{ a: b }', '({ a: this.b })'],
+    ['a shorthand object literal', '{b}', '({b: this.b})'],
+    ['an expression starting with an object literal', '{ b }.b', '({ b: this.b }.b)'],
+    ['an object literal without identifiers to resolve', '{ a: 1 }', '({ a: 1 })']
+  ])('wraps %s starting the expression in parentheses', (_name, source, expression) => {
+    expect(resolve(source).expression).toBe(expression);
   });
 
   it('preserves the original formatting of complex expressions', () => {

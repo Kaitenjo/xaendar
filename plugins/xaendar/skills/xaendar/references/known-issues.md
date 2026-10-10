@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A shorthand object in an interpolation renders nothing (bug)
-
-{ {b} } compiles, and renders an empty text.
-
-**Workaround:** Write the object in full, or format it in a method.
-
 ### Newlines are removed and entities are not decoded (limitation)
 
 A line break in text joins the words around it, and &lt; is shown as written. Text cannot contain a literal @, { or <.

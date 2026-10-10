@@ -145,7 +145,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
       const { expression, reactive } = resolveExpression(value.expression, compilerContext);
       retval.push(
         ...indent([
-          `value: () => ${expression.startsWith('{') ? `(${expression})` : expression},`,
+          `value: () => ${expression},`,
           `setter: ${reactive ? '_setReactiveProperty' : '_setExpressionProperty'}`,
         ])
       );

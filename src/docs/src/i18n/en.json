@@ -2439,13 +2439,6 @@
           "example1": "Values of every kind",
           "p2": "The last row is the most common mistake: a signal is a function, and without the call the text shows the function itself. Nothing reports it, since showing a function is valid."
         },
-        "edgeCases": {
-          "title": "Edge cases",
-          "callout6": {
-            "heading": "An object literal in braces",
-            "body": "<code>{ { value } }</code> compiles and renders nothing at all: the inner braces are not read as an object. To show an object, convert it, for example with <code>JSON.stringify</code>."
-          }
-        },
         "apiSummary": {
           "title": "API summary",
           "th1": "Value",
@@ -2976,11 +2969,6 @@
     }
   },
   "issues": {
-    "a-shorthand-object-in-an-interpolation": {
-      "title": "A shorthand object in an interpolation renders nothing",
-      "details": "{ {b} } compiles, and renders an empty text.",
-      "workaround": "Write the object in full, or format it in a method."
-    },
     "newlines-are-removed-and-entities-are": {
       "title": "Newlines are removed and entities are not decoded",
       "details": "A line break in text joins the words around it, and &lt; is shown as written. Text cannot contain a literal @, { or <.",

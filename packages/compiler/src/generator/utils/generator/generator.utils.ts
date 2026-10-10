@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, Node } from 'typescript';
+import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
@@ -264,7 +264,13 @@ export const ROOT_NODE = 'root';
  * // → typeof this.id !== 'boolean' || this.pippo instanceof HTMLElement
  */
 export function resolveExpression(expression: Expression, compilerContext: CompilerContext, options?: ResolveExpressionOptions): { expression: string, reactive?: boolean } {
-  return emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
+  const resolved = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
+
+  /*
+    An expression starting with an object literal is wrapped in parentheses: where the generated code
+    uses it as the body of an arrow function or as a statement, its brace would open a block instead
+  */
+  return resolved.expression.startsWith('{') ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
 }
 
 /**
@@ -282,28 +288,12 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
   // Leaf Identifier that needs resolution
   if (isIdentifier(node) && needsResolution(node, parent)) {
     const text = node.text;
-    if (options.skipResolution) {
-      return { expression: text }
-    }
+    const resolved = resolveIdentifier(text, compilerContext, options);
 
-    if (compilerContext.hasSignalField(text)) {
-      return { expression: `this.${text}`, reactive: true };
-    }
-
-    if (compilerContext.hasUnresolvableIdentifier(text)) {
-      return { expression: text, reactive: compilerContext.getUnresolvableIdentifierKind(text) === 'signal' };
-    }
-
-    if (compilerContext.hasIdentifier(text)) {
-      const kind = compilerContext.getIdentifierKind(text);
-      return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
-    }
-
-    if (options.resolver) {
-      return { expression: `${options.resolver}.${text}` };
-    }
-
-    return { expression: text };
+    // A shorthand property ({ name }) keeps its name, and takes the resolved value
+    return isShorthandPropertyAssignment(parent) && resolved.expression !== text
+      ? { ...resolved, expression: `${text}: ${resolved.expression}` }
+      : resolved;
   }
 
   // No resolvable identifiers in this subtree — emit verbatim
@@ -328,6 +318,40 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
 
   // Append any trailing text after the last child (e.g. closing paren)
   return { expression: `${result.expression}${slice(sourceText, lastEnd, node.getEnd())}`, reactive: result.reactive };
+}
+
+/**
+ * Resolves an identifier of an expression: to a signal member, an identifier left as written,
+ * a variable of the template scope, or a member reached through the resolver.
+ *
+ * @param text - The name of the identifier.
+ * @param compilerContext - Current render scope context.
+ * @param options - The options of the resolution.
+ * @returns The resolved access expression, and whether it reads a signal.
+ */
+function resolveIdentifier(text: string, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
+  if (options.skipResolution) {
+    return { expression: text }
+  }
+
+  if (compilerContext.hasSignalField(text)) {
+    return { expression: `this.${text}`, reactive: true };
+  }
+
+  if (compilerContext.hasUnresolvableIdentifier(text)) {
+    return { expression: text, reactive: compilerContext.getUnresolvableIdentifierKind(text) === 'signal' };
+  }
+
+  if (compilerContext.hasIdentifier(text)) {
+    const kind = compilerContext.getIdentifierKind(text);
+    return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
+  }
+
+  if (options.resolver) {
+    return { expression: `${options.resolver}.${text}` };
+  }
+
+  return { expression: text };
 }
 
 /**

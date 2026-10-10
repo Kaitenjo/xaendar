@@ -163,7 +163,6 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 ```
 
 - Members used by the template must be `public`. Module constants must be exposed as members (`public readonly limit = LIMIT;`).
-- Shorthand objects (`{ name }`) in an interpolation render nothing: write `{ name: name }`.
 - `history` and `location` always resolve to the browser globals.
 
 ## What does not exist

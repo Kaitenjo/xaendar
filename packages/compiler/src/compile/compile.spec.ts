@@ -51,6 +51,18 @@ describe('compile', () => {
     expect(javascript.match(/_renderLiteralText\([^)]*' '/g)).toHaveLength(1);
   });
 
+  it('compiles object literals starting an expression, shorthand properties included', async () => {
+    const template = '<p title="{ {count} }">{ {count} } { { a: count }.a }</p>\n@if ({ count }.count) {\n  <i>x</i>\n}';
+    const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
+
+    expect(javascript).toContain('value: () => ({count: this.count}),');
+    expect(javascript).toContain('_renderText(p0, context, () => ({count: this.count}), null);');
+    expect(javascript).toContain('_renderText(p0, context, () => ({ a: this.count }.a), null);');
+    expect(javascript).toContain('condition: () => ({ count: this.count }.count),');
+    expect(typescript.text).toContain('({count: root.count});');
+    expect(typescript.text).toContain('if (({ count: root.count }.count)) {');
+  });
+
   it('compiles a tag spanning multiple lines exactly like the same tag on a single line', async () => {
     const lines = ['<div', 'class="a"', 'title="{name}"', '(click)="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
     const compileBoth = (template: string) => compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });

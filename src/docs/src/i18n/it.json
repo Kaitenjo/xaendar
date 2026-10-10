@@ -2439,13 +2439,6 @@
           "example1": "Valori di ogni tipo",
           "p2": "L’ultima riga è l’errore più comune: un signal è una funzione, e senza la chiamata il testo mostra la funzione stessa. Nessuno lo segnala, perché mostrare una funzione è lecito."
         },
-        "edgeCases": {
-          "title": "Casi limite",
-          "callout6": {
-            "heading": "Un oggetto letterale tra graffe",
-            "body": "<code>{ { value } }</code> compila e non mostra nulla: le graffe interne non vengono lette come un oggetto. Per mostrare un oggetto convertilo, per esempio con <code>JSON.stringify</code>."
-          }
-        },
         "apiSummary": {
           "title": "Riepilogo",
           "th1": "Valore",
@@ -2976,11 +2969,6 @@
     }
   },
   "issues": {
-    "a-shorthand-object-in-an-interpolation": {
-      "title": "Un oggetto abbreviato in un’interpolazione non renderizza nulla",
-      "details": "{ {b} } compila, e renderizza un testo vuoto.",
-      "workaround": "Scrivi l’oggetto per esteso, o formattalo in un metodo."
-    },
     "newlines-are-removed-and-entities-are": {
       "title": "Gli a capo vengono rimossi e le entità non vengono decodificate",
       "details": "Un a capo nel testo unisce le parole che lo circondano, e &lt; viene mostrato così com’è. Il testo non può contenere @, { o < letterali.",

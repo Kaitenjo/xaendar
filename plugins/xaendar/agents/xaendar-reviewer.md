@@ -26,7 +26,7 @@ Check at least the following:
 - A child's `onInit` or first render reading a required input without guarding against `undefined`/defaults.
 - Effects created in the constructor or a field initializer, instead of with `this.effect` in `onInit`. Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.
 - `(keydown.enter)`-style modifiers. Listeners with logic, nested calls or `$event.x`.
-- `history`/`location` as member names. Shorthand objects in interpolations.
+- `history`/`location` as member names.
 - Components or directives that are never loaded at runtime (not matched by the `main.ts` glob or imports), or not `@import`ed by a template that uses them.
 
 **Type and build problems the build does not report**
