@@ -98,6 +98,30 @@ export class Computed<T = any> {
    */
   #sinks: Set<Computed<unknown> | Watcher>;
   /**
+   * Incremented each time the value, or the cached exception, changes.
+   *
+   * @internalSlot
+   */
+  #version = 0;
+  /**
+   * The version of each source as of the end of the last evaluation. Without sinks the state of this
+   * Signal is not kept up to date, so `get()` compares these versions to decide whether to evaluate again.
+   *
+   * @internalSlot
+   */
+  #sourceVersions = new Map<State<unknown> | Computed<unknown>, number>();
+  /**
+   * Returns the version of the value, incremented each time it changes.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns The current version.
+   * @internal
+   */
+  public getVersion(symbol: symbol): number {
+    assertPrivateContext(symbol);
+    return this.#version;
+  }
+  /**
    * Returns a snapshot of the current sinks set for introspection.
    *
    * @param symbol - Private access symbol; rejects calls from outside the library.
@@ -169,7 +193,9 @@ export class Computed<T = any> {
    *
    * If the state is `~dirty~` or `~checked~`, walks the source graph
    * depth-first to find and recalculate the deepest stale `Computed` first,
-   * then re-checks upward until this Signal is `~clean~`.
+   * then re-checks upward until this Signal is `~clean~`. Without sinks, the
+   * state is not kept up to date: the cached value is reused as long as no
+   * source changed version since the last evaluation.
    *
    * @returns The current computed value.
    * @throws The exception thrown by the last evaluation, either by `#callback` or by `#equals`.
@@ -188,15 +214,7 @@ export class Computed<T = any> {
     }
 
     GLOBAL_STATE.computing?.addSource(this, PRIVATE);
-
-    if (this.#sinks.size === 0) {
-      this.#computeValue();
-    } else if (this.#state === 'dirty' || this.#state === 'checked') {
-      while (this.#state === 'dirty' || this.#state === 'checked') {
-        const deepest = this.#findDeepestStale();
-        deepest.#computeValue();
-      }
-    }
+    this.#refresh();
 
     if (this.#hasError) {
       throw this.#error;
@@ -316,6 +334,42 @@ export class Computed<T = any> {
   }
 
   /**
+   * Brings the cached value up to date, evaluating `#callback` only when needed: with sinks, while the state
+   * is `~dirty~` or `~checked~`; without sinks, when it was never evaluated or a source changed version.
+   */
+  #refresh(): void {
+    if (this.#sinks.size === 0) {
+      if (!this.#hasValue || this.#sourcesChanged()) {
+        this.#computeValue();
+      }
+    } else {
+      while (this.#state === 'dirty' || this.#state === 'checked') {
+        const deepest = this.#findDeepestStale();
+        deepest.#computeValue();
+      }
+    }
+  }
+
+  /**
+   * Tells whether a source changed since the last evaluation, bringing the `Computed` sources up to date first.
+   *
+   * @returns `true` if at least one source has a version other than the one read by the last evaluation.
+   */
+  #sourcesChanged(): boolean {
+    for (const [source, version] of this.#sourceVersions) {
+      if (source instanceof Computed) {
+        source.#refresh();
+      }
+
+      if (source.getVersion(PRIVATE) !== version) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Recursively walks the source graph depth-first to find the deepest,
    * left-most `Computed` node that is in a `~dirty~` or `~checked~` state.
    *
@@ -376,6 +430,14 @@ export class Computed<T = any> {
     }
 
     const outcome = thrown ? this.#setError(error) : this.#setValue(newValue);
+    if (outcome === 'dirty') {
+      this.#version++;
+    }
+
+    this.#sourceVersions.clear();
+    for (const source of this.#sources) {
+      this.#sourceVersions.set(source, source.getVersion(PRIVATE));
+    }
 
     this.setState('clean', PRIVATE);
 

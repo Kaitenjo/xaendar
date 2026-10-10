@@ -1679,10 +1679,6 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "An unobserved computed signal is evaluated at every read",
-            "body": "The cache only holds while something — an effect, a template binding — depends on the computed signal. Hide the full name in the first example and press “Read it 3 times”: three reads, three evaluations. Avoid reading an expensive computed signal repeatedly from plain code; read it once into a variable."
-          },
           "example1": "Computed signals reading each other throw",
           "callout2": {
             "heading": "Keep fn pure",
@@ -2957,11 +2953,6 @@
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",
       "workaround": "Create foreign elements in code; listen to native events on a wrapper."
-    },
-    "an-unwatched-computed-signal-is-evaluated": {
-      "title": "An unwatched computed signal is evaluated at every read",
-      "details": "Without an effect or a watcher depending on it, the cache of a computed signal is not used.",
-      "workaround": "Read costly computed signals from effects or templates."
     },
     "watched-and-unwatched-fire-on-every": {
       "title": "watched and unwatched fire on every run of the only dependent",

@@ -42,12 +42,6 @@ Custom elements of other libraries are rejected by the type checker, and so are 
 
 ## Signals
 
-### An unwatched computed signal is evaluated at every read (bug)
-
-Without an effect or a watcher depending on it, the cache of a computed signal is not used.
-
-**Workaround:** Read costly computed signals from effects or templates.
-
 ### watched and unwatched fire on every run of the only dependent (bug)
 
 The sinks are removed before each recomputation, so a signal with one dependent is unwatched and watched again every time it runs. computed() ignores both callbacks.

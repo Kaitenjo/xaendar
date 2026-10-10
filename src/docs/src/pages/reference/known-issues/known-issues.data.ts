@@ -68,12 +68,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'components/registration'
   },
   {
-    id: 'an-unwatched-computed-signal-is-evaluated',
-    area: 'Signals',
-    kind: 'bug',
-    page: 'signals/computed'
-  },
-  {
     id: 'watched-and-unwatched-fire-on-every',
     area: 'Signals',
     kind: 'bug',

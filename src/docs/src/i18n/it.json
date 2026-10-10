@@ -1679,10 +1679,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Un signal derivato non osservato viene valutato a ogni lettura",
-            "body": "La cache vale solo finché qualcosa — un effetto, un binding del template — dipende dal signal derivato. Nascondi il nome completo nel primo esempio e premi “Read it 3 times”: tre letture, tre valutazioni. Evita di leggere ripetutamente un signal derivato costoso da codice normale; leggilo una volta in una variabile."
-          },
           "example1": "Signal derivati che si leggono a vicenda lanciano un errore",
           "callout2": {
             "heading": "Mantieni fn pura",
@@ -2957,11 +2953,6 @@
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
       "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "an-unwatched-computed-signal-is-evaluated": {
-      "title": "Un computed non osservato viene valutato a ogni lettura",
-      "details": "Senza un effect o un watcher che ne dipenda, la cache di un computed non viene usata.",
-      "workaround": "Leggi i computed costosi da effect o template."
     },
     "watched-and-unwatched-fire-on-every": {
       "title": "watched e unwatched scattano a ogni esecuzione dell’unico dipendente",
