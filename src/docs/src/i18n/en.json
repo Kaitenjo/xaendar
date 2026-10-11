@@ -509,7 +509,6 @@
           "li1": "<code>onDestroy</code>, <code>onInit</code> and <code>afterRender</code> run again, as the log shows;",
           "li2": "the template is rendered from scratch: the text typed in the field is lost, because it lived in the old DOM;",
           "li3": "the signals of the instance survive: the counter keeps its value;",
-          "li4": "the effect created in a field is stopped by each move and started again by the connection that follows, like the one created in <code>onInit</code>: both keep following the counter.",
           "callout2": {
             "heading": "connectedCallback and disconnectedCallback are taken",
             "p1": "The base class uses the callbacks of custom elements to render the template, and keeps them private. Defining them in a component does not compile, and at run time would replace the ones of the base class: the template would never be rendered. Use the hooks."

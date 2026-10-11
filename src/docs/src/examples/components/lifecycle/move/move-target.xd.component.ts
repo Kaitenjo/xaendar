@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * An element with a counter, a text field and two effects: one created in a field, one in onInit.
+ * An element with a counter and a text field, logging its hooks.
  */
 @WebComponent({
   selector: 'ex-move-target',
@@ -19,24 +19,15 @@ export class MoveTargetComponent extends CustomElement {
    */
   public readonly clicks = signal(0);
   /**
-   * The last count seen by the effect created in a field.
-   */
-  public readonly seenByField = signal(0);
-  /**
-   * The last count seen by the effect created in onInit.
-   */
-  public readonly seenByOnInit = signal(0);
-  /**
    * The identifier of the next line of the log.
    */
   private _nextId = 0;
 
   /**
-   * Logs the connection, and creates the effect again: hooks run at every connection.
+   * Logs the connection: hooks run at every connection.
    */
   public onInit(): void {
     this._write('onInit');
-    this.effect(() => this.seenByOnInit.set(this.clicks()));
   }
 
   /**

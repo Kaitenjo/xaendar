@@ -509,7 +509,6 @@
           "li1": "<code>onDestroy</code>, <code>onInit</code> e <code>afterRender</code> vengono rieseguiti, come mostra il log;",
           "li2": "il template viene renderizzato da zero: il testo digitato nel campo va perso, perché viveva nel vecchio DOM;",
           "li3": "i signal dell’istanza sopravvivono: il contatore mantiene il suo valore;",
-          "li4": "l’effect creato in un campo viene fermato a ogni spostamento e riavviato dal collegamento che segue, come quello creato in <code>onInit</code>: entrambi continuano a seguire il contatore.",
           "callout2": {
             "heading": "connectedCallback e disconnectedCallback sono già usati",
             "p1": "La classe base usa le callback dei custom element per renderizzare il template, e le tiene private. Definirle in un componente non compila, e a runtime sostituirebbe quelle della classe base: il template non verrebbe mai renderizzato. Usa gli hook."
