@@ -100,38 +100,6 @@ class X extends StructuralDirective { shouldRender(): boolean | Promise<boolean>
 
 Base class of the directives deciding whether the element they are applied to is rendered.
 
-### query (function)
-
-```ts
-query(this, '.selector' | ComponentClass): QuerySignal<E | null>
-```
-
-The function form of @Query, usually for a field initializer. Created once the component is connected, it starts at once.
-
-### queryAll (function)
-
-```ts
-queryAll(this, '.selector' | ComponentClass): QuerySignal<E[]>
-```
-
-The function form of @Query.all.
-
-### querySlot (function)
-
-```ts
-querySlot(this, '.selector' | ComponentClass, { slots?, lightDom? }): QuerySignal<E | null>
-```
-
-The function form of @Query.content.
-
-### querySlotAll (function)
-
-```ts
-querySlotAll(this, '.selector' | ComponentClass, { slots?, lightDom? }): QuerySignal<E[]>
-```
-
-The function form of @Query.content.all.
-
 ### Output (type)
 
 ```ts
@@ -204,15 +172,7 @@ Runs a function without tracking the signals it reads.
 isState(value), isComputed(value), introspectSources(node), introspectSinks(signal), hasSources(node), hasSinks(signal), watch(watcher, ...signals), unwatch(watcher, ...signals), getPending(watcher)
 ```
 
-Signal.subtle and instanceof for the functions returned by signal(), computed(), input() and the queries, which Signal.subtle rejects. They accept the proposal nodes too, and return the functions in place of the nodes they wrap.
-
-### input (function)
-
-```ts
-input<T, In = T>(value?: T, { transform?, equals? }?): InputSignal<T>
-```
-
-Creates the InputSignal held by a @Property accessor. Applications use the decorator instead.
+Signal.subtle and instanceof for the functions returned by signal(), computed(), the inputs and the queries, which Signal.subtle rejects. They accept the proposal nodes too, and return the functions in place of the nodes they wrap.
 
 ### Signal (type)
 
@@ -260,7 +220,7 @@ Hooks of an effect. onCleanup runs once, when the effect is disposed.
 SignalOptions<T> & { transform?: (value: In) => T }
 ```
 
-The options of input(), and of @Property together with alias.
+The options of @Property, together with alias.
 
 ### QueryTarget, QueryElement, QuerySlotOptions (type)
 

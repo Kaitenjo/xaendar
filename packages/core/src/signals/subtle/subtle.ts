@@ -48,7 +48,7 @@ export function introspectSources(sink: AnySink): AnySignal[] {
 
 /**
  * Returns the computed signals and the watchers depending on a signal, as `Signal.subtle.introspectSinks` does,
- * accepting and returning the functions returned by `signal()`, `computed()`, `input()` and the queries
+ * accepting and returning the functions returned by `signal()`, `computed()`, the inputs and the queries
  * in place of the nodes they wrap.
  *
  * @param signal - The signal.
@@ -80,7 +80,7 @@ export function hasSinks(signal: AnySignal): boolean {
 
 /**
  * Makes a watcher watch some signals, as its `watch` method does, accepting the functions returned
- * by `signal()`, `computed()`, `input()` and the queries.
+ * by `signal()`, `computed()`, the inputs and the queries.
  *
  * @param watcher - The watcher.
  * @param signals - The signals to watch.
@@ -91,7 +91,7 @@ export function watch(watcher: Signal.subtle.Watcher, ...signals: AnySignal[]): 
 
 /**
  * Makes a watcher stop watching some signals, as its `unwatch` method does, accepting the functions returned
- * by `signal()`, `computed()`, `input()` and the queries.
+ * by `signal()`, `computed()`, the inputs and the queries.
  *
  * @param watcher - The watcher.
  * @param signals - The signals to stop watching.

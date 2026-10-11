@@ -12,7 +12,7 @@ A line break in text joins the words around it, and &lt; is shown as written. Te
 
 ### Signal members are detected by syntax (limitation)
 
-An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member, or a member initialized by another function such as queryAll, is read once.
+An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member is read once.
 
 **Workaround:** Annotate the member with Signal<T> or Computed<T>, or wrap it in computed().
 

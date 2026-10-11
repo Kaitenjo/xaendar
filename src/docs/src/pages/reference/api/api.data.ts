@@ -124,34 +124,6 @@ export const API: readonly ApiEntry[] = [
     page: 'directives/structural'
   },
   {
-    name: 'query',
-    module: '@xaendar/core',
-    kind: 'function',
-    signature: "query(this, '.selector' | ComponentClass): QuerySignal<E | null>",
-    page: 'components/queries'
-  },
-  {
-    name: 'queryAll',
-    module: '@xaendar/core',
-    kind: 'function',
-    signature: "queryAll(this, '.selector' | ComponentClass): QuerySignal<E[]>",
-    page: 'components/queries'
-  },
-  {
-    name: 'querySlot',
-    module: '@xaendar/core',
-    kind: 'function',
-    signature: "querySlot(this, '.selector' | ComponentClass, { slots?, lightDom? }): QuerySignal<E | null>",
-    page: 'components/content-queries'
-  },
-  {
-    name: 'querySlotAll',
-    module: '@xaendar/core',
-    kind: 'function',
-    signature: "querySlotAll(this, '.selector' | ComponentClass, { slots?, lightDom? }): QuerySignal<E[]>",
-    page: 'components/content-queries'
-  },
-  {
     name: 'Output',
     module: '@xaendar/core',
     kind: 'type',
@@ -223,13 +195,6 @@ export const API: readonly ApiEntry[] = [
     page: 'signals/advanced'
   },
   {
-    name: 'input',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: 'input<T, In = T>(value?: T, { transform?, equals? }?): InputSignal<T>',
-    page: 'components/inputs'
-  },
-  {
     name: 'Signal',
     module: '@xaendar/core/signals',
     kind: 'type',
@@ -277,14 +242,6 @@ export const API: readonly ApiEntry[] = [
     kind: 'type',
     signature: 'QueryTarget = string | Constructor<HTMLElement>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }',
     page: 'components/content-queries'
-  },
-  {
-    name: 'createQuerySignal, createSlotQuerySignal, toSelector',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: '—',
-    page: 'components/queries',
-    internal: true
   },
   {
     name: 'loadSignals',

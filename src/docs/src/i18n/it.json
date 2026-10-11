@@ -278,10 +278,6 @@
           "li3": "D non è assegnato a nessuno slot: lo trova solo <code>lightDom</code>, in ordine di documento;",
           "li4": "E è il fallback di uno slot: appartiene all’inspector, e nessuna query sul contenuto lo trova."
         },
-        "queriesWithoutDecorators": {
-          "title": "Query senza decoratori",
-          "p1": "<code>querySlot</code> e <code>querySlotAll</code> sono le funzioni dietro i decoratori, come <code>query</code> e <code>queryAll</code> per le query sulla vista, con la stessa avvertenza nei binding degli attributi."
-        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Contenuto inoltrato tramite uno slot",
@@ -302,8 +298,7 @@
           "td1": "Il primo elemento proiettato che corrisponde a <code>target</code>, oppure <code>null</code>.",
           "td2": "Tutti gli elementi proiettati che corrispondono a <code>target</code>.",
           "td3": "Solo gli slot indicati; <code>''</code> è lo slot di default.",
-          "td4": "Tutti i figli dell’elemento, assegnati a uno slot o no.",
-          "td5": "Le stesse query, create in un campo."
+          "td4": "Tutti i figli dell’elemento, assegnati a uno slot o no."
         }
       },
       "domApis": {
@@ -617,16 +612,10 @@
           "example1": "La query prima e dopo il render, e dopo un cambiamento",
           "p2": "Il template viene aggiornato in un microtask dopo il cambiamento del signal, e la query un microtask dopo ancora. Leggi le query in <code>afterRender</code>, negli handler degli eventi, oppure in modo reattivo in un computed o in un effect: un effect creato in <code>onInit</code> viene rieseguito quando la query viene riempita."
         },
-        "queriesWithoutDecorators": {
-          "title": "Query senza decoratori",
-          "p1": "<code>query</code> e <code>queryAll</code> creano gli stessi signal dei decoratori, a partire da un campo. Sono esportate da <code>@xaendar/core</code>."
-        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Una query su una classe che cambia",
           "p1": "L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa: aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.",
-          "example2": "queryAll in un binding di attributo",
-          "p2": "Il compilatore dei template riconosce un membro signal dalla funzione che lo inizializza, che deve venire da <code>@xaendar/core/signals</code>. <code>queryAll</code> viene da <code>@xaendar/core</code>, quindi in un attributo <code>rows</code> viene letto una volta sola, al render, quando la query è ancora vuota: il primo indicatore non si muove mai, e un’annotazione di tipo non aiuta, perché con una chiamata come inizializzatore conta solo la funzione. Leggi la query tramite un <code>computed</code>, oppure usa il decoratore, il cui accessor viene riconosciuto dal tipo. Le interpolazioni nel testo sono sempre reattive. Vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>.",
           "callout2": {
             "heading": "Ricollegamento: onInit vede i vecchi elementi",
             "body": "Quando l’elemento viene spostato, il template viene renderizzato di nuovo da zero, ma la query viene aggiornata solo dopo il render: in <code>onInit</code> contiene ancora gli elementi del render precedente, ormai staccati dal documento."
@@ -642,7 +631,6 @@
           "th2": "Descrizione",
           "td1": "Il primo elemento del template che corrisponde a <code>target</code>, oppure <code>null</code>.",
           "td2": "Tutti gli elementi corrispondenti, in ordine di documento. Notifica solo quando la lista cambia.",
-          "td3": "Le stesse query, create in un campo.",
           "td4": "Un selettore CSS, oppure la classe di un componente.",
           "td5": "Un signal in sola lettura: <code>query()</code> oppure <code>query.get()</code>."
         }
@@ -1604,7 +1592,7 @@
         "introspection": {
           "title": "Introspezione",
           "p1": "<code>Signal.subtle</code> può ispezionare il grafo vivo: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>currentComputed</code>, che restituisce il signal derivato in corso di valutazione, se c’è. Valutare un signal derivato lo collega alle sue sorgenti, in entrambe le direzioni; smettere di osservarlo lo scollega di nuovo.",
-          "p2": "Le funzioni restituite da <code>signal()</code>, <code>computed()</code>, <code>input()</code> e dalle query avvolgono un nodo della proposta, che <code>Signal.subtle</code> e <code>instanceof</code> non riconoscono. <code>@xaendar/core/signals</code> esporta la stessa API per loro: <code>isState</code> e <code>isComputed</code> al posto di <code>instanceof</code>, <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>watch</code>, <code>unwatch</code>, <code>getPending</code>, che ricevono il watcher come primo argomento. Accettano anche i nodi della proposta, e restituiscono le funzioni al posto dei nodi che avvolgono.",
+          "p2": "Le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query avvolgono un nodo della proposta, che <code>Signal.subtle</code> e <code>instanceof</code> non riconoscono. <code>@xaendar/core/signals</code> esporta la stessa API per loro: <code>isState</code> e <code>isComputed</code> al posto di <code>instanceof</code>, <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>watch</code>, <code>unwatch</code>, <code>getPending</code>, che ricevono il watcher come primo argomento. Accettano anche i nodi della proposta, e restituiscono le funzioni al posto dei nodi che avvolgono.",
           "example1": "Ispezionare price → total ← quantity"
         },
         "devMode": {
@@ -1636,7 +1624,7 @@
           "td12": "<code>Signal.subtle.hasSources(nodo)</code>, <code>hasSinks(nodo)</code>",
           "td13": "Se quelle liste non sono vuote.",
           "td14": "<code>isState</code>, <code>isComputed</code>, <code>introspectSinks</code>, <code>watch(watcher, ...signals)</code>, … di <code>@xaendar/core/signals</code>",
-          "td15": "La stessa API, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, <code>input()</code> e dalle query."
+          "td15": "La stessa API, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query."
         }
       },
       "computed": {
@@ -2612,10 +2600,6 @@
     "CustomElement": "Classe base dei componenti: una shadow root aperta, gli hook del ciclo di vita, e effect eliminati alla disconnessione.",
     "CustomDirective": "Classe base delle direttive che agiscono sull’elemento a cui sono applicate.",
     "StructuralDirective": "Classe base delle direttive che decidono se l’elemento a cui sono applicate viene renderizzato.",
-    "query": "La forma funzione di @Query, di solito per l’inizializzatore di un campo. Creata quando il componente è già connesso, parte subito.",
-    "queryAll": "La forma funzione di @Query.all.",
-    "querySlot": "La forma funzione di @Query.content.",
-    "querySlotAll": "La forma funzione di @Query.content.all.",
     "Output": "Il tipo di un accessor @Event. Senza argomento di tipo l’evento non porta un detail, e i template non possono leggere $event.",
     "EventOptions": "Le opzioni di un output, passate a @Event o a un singolo emit. Serve almeno una chiave.",
     "WebComponentOptions": "Le opzioni di @WebComponent.",
@@ -2625,16 +2609,14 @@
     "computed": "Un signal derivato da altri, valutato in modo lazy e tenuto in cache finché non cambia una dipendenza.",
     "effect": "Esegue una funzione subito, e di nuovo in un microtask dopo che cambiano i signal letti. Restituisce la funzione che lo elimina.",
     "untracked": "Esegue una funzione senza tracciare i signal che legge.",
-    "isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending": "L’API di <code>Signal.subtle</code> e <code>instanceof</code>, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, <code>input()</code> e dalle query.",
-    "input": "Crea l’InputSignal contenuto da un accessor @Property. Le applicazioni usano invece il decoratore.",
+    "isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending": "L’API di <code>Signal.subtle</code> e <code>instanceof</code>, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query.",
     "Signal": "Il tipo restituito da signal(). Annotare un membro con questo tipo rende reattivi gli attributi che lo leggono.",
     "Computed": "Il tipo restituito da computed().",
     "InputSignal": "Il tipo di un input: in sola lettura per il componente, impostato dai binding del padre.",
     "QuerySignal": "Il tipo di una query: un signal in sola lettura aggiornato un microtask dopo i cambi del DOM.",
     "EffectOptions": "Hook di un effect. onCleanup viene eseguito una volta, quando l’effect viene eliminato.",
-    "InputSignalOptions": "Le opzioni di input(), e di @Property insieme ad alias.",
+    "InputSignalOptions": "Le opzioni di @Property, insieme ad alias.",
     "QueryTarget, QueryElement, QuerySlotOptions": "Il bersaglio di una query, il tipo di elemento che ne risulta, e le opzioni delle query sul contenuto.",
-    "createQuerySignal, createSlotQuerySignal, toSelector": "Usate dai decoratori e dalle funzioni delle query per costruire i loro signal.",
     "loadSignals": "Installa il polyfill globale Signal. Va eseguito prima che @xaendar/core venga caricato, da un modulo a sé.",
     "SignalOptions": "Le opzioni di signal() e di Signal.State. computed() usa solo equals.",
     "SignalEqual, ExtractSignalType": "Il tipo di una funzione di uguaglianza, e il tipo del valore di un signal.",
@@ -2899,7 +2881,7 @@
     },
     "signal-members-are-detected-by-syntax": {
       "title": "I membri signal vengono riconosciuti dalla sintassi",
-      "details": "Un attributo è reattivo solo se nomina un membro inizializzato da una funzione di @xaendar/core/signals, o annotato con uno dei suoi tipi. Un signal di modulo assegnato a un membro non annotato, o un membro inizializzato da un’altra funzione come queryAll, viene letto una volta.",
+      "details": "Un attributo è reattivo solo se nomina un membro inizializzato da una funzione di @xaendar/core/signals, o annotato con uno dei suoi tipi. Un signal di modulo assegnato a un membro non annotato viene letto una volta.",
       "workaround": "Annota il membro con Signal<T> o Computed<T>, o avvolgilo in computed()."
     },
     "a-method-reading-signals-is-evaluated": {

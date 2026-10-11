@@ -4,7 +4,6 @@
 @import { ViewQueryComponent } from '../../../examples/components/queries/view-query/view-query.xd.component.ts'
 @import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
 @import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
-@import { QueryFunctionsComponent } from '../../../examples/components/queries/query-functions/query-functions.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.components.queries.eyebrow") class="eyebrow" />
@@ -33,10 +32,6 @@
 </docs-example>
 <p @@i18n(key="pages.components.queries.whenTheResultIs.p2") />
 
-<h2 @@i18n(key="pages.components.queries.queriesWithoutDecorators.title") />
-<p @@i18n(key="pages.components.queries.queriesWithoutDecorators.p1") />
-<docs-code snippet="components/query-functions.ts" />
-
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.queries.edgeCases.title") />
   <docs-example
@@ -47,14 +42,6 @@
     <ex-attribute-changes />
   </docs-example>
   <p @@i18n(key="pages.components.queries.edgeCases.p1") />
-  <docs-example
-    name="components/queries/query-functions"
-    heading="{ translations().pages.components.queries.edgeCases.example2 }"
-    kind="edge"
-  >
-    <ex-query-functions />
-  </docs-example>
-  <p @@i18n(key="pages.components.queries.edgeCases.p2") />
   <docs-callout
     @@i18n(key="pages.components.queries.edgeCases.callout2.body")
     kind="edge"
@@ -87,13 +74,6 @@
           <code>{'@Query.all(target)'}</code>
         </td>
         <td @@i18n(key="pages.components.queries.apiSummary.td2") />
-      </tr>
-      <tr>
-        <td>
-          <code>query(this, target)</code>,
-          <code>queryAll(this, target)</code>
-        </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td3") />
       </tr>
       <tr>
         <td>
