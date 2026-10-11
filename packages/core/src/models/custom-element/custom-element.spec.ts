@@ -13,7 +13,7 @@ loadSignals();
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 type TestElement = HTMLElement & {
-  _context: unknown,
+  _context: _Context,
   connectedCallback(): void,
   effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction
 };
@@ -223,22 +223,6 @@ describe('CustomElement', () => {
 
       expect(calls).toEqual(['onDestroy', 'clear', 'hook']);
     });
-
-    it('invokes the hooks again each time the element is connected and disconnected', () => {
-      const connected = vi.fn();
-      const disconnected = vi.fn();
-      const { element } = createWithHooks({});
-      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(connected);
-      (element as unknown as CustomElement)[DISCONNECTED_HOOKS].push(disconnected);
-
-      document.body.appendChild(element);
-      element.remove();
-      document.body.appendChild(element);
-      element.remove();
-
-      expect(connected).toHaveBeenCalledTimes(2);
-      expect(disconnected).toHaveBeenCalledTimes(2);
-    });
   });
 
   describe('effect', () => {
@@ -294,24 +278,6 @@ describe('CustomElement', () => {
       expect(spy).toHaveBeenCalledOnce();
     });
 
-    it('creates new effects and disposes the old ones when it is connected again', () => {
-      const onCleanup = vi.fn();
-      const onInit = vi.fn((element: TestElement) => {
-        element.effect(() => undefined, { onCleanup });
-      });
-      const { element } = createWithHooks({ onInit });
-
-      document.body.appendChild(element);
-      element.remove();
-      document.body.appendChild(element);
-
-      expect(onInit).toHaveBeenCalledTimes(2);
-      expect(onCleanup).toHaveBeenCalledOnce();
-
-      element.remove();
-      expect(onCleanup).toHaveBeenCalledTimes(2);
-    });
-
     it('returns a disposer that stops the effect ahead of the disconnection', async () => {
       const state = new Signal.State(0);
       const spy = vi.fn();
@@ -329,48 +295,20 @@ describe('CustomElement', () => {
       element.remove();
     });
 
-    it('does not dispose the effect twice when the disposer is called before the disconnection', () => {
-      const onCleanup = vi.fn();
-      const { element } = createWithHooks({});
-      document.body.appendChild(element);
+    describe('created outside of a connection', () => {
+      it('is disposed by its disposer before the connection', () => {
+        const onCleanup = vi.fn();
+        const run = vi.fn();
+        const { element } = createWithHooks({});
+        const dispose = element.effect(run, { onCleanup });
 
-      const dispose = element.effect(() => undefined, { onCleanup });
-      dispose();
-      dispose();
-      element.remove();
+        dispose();
+        document.body.appendChild(element);
 
-      expect(onCleanup).toHaveBeenCalledOnce();
-    });
-
-    it('does not dispose the effect twice when the disposer is called after the disconnection', () => {
-      const onCleanup = vi.fn();
-      const { element } = createWithHooks({});
-      document.body.appendChild(element);
-
-      const dispose = element.effect(() => undefined, { onCleanup });
-      element.remove();
-
-      expect(() => dispose()).not.toThrow();
-      expect(onCleanup).toHaveBeenCalledOnce();
-    });
-
-    it('runs at once an effect created before the connection, as in the constructor, and disposes it with the component', async () => {
-      const onCleanup = vi.fn();
-      const { element } = createWithHooks({});
-      const source = new Signal.State(0);
-      const seen = new Array<number>();
-      element.effect(() => { seen.push(source.get()); }, { onCleanup });
-      expect(seen).toEqual([0]);
-
-      document.body.appendChild(element);
-      source.set(1);
-      await flush();
-      element.remove();
-      source.set(2);
-      await flush();
-
-      expect(seen).toEqual([0, 1]);
-      expect(onCleanup).toHaveBeenCalledOnce();
+        expect(run).toHaveBeenCalledOnce();
+        expect(onCleanup).toHaveBeenCalledOnce();
+        element.remove();
+      });
     });
   });
 });

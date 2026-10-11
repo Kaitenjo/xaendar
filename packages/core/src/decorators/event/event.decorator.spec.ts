@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CustomElement } from '../../models';
+import { CustomElement, EventOptions } from '../../models';
 import type { Output } from '../../types/event/output.type';
 import { Event } from '../event/event.decorator';
 
@@ -9,7 +9,7 @@ type Decorated<ReturnType> = { init(this: Element): Output<ReturnType> };
 
 function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]): Decorated<ReturnType> {
   const context = { name } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
-  const decorated = Event<CustomElement, ReturnType>(options)({} as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
+  const decorated = Event<ReturnType>(options)({} as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
   return decorated as unknown as Decorated<ReturnType>;
 }
 
@@ -79,13 +79,6 @@ describe('Event decorator', () => {
     expect(lastEvent(listener).detail).toBe(5);
   });
 
-  it('treats objects without event option keys as detail', () => {
-    const { emit, listener } = setup();
-    emit({ foo: 'bar' });
-
-    expect(lastEvent(listener).detail).toEqual({ foo: 'bar' });
-  });
-
   it('applies the default options', () => {
     const { emit, listener } = setup('clicked', { bubbles: true });
     emit('x');
@@ -96,7 +89,7 @@ describe('Event decorator', () => {
 
   it('overrides the default options with the ones passed alongside the value', () => {
     const { emit, listener } = setup('clicked', { bubbles: true });
-    emit('x', { bubbles: false, cancelable: true });
+    emit('x', new EventOptions({ bubbles: false, cancelable: true }));
 
     const event = lastEvent(listener);
     expect(event.bubbles).toBe(false);
@@ -104,37 +97,26 @@ describe('Event decorator', () => {
     expect(event.detail).toBe('x');
   });
 
-  it.each(['bubbles', 'cancelable', 'composed'] as const)('recognises an options-only emission with %s', key => {
+  it.each(['bubbles', 'cancelable', 'composed'] as const)('takes an EventOptions instance for the options of the emission, with %s', key => {
     const { emit, listener } = setup('clicked', { bubbles: false });
-    emit({ [key]: true });
+    emit(new EventOptions({ [key]: true }));
 
     const event = lastEvent(listener);
     expect(event[key]).toBe(true);
     expect(event.detail).toBeNull();
   });
 
-  it('treats an object with option keys and other keys as detail', () => {
+  it.each([
+    ['without option keys', { foo: 'bar' }],
+    ['with only option keys', { bubbles: true, cancelable: true, composed: true }],
+    ['with option keys and other keys', { bubbles: true, value: 1 }],
+    ['empty', {}]
+  ])('takes a plain object %s for the detail', (_case, detail) => {
     const { emit, listener } = setup('clicked', { bubbles: false });
-    emit({ bubbles: true, value: 1 });
+    emit(detail);
 
     const event = lastEvent(listener);
-    expect(event.detail).toEqual({ bubbles: true, value: 1 });
-    expect(event.bubbles).toBe(false);
-  });
-
-  it('treats the first of two arguments as detail, even when it holds only option keys', () => {
-    const { emit, listener } = setup('clicked', { bubbles: false });
-    emit({ composed: true }, { cancelable: true });
-
-    const event = lastEvent(listener);
-    expect(event.detail).toEqual({ composed: true });
-    expect([event.composed, event.cancelable]).toEqual([false, true]);
-  });
-
-  it('treats an empty object as detail', () => {
-    const { emit, listener } = setup();
-    emit({});
-
-    expect(lastEvent(listener).detail).toEqual({});
+    expect(event.detail).toEqual(detail);
+    expect([event.bubbles, event.cancelable, event.composed]).toEqual([false, false, false]);
   });
 });

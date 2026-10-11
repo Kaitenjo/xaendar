@@ -116,24 +116,26 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   const pendingDirectives = new Array<NoArgsVoidFunction>();
   let mounted = false;
 
-  // Its removal is registered first, so that the element leaves the document while its listeners still receive the events it emits
   trackNode(element, parentNode, context);
-
-  /*
-    The bindings are applied before mounting the element: a component is connected, and renders, as soon as it is
-    mounted, so it receives its inputs and the listeners of its events before its `onInit`
-  */
   bindAttributes(element, context, attributes);
   bindEvents(element, context, events);
   bindConditionalBindings(context, conditionalBindings, (branchContext, branch) => {
     bindAttributes(element, branchContext, branch.attributes);
     bindEvents(element, branchContext, branch.events);
+    // A branch selected later, once the element is mounted, applies its directives at once: the pending ones are run only once
     mounted
       ? bindDirectives(element, branchContext, branch.directives)
       : pendingDirectives.push(() => bindDirectives(element, branchContext, branch.directives));
   });
 
-  // The directives are connected once the element is mounted, so that their `onInit` finds it in the document
+  /*
+    Element is inserted in the DOM after the bindings because it triggers:
+    connected callback -> onInit -> registered effects that could read
+    inputs values. Adding the element before the binding would throw exception
+    in some cases because inputs have their default value
+    Ex: reading .field when an input is still undefined
+    
+  */
   parentNode.insertBefore(element, anchor);
   mounted = true;
   for (let i = 0; i < pendingDirectives.length; i++) {

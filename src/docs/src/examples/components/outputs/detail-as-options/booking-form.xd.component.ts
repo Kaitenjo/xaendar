@@ -15,23 +15,11 @@ export class BookingFormComponent extends CustomElement {
    */
   @Event()
   public accessor booked!: Output<{ date: string; cancelable: boolean }>;
-  /**
-   * The booking wrapped in another object.
-   */
-  @Event()
-  public accessor bookedWrapped!: Output<{ booking: { date: string; cancelable: boolean } }>;
 
   /**
    * Emits the booking as the detail.
    */
   public book(): void {
     this.booked.emit({ date: '2026-10-08', cancelable: false });
-  }
-
-  /**
-   * Emits the booking wrapped.
-   */
-  public bookWrapped(): void {
-    this.bookedWrapped.emit({ booking: { date: '2026-10-08', cancelable: false } });
   }
 }

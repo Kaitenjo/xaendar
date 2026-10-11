@@ -37,7 +37,11 @@ export function _switch(
     block: Function<[HTMLElement, _Context, Node | null], _Context>
   }>
 ): void {
-  // The position of the block selected by the current run, -1 when none matches and there is no default
+  /*
+    The expression is evaluated only once per run, inside the effect of `_if`, so that the switch stays reactive:
+    the condition of the first block, always evaluated first, makes the selection, and the others only compare
+    their position with it. Evaluating it here, once and for all, would freeze the selected case.
+  */
   let selected = -1;
   const select = (): number => {
     const value = expression();

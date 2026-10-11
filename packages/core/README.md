@@ -151,7 +151,7 @@ accessor valueChange: Output<string>;
 this.valueChange.emit('new value');
 
 // Override options per-emit
-this.valueChange.emit('new value', { bubbles: false });
+this.valueChange.emit('new value', new EventOptions({ bubbles: false }));
 ```
 
 Listen from outside in pure HTML:

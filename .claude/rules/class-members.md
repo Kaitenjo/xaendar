@@ -12,15 +12,16 @@ Applies to every class: components, directives and plain classes, in `packages/*
 1. public fields (including decorated `accessor`s: `@Property`, `@Event`, `@Query`)
 2. protected fields
 3. private fields
-4. `constructor`
-5. `onInit`
-6. `afterRender`
-7. public methods
-8. protected methods
-9. private methods
-10. `onDestroy`
+4. getters and setters
+5. `constructor`
+6. `onInit`
+7. `afterRender`
+8. public methods
+9. protected methods
+10. private methods
+11. `onDestroy`
 
-Getters and setters go with the methods of their visibility, and static members with the group of their kind and visibility. Inside a group, keep the existing order.
+Getters and setters always go before the constructor, public ones first, then protected and private ones. Static members go with the group of their kind and visibility. Inside a group, keep the existing order.
 
 A field initializer runs in declaration order. When a public field is initialized eagerly from a private one, declare the public field without an initializer and assign it in the constructor; do not break the order. Arrow functions and `computed` callbacks are lazy and are not affected.
 

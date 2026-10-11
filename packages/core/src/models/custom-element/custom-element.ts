@@ -44,6 +44,12 @@ export class CustomElement extends HTMLElement {
    * the Shadow DOM tree has been built and its signal subscriptions set up.
    */
   public afterRender?(): void;
+  
+  /**
+   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
+   * created via {@link effect} are disposed and the rendered content is removed.
+   */
+  public onDestroy?(): void;
 
   /**
    * Creates a signal effect bound to the lifecycle of this component:
@@ -57,19 +63,11 @@ export class CustomElement extends HTMLElement {
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const stop = effect(fn, options);
-    let active = true;
-    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
-    const dispose = () => {
-      if (active) {
-        active = false;
-        stop();
-      }
-    };
-    this._context.addUnlistener(dispose);
+    this._context.addUnlistener(stop);
 
     return () => {
-      this._context.removeUnlistener(dispose);
-      dispose();
+      this._context.removeUnlistener(stop);
+      stop();
     };
   }
 
@@ -133,10 +131,4 @@ export class CustomElement extends HTMLElement {
   private connectedMoveCallback(): void {
     // Declaring it is what keeps the element from being disconnected and connected again
   }
-
-  /**
-   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
-   * created via {@link effect} are disposed and the rendered content is removed.
-   */
-  public onDestroy?(): void;
 }

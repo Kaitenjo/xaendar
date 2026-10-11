@@ -1,5 +1,5 @@
 import { VoidFunction } from '@xaendar/types';
-import { EventOptions } from './event-options.type';
+import type { EventOptions } from '../../models/event-options/event-options';
 
 /**
  * Represents the output type returned by an `@Event` decorator in a web component.

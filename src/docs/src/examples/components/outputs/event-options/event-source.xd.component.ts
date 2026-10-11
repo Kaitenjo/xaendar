@@ -1,4 +1,4 @@
-import { CustomElement, Event, WebComponent } from '@xaendar/core';
+import { CustomElement, Event, EventOptions, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 
 /**
@@ -51,6 +51,6 @@ export class EventSourceComponent extends CustomElement {
    * Emits plain with the options of escaping, for this emission only.
    */
   public emitOverride(): void {
-    this.plain.emit('plain + override', { bubbles: true, composed: true });
+    this.plain.emit('plain + override', new EventOptions({ bubbles: true, composed: true }));
   }
 }

@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * Receives the same booking twice: as the detail itself, and wrapped in another object.
+ * Receives a booking whose detail has a key named like an option of CustomEvent.
  */
 @WebComponent({
   selector: 'ex-detail-as-options',
@@ -26,15 +26,6 @@ export class DetailAsOptionsComponent extends CustomElement {
    */
   public onBooked(event: CustomEvent<{ date: string; cancelable: boolean }>): void {
     this._record(`booked → detail ${JSON.stringify(event.detail)}, event.cancelable ${event.cancelable}`);
-  }
-
-  /**
-   * Logs the bookedWrapped event.
-   *
-   * @param event - The event, whose detail wraps the booking.
-   */
-  public onBookedWrapped(event: CustomEvent<{ booking: { date: string; cancelable: boolean } }>): void {
-    this._record(`bookedWrapped → detail ${JSON.stringify(event.detail)}`);
   }
 
   /**
