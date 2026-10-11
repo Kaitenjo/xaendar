@@ -7,13 +7,14 @@ import { dirname } from 'node:path';
 import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
-import { clearBaseClassDependenciesForComponent, registerBaseClassDependency } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { resolvePosixPath } from '../../utils/path/path.utils';
+import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**
@@ -61,7 +62,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     clearMetadataForFile(componentPath);
     clearComponentToImports(componentPath);
     clearStyleDependenciesForComponent(componentPath);
-    clearBaseClassDependenciesForComponent(componentPath);
+    clearDependenciesForComponent(componentPath);
     removeComponentPath(componentPath);
 
     /*
@@ -96,13 +97,17 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       */
       const folder = dirname(componentPath);
       const templatePath = resolvePosixPath(folder, templateUrl);
-      if (!templatePath || !state.host.fileExists(templatePath)) {
+      /*
+        Registered even when missing, so that the hotUpdate hook compiles the component again once the template
+        is created. It is not watched until it exists: the dev server would resolve the missing file as an import
+      */
+      registerTemplatePath(templatePath, componentPath);
+      if (!state.host.fileExists(templatePath)) {
         this.warn(`Could not find template at ${templatePath}`);
         return fail();
       }
 
       this.addWatchFile(templatePath);
-      registerTemplatePath(templatePath, componentPath);
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
@@ -152,7 +157,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       */
       for (const dependency of signals.dependencies) {
         this.addWatchFile(dependency);
-        registerBaseClassDependency(dependency, componentPath);
+        registerDependency(dependency, componentPath);
       }
 
       try {
@@ -167,6 +172,17 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       const shim = createShim(new Map([[componentPath, [className]]]), typecheckBody);
       const languageService = getLanguageService(state.compilerOptions, state.projectFileNames);
       const diagnostics = languageService.getSemanticDiagnostics(shim.path);
+
+      /*
+        The type-check reads files the dev server does not relate to the component, as the ones holding only
+        types: watching them re-runs the transform, and the registry lets the hotUpdate hook invalidate it
+      */
+      for (const dependency of collectProjectDependencies(languageService.getProgram()!, shim.path, state.compilerOptions)) {
+        if (dependency !== componentPath) {
+          this.addWatchFile(dependency);
+          registerDependency(dependency, componentPath);
+        }
+      }
 
       for (let i = 0; i < diagnostics.length; i++) {
         state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);

@@ -1,7 +1,7 @@
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE, COMPONENT_HTML_FILE_RE } from '../../costants/component-filename-regex';
-import { clearBaseClassDependenciesForComponent } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportToComponents, clearComponentToImports, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependency } from '../../registry/style-registry/style-registry';
@@ -44,7 +44,7 @@ export function handleTsDelete(componentPath: string, state: XaendarPluginState)
   removeRealFile(componentPath);
   removeComponentPath(componentPath);
   clearStyleDependenciesForComponent(componentPath);
-  clearBaseClassDependenciesForComponent(componentPath);
+  clearDependenciesForComponent(componentPath);
   clearMetadataForFile(componentPath);
 
   const components = findComponentsForImport(componentPath);

@@ -1,7 +1,7 @@
 import { clearSignalMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
-import { clearBaseClassRegistry } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
@@ -24,7 +24,7 @@ export function createConfigureServerHook(state: XaendarPluginState): NonNullabl
       clearStyleRegistry();
       clearImportRegistry();
       clearMetadataRegistry();
-      clearBaseClassRegistry();
+      clearDependencyRegistry();
       clearSignalMembersCache();
       disposeLanguageService();
       state.setLogger(undefined);

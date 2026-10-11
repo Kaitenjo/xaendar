@@ -37,9 +37,13 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
-vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
-  clearBaseClassDependenciesForComponent: vi.fn(),
-  registerBaseClassDependency: vi.fn()
+vi.mock('../../registry/dependency-registry/dependency-registry', () => ({
+  clearDependenciesForComponent: vi.fn(),
+  registerDependency: vi.fn()
+}));
+
+vi.mock('../../utils/project-dependencies/project-dependencies.utils', () => ({
+  collectProjectDependencies: vi.fn()
 }));
 
 vi.mock('../../registry/import-registry/import-registry', () => ({
@@ -76,12 +80,13 @@ import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
-import { clearBaseClassDependenciesForComponent, registerBaseClassDependency } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
+import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
@@ -89,6 +94,11 @@ import { createTransformHook } from './transform';
  * Path of the component file the tests transform.
  */
 const COMPONENT_PATH = '/src/foo/foo.xd.component.ts';
+
+/**
+ * Program of the mocked language service.
+ */
+const PROGRAM = {};
 
 /**
  * Builds the metadata of the `FooComponent` fixture, with optional overrides.
@@ -161,7 +171,8 @@ function mockSuccessfulCompile(typecheckBody: Partial<TypeCheckResult> = {}) {
 function mockNoDiagnostics() {
   vi.mocked(createShim).mockReturnValue({ path: '/virtual/foo.__typecheck__.ts', bodyLineOffset: 0 } as ReturnType<typeof createShim>);
   vi.mocked(getLanguageService).mockReturnValue({
-    getSemanticDiagnostics: vi.fn().mockReturnValue([])
+    getSemanticDiagnostics: vi.fn().mockReturnValue([]),
+    getProgram: vi.fn().mockReturnValue(PROGRAM)
   } as unknown as ReturnType<typeof getLanguageService>);
 }
 
@@ -174,6 +185,7 @@ beforeEach(() => {
   vi.mocked(extractSignalMembers).mockReturnValue({ members: ['count'], dependencies: [] });
   vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
   vi.mocked(createStyleModuleSpecifier).mockReturnValue('style-module');
+  vi.mocked(collectProjectDependencies).mockReturnValue([]);
   mockSuccessfulCompile();
   mockNoDiagnostics();
 });
@@ -270,6 +282,19 @@ describe('createTransformHook()', () => {
     expect(ctx.warn).toHaveBeenCalledWith(expect.stringContaining('Could not find template at'));
   });
 
+  it('registers a missing template without watching it, so that creating it compiles the component again', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    const hook = createTransformHook(createState({ fileExists: () => false }));
+    const ctx = createPluginContext();
+
+    await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
+
+    const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
+    expect(registerTemplatePath).toHaveBeenCalledWith(templatePath, COMPONENT_PATH);
+    expect(ctx.addWatchFile).not.toHaveBeenCalled();
+  });
+
   it('clears stale registry entries before processing the component', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
@@ -282,7 +307,7 @@ describe('createTransformHook()', () => {
     expect(clearMetadataForFile).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(clearComponentToImports).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(clearStyleDependenciesForComponent).toHaveBeenCalledWith(COMPONENT_PATH);
-    expect(clearBaseClassDependenciesForComponent).toHaveBeenCalledWith(COMPONENT_PATH);
+    expect(clearDependenciesForComponent).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(removeComponentPath).toHaveBeenCalledWith(COMPONENT_PATH);
   });
 
@@ -367,8 +392,8 @@ describe('createTransformHook()', () => {
     expect(extractSignalMembers).toHaveBeenCalledWith(expect.anything(), metadata.typescriptNodes.klass, state.compilerOptions);
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/base.ts');
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/node_modules/lib/index.d.ts');
-    expect(registerBaseClassDependency).toHaveBeenCalledWith('/src/base.ts', COMPONENT_PATH);
-    expect(registerBaseClassDependency).toHaveBeenCalledWith('/node_modules/lib/index.d.ts', COMPONENT_PATH);
+    expect(registerDependency).toHaveBeenCalledWith('/src/base.ts', COMPONENT_PATH);
+    expect(registerDependency).toHaveBeenCalledWith('/node_modules/lib/index.d.ts', COMPONENT_PATH);
   });
 
   it('imports the style module of the styleUrl, leaving its compilation to the style module', async () => {
@@ -433,13 +458,31 @@ describe('createTransformHook()', () => {
     expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions, state.projectFileNames);
   });
 
+  it('watches and registers the files the type-check of the template depends on, the component file excluded', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    vi.mocked(collectProjectDependencies).mockReturnValue([COMPONENT_PATH, '/src/foo/value.type.ts']);
+    const state = createState();
+    const hook = createTransformHook(state);
+    const ctx = createPluginContext();
+
+    await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
+
+    expect(collectProjectDependencies).toHaveBeenCalledWith(PROGRAM, '/virtual/foo.__typecheck__.ts', state.compilerOptions);
+    expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/value.type.ts');
+    expect(registerDependency).toHaveBeenCalledWith('/src/foo/value.type.ts', COMPONENT_PATH);
+    expect(ctx.addWatchFile).not.toHaveBeenCalledWith(COMPONENT_PATH);
+    expect(registerDependency).not.toHaveBeenCalledWith(COMPONENT_PATH, COMPONENT_PATH);
+  });
+
   it('logs every semantic diagnostic and returns null when the shim reports errors', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
     vi.mocked(createShim).mockReturnValue({ path: '/virtual/foo.__typecheck__.ts', bodyLineOffset: 2 } as ReturnType<typeof createShim>);
     vi.mocked(getLanguageService).mockReturnValue({
-      getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1', 'diag-2'])
+      getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1', 'diag-2']),
+      getProgram: vi.fn().mockReturnValue(PROGRAM)
     } as unknown as ReturnType<typeof getLanguageService>);
     vi.mocked(describeDiagnostic).mockReturnValueOnce('first problem').mockReturnValueOnce('second problem');
     const state = createState();
@@ -492,7 +535,8 @@ describe('createTransformHook()', () => {
       ['the template compilation throws', () => vi.mocked(compile).mockRejectedValue(new Error('boom'))],
       ['injecting the template throws', () => vi.mocked(injectTemplate).mockImplementation(() => { throw new Error('inject failed'); })],
       ['the template has type errors', () => vi.mocked(getLanguageService).mockReturnValue({
-        getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1'])
+        getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1']),
+        getProgram: vi.fn().mockReturnValue(PROGRAM)
       } as unknown as ReturnType<typeof getLanguageService>)]
     ])('fails when %s', async (_name, arrange, fileExists = () => true) => {
       vi.mocked(readFile).mockResolvedValue('class FooComponent {}');

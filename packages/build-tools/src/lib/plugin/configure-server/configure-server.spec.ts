@@ -17,8 +17,8 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
   };
 });
 
-vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
-  clearBaseClassRegistry: vi.fn()
+vi.mock('../../registry/dependency-registry/dependency-registry', () => ({
+  clearDependencyRegistry: vi.fn()
 }));
 
 vi.mock('../../registry/import-registry/import-registry', () => ({
@@ -39,7 +39,7 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 
 import { clearSignalMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
-import { clearBaseClassRegistry } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
@@ -106,7 +106,7 @@ describe('createConfigureServerHook()', () => {
     expect(clearStyleRegistry).toHaveBeenCalledTimes(1);
     expect(clearImportRegistry).toHaveBeenCalledTimes(1);
     expect(clearMetadataRegistry).toHaveBeenCalledTimes(1);
-    expect(clearBaseClassRegistry).toHaveBeenCalledTimes(1);
+    expect(clearDependencyRegistry).toHaveBeenCalledTimes(1);
     expect(clearSignalMembersCache).toHaveBeenCalledTimes(1);
     expect(disposeLanguageService).toHaveBeenCalledTimes(1);
     expect(state.setLogger).toHaveBeenLastCalledWith(undefined);

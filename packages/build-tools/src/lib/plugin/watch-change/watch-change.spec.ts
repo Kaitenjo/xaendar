@@ -10,8 +10,8 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   };
 });
 
-vi.mock('../../registry/base-class-registry/base-class-registry', () => ({
-  clearBaseClassDependenciesForComponent: vi.fn()
+vi.mock('../../registry/dependency-registry/dependency-registry', () => ({
+  clearDependenciesForComponent: vi.fn()
 }));
 
 vi.mock('../../registry/import-registry/import-registry', () => ({
@@ -36,7 +36,7 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { PluginContext } from 'rolldown';
-import { clearBaseClassDependenciesForComponent } from '../../registry/base-class-registry/base-class-registry';
+import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, clearImportToComponents, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependency } from '../../registry/style-registry/style-registry';
@@ -75,7 +75,7 @@ describe('handleTsDelete()', () => {
     expect(removeRealFile).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(removeComponentPath).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearStyleDependenciesForComponent).toHaveBeenCalledWith('/src/foo.xd.component.ts');
-    expect(clearBaseClassDependenciesForComponent).toHaveBeenCalledWith('/src/foo.xd.component.ts');
+    expect(clearDependenciesForComponent).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearMetadataForFile).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearImportToComponents).toHaveBeenCalledWith('/src/foo.xd.component.ts');
     expect(clearComponentToImports).toHaveBeenCalledWith('/src/foo.xd.component.ts');
