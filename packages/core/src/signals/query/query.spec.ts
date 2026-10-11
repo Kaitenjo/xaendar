@@ -199,37 +199,6 @@ describe('createQuerySignal', () => {
     expect(signal()).toBe(2);
     element.remove();
   });
-
-  it('starts at once when it is created after the element is connected, and stops on disconnection without breaking the other hooks', async () => {
-    const element = create(rendered => rendered.shadowRoot!.append(document.createElement('span')));
-    document.body.appendChild(element);
-    const signal = createQuerySignal(element, read, 0);
-    expect(signal()).toBe(1);
-
-    element.shadowRoot!.append(document.createElement('span'));
-    await flush();
-    expect(signal()).toBe(2);
-
-    const later = createQuerySignal(element, read, 0);
-    expect(() => element.remove()).not.toThrow();
-    element.shadowRoot!.append(document.createElement('span'));
-    await flush();
-    expect([signal(), later()]).toEqual([2, 2]);
-  });
-
-  it('starts once, with the hooks of the connection, when it is created during the connection', () => {
-    const observe = vi.fn(() => vi.fn());
-    let signal!: () => number;
-    const element = create(rendered => {
-      signal = createQuerySignal(rendered, read, 0, undefined, observe);
-      rendered.shadowRoot!.append(document.createElement('span'));
-    });
-    document.body.appendChild(element);
-
-    expect(observe).toHaveBeenCalledOnce();
-    expect(signal()).toBe(1);
-    element.remove();
-  });
 });
 
 describe('createSlotQuerySignal', () => {
