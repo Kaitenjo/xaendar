@@ -2393,10 +2393,6 @@
             "heading": "Le classi non passano il type check",
             "body": "Il plugin controlla i template, non il TypeScript delle classi: un membro in conflitto con una proprietà di <code>HTMLElement</code>, come <code>title</code> o <code>remove</code>, arriva nel bundle senza segnalazioni. Esegui anche <code>tsc --noEmit</code>."
           },
-          "callout3": {
-            "heading": "Metadati vecchi nel dev server",
-            "body": "Il dev server tiene in cache input e output di ogni componente e direttiva. Dopo averne cambiato i tipi, i template che li usano possono essere ancora controllati con quelli vecchi finché il server non viene riavviato."
-          },
           "callout4": {
             "heading": "La cartella di lavoro conta",
             "body": "<code>tsconfig.json</code> viene letto dalla cartella da cui parte Vite, non da quella di <code>vite.config.ts</code>. Avvia <code>xd</code> o Vite dalla radice del progetto."
@@ -2879,11 +2875,6 @@
       "title": "Le classi non passano il type check",
       "details": "Vengono controllati solo i template: membri in conflitto con HTMLElement, come title, lang, remove o matches, passano inosservati.",
       "workaround": "Esegui anche tsc --noEmit."
-    },
-    "the-dev-server-keeps-stale-metadata": {
-      "title": "Il dev server conserva metadati vecchi",
-      "details": "Dopo aver cambiato il tipo di un input o di un output, i template che lo usano vengono ancora controllati con quello vecchio, e una pagina creata prima del suo template resta senza funzione di render, finché il server non viene riavviato.",
-      "workaround": "Riavvia xd start."
     },
     "the-dev-overlay-reports-handled-errors": {
       "title": "L’overlay di sviluppo segnala errori gestiti",

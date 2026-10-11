@@ -2393,10 +2393,6 @@
             "heading": "Classes are not type-checked",
             "body": "The plugin type-checks templates, not the TypeScript of the classes: a member clashing with a property of <code>HTMLElement</code>, such as <code>title</code> or <code>remove</code>, reaches the bundle unnoticed. Run <code>tsc --noEmit</code> as well."
           },
-          "callout3": {
-            "heading": "Stale metadata in the dev server",
-            "body": "The dev server caches the inputs and the outputs of each component and directive. After changing their types, the templates using them may still be checked against the old ones until the server restarts."
-          },
           "callout4": {
             "heading": "The working directory matters",
             "body": "<code>tsconfig.json</code> is read from the folder Vite is started from, not from the folder of <code>vite.config.ts</code>. Start <code>xd</code> or Vite from the root of the project."
@@ -2879,11 +2875,6 @@
       "title": "Classes are not type-checked",
       "details": "Only templates are checked: members clashing with HTMLElement, such as title, lang, remove or matches, go unnoticed.",
       "workaround": "Run tsc --noEmit too."
-    },
-    "the-dev-server-keeps-stale-metadata": {
-      "title": "The dev server keeps stale metadata",
-      "details": "After changing the type of an input or output, the templates using it are still checked against the old one, and a page created before its template stays without a render function, until the server restarts.",
-      "workaround": "Restart xd start."
     },
     "the-dev-overlay-reports-handled-errors": {
       "title": "The dev overlay reports handled errors",

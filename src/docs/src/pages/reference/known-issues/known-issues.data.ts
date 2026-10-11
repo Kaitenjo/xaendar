@@ -74,12 +74,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'tools/build'
   },
   {
-    id: 'the-dev-server-keeps-stale-metadata',
-    area: 'Build',
-    kind: 'bug',
-    page: 'tools/build'
-  },
-  {
     id: 'the-dev-overlay-reports-handled-errors',
     area: 'Build',
     kind: 'bug',

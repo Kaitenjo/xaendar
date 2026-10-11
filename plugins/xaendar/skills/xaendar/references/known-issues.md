@@ -48,12 +48,6 @@ Only templates are checked: members clashing with HTMLElement, such as title, la
 
 **Workaround:** Run tsc --noEmit too.
 
-### The dev server keeps stale metadata (bug)
-
-After changing the type of an input or output, the templates using it are still checked against the old one, and a page created before its template stays without a render function, until the server restarts.
-
-**Workaround:** Restart xd start.
-
 ### The dev overlay reports handled errors (bug)
 
 Vite prints [Unhandled error] even for errors handled with preventDefault on window.

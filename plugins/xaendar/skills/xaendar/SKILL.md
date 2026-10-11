@@ -167,7 +167,7 @@ npx xd build 2>&1 | grep -A6 "Xaendar:"   # template compile/type errors (empty 
 npx tsc --noEmit -p tsconfig.json          # class type errors (HTMLElement name clashes, wrong types, …)
 ```
 
-Or run the `/xaendar:check` command. Restart `xd start` after changing a `@Property`/`@Event` type, or after creating a template for a class the dev server already loaded: it caches that metadata.
+Or run the `/xaendar:check` command.
 
 To look up a compiler or runtime message, search [references/errors.md](references/errors.md) for its text. Before concluding that your code is wrong, check [references/known-issues.md](references/known-issues.md): it lists verified framework bugs with workarounds.
 
