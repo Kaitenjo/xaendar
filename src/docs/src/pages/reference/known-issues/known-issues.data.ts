@@ -92,12 +92,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'tools/cli'
   },
   {
-    id: 'the-project-name-is-checked-too',
-    area: 'CLI',
-    kind: 'bug',
-    page: 'tools/cli'
-  },
-  {
     id: 'the-generated-spec-does-not-run',
     area: 'CLI',
     kind: 'bug',

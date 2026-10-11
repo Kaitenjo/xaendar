@@ -83,6 +83,22 @@ describe('newCommand()', () => {
     expect(execSync).toHaveBeenCalled();
   });
 
+  it('exits before writing anything when the name of the root component is not a valid custom element name', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+    const command = newCommand();
+
+    expect(() => command.parse(['MyApp'], { from: 'user' })).toThrow('process.exit called');
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Tag <MyApp-root> is not a valid custom element name'));
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(mkdirSync).not.toHaveBeenCalled();
+    expect(buildStructure).not.toHaveBeenCalled();
+    expect(execSync).not.toHaveBeenCalled();
+  });
+
   it('defaults the style to css and exits when an invalid style is provided', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {

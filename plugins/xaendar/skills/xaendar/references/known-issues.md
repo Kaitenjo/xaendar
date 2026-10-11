@@ -68,12 +68,6 @@ xd new accepts scss, less and styl, which the plugin rejects; xd generate compon
 
 **Workaround:** Use css.
 
-### The project name is checked too late (bug)
-
-xd new MyApp writes most of the project before rejecting MyApp-root, and never installs the dependencies.
-
-**Workaround:** Use a lowercase name with a dash, and delete the half-made folder.
-
 ### The generated spec does not run (bug)
 
 npm test runs Vitest without the decorators transform: SyntaxError: Invalid or unexpected token.

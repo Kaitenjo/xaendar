@@ -1,3 +1,4 @@
+import { isValidCustomElementName } from '@xaendar/common';
 import { Command } from 'commander';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path/win32';
@@ -24,6 +25,11 @@ export function newCommand(): Command {
       const style = resolveStyleOptions(options.style);
       const workingDirectory = options.path || process.cwd();
       const projectDirectory = resolve(workingDirectory, name);
+
+      // The root component is named after the project: its name is checked before anything is written
+      if (!isValidCustomElementName(`${name}-root`)) {
+        process.exit(1);
+      }
 
       checkAndCreateProjectDirectory(projectDirectory);
       createFiles(buildStructure({ name, style }), projectDirectory, style);

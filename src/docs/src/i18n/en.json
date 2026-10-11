@@ -2443,7 +2443,7 @@
           "callout2": {
             "heading": "Invalid names",
             "p1": "Component names are checked before anything is written.",
-            "p2": "The name of a project, instead, is checked only when the root component is generated, after the other files have been written."
+            "p2": "The name of a project is checked too, before anything is written: it names the root component, <code>&lt;name&gt;-root</code>."
           },
           "callout3": {
             "heading": "--style accepts what the plugin cannot compile",
@@ -2893,11 +2893,6 @@
       "title": "Style options the plugin cannot compile",
       "details": "xd new accepts scss, less and styl, which the plugin rejects; xd generate component ignores xaendar.json and always writes CSS.",
       "workaround": "Use css."
-    },
-    "the-project-name-is-checked-too": {
-      "title": "The project name is checked too late",
-      "details": "xd new MyApp writes most of the project before rejecting MyApp-root, and never installs the dependencies.",
-      "workaround": "Use a lowercase name with a dash, and delete the half-made folder."
     },
     "the-generated-spec-does-not-run": {
       "title": "The generated spec does not run",
