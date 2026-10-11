@@ -126,6 +126,15 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
+   * Called by the browser engine, in place of `disconnectedCallback` and `connectedCallback`, when the element is
+   * moved with `moveBefore`, as `@for` does with the rows it reuses: the element stays the same, with its render,
+   * its state and its effects, so there is nothing to do.
+   */
+  private connectedMoveCallback(): void {
+    // Declaring it is what keeps the element from being disconnected and connected again
+  }
+
+  /**
    * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
    * created via {@link effect} are disposed and the rendered content is removed.
    */

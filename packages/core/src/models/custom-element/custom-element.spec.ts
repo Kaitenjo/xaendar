@@ -173,6 +173,30 @@ describe('CustomElement', () => {
     });
   });
 
+  describe('connectedMoveCallback', () => {
+    it('keeps the render and the effects of an element moved with moveBefore, running no hook', async () => {
+      const onInit = vi.fn();
+      const onDestroy = vi.fn();
+      const { element, context, render } = createWithHooks({ onInit, onDestroy });
+      document.body.appendChild(element);
+      const source = new Signal.State(0);
+      const run = vi.fn(() => source.get());
+      element.effect(run);
+      onInit.mockClear();
+
+      (element as unknown as { connectedMoveCallback(): void }).connectedMoveCallback();
+      source.set(1);
+      await flush();
+
+      expect(onInit).not.toHaveBeenCalled();
+      expect(onDestroy).not.toHaveBeenCalled();
+      expect(render).toHaveBeenCalledOnce();
+      expect(element._context).toBe(context);
+      expect(run).toHaveBeenCalledTimes(2);
+      element.remove();
+    });
+  });
+
   describe('internal hooks', () => {
     it('invokes the connected hooks right after the render, before afterRender', () => {
       const calls = new Array<string>();

@@ -66,8 +66,12 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
           nodes = getItemNodes(parentNode, existing.context);
           const lastNode = nodes[nodes.length - 1];
           if (lastNode?.nextSibling !== nextReference) {
+            /*
+              moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they
+              keep their render, their state and their effects. insertBefore would destroy and render them again
+            */
             for (let i = 0; i < nodes.length; i++) {
-              parentNode.insertBefore(nodes[i], nextReference);
+              parentNode.moveBefore(nodes[i], nextReference);
             }
           }
           existing.update?.(i, items);

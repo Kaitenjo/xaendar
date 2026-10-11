@@ -13,6 +13,15 @@ const { effect, signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
+/*
+  happy-dom has no moveBefore: it moves the node as insertBefore does, without the state-preserving semantics
+  of the browsers, which keep the moved custom elements connected
+*/
+const moveBefore = vi.fn(function (this: Element, node: Node, child: Node | null) {
+  Node.prototype.insertBefore.call(this, node, child);
+});
+Object.assign(Element.prototype, { moveBefore });
+
 function createRoot() {
   return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
@@ -151,6 +160,19 @@ describe('_for', () => {
     await change(['b', 'a']);
 
     expect(Array.from(parent.querySelectorAll('li'))).toEqual([b, a]);
+  });
+
+  it('moves the nodes with moveBefore, which keeps them in the document', async () => {
+    const { parent, change } = setup(['a', 'b']);
+    const a = parent.querySelector('li');
+    const insertBefore = vi.spyOn(parent, 'insertBefore');
+    moveBefore.mockClear();
+
+    await change(['b', 'a']);
+
+    expect(moveBefore).toHaveBeenCalledExactlyOnceWith(a, expect.any(Comment));
+    expect(moveBefore.mock.contexts[0]).toBe(parent);
+    expect(insertBefore).not.toHaveBeenCalled();
   });
 
   it('works when the items do not provide an update function', async () => {
