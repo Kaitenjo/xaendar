@@ -2,7 +2,6 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
-@import { MoveComponent } from '../../../examples/components/lifecycle/move/move.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.components.lifecycle.eyebrow") class="eyebrow" />
@@ -67,28 +66,10 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.lifecycle.edgeCases.title") />
-  <docs-example
-    name="components/lifecycle/move"
-    heading="{ translations().pages.components.lifecycle.edgeCases.example1 }"
-    kind="edge"
-  >
-    <ex-move />
-  </docs-example>
-  <p @@i18n(key="pages.components.lifecycle.edgeCases.p1") />
-  <ul>
-    <li @@i18n(key="pages.components.lifecycle.edgeCases.li1") />
-    <li @@i18n(key="pages.components.lifecycle.edgeCases.li2") />
-    <li @@i18n(key="pages.components.lifecycle.edgeCases.li3") />
-  </ul>
   <docs-callout kind="edge" heading="{ translations().pages.components.lifecycle.edgeCases.callout2.heading }">
     <p @@i18n(key="pages.components.lifecycle.edgeCases.callout2.p1") />
     <docs-code snippet="components/connected-callback.ts" />
   </docs-callout>
-  <docs-callout
-    @@i18n(key="pages.components.lifecycle.edgeCases.callout3.body")
-    kind="edge"
-    heading="{ translations().pages.components.lifecycle.edgeCases.callout3.heading }"
-  />
   <docs-callout
     @@i18n(key="pages.components.lifecycle.edgeCases.callout4.body")
     kind="note"

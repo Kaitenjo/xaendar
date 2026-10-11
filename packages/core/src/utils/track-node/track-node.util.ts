@@ -15,8 +15,6 @@ export function trackNode(node: Node, parentNode: Element, context: _Context): v
   context.addNode(node);
   context.addUnlistener(() => {
     context.removeNode(node);
-    if (node.parentNode === parentNode) {
-      parentNode.removeChild(node);
-    }
+    parentNode.removeChild(node);
   });
 }

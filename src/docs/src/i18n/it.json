@@ -339,13 +339,9 @@
             "heading": "Le modifiche imperative agli attributi legati non durano",
             "body": "Un attributo legato nel template viene riscritto ogni volta che il suo valore cambia: una classe aggiunta con <code>classList</code> a un elemento il cui <code>class</code> è legato sparisce al successivo aggiornamento. Cambia invece lo stato che il binding legge, oppure tocca solo ciò che il template non lega."
           },
-          "callout3": {
-            "heading": "Il DOM viene ricostruito a ogni collegamento",
-            "body": "Gli elementi creati o modificati nel codice appartengono a un solo render: spostare il componente ne renderizza di nuovo il template, e ciò che <code>afterRender</code> ha costruito va costruito di nuovo, come fanno gli esempi qui sopra. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>."
-          },
           "callout4": {
-            "heading": "Non spostare gli elementi del template",
-            "body": "Il template rimuove un elemento solo finché si trova ancora dove il template lo ha messo. Sposta o rimuovi solo gli elementi che hai creato tu."
+            "heading": "Non spostare gli elementi della libreria",
+            "body": "La libreria crea, sposta e rimuove gli elementi dei template e i componenti. Spostarli, rimuoverli o riattaccarli con le API del DOM non è supportato: modifica solo gli elementi che hai creato tu, come il gauge qui sopra."
           }
         },
         "apiSummary": {
@@ -504,18 +500,9 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "Spostare un elemento",
-          "p1": "Spostare un elemento è uno scollegamento seguito da un collegamento, quindi attraversa l’intero ciclo di vita:",
-          "li1": "<code>onDestroy</code>, <code>onInit</code> e <code>afterRender</code> vengono rieseguiti, come mostra il log;",
-          "li2": "il template viene renderizzato da zero: il testo digitato nel campo va perso, perché viveva nel vecchio DOM;",
-          "li3": "i signal dell’istanza sopravvivono: il contatore mantiene il suo valore;",
           "callout2": {
             "heading": "connectedCallback e disconnectedCallback sono già usati",
             "p1": "La classe base usa le callback dei custom element per renderizzare il template, e le tiene private. Definirle in un componente non compila, e a runtime sostituirebbe quelle della classe base: il template non verrebbe mai renderizzato. Usa gli hook."
-          },
-          "callout3": {
-            "heading": "Un elemento spostato fuori dal suo template",
-            "body": "Un elemento renderizzato da un template viene rimosso da quel template solo finché si trova ancora dove il template lo ha messo. Se lo sposti altrove, resta lì quando il suo <code>@if</code> o la sua riga di <code>@for</code> scompaiono, senza più alcun binding. Sposta solo gli elementi che hai creato tu, come fa l’esempio."
           },
           "callout4": {
             "heading": "Nessun attributeChangedCallback",
@@ -615,10 +602,6 @@
           "title": "Casi limite",
           "example1": "Una query su una classe che cambia",
           "p1": "L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa: aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.",
-          "callout2": {
-            "heading": "Ricollegamento: onInit vede i vecchi elementi",
-            "body": "Quando l’elemento viene spostato, il template viene renderizzato di nuovo da zero, ma la query viene aggiornata solo dopo il render: in <code>onInit</code> contiene ancora gli elementi del render precedente, ormai staccati dal documento."
-          },
           "callout3": {
             "heading": "Una classe che non è un componente",
             "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore. Altrimenti la query lancia un errore quando il componente viene creato."
@@ -1508,7 +1491,7 @@
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
           "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita, e <code>disabled=\"{ false }\"</code> disabilita comunque. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
-          "li3": "<strong>Spostare un elemento lo renderizza di nuovo.</strong> La disconnessione distrugge il contenuto della shadow root, e la connessione successiva lo renderizza di nuovo. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
+          "li3": "<strong>Un elemento rimosso viene distrutto.</strong> Quando un template rimuove un elemento, la sua istanza è persa, e renderizzarlo di nuovo ne crea una nuova. Spostare o riattaccare elementi con le API del DOM non è supportato. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
             "heading": "Non disponibile",

@@ -198,19 +198,6 @@ describe('mountNode', () => {
     expect(node.parentNode).toBeNull();
     expect(context.getNodes()).toEqual([]);
   });
-
-  it('does not touch a node that has been moved elsewhere', () => {
-    const parent = document.createElement('div');
-    const other = document.createElement('div');
-    const context = createRoot();
-    const node = document.createElement('p');
-    mountNode(node, parent, context);
-    other.appendChild(node);
-
-    context.clear();
-
-    expect(node.parentNode).toBe(other);
-  });
 });
 
 describe('createAnchor', () => {

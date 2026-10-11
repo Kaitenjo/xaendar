@@ -184,21 +184,6 @@ describe('createQuerySignal', () => {
 
     expect(signal()).toBe(0);
   });
-
-  it('reads the value again and keeps updating when the element is inserted again', async () => {
-    const { element, signal } = connected(read, 0);
-    element.remove();
-    element.shadowRoot!.append(document.createElement('span'));
-
-    document.body.appendChild(element);
-    expect(signal()).toBe(1);
-
-    element.shadowRoot!.append(document.createElement('span'));
-    await flush();
-
-    expect(signal()).toBe(2);
-    element.remove();
-  });
 });
 
 describe('createSlotQuerySignal', () => {

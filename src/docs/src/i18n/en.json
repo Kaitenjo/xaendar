@@ -339,13 +339,9 @@
             "heading": "Imperative changes to bound attributes do not last",
             "body": "An attribute bound in the template is written again whenever its value changes: a class added with <code>classList</code> to an element whose <code>class</code> is bound is gone at the next update. Change the state the binding reads instead, or touch only what the template does not bind."
           },
-          "callout3": {
-            "heading": "The DOM is rebuilt at every connection",
-            "body": "Elements created or changed in code belong to one render: moving the component renders its template again, and whatever <code>afterRender</code> built has to be built again, as the examples above do. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>."
-          },
           "callout4": {
-            "heading": "Do not move the elements of the template",
-            "body": "The template removes an element only while it is still where the template put it. Move or remove only the elements you created yourself."
+            "heading": "Do not move the elements of the library",
+            "body": "The library creates, moves and removes the elements of the templates and the components. Moving, removing or reattaching them with the DOM APIs is not supported: change only the elements you created yourself, as the gauge above."
           }
         },
         "apiSummary": {
@@ -504,18 +500,9 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "Moving an element",
-          "p1": "Moving an element is a disconnection followed by a connection, so it goes through the whole lifecycle:",
-          "li1": "<code>onDestroy</code>, <code>onInit</code> and <code>afterRender</code> run again, as the log shows;",
-          "li2": "the template is rendered from scratch: the text typed in the field is lost, because it lived in the old DOM;",
-          "li3": "the signals of the instance survive: the counter keeps its value;",
           "callout2": {
             "heading": "connectedCallback and disconnectedCallback are taken",
             "p1": "The base class uses the callbacks of custom elements to render the template, and keeps them private. Defining them in a component does not compile, and at run time would replace the ones of the base class: the template would never be rendered. Use the hooks."
-          },
-          "callout3": {
-            "heading": "An element moved out of its template",
-            "body": "An element rendered by a template is removed by that template only while it is still where the template put it. If you move it somewhere else, it stays there when its <code>@if</code> or its <code>@for</code> row goes away, no longer bound to anything. Move only the elements you created yourself, as the example does."
           },
           "callout4": {
             "heading": "No attributeChangedCallback",
@@ -615,10 +602,6 @@
           "title": "Edge cases",
           "example1": "A query on a class that changes",
           "p1": "The observer watches elements being added and removed, not their attributes. Selecting a task changes only its class, so the query on <code>.selected</code> keeps its old result until the list itself changes: add a task and it catches up. Use queries to find elements, and keep the state in signals.",
-          "callout2": {
-            "heading": "Reconnection: onInit sees the old elements",
-            "body": "When the element is moved, the template is rendered again from scratch, but the query is refreshed only after the render: in <code>onInit</code> it still holds the elements of the previous render, now detached from the document."
-          },
           "callout3": {
             "heading": "A class that is not a component",
             "p1": "A class passed to a query must be decorated with <code>@WebComponent</code>, which gives it its selector. Otherwise the query throws when the component is created."
@@ -1508,7 +1491,7 @@
         "whatWorksDifferently": {
           "title": "What works differently",
           "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types, and <code>disabled=\"{ false }\"</code> still disables. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
-          "li3": "<strong>Moving an element re-renders it.</strong> Disconnection destroys the content of the shadow root, and the next connection renders it again. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
+          "li3": "<strong>A removed element is destroyed.</strong> When a template removes an element, its instance is gone, and rendering it again creates a new one. Moving or reattaching elements with the DOM APIs is not supported. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
