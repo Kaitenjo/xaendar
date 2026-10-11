@@ -62,15 +62,9 @@ Vite prints [Unhandled error] even for errors handled with preventDefault on win
 
 ## CLI
 
-### xd generate does not exist (bug)
+### Style options the plugin cannot compile (uncomplete feature)
 
-The component command is registered at the top level instead of inside generate.
-
-**Workaround:** Run xd component, or xd c.
-
-### Style options the plugin cannot compile (bug)
-
-xd new accepts scss, less and styl, which the plugin rejects; xd component ignores xaendar.json and always writes CSS.
+xd new accepts scss, less and styl, which the plugin rejects; xd generate component ignores xaendar.json and always writes CSS.
 
 **Workaround:** Use css.
 

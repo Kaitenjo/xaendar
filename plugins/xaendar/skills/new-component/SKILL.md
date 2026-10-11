@@ -15,9 +15,9 @@ The first argument is the selector (for example `app-user-card`). The optional s
 
 2. **Generate the files** from the project root:
    ```bash
-   npx xd component <selector> -p <folder>
+   npx xd generate component <selector> -p <folder>
    ```
-   Use `xd component` (alias `xd c`): `xd generate component` does not exist. The command creates `<folder>/<selector>/` containing `<selector>.xd.component.ts`, `.html`, `.css` and `.spec.ts`, with a class named `<PascalCase>Component`. If `xd` is not installed (`npx xd --version` fails), create the same four files by hand:
+   The command (alias `xd g c`) creates `<folder>/<selector>/` containing `<selector>.xd.component.ts`, `.html`, `.css` and `.spec.ts`, with a class named `<PascalCase>Component`. If `xd` is not installed (`npx xd --version` fails), create the same four files by hand:
    ```ts
    import { CustomElement, WebComponent } from '@xaendar/core';
 

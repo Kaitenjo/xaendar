@@ -12,19 +12,19 @@ beforeEach(() => {
 });
 
 describe('generateCommand()', () => {
-  it('registers the "component" command with its "c" alias, nested under "generate"', () => {
+  it('registers the "generate" command with its "g" alias, holding the "component" command with its "c" alias', () => {
     const command = generateCommand();
+    const component = command.commands.find(subcommand => subcommand.name() === 'component');
 
-    expect(command.name()).toBe('component');
-    expect(command.aliases()).toContain('c');
-    expect(command.parent?.name()).toBe('generate');
-    expect(command.parent?.aliases()).toContain('g');
+    expect(command.name()).toBe('generate');
+    expect(command.aliases()).toContain('g');
+    expect(component?.aliases()).toContain('c');
   });
 
-  it('invokes generateComponent with the current working directory when no path option is given', () => {
+  it.each([['component'], ['c']])('invokes generateComponent with the current working directory when no path option is given, through "%s"', subcommand => {
     const command = generateCommand();
 
-    command.parse(['my-button'], { from: 'user' });
+    command.parse([subcommand, 'my-button'], { from: 'user' });
 
     expect(generateComponent).toHaveBeenCalledWith('my-button', process.cwd(), false);
   });
@@ -32,7 +32,7 @@ describe('generateCommand()', () => {
   it('invokes generateComponent with the provided path and force options', () => {
     const command = generateCommand();
 
-    command.parse(['my-button', '--path', '/projects/app', '--force'], { from: 'user' });
+    command.parse(['component', 'my-button', '--path', '/projects/app', '--force'], { from: 'user' });
 
     expect(generateComponent).toHaveBeenCalledWith('my-button', '/projects/app', true);
   });

@@ -14,18 +14,33 @@ const THEME_STORAGE_KEY = 'xaendar-docs-theme';
 /**
  * The theme currently applied, as set on `<html data-theme>` by `index.html`.
  */
-export const theme = signal<Theme>(document.documentElement.dataset['theme'] === 'dark' ? 'dark' : 'light');
+export const theme = signal<Theme>(getDefaultThemeValue());
+
+
+function getDefaultThemeValue(): Theme {
+  let storageValue: string | null | undefined = localStorage.getItem(THEME_STORAGE_KEY);
+  if (storageValue === 'light' || storageValue === 'dark') {
+    document.documentElement.dataset['theme'] = storageValue;
+    return storageValue;
+  }
+
+  storageValue = document.documentElement.dataset['theme'];
+  if (storageValue === 'light' || storageValue === 'dark') {
+    return storageValue;
+  }
+
+  document.documentElement.dataset['theme'] = storageValue;
+  return 'dark';
+}
 
 /**
  * Switches between the light and the dark theme, and remembers the choice.
  */
 export function toggleTheme(): void {
-  theme.update(value => value === 'dark' ? 'light' : 'dark');
-
-  document.documentElement.dataset['theme'] = theme();
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme());
-  } catch {
-    // The theme is still applied, it just won't be remembered
-  }
+  theme.update(value => {
+    const retVal = value === 'dark' ? 'light' : 'dark'
+    document.documentElement.dataset['theme'] = retVal;
+    localStorage.setItem(THEME_STORAGE_KEY, retVal);
+    return retVal;
+  });
 }

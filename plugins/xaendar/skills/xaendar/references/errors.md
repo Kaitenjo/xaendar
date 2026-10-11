@@ -301,11 +301,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ## CLI
 
-### `error: unknown command 'generate'`
-
-- **Cause:** The component command is registered at the top level.
-- **Fix:** Run xd component <name>, or xd c <name>.
-
 ### `Tag <Widget> is not a valid custom element name. Custom element names must: …`
 
 - **Cause:** A component name, or a project name followed by -root, that is not a valid custom element name.
@@ -318,7 +313,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `✖  Directory "user-card" already exists.`
 
-- **Cause:** xd component would overwrite an existing folder.
+- **Cause:** xd generate component would overwrite an existing folder.
 - **Fix:** Pick another name, or add --force to replace it.
 
 ### `✖  Invalid style option: sass`

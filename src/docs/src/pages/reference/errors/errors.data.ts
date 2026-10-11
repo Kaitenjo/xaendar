@@ -315,11 +315,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'CLI',
-    message: "error: unknown command 'generate'",
-    page: 'tools/cli'
-  },
-  {
-    phase: 'CLI',
     message: 'Tag <Widget> is not a valid custom element name. Custom element names must: …',
     page: 'tools/cli'
   },

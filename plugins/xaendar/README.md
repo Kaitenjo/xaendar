@@ -5,7 +5,7 @@ Helps Claude Code write applications with Xaendar.
 | Component | What it does |
 | --- | --- |
 | `xaendar` skill | Loaded automatically on Xaendar code. It covers the template language, the component, directive and signal APIs, the compiler and runtime errors, and the known framework bugs with their workarounds. |
-| `/xaendar:new-component <selector> [folder] [description]` | Scaffolds a component with `xd component`, registers it in `main.ts`, and can implement it and use it in a parent template. |
+| `/xaendar:new-component <selector> [folder] [description]` | Scaffolds a component with `xd generate component`, registers it in `main.ts`, and can implement it and use it in a parent template. |
 | `/xaendar:check [folder]` | Runs `xd build` and `tsc --noEmit` and reports the template errors and the class type errors (the build never type-checks classes). |
 | `xaendar-reviewer` agent | Reviews components and templates for constructs that compile but misbehave. |
 | `xaendar` LSP server | Runs `@xaendar/language-server` on `.xd.component.html` files. |

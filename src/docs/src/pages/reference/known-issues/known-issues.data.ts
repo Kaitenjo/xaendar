@@ -86,12 +86,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'signals/effects'
   },
   {
-    id: 'xd-generate-does-not-exist',
-    area: 'CLI',
-    kind: 'bug',
-    page: 'tools/cli'
-  },
-  {
     id: 'style-options-the-plugin-cannot-compile',
     area: 'CLI',
     kind: 'bug',

@@ -2434,16 +2434,12 @@
           "p1": "<code>xd start</code> (or <code>xd s</code>) runs the Vite dev server, <code>xd build</code> (or <code>xd b</code>) a production build. Both read <code>vite.config.ts</code> from the current folder and add two plugins to it: Babel, to compile the decorators, and the Xaendar plugin, to compile templates and styles. The details are in <a href=\"#/en/tools/build\">Build and Vite plugin</a>. Everything else, such as the port, the root folder or the output folder, comes from the Vite configuration."
         },
         "xdComponent": {
-          "title": "xd component",
+          "title": "xd generate component",
           "p1": "The command creates a folder named after the component, with the class, the template, the stylesheet and a spec. The name is used as the selector, so it must be a valid custom element name; the class is named after it in PascalCase.",
           "p2": "Remember to import the new component: in <code>main.ts</code>, or through a glob, so that it is defined, and in the templates using it, with <code>@import</code>."
         },
         "edgeCases": {
           "title": "Edge cases",
-          "callout1": {
-            "heading": "xd generate does not exist",
-            "p1": "The component command is meant to live in a <code>generate</code> group, with the alias <code>g</code>, but it ends up registered at the top level. Use <code>xd component</code> or <code>xd c</code>."
-          },
           "callout2": {
             "heading": "Invalid names",
             "p1": "Component names are checked before anything is written.",
@@ -2451,7 +2447,7 @@
           },
           "callout3": {
             "heading": "--style accepts what the plugin cannot compile",
-            "p1": "<code>xd new</code> accepts <code>scss</code>, <code>less</code> and <code>styl</code>, but the plugin compiles only <code>.css</code> files. <code>xd component</code>, on its side, ignores <code>xaendar.json</code> and always writes a <code>.css</code> file."
+            "p1": "<code>xd new</code> accepts <code>scss</code>, <code>less</code> and <code>styl</code>, but the plugin compiles only <code>.css</code> files. <code>xd generate component</code>, on its side, ignores <code>xaendar.json</code> and always writes a <code>.css</code> file."
           },
           "callout4": {
             "heading": "The generated spec does not run",
@@ -2471,7 +2467,7 @@
           "td2": "Creates a project and installs its dependencies.",
           "td3": "Starts the Vite dev server with the Xaendar plugins.",
           "td4": "Builds the project with the Xaendar plugins.",
-          "td5": "<code>xd component &lt;name&gt;</code>, <code>xd c</code>",
+          "td5": "<code>xd generate component &lt;name&gt;</code>, <code>xd g c</code>",
           "td6": "Creates a component folder.",
           "td7": "Version and help."
         }
@@ -2830,10 +2826,6 @@
       "cause": "The disposer of a standalone effect called twice.",
       "fix": "Call it once."
     },
-    "error: unknown command 'generate'": {
-      "cause": "The component command is registered at the top level.",
-      "fix": "Run xd component <name>, or xd c <name>."
-    },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "A component name, or a project name followed by -root, that is not a valid custom element name.",
       "fix": "Use lowercase letters and a dash."
@@ -2843,7 +2835,7 @@
       "fix": "Pick another name."
     },
     "✖  Directory \"user-card\" already exists.": {
-      "cause": "xd component would overwrite an existing folder.",
+      "cause": "xd generate component would overwrite an existing folder.",
       "fix": "Pick another name, or add --force to replace it."
     },
     "✖  Invalid style option: sass": {
@@ -2897,14 +2889,9 @@
       "details": "Vite prints [Unhandled error] even for errors handled with preventDefault on window.",
       "workaround": "None: it happens in development only."
     },
-    "xd-generate-does-not-exist": {
-      "title": "xd generate does not exist",
-      "details": "The component command is registered at the top level instead of inside generate.",
-      "workaround": "Run xd component, or xd c."
-    },
     "style-options-the-plugin-cannot-compile": {
       "title": "Style options the plugin cannot compile",
-      "details": "xd new accepts scss, less and styl, which the plugin rejects; xd component ignores xaendar.json and always writes CSS.",
+      "details": "xd new accepts scss, less and styl, which the plugin rejects; xd generate component ignores xaendar.json and always writes CSS.",
       "workaround": "Use css."
     },
     "the-project-name-is-checked-too": {

@@ -4,13 +4,12 @@ Usage: xd [options] [command]
 Xaendar CLI
 
 Options:
-  -V, --version                 output the version number
-  -h, --help                    display help for command
+  -V, --version         output the version number
+  -h, --help            display help for command
 
 Commands:
-  component|c [options] <name>  Generate a new component (creates <name>/ folder
-                                with .ts, .html, .css, .spec.ts)
-  new [options] <name>          Scaffold a new Xaendar project
-  start|s                       Start the project
-  build|b                       Build the project
-  help [command]                display help for command
+  generate|g            Generate Xaendar building blocks
+  new [options] <name>  Scaffold a new Xaendar project
+  start|s               Start the project
+  build|b               Build the project
+  help [command]        display help for command
