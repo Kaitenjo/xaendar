@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { entries, isEmpty, isNonEmpty, keys, values } from './object-utils';
 
 describe('Object Utils', () => {
