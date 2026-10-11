@@ -14,7 +14,7 @@ export function packageJson(name: string, version: string): string {
   "scripts": {
     "build": "xd build",
     "start": "xd start",
-    "test": "vitest",
+    "test": "xd test",
     "xd": "xd"
   },
   "dependencies": {
@@ -26,6 +26,7 @@ export function packageJson(name: string, version: string): string {
     "@babel/plugin-proposal-decorators": "^8.0.2",
     "@vitest/coverage-v8": "^5.0.3",
     "@xaendar/cli": "^${version}",
+    "happy-dom": "^20.14.6",
     "typescript": "^6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"

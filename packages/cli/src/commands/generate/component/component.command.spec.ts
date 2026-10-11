@@ -120,7 +120,7 @@ describe('generateComponent()', () => {
     expect(cssContent).toBe('/* component styles */\n');
   });
 
-  it('generates a spec skeleton importing and instantiating the PascalCase class', () => {
+  it('generates a spec mounting the tag and checking the PascalCase class and the template', () => {
     vi.mocked(existsSync).mockReturnValue(false);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -129,7 +129,9 @@ describe('generateComponent()', () => {
     const specContent = vi.mocked(writeFileSync).mock.calls.find(([path]) => (path as string).endsWith('.xd.component.spec.ts'))?.[1] as string;
 
     expect(specContent).toContain("import { MyButtonComponent } from './my-button.xd.component';");
-    expect(specContent).toContain('new MyButtonComponent()');
+    expect(specContent).toContain("document.createElement('my-button')");
+    expect(specContent).toContain('toBeInstanceOf(MyButtonComponent)');
+    expect(specContent).toContain("toContain('my-button works!')");
   });
 
   it('logs a success message after generating the component', () => {

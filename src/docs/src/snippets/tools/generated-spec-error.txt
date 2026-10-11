@@ -1,4 +1,0 @@
-$ npm test
-
- FAIL  my-app-root/my-app-root.xd.component.spec.ts
-SyntaxError: Invalid or unexpected token

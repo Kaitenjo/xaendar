@@ -105,7 +105,10 @@ function cssTemplate(_name: string): string {
 /**
  * Generates the Vitest spec file content for a component.
  *
- * @param name - The component name used to derive the class name and import
+ * The spec mounts the component as `index.html` does, by adding its tag to the document, and checks that
+ * it renders the placeholder of its template.
+ *
+ * @param name - The component name used to derive the class name, the selector and the import
  *   path.
  * @returns A string containing a minimal `describe` / `it` test skeleton.
  */
@@ -115,9 +118,13 @@ function specTemplate(name: string): string {
 import { ${className}Component } from './${name}.xd.component';
 
 describe('${className}Component', () => {
-  it('should create', () => {
-    const component = new ${className}Component();
-    expect(component).toBeTruthy();
+  it('renders its template', () => {
+    const element = document.createElement('${name}');
+    document.body.append(element);
+
+    expect(element).toBeInstanceOf(${className}Component);
+    expect(element.shadowRoot?.textContent).toContain('${name} works!');
+    element.remove();
   });
 });
 `;

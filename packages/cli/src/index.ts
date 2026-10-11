@@ -6,6 +6,7 @@ import { buildCommand } from './commands/build/build.command';
 import { generateCommand } from './commands/generate/generate.command';
 import { newCommand } from './commands/new/new.command';
 import { startCommand } from './commands/start/start.command';
+import { testCommand } from './commands/test/test.command';
 
 const version = JSON.parse(readFileSync(resolve(import.meta.filename, '..', '../package.json'), 'utf-8')).version;
 
@@ -18,5 +19,6 @@ program.addCommand(generateCommand());
 program.addCommand(newCommand());
 program.addCommand(startCommand());
 program.addCommand(buildCommand());
+program.addCommand(testCommand());
 
 program.parse();

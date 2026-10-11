@@ -20,4 +20,11 @@ describe('packageJson()', () => {
     expect(result.dependencies['@xaendar/types']).toBe('^1.2.3');
     expect(result.devDependencies['@xaendar/cli']).toBe('^1.2.3');
   });
+
+  it('runs the tests through xd test, which needs a DOM environment', () => {
+    const result = JSON.parse(packageJson('my-app', '1.2.3'));
+
+    expect(result.scripts.test).toBe('xd test');
+    expect(result.devDependencies['happy-dom']).toBeDefined();
+  });
 });

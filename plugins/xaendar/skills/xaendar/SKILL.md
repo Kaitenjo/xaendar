@@ -11,10 +11,10 @@ Xaendar builds Web Components from a template language that extends HTML5. There
 
 ```
 my-app/
-├── package.json        scripts: start (xd start), build (xd build)
+├── package.json        scripts: start (xd start), build (xd build), test (xd test)
 ├── xaendar.json        project settings read by the CLI
 ├── tsconfig.json       also used to type-check the templates
-├── vite.config.ts      plain Vite config: xd start/build add Babel (decorators) + xaendarPlugin()
+├── vite.config.ts      plain Vite config: xd start/build/test add Babel (decorators) + xaendarPlugin()
 └── src/
     ├── index.html      loads signals.ts, then main.ts
     ├── signals.ts      loadSignals() from @xaendar/signals — must run before @xaendar/core loads

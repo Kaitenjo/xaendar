@@ -68,12 +68,6 @@ xd new accepts scss, less and styl, which the plugin rejects; xd generate compon
 
 **Workaround:** Use css.
 
-### The generated spec does not run (bug)
-
-npm test runs Vitest without the decorators transform: SyntaxError: Invalid or unexpected token.
-
-**Workaround:** Configure Vitest with the same plugins and a DOM environment.
-
 ## Docs
 
 ### Documentation inside the packages is out of date (docs)

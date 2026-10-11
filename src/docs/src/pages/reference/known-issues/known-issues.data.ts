@@ -92,12 +92,6 @@ export const ISSUES: readonly IssueEntry[] = [
     page: 'tools/cli'
   },
   {
-    id: 'the-generated-spec-does-not-run',
-    area: 'CLI',
-    kind: 'bug',
-    page: 'tools/cli'
-  },
-  {
     id: 'the-published-packages-predate-this-documentation',
     area: 'CLI',
     kind: 'bug',

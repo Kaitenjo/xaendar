@@ -2433,6 +2433,10 @@
           "title": "xd start e xd build",
           "p1": "<code>xd start</code> (o <code>xd s</code>) avvia il dev server di Vite, <code>xd build</code> (o <code>xd b</code>) una build di produzione. Entrambi leggono <code>vite.config.ts</code> dalla cartella corrente e vi aggiungono due plugin: Babel, per compilare i decoratori, e il plugin Xaendar, per compilare template e stili. I dettagli sono in <a href=\"#/it/tools/build\">Build e plugin Vite</a>. Tutto il resto, come la porta, la cartella radice o quella di output, viene dalla configurazione di Vite."
         },
+        "xdTest": {
+          "title": "xd test",
+          "p1": "<code>xd test</code> (o <code>xd t</code>) esegue Vitest con gli stessi plugin, nell’ambiente DOM di happy-dom, ed esegue <code>signals.ts</code> prima delle spec, come fa <code>index.html</code>. La spec generata con ogni componente aggiunge il suo tag al documento e verifica che renderizzi il suo template. Vitest osserva i file, e li esegue una volta sola in CI."
+        },
         "xdComponent": {
           "title": "xd generate component",
           "p1": "Il comando crea una cartella con il nome del componente, con la classe, il template, il foglio di stile e una spec. Il nome viene usato come selettore, quindi deve essere un nome valido per un custom element; la classe prende lo stesso nome in PascalCase.",
@@ -2448,10 +2452,6 @@
           "callout3": {
             "heading": "--style accetta ciò che il plugin non sa compilare",
             "p1": "<code>xd new</code> accetta <code>scss</code>, <code>less</code> e <code>styl</code>, ma il plugin compila solo file <code>.css</code>. <code>xd generate component</code>, dal canto suo, ignora <code>xaendar.json</code> e scrive sempre un file <code>.css</code>."
-          },
-          "callout4": {
-            "heading": "La spec generata non parte",
-            "p1": "Il <code>package.json</code> generato esegue Vitest, che non conosce né la trasformazione dei decoratori né il plugin Xaendar: la spec del componente radice fallisce prima di partire. Per testare i componenti serve una configurazione di Vitest con gli stessi plugin e un ambiente DOM."
           },
           "callout5": {
             "heading": "I pacchetti pubblicati sono più vecchi di questa documentazione",
@@ -2469,7 +2469,8 @@
           "td4": "Compila il progetto con i plugin Xaendar.",
           "td5": "<code>xd generate component &lt;nome&gt;</code>, <code>xd g c</code>",
           "td6": "Crea la cartella di un componente.",
-          "td7": "Versione e aiuto."
+          "td7": "Versione e aiuto.",
+          "td8": "Esegue le spec con i plugin Xaendar."
         }
       },
       "languageService": {
@@ -2893,11 +2894,6 @@
       "title": "Opzioni di stile che il plugin non sa compilare",
       "details": "xd new accetta scss, less e styl, che il plugin rifiuta; xd generate component ignora xaendar.json e scrive sempre CSS.",
       "workaround": "Usa css."
-    },
-    "the-generated-spec-does-not-run": {
-      "title": "La spec generata non parte",
-      "details": "npm test esegue Vitest senza la trasformazione dei decoratori: SyntaxError: Invalid or unexpected token.",
-      "workaround": "Configura Vitest con gli stessi plugin e un ambiente DOM."
     },
     "the-published-packages-predate-this-documentation": {
       "title": "I pacchetti pubblicati precedono questa documentazione",
