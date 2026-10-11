@@ -1075,7 +1075,7 @@
         },
         "specialCharacters": {
           "title": "Caratteri speciali",
-          "p1": "Nel testo di un template, <code>{</code> inizia sempre un’interpolazione, <code>@</code> inizia sempre un blocco di controllo di flusso e <code>&lt;</code> inizia sempre un tag. Per scriverli come testo, interpola una stringa: <code>{ '@' }</code>. Vedi <a href=\"#/it/templates/overview\">Sintassi dei template</a>."
+          "p1": "Nel testo di un template, <code>{</code> inizia sempre un’interpolazione, <code>@</code> inizia sempre un blocco di controllo di flusso e <code>&lt;</code> inizia sempre un tag. Per scriverli come testo, usa un riferimento a carattere come in HTML, <code>&amp;commat;</code>, oppure interpola una stringa: <code>{ '@' }</code>. Vedi <a href=\"#/it/templates/overview\">Sintassi dei template</a>."
         },
         "next": {
           "title": "Prossimo passo",
@@ -2216,24 +2216,22 @@
         },
         "whitespace": {
           "title": "Spazi",
-          "p1": "Il compilatore elimina gli a capo del testo, invece di trasformarli in spazi, ed elimina il testo fatto solo di spazi quando contiene un a capo, come tra tag su righe diverse. Uno spazio tra due tag o due interpolazioni sulla stessa riga resta. L’indentazione resta, e il browser la riduce a un solo spazio.",
-          "example1": "Sei modi di scrivere due parole",
-          "li1": "l’a capo sparisce, e le due parole si toccano;",
-          "li2": "l’indentazione della seconda riga diventa lo spazio: indenta le righe di testo che vai a capo;",
-          "li3": "l’a capo tra due tag viene eliminato, insieme all’indentazione intorno;",
-          "li4": "<code>{' '}</code> scrive uno spazio che resta;",
-          "li5": "lo spazio tra due interpolazioni sulla stessa riga resta;",
-          "li6": "costruire il testo in un’unica espressione lo mantiene."
+          "p1": "Gli a capo e l’indentazione dentro un testo restano, come in HTML, e il browser li riduce a un solo spazio. Il compilatore elimina il testo fatto solo di spazi quando contiene un a capo, come tra tag su righe diverse, mentre uno spazio tra due tag o due interpolazioni sulla stessa riga resta.",
+          "example1": "Cinque modi di scrivere due parole",
+          "li1": "l’a capo tra due parole diventa uno spazio;",
+          "li2": "l’a capo tra due tag viene eliminato, insieme all’indentazione intorno;",
+          "li3": "<code>{' '}</code> scrive uno spazio che resta;",
+          "li4": "lo spazio tra due interpolazioni sulla stessa riga resta;",
+          "li5": "costruire il testo in un’unica espressione lo mantiene."
         },
         "specialCharacters": {
           "title": "Caratteri speciali",
-          "p1": "<code>@</code>, le graffe e <code>&lt;</code> hanno un significato nei template, e il compilatore non decodifica le entità HTML: <code>&amp;lt;</code> viene mostrato così come è scritto. Per mostrare quei caratteri, interpola una stringa; per tutti gli altri, come frecce e apostrofi tipografici, scrivi il carattere stesso.",
+          "p1": "<code>@</code>, le graffe e <code>&lt;</code> hanno un significato nei template. Per mostrarli, scrivi un riferimento a carattere, come in HTML, oppure interpola una stringa. I riferimenti a carattere vengono decodificati nei testi e nei valori degli attributi, quindi <code>&amp;copy;</code> mostra ©; per gli altri caratteri, come frecce e apostrofi tipografici, puoi anche scrivere il carattere stesso.",
           "th1": "Carattere",
           "th2": "Scrivi",
           "th3": "Risultato",
           "td1": "graffa aperta",
           "td2": "graffa chiusa",
-          "td3": "&lt;",
           "td4": "un intero frammento",
           "td5": "{ count() }"
         },
@@ -2266,8 +2264,8 @@
           "td4": "Uno spazio che deve restare",
           "td5": "<code>{' '}</code>, uno spazio sulla stessa riga, oppure il testo costruito in un’unica espressione",
           "td6": "<code>@</code>, graffe, <code>&lt;</code> nel testo",
-          "td7": "Entità",
-          "td8": "Il carattere stesso: →, —, ’, ©"
+          "td7": "Altri caratteri",
+          "td8": "Il carattere stesso, →, —, ’, ©, o il suo riferimento a carattere, <code>&amp;copy;</code>"
         }
       },
       "svgMathml": {
@@ -2597,7 +2595,7 @@
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
       "cause": "Una @ nel testo apre un blocco: una keyword senza spazio prima della parentesi (@if(…)), una keyword inesistente (@unless, @empty), o una semplice @, come in un indirizzo email.",
-      "fix": "Scrivi uno spazio dopo la keyword, e un’interpolazione come { '@' } per una @ letterale."
+      "fix": "Scrivi uno spazio dopo la keyword, e &amp;commat; o un’interpolazione come { '@' } per una @ letterale."
     },
     "[Lexer] Comment never closed: '<!--' without '-->'": {
       "cause": "Un commento HTML aperto con <!-- e mai chiuso.",
@@ -2841,11 +2839,6 @@
     }
   },
   "issues": {
-    "newlines-are-removed-and-entities-are": {
-      "title": "Gli a capo vengono rimossi e le entità non vengono decodificate",
-      "details": "Un a capo nel testo unisce le parole che lo circondano, e &lt; viene mostrato così com’è. Il testo non può contenere @, { o < letterali.",
-      "workaround": "Indenta le righe a capo, e usa interpolazioni come { '@' } e caratteri Unicode."
-    },
     "signal-members-are-detected-by-syntax": {
       "title": "I membri signal vengono riconosciuti dalla sintassi",
       "details": "Un attributo è reattivo solo se nomina un membro inizializzato da una funzione di @xaendar/core/signals, o annotato con uno dei suoi tipi. Un signal di modulo assegnato a un membro non annotato viene letto una volta.",

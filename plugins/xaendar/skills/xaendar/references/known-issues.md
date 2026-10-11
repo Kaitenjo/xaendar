@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### Newlines are removed and entities are not decoded (limitation)
-
-A line break in text joins the words around it, and &lt; is shown as written. Text cannot contain a literal @, { or <.
-
-**Workaround:** Indent wrapped lines, and use interpolations such as { '@' } and Unicode characters.
-
 ### Signal members are detected by syntax (limitation)
 
 An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member is read once.

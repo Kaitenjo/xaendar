@@ -3,7 +3,8 @@
 <p>{`${count()} items`}</p>                 <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
-<!-- Characters with a meaning: write them through an interpolation -->
+<!-- Characters with a meaning: write a character reference, as in HTML, or an interpolation -->
+<p>&commat; &lt; &lbrace; &rbrace;</p>
 <p>{ '@' } { '<' } { '{' } { '}' }</p>
 
 <!-- Void elements are always self-closed; attribute values always in double quotes -->

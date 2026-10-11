@@ -51,6 +51,13 @@ describe('compile', () => {
     expect(javascript.match(/_renderLiteralText\([^)]*' '/g)).toHaveLength(1);
   });
 
+  it('keeps the line breaks of a text and decodes the character references of texts and static attribute values', async () => {
+    const javascript = await compile('<p title="a &amp; b">one\r\n  two &lt;&#64;&lbrace;</p>', { signals: [], cache: createCache() });
+
+    expect(javascript).toContain('\'one\\n  two <@{\'');
+    expect(javascript).toContain('\'a & b\'');
+  });
+
   it('compiles an event handler named like a reserved word, calling it on the component', async () => {
     const { javascript, typescript } = await compile('<button (click)="delete()">x</button>', { baseDir: '/base', signals: [], cache: createCache() });
 

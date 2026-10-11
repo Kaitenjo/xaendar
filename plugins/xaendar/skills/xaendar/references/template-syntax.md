@@ -10,7 +10,8 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 <p>{`${count()} items`}</p>                 <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
-<!-- Characters with a meaning: write them through an interpolation -->
+<!-- Characters with a meaning: write a character reference, as in HTML, or an interpolation -->
+<p>&commat; &lt; &lbrace; &rbrace;</p>
 <p>{ '@' } { '<' } { '{' } { '}' }</p>
 
 <!-- Elements without content are self-closed, native ones included; attribute values always in double quotes -->
@@ -21,8 +22,8 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 - Interpolations are single braces `{ expr }`, never `{{ expr }}`.
 - Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it.
-- A literal `@`, `<`, `{` or `}` in text must go through an interpolation (`{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`). This includes package names in prose (`{'@xaendar/core'}`) and e-mail addresses.
-- HTML entities (`&lt;`, `&amp;`, …) are not decoded and newlines are removed.
+- A literal `@`, `<`, `{` or `}` in text must be written as a character reference (`&commat;`, `&lt;`, `&lbrace;`, `&rbrace;`) or an interpolation (`{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`). This includes package names in prose (`&commat;xaendar/core`) and e-mail addresses.
+- Character references (`&lt;`, `&amp;`, `&#64;`, …) are decoded in text and static attribute values, as in HTML. Line breaks inside a text are kept, as in HTML.
 - Whitespace-only text holding a line break is dropped: elements or interpolations on separate lines render joined (write `{ ' ' }` between them). A space between them on the same line stays: `{ first } { second }`.
 
 ## Bindings and events

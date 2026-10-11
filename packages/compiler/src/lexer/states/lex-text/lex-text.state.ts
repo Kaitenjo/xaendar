@@ -69,10 +69,24 @@ export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionCon
           }
           break;
   
+        /*
+          Line breaks are kept, as in HTML, where CR LF and a lone CR are read as LF.
+          The LF is appended before peeking at the character after a CR, which throws at the end of the file.
+        */
         case LF:
+          cursor.advance();
+          text = `${text}\n`;
+          lineBreak = true;
+          break;
+
         case CR:
           cursor.advance();
+          text = `${text}\n`;
           lineBreak = true;
+
+          if (cursor.peek() === LF) {
+            cursor.advance();
+          }
           break;
   
         default:
@@ -124,7 +138,7 @@ export function lexText(cursor: LexerCursor, context: LexerTransitionFunctionCon
  * before it, and an interpolation or an element after it. That space is part of the content, as in `{ first } { second }`,
  * while the whitespace laying out the template, which holds a line break, is dropped.
  *
- * @param text - The whitespace-only text, without its line breaks.
+ * @param text - The whitespace-only text.
  * @param lineBreak - Whether the text holds a line break.
  * @param previousToken - The token emitted before the text, if any.
  * @param nextState - The state following the text.

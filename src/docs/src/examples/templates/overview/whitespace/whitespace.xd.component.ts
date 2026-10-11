@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * Renders the same words written in six ways, to show what happens to line breaks and spaces.
+ * Renders the same words written in five ways, to show what happens to line breaks and spaces.
  */
 @WebComponent({
   selector: 'ex-whitespace',

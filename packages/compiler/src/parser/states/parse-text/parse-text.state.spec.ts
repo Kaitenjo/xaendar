@@ -13,4 +13,11 @@ describe('parseText', () => {
     expect(parseText(cursor, () => undefined, token)).toEqual({ type: ASTNodeType.Text, value: 'hello' });
     expect(cursor.getCurrentToken().value).toBe(token);
   });
+
+  it('decodes named and numeric character references', () => {
+    const token: TextToken = { type: TokenType.TEXT, parts: ['&lt;a&gt; &amp; &#64;&#x7B;&rbrace;&nbsp;&copy'], span: { start: 0, end: 41 } };
+    const cursor = new ParserCursor('&lt;a&gt; &amp; &#64;&#x7B;&rbrace;&nbsp;&copy', [token]);
+
+    expect(parseText(cursor, () => undefined, token)).toEqual({ type: ASTNodeType.Text, value: '<a> & @{} ©' });
+  });
 });

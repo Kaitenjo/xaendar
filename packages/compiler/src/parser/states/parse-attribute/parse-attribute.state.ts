@@ -1,4 +1,5 @@
 import { NoArgsFunction } from '@xaendar/types';
+import { decodeHTMLAttribute } from 'entities';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
 import { AttributeValueToken } from '../../../lexer/types/tokens/attribute-value-token.type';
@@ -95,7 +96,8 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
   return {
     type: ASTNodeType.Attribute,
     name,
-    value: nextToken.parts[0],
+    // Character references are decoded as in HTML: `title="a &amp; b"` holds `a & b`
+    value: decodeHTMLAttribute(nextToken.parts[0]),
     span: {
       start: startOffset,
       end: cursor.getCurrentToken().value.span.end,

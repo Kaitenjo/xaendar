@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'newlines-are-removed-and-entities-are',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'templates/overview'
-  },
-  {
     id: 'signal-members-are-detected-by-syntax',
     area: 'Compiler',
     kind: 'limitation',

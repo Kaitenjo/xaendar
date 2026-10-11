@@ -434,7 +434,7 @@ export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 's
 }
 
 /**
- * Turns a text taken verbatim from the template (a text node, a static attribute value) into a
+ * Turns a text of the template (a text node, a static attribute value) into a
  * single-quoted string literal for the generated code, escaping the characters that would end
  * the literal or change its value: backslashes, single quotes and line terminators.
  *

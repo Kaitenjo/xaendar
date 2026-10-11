@@ -69,11 +69,19 @@ describe('lexText', () => {
     });
   });
 
-  it('skips line feeds and carriage returns without including them in the text', () => {
-    const cursor = new LexerCursor('he\nl\rlo<div>');
+  it('keeps line breaks, reading CR LF and a lone CR as LF', () => {
+    const cursor = new LexerCursor('he\nl\r\nl\ro<div>');
     expect(lexText(cursor, context)).toEqual({
       state: LexerState.TAG_OPEN_NAME,
-      tokens: [{ type: TokenType.TEXT, parts: ['hello'] }]
+      tokens: [{ type: TokenType.TEXT, parts: ['he\nl\nl\no'] }]
+    });
+  });
+
+  it('keeps a CR ending the input as LF', () => {
+    const cursor = new LexerCursor('hello\r');
+    expect(lexText(cursor, context)).toEqual({
+      state: LexerState.TEXT,
+      tokens: [{ type: TokenType.TEXT, parts: ['hello\n'] }]
     });
   });
 

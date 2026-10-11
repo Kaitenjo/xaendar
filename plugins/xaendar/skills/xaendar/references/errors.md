@@ -7,7 +7,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[Lexer] Unknown flow-control keyword`
 
 - **Cause:** An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.
-- **Fix:** Write a space after the keyword, and an interpolation such as { '@' } for a literal @.
+- **Fix:** Write a space after the keyword, and &commat; or an interpolation such as { '@' } for a literal @.
 
 ### `[Lexer] Comment never closed: '<!--' without '-->'`
 

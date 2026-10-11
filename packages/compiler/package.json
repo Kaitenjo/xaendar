@@ -11,6 +11,7 @@
   "dependencies": {
     "@xaendar/common": "0.12.0",
     "@xaendar/types": "0.12.0",
+    "entities": "^7.0.1",
     "typescript": "^6.0.3"
   }
 }

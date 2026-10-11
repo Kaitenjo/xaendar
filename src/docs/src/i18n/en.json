@@ -1075,7 +1075,7 @@
         },
         "specialCharacters": {
           "title": "Special characters",
-          "p1": "In the text of a template, <code>{</code> always starts an interpolation, <code>@</code> always starts a control flow block and <code>&lt;</code> always starts a tag. To write them as text, interpolate a string: <code>{ '@' }</code>. See <a href=\"#/en/templates/overview\">Template syntax</a>."
+          "p1": "In the text of a template, <code>{</code> always starts an interpolation, <code>@</code> always starts a control flow block and <code>&lt;</code> always starts a tag. To write them as text, use a character reference as in HTML, <code>&amp;commat;</code>, or interpolate a string: <code>{ '@' }</code>. See <a href=\"#/en/templates/overview\">Template syntax</a>."
         },
         "next": {
           "title": "Next",
@@ -2216,24 +2216,22 @@
         },
         "whitespace": {
           "title": "Whitespace",
-          "p1": "The compiler drops the line breaks of the text, instead of turning them into spaces, and drops the text made only of whitespace when it holds a line break, as between tags on separate lines. A space between two tags or two interpolations on the same line stays. Indentation is kept, and the browser collapses it into one space.",
-          "example1": "Six ways of writing two words",
-          "li1": "the line break disappears, and the two words touch;",
-          "li2": "the indentation of the second line becomes the space: indent the lines of text you wrap;",
-          "li3": "the line break between two tags is dropped, with the indentation around it;",
-          "li4": "<code>{' '}</code> writes a space that stays;",
-          "li5": "the space between two interpolations on the same line stays;",
-          "li6": "building the text in one expression keeps it."
+          "p1": "Line breaks and indentation inside a text are kept, as in HTML, and the browser collapses them into one space. The compiler drops the text made only of whitespace when it holds a line break, as between tags on separate lines, while a space between two tags or two interpolations on the same line stays.",
+          "example1": "Five ways of writing two words",
+          "li1": "the line break between two words becomes a space;",
+          "li2": "the line break between two tags is dropped, with the indentation around it;",
+          "li3": "<code>{' '}</code> writes a space that stays;",
+          "li4": "the space between two interpolations on the same line stays;",
+          "li5": "building the text in one expression keeps it."
         },
         "specialCharacters": {
           "title": "Special characters",
-          "p1": "<code>@</code>, braces and <code>&lt;</code> have a meaning in templates, and the compiler does not decode HTML entities: <code>&amp;lt;</code> is shown as written. To show those characters, interpolate a string; for all the others, such as arrows and typographic quotes, write the character itself.",
+          "p1": "<code>@</code>, braces and <code>&lt;</code> have a meaning in templates. To show them, write a character reference, as in HTML, or interpolate a string. Character references are decoded in texts and attribute values, so <code>&amp;copy;</code> shows ©; for the other characters, such as arrows and typographic quotes, you can also write the character itself.",
           "th1": "Character",
           "th2": "Write",
           "th3": "Result",
           "td1": "opening brace",
           "td2": "closing brace",
-          "td3": "&lt;",
           "td4": "a whole snippet",
           "td5": "{ count() }"
         },
@@ -2241,11 +2239,11 @@
           "title": "Edge cases",
           "callout1": {
             "heading": "An @ in plain text",
-            "p1": "An <code>@</code> followed by letters starts a block, so an email address in the text does not compile. Inside attribute values <code>@</code> is safe."
+            "p1": "An <code>@</code> followed by letters starts a block, so an email address in the text does not compile: write <code>&amp;commat;</code> instead. Inside attribute values <code>@</code> is safe."
           },
           "callout2": {
             "heading": "A less-than sign in plain text",
-            "p1": "<code>&lt;</code> always opens a tag, and the error points somewhere after it. <code>&gt;</code> is safe."
+            "p1": "<code>&lt;</code> always opens a tag, and the error points somewhere after it: write <code>&amp;lt;</code> instead. <code>&gt;</code> is safe."
           },
           "callout3": {
             "heading": "An unclosed comment",
@@ -2266,8 +2264,8 @@
           "td4": "A space that must stay",
           "td5": "<code>{' '}</code>, a space on the same line, or the text built in one expression",
           "td6": "<code>@</code>, braces, <code>&lt;</code> in text",
-          "td7": "Entities",
-          "td8": "The character itself: →, —, ’, ©"
+          "td7": "Other characters",
+          "td8": "The character itself, →, —, ’, ©, or its character reference, <code>&amp;copy;</code>"
         }
       },
       "svgMathml": {
@@ -2597,7 +2595,7 @@
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
       "cause": "An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.",
-      "fix": "Write a space after the keyword, and an interpolation such as { '@' } for a literal @."
+      "fix": "Write a space after the keyword, and &amp;commat; or an interpolation such as { '@' } for a literal @."
     },
     "[Lexer] Comment never closed: '<!--' without '-->'": {
       "cause": "An HTML comment opened with <!-- and never closed.",
@@ -2841,11 +2839,6 @@
     }
   },
   "issues": {
-    "newlines-are-removed-and-entities-are": {
-      "title": "Newlines are removed and entities are not decoded",
-      "details": "A line break in text joins the words around it, and &lt; is shown as written. Text cannot contain a literal @, { or <.",
-      "workaround": "Indent wrapped lines, and use interpolations such as { '@' } and Unicode characters."
-    },
     "signal-members-are-detected-by-syntax": {
       "title": "Signal members are detected by syntax",
       "details": "An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member is read once.",

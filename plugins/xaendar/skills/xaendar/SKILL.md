@@ -90,7 +90,7 @@ export class CounterComponent extends CustomElement {
 - In a directive, `this.element` and `this.effect` are unavailable in the constructor. Do the setup in `onInit`.
 
 **Template**: see [references/template-syntax.md](references/template-syntax.md). The essentials:
-- Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`. Use double quotes around every attribute value. Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
+- Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `&commat;`, `&lt;`, `&lbrace;`, `&rbrace;` (character references are decoded as in HTML) or `{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`. Use double quotes around every attribute value. Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
 - An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`.
 - A listener is one method call with simple arguments: no inline logic, no `(keydown.enter)` modifiers.
 - Add or remove boolean attributes (`disabled`, `checked`) with a conditional binding inside the tag, not with `="{ false }"`.
@@ -156,7 +156,7 @@ Follow these in every template you write or edit:
   - An element containing only text and interpolations stays on one line (`<span>{ total() } items</span>`) while its opening tag is short and the line stays within about 120 characters. Otherwise the text goes on its own indented line, unless it already touches both tags (`<x-card>Text</x-card>`): on its own line it would gain spaces at both ends, visible when the content flows inline (e.g. slotted).
   - An opening tag that does not fit on one line, or contains a conditional block, has one item per line and ends with `>` / `/>` on its own line.
   - Control-flow blocks are never inline.
-  - Xaendar removes newlines from text and drops whitespace-only text holding a line break: write `{ ' ' }` between two elements on separate lines that need a space, and keep punctuation on the line of the element it follows (`<code>a</code>,`).
+  - Xaendar drops whitespace-only text holding a line break: write `{ ' ' }` between two elements on separate lines that need a space, and keep punctuation on the line of the element it follows (`<code>a</code>,`). A line break inside a text is kept, and renders as a space.
 
 ## Verifying work
 

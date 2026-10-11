@@ -44,6 +44,11 @@ describe('parseAttribute', () => {
     expect(node).toMatchObject({ name: 'disabled', value: 'abc', span: { start: 0, end: 12 } });
   });
 
+  it('decodes the character references of a literal attribute value', () => {
+    const node = run({ type: TokenType.ATTRIBUTE_VALUE, parts: ['a &amp; b &quot;&#64;&lbrace;'], span: { start: 9, end: 38 } });
+    expect(node).toMatchObject({ value: 'a & b "@{' });
+  });
+
   it('parses an interpolated value', () => {
     const node = run({ type: TokenType.INTERPOLATION_EXPRESSION, parts: ['value'], span: { start: 9, end: 16 } });
     expect(node).toMatchObject({
