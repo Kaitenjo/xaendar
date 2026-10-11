@@ -1,7 +1,6 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import type { CustomElement } from '../../models/custom-element/custom-element';
-import { wrapNode } from '../signal-node/signal-node';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QuerySignal } from '../types/query-signal.type';
 import type { QuerySlotOptions } from '../types/query-slot-options.type';
@@ -66,9 +65,9 @@ export function createQuerySignal<Value>(
   });
   element[DISCONNECTED_HOOKS].push(() => stop());
 
-  return wrapNode(Object.assign(getter, {
+  return Object.assign(getter, {
     get: signal.get.bind(signal)
-  }), signal);
+  });
 }
 
 /**

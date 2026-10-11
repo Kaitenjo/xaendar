@@ -7,7 +7,6 @@ import { CustomElement } from '../../models/custom-element/custom-element';
 import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { effect } from '../effect/effect';
-import { introspectSinks, isState } from '../subtle/subtle';
 import { createQuerySignal, createSlotQuerySignal, toSelector } from './query';
 
 loadSignals();
@@ -86,18 +85,6 @@ describe('toSelector', () => {
 
 describe('createQuerySignal', () => {
   const read = (shadowRoot: ShadowRoot) => shadowRoot.childElementCount;
-
-  it('wraps a Signal.State, which the functions of subtle accept', () => {
-    const signal = createQuerySignal(create(), read, 0);
-    const reader = new Signal.Computed(() => signal());
-    const watcher = new Signal.subtle.Watcher(() => undefined);
-    watcher.watch(reader);
-    reader.get();
-
-    expect(isState(signal)).toBe(true);
-    expect(introspectSinks(signal)).toEqual([reader]);
-    watcher.unwatch(reader);
-  });
 
   it('holds the initial value until the element is connected', () => {
     expect(createQuerySignal(create(), read, -1)()).toBe(-1);

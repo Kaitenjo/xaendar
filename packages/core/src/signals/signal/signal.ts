@@ -1,6 +1,5 @@
 import type { SignalOptions } from '@xaendar/signals';
 import type { Signal as SignalType } from '../types/signal.type';
-import { wrapNode } from '../signal-node/signal-node';
 import { untracked } from '../untracked';
 
 /**
@@ -19,9 +18,9 @@ export function signal<T = unknown>(value: T, options?: SignalOptions<T>): Signa
   const signal = new Signal.State(value, options);
   const getter = function () { return signal.get(); }
 
-  return wrapNode(Object.assign(getter, {
+  return Object.assign(getter, {
     set: signal.set.bind(signal),
     get: signal.get.bind(signal),
     update: (updater: (prev: T) => T) => signal.set(updater(untracked(() => signal.get())))
-  }), signal);
+  });
 }

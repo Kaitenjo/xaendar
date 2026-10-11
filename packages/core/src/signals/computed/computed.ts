@@ -1,5 +1,4 @@
 import { SignalOptions } from '@xaendar/signals';
-import { wrapNode } from '../signal-node/signal-node';
 import { Computed } from '../types/computed.type';
 
 /**
@@ -21,7 +20,7 @@ export function computed<Value = unknown>(value: (this: Signal.Computed<Value>) 
   const signal = new Signal.Computed(value, options);
   const getter = function () { return signal.get(); }
   
-  return wrapNode(Object.assign(getter, {
+  return Object.assign(getter, {
     get: signal.get.bind(signal)
-  }), signal);
+  });
 }

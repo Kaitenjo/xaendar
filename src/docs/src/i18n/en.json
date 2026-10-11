@@ -1574,7 +1574,6 @@
         "introspection": {
           "title": "Introspection",
           "p1": "<code>Signal.subtle</code> can inspect the live graph: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, and <code>currentComputed</code>, which returns the computed signal being evaluated, if any. Evaluating a computed signal links it to its sources, in both directions; unwatching it unlinks it again.",
-          "p2": "The functions returned by <code>signal()</code>, <code>computed()</code>, the inputs and the queries wrap a node of the proposal, which <code>Signal.subtle</code> and <code>instanceof</code> do not recognise. <code>@xaendar/core/signals</code> exports the same API for them: <code>isState</code> and <code>isComputed</code> in place of <code>instanceof</code>, <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, and <code>watch</code>, <code>unwatch</code>, <code>getPending</code>, which take the watcher as first argument. They accept the nodes of the proposal too, and return the functions in place of the nodes they wrap.",
           "example1": "Inspecting price → total ← quantity"
         },
         "devMode": {
@@ -1604,9 +1603,7 @@
           "td10": "<code>Signal.subtle.introspectSources(node)</code>, <code>introspectSinks(node)</code>",
           "td11": "The nodes a node depends on, and the nodes depending on it.",
           "td12": "<code>Signal.subtle.hasSources(node)</code>, <code>hasSinks(node)</code>",
-          "td13": "Whether those lists are not empty.",
-          "td14": "<code>isState</code>, <code>isComputed</code>, <code>introspectSinks</code>, <code>watch(watcher, ...signals)</code>, … of <code>@xaendar/core/signals</code>",
-          "td15": "The same API, for the functions returned by <code>signal()</code>, <code>computed()</code>, the inputs and the queries."
+          "td13": "Whether those lists are not empty."
         }
       },
       "computed": {
@@ -2591,7 +2588,6 @@
     "computed": "A signal derived from others, evaluated lazily and cached until a dependency changes.",
     "effect": "Runs a function now, and again in a microtask after the signals it read change. Returns the function disposing it.",
     "untracked": "Runs a function without tracking the signals it reads.",
-    "isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending": "The API of <code>Signal.subtle</code> and <code>instanceof</code>, for the functions returned by <code>signal()</code>, <code>computed()</code>, the inputs and the queries.",
     "Signal": "The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive.",
     "Computed": "The type returned by computed().",
     "InputSignal": "The type of an input: read-only for the component, set by the bindings of the parent.",

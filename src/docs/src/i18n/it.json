@@ -1574,7 +1574,6 @@
         "introspection": {
           "title": "Introspezione",
           "p1": "<code>Signal.subtle</code> può ispezionare il grafo vivo: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>currentComputed</code>, che restituisce il signal derivato in corso di valutazione, se c’è. Valutare un signal derivato lo collega alle sue sorgenti, in entrambe le direzioni; smettere di osservarlo lo scollega di nuovo.",
-          "p2": "Le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query avvolgono un nodo della proposta, che <code>Signal.subtle</code> e <code>instanceof</code> non riconoscono. <code>@xaendar/core/signals</code> esporta la stessa API per loro: <code>isState</code> e <code>isComputed</code> al posto di <code>instanceof</code>, <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>watch</code>, <code>unwatch</code>, <code>getPending</code>, che ricevono il watcher come primo argomento. Accettano anche i nodi della proposta, e restituiscono le funzioni al posto dei nodi che avvolgono.",
           "example1": "Ispezionare price → total ← quantity"
         },
         "devMode": {
@@ -1604,9 +1603,7 @@
           "td10": "<code>Signal.subtle.introspectSources(nodo)</code>, <code>introspectSinks(nodo)</code>",
           "td11": "I nodi da cui dipende un nodo, e quelli che dipendono da esso.",
           "td12": "<code>Signal.subtle.hasSources(nodo)</code>, <code>hasSinks(nodo)</code>",
-          "td13": "Se quelle liste non sono vuote.",
-          "td14": "<code>isState</code>, <code>isComputed</code>, <code>introspectSinks</code>, <code>watch(watcher, ...signals)</code>, … di <code>@xaendar/core/signals</code>",
-          "td15": "La stessa API, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query."
+          "td13": "Se quelle liste non sono vuote."
         }
       },
       "computed": {
@@ -2591,7 +2588,6 @@
     "computed": "Un signal derivato da altri, valutato in modo lazy e tenuto in cache finché non cambia una dipendenza.",
     "effect": "Esegue una funzione subito, e di nuovo in un microtask dopo che cambiano i signal letti. Restituisce la funzione che lo elimina.",
     "untracked": "Esegue una funzione senza tracciare i signal che legge.",
-    "isState, isComputed, introspectSources, introspectSinks, hasSources, hasSinks, watch, unwatch, getPending": "L’API di <code>Signal.subtle</code> e <code>instanceof</code>, per le funzioni restituite da <code>signal()</code>, <code>computed()</code>, dagli input e dalle query.",
     "Signal": "Il tipo restituito da signal(). Annotare un membro con questo tipo rende reattivi gli attributi che lo leggono.",
     "Computed": "Il tipo restituito da computed().",
     "InputSignal": "Il tipo di un input: in sola lettura per il componente, impostato dai binding del padre.",
