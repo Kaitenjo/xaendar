@@ -74,6 +74,20 @@ describe('generateElement', () => {
     expectValidJavascript(code);
   });
 
+  it('calls on the component a method named like a reserved word', async () => {
+    const { code } = await run('<div (click)="delete()" (focus)="void($event)" (blur)="new.run(a)"></div>');
+    const output = code.join('\n');
+
+    expect(output).toContain('handler: () => this.delete()');
+    expect(output).toContain('handler: ($event) => this.void($event)');
+    expect(output).toContain('handler: () => this.new.run(this.a)');
+    expectValidJavascript(code);
+  });
+
+  it('rejects a handler starting with a reserved word that is not a valid expression', async () => {
+    await expect(run('<div (click)="delete[a=1]()"></div>')).rejects.toThrow('is not allowed inside template expressions');
+  });
+
   it('does not leak $event into the context after generating events', async () => {
     const context = new CompilerContext();
     await run('<div (click)="f($event)"></div>', context);

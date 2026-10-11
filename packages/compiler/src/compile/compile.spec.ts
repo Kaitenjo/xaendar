@@ -51,6 +51,13 @@ describe('compile', () => {
     expect(javascript.match(/_renderLiteralText\([^)]*' '/g)).toHaveLength(1);
   });
 
+  it('compiles an event handler named like a reserved word, calling it on the component', async () => {
+    const { javascript, typescript } = await compile('<button (click)="delete()">x</button>', { baseDir: '/base', signals: [], cache: createCache() });
+
+    expect(javascript).toContain('handler: () => this.delete()');
+    expect(typescript.text).toContain('root.delete();');
+  });
+
   it('compiles object literals starting an expression, shorthand properties included', async () => {
     const template = '<p title="{ {count} }">{ {count} } { { a: count }.a }</p>\n@if ({ count }.count) {\n  <i>x</i>\n}';
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });

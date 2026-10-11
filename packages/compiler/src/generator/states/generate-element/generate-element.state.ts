@@ -1,6 +1,6 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
 import type { AsyncFunction, Function } from '@xaendar/types';
-import { isIdentifier } from 'typescript';
+import { factory, identifierToKeywordKind, isIdentifier, SyntaxKind } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
@@ -206,7 +206,7 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   compilerContext.addUnresolvableIdentifier('$event');
 
   const mappedEvents = events.map(({ name, handler, parameters }) => {
-    const method = resolveExpression(validateExpression(handler).node, compilerContext).expression;
+    const method = resolveHandler(handler, compilerContext);
     const args = parameters.map(parameter => resolveExpression(parameter, compilerContext).expression).join(', ');
     const eventParameter = parameters.some(parameter => isIdentifier(parameter) && parameter.text === '$event') ? '$event' : '';
 
@@ -222,6 +222,28 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
 
   compilerContext.removeUnresolvabledIdentifier('$event');
   return mappedEvents;
+}
+
+/**
+ * Resolves the method an event binding calls.
+ *
+ * A handler starting with a reserved word (`delete()`, `new()`, `void()`) is a method of the component: no variable
+ * of the template can have that name. As an expression it would be read as an operator, so it is validated as the
+ * name of a property, which a reserved word can be, and called on the component.
+ *
+ * @param handler - The handler of the event binding, as written before its parenthesis.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @returns The expression of the method to call.
+ * @throws If the handler is not a valid expression.
+ */
+function resolveHandler(handler: string, compilerContext: CompilerContext): string {
+  const keyword = identifierToKeywordKind(factory.createIdentifier(handler.split(/\?\.|[.[]/)[0]));
+  if (keyword !== undefined && keyword >= SyntaxKind.FirstReservedWord && keyword <= SyntaxKind.LastReservedWord) {
+    validateExpression(`x.${handler}`);
+    return `this.${handler}`;
+  }
+
+  return resolveExpression(validateExpression(handler).node, compilerContext).expression;
 }
 
 /**
