@@ -129,6 +129,20 @@ describe('extractSignalMembers', () => {
       expect(members).toEqual(['a', 'b', 'c', 'g', 'h']);
     });
 
+    it('detects members typed as signals whatever initialises them', () => {
+      const members = setup(`
+        import { Signal, signal } from '@xaendar/core/signals';
+        class Cmp {
+          a: Signal<string> = createLog();
+          b: Signal<number> = store.count;
+          c: Other = signal(0);
+          d: Other = createLog();
+        }
+      `);
+
+      expect(members).toEqual(['a', 'b', 'c']);
+    });
+
     it('ignores side-effect and default imports of the signals module', () => {
       const members = setup(`
         import '@xaendar/core/signals';

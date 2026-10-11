@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### Signal members are detected by syntax (limitation)
-
-An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member is read once.
-
-**Workaround:** Annotate the member with Signal<T> or Computed<T>, or wrap it in computed().
-
 ### A method reading signals is evaluated once in an attribute (limitation)
 
 In text, any expression is reactive; in an attribute, only one naming a signal member.

@@ -166,17 +166,22 @@ function extractOwnSignalMembers({ sourceFile, declaration }: ResolvedClass, con
  * @returns `true` if the member is backed by a signal.
  */
 function isSignalMember(member: PropertyDeclaration, sourceFile: SourceFile, bindings: SignalImportBindings, context: ResolutionContext): boolean {
-  // Handle initialization by function: input, computed, etc...
-  if (member.initializer && isCallExpression(member.initializer)) {
-    return resolvesToSignalBinding(member.initializer.expression, bindings);
+  /*
+    A signal type makes the member a signal member whatever initialises it: the @Property accessors,
+    declared without initializer, and members initialised by a function returning a signal
+    (`log: Signal<string> = createLog()`)
+  */
+  if (member.type && isTypeReferenceNode(member.type) && resolvesEntityNameToSignalBinding(member.type.typeName, bindings)) {
+    return true;
   }
 
-  /*
-    Handle specific case introduced by @Property decorator where
-    there is no initialization but only a type reference
-  */
-  if (member.type && isTypeReferenceNode(member.type)) {
-    return resolvesEntityNameToSignalBinding(member.type.typeName, bindings);
+  if (!member.initializer) {
+    return false;
+  }
+
+  // Handle initialization by function: input, computed, etc...
+  if (isCallExpression(member.initializer)) {
+    return resolvesToSignalBinding(member.initializer.expression, bindings);
   }
 
   /*
@@ -186,7 +191,7 @@ function isSignalMember(member: PropertyDeclaration, sourceFile: SourceFile, bin
       count = count;
     }
   */
-  return !!member.initializer && isSignalReference(sourceFile, member.initializer, context, new Set());
+  return isSignalReference(sourceFile, member.initializer, context, new Set());
 }
 
 /**

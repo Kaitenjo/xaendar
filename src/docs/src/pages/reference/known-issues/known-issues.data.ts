@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'signal-members-are-detected-by-syntax',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'signals/shared-state'
-  },
-  {
     id: 'a-method-reading-signals-is-evaluated',
     area: 'Compiler',
     kind: 'limitation',

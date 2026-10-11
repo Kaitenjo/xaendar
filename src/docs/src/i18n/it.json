@@ -1839,7 +1839,7 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "I signal restituiti da tue funzioni bloccano i binding degli attributi",
-            "body": "Un membro come <code>readonly level = readLevel()</code> viene valutato una sola volta negli attributi, qualunque sia la sua annotazione: il compilatore non guarda dentro la funzione. Inizializza il membro con il signal del modulo, oppure avvolgi la chiamata in <code>computed()</code>."
+            "body": "Un membro come <code>readonly level = readLevel()</code> viene valutato una sola volta negli attributi: il compilatore non guarda dentro la funzione. Inizializza il membro con il signal del modulo, annotalo con il suo tipo signal, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, oppure avvolgi la chiamata in <code>computed()</code>."
           },
           "callout2": {
             "heading": "L’annotazione deve essere un tipo di @xaendar/core/signals",
@@ -2839,11 +2839,6 @@
     }
   },
   "issues": {
-    "signal-members-are-detected-by-syntax": {
-      "title": "I membri signal vengono riconosciuti dalla sintassi",
-      "details": "Un attributo è reattivo solo se nomina un membro inizializzato da una funzione di @xaendar/core/signals, o annotato con uno dei suoi tipi. Un signal di modulo assegnato a un membro non annotato viene letto una volta.",
-      "workaround": "Annota il membro con Signal<T> o Computed<T>, o avvolgilo in computed()."
-    },
     "a-method-reading-signals-is-evaluated": {
       "title": "Un metodo che legge signal viene valutato una volta in un attributo",
       "details": "Nel testo ogni espressione è reattiva; in un attributo, solo una che nomina un membro signal.",

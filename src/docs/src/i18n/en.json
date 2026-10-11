@@ -1839,7 +1839,7 @@
           "title": "Edge cases",
           "callout1": {
             "heading": "Signals returned by your own functions freeze attribute bindings",
-            "body": "A member like <code>readonly level = readLevel()</code> is evaluated once in attributes, whatever its annotation: the compiler does not look inside the function. Initialize the member with the module signal itself, or wrap the call in <code>computed()</code>."
+            "body": "A member like <code>readonly level = readLevel()</code> is evaluated once in attributes: the compiler does not look inside the function. Initialize the member with the module signal itself, annotate it with its signal type, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, or wrap the call in <code>computed()</code>."
           },
           "callout2": {
             "heading": "The annotation must be a type of @xaendar/core/signals",
@@ -2839,11 +2839,6 @@
     }
   },
   "issues": {
-    "signal-members-are-detected-by-syntax": {
-      "title": "Signal members are detected by syntax",
-      "details": "An attribute is reactive only if it names a member initialized by a function of @xaendar/core/signals, or annotated with one of its types. A module signal assigned to an unannotated member is read once.",
-      "workaround": "Annotate the member with Signal<T> or Computed<T>, or wrap it in computed()."
-    },
     "a-method-reading-signals-is-evaluated": {
       "title": "A method reading signals is evaluated once in an attribute",
       "details": "In text, any expression is reactive; in an attribute, only one naming a signal member.",

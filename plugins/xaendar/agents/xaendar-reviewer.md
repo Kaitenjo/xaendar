@@ -17,7 +17,7 @@ Scope: the files named by the caller. Otherwise use the changed Xaendar files fr
 Check at least the following:
 
 **Bugs that compile**
-- Attribute bindings that read a member the compiler cannot recognize as a signal: a method call, a member initialized by calling a function of the application (`level = readLevel()`, whatever its annotation), or a member assigned from another object (`this.log = target.log`) without a signal type. These are evaluated only once. A member initialized with a module signal (`count = count`) is recognized without annotation.
+- Attribute bindings that read a member the compiler cannot recognize as a signal: a method call, a member initialized by calling a function of the application (`level = readLevel()`) or assigned from another object (`this.log = target.log`), without a signal type. These are evaluated only once. A member initialized with a module signal (`count = count`) is recognized without annotation.
 - Mixed static text and `{ }` in one attribute value. It renders literally.
 - Boolean attributes bound to an expression (`disabled="{ x() }"`, `checked="{ … }"`). They are always present.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
