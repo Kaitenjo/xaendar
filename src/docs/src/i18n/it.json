@@ -1891,9 +1891,9 @@
         },
         "whichExpressionsAreReactive": {
           "title": "Quali espressioni sono reattive",
-          "p1": "Gli attributi seguono una regola più rigida del testo. Il compilatore decide a build time se un attributo può cambiare, cercando i <strong>membri signal</strong> che l’espressione nomina: membri inizializzati con una funzione di <code>@xaendar/core/signals</code>, input e query. Un attributo che non ne nomina nessuno viene impostato una volta sola.",
-          "example1": "Un metodo, un computed e un signal",
-          "p2": "<code>percentOf()</code> legge il livello, ma è un metodo: il compilatore non può vedere cosa legge, quindi il primo indicatore mantiene il valore del primo render. Lo stesso metodo nel testo sotto è reattivo, perché le interpolazioni nel testo lo sono sempre. Sposta la logica dei binding degli attributi nei computed. La regola per i membri che contengono un signal creato altrove è in <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
+          "p1": "Gli attributi seguono una regola più rigida del testo. Il compilatore decide a build time se un attributo può cambiare, cercando i <strong>membri reattivi</strong> che l’espressione nomina: i membri signal, inizializzati con una funzione di <code>@xaendar/core/signals</code>, input e query, e i metodi e i getter del componente il cui corpo legge uno di essi, un signal di modulo o un altro metodo reattivo. Un attributo che non ne nomina nessuno viene impostato una volta sola.",
+          "example1": "Due metodi e un computed",
+          "p2": "<code>percentOf()</code> legge il livello nel proprio corpo, quindi il suo indicatore lo segue. <code>percentFromHelper()</code> lo legge tramite <code>readPercent()</code>, una funzione esterna alla classe: il compilatore non segue le chiamate che non riesce a ricondurre a un signal, quindi il secondo indicatore mantiene il valore del primo render, mentre lo stesso metodo nel testo sotto è reattivo, perché le interpolazioni nel testo lo sono sempre. Quando un attributo ha bisogno di un valore del genere, dichiarane la reattività con un computed, come fa <code>percent</code>. La regola per i membri che contengono un signal creato altrove è in <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
         },
         "bindingTheInputsOf": {
           "title": "Legare gli input dei componenti",
@@ -2839,11 +2839,6 @@
     }
   },
   "issues": {
-    "a-method-reading-signals-is-evaluated": {
-      "title": "Un metodo che legge signal viene valutato una volta in un attributo",
-      "details": "Nel testo ogni espressione è reattiva; in un attributo, solo una che nomina un membro signal.",
-      "workaround": "Trasforma il metodo in un computed."
-    },
     "members-named-history-or-location": {
       "title": "Membri chiamati history o location",
       "details": "In un template questi nomi si riferiscono ai globali del browser, anche quando il componente li dichiara.",

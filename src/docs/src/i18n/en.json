@@ -1891,9 +1891,9 @@
         },
         "whichExpressionsAreReactive": {
           "title": "Which expressions are reactive",
-          "p1": "Attributes follow a stricter rule than text. The compiler decides at build time whether an attribute can change, by looking for the <strong>signal members</strong> the expression names: members initialized with a function of <code>@xaendar/core/signals</code>, inputs and queries. An attribute that names none is set once.",
-          "example1": "A method, a computed signal and a signal",
-          "p2": "<code>percentOf()</code> reads the level, but it is a method: the compiler cannot see what it reads, so the first meter keeps the value of the first render. The same method in the text below is reactive, because text interpolations always are. Move the logic of attribute bindings into computed signals. The rule for members that hold a signal created elsewhere is in <a href=\"#/en/signals/shared-state\">Shared state</a>."
+          "p1": "Attributes follow a stricter rule than text. The compiler decides at build time whether an attribute can change, by looking for the <strong>reactive members</strong> the expression names: the signal members, initialized with a function of <code>@xaendar/core/signals</code>, inputs and queries, and the methods and getters of the component whose body reads one of them, a module signal or another reactive method. An attribute that names none is set once.",
+          "example1": "Two methods and a computed signal",
+          "p2": "<code>percentOf()</code> reads the level in its own body, so its meter follows it. <code>percentFromHelper()</code> reads it through <code>readPercent()</code>, a function outside the class: the compiler does not follow calls it cannot trace back to a signal, so the second meter keeps the value of the first render, while the same method in the text below is reactive, because text interpolations always are. When an attribute needs such a value, declare its reactivity with a computed signal, as <code>percent</code> does. The rule for members that hold a signal created elsewhere is in <a href=\"#/en/signals/shared-state\">Shared state</a>."
         },
         "bindingTheInputsOf": {
           "title": "Binding the inputs of components",
@@ -2839,11 +2839,6 @@
     }
   },
   "issues": {
-    "a-method-reading-signals-is-evaluated": {
-      "title": "A method reading signals is evaluated once in an attribute",
-      "details": "In text, any expression is reactive; in an attribute, only one naming a signal member.",
-      "workaround": "Turn the method into a computed signal."
-    },
     "members-named-history-or-location": {
       "title": "Members named history or location",
       "details": "In a template, these names resolve to the globals of the browser, even when the component declares them.",

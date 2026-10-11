@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'a-method-reading-signals-is-evaluated',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'templates/binding'
-  },
-  {
     id: 'members-named-history-or-location',
     area: 'Compiler',
     kind: 'limitation',

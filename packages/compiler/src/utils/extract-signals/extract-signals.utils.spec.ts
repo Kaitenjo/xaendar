@@ -334,6 +334,58 @@ describe('extractSignalMembers', () => {
     });
   });
 
+  describe('reactive methods', () => {
+    it('detects methods and getters reading a signal field, a module signal or another reactive member', () => {
+      const members = setup(`
+        ${SIGNALS_IMPORT}
+        import { other } from './other';
+        const level = signal(0);
+        class Cmp {
+          count = signal(0);
+          viaMethod() { return this.label() + '!'; }
+          label() { return \`\${this.count()} items\`; }
+          get total() { return this.items().length * this.count(); }
+          viaGetter() { return [1].map(() => this.total); }
+          fromModule() { return level(); }
+          items() { return [1, 2]; }
+          writes() { this.count.set(1); }
+          passes() { return this.count; }
+          helper() { return other(); }
+          getterCalled() { return this.total(); }
+          methodAccessed() { return this.label; }
+          declared(): number;
+          ['computedName']() { return this.count(); }
+          arrow = () => this.count();
+        }
+      `);
+
+      expect(members).toEqual(['count', 'viaMethod', 'label', 'total', 'viaGetter', 'fromModule']);
+    });
+
+    it('stops on methods calling each other', () => {
+      const members = setup(`
+        ${SIGNALS_IMPORT}
+        class Cmp {
+          count = signal(0);
+          a() { return this.b(); }
+          b() { return this.a(); }
+          c() { return this.d(); }
+          d() { return this.c() + this.count(); }
+        }
+      `);
+
+      expect(members).toEqual(['count', 'c', 'd']);
+    });
+
+    it('walks the inheritance chain, a member declared again overriding the inherited one', () => {
+      const prepare = (dir: string) => write(join(dir, 'base.ts'), `${SIGNALS_IMPORT}export class Base { count = signal(0); label() { return this.count(); } plain() { return 1; } other() { return this.count(); } }`);
+
+      expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base { own() { return this.label(); } other() { return 1; } }', prepare)).toEqual(['count', 'label', 'own']);
+      expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base { label = 1; plain() { return this.count(); } }', prepare)).toEqual(['count', 'other', 'plain']);
+      expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base { count() { return 1; } }', prepare)).toEqual([]);
+    });
+  });
+
   describe('re-exports', () => {
     const extendsBaseFrom = (specifier: string, files: Record<string, string>) => setup(`import { Base } from '${specifier}';\nclass Cmp extends Base {}`, dir => {
       Object.entries(files).forEach(([file, content]) => write(join(dir, file), content));

@@ -3,7 +3,8 @@
  */
 export type SignalMembers = {
   /**
-   * Names of the class members backed by a signal, each listed once, inherited ones first.
+   * Names of the class members a template reads reactively, each listed once: the members backed by a signal,
+   * inherited ones first, then the methods and getters reading a signal.
    */
   readonly members: readonly string[];
   /**

@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### A method reading signals is evaluated once in an attribute (limitation)
-
-In text, any expression is reactive; in an attribute, only one naming a signal member.
-
-**Workaround:** Turn the method into a computed signal.
-
 ### Members named history or location (limitation)
 
 In a template, these names resolve to the globals of the browser, even when the component declares them.

@@ -1,10 +1,11 @@
-import { EntityName, Expression, PropertyDeclaration, SourceFile, Statement, SyntaxKind, VariableDeclaration, forEachChild, isCallExpression, isIdentifier, isImportDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
+import { ClassElement, EntityName, Expression, Identifier, Node, PropertyDeclaration, SourceFile, Statement, SyntaxKind, VariableDeclaration, forEachChild, isCallExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
 import type { SignalMembers } from '../../types/signal-members/signal-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
 import { DEFAULT_COMPILER_OPTIONS, clearSourceFileCache, resolveBaseClass, resolveReference } from '../resolve-declaration/resolve-declaration.utils';
 import type { DeclarationFinder } from '../resolve-declaration/types/declaration-finder.type';
 import type { ResolutionContext } from '../resolve-declaration/types/resolution-context.type';
 import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
+import type { MemberReads } from './types/member-reads.type';
 import type { SignalImportBindings } from './types/signal-import-bindings.type';
 
 /**
@@ -43,6 +44,10 @@ const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
  * through a signal function, typed as a signal, or itself initialised
  * with a module-level signal. No annotation is needed on the member.
  *
+ * The methods and getters whose body reads one of those members, a module
+ * signal or another such method are listed too: a template binding calling
+ * them is reactive. Calls that can't be traced back to a signal don't count.
+ *
  * Unresolvable ancestors (missing file, class expressions, mixins, etc.) are
  * skipped silently: this can only ever produce a false negative for THAT
  * ancestor's own members, which degrades to the existing conservative
@@ -52,7 +57,7 @@ const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
  * @param classDeclaration - Declaration of the class to be compiled.
  * @param compilerOptions - Project compiler options, driving how the modules
  *   declaring the base classes are resolved (e.g. `paths` aliases).
- * @returns The signal members, each listed once, and the files read to resolve them.
+ * @returns The signal members and the reactive methods, each listed once, and the files read to resolve them.
  */
 export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: ClassDeclarationWithName, compilerOptions = DEFAULT_COMPILER_OPTIONS): SignalMembers {
   const context: ResolutionContext = {
@@ -61,29 +66,136 @@ export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: C
     visitedClasses: new Set([classDeclaration])
   };
 
-  const members = collectSignalMembers({ sourceFile, declaration: classDeclaration }, context);
+  const chain = collectClassChain({ sourceFile, declaration: classDeclaration }, context);
+  const signals = collectSignalMembers(chain, context);
+  const members = [...signals, ...collectReactiveMethods(chain, new Set(signals), context)];
   return { members, dependencies: [...context.dependencies] };
 }
 
 /**
- * Collects the signal members of `klass`, walking its whole inheritance chain. A member declared again
- * overrides the inherited one: it is a signal member only if the class declaring it again makes it one.
+ * Collects the inheritance chain of `klass`, skipping the base classes that can't be resolved.
  *
- * @param klass - The class to collect the signal members of.
+ * @param klass - The class whose chain is collected.
  * @param context - State of the current extraction.
- * @returns The signal members, each listed once, inherited ones first.
+ * @returns The classes of the chain, the farthest base class first and `klass` last.
  */
-function collectSignalMembers(klass: ResolvedClass, context: ResolutionContext): string[] {
+function collectClassChain(klass: ResolvedClass, context: ResolutionContext): ResolvedClass[] {
   const base = resolveBaseClass(klass, context);
-  let inherited = new Array<string>();
-  if (base && !context.visitedClasses.has(base.declaration)) {
-    context.visitedClasses.add(base.declaration);
-    inherited = collectSignalMembers(base, context);
+  if (!base || context.visitedClasses.has(base.declaration)) {
+    return [klass];
   }
 
-  const declared = new Set(klass.declaration.members.flatMap(member => isPropertyDeclaration(member) && isIdentifier(member.name) ? [member.name.text] : []));
-  const own = extractOwnSignalMembers(klass, context);
-  return [...new Set([...inherited.filter(name => !declared.has(name)), ...own])];
+  context.visitedClasses.add(base.declaration);
+  return [...collectClassChain(base, context), klass];
+}
+
+/**
+ * Collects the signal fields of an inheritance chain. A member declared again overrides the inherited one:
+ * it is a signal member only if the class declaring it again makes it one.
+ *
+ * @param chain - The inheritance chain, the farthest base class first.
+ * @param context - State of the current extraction.
+ * @returns The signal fields, each listed once, inherited ones first.
+ */
+function collectSignalMembers(chain: readonly ResolvedClass[], context: ResolutionContext): string[] {
+  let members = new Array<string>();
+  for (const klass of chain) {
+    const declared = new Set(klass.declaration.members.flatMap(member => isNamedMember(member) ? [member.name.text] : []));
+    members = [...new Set([...members.filter(name => !declared.has(name)), ...extractOwnSignalMembers(klass, context)])];
+  }
+  return members;
+}
+
+/**
+ * Collects the reactive methods and getters of an inheritance chain: those whose body reads a signal field
+ * (`this.count()`), a module signal (`count()`) or another reactive method or getter (`this.total()`, `this.label`).
+ * Calls that can't be traced back to a signal, as those to functions of other modules or to members of other
+ * objects, don't make a method reactive. A member declared again overrides the inherited one.
+ *
+ * @param chain - The inheritance chain, the farthest base class first.
+ * @param signals - The signal fields of the chain.
+ * @param context - State of the current extraction.
+ * @returns The names of the reactive methods and getters, in declaration order, inherited ones first.
+ */
+function collectReactiveMethods(chain: readonly ResolvedClass[], signals: ReadonlySet<string>, context: ResolutionContext): string[] {
+  const methods = new Map<string, MemberReads>();
+  for (const { sourceFile, declaration } of chain) {
+    for (const member of declaration.members) {
+      if (!isNamedMember(member)) {
+        continue;
+      }
+
+      methods.delete(member.name.text);
+      if ((isMethodDeclaration(member) || isGetAccessorDeclaration(member)) && member.body) {
+        methods.set(member.name.text, collectMemberReads(member.body, sourceFile, isGetAccessorDeclaration(member), context));
+      }
+    }
+  }
+
+  // A method is reactive when it reads a reactive member, which may be a method found reactive later on
+  const reactive = new Set(signals);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [name, reads] of methods) {
+      if (!reactive.has(name) && readsReactiveMember(reads, reactive, methods)) {
+        reactive.add(name);
+        changed = true;
+      }
+    }
+  }
+
+  return [...methods.keys()].filter(name => reactive.has(name) && !signals.has(name));
+}
+
+/**
+ * Collects what the body of a method or of a getter reads: the members it calls and accesses through `this`,
+ * and whether it calls a module signal.
+ *
+ * @param body - The body of the method or of the getter.
+ * @param sourceFile - The file declaring the method.
+ * @param getter - Whether the member is a getter.
+ * @param context - State of the current extraction.
+ * @returns What the body reads.
+ */
+function collectMemberReads(body: Node, sourceFile: SourceFile, getter: boolean, context: ResolutionContext): MemberReads {
+  const reads: MemberReads = { getter, calls: new Set(), accesses: new Set(), readsModuleSignal: false };
+  const visit = (node: Node): void => {
+    if (isPropertyAccessExpression(node) && node.expression.kind === SyntaxKind.ThisKeyword) {
+      const calls = isCallExpression(node.parent) && node.parent.expression === node;
+      (calls ? reads.calls : reads.accesses).add(node.name.text);
+    } else if (isCallExpression(node) && isIdentifier(node.expression) && !reads.readsModuleSignal) {
+      reads.readsModuleSignal = isSignalReference(sourceFile, node.expression, context, new Set());
+    }
+    forEachChild(node, visit);
+  };
+  visit(body);
+  return reads;
+}
+
+/**
+ * Checks whether a method or a getter reads a reactive member: calls a signal field or a reactive method, or accesses
+ * a reactive getter.
+ *
+ * @param reads - What the body of the method or of the getter reads.
+ * @param reactive - The members known to be reactive so far.
+ * @param methods - What the methods and the getters of the chain read, by name.
+ * @returns `true` if the member reads a reactive member.
+ */
+function readsReactiveMember(reads: MemberReads, reactive: ReadonlySet<string>, methods: ReadonlyMap<string, MemberReads>): boolean {
+  return reads.readsModuleSignal
+    || [...reads.calls].some(name => reactive.has(name) && !methods.get(name)?.getter)
+    || [...reads.accesses].some(name => reactive.has(name) && !!methods.get(name)?.getter);
+}
+
+/**
+ * Tells whether a class member is declared with a plain name, as `count` and not `['count']`.
+ *
+ * @param member - The class member.
+ * @returns `true` if the member has an identifier as name.
+ */
+function isNamedMember(member: ClassElement): member is ClassElement & { name: Identifier } {
+  return !!member.name && isIdentifier(member.name);
 }
 
 /**
