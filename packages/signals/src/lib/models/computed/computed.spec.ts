@@ -49,65 +49,8 @@ describe('Computed', () => {
       const computed = new Computed(cb);
       computed.get();
       computed.get();
-      expect(cb).toHaveBeenCalledTimes(1);
-    });
-
-    describe('without sinks', () => {
-      it('evaluates again only once a source changed', () => {
-        const state = new State(1);
-        const cb = vi.fn(() => state.get() * 2);
-        const computed = new Computed(cb);
-
-        expect([computed.get(), computed.get()]).toEqual([2, 2]);
-        state.set(2);
-        expect([computed.get(), computed.get()]).toEqual([4, 4]);
-        expect(cb).toHaveBeenCalledTimes(2);
-      });
-
-      it('brings the Computed sources up to date, evaluating only the ones whose sources changed', () => {
-        const state = new State(1);
-        const other = new State(0);
-        const innerCb = vi.fn(() => state.get() + 1);
-        const inner = new Computed(innerCb);
-        const outerCb = vi.fn(() => inner.get() + other.get());
-        const outer = new Computed(outerCb);
-
-        outer.get();
-        outer.get();
-        other.set(5);
-        expect(outer.get()).toBe(7);
-        state.set(2);
-        expect(outer.get()).toBe(8);
-
-        expect(innerCb).toHaveBeenCalledTimes(2);
-        expect(outerCb).toHaveBeenCalledTimes(3);
-      });
-
-      it('does not evaluate again when a Computed source evaluates to an equal value', () => {
-        const state = new State(1);
-        const parity = new Computed(() => state.get() % 2);
-        const cb = vi.fn(() => parity.get());
-        const computed = new Computed(cb);
-
-        computed.get();
-        state.set(3);
-        computed.get();
-
-        expect(cb).toHaveBeenCalledTimes(1);
-      });
-
-      it('evaluates again when a source changed while it was no longer watched', () => {
-        const state = new State(1);
-        const computed = new Computed(() => state.get() * 10);
-        const watcher = new Watcher(() => undefined);
-        watcher.watch(computed);
-        computed.get();
-        watcher.unwatch(computed);
-
-        state.set(2);
-
-        expect(computed.get()).toBe(20);
-      });
+      // without sinks, every get() re-evaluates (unwatched path)
+      expect(cb).toHaveBeenCalledTimes(2);
     });
 
     it('tracks State sources automatically', () => {
@@ -567,15 +510,16 @@ describe('Computed', () => {
       expect(unwatched).not.toHaveBeenCalled();
     });
 
-    it('trusts its cached value on the first read after getting a sink, when no source changed', () => {
+    it('evaluates again on the first read after getting a sink, even when no source changed, and then uses the cache', () => {
       const cb = vi.fn(() => 1);
       const computed = new Computed(cb);
       computed.get();
 
       new Watcher(() => undefined).watch(computed);
       computed.get();
+      computed.get();
 
-      expect(cb).toHaveBeenCalledOnce();
+      expect(cb).toHaveBeenCalledTimes(2);
     });
 
     it('evaluates again on the first read after getting a sink, when a source changed meanwhile', () => {

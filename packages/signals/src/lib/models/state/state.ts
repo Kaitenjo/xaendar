@@ -68,24 +68,6 @@ export class State<T = any> {
    */
   #sinks: Set<Computed<unknown> | Watcher>;
   /**
-   * Incremented each time the value changes: a `Computed` without sinks compares it with the version
-   * it read, to know whether it has to evaluate again.
-   *
-   * @internalSlot
-   */
-  #version = 0;
-  /**
-   * Returns the version of the value, incremented each time it changes.
-   *
-   * @param symbol - Private access symbol; rejects calls from outside the library.
-   * @returns The current version.
-   * @internal
-   */
-  public getVersion(symbol: symbol): number {
-    assertPrivateContext(symbol);
-    return this.#version;
-  }
-  /**
    * Returns a snapshot of the current sinks set for introspection.
    *
    * @param symbol - Private access symbol; rejects calls from outside the library.
@@ -167,7 +149,6 @@ export class State<T = any> {
 
     if (!this.#equals.call(this, this.#value, newValue)) {
       this.#value = newValue;
-      this.#version++;
       for (const sink of this.#sinks) {
         sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE)
       }
