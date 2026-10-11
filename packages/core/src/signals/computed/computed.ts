@@ -14,10 +14,10 @@ import { Computed } from '../types/computed.type';
  * @template Value - The type of the computed value. Defaults to `unknown`.
  * @param value - The function deriving the value from other signals. It is invoked with the
  *   underlying {@link Signal.Computed} as `this`, not with the returned getter.
- * @param options - Configuration options for the underlying signal.
+ * @param options - Configuration options for the underlying signal: only `equals`.
  * @returns A {@link Computed} instance.
  */
-export function computed<Value = unknown>(value: (this: Signal.Computed<Value>) => Value, options?: SignalOptions<Value>): Computed<Value> {
+export function computed<Value = unknown>(value: (this: Signal.Computed<Value>) => Value, options?: Pick<SignalOptions<Value>, 'equals'>): Computed<Value> {
   const signal = new Signal.Computed(value, options);
   const getter = function () { return signal.get(); }
   

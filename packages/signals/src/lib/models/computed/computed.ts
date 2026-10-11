@@ -150,7 +150,7 @@ export class Computed<T = any> {
    *
    * @see Signal algorithms — "Signal.Computed Constructor"
    */
-  constructor(cb: (this: Computed<T>) => T, options?: SignalOptions<T>) {
+  constructor(cb: (this: Computed<T>) => T, options?: Pick<SignalOptions<T>, 'equals'>) {
     this.#callback = cb;
     this.#equals = options?.equals ?? Object.is;
     this.#sources = new Set;

@@ -62,7 +62,7 @@ declare global {
        * @param options - Optional configuration:
        *   - `equals` — custom equality function; defaults to `Object.is`.
        */
-      constructor(computeFn: (this: Computed<T>) => T, options?: { equals?: (a: T, b: T) => boolean, watched?: () => void, unwatched?: () => void });
+      constructor(computeFn: (this: Computed<T>) => T, options?: { equals?: (a: T, b: T) => boolean });
       /**
        * Returns the current value of this Signal, re-evaluating the callback if
        * the cached value may be stale.
