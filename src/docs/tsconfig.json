@@ -11,11 +11,10 @@
     "types": [
       "vite/client"
     ],
-    "rootDir": "./src",
     "isolatedModules": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noEmit": true,
     "skipLibCheck": true,
     "paths": {

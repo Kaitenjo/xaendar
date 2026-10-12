@@ -7,6 +7,7 @@ import { dirname } from 'node:path';
 import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
+import { TS_FILE_RE } from '../../costants/ts-file-regex';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -15,6 +16,7 @@ import { registerTemplatePath, removeComponentPath } from '../../registry/templa
 import type { XaendarPluginState } from '../../types/plugin.types';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
+import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**
@@ -26,11 +28,22 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
  * A component that cannot be compiled is left without its render function: its errors are logged and,
  * in a build, the build fails.
  *
+ * In the dev server, every TypeScript file of the program is also type-checked as it is served: a file with
+ * type errors is not served, and its errors reach the terminal and the overlay of Vite. In a build, the
+ * whole program is checked by the `buildEnd` hook.
+ *
  * @param state - The shared plugin state (compiler host, project compiler options/file names, logger).
  * @returns The `transform` hook handler.
  */
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
+    if (!state.isBuild && TS_FILE_RE.test(componentPath)) {
+      const diagnostics = collectFileDiagnostics(getLanguageService(state.compilerOptions, state.projectFileNames), componentPath);
+      if (diagnostics.length) {
+        this.error(`[TypeChecker] Type check failed\n${formatTypeDiagnostics(diagnostics)}`);
+      }
+    }
+
     if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
       return code;
     }
@@ -141,6 +154,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         typecheckBody = await compile(templateSource, {
           baseDir: dirname(templatePath),
           shadowingMembers: componentMembers.shadowingMembers,
+          customElements: state.customElements,
           cache: {
             getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
             set: registerMetadata

@@ -51,6 +51,6 @@ Check at least the following:
   - inline control-flow blocks.
   - Content of `<pre>` is exempt. When suggesting a fix, keep spaces that matter: `{ ' ' }` between two elements, and punctuation on the line of the element it follows.
 
-If the project has `node_modules`, you may run `npx xd build 2>&1 | grep -A6 "Xaendar:"` and `npx tsc --noEmit -p tsconfig.json` to confirm suspicions. These are read-only, except that the build writes `dist/`.
+If the project has `node_modules`, you may run `npx xd build 2>&1 | grep -A6 "Xaendar:"` to confirm suspicions: it reports the template errors and the type errors of the project. It is read-only, except that it writes `dist/`.
 
 Output: a list of findings, most severe first. For each one give `file:line`, what goes wrong at runtime or build time (concretely), and the fix. Cite the known issue when one applies. Report the code conventions above in a final section, and leave out any other style nitpick. If nothing is wrong, say so.

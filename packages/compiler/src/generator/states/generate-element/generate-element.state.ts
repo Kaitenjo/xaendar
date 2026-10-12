@@ -32,7 +32,8 @@ import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../
  */
 export async function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
-  const isCustomElement = isValidCustomElementName(tagName, false);
+  // A custom element of another library has no metadata: it is generated like a native element
+  const isCustomElement = isValidCustomElementName(tagName, false) && !compilerContext.isForeignElement(tagName);
   const attributes = await mapAttributes(node.attributes, compilerContext, tagName);
   const events = mapEvents(node.events, compilerContext);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, compilerContext, tagName, isCustomElement);

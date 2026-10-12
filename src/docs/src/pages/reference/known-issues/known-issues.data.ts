@@ -32,18 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'every-tag-with-a-dash-must',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'components/registration'
-  },
-  {
-    id: 'classes-are-not-type-checked',
-    area: 'Build',
-    kind: 'limitation',
-    page: 'tools/build'
-  },
-  {
     id: 'the-dev-overlay-reports-handled-errors',
     area: 'Build',
     kind: 'bug',

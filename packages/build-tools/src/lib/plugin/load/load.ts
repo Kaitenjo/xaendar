@@ -97,6 +97,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       compiledFunctions = await compile(templateSource, {
         signals,
         shadowingMembers,
+        customElements: state.customElements,
         cache: {
           getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
           set: registerMetadata

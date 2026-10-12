@@ -22,20 +22,20 @@ import type { ComponentOrDirectiveMetadata } from '../types/component-or-directi
  * @param options - The compilation options, selecting which outputs are produced.
  * @returns The compiled Javascript render functions, the type-check result, or both.
  */
-export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'cache'>): Promise<TypeCheckResult>
+export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'customElements' | 'cache'>): Promise<TypeCheckResult>
 export async function compile(input: string, options: Omit<CompileOptions, 'baseDir'>): Promise<string>
 export async function compile(input: string, options: CompileOptions): Promise<{ javascript: string; typescript: TypeCheckResult }>
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
   const tokens = new Lexer(input).tokenize();
   const nodes = new Parser(input, tokens).parse();
 
-  const { baseDir, signals, shadowingMembers = [], cache } = options;
+  const { baseDir, signals, shadowingMembers = [], customElements = [], cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (baseDir && signals) {
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
-      generateJavascriptCode(input, nodes, signals, shadowingMembers, cache),
-      generateTypecheckResult(input, nodes, metadatas, shadowingMembers)
+      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache),
+      generateTypecheckResult(input, nodes, metadatas, shadowingMembers, customElements)
     ]);
     
     return {
@@ -44,10 +44,10 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     }
   } else if (baseDir) {
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
-    return await generateTypecheckResult(input, nodes, metadatas, shadowingMembers);
+    return await generateTypecheckResult(input, nodes, metadatas, shadowingMembers, customElements);
   } else {
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
-    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, cache);
+    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache);
   }
 }
 /**
@@ -56,10 +56,11 @@ export async function compile(input: string, options: CompileOptions): Promise<s
  * @param nodes - The parsed AST nodes from the template.
  * @param signals - Array of signal names to be used in the generated render function.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
+ * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], cache: CompilerCache): Promise<string> {
-  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers);
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: CompilerCache): Promise<string> {
+  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements);
 }
 
 /**
@@ -68,11 +69,12 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param nodes - The parsed AST nodes from the template.
  * @param metadatas - Array of component and directive metadata extracted from the template.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
+ * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param cache - Optional cache for storing previously computed type-checking results to improve performance.
  * @returns A promise that resolves to the type-checking result.
  */
-async function generateTypecheckResult(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[]): Promise<TypeCheckResult> {
-  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers);
+async function generateTypecheckResult(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[]): Promise<TypeCheckResult> {
+  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements);
 }
 
 /**

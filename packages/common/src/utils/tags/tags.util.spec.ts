@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isValidCustomElementName } from './tags.util';
+import { isValidCustomElementName, matchesCustomElementPattern } from './tags.util';
 
 
 describe('isValidCustomElementName()', () => {
@@ -112,5 +112,27 @@ describe('isValidCustomElementName()', () => {
       isValidCustomElementName('annotation-xml');
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('annotation-xml'));
     });
+  });
+});
+
+describe('matchesCustomElementPattern()', () => {
+  it('matches the tag names a pattern with wildcards stands for', () => {
+    expect(matchesCustomElementPattern('sl-button', ['sl-*'])).toBe(true);
+    expect(matchesCustomElementPattern('sl-icon-button', ['x-*', 'sl-*'])).toBe(true);
+    expect(matchesCustomElementPattern('my-legacy-widget', ['my-*-widget'])).toBe(true);
+  });
+
+  it('matches a pattern without wildcards only to the same tag name', () => {
+    expect(matchesCustomElementPattern('my-widget', ['my-widget'])).toBe(true);
+    expect(matchesCustomElementPattern('my-widget-x', ['my-widget'])).toBe(false);
+  });
+
+  it('matches every other character of a pattern literally', () => {
+    expect(matchesCustomElementPattern('my-xwidget', ['my-.widget'])).toBe(false);
+    expect(matchesCustomElementPattern('my-.widget', ['my-.widget'])).toBe(true);
+  });
+
+  it('matches nothing without patterns', () => {
+    expect(matchesCustomElementPattern('sl-button', [])).toBe(false);
   });
 });

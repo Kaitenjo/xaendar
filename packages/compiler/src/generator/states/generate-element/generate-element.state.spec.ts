@@ -311,6 +311,15 @@ describe('generateElement', () => {
       expect(code.join('\n')).toContain('unbind: _removeAttribute');
     });
 
+    it('generates a custom element of another library like a native element, without querying its metadata', async () => {
+      const context = new CompilerContext();
+      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, set: () => undefined };
+      context.addCustomElementPatterns('sl-*');
+      const { code } = await run('<sl-button @if (cond()) { variant="primary" }></sl-button>', context);
+
+      expect(code.join('\n')).toContain('unbind: _removeAttribute');
+    });
+
     it('generates the directives applied inside a conditional binding', async () => {
       const { code } = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>');
 

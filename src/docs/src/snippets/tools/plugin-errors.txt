@@ -7,5 +7,10 @@ Xaendar: [TypeChecker] Failed to compile template - src/user-card/user-card.xd.c
 Xaendar: Failed to compile template - src/user-card/user-card.xd.component.html
 [Parser] [Ln 1, Col 2] - Expected closing tag input while file is over
 
+# A type error in the TypeScript of the project: the build fails
+Xaendar: [TypeChecker] Type check failed
+src/user-card/user-card.xd.component.ts(12,19): error TS2416: Property 'title' in type 'UserCardComponent' is not assignable to the same property in base type 'CustomElement'.
+  Type 'number' is not assignable to type 'string'.
+
 # At run time, in the browser
 UserCardComponent does not seems to have a Render Function

@@ -160,11 +160,10 @@ Follow these in every template you write or edit:
 
 ## Verifying work
 
-`xd build` fails on template errors, printed in red with the prefix `Xaendar:`. Component classes are not type-checked by the build at all. After changing components, run both checks and read the output:
+`xd build` fails on template errors and on type errors anywhere in the project, printed in red with the prefix `Xaendar:`. `xd start` checks each file as it serves it, and does not serve a file with type errors: they show in the terminal and in the Vite overlay. After changing components, run the build and read the output:
 
 ```bash
-npx xd build 2>&1 | grep -A6 "Xaendar:"   # template compile/type errors (empty = OK)
-npx tsc --noEmit -p tsconfig.json          # class type errors (HTMLElement name clashes, wrong types, …)
+npx xd build 2>&1 | grep -A6 "Xaendar:"   # template and type errors (empty = OK)
 ```
 
 Or run the `/xaendar:check` command.

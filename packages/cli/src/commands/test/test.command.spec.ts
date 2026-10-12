@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { startVitest } from 'vitest/node';
 
+const { PLUGINS } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }] }));
+
 vi.mock('../../utils/plugins', () => ({
-  PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }]
+  createPlugins: () => PLUGINS
 }));
 
-import { PLUGINS } from '../../utils/plugins';
 import { testCommand } from './test.command';
 
 /**

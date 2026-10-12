@@ -27,6 +27,16 @@ describe('compile', () => {
     expect(cache.getOrInsert).toHaveBeenCalledWith('default', ['/base', './a']);
   });
 
+  it('compiles the custom elements of other libraries matching the customElements patterns like native elements', async () => {
+    const template = '<sl-button @if (cond) { variant="primary" } (sl-click)="f($event)"></sl-button>';
+    const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: [], customElements: ['sl-*'], cache: createCache() });
+
+    expect(javascript).toContain('unbind: _removeAttribute');
+    expect(typescript.text).toContain('let $event!: (HTMLElementEventMap extends { \'sl-click\': infer Event } ? Event : any);');
+    await expect(compile(template, { signals: [], customElements: ['sl-*'], cache: createCache() })).resolves.toContain('unbind: _removeAttribute');
+    await expect(compile(template, { baseDir: '/base', customElements: ['sl-*'], cache: createCache() })).resolves.toMatchObject({ text: expect.stringContaining('sl-click') });
+  });
+
   it('generates both outputs when base directory and signals are provided', async () => {
     const result = await compile('{count}', { baseDir: '/base', signals: ['count'], cache: createCache() });
 

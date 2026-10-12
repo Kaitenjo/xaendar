@@ -5,11 +5,12 @@ vi.mock('vite', () => ({
   createServer: vi.fn()
 }));
 
+const { PLUGINS } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }] }));
+
 vi.mock('../../utils/plugins', () => ({
-  PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }]
+  createPlugins: () => PLUGINS
 }));
 
-import { PLUGINS } from '../../utils/plugins';
 import { startCommand } from './start.command';
 
 beforeEach(() => {

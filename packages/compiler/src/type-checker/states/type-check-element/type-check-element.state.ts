@@ -18,6 +18,7 @@ import type { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 import { Line } from '../../types/generated-line.type';
+import type { NativeEventType } from '../../types/native-event-type.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 
@@ -26,34 +27,44 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
  * attributes, events, conditional bindings, directives and structural directives, then recurses into its children.
  *
  * Custom elements (tag names containing a dash) are checked against the
- * metadata of the component imported for their selector; native elements
- * only get their expressions and event handlers checked.
+ * metadata of the component imported for their selector; native elements, and the custom elements of other
+ * libraries matching the `customElements` patterns, only get their expressions and event handlers checked.
  *
  * The native events of the element are typed through the event map of its namespace (see {@link getElementEventMap}),
  * which its children inherit: the children of an `<svg>` or a `<math>` element are type-checked in a scope declaring it.
+ * A custom element of another library may dispatch events the map doesn't declare: their `$event` is `any`.
  *
  * @param node - The `ElementNode` to type-check.
  * @param processNode - Callback used to type-check each child node.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If the tag is a custom element, or one of its directives, whose selector is not imported in the template.
+ * @throws If the tag is a custom element, or one of its directives, whose selector is not imported in the template,
+ *   or a custom element both imported and matching the `customElements` patterns.
  */
 export function typeCheckElement(node: ElementNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
-  const eventMap = getElementEventMap(node.tagName, context);
+  const { tagName } = node;
+  const eventMap = getElementEventMap(tagName, context);
+  let nativeEventType: NativeEventType = name => getNativeEventType(eventMap, name);
 
-  if (isCustomElementTag(node.tagName)) {
-    const metadata = context.getImportBySelector(node.tagName);
-    if (!metadata) {
-      throw new Error(`${node.tagName} selector is not associated to any WebComponent imported in the template`, { cause: node.span });
+  if (isCustomElementTag(tagName)) {
+    const metadata = context.getImportBySelector(tagName);
+    const isForeign = context.isForeignElement(tagName);
+    if (metadata && isForeign) {
+      throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
+    } else if (metadata) {
+      lines.push(...typeCheckComponentBindings(node, metadata, nativeEventType, context));
+    } else if (isForeign) {
+      nativeEventType = name => getForeignEventType(eventMap, name);
+      lines.push(...typeCheckNativeBindings(node, nativeEventType, context));
+    } else {
+      throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
     }
-
-    lines.push(...typeCheckComponentBindings(node, metadata, eventMap, context));
   } else {
-    lines.push(...typeCheckNativeBindings(node, eventMap, context));
+    lines.push(...typeCheckNativeBindings(node, nativeEventType, context));
   }
 
-  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], node.tagName, eventMap, context));
+  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEventType, context));
 
   const childrenEventMap = getChildrenEventMap(node.tagName, eventMap);
   const childrenContext = childrenEventMap === context.eventMap ? context : new TypeCheckContext(context, childrenEventMap);
@@ -113,12 +124,12 @@ function getChildrenEventMap(tagName: string, eventMap: ElementEventMap): Elemen
  *
  * @param node - The custom element node.
  * @param metadata - Metadata of the component registered for the element's selector.
- * @param eventMap - Event map of the element, typing the native events of the directives applied to it.
+ * @param nativeEventType - Builds the type of `$event` for the native events bound on the element and in its directives.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If a required property is missing, is bound inside a conditional binding that may not bind it, or an event is unknown.
+ * @throws If a required property is missing, or is bound inside a conditional binding that may not bind it.
  */
-function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetadata, eventMap: ElementEventMap, context: TypeCheckContext): Line[] {
+function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetadata, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
@@ -132,8 +143,8 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
 
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context),
-      ...typeCheckComponentEvents(branch.events, `<${node.tagName}>`, metadata, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, eventMap, context)
+      ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ];
   });
 
@@ -148,7 +159,7 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
     throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
   }
 
-  lines.push(...typeCheckComponentEvents(node.events, `<${node.tagName}>`, metadata, context));
+  lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
   lines.push(...conditionalBindingLines);
 
   return lines;
@@ -170,12 +181,12 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
  *
  * @param directives - The directive and structural directive nodes applied to the element.
  * @param tagName - Tag name of the element, used in error messages.
- * @param eventMap - Event map of the element, typing the native events bound in the directives.
+ * @param nativeEventType - Builds the type of `$event` for the native events bound in the directives.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
  * @throws If a directive is not imported, binds an unknown property, misses a required property or binds it inside a conditional binding that may not bind it.
  */
-function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNode)[], tagName: string, eventMap: ElementEventMap, context: TypeCheckContext): Line[] {
+function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNode)[], tagName: string, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < directives.length; i++) {
@@ -201,7 +212,7 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
 
       return [
         ...typeCheckComponentAttributes(branch.attributes, metadata, context),
-        ...typeCheckComponentEvents(branch.events, owner, metadata, context, eventMap)
+        ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context)
       ];
     });
 
@@ -218,7 +229,7 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
 
     lines.push(
       ...typeCheckComponentAttributes(attributes, metadata, context),
-      ...typeCheckComponentEvents(events, owner, metadata, context, eventMap),
+      ...typeCheckComponentEvents(events, metadata, nativeEventType, context),
       ...conditionalBindingLines
     );
   }
@@ -333,32 +344,33 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
 
 /**
  * Type-checks event bindings against the component's or directive's `@Event`s, typing `$event` as
- * `CustomEvent<payload type>`, or `CustomEvent<null>` for an event without payload (see {@link typeCheckEvent}). An event of a directive not declared as an
- * `@Event` is a native event of the element the directive is applied to, so `$event` is typed through its `eventMap`.
+ * `CustomEvent<payload type>`, or `CustomEvent<null>` for an event without payload (see {@link typeCheckEvent}).
+ * An event not declared as an `@Event` is a native event of the element the component is, or the directive is
+ * applied to, since its listener is attached to the element: `$event` is typed through `nativeEventType`, so an
+ * event name the element doesn't dispatch, such as a misspelled `@Event`, is reported by TypeScript. The name is
+ * checked even when the handler is not passed `$event`.
  *
  * @param events - The event nodes to type-check.
- * @param owner - The element (`<tag-name>`) or the directive (`@@selector`) the events are bound to, used in error messages.
  * @param metadata - Metadata of the component or directive emitting the events.
+ * @param nativeEventType - Builds the type of `$event` for the native events of the element.
  * @param context - Current type-check scope.
- * @param eventMap - Event map of the element a directive is applied to, typing its native events. Omitted for a
- *   component, whose events must all be declared as `@Event`s.
  * @returns The generated type-check lines, one call per event, wrapped in a block when it declares `$event`.
- * @throws If an event of a component is not declared as one of its `@Event`s.
  */
-function typeCheckComponentEvents(events: EventNode[], owner: string, metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext, eventMap?: ElementEventMap): Line[] {
+function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDirectiveMetadata, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < events.length; i++) {
-    const { name, span } = events[i];
+    const { name, parameters, span } = events[i];
     const event = metadata.events.get(name);
 
     if (event) {
       // An event without payload is emitted without detail, which the CustomEvent sets to null
       lines.push(...typeCheckEvent(events[i], `CustomEvent<${event.type === 'void' ? 'null' : event.type}>`, context));
-    } else if (eventMap) {
-      lines.push(...typeCheckEvent(events[i], getNativeEventType(eventMap, name), context));
     } else {
-      throw new Error(`Unknown event "${name}" on ${owner} (${metadata.className} has no @Event with this name).`, { cause: span });
+      const eventType = nativeEventType(name);
+      passesEvent(parameters) 
+        ? lines.push(...typeCheckEvent(events[i], eventType, context))
+        : lines.push(line(mapped(`null! satisfies ${eventType};`, span)), ...typeCheckEvent(events[i], eventType, context));
     }
   }
 
@@ -366,22 +378,22 @@ function typeCheckComponentEvents(events: EventNode[], owner: string, metadata: 
 }
 
 /**
- * Type-checks the bindings of a native element: attributes, events and
+ * Type-checks the bindings of a native element, or of a custom element of another library: attributes, events and
  * conditional bindings.
  *
- * @param node - The native element node.
- * @param eventMap - Event map of the element, typing its native events and the ones of the directives applied to it.
+ * @param node - The element node.
+ * @param nativeEventType - Builds the type of `$event` for the native events of the element and of the directives applied to it.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
  */
-function typeCheckNativeBindings(node: ElementNode, eventMap: ElementEventMap, context: TypeCheckContext): Line[] {
+function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
-    ...typeCheckNativeEvents(node.events, eventMap, context),
+    ...typeCheckNativeEvents(node.events, nativeEventType, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
       ...typeCheckNativeAttributes(branch.attributes, context),
-      ...typeCheckNativeEvents(branch.events, eventMap, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, eventMap, context)
+      ...typeCheckNativeEvents(branch.events, nativeEventType, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ])
   ];
 }
@@ -412,12 +424,12 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], context: TypeChe
  * event map of the element (see {@link typeCheckEvent}), e.g. `HTMLElementEventMap['click']`.
  *
  * @param events - The event nodes to type-check.
- * @param eventMap - Event map of the element.
+ * @param nativeEventType - Builds the type of `$event` for the native events of the element.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one call per event, wrapped in a block when it declares `$event`.
  */
-function typeCheckNativeEvents(events: EventNode[], eventMap: ElementEventMap, context: TypeCheckContext): Line[] {
-  return events.flatMap(event => typeCheckEvent(event, getNativeEventType(eventMap, event.name), context));
+function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
+  return events.flatMap(event => typeCheckEvent(event, nativeEventType(event.name), context));
 }
 
 /**
@@ -450,7 +462,7 @@ function typeCheckEvent({ handler, parameters, span }: EventNode, eventType: str
     ? [
       plain('{'),
       ...indentLines([
-        plain(`let $event!: ${eventType};`),
+        line(mapped(`let $event!: ${eventType};`, span)),
         call
       ]),
       plain('}')
@@ -574,6 +586,20 @@ function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckConte
  */
 function getNativeEventType(eventMap: string, name: string): string {
   return `${eventMap}['${name}']`
+}
+
+/**
+ * Returns the type of `$event` for an event of a custom element of another library: the type the event map of
+ * the element declares for the event name, or `any` for an event the map doesn't declare, since the element
+ * may dispatch events of its own. The type is inferred instead of indexed, since TypeScript checks an indexed access
+ * even in the branch of a conditional type that excludes it.
+ *
+ * @param eventMap - Event map of the element the event is bound to.
+ * @param name - Name of the event.
+ * @returns The conditional type typing `$event`.
+ */
+function getForeignEventType(eventMap: string, name: string): string {
+  return `(${eventMap} extends { '${name}': infer Event } ? Event : any)`;
 }
 
 /**

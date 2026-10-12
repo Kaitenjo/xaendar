@@ -325,16 +325,12 @@
         },
         "customElementsFromOther": {
           "title": "Custom element di altre librerie",
-          "p1": "Un template accetta come custom element solo componenti Xaendar, quindi un elemento di un’altra libreria va creato nel codice: in <code>afterRender</code>, dentro un elemento del template, con un effect che copia lo stato nelle sue proprietà.",
+          "p1": "Un template può usare un elemento di un’altra libreria una volta dichiarato il suo tag in <code>customElements</code> (vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>), ma i suoi binding scrivono attributi, che portano solo stringhe. Per passare qualsiasi altro valore a una proprietà, crea l’elemento nel codice: in <code>afterRender</code>, dentro un elemento del template, con un effect che copia lo stato nelle sue proprietà.",
           "example1": "Un custom element scritto senza Xaendar",
           "p2": "Il gauge è un normale <code>HTMLElement</code> con una proprietà <code>value</code>, come lo sarebbe un componente di qualsiasi altra libreria. L’effect imposta la proprietà, non un attributo, quindi si può passare un valore di qualsiasi tipo. Il gauge viene creato con <code>new VanillaGauge()</code>: con <code>document.createElement</code> la classe verrebbe usata solo come tipo, TypeScript eliminerebbe l’import, e l’elemento non verrebbe mai definito."
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout1": {
-            "heading": "Tag esterni nei template",
-            "p1": "Ogni tag con un trattino in un template deve essere un componente Xaendar importato, quindi il tag del gauge non può essere scritto nel template. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>."
-          },
           "callout2": {
             "heading": "Le modifiche imperative agli attributi legati non durano",
             "body": "Un attributo legato nel template viene riscritto ogni volta che il suo valore cambia: una classe aggiunta con <code>classList</code> a un elemento il cui <code>class</code> è legato sparisce al successivo aggiornamento. Cambia invece lo stato che il binding legge, oppure tocca solo ciò che il template non lega."
@@ -558,7 +554,7 @@
           },
           "callout4": {
             "heading": "Eventi nativi sul tag di un componente",
-            "p1": "Il tag di un componente accetta solo gli eventi che dichiara: <code>(click)</code> non compila. Ascolta su un elemento nativo che lo contiene, perché gli eventi nativi composed, come <code>click</code>, escono dallo shadow root del componente; oppure emetti un evento tuo dall’interno."
+            "p1": "Un evento che il componente non dichiara è un evento nativo del suo elemento: <code>(click)</code> sul tag di un componente compila, con <code>$event</code> tipato tramite <code>HTMLElementEventMap</code>, e un nome che non è né un output né un evento nativo fa fallire la build. Il listener riceve solo gli eventi che raggiungono il tag: gli eventi nativi composed, come <code>click</code>, escono dallo shadow root del componente, mentre gli altri, come <code>change</code>, restano al suo interno."
           },
           "callout6": {
             "heading": "Nomi già usati da HTMLElement",
@@ -632,7 +628,13 @@
           "p1": "Un template usa un componente in due passaggi distinti.",
           "li1": "<strong>Durante la build</strong>, il template importa la classe con <code>@import</code>. Il compilatore legge la classe per conoscerne selettore, input e output, e controlla i binding rispetto a questi. Niente di questo import arriva al browser.",
           "li2": "<strong>A runtime</strong>, il modulo che dichiara la classe deve essere stato valutato, così che il decoratore abbia definito l’elemento. Il modo abituale è un entry point che importa tutti i componenti prima di renderizzare qualsiasi cosa; questo sito lo fa con un import glob:",
-          "p2": "Un tag con il trattino che il template non importa fa fallire la build:"
+          "p2": "Un tag con il trattino che il template non importa, e che non è dichiarato come custom element di un’altra libreria (vedi sotto), fa fallire la build:"
+        },
+        "customElementsOfOther": {
+          "title": "Custom element di altre librerie",
+          "p1": "Un template può usare anche i custom element di altre librerie, come Shoelace o un elemento scritto senza Xaendar. I loro tag si dichiarano in <code>customElements</code>, in <code>xaendar.json</code>, come una lista di pattern in cui <code>*</code> sta per qualsiasi sequenza di caratteri. Un progetto che usa Vite direttamente passa la stessa lista al plugin: <code>xaendarPlugin({ customElements: ['sl-*'] })</code>.",
+          "example1": "Un elemento scritto senza Xaendar, usato in un template",
+          "p2": "Il compilatore tratta questi tag come elementi nativi. Un binding scrive un attributo, quindi l’elemento riceve una stringa: qui le stelle leggono <code>count</code> dal loro attributo. Un valore che non è una stringa, come un oggetto, va passato a una proprietà nel codice, come mostrato in <a href=\"#/it/components/dom-apis\">Usare le API del DOM</a>. <code>$event</code> prende il tipo che <code>HTMLElementEventMap</code> dichiara per l’evento, ed è <code>any</code> per un evento che non dichiara, come il <code>vanilla-change</code> delle stelle. La libreria deve comunque definire l’elemento a runtime: l’esempio ne importa il modulo."
         },
         "loadingAComponentOn": {
           "title": "Caricare un componente su richiesta",
@@ -647,8 +649,8 @@
             "body": "Un componente importato in un template ma mai valutato a runtime compila, e viene renderizzato come un elemento vuoto e non definito: nessuno shadow root, nessun contenuto, nessun errore. La pseudo-classe <code>:defined</code> permette di dargli uno stile mentre aspetta, come fa l’esempio del caricamento su richiesta."
           },
           "callout2": {
-            "heading": "Custom element che non sono componenti Xaendar",
-            "p1": "Ogni tag con il trattino in un template deve essere un componente Xaendar importato con <code>@import</code>, quindi gli elementi di altre librerie non si possono scrivere in un template. Vanno creati da codice, come mostrato in <a href=\"#/it/components/dom-apis\">Usare le API del DOM</a>."
+            "heading": "Un tag importato e anche dichiarato",
+            "body": "Un tag che corrisponde a un pattern di <code>customElements</code> non può essere anche un componente importato dal template: la build fallisce, così il compilatore non tratta mai uno dei tuoi componenti come un elemento di un’altra libreria. Usa pattern specifici per le altre librerie."
           },
           "callout3": {
             "heading": "Il registro è globale",
@@ -665,7 +667,9 @@
           "td4": "La classe definita con quel nome, o <code>undefined</code>.",
           "td5": "<code>customElements.whenDefined(nome)</code>",
           "td6": "Una promise risolta quando il nome viene definito.",
-          "td7": "Pseudo-classi CSS per gli elementi definiti e per quelli non ancora definiti."
+          "td7": "Pseudo-classi CSS per gli elementi definiti e per quelli non ancora definiti.",
+          "td8": "<code>\"customElements\": [\"sl-*\"]</code>",
+          "td9": "In <code>xaendar.json</code>: i tag di altre librerie che i template usano come elementi nativi. Solo durante la build."
         }
       },
       "styling": {
@@ -2371,7 +2375,8 @@
         },
         "errors": {
           "title": "Errori",
-          "p1": "Gli errori di un template vengono stampati dal dev server e dalla build, con la posizione nel template e l’estratto coinvolto. Fanno fallire la build. Nel dev server, il componente a cui appartengono resta senza funzione di render, e lancia un errore quando viene connesso. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi."
+          "p1": "Gli errori di un template vengono stampati dal dev server e dalla build, con la posizione nel template e l’estratto coinvolto. Fanno fallire la build. Nel dev server, il componente a cui appartengono resta senza funzione di render, e lancia un errore quando viene connesso. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi.",
+          "p2": "Vite toglie i tipi dal TypeScript senza controllarli. Li controlla il plugin: alla fine della build verifica i tipi di tutto il progetto come <code>tsc --noEmit</code>, e la fa fallire se trova errori. Il dev server controlla ogni file quando lo serve: un file con errori di tipo non viene servito, e i suoi errori compaiono nel terminale e nell’overlay di Vite."
         },
         "devServer": {
           "title": "Dev server",
@@ -2379,10 +2384,6 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "callout2": {
-            "heading": "Le classi non passano il type check",
-            "body": "Il plugin controlla i template, non il TypeScript delle classi: un membro in conflitto con una proprietà di <code>HTMLElement</code>, come <code>title</code> o <code>remove</code>, arriva nel bundle senza segnalazioni. Esegui anche <code>tsc --noEmit</code>."
-          },
           "callout4": {
             "heading": "La cartella di lavoro conta",
             "body": "<code>tsconfig.json</code> viene letto dalla cartella da cui parte Vite, non da quella di <code>vite.config.ts</code>. Avvia <code>xd</code> o Vite dalla radice del progetto."
@@ -2413,7 +2414,7 @@
         "xdNew": {
           "title": "xd new",
           "p1": "Il nome del progetto viene usato per la cartella, per <code>package.json</code> e per il componente radice, <code>&lt;nome&gt;-root</code>. I file generati sono descritti in <a href=\"#/it/installation\">Installazione</a>. Il comando si ferma se la cartella esiste e non è vuota.",
-          "p2": "<code>xaendar.json</code> registra le impostazioni del progetto. Oggi contiene solo l’estensione scelta con <code>--style</code>."
+          "p2": "<code>xaendar.json</code> registra le impostazioni del progetto: l’estensione scelta con <code>--style</code> e, in <code>customElements</code>, i tag di altre librerie usati dai template (vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>)."
         },
         "xdStartAndXd": {
           "title": "xd start e xd build",
@@ -2661,9 +2662,13 @@
       "cause": "Un alias di @for scritto con let.",
       "fix": "Scrivi l’alias come index = $index."
     },
-    "[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template": {
-      "cause": "Un tag con trattino che non è un componente Xaendar importato dal template: un @import mancante, o un custom element di un’altra libreria.",
-      "fix": "Importa il componente; crea nel codice gli elementi di altre librerie."
+    "[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template, nor declared in customElements": {
+      "cause": "Un tag con trattino che non è né un componente Xaendar importato dal template né dichiarato in customElements: un @import mancante, o un custom element di un’altra libreria.",
+      "fix": "Importa il componente; dichiara i tag di altre librerie nei customElements di xaendar.json."
+    },
+    "[TypeChecker] sl-button is both imported as a WebComponent and declared in customElements": {
+      "cause": "Un tag che è un componente importato dal template e corrisponde anche a un pattern di customElements.",
+      "fix": "Restringi il pattern ai tag dell’altra libreria, o rinomina il selettore del componente."
     },
     "[TypeChecker] @@exTint selector is not associated to any Directive imported in the template": {
       "cause": "Una direttiva usata senza @import.",
@@ -2677,9 +2682,9 @@
       "cause": "Un input required legato solo in alcuni rami.",
       "fix": "Aggiungi un ramo @else o @default che lo lega, o legalo fuori dalla condizione."
     },
-    "[TypeChecker] Unknown event \"valuechange\" on <x-picker> (XPicker has no @Event with this name).": {
-      "cause": "Un listener per un evento che il componente non dichiara: maiuscole diverse, o un evento nativo come click sul tag di un componente.",
-      "fix": "Usa il nome esatto dell’accessor; ascolta gli eventi nativi su un elemento contenitore."
+    "Property 'valuechange' does not exist on type 'HTMLElementEventMap'.": {
+      "cause": "Un listener per un evento che non è né un output del componente né un evento nativo del suo elemento: maiuscole diverse, o un nome sbagliato.",
+      "fix": "Usa il nome dell’accessor, lettera per lettera."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "Un input che la direttiva non dichiara.",
@@ -2831,16 +2836,6 @@
     }
   },
   "issues": {
-    "every-tag-with-a-dash-must": {
-      "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
-      "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",
-      "workaround": "Crea gli elementi esterni nel codice; ascolta gli eventi nativi su un contenitore."
-    },
-    "classes-are-not-type-checked": {
-      "title": "Le classi non passano il type check",
-      "details": "Vengono controllati solo i template: membri in conflitto con HTMLElement, come title, lang, remove o matches, passano inosservati.",
-      "workaround": "Esegui anche tsc --noEmit."
-    },
     "the-dev-overlay-reports-handled-errors": {
       "title": "L’overlay di sviluppo segnala errori gestiti",
       "details": "Vite stampa [Unhandled error] anche per errori gestiti con preventDefault su window.",

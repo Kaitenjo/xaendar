@@ -57,7 +57,9 @@ describe('typeCheckElement', () => {
       ]);
       expect(lines[0].mappings).toHaveLength(1);
       expect(lines[3].mappings).toEqual([{ columnStart: 2, columnEnd: 25, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
-      expect([lines[1], lines[2], lines[4]].every(l => !l.mappings)).toBe(true);
+      // The declaration of $event is mapped too, so that an event the element doesn't dispatch is reported on the binding
+      expect(lines[2].mappings).toEqual([{ columnStart: 2, columnEnd: 44, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+      expect([lines[1], lines[4]].every(l => !l.mappings)).toBe(true);
     });
 
     it('declares $event in a separate block for each event, so that every handler gets its own', () => {
@@ -255,8 +257,15 @@ describe('typeCheckElement', () => {
       expect(run('<my-el title="a"></my-el>', component)).not.toHaveLength(0);
     });
 
-    it('throws for an unknown event', () => {
-      expect(() => run('<my-el (nope)="f()"></my-el>', metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
+    it('types the events the component does not declare as native events of its element, checking their name even without $event', () => {
+      expect(text(run('<my-el (click)="f($event)" (nope)="g()"></my-el>', metadata({})))).toEqual([
+        '{',
+        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  root.f($event);',
+        '}',
+        'null! satisfies HTMLElementEventMap[\x27nope\x27];',
+        'root.g();'
+      ]);
     });
 
     it('type-checks inputs and outputs inside conditional bindings', () => {
@@ -305,12 +314,15 @@ describe('typeCheckElement', () => {
       ]);
     });
 
-    it.each([
-      ['an @if branch', '<my-el @if (cond) { (nope)="f()" }></my-el>'],
-      ['an @else branch', '<my-el @if (cond) { } @else { (nope)="f()" }></my-el>'],
-      ['a @switch branch', '<my-el @switch (mode) { @case (1) { (nope)="f()" } }></my-el>']
-    ])('throws for an unknown event inside %s', (_description, template) => {
-      expect(() => run(template, metadata({}))).toThrow('Unknown event "nope" on <my-el> (MyEl has no @Event with this name).');
+    it('types the native events bound inside a conditional binding through the event map of the element', () => {
+      expect(text(run('<my-el @if (cond) { (click)="f($event)" }></my-el>', metadata({})))).toEqual([
+        'if (root.cond) {',
+        '  {',
+        '    let $event!: HTMLElementEventMap[\'click\'];',
+        '    root.f($event);',
+        '  }',
+        '}'
+      ]);
     });
 
     describe('required properties bound inside conditional bindings', () => {
@@ -399,6 +411,53 @@ describe('typeCheckElement', () => {
       });
     });
   });
+
+  describe('custom elements of other libraries', () => {
+    const runForeign = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
+      const context = new TypeCheckContext();
+      context.addImport(...imports);
+      context.addCustomElementPatterns('sl-*', 'my-el');
+
+      return typeCheckElement(parse(template), processNode, context);
+    };
+
+    it('checks the expressions of the attributes, typing $event through the event map or as any', () => {
+      const lines = runForeign('<sl-button variant="primary" size="{size}" @if (cond) { (sl-focus)="g($event)" } (click)="f($event)"></sl-button>');
+
+      expect(text(lines)).toEqual([
+        'root.size;',
+        '{',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : any);',
+        '  root.f($event);',
+        '}',
+        'if (root.cond) {',
+        '  {',
+        '    let $event!: (HTMLElementEventMap extends { \'sl-focus\': infer Event } ? Event : any);',
+        '    root.g($event);',
+        '  }',
+        '}'
+      ]);
+    });
+
+    it('types the native events of the directives applied to them the same way', () => {
+      const lines = runForeign('<sl-button @@myDirective((sl-blur)="f($event)")></sl-button>', directiveMetadata({}));
+
+      expect(text(lines)).toEqual([
+        '{',
+        '  let $event!: (HTMLElementEventMap extends { \'sl-blur\': infer Event } ? Event : any);',
+        '  root.f($event);',
+        '}'
+      ]);
+    });
+
+    it('throws for a tag both imported as a component and matching a pattern', () => {
+      expect(() => runForeign('<my-el></my-el>', metadata({}))).toThrow('my-el is both imported as a WebComponent and declared in customElements');
+    });
+
+    it('throws for a tag neither imported nor matching a pattern', () => {
+      expect(() => runForeign('<x-thing></x-thing>')).toThrow('x-thing selector is not associated to any WebComponent imported in the template, nor declared in customElements');
+    });
+  });
 });
 
 describe('typeCheckElement directives', () => {
@@ -477,6 +536,7 @@ describe('typeCheckElement directives', () => {
       '  let $event!: HTMLElementEventMap[\'click\'];',
       '  root.g($event);',
       '}',
+      'null! satisfies HTMLElementEventMap[\x27nope\x27];',
       'root.h();'
     ]);
   });

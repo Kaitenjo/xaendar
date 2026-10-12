@@ -51,10 +51,11 @@ export class Generator {
    * Generates the code for the given AST using the specified signals.
    * @param signals An array of signal names to be included in the generated code.
    * @param shadowingMembers Class members named like a global identifier, read from the component instead of the global scope.
+   * @param customElements Patterns of the tag names of the custom elements of other libraries, generated like native elements.
    * @returns The generated code as a string: module-level functions, the entry point being `render`,
    *   each expecting to be invoked with the component instance bound as `this`.
    */
-  public async generate(signals: string[], shadowingMembers: readonly string[] = []): Promise<string> {
+  public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<string> {
     const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess']) => {
       if (functionsToProcess) {
         for (const [key, value] of functionsToProcess.entries()) {
@@ -73,6 +74,7 @@ export class Generator {
       for (const member of shadowingMembers) {
         compilerContext.addShadowingMember(member);
       }
+      compilerContext.addCustomElementPatterns(...customElements);
 
       const generatedCode = [
         'function render() {',

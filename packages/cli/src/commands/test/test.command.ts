@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { startVitest } from 'vitest/node';
-import { PLUGINS } from '../../utils/plugins';
+import { createPlugins } from '../../utils/plugins';
 
 /**
  * Creates and returns the `test` command (alias `t`).
@@ -19,7 +19,7 @@ export function testCommand(runVitest: typeof startVitest = startVitest): Comman
     .alias('t')
     .description('Run the tests of the project')
     .action(async () => {
-      const vitest = await runVitest([], { environment: 'happy-dom', setupFiles: ['./signals.ts'] }, { plugins: PLUGINS });
+      const vitest = await runVitest([], { environment: 'happy-dom', setupFiles: ['./signals.ts'] }, { plugins: createPlugins() });
 
       // Vitest keeps running only in watch mode: a single run exits, with the outcome of the tests
       if (!vitest.shouldKeepServer()) {

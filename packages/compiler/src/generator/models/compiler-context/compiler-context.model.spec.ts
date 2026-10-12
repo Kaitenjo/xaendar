@@ -135,4 +135,18 @@ describe('CompilerContext', () => {
       expect(() => context.addSignalClassField('count')).toThrow('Signal field "count" is already declared in this scope.');
     });
   });
+
+  describe('custom elements of other libraries', () => {
+    it('matches the tag names against the patterns of the scope chain', () => {
+      const parent = new CompilerContext();
+      parent.addCustomElementPatterns('sl-*');
+      const child = new CompilerContext(parent);
+      child.addCustomElementPatterns('my-widget');
+
+      expect(child.isForeignElement('sl-button')).toBe(true);
+      expect(child.isForeignElement('my-widget')).toBe(true);
+      expect(parent.isForeignElement('my-widget')).toBe(false);
+      expect(child.isForeignElement('x-card')).toBe(false);
+    });
+  });
 });

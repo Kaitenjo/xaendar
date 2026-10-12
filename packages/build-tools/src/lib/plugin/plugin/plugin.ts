@@ -2,6 +2,8 @@ import { loadTsConfig } from '@xaendar/language-core';
 import type { Logger, Plugin } from 'vite';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginOptions } from '../../types/xaendar-plugin-options.type';
+import { createBuildEndHook } from '../build-end/build-end';
 import { createConfigResolvedHook } from '../config-resolved/config-resolved';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createHotUpdateHook } from '../hot-update/hot-update';
@@ -40,6 +42,19 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  * bundling phase. The output is handed to esbuild as TypeScript, which strips
  * the types and produces the final JavaScript bundle.
  *
+ * ## Type check
+ *
+ * Vite does not type-check TypeScript. Besides checking each template against its
+ * component class, the plugin checks the rest of the program: as `tsc --noEmit`
+ * does once a build ends, failing it on errors, and in dev mode file by file as
+ * they are served, not serving a file with errors.
+ *
+ * ## Custom elements of other libraries
+ *
+ * Every tag with a dash used by a template must be a component imported in it, unless it matches one of the
+ * `customElements` patterns: those tags belong to other libraries and are used like native elements.
+ *
+ * @param options - The options of the plugin.
  * @returns A Vite {@link Plugin} instance.
  *
  * @example
@@ -48,10 +63,10 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  * import { xaendarPlugin } from '@xaendar/build-tools';
  *
  * export default defineConfig({
- *   plugins: [xaendarPlugin()],
+ *   plugins: [xaendarPlugin({ customElements: ['sl-*'] })],
  * });
  */
-export function xaendarPlugin(): Plugin {
+export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
   const host = new NodeCompilerHost;
   // The project tsconfig is resolved from the directory Vite is launched from.
   const tsConfig = loadTsConfig(process.cwd());
@@ -67,6 +82,7 @@ export function xaendarPlugin(): Plugin {
     host,
     compilerOptions: tsConfig.options,
     projectFileNames: tsConfig.fileNames,
+    customElements: options.customElements ?? [],
     minifyStyles: false,
     isBuild: false,
     setLogger: value => logger = value,
@@ -79,6 +95,7 @@ export function xaendarPlugin(): Plugin {
     resolveId: createResolveIdHook(),
     load: createLoadHook(state),
     transform: createTransformHook(state),
+    buildEnd: createBuildEndHook(state),
     watchChange: createWatchChangeHook(state),
     hotUpdate: createHotUpdateHook(),
     configureServer: createConfigureServerHook(state),

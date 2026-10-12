@@ -38,6 +38,22 @@ Reserved names are:
 }
 
 /**
+ * Checks whether a tag name matches one of the patterns declaring the custom elements of other libraries,
+ * where `*` stands for any sequence of characters (`sl-*` matches `sl-button` and `sl-icon-button`).
+ * Any other character of a pattern matches itself.
+ *
+ * @param tagName - The tag name to check.
+ * @param patterns - The patterns of the custom elements, e.g. `['sl-*', 'my-legacy-widget']`.
+ * @returns `true` if the tag name matches at least one pattern, `false` otherwise.
+ */
+export function matchesCustomElementPattern(tagName: string, patterns: readonly string[]): boolean {
+  return patterns.some(pattern => {
+    const source = pattern.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
+    return new RegExp(`^${source}$`).test(tagName);
+  });
+}
+
+/**
  * Checks if a tag name is reserved and cannot be used for a custom element.
  * 
  * Reserved names include certain HTML, SVG, or other names that are forbidden by the specification.

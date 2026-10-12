@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { build } from 'vite';
-import { PLUGINS } from '../../utils/plugins';
+import { createPlugins } from '../../utils/plugins';
 
 export function buildCommand(): Command {
   return new Command('build')
@@ -8,7 +8,7 @@ export function buildCommand(): Command {
     .description('Build the project')
     .action(async () => {
       await build({
-        plugins: PLUGINS
+        plugins: createPlugins()
       });
     });
 }

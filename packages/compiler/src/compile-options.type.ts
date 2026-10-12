@@ -54,6 +54,14 @@ export type CompileOptions = {
    */
   shadowingMembers?: readonly string[];
   /**
+   * Patterns of the tag names of the custom elements of other libraries (e.g. `sl-*`), where `*` stands
+   * for any sequence of characters. The template uses them like native elements: their attributes and
+   * listeners are not checked against a component, and an event missing from `HTMLElementEventMap`
+   * types `$event` as `any`. Any other tag with a dash must be a component imported in the template.
+   * Defaults to none.
+   */
+  customElements?: readonly string[];
+  /**
    * Optional caching layer for component and directive metadata.
    *
    * Improves compilation performance by caching extracted metadata,

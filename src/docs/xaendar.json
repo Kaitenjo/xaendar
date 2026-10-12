@@ -3,6 +3,7 @@
   "entry": "src/main.ts",
   "outDir": "dist",
   "assetsDir": "assets",
+  "customElements": ["vanilla-*"],
   "generate": {
     "components": {
       "style": "css"

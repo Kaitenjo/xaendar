@@ -47,7 +47,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with a function of `@xaendar/core/signals`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.
 - Listeners call exactly one method of the component or of one of its members (`cart.clear()`, `count.set(0)`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
-- On a component tag only the events it declares with `@Event` can be bound; on native elements only native events. Listen to native events on a wrapper element.
+- On a component tag, an event it does not declare with `@Event` is a native event of its element (`(click)`), typed through `HTMLElementEventMap`; only composed native events leave its shadow root. A name that is neither is a build error.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
 
 ## Control flow
@@ -149,7 +149,7 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 ```
 
 - Only relative paths: package names and tsconfig aliases are not resolved.
-- Every tag containing a dash must be an imported Xaendar component; custom elements of other libraries are rejected. Create foreign elements from code (e.g. in `afterRender` through a query).
+- Every tag containing a dash must be an imported Xaendar component, or match a pattern of `customElements` in `xaendar.json` (`["sl-*"]`; `xaendarPlugin({ customElements })` with plain Vite). Those custom elements of other libraries are used like native elements: bindings write attributes (strings only; set object properties from code), and `$event` is typed through `HTMLElementEventMap`, or `any` for events it does not declare.
 
 ## Expressions
 

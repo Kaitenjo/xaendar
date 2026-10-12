@@ -20,6 +20,10 @@ export type XaendarPluginState = {
    */
   projectFileNames: readonly string[];
   /**
+   * Patterns of the tag names of the custom elements of other libraries, used by templates like native elements.
+   */
+  customElements: readonly string[];
+  /**
    * Whether the compiled styles must be minified, set once the Vite config is resolved.
    */
   minifyStyles: boolean;

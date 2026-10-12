@@ -125,8 +125,13 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template',
+    message: '[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template, nor declared in customElements',
     page: 'templates/imports'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] sl-button is both imported as a WebComponent and declared in customElements',
+    page: 'components/registration'
   },
   {
     phase: 'TypeChecker',
@@ -145,7 +150,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] Unknown event "valuechange" on <x-picker> (XPicker has no @Event with this name).',
+    message: "Property 'valuechange' does not exist on type 'HTMLElementEventMap'.",
     page: 'components/outputs'
   },
   {

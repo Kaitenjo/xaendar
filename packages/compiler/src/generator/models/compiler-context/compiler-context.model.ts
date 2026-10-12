@@ -1,3 +1,4 @@
+import { matchesCustomElementPattern } from '@xaendar/common';
 import type { CompilerCache } from '../../../types/compiler-cache.type';
 
 /**
@@ -33,6 +34,11 @@ export class CompilerContext {
    * a global identifier, which they shadow in the template (e.g. a `name` field)
    */
   private readonly _componentShadowingMembers = new Set<string>();
+  /**
+   * Patterns of the tag names of the custom elements of other libraries (e.g. `sl-*`),
+   * which the template uses like native elements
+   */
+  private readonly _customElementPatterns = new Array<string>();
   /**
    * Identifiers declared directly in this scope, mapped to whether they
    * hold a plain value or a signal (e.g. the item of a `@for` and its implicit
@@ -117,6 +123,15 @@ export class CompilerContext {
   }
 
   /**
+   * Registers the patterns of the tag names of the custom elements of other libraries.
+   *
+   * @param patterns - The patterns, where `*` stands for any sequence of characters.
+   */
+  public addCustomElementPatterns(...patterns: readonly string[]): void {
+    this._customElementPatterns.push(...patterns);
+  }
+
+  /**
    * Removes a previously registered identifier from this scope, if present.
    * Does nothing if no identifier with the given name is declared in this scope.
    * Note: this only affects the current scope, not any ancestor scopes.
@@ -180,6 +195,17 @@ export class CompilerContext {
    */
   public hasShadowingMember(name: string): boolean {
     return this._componentShadowingMembers.has(name) || (this.parent?.hasShadowingMember(name) ?? false);
+  }
+
+  /**
+   * Returns `true` if a tag name matches one of the patterns of the custom elements of other libraries
+   * registered in this scope or any of its ancestor scopes.
+   *
+   * @param tagName - The tag name to check.
+   * @returns `true` if the tag is a custom element of another library, `false` otherwise.
+   */
+  public isForeignElement(tagName: string): boolean {
+    return matchesCustomElementPattern(tagName, this._customElementPatterns) || (this.parent?.isForeignElement(tagName) ?? false);
   }
 
   /**

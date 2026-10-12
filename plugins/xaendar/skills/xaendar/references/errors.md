@@ -103,10 +103,15 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ## TypeChecker
 
-### `[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template`
+### `[TypeChecker] foreign-thing selector is not associated to any WebComponent imported in the template, nor declared in customElements`
 
-- **Cause:** A tag with a dash that is not a Xaendar component imported by the template: a missing @import, or a custom element of another library.
-- **Fix:** Import the component; create elements of other libraries in code.
+- **Cause:** A tag with a dash that is neither a Xaendar component imported by the template nor declared in customElements: a missing @import, or a custom element of another library.
+- **Fix:** Import the component; declare the tags of other libraries in the customElements of xaendar.json.
+
+### `[TypeChecker] sl-button is both imported as a WebComponent and declared in customElements`
+
+- **Cause:** A tag that is a component imported by the template and also matches a pattern of customElements.
+- **Fix:** Narrow the pattern to the tags of the other library, or rename the selector of the component.
 
 ### `[TypeChecker] @@exTint selector is not associated to any Directive imported in the template`
 
@@ -123,10 +128,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A required input bound only in some branches.
 - **Fix:** Add an @else or @default branch binding it, or bind it outside the condition.
 
-### `[TypeChecker] Unknown event "valuechange" on <x-picker> (XPicker has no @Event with this name).`
+### `Property 'valuechange' does not exist on type 'HTMLElementEventMap'.`
 
-- **Cause:** A listener for an event the component does not declare: a different case, or a native event such as click on a component tag.
-- **Fix:** Match the name of the accessor; listen to native events on a wrapper element.
+- **Cause:** A listener for an event that is neither an output of the component nor a native event of its element: a different case, or a misspelled name.
+- **Fix:** Match the name of the accessor, letter by letter.
 
 ### `[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).`
 

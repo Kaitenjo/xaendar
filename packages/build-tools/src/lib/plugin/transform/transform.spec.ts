@@ -46,6 +46,11 @@ vi.mock('../../utils/project-dependencies/project-dependencies.utils', () => ({
   collectProjectDependencies: vi.fn()
 }));
 
+vi.mock('../../utils/type-check/type-check.utils', () => ({
+  collectFileDiagnostics: vi.fn(),
+  formatTypeDiagnostics: vi.fn()
+}));
+
 vi.mock('../../registry/import-registry/import-registry', () => ({
   clearComponentToImports: vi.fn(),
   registerImport: vi.fn()
@@ -87,6 +92,7 @@ import { clearStyleDependenciesForComponent, registerStyleDependency } from '../
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
+import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
@@ -136,6 +142,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     } as unknown as NodeCompilerHost,
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: ['/project/src/globals.d.ts'],
+    customElements: [],
     minifyStyles: false,
     isBuild: false,
     setLogger: vi.fn(),
@@ -186,6 +193,7 @@ beforeEach(() => {
   vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
   vi.mocked(createStyleModuleSpecifier).mockReturnValue('style-module');
   vi.mocked(collectProjectDependencies).mockReturnValue([]);
+  vi.mocked(collectFileDiagnostics).mockReturnValue([]);
   mockSuccessfulCompile();
   mockNoDiagnostics();
 });
@@ -199,6 +207,41 @@ describe('createTransformHook()', () => {
 
     expect(result).toBe('const x = 1;');
     expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('does not serve a TypeScript file with type errors in the dev server, raising them', async () => {
+    vi.mocked(collectFileDiagnostics).mockReturnValue(['diag'] as unknown as ReturnType<typeof collectFileDiagnostics>);
+    vi.mocked(formatTypeDiagnostics).mockReturnValue('util.ts(1,7): error TS2322');
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    await expect(hook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined)).rejects.toThrow('[TypeChecker] Type check failed\nutil.ts(1,7): error TS2322');
+    expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions, state.projectFileNames);
+    expect(collectFileDiagnostics).toHaveBeenCalledWith(expect.anything(), '/src/foo/util.ts');
+    expect(formatTypeDiagnostics).toHaveBeenCalledWith(['diag']);
+  });
+
+  it('serves a TypeScript file without type errors', async () => {
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    await hook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined);
+
+    expect(collectFileDiagnostics).toHaveBeenCalledWith(expect.anything(), '/src/foo/util.ts');
+    expect(state.logError).not.toHaveBeenCalled();
+  });
+
+  it('does not type-check the files that are not TypeScript, nor any file in a build', async () => {
+    const devHook = createTransformHook(createState());
+    const buildState = createState();
+    buildState.isBuild = true;
+    const buildHook = createTransformHook(buildState);
+
+    await devHook.call(createPluginContext(), 'export default "";', '/src/foo/foo.ts?raw', undefined);
+    await devHook.call(createPluginContext(), '.a {}', '/src/foo/foo.css', undefined);
+    await buildHook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined);
+
+    expect(collectFileDiagnostics).not.toHaveBeenCalled();
   });
 
   it('returns the code unchanged when no component metadata could be extracted (undefined map)', async () => {
@@ -359,9 +402,9 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], customElements: [], cache: expect.any(Object) });
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], customElements: [], cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count'], ['name']);
   });
 
