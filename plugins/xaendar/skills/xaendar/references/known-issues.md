@@ -2,8 +2,6 @@
 
 Verified bugs and limitations of the framework and its tools (Xaendar 0.12), with workarounds. Check here before assuming generated code or a template is wrong.
 
-## Compiler
-
 ## Build
 
 ### The dev overlay reports handled errors (bug)
