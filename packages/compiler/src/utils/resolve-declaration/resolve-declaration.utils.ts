@@ -90,7 +90,10 @@ export function resolveReference<D extends Declaration>(sourceFile: SourceFile, 
     return resolveLocal(sourceFile, expression.text, finder, context, visitedExports);
   }
 
-  // import * as ns from './base'; class Cmp extends ns.Base {}
+  /* 
+    import * as ns from './base'; 
+    class Cmp extends ns.Base {}
+  */
   if (isPropertyAccessExpression(expression) && isIdentifier(expression.expression)) {
     const importDeclaration = findNamespaceImport(sourceFile, expression.expression.text);
     if (importDeclaration) {
@@ -113,11 +116,17 @@ export function resolveReference<D extends Declaration>(sourceFile: SourceFile, 
  */
 function resolveLocal<D extends Declaration>(sourceFile: SourceFile, localName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
   for (const statement of sourceFile.statements) {
+    // class Base {} / const count = ...
     const declaration = finder.local(statement, localName);
     if (declaration) {
       return { sourceFile, declaration };
     }
 
+    /* 
+      import Base from './base';
+      import { Base } from './base';
+      import { Other as Base } from './base'
+    */
     if (isImportDeclaration(statement)) {
       const importedName = getImportedName(statement, localName);
       if (importedName) {
@@ -137,17 +146,23 @@ function resolveLocal<D extends Declaration>(sourceFile: SourceFile, localName: 
  *   when `localName` isn't imported by `importDeclaration`.
  */
 function getImportedName(importDeclaration: ImportDeclaration, localName: string): string | undefined {
+  // import Base from './base'
   const importClause = importDeclaration.importClause;
   if (importClause?.name?.text === localName) {
     return 'default';
   }
 
+  /* 
+    import { Base } from './base';
+    import { Other as Base } from './base'
+  */
   const namedBindings = importClause?.namedBindings;
   if (namedBindings && isNamedImports(namedBindings)) {
     const element = namedBindings.elements.find(el => el.name.text === localName);
     return element && (element.propertyName ?? element.name).text;
   }
 
+  // import * as ns from './base' (handled by findNamespaceImport) / unrelated import
   return;
 }
 
@@ -179,10 +194,12 @@ function findNamespaceImport(sourceFile: SourceFile, namespace: string): ImportD
  * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
  */
 function resolveImported<D extends Declaration>(sourceFile: SourceFile, moduleSpecifier: Expression, exportedName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
+  // import { Base } from someVariable (not statically resolvable)
   if (!isStringLiteralLike(moduleSpecifier)) {
     return;
   }
 
+  // import { Base } from './base' / from '@scope/pkg' (unresolvable modules and unreadable files yield undefined)
   const { resolvedModule } = resolveModuleName(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, sys);
   const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : undefined;
@@ -210,7 +227,11 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
 
   const wildcardSpecifiers = new Array<Expression>();
   for (const statement of sourceFile.statements) {
-    // export class X {} / export default class X {} / export const x = ...
+    /*
+      export class X {}
+      export default class X {}
+      export const x = ...
+    */
     const declaration = finder.exported(statement, exportedName);
     if (declaration) {
       return { sourceFile, declaration };
@@ -229,7 +250,10 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
         wildcardSpecifiers.push(moduleSpecifier);
       }
 
-      // export { Y as X } from './y' / export { Y as X }
+      /* 
+        export { Y as X } from './y'
+        export { Y as X }
+      */
       if (exportClause && isNamedExports(exportClause)) {
         const element = exportClause.elements.find(el => el.name.text === exportedName);
         if (element) {
@@ -247,6 +271,7 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
     return;
   }
 
+  // export * from './x' (first module exporting the name wins)
   for (const moduleSpecifier of wildcardSpecifiers) {
     const resolved = resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports);
     if (resolved) {
@@ -265,10 +290,12 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
  * @returns `true` if the class is exported under that name.
  */
 function isClassExportedAs(declaration: ClassDeclaration, exportedName: string): boolean {
+  // export default class X {}
   if (exportedName === 'default') {
     return !!declaration.modifiers?.some(modifier => modifier.kind === SyntaxKind.DefaultKeyword);
   }
 
+  // export class X {}
   return declaration.name?.text === exportedName;
 }
 
@@ -285,13 +312,16 @@ function getSourceFile(fileName: string, context: ResolutionContext): SourceFile
   try {
     const { mtimeMs, size } = statSync(fileName);
     const cached = sourceFileCache.get(fileName);
+    // Unchanged file: reuse the cached parse
     if (cached?.modifiedTime === mtimeMs && cached.size === size) {
       sourceFile = cached.sourceFile;
     } else {
+      // New or modified file: parse it again
       sourceFile = createSourceFile(fileName, readFileSync(fileName, 'utf-8'), ScriptTarget.Latest, true);
       sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
     }
   } catch {
+    // Missing or unreadable file
     return undefined;
   }
 

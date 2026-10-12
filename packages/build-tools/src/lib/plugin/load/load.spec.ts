@@ -81,7 +81,7 @@ describe('createLoadHook()', () => {
 
     const result = await load(createState({ [TEMPLATE_PATH]: 'template source' }), ctx, TEMPLATE_MODULE_ID);
 
-    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], cache: { getOrInsert: expect.any(Function), set: registerMetadata } });
+    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], shadowingMembers: [], cache: { getOrInsert: expect.any(Function), set: registerMetadata } });
     expect(result).toEqual({ code: expect.stringContaining('function render() {}\n\nexport { render };'), map: { mappings: '' }, moduleType: 'js' });
     expect(ctx.addWatchFile).toHaveBeenCalledWith(TEMPLATE_PATH);
   });

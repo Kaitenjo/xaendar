@@ -111,6 +111,11 @@ describe('createTemplateModuleSpecifier()', () => {
     expect(createTemplateModuleSpecifier('C:\\src\\foo.xd.component.html', [])).toBe('virtual:xaendar-template:C:/src/foo.xd.component.html?signals=&lang.js');
   });
 
+  it('encodes the sorted shadowing members only when there are any', () => {
+    expect(createTemplateModuleSpecifier('/foo.html', ['count'], ['name', 'Math'])).toBe('virtual:xaendar-template:/foo.html?signals=count&shadowing=Math,name&lang.js');
+    expect(createTemplateModuleSpecifier('/foo.html', ['count'], [])).toBe('virtual:xaendar-template:/foo.html?signals=count&lang.js');
+  });
+
   it('does not mutate the given signals', () => {
     const signals = ['b', 'a'];
     createTemplateModuleSpecifier('/foo.html', signals);
@@ -123,11 +128,15 @@ describe('parseTemplateModuleId()', () => {
   it('decodes the template path and the signals of a resolved template module id', () => {
     const id = `\0${createTemplateModuleSpecifier('/src/foo/foo.xd.component.html', ['$count', 'items'])}`;
 
-    expect(parseTemplateModuleId(id)).toEqual({ templatePath: '/src/foo/foo.xd.component.html', signals: ['$count', 'items'] });
+    expect(parseTemplateModuleId(id)).toEqual({ templatePath: '/src/foo/foo.xd.component.html', signals: ['$count', 'items'], shadowingMembers: [] });
   });
 
   it('decodes an empty signal list', () => {
-    expect(parseTemplateModuleId(`\0${createTemplateModuleSpecifier('/foo.html', [])}`)).toEqual({ templatePath: '/foo.html', signals: [] });
+    expect(parseTemplateModuleId(`\0${createTemplateModuleSpecifier('/foo.html', [])}`)).toEqual({ templatePath: '/foo.html', signals: [], shadowingMembers: [] });
+  });
+
+  it('decodes the shadowing members', () => {
+    expect(parseTemplateModuleId(`\0${createTemplateModuleSpecifier('/foo.html', [], ['name'])}`)).toEqual({ templatePath: '/foo.html', signals: [], shadowingMembers: ['name'] });
   });
 
   it('returns undefined for ids of other modules', () => {

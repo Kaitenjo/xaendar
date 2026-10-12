@@ -11,7 +11,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 describe('TypeChecker', () => {
   it('wraps the generated lines in a typeCheck function and maps them to the template', async () => {
     const template = '@import { A } from \'./a\'\nhello{name}';
-    const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([]);
+    const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([], ['name']);
 
     expect(text).toBe('function typeCheck() {\n  root.name;\n}');
     expect([...mappingTable.keys()]).toEqual([1]);

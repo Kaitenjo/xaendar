@@ -23,7 +23,7 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     ...actual,
     compile: vi.fn(),
     extractComponentsMetadataFromSourceFile: vi.fn(),
-    extractSignalMembers: vi.fn()
+    extractComponentMembers: vi.fn()
   };
 });
 
@@ -77,7 +77,7 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
 }));
 
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
@@ -182,7 +182,7 @@ beforeEach(() => {
   vi.mocked(claimSelectors).mockResolvedValue(undefined);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
-  vi.mocked(extractSignalMembers).mockReturnValue({ members: ['count'], dependencies: [] });
+  vi.mocked(extractComponentMembers).mockReturnValue({ reactiveMembers: ['count'], shadowingMembers: ['name'], dependencies: [] });
   vi.mocked(createTemplateModuleSpecifier).mockReturnValue('template-module');
   vi.mocked(createStyleModuleSpecifier).mockReturnValue('style-module');
   vi.mocked(collectProjectDependencies).mockReturnValue([]);
@@ -359,10 +359,10 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], cache: expect.any(Object) });
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), cache: expect.any(Object) });
-    expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count']);
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], cache: expect.any(Object) });
+    expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count'], ['name']);
   });
 
   it('extracts the metadata of the component and of the imported ones with the project compiler options', async () => {
@@ -382,14 +382,14 @@ describe('createTransformHook()', () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
-    vi.mocked(extractSignalMembers).mockReturnValue({ members: ['count'], dependencies: ['/src/base.ts', '/node_modules/lib/index.d.ts'] });
+    vi.mocked(extractComponentMembers).mockReturnValue({ reactiveMembers: ['count'], shadowingMembers: [], dependencies: ['/src/base.ts', '/node_modules/lib/index.d.ts'] });
     const state = createState();
     const hook = createTransformHook(state);
     const ctx = createPluginContext();
 
     await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
-    expect(extractSignalMembers).toHaveBeenCalledWith(expect.anything(), metadata.typescriptNodes.klass, state.compilerOptions);
+    expect(extractComponentMembers).toHaveBeenCalledWith(expect.anything(), metadata.typescriptNodes.klass, state.compilerOptions);
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/base.ts');
     expect(ctx.addWatchFile).toHaveBeenCalledWith('/node_modules/lib/index.d.ts');
     expect(registerDependency).toHaveBeenCalledWith('/src/base.ts', COMPONENT_PATH);

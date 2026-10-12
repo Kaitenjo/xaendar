@@ -6,5 +6,5 @@ export * from './type-checker/types/type-checker-result.type';
 export * from './types/compiler-cache.type';
 export * from './type-checker/utils/mapping-resolver/mapping-resolver.utils';
 export * from './types';
-export * from './utils/extract-signals/extract-signals.utils';
+export * from './utils/extract-component-members/extract-component-members.utils';
 export * from './utils/metadata/metadata.utils';

@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { CompilerOptions, createSourceFile, forEachChild, isClassDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SignalMembers } from '../../types/signal-members/signal-members.type';
+import type { ComponentMembers } from '../../types/component-members/component-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
-import { clearSignalMembersCache, extractSignalMembers } from './extract-signals.utils';
+import { clearComponentMembersCache, extractComponentMembers } from './extract-component-members.utils';
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
@@ -44,7 +44,7 @@ afterAll(() => {
 });
 
 beforeEach(() => {
-  clearSignalMembersCache();
+  clearComponentMembersCache();
   vi.mocked(readFileSync).mockClear();
 });
 
@@ -74,9 +74,9 @@ const posix = (path: string): string => path.replace(/\\/g, '/');
  * @param source - The TypeScript source declaring a `Cmp` class, extraction is run against it.
  * @param prepare - Callback adding sibling fixture files to the fresh directory.
  * @param compilerOptions - Optional factory of the compiler options to resolve modules with.
- * @returns The extracted signal members and dependencies, plus the fixture directory used.
+ * @returns The extracted component members and dependencies, plus the fixture directory used.
  */
-const extract = (source: string, prepare: (dir: string) => void = () => undefined, compilerOptions?: (dir: string) => CompilerOptions): SignalMembers & { dir: string } => {
+const extract = (source: string, prepare: (dir: string) => void = () => undefined, compilerOptions?: (dir: string) => CompilerOptions): ComponentMembers & { dir: string } => {
   const dir = posix(join(root, `case-${counter++}`));
   mkdirSync(dir, { recursive: true });
   prepare(dir);
@@ -89,7 +89,7 @@ const extract = (source: string, prepare: (dir: string) => void = () => undefine
     }
   });
 
-  return { ...extractSignalMembers(sourceFile, klass, compilerOptions?.(dir)), dir };
+  return { ...extractComponentMembers(sourceFile, klass, compilerOptions?.(dir)), dir };
 };
 
 /**
@@ -99,9 +99,9 @@ const extract = (source: string, prepare: (dir: string) => void = () => undefine
  * @param prepare - Callback adding sibling fixture files to the fresh directory.
  * @returns The extracted signal member names.
  */
-const setup = (source: string, prepare?: (dir: string) => void): readonly string[] => extract(source, prepare).members;
+const setup = (source: string, prepare?: (dir: string) => void): readonly string[] => extract(source, prepare).reactiveMembers;
 
-describe('extractSignalMembers', () => {
+describe('extractComponentMembers', () => {
   describe('own members', () => {
     it('detects members initialised through signal functions and typed as signals', () => {
       const members = setup(`
@@ -229,7 +229,7 @@ describe('extractSignalMembers', () => {
     });
 
     it('reports the files read to resolve the signals', () => {
-      const { members, dependencies, dir } = extract('import { count } from \'./store\';\nclass Cmp { count = count; }', dir => write(join(dir, 'store.ts'), STORE));
+      const { reactiveMembers: members, dependencies, dir } = extract('import { count } from \'./store\';\nclass Cmp { count = count; }', dir => write(join(dir, 'store.ts'), STORE));
 
       expect(members).toEqual(['count']);
       expect(dependencies).toEqual([`${dir}/store.ts`]);
@@ -291,7 +291,7 @@ describe('extractSignalMembers', () => {
         module: ModuleKind.ESNext,
         moduleResolution: ModuleResolutionKind.Bundler,
         paths: { '@lib/*': [`${dir}/lib/*`] }
-      })).members;
+      })).reactiveMembers;
 
       expect(members).toEqual(['x']);
     });
@@ -331,6 +331,30 @@ describe('extractSignalMembers', () => {
         throw new Error('EACCES');
       });
       expect(setup('import { Base } from \'./base\';\nclass Cmp extends Base {}', dir => write(join(dir, 'base.d.ts'), BASE_DTS))).toEqual([]);
+    });
+  });
+
+  describe('shadowing members', () => {
+    it('lists the instance members named like a global identifier along the whole chain, once each', () => {
+      const { shadowingMembers } = extract(`
+        import { Base } from './base';
+        class Cmp extends Base {
+          name = 'cmp';
+          status(): string { return ''; }
+          get length(): number { return 0; }
+          static Math = 1;
+          count = 0;
+        }
+      `, dir => write(join(dir, 'base.d.ts'), 'export declare class Base { name: string; top: number; other: string; }\n'));
+
+      expect(shadowingMembers).toEqual(['name', 'top', 'status', 'length']);
+    });
+
+    it('lists the signal members named like a global identifier too, which are reactive members as well', () => {
+      const { reactiveMembers, shadowingMembers } = extract(`${SIGNALS_IMPORT}class Cmp { name = signal(''); count = signal(0); }`);
+
+      expect(reactiveMembers).toEqual(['name', 'count']);
+      expect(shadowingMembers).toEqual(['name']);
     });
   });
 
@@ -431,7 +455,7 @@ describe('extractSignalMembers', () => {
 
   describe('dependencies and cache', () => {
     it('reports every file read to resolve the inheritance chain, except the component file', () => {
-      const { members, dependencies, dir } = extract(`${SIGNALS_IMPORT}import { Base } from './barrel';\nclass Cmp extends Base {}`, dir => {
+      const { reactiveMembers: members, dependencies, dir } = extract(`${SIGNALS_IMPORT}import { Base } from './barrel';\nclass Cmp extends Base {}`, dir => {
         write(join(dir, 'barrel.d.ts'), 'export * from \'./base\';');
         write(join(dir, 'base.d.ts'), BASE_DTS);
       });
@@ -449,17 +473,17 @@ describe('extractSignalMembers', () => {
       const klass = sourceFile.statements[1] as unknown as ClassDeclarationWithName;
       const baseReads = () => vi.mocked(readFileSync).mock.calls.filter(([path]) => path === basePath).length;
 
-      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x']);
-      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x']);
+      expect(extractComponentMembers(sourceFile, klass).reactiveMembers).toEqual(['x']);
+      expect(extractComponentMembers(sourceFile, klass).reactiveMembers).toEqual(['x']);
       expect(baseReads()).toBe(1);
 
       write(basePath, BASE_DTS.replace('y: string', 'y: Signal<string>'));
       utimesSync(basePath, new Date(), new Date(Date.now() + 10_000));
-      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x', 'y']);
+      expect(extractComponentMembers(sourceFile, klass).reactiveMembers).toEqual(['x', 'y']);
       expect(baseReads()).toBe(2);
 
-      clearSignalMembersCache();
-      expect(extractSignalMembers(sourceFile, klass).members).toEqual(['x', 'y']);
+      clearComponentMembersCache();
+      expect(extractComponentMembers(sourceFile, klass).reactiveMembers).toEqual(['x', 'y']);
       expect(baseReads()).toBe(3);
     });
   });

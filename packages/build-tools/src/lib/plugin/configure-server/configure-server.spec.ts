@@ -13,7 +13,7 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/compiler')>();
   return {
     ...actual,
-    clearSignalMembersCache: vi.fn()
+    clearComponentMembersCache: vi.fn()
   };
 });
 
@@ -37,7 +37,7 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   clearTemplateRegistry: vi.fn()
 }));
 
-import { clearSignalMembersCache } from '@xaendar/compiler';
+import { clearComponentMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
 import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
@@ -107,7 +107,7 @@ describe('createConfigureServerHook()', () => {
     expect(clearImportRegistry).toHaveBeenCalledTimes(1);
     expect(clearMetadataRegistry).toHaveBeenCalledTimes(1);
     expect(clearDependencyRegistry).toHaveBeenCalledTimes(1);
-    expect(clearSignalMembersCache).toHaveBeenCalledTimes(1);
+    expect(clearComponentMembersCache).toHaveBeenCalledTimes(1);
     expect(disposeLanguageService).toHaveBeenCalledTimes(1);
     expect(state.setLogger).toHaveBeenLastCalledWith(undefined);
   });

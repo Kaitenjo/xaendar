@@ -48,6 +48,12 @@ export type CompileOptions = {
    */
   signals?: string[];
   /**
+   * Names of the component class members (inherited ones included) named like a global
+   * identifier, as listed by `extractComponentMembers`: the template reads them from the
+   * component, not from the global scope. Defaults to none.
+   */
+  shadowingMembers?: readonly string[];
+  /**
    * Optional caching layer for component and directive metadata.
    *
    * Improves compilation performance by caching extracted metadata,

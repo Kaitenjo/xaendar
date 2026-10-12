@@ -10,4 +10,8 @@ export type TemplateModuleRequest = {
    * Signal members of the component classes sharing this template module.
    */
   readonly signals: string[];
+  /**
+   * Members of the component classes sharing this template module named like a global identifier.
+   */
+  readonly shadowingMembers: string[];
 };

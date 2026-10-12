@@ -4,6 +4,7 @@ import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 import { Dictionary } from '@xaendar/types';
+import globals from 'globals';
 
 /**
  * Complete set of JavaScript global identifiers up to ES2026.
@@ -20,208 +21,10 @@ import { Dictionary } from '@xaendar/types';
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
  */
-export const GLOBAL_IDENTIFIERS: ReadonlySet<string> = new Set([
-  // ---- Value properties ------------------------------------------------
-  // true, false, null are SyntaxKind keywords — not needed here.
-  'undefined',
-  'NaN',
-  'Infinity',
-  'globalThis',
-
-  // ---- Global functions ------------------------------------------------
-  'eval',
-  'isFinite',
-  'isNaN',
-  'parseFloat',
-  'parseInt',
-  'decodeURI',
-  'decodeURIComponent',
-  'encodeURI',
-  'encodeURIComponent',
-  // Deprecated but still Identifiers in TS
-  'escape',
-  'unescape',
-
-  // ---- Fundamental objects ---------------------------------------------
-  'Object',
-  'Function',
-  'Boolean',
-  'Symbol',
-
-  // ---- Error objects ---------------------------------------------------
-  'Error',
-  'AggregateError',
-  'EvalError',
-  'RangeError',
-  'ReferenceError',
-  'SyntaxError',
-  'TypeError',
-  'URIError',
-  'SuppressedError',       // ES2026 — explicit resource management
-  'InternalError',         // Non-standard (Firefox) but common
-
-  // ---- Numbers and dates -----------------------------------------------
-  'Number',
-  'BigInt',
-  'Math',
-  'Date',
-  'Temporal',              // ES2026 — replaces Date
-
-  // ---- Text processing -------------------------------------------------
-  'String',
-  'RegExp',
-
-  // ---- Indexed collections ---------------------------------------------
-  'Array',
-  'TypedArray',
-  'Int8Array',
-  'Uint8Array',
-  'Uint8ClampedArray',
-  'Int16Array',
-  'Uint16Array',
-  'Int32Array',
-  'Uint32Array',
-  'BigInt64Array',
-  'BigUint64Array',
-  'Float16Array',          // ES2025
-  'Float32Array',
-  'Float64Array',
-
-  // ---- Keyed collections -----------------------------------------------
-  'Map',
-  'Set',
-  'WeakMap',
-  'WeakSet',
-
-  // ---- Structured data -------------------------------------------------
-  'ArrayBuffer',
-  'SharedArrayBuffer',
-  'DataView',
-  'Atomics',
-  'JSON',
-
-  // ---- Memory management -----------------------------------------------
-  'WeakRef',
-  'FinalizationRegistry',
-
-  // ---- Control abstractions --------------------------------------------
-  'Iterator',              // ES2025
-  'AsyncIterator',         // ES2025
-  'Promise',
-  'GeneratorFunction',
-  'AsyncGeneratorFunction',
-  'Generator',
-  'AsyncGenerator',
-  'AsyncFunction',
-  'DisposableStack',       // ES2026 — explicit resource management
-  'AsyncDisposableStack',  // ES2026 — explicit resource management
-
-  // ---- Reflection ------------------------------------------------------
-  'Reflect',
-  'Proxy',
-
-  // ---- Internationalization --------------------------------------------
-  'Intl',
-
-  // ---- WebAssembly -----------------------------------------------------
-  'WebAssembly',
-
-  // ---- Browser / DOM globals -------------------------------------------
-  // These are not part of the ECMAScript spec but are universally available
-  // in browser environments and must not be treated as component properties.
-  'window',
-  'document',
-  'navigator',
-  'location',
-  'history',
-  'screen',
-  'console',
-  'performance',
-  'crypto',
-  'fetch',
-  'alert',
-  'confirm',
-  'prompt',
-  'setTimeout',
-  'setInterval',
-  'clearTimeout',
-  'clearInterval',
-  'requestAnimationFrame',
-  'cancelAnimationFrame',
-  'queueMicrotask',
-  'structuredClone',
-  'URL',
-  'URLSearchParams',
-  'FormData',
-  'Headers',
-  'Request',
-  'Response',
-  'AbortController',
-  'AbortSignal',
-  'CustomEvent',
-  'Event',
-  'EventTarget',
-  'MutationObserver',
-  'IntersectionObserver',
-  'ResizeObserver',
-  'PerformanceObserver',
-  'Worker',
-  'SharedWorker',
-  'ServiceWorker',
-  'Blob',
-  'File',
-  'FileReader',
-  'ReadableStream',
-  'WritableStream',
-  'TransformStream',
-  'TextEncoder',
-  'TextDecoder',
-  'ImageData',
-  'Canvas',
-  'Storage',
-  'localStorage',
-  'sessionStorage',
-  'indexedDB',
-  'WebSocket',
-  'XMLHttpRequest',
-
-  // ---- DOM element constructors ----------------------------------------
-  // Commonly used with instanceof in template expressions.
-  'HTMLElement',
-  'HTMLInputElement',
-  'HTMLButtonElement',
-  'HTMLFormElement',
-  'HTMLAnchorElement',
-  'HTMLImageElement',
-  'HTMLVideoElement',
-  'HTMLAudioElement',
-  'HTMLCanvasElement',
-  'HTMLSelectElement',
-  'HTMLTextAreaElement',
-  'HTMLDivElement',
-  'HTMLSpanElement',
-  'HTMLParagraphElement',
-  'HTMLHeadingElement',
-  'HTMLTableElement',
-  'HTMLTableRowElement',
-  'HTMLTableCellElement',
-  'HTMLUListElement',
-  'HTMLOListElement',
-  'HTMLLIElement',
-  'HTMLLabelElement',
-  'HTMLDialogElement',
-  'HTMLDetailsElement',
-  'HTMLSlotElement',
-  'HTMLTemplateElement',
-  'SVGElement',
-  'SVGSVGElement',
-  'Element',
-  'Node',
-  'NodeList',
-  'DocumentFragment',
-  'ShadowRoot',
-  'Document',
-  'Window',
+export const GLOBAL_IDENTIFIERS = new Set([
+  ...Object.keys(globals.browser),
+  ...Object.keys(globals.builtin),
+  ...Object.getOwnPropertyNames(Object.prototype),
 ]);
 
 export const ROOT_NODE = 'root';
@@ -286,7 +89,7 @@ export function resolveExpression(expression: Expression, compilerContext: Compi
 
 function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
   // Leaf Identifier that needs resolution
-  if (isIdentifier(node) && needsResolution(node, parent)) {
+  if (isIdentifier(node) && needsResolution(node, parent, compilerContext)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, compilerContext, options);
 
@@ -297,7 +100,7 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
   }
 
   // No resolvable identifiers in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent)) {
+  if (!containsResolvableIdentifier(node, parent, compilerContext)) {
     return { expression: node.getText() };
   }
 
@@ -360,8 +163,8 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
  *
  * Short-circuits as soon as one is found to avoid visiting the whole tree.
  */
-function containsResolvableIdentifier(node: Node, parent: Node): boolean {
-  if (isIdentifier(node) && needsResolution(node, parent)) {
+function containsResolvableIdentifier(node: Node, parent: Node, compilerContext: CompilerContext): boolean {
+  if (isIdentifier(node) && needsResolution(node, parent, compilerContext)) {
     return true;
   }
 
@@ -369,7 +172,7 @@ function containsResolvableIdentifier(node: Node, parent: Node): boolean {
 
   forEachChild(node, child => {
     if (!found) {
-      found = containsResolvableIdentifier(child, node);
+      found = containsResolvableIdentifier(child, node, compilerContext);
     }
   });
 
@@ -378,15 +181,23 @@ function containsResolvableIdentifier(node: Node, parent: Node): boolean {
 
 /**
  * Returns true if the identifier needs to be resolved against the context
- * or prefixed with `this.` — i.e. it is not a global/builtin identifier
- * and not the property-name side of a member access expression.
+ * or prefixed with `this.` — i.e. it is not the property-name side of a member
+ * access expression, and it is not a global/builtin identifier. A local identifier
+ * (class member, inherited ones included, or template variable) named like a global
+ * shadows it: the global stays reachable as `window.name` or `globalThis.name`.
  */
-function needsResolution(node: Identifier, parent: Node): boolean {
+function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext): boolean {
+  const { text } = node;
+  const isLocal = compilerContext.hasSignalField(text)
+    || compilerContext.hasShadowingMember(text)
+    || compilerContext.hasUnresolvableIdentifier(text)
+    || compilerContext.hasIdentifier(text);
+
   return !(
     (isPropertyAccessExpression(parent) && parent.name === node)  // obj.prop -> prop should not be resolved
     || (isPropertyAssignment(parent) && parent.name === node) // { key: value } -> key should not be resolved
-    || GLOBAL_IDENTIFIERS.has(node.text)
-    || !node.text
+    || (GLOBAL_IDENTIFIERS.has(text) && !isLocal) // a local identifier shadows the global one
+    || !text
   );
 }
 

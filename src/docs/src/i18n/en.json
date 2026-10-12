@@ -1383,14 +1383,10 @@
         "edgeCases": {
           "title": "Edge cases",
           "callout1": {
-            "heading": "Members named location or history",
-            "body": "In a template, <code>location</code> and <code>history</code> are the globals of the browser, even when the component has members with those names, as shown in <a href=\"#/en/templates/expressions\">Expressions</a>. Pick other names for the members of a router, such as <code>path</code> and <code>visited</code>."
-          },
-          "callout2": {
             "heading": "Pages loaded on demand",
             "body": "A page component imported lazily must be defined before the template using it is rendered: one rendered earlier receives its inputs as plain attributes. See <a href=\"#/en/components/registration\">Selectors and registration</a>."
           },
-          "callout3": {
+          "callout2": {
             "heading": "State that survives navigation",
             "body": "The <code>@switch</code> destroys the page it leaves. State that has to outlive a page, such as a filter or a draft, belongs in a module, like the router itself."
           }
@@ -2034,7 +2030,7 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "Members named like globals",
-          "p1": "A member named <code>history</code> or <code>location</code> is hidden by the global of the browser with the same name: the template shows <code>window.history</code> and the address of the page. Other names of globals, such as <code>name</code> or <code>status</code>, are not affected. Rename the members. This is listed in <a href=\"#/en/reference/known-issues\">Known issues</a>.",
+          "p1": "A member named like a global, such as <code>history</code>, <code>location</code> or <code>name</code>, hides the global in the template: <code>{ location }</code> reads the member. To read the global, write <code>window.location</code> or <code>globalThis.location</code>. Inherited members hide globals the same way.",
           "callout1": {
             "heading": "Strict checks from tsconfig.json",
             "p1": "The template is checked with the strict options of the project. With <code>noUncheckedIndexedAccess</code>, a property of a <code>Record</code> may be undefined; a <code>readonly</code> member has the literal type of its value, so comparing it with another literal is flagged. The messages show the member with a <code>root.</code> prefix."
@@ -2839,11 +2835,6 @@
     }
   },
   "issues": {
-    "members-named-history-or-location": {
-      "title": "Members named history or location",
-      "details": "In a template, these names resolve to the globals of the browser, even when the component declares them.",
-      "workaround": "Pick other names."
-    },
     "output-without-a-type-no-event": {
       "title": "Output without a type: no $event",
       "details": "The listener of an Output with no type argument cannot use $event, so it cannot cancel or inspect the event.",

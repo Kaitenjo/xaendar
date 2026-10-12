@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### Members named history or location (limitation)
-
-In a template, these names resolve to the globals of the browser, even when the component declares them.
-
-**Workaround:** Pick other names.
-
 ### Output without a type: no $event (limitation)
 
 The listener of an Output with no type argument cannot use $event, so it cannot cancel or inspect the event.

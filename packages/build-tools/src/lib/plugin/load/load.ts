@@ -68,7 +68,7 @@ function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string
  * @returns A promise resolving to the module representing the compiled template, or an error if compilation fails.
  */
 async function loadTemplateModule(context: ThisParameterType<LoadHook>, request: TemplateModuleRequest): Promise<ReturnType<LoadHook>> {
-   const { templatePath, signals } = request;
+   const { templatePath, signals, shadowingMembers } = request;
 
     /*
       Watching the template, and the components it imports whose metadata shape the generated bindings,
@@ -96,6 +96,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
     try {
       compiledFunctions = await compile(templateSource, {
         signals,
+        shadowingMembers,
         cache: {
           getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
           set: registerMetadata

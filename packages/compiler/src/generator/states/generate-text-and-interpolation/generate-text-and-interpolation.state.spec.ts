@@ -16,8 +16,8 @@ describe('generateTextAndInterpolation', () => {
   });
 
   it('generates an interpolation node', async () => {
-    expect(await generateTextAndInterpolation(parse('{name}'), 'root', '0', new CompilerContext(), 'anchor')).toEqual({
-      code: ['_renderText(root, context, () => this.name, anchor);']
+    expect(await generateTextAndInterpolation(parse('{heading}'), 'root', '0', new CompilerContext(), 'anchor')).toEqual({
+      code: ['_renderText(root, context, () => this.heading, anchor);']
     });
   });
 });

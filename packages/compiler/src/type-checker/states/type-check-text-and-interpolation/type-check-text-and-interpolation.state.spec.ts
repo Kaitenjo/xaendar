@@ -14,8 +14,8 @@ describe('typeCheckTextAndInterpolation', () => {
   });
 
   it('emits the interpolation expression as a mapped statement', () => {
-    const [line] = typeCheckTextAndInterpolation(parse('{name}'), () => [], new TypeCheckContext());
-    expect(line.text).toBe('root.name;');
+    const [line] = typeCheckTextAndInterpolation(parse('{heading}'), () => [], new TypeCheckContext());
+    expect(line.text).toBe('root.heading;');
     expect(line.mappings).toHaveLength(1);
   });
 });

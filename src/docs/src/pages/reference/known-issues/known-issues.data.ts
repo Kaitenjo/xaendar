@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'members-named-history-or-location',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'templates/expressions'
-  },
-  {
     id: 'output-without-a-type-no-event',
     area: 'Compiler',
     kind: 'limitation',

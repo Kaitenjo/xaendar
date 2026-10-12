@@ -1,5 +1,6 @@
-import { ClassElement, EntityName, Expression, Identifier, Node, PropertyDeclaration, SourceFile, Statement, SyntaxKind, VariableDeclaration, forEachChild, isCallExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
-import type { SignalMembers } from '../../types/signal-members/signal-members.type';
+import { ClassElement, EntityName, Expression, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, VariableDeclaration, forEachChild, getCombinedModifierFlags, isCallExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
+import { GLOBAL_IDENTIFIERS } from '../../generator/utils/generator/generator.utils';
+import type { ComponentMembers } from '../../types/component-members/component-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
 import { DEFAULT_COMPILER_OPTIONS, clearSourceFileCache, resolveBaseClass, resolveReference } from '../resolve-declaration/resolve-declaration.utils';
 import type { DeclarationFinder } from '../resolve-declaration/types/declaration-finder.type';
@@ -23,10 +24,11 @@ const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
 };
 
 /**
- * Statically resolves which class members of a component (including those
+ * Statically resolves the class members of a component (including those
  * inherited from a base class — possibly from a pre-compiled library with
- * only `.d.ts` available) are backed by a signal, without any
- * type-checker/`Program`.
+ * only `.d.ts` available) that change how its template is compiled, without any
+ * type-checker/`Program`: those backed by a signal or reading one, and those
+ * named like a global identifier, which they shadow in the template.
  *
  * Walks the `extends` chain: a base class can be declared in the same file,
  * or imported (also through a namespace import, e.g. `extends ns.Base`) from
@@ -57,9 +59,10 @@ const VARIABLE_FINDER: DeclarationFinder<VariableDeclaration> = {
  * @param classDeclaration - Declaration of the class to be compiled.
  * @param compilerOptions - Project compiler options, driving how the modules
  *   declaring the base classes are resolved (e.g. `paths` aliases).
- * @returns The signal members and the reactive methods, each listed once, and the files read to resolve them.
+ * @returns The reactive members (signal members and reactive methods) and the members shadowing a global,
+ *   each listed once, and the files read to resolve them.
  */
-export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: ClassDeclarationWithName, compilerOptions = DEFAULT_COMPILER_OPTIONS): SignalMembers {
+export function extractComponentMembers(sourceFile: SourceFile, classDeclaration: ClassDeclarationWithName, compilerOptions = DEFAULT_COMPILER_OPTIONS): ComponentMembers {
   const context: ResolutionContext = {
     compilerOptions,
     dependencies: new Set(),
@@ -68,8 +71,23 @@ export function extractSignalMembers(sourceFile: SourceFile, classDeclaration: C
 
   const chain = collectClassChain({ sourceFile, declaration: classDeclaration }, context);
   const signals = collectSignalMembers(chain, context);
-  const members = [...signals, ...collectReactiveMethods(chain, new Set(signals), context)];
-  return { members, dependencies: [...context.dependencies] };
+  const reactiveMembers = [...signals, ...collectReactiveMethods(chain, new Set(signals), context)];
+  return { reactiveMembers, shadowingMembers: collectShadowingMembers(chain), dependencies: [...context.dependencies] };
+}
+
+/**
+ * Collects the instance members of an inheritance chain named like a global identifier: a template
+ * reading one of those names reads the member, not the global.
+ *
+ * @param chain - The inheritance chain, the farthest base class first.
+ * @returns The names of the members, each listed once, inherited ones first.
+ */
+function collectShadowingMembers(chain: readonly ResolvedClass[]): string[] {
+  const members = chain.flatMap(({ declaration }) => declaration.members.flatMap(member => {
+    const isStatic = !!(getCombinedModifierFlags(member) & ModifierFlags.Static);
+    return isNamedMember(member) && !isStatic && GLOBAL_IDENTIFIERS.has(member.name.text) ? [member.name.text] : [];
+  }));
+  return [...new Set(members)];
 }
 
 /**
@@ -411,6 +429,6 @@ function resolvesEntityNameToSignalBinding(entityName: EntityName, bindings: Sig
 /**
  * Clears the cache of the parsed ancestor files, e.g. on dev server shutdown.
  */
-export function clearSignalMembersCache(): void {
+export function clearComponentMembersCache(): void {
   clearSourceFileCache();
 }

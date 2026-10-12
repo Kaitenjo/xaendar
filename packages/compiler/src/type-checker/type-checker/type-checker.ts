@@ -72,12 +72,16 @@ export class TypeChecker {
    * `HTMLElementEventMap['click']` or, inside an `<svg>`, `SVGElementEventMap['click']`.
    *
    * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
+   * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  public async generate(metadatas: ComponentOrDirectiveMetadata[]): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = []): Promise<TypeCheckResult> {
     try {
       this._context.addImport(...metadatas);
+      for (const member of shadowingMembers) {
+        this._context.addShadowingMember(member);
+      }
       const body = this._ast.flatMap(node => this._processNode(node, this._context));
 
       const lines: Line[] = [

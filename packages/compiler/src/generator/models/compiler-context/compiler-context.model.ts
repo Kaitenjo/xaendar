@@ -29,6 +29,11 @@ export class CompilerContext {
    */
   private readonly _componentSignalsFields = new Set<string>();
   /**
+   * Members of the class (and of its base classes) associated to the template named like
+   * a global identifier, which they shadow in the template (e.g. a `name` field)
+   */
+  private readonly _componentShadowingMembers = new Set<string>();
+  /**
    * Identifiers declared directly in this scope, mapped to whether they
    * hold a plain value or a signal (e.g. the item of a `@for` and its implicit
    * variables like `$index` are signals).
@@ -103,6 +108,15 @@ export class CompilerContext {
   }
 
   /**
+   * Registers a class member named like a global identifier, which it shadows in the template.
+   *
+   * @param name - The name of the member.
+   */
+  public addShadowingMember(name: string): void {
+    this._componentShadowingMembers.add(name);
+  }
+
+  /**
    * Removes a previously registered identifier from this scope, if present.
    * Does nothing if no identifier with the given name is declared in this scope.
    * Note: this only affects the current scope, not any ancestor scopes.
@@ -155,6 +169,17 @@ export class CompilerContext {
    */
   public hasSignalField(name: string): boolean {
     return this._componentSignalsFields.has(name) || (this.parent?.hasSignalField(name) ?? false);
+  }
+
+  /**
+   * Returns `true` if a class member named like a global identifier is registered in this
+   * scope or any of its ancestor scopes.
+   *
+   * @param name - The member name to look up.
+   * @returns `true` if the member exists in the scope chain, `false` otherwise.
+   */
+  public hasShadowingMember(name: string): boolean {
+    return this._componentShadowingMembers.has(name) || (this.parent?.hasShadowingMember(name) ?? false);
   }
 
   /**

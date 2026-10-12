@@ -1,7 +1,7 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 
 /**
- * Members named like globals of the browser: two of them are hidden by the global.
+ * Members named like globals of the browser: each one hides the global in the template.
  */
 @WebComponent({
   selector: 'ex-shadowed-globals',

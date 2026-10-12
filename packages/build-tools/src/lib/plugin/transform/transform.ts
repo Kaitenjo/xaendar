@@ -1,5 +1,5 @@
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile, extractSignalMembers, SignalMembers, TypeCheckResult } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
 
 /**
  * Vite plugin `transform` hook: for every Xaendar component declared in a `.xd.component.ts`
- * file, resolves its template and style files, extracts its signal members, type-checks the
+ * file, resolves its template and style files, extracts its component members, type-checks the
  * template against the component class, and injects the render function/stylesheet imports and
  * registration into the transpiled output.
  *
@@ -129,17 +129,18 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         styleModuleSpecifier = createStyleModuleSpecifier(stylePath);
       }
 
-      let signals: SignalMembers;
+      let componentMembers: ComponentMembers;
       let typecheckBody: TypeCheckResult;
 
       try {
-        signals = extractSignalMembers(tsSource, metadata.typescriptNodes.klass, state.compilerOptions);
+        componentMembers = extractComponentMembers(tsSource, metadata.typescriptNodes.klass, state.compilerOptions);
         /*
           Only the type-check is performed here, as it depends on the component class.
           The render function is compiled once per template in its own module (see the load hook).
         */
         typecheckBody = await compile(templateSource, {
           baseDir: dirname(templatePath),
+          shadowingMembers: componentMembers.shadowingMembers,
           cache: {
             getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
             set: registerMetadata
@@ -151,17 +152,17 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       /*
-        The signal members also depend on the classes the component inherits from: watching their files
+        The component members also depend on the classes the component inherits from: watching their files
         re-runs the transform in build watch mode, while the registry lets the hotUpdate hook fully
         invalidate the component in dev mode, where a statically imported file is only soft-invalidated.
       */
-      for (const dependency of signals.dependencies) {
+      for (const dependency of componentMembers.dependencies) {
         this.addWatchFile(dependency);
         registerDependency(dependency, componentPath);
       }
 
       try {
-        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, signals.members), styleModuleSpecifier);
+        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, componentMembers.reactiveMembers, componentMembers.shadowingMembers), styleModuleSpecifier);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return fail();

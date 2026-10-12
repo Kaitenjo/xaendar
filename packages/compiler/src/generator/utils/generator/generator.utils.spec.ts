@@ -23,6 +23,22 @@ describe('resolveExpression', () => {
     expect(resolve('items', new CompilerContext(), { skipResolution: true })).toEqual({ expression: 'items' });
   });
 
+  it('resolves a local identifier named like a global to the local value, keeping window and globalThis for the global', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('Math');
+    expect(resolve('Math', context)).toEqual({ expression: 'this.Math', reactive: true });
+    expect(resolve('window.Math.PI + globalThis.Math.E', context)).toEqual({ expression: 'window.Math.PI + globalThis.Math.E' });
+  });
+
+  it('resolves a non-signal class member named like a global through the resolver', () => {
+    const context = new CompilerContext();
+    context.addShadowingMember('name');
+    expect(resolve('name', context)).toEqual({ expression: 'this.name' });
+    expect(resolve('name', context, { resolver: 'root' })).toEqual({ expression: 'root.name' });
+    expect(resolve('window.name', context)).toEqual({ expression: 'window.name' });
+    expect(resolve('name', new CompilerContext(new CompilerContext()))).toEqual({ expression: 'name' });
+  });
+
   it('resolves signal class fields as reactive this-members', () => {
     const context = new CompilerContext();
     context.addSignalClassField('count');

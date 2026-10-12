@@ -57,25 +57,29 @@ export function stripCssComments(css: string): string {
  * are signal members of the component class, so both are encoded in the specifier: components
  * sharing the same template and signals import the very same module, which is therefore
  * compiled and bundled only once. Signals are sorted so their declaration order doesn't matter.
+ * The class members named like a global identifier change the compiled code as well, so they are
+ * encoded too, sorted, only when there are any.
  *
  * The trailing `lang.js` query flag makes the id look like a JavaScript request to the
  * extension-based checks of the dev server (same convention used by Vue SFC sub-modules).
  *
  * @param templatePath - Absolute path of the template file.
  * @param signals - Signal members of the component class.
+ * @param shadowingMembers - Members of the component class named like a global identifier.
  * @returns The import specifier, resolved by the plugin `resolveId` hook.
  */
-export function createTemplateModuleSpecifier(templatePath: string, signals: readonly string[]): string {
+export function createTemplateModuleSpecifier(templatePath: string, signals: readonly string[], shadowingMembers: readonly string[] = []): string {
   const path = toPosixPath(templatePath);
-  const encodedSignals = [...signals].sort().map(encodeURIComponent).join(',');
-  return `${TEMPLATE_MODULE_PREFIX}${path}?signals=${encodedSignals}&lang.js`;
+  const encode = (names: readonly string[]) => [...names].sort().map(encodeURIComponent).join(',');
+  const shadowing = shadowingMembers.length ? `&shadowing=${encode(shadowingMembers)}` : '';
+  return `${TEMPLATE_MODULE_PREFIX}${path}?signals=${encode(signals)}${shadowing}&lang.js`;
 }
 
 /**
  * Decodes the resolved id of a template module built from {@link createTemplateModuleSpecifier}.
  *
  * @param id - The resolved module id.
- * @returns The template path and signals encoded in the id, or `undefined` if `id`
+ * @returns The template path, signals and shadowing members encoded in the id, or `undefined` if `id`
  *   doesn't identify a template module.
  */
 export function parseTemplateModuleId(id: string): TemplateModuleRequest | undefined {
@@ -84,11 +88,15 @@ export function parseTemplateModuleId(id: string): TemplateModuleRequest | undef
     return undefined;
   }
 
-  const signals = new URLSearchParams(slice(id, queryIndex + 1)).get('signals');
+  const query = new URLSearchParams(slice(id, queryIndex + 1));
+  const signals = query.get('signals');
+  const shadowingMembers = query.get('shadowing');
   return {
     templatePath: slice(id, RESOLVED_TEMPLATE_MODULE_PREFIX.length, queryIndex),
     // An empty list is encoded as `signals=`, which `split` would turn into `['']`
-    signals: signals ? signals.split(',') : []
+    signals: signals ? signals.split(',') : [],
+    // Omitted from the id when there are none
+    shadowingMembers: shadowingMembers ? shadowingMembers.split(',') : []
   };
 }
 

@@ -1,4 +1,4 @@
-import { clearSignalMembersCache } from '@xaendar/compiler';
+import { clearComponentMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
 import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
@@ -25,7 +25,7 @@ export function createConfigureServerHook(state: XaendarPluginState): NonNullabl
       clearImportRegistry();
       clearMetadataRegistry();
       clearDependencyRegistry();
-      clearSignalMembersCache();
+      clearComponentMembersCache();
       disposeLanguageService();
       state.setLogger(undefined);
     });

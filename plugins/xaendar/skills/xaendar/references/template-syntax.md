@@ -164,7 +164,7 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 ```
 
 - Members used by the template must be `public`. Module constants must be exposed as members (`public readonly limit = LIMIT;`).
-- `history` and `location` always resolve to the browser globals.
+- A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 
 ## What does not exist
 

@@ -36,12 +36,12 @@ describe('generateElement', () => {
   it('generates literal, expression and reactive attributes', async () => {
     const context = new CompilerContext();
     context.addSignalClassField('count');
-    const { code } = await run('<div class="a" title="{name}" id="{count}"></div>', context);
+    const { code } = await run('<div class="a" title="{heading}" id="{count}"></div>', context);
     const output = code.join('\n');
 
     expect(output).toContain('value: \'a\',');
     expect(output).toContain('setter: _setProperty');
-    expect(output).toContain('value: () => this.name,');
+    expect(output).toContain('value: () => this.heading,');
     expect(output).toContain('setter: _setExpressionProperty');
     expect(output).toContain('setter: _setReactiveProperty');
   });

@@ -21,6 +21,12 @@ describe('Generator', () => {
     ].join('\n'));
   });
 
+  it('reads the class members named like a global from the component', async () => {
+    const template = '{name}';
+    const code = await new Generator(template, parse(template)).generate([], ['name']);
+    expect(code).toContain('() => this.name');
+  });
+
   it('generates the helper functions for nested nodes', async () => {
     const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i) { <li></li> }');
 

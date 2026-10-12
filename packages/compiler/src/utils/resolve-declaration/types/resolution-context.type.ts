@@ -1,7 +1,7 @@
 import type { ClassDeclaration, CompilerOptions } from 'typescript';
 
 /**
- * State shared by every step of a single resolution, e.g. of the whole inheritance chain walked by `extractSignalMembers`.
+ * State shared by every step of a single resolution, e.g. of the whole inheritance chain walked by `extractComponentMembers`.
  */
 export type ResolutionContext = {
   /**

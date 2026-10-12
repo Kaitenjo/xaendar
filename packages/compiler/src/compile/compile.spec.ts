@@ -20,9 +20,9 @@ describe('compile', () => {
 
   it('generates only the type-check result when signals are not provided', async () => {
     const cache = createCache();
-    const result = await compile('@import { A, default } from \'./a\'\n{name}', { baseDir: '/base', cache });
+    const result = await compile('@import { A, default } from \'./a\'\n{heading}', { baseDir: '/base', cache });
 
-    expect(result).toMatchObject({ text: 'function typeCheck() {\n  root.name;\n}' });
+    expect(result).toMatchObject({ text: 'function typeCheck() {\n  root.heading;\n}' });
     expect(cache.getOrInsert).toHaveBeenCalledWith('A', ['/base', './a']);
     expect(cache.getOrInsert).toHaveBeenCalledWith('default', ['/base', './a']);
   });
@@ -78,7 +78,7 @@ describe('compile', () => {
   });
 
   it('compiles a tag spanning multiple lines exactly like the same tag on a single line', async () => {
-    const lines = ['<div', 'class="a"', 'title="{name}"', '(click)="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
+    const lines = ['<div', 'class="a"', 'title="{heading}"', '(click)="onClick($event)"', '@if (dark) {', 'hidden', '} @else {', 'id="light"', '}', '>{count}</div>'];
     const compileBoth = (template: string) => compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
     const singleLine = await compileBoth(lines.join(' '));
     const multiLine = await compileBoth(lines.join('\r\n\t'));

@@ -45,11 +45,11 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks expression attributes and event handlers, declaring $event with the type of the native event in the block of the handler', () => {
-      const template = '<div title="{name}" (click)="f($event, b)"></div>';
+      const template = '<div title="{heading}" (click)="f($event, b)"></div>';
       const lines = run(template);
 
       expect(text(lines)).toEqual([
-        'root.name;',
+        'root.heading;',
         '{',
         '  let $event!: HTMLElementEventMap[\'click\'];',
         '  root.f($event, root.b);',
@@ -86,11 +86,11 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks conditional bindings as nested if blocks', () => {
-      const lines = run('<div @if (cond()) { title="{name}" (click)="f($event)" @if (inner) { id="{b}" } }></div>');
+      const lines = run('<div @if (cond()) { title="{heading}" (click)="f($event)" @if (inner) { id="{b}" } }></div>');
 
       expect(text(lines)).toEqual([
         'if (root.cond()) {',
-        '  root.name;',
+        '  root.heading;',
         '  {',
         '    let $event!: HTMLElementEventMap[\'click\'];',
         '    root.f($event);',
@@ -208,11 +208,11 @@ describe('typeCheckElement', () => {
     };
 
     it('type-checks literal and expression bindings, ignoring unknown attributes', () => {
-      const lines = run('<my-el title="{name}" label="x" other="y"></my-el>', metadata(properties));
+      const lines = run('<my-el title="{heading}" label="x" other="y"></my-el>', metadata(properties));
 
       expect(text(lines)).toEqual([
         '{',
-        '  (root.name) satisfies string;',
+        '  (root.heading) satisfies string;',
         '}',
         '{',
         '  let x!: string;',
@@ -258,12 +258,12 @@ describe('typeCheckElement', () => {
 
     it('type-checks inputs and outputs inside conditional bindings', () => {
       const component = metadata(properties, { done: 'number' });
-      const lines = run('<my-el @if (cond) { title="{name}" (done)="f($event)" @if (inner) { label="x" } } @else { label="{other}" }></my-el>', component);
+      const lines = run('<my-el @if (cond) { title="{heading}" (done)="f($event)" @if (inner) { label="x" } } @else { label="{other}" }></my-el>', component);
 
       expect(text(lines)).toEqual([
         'if (root.cond) {',
         '  {',
-        '    (root.name) satisfies string;',
+        '    (root.heading) satisfies string;',
         '  }',
         '  {',
         '    let $event!: CustomEvent<number>;',
@@ -286,13 +286,13 @@ describe('typeCheckElement', () => {
 
     it('type-checks inputs and outputs inside the branches of a @switch', () => {
       const component = metadata(properties, { done: 'void' });
-      const lines = run('<my-el @switch (mode) { @case (1) { title="{name}" } @default { (done)="f()" } }></my-el>', component);
+      const lines = run('<my-el @switch (mode) { @case (1) { title="{heading}" } @default { (done)="f()" } }></my-el>', component);
 
       expect(text(lines)).toEqual([
         'switch (root.mode) {',
         '  case 1:',
         '    {',
-        '      (root.name) satisfies string;',
+        '      (root.heading) satisfies string;',
         '    }',
         '    break;',
         '  default:',
@@ -331,12 +331,12 @@ describe('typeCheckElement', () => {
       });
 
       it('type-checks the value a required property is bound to in each branch', () => {
-        const lines = run('<my-el @if (cond) { title="{name}" } @else { title="c" }></my-el>', component);
+        const lines = run('<my-el @if (cond) { title="{heading}" } @else { title="c" }></my-el>', component);
 
         expect(text(lines)).toEqual([
           'if (root.cond) {',
           '  {',
-          '    (root.name) satisfies string;',
+          '    (root.heading) satisfies string;',
           '  }',
           '}',
           'else {',
@@ -406,10 +406,10 @@ describe('typeCheckElement directives', () => {
 
   it('type-checks directive properties and events on a native element', () => {
     const directive = directiveMetadata(properties, { toggled: 'boolean' });
-    const lines = run('<div title="{name}" @@myDirective(display="block" visible="{isVisible()}" (toggled)="f($event)")><span></span></div>', directive);
+    const lines = run('<div title="{heading}" @@myDirective(display="block" visible="{isVisible()}" (toggled)="f($event)")><span></span></div>', directive);
 
     expect(text(lines)).toEqual([
-      'root.name;',
+      'root.heading;',
       '{',
       '  let x!: string;',
       '  x satisfies \'block\' | \'none\';',
@@ -428,11 +428,11 @@ describe('typeCheckElement directives', () => {
   it('type-checks the directives of a custom element after its own bindings', () => {
     const component = metadata({ title: new ComponentPropertyMetadata('title', 'string') });
     const directive = directiveMetadata({ display: properties.display });
-    const lines = run('<my-el title="{name}" @@myDirective(display="{mode}")></my-el>', component, directive);
+    const lines = run('<my-el title="{heading}" @@myDirective(display="{mode}")></my-el>', component, directive);
 
     expect(text(lines)).toEqual([
       '{',
-      '  (root.name) satisfies string;',
+      '  (root.heading) satisfies string;',
       '}',
       '{',
       '  (root.mode) satisfies \'block\' | \'none\';',
@@ -610,11 +610,11 @@ describe('typeCheckElement directives', () => {
   });
 
   it('type-checks the directives applied inside a conditional binding of a native element', () => {
-    const lines = run('<div @if (cond()) { title="{name}" @@myDirective(display="{mode}") } @else { @@myDirective(display="none") }></div>', directiveMetadata({ display: properties.display }));
+    const lines = run('<div @if (cond()) { title="{heading}" @@myDirective(display="{mode}") } @else { @@myDirective(display="none") }></div>', directiveMetadata({ display: properties.display }));
 
     expect(text(lines)).toEqual([
       'if (root.cond()) {',
-      '  root.name;',
+      '  root.heading;',
       '  {',
       '    (root.mode) satisfies \'block\' | \'none\';',
       '  }',
