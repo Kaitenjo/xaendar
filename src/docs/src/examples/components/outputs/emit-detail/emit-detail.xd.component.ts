@@ -40,7 +40,7 @@ export class EmitDetailComponent extends CustomElement {
   }
 
   /**
-   * Resets the quantity. The cleared event carries no detail, so the template has no $event to pass.
+   * Resets the quantity. The cleared event carries no detail: its $event has a null detail.
    */
   public clear(): void {
     this._record('cleared, no detail');

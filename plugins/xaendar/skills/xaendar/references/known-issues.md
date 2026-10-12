@@ -4,12 +4,6 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Compiler
 
-### Output without a type: no $event (limitation)
-
-The listener of an Output with no type argument cannot use $event, so it cannot cancel or inspect the event.
-
-**Workaround:** Give the output a type, even a simple one.
-
 ### Every tag with a dash must be an imported Xaendar component (limitation)
 
 Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.

@@ -145,8 +145,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Cannot find name '$event'. Did you mean 'event'?`
 
-- **Cause:** $event used for an output without a type argument, or as $event.target.
-- **Fix:** Give the output a type, such as Output<string>; pass $event whole and read the target in the method.
+- **Cause:** $event used as $event.target, or another expression reading it.
+- **Fix:** Pass $event whole and read the target in the method.
 
 ### `Property 'secret' is private and only accessible within class 'XCard'.`
 

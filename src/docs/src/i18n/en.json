@@ -547,11 +547,7 @@
           "example2": "A detail that looks like options",
           "p2": "<code>emit</code> takes its only argument for the options only when it is an instance of <code>EventOptions</code>. Any other value is the detail, even an object holding the keys <code>bubbles</code>, <code>cancelable</code> or <code>composed</code>: the booking arrives whole in <code>event.detail</code>, and its <code>cancelable</code> does not change the event.",
           "example3": "A cancelable event",
-          "p3": "<code>emit</code> returns nothing, so the child cannot know whether a listener called <code>preventDefault()</code>. To make a cancelable event useful, declare it with <code>@Event</code>, so that templates can listen to it, and dispatch it yourself with <code>dispatchEvent</code>, which returns <code>false</code> when the event was canceled. Listeners run synchronously, so the result is ready on the next line. The event has a detail, the mode of the note, so that the parent receives <code>$event</code> and can cancel it.",
-          "callout1": {
-            "heading": "An event without a detail has no $event",
-            "p1": "For an <code>Output</code> without a type argument the template compiler declares no <code>$event</code>: the handler can only be called without it. When the parent needs the event itself, to cancel it or to read its target, give the event a detail."
-          },
+          "p3": "<code>emit</code> returns nothing, so the child cannot know whether a listener called <code>preventDefault()</code>. To make a cancelable event useful, declare it with <code>@Event</code>, so that templates can listen to it, and dispatch it yourself with <code>dispatchEvent</code>, which returns <code>false</code> when the event was canceled. Listeners run synchronously, so the result is ready on the next line. The event carries the mode of the note as its detail.",
           "callout2": {
             "heading": "Event names are case-sensitive",
             "p1": "The name of the event is the name of the accessor, letter by letter. HTML attributes are case-insensitive, but event bindings are not: <code>(valuechange)</code> does not match <code>valueChange</code>."
@@ -2698,8 +2694,8 @@
       "fix": "Bind an expression: count=\"{ 3 }\"."
     },
     "Cannot find name '$event'. Did you mean 'event'?": {
-      "cause": "$event used for an output without a type argument, or as $event.target.",
-      "fix": "Give the output a type, such as Output<string>; pass $event whole and read the target in the method."
+      "cause": "$event used as $event.target, or another expression reading it.",
+      "fix": "Pass $event whole and read the target in the method."
     },
     "Property 'secret' is private and only accessible within class 'XCard'.": {
       "cause": "A private or protected member read by the template.",
@@ -2835,11 +2831,6 @@
     }
   },
   "issues": {
-    "output-without-a-type-no-event": {
-      "title": "Output without a type: no $event",
-      "details": "The listener of an Output with no type argument cannot use $event, so it cannot cancel or inspect the event.",
-      "workaround": "Give the output a type, even a simple one."
-    },
     "every-tag-with-a-dash-must": {
       "title": "Every tag with a dash must be an imported Xaendar component",
       "details": "Custom elements of other libraries are rejected by the type checker, and so are native events on the tag of a component.",

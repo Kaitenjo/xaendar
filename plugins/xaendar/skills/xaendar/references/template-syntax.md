@@ -48,7 +48,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Listeners call exactly one method of the component or of one of its members (`cart.clear()`, `count.set(0)`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
 - On a component tag only the events it declares with `@Event` can be bound; on native elements only native events. Listen to native events on a wrapper element.
-- `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives no `$event`.
+- `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
 
 ## Control flow
 

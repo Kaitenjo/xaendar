@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'output-without-a-type-no-event',
-    area: 'Compiler',
-    kind: 'limitation',
-    page: 'components/outputs'
-  },
-  {
     id: 'every-tag-with-a-dash-must',
     area: 'Compiler',
     kind: 'limitation',

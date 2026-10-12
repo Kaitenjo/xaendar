@@ -547,11 +547,7 @@
           "example2": "Un detail che sembra un oggetto di opzioni",
           "p2": "<code>emit</code> prende il suo unico argomento per le opzioni solo quando è un'istanza di <code>EventOptions</code>. Qualsiasi altro valore è il detail, anche un oggetto che contiene le chiavi <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>: la prenotazione arriva intera in <code>event.detail</code>, e il suo <code>cancelable</code> non cambia l'evento.",
           "example3": "Un evento annullabile",
-          "p3": "<code>emit</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento ha un detail, la modalità della nota, perché il padre riceva <code>$event</code> e possa annullarlo.",
-          "callout1": {
-            "heading": "Un evento senza detail non ha $event",
-            "p1": "Per un <code>Output</code> senza argomento di tipo il compilatore dei template non dichiara <code>$event</code>: l’handler può essere chiamato solo senza. Quando il padre ha bisogno dell’evento stesso, per annullarlo o per leggerne il target, dai all’evento un detail."
-          },
+          "p3": "<code>emit</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento porta come detail la modalità della nota.",
           "callout2": {
             "heading": "I nomi degli eventi distinguono maiuscole e minuscole",
             "p1": "Il nome dell’evento è il nome dell’accessor, lettera per lettera. Gli attributi HTML non distinguono maiuscole e minuscole, i binding degli eventi sì: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>."
@@ -2698,8 +2694,8 @@
       "fix": "Lega un’espressione: count=\"{ 3 }\"."
     },
     "Cannot find name '$event'. Did you mean 'event'?": {
-      "cause": "$event usato per un output senza argomento di tipo, o come $event.target.",
-      "fix": "Dai un tipo all’output, come Output<string>; passa $event intero e leggi il target nel metodo."
+      "cause": "$event usato come $event.target, o in un’altra espressione che lo legge.",
+      "fix": "Passa $event intero e leggi il target nel metodo."
     },
     "Property 'secret' is private and only accessible within class 'XCard'.": {
       "cause": "Un membro private o protected letto dal template.",
@@ -2835,11 +2831,6 @@
     }
   },
   "issues": {
-    "output-without-a-type-no-event": {
-      "title": "Output senza tipo: niente $event",
-      "details": "Il listener di un Output senza argomento di tipo non può usare $event, quindi non può annullare né ispezionare l’evento.",
-      "workaround": "Dai un tipo all’output, anche semplice."
-    },
     "every-tag-with-a-dash-must": {
       "title": "Ogni tag con trattino deve essere un componente Xaendar importato",
       "details": "I custom element di altre librerie vengono rifiutati dal type checker, e così gli eventi nativi sul tag di un componente.",

@@ -333,7 +333,7 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
 
 /**
  * Type-checks event bindings against the component's or directive's `@Event`s, typing `$event` as
- * `CustomEvent<payload type>` (see {@link typeCheckEvent}). An event of a directive not declared as an
+ * `CustomEvent<payload type>`, or `CustomEvent<null>` for an event without payload (see {@link typeCheckEvent}). An event of a directive not declared as an
  * `@Event` is a native event of the element the directive is applied to, so `$event` is typed through its `eventMap`.
  *
  * @param events - The event nodes to type-check.
@@ -353,7 +353,8 @@ function typeCheckComponentEvents(events: EventNode[], owner: string, metadata: 
     const event = metadata.events.get(name);
 
     if (event) {
-      lines.push(...typeCheckEvent(events[i], event.type === 'void' ? null : `CustomEvent<${event.type}>`, context));
+      // An event without payload is emitted without detail, which the CustomEvent sets to null
+      lines.push(...typeCheckEvent(events[i], `CustomEvent<${event.type === 'void' ? 'null' : event.type}>`, context));
     } else if (eventMap) {
       lines.push(...typeCheckEvent(events[i], getNativeEventType(eventMap, name), context));
     } else {
@@ -425,11 +426,11 @@ function typeCheckNativeEvents(events: EventNode[], eventMap: ElementEventMap, c
  * of the event, so that the following events can declare it again.
  *
  * @param event - The event node to type-check.
- * @param eventType - The type of `$event`, or `null` for an event without payload, which has no `$event` to declare.
+ * @param eventType - The type of `$event`.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines: the call, wrapped in a block when it declares `$event`.
  */
-function typeCheckEvent({ handler, parameters, span }: EventNode, eventType: string | null, context: TypeCheckContext): Line[] {
+function typeCheckEvent({ handler, parameters, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier('$event');
 
@@ -445,7 +446,7 @@ function typeCheckEvent({ handler, parameters, span }: EventNode, eventType: str
   */
   const call = line(mapped(`root.${handler}(${args});`, span));
 
-  return eventType && passesEvent(parameters)
+  return passesEvent(parameters)
     ? [
       plain('{'),
       ...indentLines([

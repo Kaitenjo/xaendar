@@ -221,7 +221,7 @@ describe('typeCheckElement', () => {
       ]);
     });
 
-    it('declares $event only for the events carrying a payload whose handler is passed it', () => {
+    it('declares $event only for the events whose handler is passed it, with a null detail for the events without payload', () => {
       const component = metadata({}, { done: 'number', changed: 'string', ping: 'void' });
       const lines = run('<my-el (done)="f($event)" (changed)="g()" (ping)="h()" (ping)="i($event)"></my-el>', component);
 
@@ -232,7 +232,10 @@ describe('typeCheckElement', () => {
         '}',
         'root.g();',
         'root.h();',
-        'root.i($event);'
+        '{',
+        '  let $event!: CustomEvent<null>;',
+        '  root.i($event);',
+        '}'
       ]);
       expect(lines[2].mappings).toHaveLength(1);
       expect(lines[4].mappings).toHaveLength(1);
