@@ -2836,11 +2836,6 @@
     }
   },
   "issues": {
-    "the-dev-overlay-reports-handled-errors": {
-      "title": "The dev overlay reports handled errors",
-      "details": "Vite prints [Unhandled error] even for errors handled with preventDefault on window.",
-      "workaround": "None: it happens in development only."
-    },
     "style-options-the-plugin-cannot-compile": {
       "title": "Style options the plugin cannot compile",
       "details": "xd new accepts scss, less and styl, which the plugin rejects; xd generate component ignores xaendar.json and always writes CSS.",

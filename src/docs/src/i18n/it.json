@@ -2836,11 +2836,6 @@
     }
   },
   "issues": {
-    "the-dev-overlay-reports-handled-errors": {
-      "title": "L’overlay di sviluppo segnala errori gestiti",
-      "details": "Vite stampa [Unhandled error] anche per errori gestiti con preventDefault su window.",
-      "workaround": "Nessuno: accade solo in sviluppo."
-    },
     "style-options-the-plugin-cannot-compile": {
       "title": "Opzioni di stile che il plugin non sa compilare",
       "details": "xd new accetta scss, less e styl, che il plugin rifiuta; xd generate component ignora xaendar.json e scrive sempre CSS.",

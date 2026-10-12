@@ -4,11 +4,11 @@ Verified bugs and limitations of the framework and its tools (Xaendar 0.12), wit
 
 ## Build
 
-### The dev overlay reports handled errors (bug)
+### Handled errors are printed as [Unhandled error] (Vite)
 
-Vite prints [Unhandled error] even for errors handled with preventDefault on window.
+When an agent starts the dev server (`AI_AGENT`, `CLAUDECODE`, …), Vite's `server.forwardConsole` sends every error reaching `window` to the terminal, even when a listener calls `preventDefault()`.
 
-**Workaround:** None: it happens in development only.
+**Workaround:** Ignore it, it is not a Xaendar error; or set `server.forwardConsole: false` in `vite.config.ts`.
 
 ## CLI
 

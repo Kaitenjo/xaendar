@@ -32,12 +32,6 @@ export type IssueEntry = {
  */
 export const ISSUES: readonly IssueEntry[] = [
   {
-    id: 'the-dev-overlay-reports-handled-errors',
-    area: 'Build',
-    kind: 'bug',
-    page: 'signals/effects'
-  },
-  {
     id: 'style-options-the-plugin-cannot-compile',
     area: 'CLI',
     kind: 'bug',
