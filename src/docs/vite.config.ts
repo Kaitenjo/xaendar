@@ -27,6 +27,7 @@ export default defineConfig({
     port: 4200,
     fs: {
       allow: [monorepoRoot]
-    }
+    },
+    forwardConsole: false
   }
 });

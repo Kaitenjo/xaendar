@@ -15,7 +15,8 @@ export default defineConfig({
   },
   server: {
     open: true,
-    port: 4200
+    port: 4200,
+    forwardConsole: false
   }
 });`;
 }
