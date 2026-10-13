@@ -26,8 +26,7 @@ export async function compile(input: string, options: Pick<CompileOptions, 'base
 export async function compile(input: string, options: Omit<CompileOptions, 'baseDir'>): Promise<string>
 export async function compile(input: string, options: CompileOptions): Promise<{ javascript: string; typescript: TypeCheckResult }>
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
-  const tokens = new Lexer(input).tokenize();
-  const nodes = new Parser(input, tokens).parse();
+  const nodes = parseTemplate(input);
 
   const { baseDir, signals, shadowingMembers = [], customElements = [], cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
@@ -35,7 +34,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
       generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache),
-      generateTypecheckResult(input, nodes, metadatas, shadowingMembers, customElements)
+      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements)
     ]);
     
     return {
@@ -44,12 +43,23 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     }
   } else if (baseDir) {
     const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
-    return await generateTypecheckResult(input, nodes, metadatas, shadowingMembers, customElements);
+    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements);
   } else {
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
     return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache);
   }
 }
+/**
+ * Tokenises and parses a template into its AST, the first two stages of {@link compile}.
+ *
+ * @param input - The raw HTML-like template source.
+ * @returns The top-level AST nodes of the template.
+ * @throws A `TemplateError` if the template cannot be tokenised or parsed.
+ */
+export function parseTemplate(input: string): ASTNode[] {
+  return new Parser(input, new Lexer(input).tokenize()).parse();
+}
+
 /**
  * Generates the Javascript render functions from the parsed AST nodes.
  * @param input - The raw HTML-like template source to compile.
@@ -64,16 +74,17 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
 }
 
 /**
- * Generates the type-checking result for the parsed AST nodes using the TypeChecker.
+ * Generates the type-checking result for the parsed AST nodes using the TypeChecker: the type-check stage of
+ * {@link compile}, for callers resolving the metadata of the imported components and directives on their own.
  * @param input - The raw HTML-like template source to compile.
- * @param nodes - The parsed AST nodes from the template.
+ * @param nodes - The parsed AST nodes from the template (see {@link parseTemplate}).
  * @param metadatas - Array of component and directive metadata extracted from the template.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
- * @param cache - Optional cache for storing previously computed type-checking results to improve performance.
  * @returns A promise that resolves to the type-checking result.
+ * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
  */
-async function generateTypecheckResult(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[]): Promise<TypeCheckResult> {
+export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
   return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements);
 }
 

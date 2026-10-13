@@ -40,6 +40,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
   // consume Attribute token
   cursor.advance();
   const name = token.parts[0];
+  const nameSpan = cursor.findSpan(name, startOffset);
   
   // All possible tokens after an Attribute Token
   const nextToken = cursor.peek<
@@ -66,6 +67,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     return {
       type: ASTNodeType.Attribute,
       name,
+      nameSpan,
       value: 'true',
       span: {
         start: startOffset,
@@ -79,6 +81,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     return {
       type: ASTNodeType.Attribute,
       name,
+      nameSpan,
       value: interpolation,
       span: {
         start: startOffset,
@@ -96,6 +99,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
   return {
     type: ASTNodeType.Attribute,
     name,
+    nameSpan,
     // Character references are decoded as in HTML: `title="a &amp; b"` holds `a & b`
     value: decodeHTMLAttribute(nextToken.parts[0]),
     span: {

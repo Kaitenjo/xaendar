@@ -84,7 +84,7 @@ function parseIfOrElseIf(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode
   cursor.advance(2);
 
   const condition = conditionToken.parts[0];
-  const validationResult = validateExpression(condition);
+  const validationResult = validateExpression(condition, cursor.findConditionSpan(conditionToken).start);
 
   const consequent = parseBlockChildren(cursor, parseNode);
   let alternate: ElseIfNode | ElseNode | null = null;

@@ -23,18 +23,21 @@ export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
 
   while (cursor.peek().type === TokenType.IMPORT) {
     cursor.advance();
-    const rawSpecifier = cursor.getCurrentToken<ImportToken>().value.parts[0];
-    const specifier = parseSpecifier(rawSpecifier);
+    const { parts: [rawSpecifier], span } = cursor.getCurrentToken<ImportToken>().value;
+    const specifier = parseSpecifier(rawSpecifier, cursor.findSpan(rawSpecifier.trim(), span.start).start);
     specifiers.push(specifier);
   }
 
   // Consume TokenType.IMPORT_PATH
   cursor.advance();
+  const { parts: [path], span } = cursor.getCurrentToken<ImportPathToken>().value;
 
   return {
     type: ASTNodeType.Import,
     specifiers,
-    path: cursor.getCurrentToken<ImportPathToken>().value.parts[0]
+    path,
+    // The token starts with the `from` keyword, which the path may contain too
+    pathSpan: cursor.findSpan(path, cursor.findSpan('from', span.start).end)
   }
 }
 
@@ -42,37 +45,36 @@ export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
  * Parses a single import specifier string.
  *
  * @param raw - The raw specifier string (may include 'as' alias).
- * @returns An `ImportSpecifier` with `imported` and `local` fields.
+ * @param offset - The offset of the trimmed specifier in the template.
+ * @returns An `ImportSpecifier` with `imported` and `local` fields and their spans.
  * @throws If the specifier format is invalid.
  */
-function parseSpecifier(raw: string): ImportSpecifier {
+function parseSpecifier(raw: string, offset: number): ImportSpecifier {
   const trimmed = raw.trim();
+  // The exported name always starts the specifier, the local alias always ends it
+  const withSpans = (imported: string, local: string): ImportSpecifier => ({
+    imported,
+    local,
+    importedSpan: { start: offset, end: offset + imported.length },
+    localSpan: { start: offset + trimmed.length - local.length, end: offset + trimmed.length }
+  });
 
   // Namespace import: `* as ns`
   const namespaceMatch = trimmed.match(/^\*\s+as\s+([A-Za-z_$][\w$]*)$/);
   if (namespaceMatch) {
-    return {
-      imported: '*',
-      local: namespaceMatch[1],
-    };
+    return withSpans('*', namespaceMatch[1]);
   }
 
   // Default import with alias: `default as D`
   const defaultMatch = trimmed.match(/^default\s+as\s+([A-Za-z_$][\w$]*)$/);
   if (defaultMatch) {
-    return {
-      imported: 'default',
-      local: defaultMatch[1],
-    };
+    return withSpans('default', defaultMatch[1]);
   }
 
   // Named import with optional alias: `foo` or `foo as bar`
   const namedMatch = trimmed.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
   if (namedMatch) {
-    return {
-      imported: namedMatch[1],
-      local: namedMatch[2] ?? namedMatch[1],
-    };
+    return withSpans(namedMatch[1], namedMatch[2] ?? namedMatch[1]);
   }
 
   throw `Invalid import specifier "${raw}".`;

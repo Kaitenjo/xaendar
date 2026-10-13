@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 
@@ -13,6 +14,10 @@ export type CaseNode = ASTNodeWithSpan<{
    * The case condition expression, or `null` for a `@default` branch.
    */
   condition: string[] | null; // null = @default
+  /**
+   * Spans of the case condition expressions, one per condition, empty for a `@default` branch.
+   */
+  conditionSpans: Span[];
   /**
    * Child nodes rendered when this case matches.
    */

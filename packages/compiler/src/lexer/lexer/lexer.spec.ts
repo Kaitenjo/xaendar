@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TokenType } from '../types/token-type.enum';
+import { TemplateError } from '../../models/template-error/template-error.model';
 import { Lexer } from './lexer';
 
 describe('Lexer', () => {
@@ -351,9 +352,21 @@ describe('Lexer', () => {
       caught = err;
     }
 
-    expect(typeof caught).toBe('string');
-    expect(caught as string).toContain('[Lexer]');
-    expect(caught as string).toContain('Attribute cannot start with \'=\'');
+    expect(caught).toBeInstanceOf(TemplateError);
+    expect(`${caught}`).toContain('[Lexer]');
+    expect(`${caught}`).toContain('Attribute cannot start with \'=\'');
+  });
+
+  it('reports the span of the template consumed by the failing state and the description of the error', () => {
+    let caught: TemplateError | undefined;
+    try {
+      new Lexer('<p>a</p><button (click)="onClick foo()"></button>').tokenize();
+    } catch (err) {
+      caught = err as TemplateError;
+    }
+
+    expect(caught!.detail).toBe('No spaces are allowed in event handler name');
+    expect(caught!.span).toEqual({ start: 25, end: 32 });
   });
 
   it('formats a thrown string error consumed after several characters', () => {
@@ -364,8 +377,8 @@ describe('Lexer', () => {
       caught = err;
     }
 
-    expect(typeof caught).toBe('string');
-    expect(caught as string).toContain('No spaces are allowed in event handler name');
+    expect(caught).toBeInstanceOf(TemplateError);
+    expect(`${caught}`).toContain('No spaces are allowed in event handler name');
   });
 
   it('stops the backward neighbourhood scan at a line break', () => {
@@ -376,8 +389,8 @@ describe('Lexer', () => {
       caught = err;
     }
 
-    expect(typeof caught).toBe('string');
-    expect(caught as string).toContain('No spaces are allowed in event handler name');
+    expect(caught).toBeInstanceOf(TemplateError);
+    expect(`${caught}`).toContain('No spaces are allowed in event handler name');
   });
 
   it('formats an error near the very start of the template', () => {
@@ -388,8 +401,8 @@ describe('Lexer', () => {
       caught = err;
     }
 
-    expect(typeof caught).toBe('string');
-    expect(caught as string).toContain('Tag name cannot be empty');
+    expect(caught).toBeInstanceOf(TemplateError);
+    expect(`${caught}`).toContain('Tag name cannot be empty');
   });
 
   it('stops the forward neighbourhood scan at a line break', () => {
@@ -400,7 +413,7 @@ describe('Lexer', () => {
       caught = err;
     }
 
-    expect(typeof caught).toBe('string');
-    expect(caught as string).toContain('[Lexer]');
+    expect(caught).toBeInstanceOf(TemplateError);
+    expect(`${caught}`).toContain('[Lexer]');
   });
 });

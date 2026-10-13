@@ -4,6 +4,7 @@ import { ComponentEventMetadata, ComponentMetadata } from '../../types/component
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
+import type { MemberDeclaration } from '../../types/member-declaration/member-declaration.type';
 import { Span } from '../../types/span.type';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
@@ -131,7 +132,7 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
   const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-  bindings.properties.entries().forEach(([propName, { name, type, required, alias }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias })));
+  bindings.properties.entries().forEach(([propName, { name, type, required, alias, declaration }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration })));
 
   return {
     properties: mappedProperties,
@@ -220,9 +221,9 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, 
     const eventDecorator = Array.from(memberModifiers).find(member => isEventDecorator(member));
     if (eventDecorator) {
       const nameNode = getNameOfDeclaration(member);
-      const eventName = nameNode && isIdentifier(nameNode) ? nameNode.text : undefined;
-      if (eventName) {
-        events.set(eventName, extractEventMetadata(member, eventName, accessorOwner));
+      if (nameNode && isIdentifier(nameNode)) {
+        const eventName = nameNode.text;
+        events.set(eventName, extractEventMetadata(member, eventName, accessorOwner, toMemberDeclaration(nameNode, sourceFile)));
       }
     }
   }
@@ -415,6 +416,7 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
   */
   const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
+  metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
 
   if (args.length) {
     const options = required ? args[0] : args[1];
@@ -450,12 +452,25 @@ function isEventDecorator(modifier: ModifierLike): modifier is EventDecorator {
  * @param event - The accessor decorated with `@Event`.
  * @param name - The name of the accessor.
  * @param accessorOwner - The type of the class the metadata are extracted for, which declares or inherits the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
+ * @param declaration - Where the accessor is declared.
  * @returns The metadata of the event.
  */
-function extractEventMetadata(event: PropertyDeclaration, name: string, accessorOwner: string): ComponentEventMetadata {
+function extractEventMetadata(event: PropertyDeclaration, name: string, accessorOwner: string, declaration: MemberDeclaration): ComponentEventMetadata {
   return {
-    type: extractBindingType(event, name, accessorOwner, true)
+    type: extractBindingType(event, name, accessorOwner, true),
+    declaration
   };
+}
+
+/**
+ * Describes where a member is declared, from the node of its name.
+ *
+ * @param nameNode - The name of the member.
+ * @param sourceFile - The source file declaring the member.
+ * @returns The file and the span of the name.
+ */
+function toMemberDeclaration(nameNode: Identifier, sourceFile: SourceFile): MemberDeclaration {
+  return { fileName: sourceFile.fileName, span: { start: nameNode.getStart(sourceFile), end: nameNode.getEnd() } };
 }
 
 /**

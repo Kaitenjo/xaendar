@@ -1,4 +1,11 @@
 export * from './lib/language-service/language-service';
+export * from './lib/template-analysis/template-analysis';
+export * from './lib/template-completions/template-completions';
+export * from './lib/template-definition/template-definition';
+export * from './lib/template-diagnostics/template-diagnostics';
+export * from './lib/template-metadata-cache/template-metadata-cache';
+export * from './lib/template-semantic-tokens/template-semantic-tokens';
 export * from './lib/utils/compiler-options/compiler-options.utils';
+export * from './lib/utils/module-path/module-path.utils';
+export * from './lib/utils/path/path.utils';
 export * from './lib/utils/shim/shim.utils';
-

@@ -1,6 +1,9 @@
 import { slice } from '@xaendar/common';
 import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
+import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
+import type { LineMapping } from '../../../type-checker/types/generated-line.type';
+import type { Span } from '../../../types/span.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 import { Dictionary } from '@xaendar/types';
@@ -46,9 +49,17 @@ export const ROOT_NODE = 'root';
  * operator tokens, member access dots — is preserved verbatim by delegating
  * to `node.getText()` for any subtree that contains no resolvable identifiers.
  *
+ * When a `segments` collector is given, it is filled with the mappings from the columns of the
+ * resolved expression to the spans of the template they come from: one for every resolved identifier
+ * (its name, e.g. `foo` in `root.foo`) and one for every piece copied verbatim. Only the expressions
+ * validated together with their offset in the template (see `validateExpression`) produce mappings.
+ * The resolved expression is the same whether the collector is given or not.
+ *
  * @param expression - Either a raw identifier string or a validated
  *   `Expression` node produced by `validateExpression`.
  * @param compilerContext - The active template scope context.
+ * @param options - The options of the resolution.
+ * @param segments - Optional collector of the mappings of the resolved expression, whose columns are relative to its start.
  * @returns The resolved expression as a JavaScript string ready for codegen.
  *
  * @example
@@ -66,14 +77,57 @@ export const ROOT_NODE = 'root';
  * // typeof id !== 'boolean' || pippo instanceof HTMLElement
  * // → typeof this.id !== 'boolean' || this.pippo instanceof HTMLElement
  */
-export function resolveExpression(expression: Expression, compilerContext: CompilerContext, options?: ResolveExpressionOptions): { expression: string, reactive?: boolean } {
-  const resolved = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
+export function resolveExpression(expression: Expression, compilerContext: CompilerContext, options?: ResolveExpressionOptions, segments?: LineMapping[]): { expression: string, reactive?: boolean } {
+  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
 
   /*
     An expression starting with an object literal is wrapped in parentheses: where the generated code
     uses it as the body of an arrow function or as a statement, its brace would open a block instead
   */
-  return resolved.expression.startsWith('{') ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
+  const wrapped = resolved.expression.startsWith('{');
+  segments?.push(...shiftSegments(emittedSegments, wrapped ? 1 : 0));
+  return wrapped ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
+}
+
+/**
+ * The text emitted for a node of an expression, with the mappings of its columns to the template.
+ */
+type EmittedNode = {
+  /**
+   * The resolved text of the node.
+   */
+  expression: string;
+  /**
+   * Whether the node reads a signal.
+   */
+  reactive?: boolean;
+  /**
+   * The mappings of the columns of `expression` to the spans of the template they come from.
+   */
+  segments: LineMapping[];
+};
+
+/**
+ * Moves segments to the right, e.g. those of a child node once its text follows the text emitted before it.
+ *
+ * @param segments - The segments to move.
+ * @param columns - The number of columns to move them by.
+ * @returns The moved segments.
+ */
+function shiftSegments(segments: LineMapping[], columns: number): LineMapping[] {
+  return segments.map(({ columnStart, columnEnd, original }) => ({ columnStart: columnStart + columns, columnEnd: columnEnd + columns, original }));
+}
+
+/**
+ * Maps the end of a text emitted at the start of the output onto the span of the template it comes from.
+ *
+ * @param text - The emitted text.
+ * @param span - The span of the template, if known.
+ * @param columnStart - The column of the output the mapped part of the text starts at.
+ * @returns The mapping, or no mapping when the span is not known or the text is empty.
+ */
+function segmentOf(text: string, span: Span | undefined, columnStart = 0): LineMapping[] {
+  return span && text.length ? [{ columnStart, columnEnd: text.length, original: span }] : [];
 }
 
 /**
@@ -87,21 +141,25 @@ export function resolveExpression(expression: Expression, compilerContext: Compi
  * - Otherwise recurses into children and concatenates their output.
  */
 
-function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
+function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
+  const span = getTemplateSpan(node);
+
   // Leaf Identifier that needs resolution
   if (isIdentifier(node) && needsResolution(node, parent, compilerContext)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, compilerContext, options);
 
     // A shorthand property ({ name }) keeps its name, and takes the resolved value
-    return isShorthandPropertyAssignment(parent) && resolved.expression !== text
-      ? { ...resolved, expression: `${text}: ${resolved.expression}` }
-      : resolved;
+    const expression = isShorthandPropertyAssignment(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
+    // The name of the identifier ends the resolved access (`root.name`), unless it is read through the context
+    const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
+    return { ...resolved, expression, segments };
   }
 
   // No resolvable identifiers in this subtree — emit verbatim
   if (!containsResolvableIdentifier(node, parent, compilerContext)) {
-    return { expression: node.getText() };
+    const expression = node.getText();
+    return { expression, segments: segmentOf(expression, span) };
   }
 
   /*
@@ -110,17 +168,38 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
     children faithfully instead of joining with a fixed separator.
   */
   const sourceText = node.getSourceFile().text;
-  let result: { expression: string, reactive?: boolean } = { expression: '' };
+  // Offset turning a position of the source file of the expression into an offset of the template
+  const templateDelta = span && span.start - node.getStart();
+  let result: EmittedNode = { expression: '', segments: [] };
   let lastEnd = node.getStart();
 
+  /*
+    Appends the text copied verbatim from the source file between `start` and `end` (e.g. the spacing and
+    the punctuation between children), followed by the text emitted for a child, if any.
+  */
+  const append = (start: number, end: number, child?: EmittedNode): void => {
+    const verbatim = slice(sourceText, start, end);
+    const verbatimSpan = templateDelta === undefined ? undefined : { start: templateDelta + start, end: templateDelta + end };
+    const column = result.expression.length;
+    result = {
+      expression: `${result.expression}${verbatim}${child?.expression ?? ''}`,
+      reactive: result.reactive || child?.reactive,
+      segments: [
+        ...result.segments,
+        ...shiftSegments(segmentOf(verbatim, verbatimSpan), column),
+        ...shiftSegments(child?.segments ?? [], column + verbatim.length)
+      ]
+    };
+  };
+
   forEachChild(node, child => {
-    const { expression, reactive } = emitNode(child, node, compilerContext, options);
-    result = { expression: `${result.expression}${slice(sourceText, lastEnd, child.getStart())}${expression}`, reactive: result.reactive || reactive };
+    append(lastEnd, child.getStart(), emitNode(child, node, compilerContext, options));
     lastEnd = child.getEnd();
   });
 
   // Append any trailing text after the last child (e.g. closing paren)
-  return { expression: `${result.expression}${slice(sourceText, lastEnd, node.getEnd())}`, reactive: result.reactive };
+  append(lastEnd, node.getEnd());
+  return result;
 }
 
 /**

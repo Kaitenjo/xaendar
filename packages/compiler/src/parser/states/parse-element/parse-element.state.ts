@@ -30,6 +30,7 @@ import { parseStructuralDirective } from '../parse-structural-directive/parse-st
 export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: TagOpenNameToken): MaybeASTNodeWithSpan<ElementNode> {
   cursor.advance();
   const tagName = token.parts[0];
+  const nameSpan = cursor.findSpan(tagName, token.span.start);
 
   const attributes = new Array<AttributeNode>();
   const events = new Array<EventNode>();
@@ -84,6 +85,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       return {
         type: ASTNodeType.Element,
         tagName,
+        nameSpan,
         attributes,
         events,
         children: [],
@@ -107,10 +109,13 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   // Consume closing tag </div>
   cursor.advance();
+  const closeNameSpan = cursor.findSpan(tagName, cursor.getCurrentToken().value.span.start);
 
   return {
     type: ASTNodeType.Element,
     tagName,
+    nameSpan,
+    closeNameSpan,
     attributes,
     events,
     children,

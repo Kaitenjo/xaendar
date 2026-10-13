@@ -4,6 +4,8 @@ import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
 import { Parser } from '../../parser/parser';
 import { SwitchNode } from '../../types/nodes/switch-node.type';
+import type { Span } from '../../../types/span.type';
+import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
@@ -52,5 +54,15 @@ describe('parseSwitchControlFlow', () => {
 
     expect(() => new Parser('', [...head, text]).parse()).toThrow('Unexpected TEXT inside SWITCH, expected CASE or DEFAULT');
     expect(() => new Parser('', head).parse()).toThrow('Unexpected EOF inside SWITCH, expected CASE or DEFAULT');
+  });
+
+  it('locates the expression and the case conditions in the template', () => {
+    const template = '@switch (kind()) { @case (\'a\') @case (Kind.B) { x } @default { y } }';
+    const [node] = parse(template) as SwitchNode[];
+    const textOf = (template: string, span: Span | undefined) => span && template.slice(span.start, span.end);
+
+    expect(textOf(template, getTemplateSpan(node.expression))).toBe('kind()');
+    expect(node.children[0].conditionSpans.map(span => textOf(template, span))).toEqual(['\'a\'', 'Kind.B']);
+    expect(node.children[1].conditionSpans).toEqual([]);
   });
 });

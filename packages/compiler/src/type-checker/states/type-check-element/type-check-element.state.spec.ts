@@ -55,10 +55,10 @@ describe('typeCheckElement', () => {
         '  root.f($event, root.b);',
         '}'
       ]);
-      expect(lines[0].mappings).toHaveLength(1);
-      expect(lines[3].mappings).toEqual([{ columnStart: 2, columnEnd: 25, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+      expect(lines[0].mappings![0]).toBeDefined();
+      expect(lines[3].mappings![0]).toEqual({ columnStart: 2, columnEnd: 25, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
       // The declaration of $event is mapped too, so that an event the element doesn't dispatch is reported on the binding
-      expect(lines[2].mappings).toEqual([{ columnStart: 2, columnEnd: 44, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+      expect(lines[2].mappings![0]).toEqual({ columnStart: 2, columnEnd: 44, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
       expect([lines[1], lines[4]].every(l => !l.mappings)).toBe(true);
     });
 
@@ -80,7 +80,7 @@ describe('typeCheckElement', () => {
       const lines = run(template);
 
       expect(text(lines)).toEqual(['root.f(root.$eventName, root.obj.$event, \'$event\');']);
-      expect(lines[0].mappings).toEqual([{ columnStart: 0, columnEnd: 51, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } }]);
+      expect(lines[0].mappings![0]).toEqual({ columnStart: 0, columnEnd: 51, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
     });
 
     it('leaves $event undeclared when only a member of it is passed, since it must be passed whole', () => {
@@ -102,7 +102,7 @@ describe('typeCheckElement', () => {
         '  }',
         '}'
       ]);
-      expect(lines[0].mappings).toHaveLength(1);
+      expect(lines[0].mappings![0]).toBeDefined();
     });
 
     it('type-checks an @if chain as an if / else if / else chain, mapping each condition to its branch', () => {
@@ -120,8 +120,8 @@ describe('typeCheckElement', () => {
         '  root.f();',
         '}'
       ]);
-      expect(lines[0].mappings).toEqual([{ columnStart: 4, columnEnd: 12, original: { start: template.indexOf('@if'), end: template.indexOf('}"') + 4 } }]);
-      expect(lines[3].mappings).toEqual([{ columnStart: 9, columnEnd: 15, original: { start: template.indexOf('@else if'), end: template.indexOf(' @else {') } }]);
+      expect(lines[0].mappings![0]).toEqual({ columnStart: 4, columnEnd: 12, original: { start: template.indexOf('@if'), end: template.indexOf('}"') + 4 } });
+      expect(lines[3].mappings![0]).toEqual({ columnStart: 9, columnEnd: 15, original: { start: template.indexOf('@else if'), end: template.indexOf(' @else {') } });
       expect(lines[6].mappings).toBeUndefined();
     });
 
@@ -144,7 +144,7 @@ describe('typeCheckElement', () => {
         '    break;',
         '}'
       ]);
-      expect(lines[0].mappings).toEqual([{ columnStart: 8, columnEnd: 19, original: { start: template.indexOf('@switch'), end: template.lastIndexOf('}') + 1 } }]);
+      expect(lines[0].mappings![0]).toEqual({ columnStart: 8, columnEnd: 19, original: { start: template.indexOf('@switch'), end: template.lastIndexOf('}') + 1 } });
     });
 
     it('type-checks a @switch without branches', () => {
@@ -239,8 +239,8 @@ describe('typeCheckElement', () => {
         '  root.i($event);',
         '}'
       ]);
-      expect(lines[2].mappings).toHaveLength(1);
-      expect(lines[4].mappings).toHaveLength(1);
+      expect(lines[2].mappings![0]).toBeDefined();
+      expect(lines[4].mappings![0]).toBeDefined();
     });
 
     it('throws when the selector is not imported', () => {
@@ -773,6 +773,41 @@ describe('typeCheckElement structural directives', () => {
       '  }',
       '}'
     ]);
+  });
+
+  describe('fine mappings', () => {
+    const at = (template: string, text: string, from = 0) => ({ start: template.indexOf(text, from), end: template.indexOf(text, from) + text.length });
+
+    it('maps the handler, the arguments and the name of a native event', () => {
+      const template = '<div (click)="cart.save(item, $event)"></div>';
+      const [, declaration, call] = run(template);
+
+      expect(call.text).toBe('  root.cart.save(root.item, $event);');
+      expect(call.mappings).toContainEqual({ columnStart: 7, columnEnd: 16, original: at(template, 'cart.save') });
+      expect(call.mappings).toContainEqual({ columnStart: 22, columnEnd: 26, original: at(template, 'item') });
+      expect(call.mappings).toContainEqual({ columnStart: 28, columnEnd: 34, original: at(template, '$event') });
+      // The event name quoted in the type of $event
+      expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 41, original: at(template, 'click') });
+    });
+
+    it('maps the name of a native event bound on a component and not passed $event', () => {
+      const template = '<my-el (clik)="f()"></my-el>';
+      const [check] = run(template, metadata({}));
+
+      expect(check.text).toBe('null! satisfies HTMLElementEventMap[\'clik\'];');
+      expect(check.mappings).toContainEqual({ columnStart: 37, columnEnd: 41, original: at(template, 'clik') });
+    });
+
+    it('maps the expressions bound to the properties of a component and the conditions of the conditional bindings', () => {
+      const template = '<my-el label="{title}" @if (shown) { size="{big}" } @switch (kind) { @case (1) { tone="{small}" } }></my-el>';
+      const lines = run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string'), size: new ComponentPropertyMetadata('size', 'number'), tone: new ComponentPropertyMetadata('tone', 'string') }));
+      const lineOf = (text: string) => lines.find(line => line.text.includes(text))!;
+
+      expect(lineOf('root.title').mappings).toContainEqual({ columnStart: 8, columnEnd: 13, original: at(template, 'title') });
+      expect(lineOf('if (root.shown)').mappings).toContainEqual({ columnStart: 9, columnEnd: 14, original: at(template, 'shown') });
+      expect(lineOf('switch (root.kind)').mappings).toContainEqual({ columnStart: 13, columnEnd: 17, original: at(template, 'kind') });
+      expect(lineOf('case 1:').mappings).toEqual([{ columnStart: 7, columnEnd: 8, original: { start: template.indexOf('(1)') + 1, end: template.indexOf('(1)') + 2 } }]);
+    });
   });
 });
 

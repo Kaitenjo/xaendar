@@ -179,4 +179,17 @@ describe('parseElement', () => {
   it('throws when the closing tag does not match', () => {
     expect(() => parse('<div></span>')).toThrow('Expected closing tag div, found span');
   });
+
+  it('locates the tag name in the opening and in the closing tag', () => {
+    const template = '<docs-search a="b"><i /></docs-search>';
+    const [node] = parse(template) as ElementNode[];
+    const [child] = node.children as ElementNode[];
+
+    expect(node.nameSpan).toEqual({ start: 1, end: 12 });
+    expect(node.closeNameSpan).toEqual({ start: 26, end: 37 });
+    expect(template.slice(node.closeNameSpan!.start, node.closeNameSpan!.end)).toBe('docs-search');
+    // A self-closing tag has no closing tag
+    expect(child.nameSpan).toEqual({ start: 20, end: 21 });
+    expect(child.closeNameSpan).toBeUndefined();
+  });
 });

@@ -1,5 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { copyFileSync, cpSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
 import { build as tsupBuild } from 'tsup';
 import { XaendarPackageJson } from '../types/xaendar-package-json.type.js';
 
@@ -108,7 +109,7 @@ async function buildLanguageServerInto(
     watchPatterns?: string[];
   }
 ): Promise<void> {
-  const serverEntry = resolve(serverProjectPath, 'src/lib/server.ts');
+  const serverEntry = resolve(serverProjectPath, 'src/lib/server/server.ts');
 
   await tsupBuild({
     entry: { server: serverEntry },
@@ -123,11 +124,29 @@ async function buildLanguageServerInto(
     clean: true,
     watch: options.watch ? options.watchPatterns : undefined,
     tsconfig: options.tsconfigPath,
+    // TypeScript is bundled: it looks for its default libraries next to the bundle
+    onSuccess: async () => copyTypeScriptLibraries(serverOutDir),
   });
 }
 
 /**
- * Writes extension `package.json` and copies `language.json` into output.
+ * Copies the default libraries of TypeScript (`lib.*.d.ts`) into a folder: the bundled language server reads them
+ * from its own folder, without them the templates are type-checked without the standard types (e.g. `ReturnType`).
+ *
+ * @param outDir Destination folder, the one of the bundled language server.
+ */
+function copyTypeScriptLibraries(outDir: string): void {
+  const typescriptLibDir = dirname(createRequire(import.meta.url).resolve('typescript'));
+  const libraries = readdirSync(typescriptLibDir).filter(fileName => /^lib\..*\.d\.ts$/.test(fileName));
+
+  for (const library of libraries) {
+    copyFileSync(resolve(typescriptLibDir, library), resolve(outDir, library));
+  }
+}
+
+/**
+ * Writes the extension `package.json`, copying the manifest fields of the source one (`engines`, `activationEvents`
+ * and `contributes`), and copies the `syntaxes` folder holding the grammars it contributes into output.
  *
  * @param projectName Extension package folder name.
  * @param projectPath Extension package root path.
@@ -143,37 +162,16 @@ function writePackageJsonForExtensionProject(projectName: string, projectPath: s
     license: pkg.license ?? 'MIT',
     type: 'module',
     publisher: 'xaendar',
-    engines: {
-      vscode: '^1.90.0'
-    },
+    engines: pkg.engines,
     categories: ['Programming Languages', 'Linters'],
-    activationEvents: [
-      'workspaceContains:**/*.xd.component.html'
-    ],
+    activationEvents: pkg['activationEvents'],
     main: `./dist/${projectName}.cjs`,
-    contributes: {
-      languages: [
-        {
-          id: 'xaendar-html',
-          extensions: ['.xd.component.html'],
-          aliases: ['Xaendar Template']
-        }
-      ],
-      grammars: [
-        {
-          language: 'xaendar-html',
-          scopeName: 'xaendar.injection',
-          path: './language.json'
-        }
-      ]
-    },
+    contributes: pkg['contributes'],
   };
 
   mkdirSync(outDir, { recursive: true });
   const packageJsonPath = resolve(outDir, 'package.json');
   writeFileSync(packageJsonPath, JSON.stringify(distPkg, null, 2), 'utf-8');
 
-  const languageJsonPath = resolve(projectPath, 'language.json');
-  const languageJson = readFileSync(languageJsonPath, 'utf-8');
-  writeFileSync(resolve(outDir, 'language.json'), languageJson);
+  cpSync(resolve(projectPath, 'syntaxes'), resolve(outDir, 'syntaxes'), { recursive: true, filter: source => !source.endsWith('.spec.ts') });
 }

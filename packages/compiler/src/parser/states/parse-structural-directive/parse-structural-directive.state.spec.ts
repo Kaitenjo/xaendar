@@ -15,6 +15,7 @@ describe('parseStructuralDirective', () => {
     expect(node.structuralDirectives).toEqual([{
       type: ASTNodeType.StructuralDirective,
       selector: 'hasRole',
+      selectorSpan: { start: 6, end: 13 },
       attributes: [],
       span: { start: 6, end: 13 }
     }]);

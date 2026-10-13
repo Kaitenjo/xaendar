@@ -1,6 +1,7 @@
 import { NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
+import type { Span } from '../../../types/span.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
@@ -27,7 +28,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
     throw `Expected CONDITION after SWITCH, got ${TokenType[conditionToken.type]}`;
   }
 
-  const expression = validateExpression(conditionToken.parts[0]).node;
+  const expression = validateExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start).node;
   // consume CONDITION and BLOCK_OPEN
   cursor.advance(2);
 
@@ -40,6 +41,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
       case TokenType.CASE:
         const caseStartOffset = token.span.start;
         const condition = new Array<string>;
+        const conditionSpans = new Array<Span>;
         
         /*
           We loop to support block case with multiple conditions, e.g.:
@@ -60,6 +62,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
           }
   
           condition.push(caseCondition.parts[0]);
+          conditionSpans.push(cursor.findConditionSpan(caseCondition));
           // consume CONDITION
           cursor.advance();
         } while (cursor.peek().type === TokenType.CASE);
@@ -76,6 +79,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
         cases.push({
           type: ASTNodeType.Case, 
           condition, 
+          conditionSpans,
           children: caseChildren,
           span: {
             start: caseStartOffset,
@@ -93,6 +97,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
         cases.push({
           type: ASTNodeType.Case, 
           condition: null, 
+          conditionSpans: [],
           children: defaultChildren,
           span: {
             start: defaultStartOffset,

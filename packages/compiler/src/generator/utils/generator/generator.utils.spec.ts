@@ -1,12 +1,67 @@
 import { describe, expect, it } from 'vitest';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
+import type { LineMapping } from '../../../type-checker/types/generated-line.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { getBlockIdentifier, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 
 const resolve = (source: string, context = new CompilerContext(), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
 
 describe('resolveExpression', () => {
+  describe('segments', () => {
+    const collect = (source: string, offset: number, context = new CompilerContext()) => {
+      const segments = new Array<LineMapping>();
+      const { expression } = resolveExpression(validateExpression(source, offset).node, context, { resolver: 'root' }, segments);
+      return { expression, segments };
+    };
+    const columns = (expression: string, segments: LineMapping[]) => segments.map(({ columnStart, columnEnd, original }) => [expression.slice(columnStart, columnEnd), original.start, original.end]);
+
+    it('maps every resolved identifier and every piece copied verbatim, without changing the expression', () => {
+      const { expression, segments } = collect('a.b + c', 10);
+
+      expect(expression).toBe('root.a.b + root.c');
+      expect(columns(expression, segments)).toEqual([
+        ['a', 10, 11],
+        ['.', 11, 12],
+        ['b', 12, 13],
+        [' ', 13, 14],
+        ['+', 14, 15],
+        [' ', 15, 16],
+        ['c', 16, 17]
+      ]);
+    });
+
+    it('maps a subtree without resolvable identifiers as a whole', () => {
+      const { expression, segments } = collect('\'x\' + 1', 3);
+
+      expect(columns(expression, segments)).toEqual([['\'x\' + 1', 3, 10]]);
+    });
+
+    it('moves the segments of an object literal wrapped in parentheses', () => {
+      const { expression, segments } = collect('{ a: b }', 0);
+
+      expect(expression).toBe('({ a: root.b })');
+      expect(columns(expression, segments)).toContainEqual(['b', 5, 6]);
+    });
+
+    it('maps the whole access of an identifier read through the context, and the name of a shorthand property', () => {
+      const context = new CompilerContext();
+      context.addIdentifier('item', 'signal');
+
+      const { expression, segments } = collect('{ item }', 0, context);
+
+      expect(expression).toBe('({ item: context.get(\'item\') })');
+      expect(columns(expression, segments)).toContainEqual(['item: context.get(\'item\')', 2, 6]);
+    });
+
+    it('collects no segment for an expression validated without offset', () => {
+      const segments = new Array<LineMapping>();
+      resolveExpression(validateExpression('a + b').node, new CompilerContext(), {}, segments);
+
+      expect(segments).toEqual([]);
+    });
+  });
+
   it('prefixes unknown identifiers with the default resolver', () => {
     expect(resolve('items')).toEqual({ expression: 'this.items' });
   });

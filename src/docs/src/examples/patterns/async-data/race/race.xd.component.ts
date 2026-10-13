@@ -45,8 +45,8 @@ export class RaceComponent extends CustomElement {
     this.selected.set(id);
     this.naive.set('loading…');
     this.safe.set('loading…');
-    void this._loadNaive(id);
-    void this._loadSafe(id);
+    this._loadNaive(id);
+    this._loadSafe(id);
   }
 
   /**

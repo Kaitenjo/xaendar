@@ -1,4 +1,5 @@
 import { Expression } from 'typescript';
+import type { Span } from '../../types/span.type';
 import { ForImplicitVariables } from './nodes/for-implicit-variables';
 
 /**
@@ -15,6 +16,10 @@ export type ForExpression = {
    * `item of` part is omitted (e.g. `@for(10; track $index)`).
    */
   itemAlias?: string;
+  /**
+   * Span of the loop variable alias, `undefined` when there is none.
+   */
+  itemAliasSpan?: Span;
   /**
    * The iterable expression parsed and validated as a JS expression (e.g. `items`):
    * an array, or a number `n` iterated as `0, 1, ..., n - 1`.
@@ -36,4 +41,8 @@ export type ForExpression = {
    * Map of explicit implicit variable aliases (e.g. `{ i: '$index', l: '$last' }`). 
    */
   implicitAliases: Map<ForImplicitVariables, string>;
+  /**
+   * Spans of the explicit implicit variable aliases (e.g. `i` in `$index = i`), keyed by implicit variable.
+   */
+  implicitAliasSpans: Map<ForImplicitVariables, Span>;
 }

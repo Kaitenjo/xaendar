@@ -3,7 +3,8 @@ import { Parser } from '../parser/parser/parser';
 import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
 import type { CompilerCache } from '../types/compiler-cache.type';
-import { compile } from './compile';
+import { TemplateError } from '../models/template-error/template-error.model';
+import { compile, parseTemplate, typeCheckTemplate } from './compile';
 
 const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };
 const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
@@ -111,5 +112,24 @@ describe('compile', () => {
     await compile('', { baseDir: '/base', cache });
 
     expect(cache.getOrInsert.mock.calls.map(([name]) => name)).toEqual(['D', 'A']);
+  });
+});
+
+describe('parseTemplate', () => {
+  it('tokenises and parses a template into its AST', () => {
+    expect(parseTemplate('<b>{x}</b>')).toMatchObject([{ type: ASTNodeType.Element, tagName: 'b', children: [{ type: ASTNodeType.Interpolation }] }]);
+  });
+
+  it('throws a TemplateError for a template that cannot be parsed', () => {
+    expect(() => parseTemplate('<b>')).toThrow(TemplateError);
+  });
+});
+
+describe('typeCheckTemplate', () => {
+  it('type-checks a parsed template against the given metadata', async () => {
+    const template = '<a-b></a-b>{heading}';
+    const result = await typeCheckTemplate(template, parseTemplate(template), [component as never]);
+
+    expect(result.text).toBe('function typeCheck() {\n  root.heading;\n}');
   });
 });

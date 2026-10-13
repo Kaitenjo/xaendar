@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { indentLines, line, mapped, plain } from './line-builder.utils';
+import { indentLines, line, mapped, mappedSegments, plain } from './line-builder.utils';
 
 describe('line-builder utils', () => {
   const span = { start: 1, end: 4 };
@@ -22,6 +22,19 @@ describe('line-builder utils', () => {
       mappings: [
         { columnStart: 4, columnEnd: 8, original: span },
         { columnStart: 11, columnEnd: 12, original: span }
+      ]
+    });
+  });
+
+  it('adds the finer mappings of a fragment after its whole mapping, moved to its column', () => {
+    const identifier = { start: 10, end: 13 };
+    const fragment = mappedSegments('root.foo;', span, [{ columnStart: 5, columnEnd: 8, original: identifier }]);
+
+    expect(line('x = ', fragment)).toEqual({
+      text: 'x = root.foo;',
+      mappings: [
+        { columnStart: 4, columnEnd: 13, original: span },
+        { columnStart: 9, columnEnd: 12, original: identifier }
       ]
     });
   });

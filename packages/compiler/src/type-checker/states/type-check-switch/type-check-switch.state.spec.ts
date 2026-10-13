@@ -28,6 +28,14 @@ describe('typeCheckSwitch', () => {
       '    break;',
       '}'
     ]);
-    expect(lines[0].mappings).toHaveLength(1);
+    expect(lines[0].mappings![0]).toBeDefined();
+  });
+
+  it('maps each case value onto the template', () => {
+    const template = '@switch (mode()) { @case (\'a\') @case (Mode.B) { x } @default { y } }';
+    const lines = typeCheckSwitch(new Parser(template, new Lexer(template).tokenize()).parse()[0] as SwitchNode, () => [], new TypeCheckContext());
+
+    expect(lines[1]).toEqual({ text: '  case \'a\':', mappings: [{ columnStart: 7, columnEnd: 10, original: { start: template.indexOf('\'a\''), end: template.indexOf('\'a\'') + 3 } }] });
+    expect(lines[2].mappings).toEqual([{ columnStart: 7, columnEnd: 13, original: { start: template.indexOf('Mode.B'), end: template.indexOf('Mode.B') + 6 } }]);
   });
 });

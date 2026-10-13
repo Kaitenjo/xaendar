@@ -28,3 +28,13 @@ export function loadTsConfig(fromDir: string): Pick<ParsedCommandLine, 'options'
   const parsed = parseJsonConfigFileContent(configFile.config, sys, dirname(configPath));
   return { options: parsed.options, fileNames: parsed.fileNames };
 }
+
+/**
+ * Finds the `tsconfig.json` applicable to the given directory, walking up its parent directories as `loadTsConfig` does.
+ *
+ * @param fromDir - Directory to start searching for `tsconfig.json` from.
+ * @returns The path of the `tsconfig.json`, or `undefined` if no config file is found.
+ */
+export function findTsConfigPath(fromDir: string): string | undefined {
+  return findConfigFile(fromDir, sys.fileExists, 'tsconfig.json');
+}

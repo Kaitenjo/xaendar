@@ -1,6 +1,6 @@
 import type { TypeCheckResult } from '@xaendar/compiler';
 import { basename, extname } from 'node:path';
-import { upsertVirtualFile } from '../../language-service/language-service';
+import { type ProjectLanguageService, upsertVirtualFile } from '../../language-service/language-service';
 
 /**
  * Builds the type-check shim source for a component and upserts it into the
@@ -10,14 +10,15 @@ import { upsertVirtualFile } from '../../language-service/language-service';
  *   path to the exported class names it declares.
  * @param typecheckBody - The compiler's `TypeCheckResult` whose `text` supplies
  *   the fictitious-TS type-check body to wrap.
+ * @param project - The language service of the project the shim belongs to, the default one if not given.
  * @returns The shim's full source, its path, the line offset at which the
  *   type-check body starts, and the collected class names.
  */
-export function createShim(componentData: Map<string, string[]>, typecheckBody: TypeCheckResult): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
+export function createShim(componentData: ReadonlyMap<string, readonly string[]>, typecheckBody: TypeCheckResult, project?: ProjectLanguageService): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
   const entries = Array.from(componentData.entries());
   const shimPath = `${entries[0][0]}.__typecheck__.ts`;
   const shim = buildTypecheckShim(entries, shimPath, typecheckBody.text);
-  upsertVirtualFile(shimPath, shim.code);
+  project ? project.upsertVirtualFile(shimPath, shim.code) : upsertVirtualFile(shimPath, shim.code);
   return shim;
 }
 
@@ -38,7 +39,7 @@ export function createShim(componentData: Map<string, string[]>, typecheckBody: 
  *   (the `function typeCheck() {...}` blocks and friends).
  * @returns The full shim source, ready to be passed to `updateVirtualFile`.
  */
-function buildTypecheckShim(componentData: [string, string[]][], shimPath: string, body: string): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
+function buildTypecheckShim(componentData: [string, readonly string[]][], shimPath: string, body: string): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
   const prefixLinesLength = componentData.length + 4;
   const prefixLines = new Array<string>(prefixLinesLength).fill(''); 
   const classNames = new Array<string>();

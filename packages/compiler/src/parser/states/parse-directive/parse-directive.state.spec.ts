@@ -15,6 +15,7 @@ describe('parseDirective', () => {
     expect(node.directives).toEqual([{
       type: ASTNodeType.Directive,
       selector: 'myDirective',
+      selectorSpan: { start: 7, end: 18 },
       attributes: [],
       events: [],
       conditionalBindings: [],

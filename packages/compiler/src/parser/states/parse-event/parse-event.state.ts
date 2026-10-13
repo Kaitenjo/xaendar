@@ -35,14 +35,17 @@ export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTN
   const parameters = new Array<Expression>
   while (cursor.peek().type === TokenType.EVENT_PARAMETER) {
     cursor.advance();
-    parameters.push(validateExpression(cursor.getCurrentToken<EventParAmeterToken>().value.parts[0]).node);
+    const { parts: [parameter], span } = cursor.getCurrentToken<EventParAmeterToken>().value;
+    parameters.push(validateExpression(parameter, cursor.findSpan(parameter, span.start).start).node);
     endOffset = cursor.getCurrentToken().value.span.end;
   }
 
   return {
     type: ASTNodeType.Event,
     name,
+    nameSpan: cursor.findSpan(name, startOffset),
     handler: handlerToken.parts[0],
+    handlerSpan: cursor.findSpan(handlerToken.parts[0], handlerToken.span.start),
     parameters,
     span: {
       start: startOffset,

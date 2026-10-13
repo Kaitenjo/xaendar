@@ -1,10 +1,11 @@
-import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { Line } from '../../types/generated-line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
+import type { Span } from '../../../types/span.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Generic arrow function the iterable of every `@for` is passed to: it accepts only a
@@ -58,27 +59,35 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
 
   const lines = new Array<Line>();
 
-  // NOTA: presuppone che ForNode esponga uno span dedicato per la sola
-  // sorgente iterabile (`node.iterableSourceSpan`), distinto da `node.span`
-  // (l'intero blocco @for). Se al momento il parser non lo produce, questo
-  // è un buon segnale per aggiungerlo: senza, l'errore su "root.foo non
-  // esiste" punterebbe sempre all'intero blocco invece che al solo nome.
-  const iterable = resolveExpression(node.iterableExpression, context, { resolver: 'root' }).expression;
-  lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mapped(iterable, node.span), ')) {'));
+  // The iterable, the track expression and the identifiers they read are mapped finely onto the template
+  lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mappedExpression(node.iterableExpression, context, node.span), ')) {'));
 
   lines.push(...indentLines([
-    ...(node.itemAlias ? [plain(`let ${node.itemAlias}!: Signal<typeof ${FOR_VALUE}>;`)] : []),
-    plain(`let ${indexName}!: Signal<number>;`),
-    plain(`let ${firstName}!: Signal<boolean>;`),
-    plain(`let ${lastName}!: Signal<boolean>;`),
-    plain(`let ${evenName}!: Signal<boolean>;`),
-    plain(`let ${oddName}!: Signal<boolean>;`),
-    line(mapped(`${resolveExpression(node.trackExpression, forContext).expression};`, node.span)),
+    ...(node.itemAlias ? [declareVariable(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`)] : []),
+    declareVariable(indexName, node.implicitAliasSpans.get('$index'), 'Signal<number>'),
+    declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'Signal<boolean>'),
+    declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'Signal<boolean>'),
+    declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'Signal<boolean>'),
+    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>'),
+    line(mappedExpression(node.trackExpression, forContext, node.span, ';', {})),
     ...node.children.flatMap(child => processNode(child, forContext)),
   ]));
 
   lines.push(plain('}'));
   return lines;
+}
+
+/**
+ * Declares a variable of the loop, mapping its name onto the span of the template declaring it, if any: the alias
+ * of the item or of an implicit variable, so that the definition of a variable read in the loop leads to the template.
+ *
+ * @param name - The name of the variable.
+ * @param span - The span of the template declaring the name, `undefined` for an implicit variable without alias.
+ * @param type - The type of the variable.
+ * @returns The line declaring the variable.
+ */
+function declareVariable(name: string, span: Span | undefined, type: string): Line {
+  return span ? line('let ', mapped(name, span), `!: ${type};`) : plain(`let ${name}!: ${type};`);
 }
 
 /**

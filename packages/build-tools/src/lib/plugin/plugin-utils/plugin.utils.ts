@@ -1,7 +1,7 @@
 import { slice } from '@xaendar/common';
 import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { resolveModulePath } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { ClassDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
 import { LANG_JS_FLAG, RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX, STYLE_PATH_PARAM } from '../../costants/style-module-prefix';
@@ -350,39 +350,6 @@ export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Pr
 
   // registerSelectors replaces a stale owner, releasing the selector from it
   registerSelectors(metadata, ownerFile);
-  return undefined;
-}
-
-/**
- * Resolves a module import path to an actual file system path.
- * Handles both relative paths (./button.component) and package paths (@scope/pkg).
- *
- * @param baseDir - The directory to resolve relative imports from
- * @param modulePath - The import module path
- * @returns The resolved file path, in posix format, or undefined if not found
- */
-export function resolveModulePath(baseDir: string, modulePath: string): string | undefined {
-  // Handle relative imports
-  if (modulePath.startsWith('.')) {
-    const resolvedPath = resolvePosixPath(baseDir, modulePath);
-
-    // Try as-is (might already have extension)
-    if (existsSync(resolvedPath)) {
-      return resolvedPath;
-    }
-
-    // Try with .ts extension
-    if (existsSync(`${resolvedPath}.ts`)) {
-      return `${resolvedPath}.ts`;
-    }
-
-    // Try with /index.ts if directory
-    if (existsSync(`${resolvedPath}/index.ts`)) {
-      return `${resolvedPath}/index.ts`;
-    }
-  }
-
-  // TODO: Handle package imports and tsconfig aliases
   return undefined;
 }
 

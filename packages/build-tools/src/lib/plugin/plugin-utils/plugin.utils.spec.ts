@@ -35,7 +35,7 @@ import MagicString from 'magic-string';
 import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveModulePath, stripCssComments } from './plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
@@ -469,44 +469,6 @@ describe('describeDiagnostic()', () => {
     const result = describeDiagnostic(templateSource, diagnostic, 1, mappingTable);
 
     expect(result).toBe('[Ln 1, Col 1] - Something went wrong\n ---> line');
-  });
-});
-
-describe('resolveModulePath()', () => {
-  const resolvedPath = resolvePosixPath('/src', './button');
-
-  it('returns the resolved path unchanged when it already exists as-is', () => {
-    vi.mocked(existsSync).mockImplementation((p) => p === resolvedPath);
-
-    expect(resolveModulePath('/src', './button')).toBe(resolvedPath);
-  });
-
-  it('appends a .ts extension when the bare path does not exist but the .ts file does', () => {
-    vi.mocked(existsSync).mockImplementation((p) => p === `${resolvedPath}.ts`);
-
-    expect(resolveModulePath('/src', './button')).toBe(`${resolvedPath}.ts`);
-  });
-
-  it('appends /index.ts when the path is a directory containing an index file', () => {
-    vi.mocked(existsSync).mockImplementation((p) => p === `${resolvedPath}/index.ts`);
-
-    expect(resolveModulePath('/src', './button')).toBe(`${resolvedPath}/index.ts`);
-  });
-
-  it('returns undefined when no candidate path exists', () => {
-    vi.mocked(existsSync).mockReturnValue(false);
-
-    expect(resolveModulePath('/src', './button')).toBeUndefined();
-  });
-
-  it('returns undefined for package (non-relative) import specifiers', () => {
-    expect(resolveModulePath('/src', '@scope/pkg')).toBeUndefined();
-  });
-
-  it('returns a posix path, matching the owner file keys of the metadata registry', () => {
-    vi.mocked(existsSync).mockReturnValue(true);
-
-    expect(resolveModulePath('/src', './button')).not.toContain('\\');
   });
 });
 

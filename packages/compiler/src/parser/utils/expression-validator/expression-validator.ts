@@ -1,6 +1,18 @@
 import { slice } from '@xaendar/common';
-import { LanguageVariant, Node, ScriptTarget, SyntaxKind, VariableStatement, createScanner, createSourceFile, forEachChild } from 'typescript';
+import { LanguageVariant, Node, ScriptTarget, SourceFile, SyntaxKind, VariableStatement, createScanner, createSourceFile, forEachChild } from 'typescript';
+import type { Span } from '../../../types/span.type';
 import { ExpressionValidationResult } from '../../types/expression-validation-result.type';
+
+/**
+ * Text the expression is prefixed with to be parsed as the initializer of a declaration.
+ */
+const EXPRESSION_PREFIX = 'const x = ';
+
+/**
+ * Offset to add to a position in the source file of an expression to get its offset in the template,
+ * for the expressions validated together with their offset (see {@link validateExpression}).
+ */
+const templateOffsets = new WeakMap<SourceFile, number>();
 
 /**
  * Validates that a string contains a single expression belonging to the
@@ -40,9 +52,16 @@ import { ExpressionValidationResult } from '../../types/expression-validation-re
  * caller and must be performed on the returned `node` after this function
  * returns without throwing.
  *
+ * ## Template positions
+ *
+ * When `templateOffset` is given, the offset of the expression in the template is recorded, so that
+ * {@link getTemplateSpan} can tell where any node of the expression is in the template, and an error
+ * carries the span of the offending part of the expression as its `cause`.
+ *
  * @param source - The raw expression string extracted from the template.
+ * @param templateOffset - The offset of `source` in the template, if known.
  * @returns A {@link ExpressionValidationResult} containing the parsed AST node.
- * @throws A message describing the first disallowed construct found.
+ * @throws An `Error` describing the first disallowed construct found.
  *
  * @example
  * const { node } = validateExpression('user.hasRole("admin") && isVerified');
@@ -51,9 +70,11 @@ import { ExpressionValidationResult } from '../../types/expression-validation-re
  * validateExpression('await user.load()');
  * // throws "'await' is not allowed inside template expressions."
  */
-export function validateExpression(source: string): ExpressionValidationResult {
-  const prefix = 'const x = ';
-  const sourceFile = createSourceFile('expression.ts', `${prefix}${source}`, ScriptTarget.ESNext, true);
+export function validateExpression(source: string, templateOffset?: number): ExpressionValidationResult {
+  const sourceFile = createSourceFile('expression.ts', `${EXPRESSION_PREFIX}${source}`, ScriptTarget.ESNext, true);
+  if (templateOffset !== undefined) {
+    templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
+  }
 
   const statement = sourceFile.statements[0] as VariableStatement;
   const expression = statement.declarationList.declarations[0].initializer!;
@@ -65,7 +86,10 @@ export function validateExpression(source: string): ExpressionValidationResult {
   */
   const scanner = createScanner(ScriptTarget.ESNext, true, LanguageVariant.Standard, sourceFile.text, undefined, expression.end);
   if (scanner.scan() !== SyntaxKind.EndOfFileToken) {
-    throw `'${source.trim()}' must be a single expression, got '${slice(sourceFile.text, expression.end).trim()}' after '${expression.getText()}'.`;
+    const rest = slice(sourceFile.text, expression.end);
+    throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
+      cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
+    });
   }
 
   visitNode(expression);
@@ -76,14 +100,39 @@ export function validateExpression(source: string): ExpressionValidationResult {
 }
 
 /**
+ * Returns the span in the template of a node of an expression validated together with its offset (see {@link validateExpression}).
+ *
+ * @param node - A node of the expression: the expression itself, or any of its descendants.
+ * @returns The span of the node in the template, or `undefined` if the offset of the expression is not known.
+ */
+export function getTemplateSpan(node: Node): Span | undefined {
+  const sourceFile = node.getSourceFile();
+  return toTemplateSpan(sourceFile, node.getStart(sourceFile), node.getEnd());
+}
+
+/**
+ * Converts a range of the source file of an expression into a span of the template.
+ *
+ * @param sourceFile - The source file of the expression.
+ * @param start - The start of the range in the source file.
+ * @param end - The end of the range in the source file.
+ * @returns The span in the template, or `undefined` if the offset of the expression is not known.
+ */
+function toTemplateSpan(sourceFile: SourceFile, start: number, end: number): Span | undefined {
+  const offset = templateOffsets.get(sourceFile);
+  return offset === undefined ? undefined : { start: offset + start, end: offset + end };
+}
+
+/**
  * Recursively visits an AST node, throwing as soon as a node kind outside
  * the permitted expression subset is found.
  *
  * @param node - The AST node to inspect.
+ * @throws An `Error` describing the disallowed node, carrying its span in the template as `cause` when known.
  */
 function visitNode(node: Node): void {
   if (!isAllowedNode(node)) {
-    throw buildDisallowedMessage(node);
+    throw new Error(buildDisallowedMessage(node), { cause: getTemplateSpan(node) });
   }
 
   forEachChild(node, visitNode);

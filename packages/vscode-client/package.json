@@ -11,6 +11,43 @@
   "xaendar": {
     "target": "extension"
   },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "onLanguage:html"
+  ],
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "xaendar.template.injection",
+        "path": "./syntaxes/xaendar-template.tmLanguage.json",
+        "injectTo": [
+          "text.html.basic",
+          "text.html.derivative"
+        ]
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "html",
+        "scopes": {
+          "property": [
+            "variable.other.property"
+          ],
+          "event": [
+            "entity.name.function.event.xaendar"
+          ],
+          "decorator": [
+            "entity.name.function.decorator.xaendar"
+          ],
+          "variable.readonly": [
+            "variable.other.constant"
+          ]
+        }
+      }
+    ]
+  },
   "dependencies": {
     "vscode-languageclient": "^10.1.1"
   }

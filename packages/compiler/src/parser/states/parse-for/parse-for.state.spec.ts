@@ -6,6 +6,8 @@ import { Parser } from '../../parser/parser';
 import { ASTNodeType } from '../../types/node.enum';
 import { ForNode } from '../../types/nodes/for-node.type';
 import { parseForExpression } from './parse-for.state';
+import type { Span } from '../../../types/span.type';
+import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
@@ -101,5 +103,24 @@ describe('parseForExpression', () => {
     ['a duplicated implicit alias', 'item of items; track item; a = $index, b = $index', 'is already aliased']
   ])('throws for %s', (_name, source, message) => {
     expect(() => parseForExpression(source)).toThrow(message);
+  });
+
+  it('locates the item alias, the iterable, the track expression and the aliases in the template', () => {
+    const template = '@for ( item  of  items() ;  track item.id ;  i = $index ,  odd = $odd ) { x }';
+    const [node] = parse(template) as ForNode[];
+    const textOf = (template: string, span: Span | undefined) => span && template.slice(span.start, span.end);
+
+    expect(textOf(template, node.itemAliasSpan)).toBe('item');
+    expect(textOf(template, getTemplateSpan(node.iterableExpression))).toBe('items()');
+    expect(textOf(template, getTemplateSpan(node.trackExpression))).toBe('item.id');
+    expect(textOf(template, node.implicitAliasSpans.get('$index'))).toBe('i');
+    expect(textOf(template, node.implicitAliasSpans.get('$odd'))).toBe('odd');
+  });
+
+  it('gives no span to the default track expression and to a missing item alias', () => {
+    const [node] = parse('@for (10) { x }') as ForNode[];
+
+    expect(node.itemAliasSpan).toBeUndefined();
+    expect(getTemplateSpan(node.trackExpression)).toBeUndefined();
   });
 });

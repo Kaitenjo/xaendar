@@ -20,7 +20,7 @@ export function parseInterpolation(cursor: ParserCursor, _parseNode: NoArgsFunct
   
   return {
     type: ASTNodeType.Interpolation,
-    expression: validateExpression(token.parts[0]).node,
+    expression: validateExpression(token.parts[0], cursor.findSpan(token.parts[0], startOffset).start).node,
     span: {
       start: startOffset,
       end: cursor.getCurrentToken().value.span.end,

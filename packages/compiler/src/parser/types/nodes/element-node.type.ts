@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
@@ -18,6 +19,14 @@ export type ElementNode = ASTNodeWithSpan<{
    * The HTML tag name of the element.
    */
   tagName: string;
+  /**
+   * Span of the tag name in the opening tag, e.g. `docs-search` in `<docs-search>`.
+   */
+  nameSpan: Span;
+  /**
+   * Span of the tag name in the closing tag, e.g. `docs-search` in `</docs-search>`, `undefined` for a self-closing tag.
+   */
+  closeNameSpan?: Span;
   /**
    * Attribute nodes bound to this element.
    */

@@ -9,7 +9,7 @@ import type { DirectiveNode } from './directive-node.type';
  * Unlike a directive, it only binds its properties: it listens to no event, since it holds no element to dispatch
  * them on, and its properties cannot be bound conditionally.
  */
-export type StructuralDirectiveNode = ASTNodeWithSpan<Pick<DirectiveNode, 'selector' | 'attributes'> & {
+export type StructuralDirectiveNode = ASTNodeWithSpan<Pick<DirectiveNode, 'selector' | 'selectorSpan' | 'attributes'> & {
   /**
    * Discriminant identifying this node as a structural directive.
    */

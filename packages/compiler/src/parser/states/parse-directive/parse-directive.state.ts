@@ -65,6 +65,7 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
   return {
     type: ASTNodeType.Directive,
     selector: token.parts[0],
+    selectorSpan: cursor.findSpan(token.parts[0], startOffset),
     attributes,
     events,
     conditionalBindings,

@@ -1,6 +1,7 @@
 import { slice, Stack } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import { CR, LF, SPACE } from '../../costants/chars.constants';
+import { TemplateError } from '../../models/template-error/template-error.model';
 import { Span } from '../../types/span.type';
 import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-value.state';
 import { lexAttribute } from '../states/lex-attribute/lex-attribute.state';
@@ -182,8 +183,12 @@ export class Lexer {
           const previousNeighbourhood = slice(this._input, startInterval, stateStartIndex).replace(/^\s+/, '');
           const underlinedError = `\x1b[4m${slice(this._input, stateStartIndex, stateEndIndex)}\x1b[0m`;
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
-          const message = isError ? err.message : err;
-          throw `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`;
+          const message = isError ? err.message : `${err}`;
+          throw new TemplateError(
+            `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
+            { start: stateStartIndex, end: stateEndIndex },
+            message
+          );
         }
       }
     }

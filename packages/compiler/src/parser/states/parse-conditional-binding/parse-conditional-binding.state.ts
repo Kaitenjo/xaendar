@@ -1,10 +1,12 @@
 import type { NoArgsFunction } from '@xaendar/types';
 import type { Expression } from 'typescript';
 import { TokenType } from '../../../lexer/types/token-type.enum';
+import type { ConditionToken } from '../../../lexer/types/tokens/condition-token.type';
 import type { ElseIfToken } from '../../../lexer/types/tokens/else-if-token.type';
 import type { ElseToken } from '../../../lexer/types/tokens/else-token.type';
 import type { IfToken } from '../../../lexer/types/tokens/if-token.type';
 import type { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
+import type { Span } from '../../../types/span.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import type { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
@@ -55,15 +57,16 @@ function parseIfBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode 
   do {
     // consume IF or ELSE_IF
     cursor.advance();
-    const condition = validateExpression(parseCondition(cursor, branchToken.type)).node;
-    branches.push(parseBranch(cursor, parseNode, branchToken.span.start, condition));
+    const conditionToken = parseCondition(cursor, branchToken.type);
+    const condition = validateExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start).node;
+    branches.push(parseBranch(cursor, parseNode, branchToken.span.start, condition, []));
     branchToken = cursor.peek<ElseIfToken | ElseToken>();
   } while (branchToken.type === TokenType.ELSE_IF);
 
   if (branchToken.type === TokenType.ELSE) {
     // consume ELSE
     cursor.advance();
-    branches.push(parseBranch(cursor, parseNode, branchToken.span.start, null));
+    branches.push(parseBranch(cursor, parseNode, branchToken.span.start, null, []));
   }
 
   return {
@@ -90,7 +93,8 @@ function parseIfBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode 
 function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: SwitchToken): SwitchBindingNode {
   // consume SWITCH
   cursor.advance();
-  const expression = validateExpression(parseCondition(cursor, token.type)).node;
+  const conditionToken = parseCondition(cursor, token.type);
+  const expression = validateExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start).node;
   consumeBlockOpen(cursor);
 
   const branches = new Array<ConditionalBindingBranchNode<string[]>>();
@@ -109,7 +113,8 @@ function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
           throw new Error('@default must be the last branch of a @switch');
         }
 
-        branches.push(parseBranch(cursor, parseNode, branchToken.span.start, parseCases(cursor)));
+        const { conditions, conditionSpans } = parseCases(cursor);
+        branches.push(parseBranch(cursor, parseNode, branchToken.span.start, conditions, conditionSpans));
         break;
 
       case TokenType.BLOCK_CLOSE:
@@ -138,17 +143,18 @@ function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
  * consecutive CASE tokens, which share the same block, or nothing for the DEFAULT token.
  *
  * @param cursor - Parser cursor positioned at the CASE or DEFAULT token opening the branch.
- * @returns The conditions of the `@case`s of the branch, or `null` for the `@default` branch.
+ * @returns The conditions of the `@case`s of the branch, or `null` for the `@default` branch, with their spans.
  * @throws If a `@case` has no condition.
  */
-function parseCases(cursor: ParserCursor): string[] | null {
+function parseCases(cursor: ParserCursor): { conditions: string[] | null, conditionSpans: Span[] } {
   if (cursor.peek().type === TokenType.DEFAULT) {
     // consume DEFAULT
     cursor.advance();
-    return null;
+    return { conditions: null, conditionSpans: [] };
   }
 
   const conditions = new Array<string>();
+  const conditionSpans = new Array<Span>();
 
   /*
     We loop to support a branch with multiple conditions, e.g.:
@@ -160,10 +166,12 @@ function parseCases(cursor: ParserCursor): string[] | null {
   do {
     // consume CASE
     cursor.advance();
-    conditions.push(parseCondition(cursor, TokenType.CASE));
+    const conditionToken = parseCondition(cursor, TokenType.CASE);
+    conditions.push(conditionToken.parts[0]);
+    conditionSpans.push(cursor.findConditionSpan(conditionToken));
   } while (cursor.peek().type === TokenType.CASE);
 
-  return conditions;
+  return { conditions, conditionSpans };
 }
 
 /**
@@ -174,10 +182,11 @@ function parseCases(cursor: ParserCursor): string[] | null {
  * @param parseNode - Parser function for recursive child parsing.
  * @param start - Offset of the keyword opening the branch, where its span starts.
  * @param condition - What selects the branch, or `null` for an `@else` or a `@default` branch.
+ * @param conditionSpans - The spans of the values matched by a `@switch` branch, empty for any other branch.
  * @returns The parsed `ConditionalBindingBranchNode`.
  * @throws If the block is not opened, or an unexpected token is found in it.
  */
-function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, start: number, condition: Condition | null): ConditionalBindingBranchNode<Condition> {
+function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, start: number, condition: Condition | null, conditionSpans: Span[]): ConditionalBindingBranchNode<Condition> {
   consumeBlockOpen(cursor);
 
   const attributes = new Array<AttributeNode>();
@@ -224,6 +233,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
   return {
     type: ASTNodeType.ConditionalBindingBranch,
     condition,
+    conditionSpans,
     attributes,
     events,
     conditionalBindings,
@@ -241,17 +251,17 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
  *
  * @param cursor - Parser cursor positioned right after the keyword token.
  * @param keyword - The type of the keyword token, used in the error message.
- * @returns The raw condition declared between the parentheses of the keyword.
+ * @returns The CONDITION token, holding the raw condition declared between the parentheses of the keyword.
  * @throws If the keyword is not followed by a CONDITION token.
  */
-function parseCondition(cursor: ParserCursor, keyword: TokenType): string {
+function parseCondition(cursor: ParserCursor, keyword: TokenType): ConditionToken {
   const token = cursor.peek();
   if (token.type !== TokenType.CONDITION) {
     throw new Error(`Expected CONDITION after ${TokenType[keyword]}, got ${TokenType[token.type]}`);
   }
 
   cursor.advance();
-  return token.parts[0];
+  return token;
 }
 
 /**

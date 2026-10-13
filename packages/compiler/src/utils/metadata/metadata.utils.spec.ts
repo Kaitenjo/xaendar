@@ -142,7 +142,8 @@ describe('extractComponentsMetadataFromSourceFile', () => {
         @Other() accessor other!: OutputEvent<number>;
       `)))?.get('MyEl')?.events;
 
-      expect(Object.fromEntries(events!)).toEqual({
+      expect([...events!.keys()]).toEqual(['done', 'bare', 'untyped', 'empty']);
+      expect(Object.fromEntries(events!)).toMatchObject({
         done: { type: eventType('MyEl', 'done') },
         bare: { type: 'void' },
         untyped: { type: 'void' },
@@ -167,7 +168,27 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       expect([...metadata!.properties.keys()]).toEqual(['id', 'caption']);
       expect(metadata?.properties.get('id')).toMatchObject({ name: 'id', type: propertyType('MyEl', 'id'), required: true });
       expect(metadata?.properties.get('caption')).toMatchObject({ name: 'label', type: propertyType('MyEl', 'label'), alias: 'caption' });
-      expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: eventType('MyEl', 'picked') }, done: { type: eventType('MyEl', 'done') } });
+      expect(Object.fromEntries(metadata!.events)).toMatchObject({ picked: { type: eventType('MyEl', 'picked') }, done: { type: eventType('MyEl', 'done') } });
+    });
+
+    it('tells where each property and event is declared, in the class or in a base class', async () => {
+      const code = `
+        class Base {
+          @Property('x', { alias: 'caption' }) accessor label!: InputSignal<string>;
+          @Event() accessor picked!: Output<number>;
+        }
+        ${subclass('extends Base', '@Property() accessor size!: InputSignal<number>;\n@Event() accessor done!: Output<boolean>;')}
+      `;
+      const metadata = (await extract(code))?.get('MyEl');
+      const nameAt = ({ start, end }: { start: number, end: number }) => code.slice(start, end);
+
+      // An aliased property is declared by its accessor, not by its alias
+      expect(metadata?.properties.get('caption')?.declaration).toEqual({ fileName: 'component.ts', span: expect.any(Object) });
+      expect(nameAt(metadata!.properties.get('caption')!.declaration!.span)).toBe('label');
+      expect(nameAt(metadata!.properties.get('size')!.declaration!.span)).toBe('size');
+      expect(nameAt(metadata!.events.get('picked')!.declaration!.span)).toBe('picked');
+      expect(nameAt(metadata!.events.get('done')!.declaration!.span)).toBe('done');
+      expect(code.indexOf('label')).toBe(metadata!.properties.get('caption')!.declaration!.span.start);
     });
 
     it('lets the class override an inherited accessor, whatever its alias', async () => {
@@ -181,7 +202,7 @@ describe('extractComponentsMetadataFromSourceFile', () => {
 
       expect([...metadata!.properties.keys()]).toEqual(['label']);
       expect(metadata?.properties.get('label')).toMatchObject({ required: true, alias: undefined });
-      expect(Object.fromEntries(metadata!.events)).toEqual({ picked: { type: 'void' } });
+      expect(Object.fromEntries(metadata!.events)).toMatchObject({ picked: { type: 'void' } });
     });
 
     it('throws, pointing at the inherited property, when a property of the class resolves to its name', async () => {
@@ -257,7 +278,7 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
     expect(metadata).not.toHaveProperty('styleUrl');
     expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: propertyType('MyDirective', 'display'), required: false });
     expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: propertyType('MyDirective', 'visible'), required: true });
-    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: eventType('MyDirective', 'toggled') } });
+    expect(Object.fromEntries(metadata!.events)).toMatchObject({ toggled: { type: eventType('MyDirective', 'toggled') } });
     expect(metadata?.typescriptNodes.klass.name.text).toBe('MyDirective');
   });
 
@@ -299,6 +320,6 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
     `))?.get('MyDirective');
 
     expect(metadata?.properties.get('display')?.type).toBe(propertyType('MyDirective', 'display'));
-    expect(Object.fromEntries(metadata!.events)).toEqual({ toggled: { type: eventType('MyDirective', 'toggled') } });
+    expect(Object.fromEntries(metadata!.events)).toMatchObject({ toggled: { type: eventType('MyDirective', 'toggled') } });
   });
 });

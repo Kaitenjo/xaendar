@@ -32,6 +32,6 @@ describe('TypeChecker', () => {
   it('reports nodes without a registered transition function', async () => {
     const ast = [{ type: ASTNodeType.Case, span: { start: 0, end: 5 } }] as unknown as ASTNode[];
 
-    await expect(new TypeChecker('hello', ast).generate([])).rejects.toContain('[TypeChecker] No transition function for ASTNode of type Case');
+    await expect(new TypeChecker('hello', ast).generate([])).rejects.toThrow('[TypeChecker] No transition function for ASTNode of type Case');
   });
 });

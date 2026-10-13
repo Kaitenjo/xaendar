@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import { ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { ImportSpecifier } from './import-specifier.type';
@@ -22,4 +23,8 @@ export type ImportNode = ASTNodeWithSpan<{
    * Module path where the symbols are imported from.
    */
   path: string;
+  /**
+   * Span of the module path, without the quotes.
+   */
+  pathSpan: Span;
 }>;

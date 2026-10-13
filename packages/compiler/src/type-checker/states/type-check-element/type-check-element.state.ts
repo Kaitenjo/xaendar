@@ -17,10 +17,12 @@ import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-d
 import type { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import type { ElementEventMap } from '../../types/element-event-map.type';
-import { Line } from '../../types/generated-line.type';
+import type { Span } from '../../../types/span.type';
+import { Line, LineMapping } from '../../types/generated-line.type';
 import type { NativeEventType } from '../../types/native-event-type.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
-import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import { indentLines, line, type LinePart, mapped, mappedSegments, plain } from '../../utils/line-builder/line-builder.utils';
+import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Type-checks an element node: emits the type-check lines for its
@@ -331,7 +333,7 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
       lines.push(
         plain('{'),
         ...indentLines(typeof value === 'object'
-          ? [line('(', mapped(resolveExpression(value.expression, context, { resolver: 'root' }).expression, value.span), `) satisfies ${property.type};`)]
+          ? [line('(', mappedExpression(value.expression, context, value.span), `) satisfies ${property.type};`)]
           : [plain('let x!: string;'), line(mapped(`x satisfies ${property.type};`, attributes[i].span))]
         ),
         plain('}')
@@ -360,7 +362,7 @@ function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDire
   const lines = new Array<Line>();
 
   for (let i = 0; i < events.length; i++) {
-    const { name, parameters, span } = events[i];
+    const { name, nameSpan, parameters, span } = events[i];
     const event = metadata.events.get(name);
 
     if (event) {
@@ -370,7 +372,7 @@ function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDire
       const eventType = nativeEventType(name);
       passesEvent(parameters) 
         ? lines.push(...typeCheckEvent(events[i], eventType, context))
-        : lines.push(line(mapped(`null! satisfies ${eventType};`, span)), ...typeCheckEvent(events[i], eventType, context));
+        : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, span, name, nameSpan)), ...typeCheckEvent(events[i], eventType, context));
     }
   }
 
@@ -412,7 +414,7 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], context: TypeChe
   for (let i = 0; i < attributes.length; i++) {
     const { value } = attributes[i];
     if (typeof value !== 'string') {
-      lines.push(line(mapped(`${resolveExpression(value.expression, context, { resolver: 'root' }).expression};`, value.span)));
+      lines.push(line(mappedExpression(value.expression, context, value.span, ';')));
     }
   };
 
@@ -442,32 +444,59 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
  * @param context - Current type-check scope.
  * @returns The generated type-check lines: the call, wrapped in a block when it declares `$event`.
  */
-function typeCheckEvent({ handler, parameters, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
+function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier('$event');
 
-  const args = parameters
-    .map(parameter => resolveExpression(parameter, eventContext, { resolver: 'root' }).expression)
-    .join(', ');
-
   /*
-    The whole call is mapped onto the span of the event binding
-    (the whole `(click)="handler($event)"`), not onto
-    the single parameters: mapping each argument on its own would need
-    the parser to provide a span for every parameter.
+    The whole call is mapped onto the span of the event binding (the whole `(click)="handler($event)"`),
+    the handler onto its name and each argument finely, like any other expression.
   */
-  const call = line(mapped(`root.${handler}(${args});`, span));
+  const callee = `root.${handler}(`;
+  const segments: LineMapping[] = [{ columnStart: 5, columnEnd: 5 + handler.length, original: handlerSpan }];
+  let call = callee;
+
+  for (let i = 0; i < parameters.length; i++) {
+    const separator = i ? ', ' : '';
+    const argumentSegments = new Array<LineMapping>();
+    const argument = resolveExpression(parameters[i], eventContext, { resolver: 'root' }, argumentSegments).expression;
+    const column = call.length + separator.length;
+
+    for (let j = 0; j < argumentSegments.length; j++) {
+      const { columnStart, columnEnd, original } = argumentSegments[j];
+      segments.push({ columnStart: column + columnStart, columnEnd: column + columnEnd, original });
+    }
+
+    call = `${call}${separator}${argument}`;
+  }
+
+  const callLine = line(mappedSegments(`${call});`, span, segments));
 
   return passesEvent(parameters)
     ? [
       plain('{'),
       ...indentLines([
-        line(mapped(`let $event!: ${eventType};`, span)),
-        call
+        line(mappedEventName(`let $event!: ${eventType};`, span, name, nameSpan)),
+        callLine
       ]),
       plain('}')
     ]
-    : [call];
+    : [callLine];
+}
+
+/**
+ * Maps a text typing an event by its name (e.g. `let $event!: HTMLElementEventMap['click'];`) onto the span of the
+ * event binding, and the name quoted in it onto the name of the event, where TypeScript reports an unknown event.
+ *
+ * @param text - The text typing the event.
+ * @param span - The span of the event binding.
+ * @param name - The name of the event.
+ * @param nameSpan - The span of the name of the event.
+ * @returns The mapped fragment.
+ */
+function mappedEventName(text: string, span: Span, name: string, nameSpan: Span): LinePart {
+  const nameColumn = text.indexOf(`'${name}'`) + 1;
+  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + name.length, original: nameSpan }] : []);
 }
 
 /**
@@ -534,7 +563,7 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, type
     lines.push(
       // Only the first branch opens the chain, only the `@else` one has no condition
       condition
-        ? line(i ? 'else if (' : 'if (', mapped(resolveExpression(condition, context, { resolver: 'root' }).expression, span), ') {')
+        ? line(i ? 'else if (' : 'if (', mappedExpression(condition, context, span), ') {')
         : plain('else {'),
       ...typeCheckBranch(branch),
       plain('}')
@@ -556,13 +585,12 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, type
  * @returns The generated type-check lines.
  */
 function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, typeCheckBranch: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
-  const { expression } = resolveExpression(node.expression, context, { resolver: 'root' });
-  const lines = [line('switch (', mapped(expression, node.span), ') {')];
+  const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
 
   const { branches } = node;
   for (let i = 0; i < branches.length; i++) {
     const branch = branches[i];
-    const labels = branch.condition?.map(condition => plain(`case ${condition}:`)) ?? [plain('default:')];
+    const labels = branch.condition?.map((condition, index) => line('case ', mapped(condition, branch.conditionSpans[index]), ':')) ?? [plain('default:')];
 
     lines.push(...indentLines([
       ...labels,

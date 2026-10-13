@@ -72,4 +72,17 @@ describe('ParserCursor', () => {
       expect(cursor.peek(4)).toEqual([tokens[0], tokens[1], tokens[2], eof]);
     });
   });
+
+  it('finds the span of a text written verbatim in the template', () => {
+    const cursor = new ParserCursor('<a title="x">', []);
+
+    expect(cursor.findSpan('title', 1)).toEqual({ start: 3, end: 8 });
+    expect(cursor.findSpan('missing', 1)).toEqual({ start: 1, end: 1 });
+  });
+
+  it('finds the span of a condition inside its parentheses', () => {
+    const cursor = new ParserCursor('@if ((a) || b) {}', []);
+
+    expect(cursor.findConditionSpan({ type: TokenType.CONDITION, parts: ['(a) || b'], span: { start: 3, end: 14 } })).toEqual({ start: 5, end: 13 });
+  });
 });

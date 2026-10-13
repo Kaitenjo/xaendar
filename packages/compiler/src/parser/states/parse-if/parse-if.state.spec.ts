@@ -6,6 +6,8 @@ import { Parser } from '../../parser/parser';
 import { ASTNodeType } from '../../types/node.enum';
 import { ElseIfNode } from '../../types/nodes/else-if-node.type';
 import { IfNode } from '../../types/nodes/if-node.type';
+import type { Span } from '../../../types/span.type';
+import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
@@ -27,5 +29,14 @@ describe('parseIfControlFlow', () => {
   it('throws when the condition is missing', () => {
     const tokens: Token[] = [{ type: TokenType.IF, span: { start: 0, end: 3 } }];
     expect(() => new Parser('', tokens).parse()).toThrow('Expected CONDITION after IF, got EOF');
+  });
+
+  it('locates the conditions in the template', () => {
+    const template = '@if ( a() ) { x } @else if ((b)) { y }';
+    const [node] = parse(template) as IfNode[];
+    const textOf = (template: string, span: Span | undefined) => span && template.slice(span.start, span.end);
+
+    expect(textOf(template, getTemplateSpan(node.conditionNode))).toBe('a()');
+    expect(textOf(template, getTemplateSpan((node.alternate as ElseIfNode).conditionNode))).toBe('(b)');
   });
 });

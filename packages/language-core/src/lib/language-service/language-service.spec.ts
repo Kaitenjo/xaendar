@@ -339,6 +339,7 @@ describe('LanguageServiceHost', () => {
 
     it('delegates to sys.readFile for a non-virtual file', async () => {
       const { ts, host } = await setupHost();
+      vi.mocked(ts.sys.fileExists).mockReturnValue(true);
       vi.mocked(ts.sys.readFile).mockReturnValue('real content');
 
       expect(host.readFile('/real.ts')).toBe('real content');
@@ -353,5 +354,89 @@ describe('LanguageServiceHost', () => {
     expect(host.directoryExists).toBe(ts.sys.directoryExists);
     expect(host.getDirectories).toBe(ts.sys.getDirectories);
     expect(host.realpath).toBe(ts.sys.realpath);
+  });
+});
+
+describe('document overlays', () => {
+  async function setupHost() {
+    const { mod, ts } = await load();
+    const { hosts } = mockLanguageServiceFactory(ts);
+    vi.mocked(ts.createDocumentRegistry).mockReturnValue({} as never);
+    mod.getLanguageService({});
+    return { mod, ts, host: hosts[0] };
+  }
+
+  it('reads the unsaved text of an open document in place of the file on disk, whatever the separators and the drive case', async () => {
+    const { mod, ts, host } = await setupHost();
+    vi.mocked(ts.sys.fileExists).mockReturnValue(false);
+
+    mod.setDocumentOverlay('C:\\src\\open.ts', 'unsaved');
+
+    expect(host.readFile('c:/src/open.ts')).toBe('unsaved');
+    expect(host.fileExists('C:/src/open.ts')).toBe(true);
+    expect(host.getScriptVersion('c:/src/open.ts')).toBe('overlay-1');
+    const snapshot = host.getScriptSnapshot('c:/src/open.ts');
+    expect(snapshot?.getText(0, snapshot.getLength())).toBe('unsaved');
+    expect(mod.readDocument('c:/src/open.ts')).toBe('unsaved');
+
+    mod.setDocumentOverlay('c:/src/open.ts', 'changed');
+    expect(host.getScriptVersion('c:/src/open.ts')).toBe('overlay-2');
+  });
+
+  it('reads the file on disk again once the document is closed', async () => {
+    const { mod, ts, host } = await setupHost();
+    vi.mocked(ts.sys.fileExists).mockReturnValue(true);
+    vi.mocked(ts.sys.readFile).mockReturnValue('saved');
+
+    mod.setDocumentOverlay('/src/closed.ts', 'unsaved');
+    mod.removeDocumentOverlay('/src/closed.ts');
+
+    expect(host.readFile('/src/closed.ts')).toBe('saved');
+    expect(mod.readDocument('/src/closed.ts')).toBe('saved');
+  });
+
+  it('reads nothing for a file that is neither open nor on disk', async () => {
+    const { mod, ts } = await load();
+    vi.mocked(ts.sys.fileExists).mockReturnValue(false);
+
+    expect(mod.readDocument('/src/missing.ts')).toBeUndefined();
+  });
+});
+
+describe('getProjectLanguageService()', () => {
+  it('returns the default instance, used by the module-level functions, for a file outside of any project', async () => {
+    const { mod, ts } = await load();
+    const { instances } = mockLanguageServiceFactory(ts);
+
+    expect(mod.getProjectLanguageService(undefined).getLanguageService({})).toBe(mod.getLanguageService({}));
+    expect(instances).toHaveLength(1);
+  });
+
+  it('returns one instance per tsconfig.json, each with its own LanguageService', async () => {
+    const { mod, ts } = await load();
+    const { hosts, instances } = mockLanguageServiceFactory(ts);
+
+    const root = mod.getProjectLanguageService('C:\\repo\\tsconfig.json');
+    const docs = mod.getProjectLanguageService('c:/repo/docs/tsconfig.json');
+    expect(mod.getProjectLanguageService('c:/repo/tsconfig.json')).toBe(root);
+    expect(docs).not.toBe(root);
+
+    root.getLanguageService({ strict: true });
+    docs.getLanguageService({ strict: false });
+    root.upsertVirtualFile('/repo/a.ts.__typecheck__.ts', 'a');
+    docs.registerRealFile('/repo/docs/b.ts');
+
+    expect(hosts[0].getScriptFileNames()).toEqual(['/repo/a.ts.__typecheck__.ts']);
+    expect(hosts[1].getScriptFileNames()).toEqual(['/repo/docs/b.ts']);
+
+    mod.disposeProjectLanguageServices();
+    expect(instances.every(instance => instance.dispose.mock.calls.length === 1)).toBe(true);
+    expect(mod.getProjectLanguageService('c:/repo/tsconfig.json')).not.toBe(root);
+  });
+
+  it('disposes an instance that never created its LanguageService', async () => {
+    const { mod } = await load();
+
+    expect(() => mod.getProjectLanguageService('/other/tsconfig.json').dispose()).not.toThrow();
   });
 });

@@ -1,9 +1,9 @@
-import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { Line } from '../../types/generated-line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Type-checks a `@switch` block using a real TypeScript `switch` statement.
@@ -21,8 +21,7 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
  * JS/TS fallthrough syntax directly.
  */
 export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
-  const { expression } = resolveExpression(node.expression, context, { resolver: 'root' });
-  const lines = [line('switch (', mapped(expression, node.span), ') {')];
+  const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
 
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
@@ -30,10 +29,7 @@ export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, cont
     const conditions = caseNode.condition;
     if (conditions?.length) {
       for (let j = 0; j < conditions.length; j++) {
-        // Se in futuro ogni condizione porta un proprio span (fallthrough
-        // con provenienze diverse), sostituisci con:
-        // line('  case ', mapped(conditions[j], conditionSpans[j]), ':')
-        lines.push(plain(`  case ${conditions[j]}:`));
+        lines.push(line('  case ', mapped(conditions[j], caseNode.conditionSpans[j]), ':'));
       }
     } else {
       lines.push(plain('  default:'));

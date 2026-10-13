@@ -16,6 +16,10 @@ describe('typeCheckTextAndInterpolation', () => {
   it('emits the interpolation expression as a mapped statement', () => {
     const [line] = typeCheckTextAndInterpolation(parse('{heading}'), () => [], new TypeCheckContext());
     expect(line.text).toBe('root.heading;');
-    expect(line.mappings).toHaveLength(1);
+    // The whole statement, then the identifier read from the component
+    expect(line.mappings).toEqual([
+      { columnStart: 0, columnEnd: 13, original: { start: 1, end: 9 } },
+      { columnStart: 5, columnEnd: 12, original: { start: 1, end: 8 } }
+    ]);
   });
 });

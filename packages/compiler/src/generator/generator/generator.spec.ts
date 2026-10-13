@@ -113,6 +113,6 @@ describe('Generator', () => {
   it('reports nodes without a registered transition function', async () => {
     const ast = [{ type: ASTNodeType.Case, span: { start: 0, end: 5 } }] as unknown as ASTNode[];
 
-    await expect(new Generator('hello', ast).generate([])).rejects.toContain('[Generator] No transition function for ASTNode of type Case');
+    await expect(new Generator('hello', ast).generate([])).rejects.toThrow('[Generator] No transition function for ASTNode of type Case');
   });
 });

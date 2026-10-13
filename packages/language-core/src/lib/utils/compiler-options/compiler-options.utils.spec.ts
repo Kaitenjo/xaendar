@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { loadTsConfig } from './compiler-options.utils';
+import { findTsConfigPath, loadTsConfig } from './compiler-options.utils';
 
 let root: string;
 let counter = 0;
@@ -55,5 +55,17 @@ describe('loadTsConfig()', () => {
     const fileNames = loadTsConfig(dir).fileNames.map(fileName => basename(fileName));
 
     expect(fileNames.sort()).toEqual(['component.ts', 'globals.d.ts']);
+  });
+});
+
+describe('findTsConfigPath()', () => {
+  it('finds the tsconfig.json of the directory or of one of its parents', () => {
+    const dir = freshDir();
+    const nested = join(dir, 'src', 'app');
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(join(dir, 'tsconfig.json'), '{}');
+
+    expect(basename(findTsConfigPath(nested)!)).toBe('tsconfig.json');
+    expect(findTsConfigPath(nested)!.replace(/\\/g, '/')).toBe(join(dir, 'tsconfig.json').replace(/\\/g, '/'));
   });
 });

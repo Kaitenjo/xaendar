@@ -8,6 +8,7 @@ import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
 import { ForExpression } from '../../types/for-expression.type';
 import { ASTNodeType } from '../../types/node.enum';
 import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables';
+import type { Span } from '../../../types/span.type';
 import { ForNode } from '../../types/nodes/for-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
@@ -29,7 +30,7 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
   if (conditionToken.type !== TokenType.CONDITION) {
     throw `Expected CONDITION after FOR, got ${TokenType[conditionToken.type]}`;
   }
-  const expression = parseForExpression(conditionToken.parts[0]);
+  const expression = parseForExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start);
 
   // consume CONDITION and BLOCK_OPEN
   cursor.advance(2);
@@ -38,6 +39,20 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
 
   return { type: ASTNodeType.For, ...expression, children };
 }
+
+/**
+ * A section of an `@for` expression, delimited by semicolons.
+ */
+type ForSection = {
+  /**
+   * The text of the section, without the `;` separators and the leading spaces.
+   */
+  text: string;
+  /**
+   * The offset of the section in the template.
+   */
+  offset: number;
+};
 
 /**
  * Parses the body of an `@for` block into a structured {@link ForExpression}.
@@ -54,26 +69,29 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
  * is none, to `$index` (or its alias).
  *
  * @param source - The raw string content of the `@for(...)` expression.
+ * @param offset - The offset of `source` in the template, used for the spans of the expression parts.
  * @returns A {@link ForExpression} object.
  * @throws When `source` is not a valid `@for` expression.
  */
-export function parseForExpression(source: string): ForExpression {
-  const sections = splitForSections(source);
+export function parseForExpression(source: string, offset = 0): ForExpression {
+  const sections = splitForSections(source, offset);
 
   if (sections.length < 1) {
     throw '@for requires at least one of these forms: "item of items()" or "numberItems()".';
   }
 
   // ---- Section 1: "item of items" or "items" ----
-  const iterSection = sections[0].trim();
+  const { text: iterSection, offset: iterOffset } = trimSection(sections[0]);
   const ofIndex = iterSection.indexOf(' of ');
 
   let itemAlias: string | undefined;
-  let iterableSource = iterSection;
+  let itemAliasSpan: Span | undefined;
+  let iterable: ForSection = { text: iterSection, offset: iterOffset };
 
   if (ofIndex !== -1) {
     itemAlias = slice(iterSection, 0, ofIndex).trim();
-    iterableSource = slice(iterSection, ofIndex + 4).trim();
+    itemAliasSpan = { start: iterOffset, end: iterOffset + itemAlias.length };
+    iterable = trimSection({ text: slice(iterSection, ofIndex + 4), offset: iterOffset + ofIndex + 4 });
 
     if (!isValidIdentifier(itemAlias)) {
       throw `'${itemAlias}' is not a valid item alias.`;
@@ -81,59 +99,69 @@ export function parseForExpression(source: string): ForExpression {
   }
 
   // Validate the iterable as a JS expression.
-  const iterValidation = validateExpression(iterableSource);
+  const iterValidation = validateExpression(iterable.text, iterable.offset);
 
-  // ---- Section 2 (optional): "$index = i, $last = l" ----
+  // ---- Section 2 (optional): "i = $index, l = $last" ----
   // Parsed before the track section, whose fallback may depend on the `$index` alias.
   const implicitAliases = new Map<ForImplicitVariables, string>;
+  const implicitAliasSpans = new Map<ForImplicitVariables, Span>;
 
   if (sections.length >= 3 && sections[2] !== undefined) {
-    const aliasSection = sections[2].trim();
-    parseImplicitAliases(aliasSection, implicitAliases);
+    parseImplicitAliases(trimSection(sections[2]), implicitAliases, implicitAliasSpans);
   }
 
   // ---- Section 3 (optional): "track item.id" ----
   // Without it the loop tracks by item, or by index when there is no item alias.
-  const trackSection = sections[1]?.trim();
+  const trackSection = sections[1] && trimSection(sections[1]);
   let trackSource = itemAlias ?? implicitAliases.get('$index') ?? '$index';
+  // The default track expression is not written in the template, so it has no offset
+  let trackOffset: number | undefined;
 
-  if (trackSection) {
-    if (!trackSection.startsWith('track ')) {
+  if (trackSection?.text) {
+    if (!trackSection.text.startsWith('track ')) {
       throw 'Second section of @for must start with "track".';
     }
 
-    trackSource = slice(trackSection, 6).trim();
+    const track = trimSection({ text: slice(trackSection.text, 6), offset: trackSection.offset + 6 });
+    trackSource = track.text;
+    trackOffset = track.offset;
   }
 
-  const trackValidation = validateExpression(trackSource);
+  const trackValidation = validateExpression(trackSource, trackOffset);
 
   return {
     itemAlias,
+    itemAliasSpan,
     iterableExpression: iterValidation.node,
-    iterableSource,
+    iterableSource: iterable.text,
     trackExpression: trackValidation.node,
     trackSource,
-    implicitAliases
+    implicitAliases,
+    implicitAliasSpans
   };
 }
 
 /**
  * Parses the optional third section of an `@for` expression, which declares
- * aliases for implicit loop variables (e.g. `$index = i, $last = l, $even = isEven`).
+ * aliases for implicit loop variables (e.g. `i = $index, l = $last, isEven = $even`).
  *
- * Valid entries are comma-separated pairs in the form `$implicit = alias`.
+ * Valid entries are comma-separated pairs in the form `alias = $implicit`.
  *
- * @param source - The raw alias-declarations string (everything after the second `;`).
- * @param baseOffset - Character offset of `source` within the original template.
- * @param out - Map to populate with `alias → implicit-variable` entries.
+ * @param section - The trimmed alias-declarations section (everything after the second `;`).
+ * @param out - Map to populate with `implicit-variable → alias` entries.
+ * @param spans - Map to populate with `implicit-variable → span of the alias` entries.
+ * @throws When an entry is not a valid alias declaration.
  */
-function parseImplicitAliases(source: string, out: Map<ForImplicitVariables, string>): void {
-  const entries = source.split(',');
+function parseImplicitAliases({ text, offset }: ForSection, out: Map<ForImplicitVariables, string>, spans: Map<ForImplicitVariables, Span>): void {
+  const entries = text.split(',');
   const IMPLICIT_VARIABLES = new Set(['$index', '$last', '$first', '$even', '$odd']);
-  
+  let entryOffset = offset;
+
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    const trimmed = entry.trim();
+    const { text: trimmed, offset: trimmedOffset } = trimSection({ text: entry, offset: entryOffset });
+    // The next entry starts after the comma
+    entryOffset += entry.length + 1;
 
     const eqIndex = trimmed.indexOf('=');
     if (eqIndex === -1) {
@@ -141,12 +169,12 @@ function parseImplicitAliases(source: string, out: Map<ForImplicitVariables, str
     }
 
     const isImplicitVariable = (value: string): value is ForImplicitVariables => IMPLICIT_VARIABLES.has(value);
-    
+
     const implicit = slice(trimmed, eqIndex + 1).trim();
     if (!isImplicitVariable(implicit)) {
       throw `'${implicit}' is not a known implicit variable. Known variables: ${[...IMPLICIT_VARIABLES].join(', ')}.`;
     }
-    
+
     const alias = slice(trimmed, 0, eqIndex).trim();
     if (!isValidIdentifier(alias)) {
       throw `'${alias}' is not a valid alias identifier.`;
@@ -156,8 +184,20 @@ function parseImplicitAliases(source: string, out: Map<ForImplicitVariables, str
       throw `'${implicit}' is already aliased in this @for expression.`;
     } else {
       out.set(implicit, alias);
+      spans.set(implicit, { start: trimmedOffset, end: trimmedOffset + alias.length });
     }
   }
+}
+
+/**
+ * Trims a section of an `@for` expression, moving its offset past the leading whitespace.
+ *
+ * @param section - The section to trim.
+ * @returns The trimmed section.
+ */
+function trimSection({ text, offset }: ForSection): ForSection {
+  const trimmedStart = text.trimStart();
+  return { text: trimmedStart.trimEnd(), offset: offset + text.length - trimmedStart.length };
 }
 
 /**
@@ -165,15 +205,17 @@ function parseImplicitAliases(source: string, out: Map<ForImplicitVariables, str
  * respecting nested brackets and string literals so that semicolons inside
  * them are never treated as section separators.
  *
- * Example input:  `"item of items; track item.id; $index = i"`
- * Example output: `["item of items", " track item.id", " $index = i"]`
+ * Example input:  `"item of items; track item.id; i = $index"`
+ * Example output: `["item of items", "track item.id", "i = $index"]`, each with its offset
  *
  * @param source - The raw content of the `@for(...)` expression.
- * @returns An array of section strings (without the `;` separators).
+ * @param offset - The offset of `source` in the template.
+ * @returns An array of sections (without the `;` separators and the leading spaces), each with its offset in the template.
  */
-function splitForSections(source: string): string[] {
-  const sections = new Array<string>;
+function splitForSections(source: string, offset: number): ForSection[] {
+  const sections = new Array<ForSection>;
   let current = '';
+  let currentStart = 0;
   let depth = 0;
   let inString: '"' | "'" | '`' | null | undefined;
 
@@ -182,6 +224,10 @@ function splitForSections(source: string): string[] {
 
     if (!current && char === ' ') {
       continue;
+    }
+
+    if (!current) {
+      currentStart = i;
     }
 
     if (inString) {
@@ -213,7 +259,7 @@ function splitForSections(source: string): string[] {
 
     // Section separator — only split when not inside brackets or strings.
     if (char === ';' && depth === 0) {
-      sections.push(current);
+      sections.push({ text: current, offset: offset + currentStart });
       current = '';
       continue;
     }
@@ -223,7 +269,7 @@ function splitForSections(source: string): string[] {
 
   // Push the last section even when it has no trailing `;`.
   if (current.trim().length) {
-    sections.push(current);
+    sections.push({ text: current, offset: offset + currentStart });
   }
 
   return sections;

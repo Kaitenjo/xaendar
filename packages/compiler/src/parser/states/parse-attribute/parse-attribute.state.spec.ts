@@ -9,7 +9,7 @@ import { parseAttribute } from './parse-attribute.state';
 const attribute: Token = { type: TokenType.ATTRIBUTE, parts: ['disabled'], span: { start: 0, end: 8 } };
 
 const run = (...following: Token[]) => {
-  const cursor = new ParserCursor('', [attribute, ...following]);
+  const cursor = new ParserCursor('disabled', [attribute, ...following]);
   return parseAttribute(cursor, () => undefined, cursor.peek() as AttributeToken);
 };
 
@@ -34,6 +34,7 @@ describe('parseAttribute', () => {
     expect(run(next)).toEqual({
       type: ASTNodeType.Attribute,
       name: 'disabled',
+      nameSpan: { start: 0, end: 8 },
       value: 'true',
       span: { start: 0, end: 8 }
     });
@@ -53,6 +54,7 @@ describe('parseAttribute', () => {
     const node = run({ type: TokenType.INTERPOLATION_EXPRESSION, parts: ['value'], span: { start: 9, end: 16 } });
     expect(node).toMatchObject({
       name: 'disabled',
+      nameSpan: { start: 0, end: 8 },
       value: { type: ASTNodeType.Interpolation },
       span: { start: 0, end: 16 }
     });

@@ -14,6 +14,13 @@ describe('ComponentPropertyMetadata', () => {
     expect(property.required).toBe(false);
   });
 
+  it('keeps where the property is declared', () => {
+    const declaration = { fileName: '/src/a.ts', span: { start: 1, end: 5 } };
+
+    expect(new ComponentPropertyMetadata('name', 'string', { declaration }).declaration).toBe(declaration);
+    expect(new ComponentPropertyMetadata('name', 'string').declaration).toBeUndefined();
+  });
+
   it('applies the required flag', () => {
     expect(new ComponentPropertyMetadata('name', 'string', { required: true }).required).toBe(true);
     expect(new ComponentPropertyMetadata('name', 'string', { required: false }).required).toBe(false);

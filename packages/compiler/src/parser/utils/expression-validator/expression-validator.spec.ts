@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { validateExpression } from './expression-validator';
+import { getTemplateSpan, validateExpression } from './expression-validator';
+import type { BinaryExpression } from 'typescript';
+
+const capture = (fn: () => void): Error => {
+  try {
+    fn();
+  } catch (err) {
+    return err as Error;
+  }
+
+  throw new Error('Expected the expression to be rejected');
+};
 
 describe('validateExpression', () => {
   describe('permitted constructs', () => {
@@ -128,6 +139,36 @@ describe('validateExpression', () => {
 
     it('accepts an incomplete expression recovered by the parser', () => {
       expect(validateExpression('a.').node.getText()).toBe('a.');
+    });
+  });
+
+  describe('template positions', () => {
+    it('locates any node of an expression validated with its offset', () => {
+      const { node } = validateExpression('user.name + 1', 10);
+
+      expect(getTemplateSpan(node)).toEqual({ start: 10, end: 23 });
+      expect(getTemplateSpan((node as BinaryExpression).left)).toEqual({ start: 10, end: 19 });
+    });
+
+    it('does not locate an expression validated without offset', () => {
+      expect(getTemplateSpan(validateExpression('user').node)).toBeUndefined();
+    });
+
+    it('carries the span of the disallowed node as the cause of the error', () => {
+      const error = capture(() => validateExpression('a = 1', 4));
+
+      expect(error.cause).toEqual({ start: 6, end: 7 });
+    });
+
+    it('carries the span of what follows the expression as the cause of the error', () => {
+      const error = capture(() => validateExpression('a b ', 4));
+
+      expect(error.message).toBe('\'a b\' must be a single expression, got \'b\' after \'a\'.');
+      expect(error.cause).toEqual({ start: 6, end: 7 });
+    });
+
+    it('carries no span when the offset is not known', () => {
+      expect(capture(() => validateExpression('a = 1')).cause).toBeUndefined();
     });
   });
 });

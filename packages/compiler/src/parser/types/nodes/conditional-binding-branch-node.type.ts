@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast.type';
 import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
@@ -21,6 +22,10 @@ export type ConditionalBindingBranchNode<Condition = unknown> = ASTNodeWithSpan<
    * What selects the branch, or `null` for the branch selected when no other one is (`@else`, `@default`).
    */
   condition: Condition | null;
+  /**
+   * Spans of the values matched by a `@switch` branch, one per `@case`: empty for any other branch.
+   */
+  conditionSpans: Span[];
   /**
    * Attribute nodes bound while the branch is selected.
    */

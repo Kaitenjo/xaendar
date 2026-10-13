@@ -1,11 +1,11 @@
-import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { TextNode } from '../../../parser/types/nodes/text-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { Line } from '../../types/generated-line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
-import { line, mapped } from '../../utils/line-builder/line-builder.utils';
+import { line } from '../../utils/line-builder/line-builder.utils';
+import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Type-checks a text or interpolation node.
@@ -16,6 +16,6 @@ import { line, mapped } from '../../utils/line-builder/line-builder.utils';
  */
 export function typeCheckTextAndInterpolation(node: TextNode | InterpolationNode, _processNode: ProcessNode, context: TypeCheckContext): Line[] {
   return node.type === ASTNodeType.Interpolation
-    ? [line(mapped(`${resolveExpression(node.expression, context, { resolver: 'root' }).expression};`, node.span))]
+    ? [line(mappedExpression(node.expression, context, node.span, ';'))]
     : [];
 }

@@ -81,7 +81,7 @@ export async function startI18n(): Promise<void> {
   effect(() => {
     const target = lang();
     document.documentElement.lang = target;
-    void loadMessages(target).then(messages => {
+    loadMessages(target).then(messages => {
       // A quicker switch to another language may have happened meanwhile
       if (lang() === target) {
         loaded.set(messages);

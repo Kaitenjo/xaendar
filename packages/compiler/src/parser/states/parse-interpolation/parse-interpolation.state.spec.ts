@@ -4,6 +4,10 @@ import { InterpolationExpressionToken } from '../../../lexer/types/tokens/interp
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNodeType } from '../../types/node.enum';
 import { parseInterpolation } from './parse-interpolation.state';
+import { Parser } from '../../parser/parser';
+import type { ElementNode } from '../../types/nodes/element-node.type';
+import type { InterpolationNode } from '../../types/nodes/interpolation-node.type';
+import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const run = (template: string) => {
   const cursor = new ParserCursor(template, new Lexer(template).tokenize());
@@ -23,5 +27,13 @@ describe('parseInterpolation', () => {
 
   it('throws for a disallowed expression', () => {
     expect(() => run('{ a = 1 }')).toThrow();
+  });
+
+  it('locates the expression in the template', () => {
+    const template = '<a>{  user.name }</a>';
+    const [node] = new Parser(template, new Lexer(template).tokenize()).parse() as ElementNode[];
+    const [interpolation] = node.children as InterpolationNode[];
+
+    expect(getTemplateSpan(interpolation.expression)).toEqual({ start: 6, end: 15 });
   });
 });

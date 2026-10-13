@@ -1,4 +1,5 @@
 import type { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
+import type { MemberDeclaration } from '../member-declaration/member-declaration.type';
 import type { ClassDeclarationWithName, WebComponentDecorator } from '../typescript-decorator-nodes.type';
 
 /**
@@ -48,6 +49,10 @@ export type ComponentEventMetadata = {
    * Detail type emitted by the event.
    */
   type: string;
+  /**
+   * Where the `@Event` accessor is declared: in the class itself, or in one of its base classes.
+   */
+  declaration?: MemberDeclaration;
 };
 
 /**

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../lexer/lexer/lexer';
 import { TokenType } from '../../lexer/types/token-type.enum';
 import { Token } from '../../lexer/types/token.type';
+import { TemplateError } from '../../models/template-error/template-error.model';
 import { ASTNodeType } from '../types/node.enum';
 import { Parser } from './parser';
 
@@ -49,12 +50,29 @@ describe('Parser', () => {
     expect(() => new Parser('<div', tokens).parse()).toThrow('[Parser]');
   });
 
+  it('reports the span carried by the error, or the one of the node being parsed', () => {
+    const capture = (template: string): TemplateError => {
+      try {
+        parse(template);
+      } catch (err) {
+        return err as TemplateError;
+      }
+
+      throw new Error('Expected the template to fail');
+    };
+
+    // The assignment operator of the expression
+    expect(capture('hello {a = 1}').span).toEqual({ start: 9, end: 10 });
+    expect(capture('hello {a = 1}').detail).toBe('\'FirstAssignment\' is not allowed inside template expressions.');
+    expect(capture('<div></div></span>').span).toEqual({ start: 11, end: 18 });
+  });
+
   it('does not wrap errors more than once when parsing nested nodes', () => {
     let message = '';
     try {
       parse('<div>{a = 1}</div>');
     } catch (err) {
-      message = err as string;
+      message = `${err}`;
     }
 
     expect(message.match(/\[Parser\]/g)).toHaveLength(1);

@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import { ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { InterpolationNode } from './interpolation-node.type';
@@ -14,6 +15,10 @@ export type AttributeNode = ASTNodeWithSpan<{
    * The attribute name.
    */
   name: string;
+  /**
+   * Span of the attribute name.
+   */
+  nameSpan: Span;
   /**
    * The attribute value, either a plain string or an interpolation node.
    */

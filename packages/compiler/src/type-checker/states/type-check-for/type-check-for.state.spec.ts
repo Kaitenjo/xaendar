@@ -26,7 +26,7 @@ describe('typeCheckFor', () => {
       '  child;',
       '}'
     ]);
-    expect(lines[0].mappings).toHaveLength(1);
+    expect(lines[0].mappings![0]).toBeDefined();
   });
 
   it.each([
@@ -50,5 +50,18 @@ describe('typeCheckFor', () => {
   it('uses the aliases declared for implicit variables', () => {
     const lines = typeCheckFor(parse('@for (item of items; track item(); i = $index) { <li></li> }'), processNode, new TypeCheckContext());
     expect(lines[2].text).toBe('  let i!: Signal<number>;');
+  });
+
+  it('maps the declarations of the item and of the aliases onto the template, and the expressions finely', () => {
+    const template = '@for (item of items; track item(); i = $index) { <li></li> }';
+    const lines = typeCheckFor(parse(template), processNode, new TypeCheckContext());
+    const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
+
+    // `items` in `root.items`
+    expect(lines[0].mappings).toContainEqual({ columnStart: lines[0].text.indexOf('items'), columnEnd: lines[0].text.indexOf('items') + 5, original: at('items') });
+    expect(lines[1].mappings).toEqual([{ columnStart: 6, columnEnd: 10, original: at('item') }]);
+    expect(lines[2].mappings).toEqual([{ columnStart: 6, columnEnd: 7, original: { start: template.indexOf('i ='), end: template.indexOf('i =') + 1 } }]);
+    expect(lines[3].mappings).toBeUndefined();
+    expect(lines[7].mappings).toContainEqual({ columnStart: 2, columnEnd: 6, original: { start: template.indexOf('item()'), end: template.indexOf('item()') + 4 } });
   });
 });

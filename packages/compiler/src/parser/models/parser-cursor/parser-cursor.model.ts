@@ -1,8 +1,11 @@
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
+import type { ConditionToken } from '../../../lexer/types/tokens/condition-token.type';
 import { EOFToken } from '../../../lexer/types/tokens/eof-token.type';
 import { Cursor } from '../../../models/cursor/cursor';
+import type { Span } from '../../../types/span.type';
+import { findSpan } from '../../../utils/span/span.utils';
 import { CurrentToken } from '../../types/current-token.type';
 
 /**
@@ -98,6 +101,28 @@ export class ParserCursor extends Cursor {
     const tokens = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
     return tokens === 1 ? this.peekOneToken(this._currentToken.index + offset + 1) : this.peekMany(tokens + offset);
+  }
+
+  /**
+   * Finds the span of a text written verbatim in the template, e.g. the name of an attribute inside the span of
+   * its token, which covers the `="` following the name too.
+   *
+   * @param text - The text to find.
+   * @param from - The offset the search starts from, usually the start of the span of the token holding the text.
+   * @returns The span of the first occurrence of the text from `from` onwards, or an empty span at `from` when it is not found.
+   */
+  public findSpan(text: string, from: number): Span {
+    return findSpan(this.input, text, from);
+  }
+
+  /**
+   * Finds the span of the condition of a flow-control keyword inside its parentheses, e.g. `cond` in `@if (cond)`.
+   *
+   * @param token - The CONDITION token, whose span starts before the opening parenthesis.
+   * @returns The span of the condition.
+   */
+  public findConditionSpan(token: ConditionToken): Span {
+    return this.findSpan(token.parts[0], this.findSpan('(', token.span.start).end);
   }
 
   /**

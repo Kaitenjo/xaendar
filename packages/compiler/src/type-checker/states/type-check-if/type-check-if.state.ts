@@ -1,10 +1,10 @@
-import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { Line } from '../../types/generated-line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
-import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import { indentLines, line, plain } from '../../utils/line-builder/line-builder.utils';
+import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Type-checks an `@if`/`@else if`/`@else` chain using real TypeScript
@@ -19,17 +19,13 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
  */
 export function typeCheckIf(node: IfNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
-  const condition = resolveExpression(node.conditionNode, context, { resolver: 'root' });
-
-  lines.push(line('if (', mapped(condition.expression, node.span), ') {'));
+  lines.push(line('if (', mappedExpression(node.conditionNode, context, node.span), ') {'));
   lines.push(...indentLines(node.children.flatMap(child => processNode(child, context))));
   lines.push(plain('}'));
 
   let alt = node.alternate;
   while (alt?.type === ASTNodeType.ElseIf) {
-    const elseIfCondition = resolveExpression(alt.conditionNode, context, { resolver: 'root' });
-
-    lines.push(line('else if (', mapped(elseIfCondition.expression, alt.span), ') {'));
+    lines.push(line('else if (', mappedExpression(alt.conditionNode, context, alt.span), ') {'));
     lines.push(...indentLines(alt.children.flatMap(child => processNode(child, context))));
     lines.push(plain('}'));
 

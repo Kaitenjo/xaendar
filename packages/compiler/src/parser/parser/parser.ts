@@ -1,6 +1,8 @@
 import { slice } from '@xaendar/common';
 import { TokenType } from '../../lexer/types/token-type.enum.js';
 import { Token } from '../../lexer/types/token.type.js';
+import { TemplateError } from '../../models/template-error/template-error.model.js';
+import { isSpan } from '../../utils/span/span.utils.js';
 import { ParserCursor } from '../models/parser-cursor/parser-cursor.model.js';
 import { parseElement } from '../states/parse-element/parse-element.state.js';
 import { parseForControlFlow } from '../states/parse-for/parse-for.state.js';
@@ -116,10 +118,12 @@ export class Parser {
         throw err;
       }
       this.thrown = true;
-      const message = err instanceof Error ? err.message : err;
+      const message = err instanceof Error ? err.message : `${err}`;
       const currentToken = this._cursor.peek();
-      const stateEndIndex = currentToken.type !== TokenType.EOF ? currentToken.span.end : undefined;
-      throw `[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`;
+      const stateEndIndex = currentToken.type !== TokenType.EOF ? currentToken.span.end : this._input.length;
+      // An error raised with its own span (e.g. an invalid expression, a duplicated attribute) points to it
+      const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
+      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
     }
   }
 }

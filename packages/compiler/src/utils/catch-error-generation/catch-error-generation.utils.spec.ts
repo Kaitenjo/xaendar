@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TemplateError } from '../../models/template-error/template-error.model';
 import { catchErrorWithPrefix } from './catch-error-generation.utils';
 
 const capture = (fn: () => void): unknown => {
@@ -10,9 +11,14 @@ const capture = (fn: () => void): unknown => {
 };
 
 describe('catchErrorWithPrefix', () => {
-  it('throws a formatted string with the source excerpt when the cause is a span', () => {
+  it('throws a TemplateError formatted with the source excerpt when the cause is a span', () => {
     const error = new Error('boom', { cause: { start: 6, end: 11 } });
-    expect(capture(() => catchErrorWithPrefix('Prefix', 'hello world', error))).toBe('[Prefix] boom\n----> world');
+    const thrown = capture(() => catchErrorWithPrefix('Prefix', 'hello world', error)) as TemplateError;
+
+    expect(thrown).toBeInstanceOf(TemplateError);
+    expect(`${thrown}`).toBe('[Prefix] boom\n----> world');
+    expect(thrown.span).toEqual({ start: 6, end: 11 });
+    expect(thrown.detail).toBe('boom');
   });
 
   it('throws a prefixed Error preserving the stack when the cause is not a span', () => {

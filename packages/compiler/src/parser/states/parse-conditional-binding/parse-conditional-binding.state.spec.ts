@@ -7,6 +7,8 @@ import { ASTNodeType } from '../../types/node.enum';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import { IfBindingNode } from '../../types/nodes/if-binding-node.type';
 import { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
+import type { Span } from '../../../types/span.type';
+import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse() as ElementNode[];
 const parseTokens = (...tokens: Token[]) => new Parser('', [{ type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } }, ...tokens]).parse();
@@ -175,5 +177,18 @@ describe('parseConditionalBinding', () => {
   it('throws on a misplaced flow-control keyword', () => {
     expect(() => parse('<div @if (a()) { @else { title="x" } }></div>')).toThrow('Unexpected ELSE in conditional binding');
     expect(() => parse('<div @if (a()) { @case (1) { title="x" } }></div>')).toThrow('Unexpected CASE in conditional binding');
+  });
+
+  it('locates the conditions and the matched values in the template', () => {
+    const template = '<div @if (a()) { x="1" } @else { y="2" } @switch ( kind ) { @case (1) @case ( 2 ) { z="3" } @default { w="4" } }></div>';
+    const [node] = parse(template);
+    const [ifBinding, switchBinding] = node.conditionalBindings as [IfBindingNode, SwitchBindingNode];
+    const textOf = (template: string, span: Span | undefined) => span && template.slice(span.start, span.end);
+
+    expect(textOf(template, getTemplateSpan(ifBinding.branches[0].condition!))).toBe('a()');
+    expect(ifBinding.branches.map(({ conditionSpans }) => conditionSpans)).toEqual([[], []]);
+    expect(textOf(template, getTemplateSpan(switchBinding.expression))).toBe('kind');
+    expect(switchBinding.branches[0].conditionSpans.map(span => textOf(template, span))).toEqual(['1', ' 2 ']);
+    expect(switchBinding.branches[1].conditionSpans).toEqual([]);
   });
 });

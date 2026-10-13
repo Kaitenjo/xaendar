@@ -47,6 +47,7 @@ export function parseStructuralDirective(cursor: ParserCursor, parseNode: NoArgs
   return {
     type: ASTNodeType.StructuralDirective,
     selector: token.parts[0],
+    selectorSpan: cursor.findSpan(token.parts[0], startOffset),
     attributes,
     span: {
       start: startOffset,

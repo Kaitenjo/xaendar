@@ -1,3 +1,4 @@
+import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast.type';
 import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
@@ -17,6 +18,10 @@ export type DirectiveNode = ASTNodeWithSpan<{
    * The selector of the directive.
    */
   selector: string;
+  /**
+   * Span of the selector, without the `@@` prefix.
+   */
+  selectorSpan: Span;
   /**
    * Attribute nodes bound to the directive properties.
    */

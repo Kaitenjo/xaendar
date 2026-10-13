@@ -7,6 +7,7 @@ vi.mock('../../language-service/language-service', () => ({
 
 import { upsertVirtualFile } from '../../language-service/language-service';
 import { createShim } from './shim.utils';
+import type { ProjectLanguageService } from '../../language-service/language-service';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -60,5 +61,14 @@ describe('createShim()', () => {
       '',
       'body'
     ].join('\n'));
+  });
+
+  it('registers the shim in the language service of the given project instead of the default one', () => {
+    const project = { upsertVirtualFile: vi.fn() } as unknown as ProjectLanguageService;
+
+    const shim = createShim(new Map([['/src/foo/foo.component.ts', ['FooComponent']]]), typecheckBody('body'), project);
+
+    expect(project.upsertVirtualFile).toHaveBeenCalledWith(shim.path, shim.code);
+    expect(upsertVirtualFile).not.toHaveBeenCalled();
   });
 });
