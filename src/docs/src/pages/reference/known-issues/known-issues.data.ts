@@ -36,29 +36,5 @@ export const ISSUES: readonly IssueEntry[] = [
     area: 'CLI',
     kind: 'bug',
     page: 'tools/cli'
-  },
-  {
-    id: 'the-published-packages-predate-this-documentation',
-    area: 'CLI',
-    kind: 'bug',
-    page: 'tools/cli'
-  },
-  {
-    id: 'the-language-server-never-compiles-a',
-    area: 'Editor',
-    kind: 'bug',
-    page: 'tools/language-service'
-  },
-  {
-    id: 'the-grammar-highlights-instead-of',
-    area: 'Editor',
-    kind: 'bug',
-    page: 'tools/language-service'
-  },
-  {
-    id: 'documentation-inside-the-packages-is-out',
-    area: 'Docs',
-    kind: 'docs',
-    page: 'signals/effects'
   }
 ];

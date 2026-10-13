@@ -12,3 +12,14 @@ export const STYLE_MODULE_PREFIX = 'virtual:xaendar-style?';
  * Rollup/Vite convention marking a virtual module, so that no other plugin tries to load it from disk.
  */
 export const RESOLVED_STYLE_MODULE_PREFIX = `\0${STYLE_MODULE_PREFIX}`;
+
+/**
+ * Query parameter of a style module specifier carrying the path of the stylesheet, which follows it up to {@link LANG_JS_FLAG}.
+ */
+export const STYLE_PATH_PARAM = 'path=';
+
+/**
+ * Trailing query flag of a style module specifier, making the id look like a JavaScript request to
+ * the extension-based checks of the dev server.
+ */
+export const LANG_JS_FLAG = '&lang.js';

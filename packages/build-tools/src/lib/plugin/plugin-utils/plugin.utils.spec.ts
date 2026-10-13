@@ -159,12 +159,17 @@ describe('generateTemplateModule()', () => {
 });
 
 describe('createStyleModuleSpecifier()', () => {
-  it('encodes the style path in the query', () => {
-    expect(createStyleModuleSpecifier('/src/foo/foo.css')).toBe('virtual:xaendar-style?path=%2Fsrc%2Ffoo%2Ffoo.css&lang.js');
+  it('carries the style path in the query', () => {
+    expect(createStyleModuleSpecifier('/src/foo/foo.css')).toBe('virtual:xaendar-style?path=/src/foo/foo.css&lang.js');
   });
 
   it('normalizes windows path separators', () => {
-    expect(createStyleModuleSpecifier('C:\\my src\\foo.css')).toBe('virtual:xaendar-style?path=C%3A%2Fmy%20src%2Ffoo.css&lang.js');
+    expect(createStyleModuleSpecifier('C:\\my src\\foo.css')).toBe('virtual:xaendar-style?path=C:/my src/foo.css&lang.js');
+  });
+
+  it('keeps the path unchanged by the URL decoding of the dev server', () => {
+    const specifier = createStyleModuleSpecifier('C:/my src/foo.css');
+    expect(decodeURI(specifier)).toBe(specifier);
   });
 
   it('does not end the specifier with the style file extension', () => {
@@ -185,6 +190,10 @@ describe('parseStyleModuleId()', () => {
 
   it('returns undefined for a style module id without path', () => {
     expect(parseStyleModuleId('\0virtual:xaendar-style?lang.js')).toBeUndefined();
+  });
+
+  it('returns undefined for a style module id without the lang.js flag', () => {
+    expect(parseStyleModuleId('\0virtual:xaendar-style?path=/foo.css')).toBeUndefined();
   });
 });
 

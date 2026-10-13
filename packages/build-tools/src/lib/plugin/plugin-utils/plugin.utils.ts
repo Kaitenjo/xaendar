@@ -4,7 +4,7 @@ import type MagicString from 'magic-string';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { ClassDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
-import { RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
+import { LANG_JS_FLAG, RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX, STYLE_PATH_PARAM } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import type { SelectorOwner } from '../../types/selector-owner.type';
@@ -126,12 +126,16 @@ export function generateTemplateModule(compiledFunctions: string): string {
  * or in different ones, imports the very same module: the CSS is compiled and bundled only once,
  * and a single `CSSStyleSheet` is shared by all of them.
  *
+ * The path is not percent-encoded, as in the template module specifier: the dev server decodes the
+ * URL requested by the browser before looking its module up, so an encoded character (e.g. `%20`) would
+ * resolve to a second module, never invalidated when the style file changes.
+ *
  * @param stylePath - Absolute path of the style file.
  * @returns The import specifier, resolved by the plugin `resolveId` hook.
  */
 export function createStyleModuleSpecifier(stylePath: string): string {
   const path = toPosixPath(stylePath);
-  return `${STYLE_MODULE_PREFIX}path=${encodeURIComponent(path)}&lang.js`;
+  return `${STYLE_MODULE_PREFIX}${STYLE_PATH_PARAM}${path}${LANG_JS_FLAG}`;
 }
 
 /**
@@ -141,11 +145,13 @@ export function createStyleModuleSpecifier(stylePath: string): string {
  * @returns The style path encoded in the id, or `undefined` if `id` doesn't identify a style module.
  */
 export function parseStyleModuleId(id: string): string | undefined {
-  if (!id.startsWith(RESOLVED_STYLE_MODULE_PREFIX)) {
+  const pathPrefix = `${RESOLVED_STYLE_MODULE_PREFIX}${STYLE_PATH_PARAM}`;
+  if (!id.startsWith(pathPrefix) || !id.endsWith(LANG_JS_FLAG)) {
     return undefined;
   }
 
-  return new URLSearchParams(slice(id, RESOLVED_STYLE_MODULE_PREFIX.length)).get('path') ?? undefined;
+  // The path is taken as is, since it may contain characters with a meaning in a query (e.g. `&`)
+  return slice(id, pathPrefix.length, -LANG_JS_FLAG.length);
 }
 
 /**

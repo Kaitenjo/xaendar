@@ -26,8 +26,8 @@ import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
  *
  * @example
  * // Style modules are resolved the same way, and shared by every component using the same style file
- * import { sheet as __Foo_sheet } from 'virtual:xaendar-style?path=%2Fsrc%2Ffoo%2Ffoo.css&lang.js';
- * // resolved to '\0virtual:xaendar-style?path=%2Fsrc%2Ffoo%2Ffoo.css&lang.js'
+ * import { sheet as __Foo_sheet } from 'virtual:xaendar-style?path=/src/foo/foo.css&lang.js';
+ * // resolved to '\0virtual:xaendar-style?path=/src/foo/foo.css&lang.js'
  *
  * @example
  * // Any other specifier is left to the other plugins
