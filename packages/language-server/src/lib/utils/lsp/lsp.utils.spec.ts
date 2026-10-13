@@ -62,6 +62,7 @@ describe('toCompletionItemKind', () => {
     [ScriptElementKind.letElement, CompletionItemKind.Variable],
     [ScriptElementKind.constElement, CompletionItemKind.Variable],
     [ScriptElementKind.classElement, CompletionItemKind.Class],
+    ['event', CompletionItemKind.Event],
     [ScriptElementKind.keyword, CompletionItemKind.Text]
   ])('maps the kind %s to the completion kind %s', (kind, completionKind) => {
     expect(toCompletionItemKind(kind)).toBe(completionKind);

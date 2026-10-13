@@ -82,6 +82,25 @@ export class Lexer {
   }
 
   /**
+   * The state the lexer is in: once the input is tokenized, the one it ended in, e.g. the attribute whose name the
+   * input stops in the middle of.
+   *
+   * @returns The current state.
+   */
+  public get state(): LexerState {
+    return this._state;
+  }
+
+  /**
+   * The states opening the current one, from the outermost: e.g. the directive whose bindings hold the current state.
+   *
+   * @returns The opening states.
+   */
+  public get history(): readonly LexerState[] {
+    return this._stack.values;
+  }
+
+  /**
    * Creates a new Lexer instance for the given template content.
    *
    * @param _input - The full template text to tokenise.

@@ -1,9 +1,9 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getComponentLinks, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateDefinition } from '@xaendar/language-core';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
-import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, FileChangeType, type InitializeParams, type InitializeResult, type Location, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
+import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, type DocumentLink, type DocumentLinkParams, FileChangeType, type InitializeParams, type InitializeResult, type Location, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
 import { Debouncer } from '../utils/debounce/debounce.utils';
-import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from '../utils/lsp/lsp.utils';
+import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity, toUri } from '../utils/lsp/lsp.utils';
 
 /**
  * Suffix of the templates of the components.
@@ -70,6 +70,7 @@ export class XaendarLanguageServer {
     connection.onDidChangeWatchedFiles(params => this.onDidChangeWatchedFiles(params));
     connection.onDefinition(params => this.onDefinition(params));
     connection.onCompletion(params => this.onCompletion(params));
+    connection.onDocumentLinks(params => this.onDocumentLinks(params));
     connection.languages.semanticTokens.on(params => this.onSemanticTokens(params));
     connection.onShutdown(() => this.onShutdown());
     this._documents.onDidChangeContent(({ document }) => this.onDidChangeContent(document));
@@ -91,7 +92,8 @@ export class XaendarLanguageServer {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         definitionProvider: true,
-        completionProvider: { triggerCharacters: ['.'] },
+        completionProvider: { triggerCharacters: ['.', '('] },
+        documentLinkProvider: { resolveProvider: false },
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
           full: true
@@ -158,22 +160,25 @@ export class XaendarLanguageServer {
   }
 
   /**
-   * Finds the definitions of the symbol under the cursor in a template.
+   * Finds the definitions of the symbol under the cursor in a template, or, in a component file, the template and
+   * the style a `@WebComponent` decorator leads to.
    *
    * @param params - The definition request.
    * @returns The locations of the definitions.
    */
   public async onDefinition({ textDocument, position }: DefinitionParams): Promise<Location[]> {
     const document = this._documents.get(textDocument.uri);
-    const analysis = document && (await this._getAnalysis(document))?.analysis;
-    if (!analysis) {
+    if (!document) {
       return [];
     }
 
-    return getTemplateDefinition(analysis, document.offsetAt(position)).map(({ fileName, span }) => {
-      const target = getDocument(fileName, uri => this._documents.get(uri));
-      return { uri: target.uri, range: toRange(target, span) };
-    });
+    const offset = document.offsetAt(position);
+    if (!isTemplate(document)) {
+      return this._toLocations(await getComponentDefinition(fromUri(document.uri), document.getText(), offset));
+    }
+
+    const analysis = (await this._getAnalysis(document))?.analysis;
+    return analysis ? this._toLocations(getTemplateDefinition(analysis, offset)) : [];
   }
 
   /**
@@ -197,19 +202,46 @@ export class XaendarLanguageServer {
   }
 
   /**
-   * Proposes the completions at the cursor in an expression of a template, none while it doesn't compile.
+   * Proposes the completions at the cursor in a template: on the name of an attribute or event, the bindings of the
+   * component or directive, also while the template doesn't compile; in an expression, the ones of TypeScript, none
+   * while the template doesn't compile or when the completion was triggered by the `(` of a call.
    *
    * @param params - The completion request.
    * @returns The completion items.
    */
-  public async onCompletion({ textDocument, position }: CompletionParams): Promise<CompletionItem[]> {
+  public async onCompletion({ textDocument, position, context }: CompletionParams): Promise<CompletionItem[]> {
     const document = this._documents.get(textDocument.uri);
-    const analysis = document && await this._getCurrentAnalysis(document);
+    const analysis = document && (await this._getAnalysis(document))?.analysis;
     if (!analysis) {
       return [];
     }
 
-    return getTemplateCompletions(analysis, document!.offsetAt(position)).map(({ name, kind, sortText }) => ({ label: name, kind: toCompletionItemKind(kind), sortText }));
+    const offset = document.offsetAt(position);
+    const completions = getTemplateBindingCompletions(analysis.metadatas, document.getText(), offset)
+      ?? (analysis.source === document.getText() && context?.triggerCharacter !== '(' ? getTemplateCompletions(analysis, offset) : []);
+
+    return completions.map(({ name, kind, sortText, replacementSpan }) => ({
+      label: name,
+      kind: toCompletionItemKind(kind),
+      sortText,
+      ...replacementSpan && { textEdit: { range: toRange(document, replacementSpan), newText: name } }
+    }));
+  }
+
+  /**
+   * Finds the links of a component file to the templates and the styles of its components, none in a template.
+   *
+   * @param params - The document links request.
+   * @returns The links.
+   */
+  public async onDocumentLinks({ textDocument }: DocumentLinkParams): Promise<DocumentLink[]> {
+    const document = this._documents.get(textDocument.uri);
+    if (!document || isTemplate(document)) {
+      return [];
+    }
+
+    const links = await getComponentLinks(fromUri(document.uri), document.getText());
+    return links.map(({ span, fileName }) => ({ range: toRange(document, span), target: toUri(fileName) }));
   }
 
   /**
@@ -276,6 +308,19 @@ export class XaendarLanguageServer {
   private async _getCurrentAnalysis(document: TextDocument): Promise<TemplateAnalysis | undefined> {
     const analysis = (await this._getAnalysis(document))?.analysis;
     return analysis?.source === document.getText() ? analysis : undefined;
+  }
+
+  /**
+   * Converts definitions into the locations of the client, reading the files not open in the editor from disk.
+   *
+   * @param definitions - The definitions.
+   * @returns The locations of the definitions.
+   */
+  private _toLocations(definitions: readonly TemplateDefinition[]): Location[] {
+    return definitions.map(({ fileName, span }) => {
+      const target = getDocument(fileName, uri => this._documents.get(uri));
+      return { uri: target.uri, range: toRange(target, span) };
+    });
   }
 
   /**

@@ -15,7 +15,8 @@
     "vscode": "^1.90.0"
   },
   "activationEvents": [
-    "onLanguage:html"
+    "onLanguage:html",
+    "onLanguage:typescript"
   ],
   "contributes": {
     "grammars": [
@@ -33,13 +34,13 @@
         "language": "html",
         "scopes": {
           "property": [
-            "variable.other.property"
+            "entity.name.function.input.xaendar"
           ],
           "event": [
             "entity.name.function.event.xaendar"
           ],
           "decorator": [
-            "entity.name.function.decorator.xaendar"
+            "keyword.control.directive.xaendar"
           ],
           "variable.readonly": [
             "variable.other.constant"

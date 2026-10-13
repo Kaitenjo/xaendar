@@ -1,4 +1,4 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getComponentLinks, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -20,8 +20,11 @@ vi.mock('@xaendar/language-core', async importOriginal => ({
   analyzeTemplate: vi.fn(),
   getTemplateDiagnostics: vi.fn(() => []),
   getTemplateDefinition: vi.fn(() => []),
+  getComponentDefinition: vi.fn(async () => []),
+  getComponentLinks: vi.fn(async () => []),
   getTemplateSemanticTokens: vi.fn(() => []),
   getTemplateCompletions: vi.fn(() => []),
+  getTemplateBindingCompletions: vi.fn(() => undefined),
   setDocumentOverlay: vi.fn(),
   removeDocumentOverlay: vi.fn(),
   removeTemplateAnalysis: vi.fn(),
@@ -50,6 +53,7 @@ function setup(...documents: TextDocument[]) {
     onDidChangeWatchedFiles: capture('watchedFiles'),
     onDefinition: capture('definition'),
     onCompletion: capture('completion'),
+    onDocumentLinks: capture('documentLinks'),
     onShutdown: capture('shutdown'),
     languages: { semanticTokens: { on: capture('semanticTokens') } },
     listen: vi.fn(),
@@ -69,7 +73,7 @@ function setup(...documents: TextDocument[]) {
 
 const template = (text = '<b>{ title }</b>', version = 1) => TextDocument.create(TEMPLATE_URI, 'html', version, text);
 const analysisOf = (source: string, dependencies: string[] = []): TemplateAnalysisResult => ({
-  analysis: { templatePath: pathOf(TEMPLATE_URI), source, dependencies: new Set(dependencies) } as unknown as TemplateAnalysis,
+  analysis: { templatePath: pathOf(TEMPLATE_URI), source, metadatas: [], dependencies: new Set(dependencies) } as unknown as TemplateAnalysis,
   error: undefined,
   ast: []
 });
@@ -95,6 +99,7 @@ describe('XaendarLanguageServer', () => {
       onDidChangeWatchedFiles: vi.spyOn(server, 'onDidChangeWatchedFiles').mockResolvedValue(),
       onDefinition: vi.spyOn(server, 'onDefinition').mockResolvedValue([]),
       onCompletion: vi.spyOn(server, 'onCompletion').mockResolvedValue([]),
+      onDocumentLinks: vi.spyOn(server, 'onDocumentLinks').mockResolvedValue([]),
       onSemanticTokens: vi.spyOn(server, 'onSemanticTokens').mockResolvedValue({ data: [] }),
       onShutdown: vi.spyOn(server, 'onShutdown').mockReturnValue(),
       onDidChangeContent: vi.spyOn(server, 'onDidChangeContent').mockResolvedValue(),
@@ -106,6 +111,7 @@ describe('XaendarLanguageServer', () => {
     handlers.watchedFiles({ changes: [] });
     handlers.definition({});
     handlers.completion({});
+    handlers.documentLinks({});
     handlers.semanticTokens({});
     handlers.shutdown();
     handlers.change({ document });
@@ -125,7 +131,8 @@ describe('XaendarLanguageServer', () => {
       expect(server.onInitialize({ workspaceFolders: null } as never).capabilities).toEqual({
         textDocumentSync: 2,
         definitionProvider: true,
-        completionProvider: { triggerCharacters: ['.'] },
+        completionProvider: { triggerCharacters: ['.', '('] },
+        documentLinkProvider: { resolveProvider: false },
         semanticTokensProvider: {
           legend: { tokenTypes: ['property', 'event', 'decorator', 'variable'], tokenModifiers: ['readonly'] },
           full: true
@@ -285,6 +292,21 @@ describe('XaendarLanguageServer', () => {
       expect(await server.onDefinition({ textDocument: { uri: 'file:///closed.html' }, position: { line: 0, character: 0 } })).toEqual([]);
       expect(await server.onDefinition({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 0 } })).toEqual([]);
     });
+
+    it('locates the template and the style a @WebComponent of a component file leads to', async () => {
+      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, 'import x;\n@WebComponent({})');
+      const { server } = setup(template(), component);
+      vi.mocked(getComponentDefinition).mockResolvedValue([
+        { fileName: pathOf(TEMPLATE_URI), span: { start: 0, end: 0 } },
+        { fileName: pathOf('file:///src/app.css'), span: { start: 0, end: 0 } }
+      ]);
+
+      const locations = await server.onDefinition({ textDocument: { uri: COMPONENT_URI }, position: { line: 1, character: 3 } });
+
+      expect(getComponentDefinition).toHaveBeenCalledWith(pathOf(COMPONENT_URI), component.getText(), 13);
+      expect(locations.map(({ uri }) => uri)).toEqual([TEMPLATE_URI, 'file:///src/app.css']);
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+    });
   });
 
   describe('onSemanticTokens', () => {
@@ -311,6 +333,27 @@ describe('XaendarLanguageServer', () => {
     });
   });
 
+  describe('onDocumentLinks', () => {
+    it('links a component file to the templates and the styles of its components', async () => {
+      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, 'import x;\nconst url = \'./app.css\';');
+      const { server } = setup(component);
+      vi.mocked(getComponentLinks).mockResolvedValue([{ span: { start: 23, end: 32 }, fileName: pathOf('file:///src/app.css') }]);
+
+      const links = await server.onDocumentLinks({ textDocument: { uri: COMPONENT_URI } });
+
+      expect(getComponentLinks).toHaveBeenCalledWith(pathOf(COMPONENT_URI), component.getText());
+      expect(links).toEqual([{ range: { start: { line: 1, character: 13 }, end: { line: 1, character: 22 } }, target: 'file:///src/app.css' }]);
+    });
+
+    it('finds no links in a template, or in a document that is not open', async () => {
+      const { server } = setup(template());
+
+      expect(await server.onDocumentLinks({ textDocument: { uri: TEMPLATE_URI } })).toEqual([]);
+      expect(await server.onDocumentLinks({ textDocument: { uri: COMPONENT_URI } })).toEqual([]);
+      expect(getComponentLinks).not.toHaveBeenCalled();
+    });
+  });
+
   describe('onCompletion', () => {
     it('proposes the completions of the expression under the cursor', async () => {
       const document = template('<b>{ ti }</b>');
@@ -323,11 +366,47 @@ describe('XaendarLanguageServer', () => {
       expect(getTemplateCompletions).toHaveBeenCalledWith(result.analysis, 7);
     });
 
-    it('proposes nothing for a template that doesn\'t compile', async () => {
+    it('proposes nothing in an expression of a template that doesn\'t compile, or after the ( of a call', async () => {
       const { server } = setup(template('<b>{ ti '));
       vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf('<b>{ ti }</b>'));
 
       expect(await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 7 } })).toEqual([]);
+
+      const call = template('<b>{ f( }</b>', 2);
+      const { server: callServer } = setup(call);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(call.getText()));
+
+      expect(await callServer.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 7 }, context: { triggerKind: 2, triggerCharacter: '(' } })).toEqual([]);
+      expect(getTemplateCompletions).not.toHaveBeenCalled();
+    });
+
+    it('proposes the bindings of a component on the name of an attribute, also while the template doesn\'t compile', async () => {
+      const document = template('<my-el\n  la');
+      const { server } = setup(document);
+      const result = analysisOf('<my-el></my-el>');
+      vi.mocked(analyzeTemplate).mockResolvedValue(result);
+      vi.mocked(getTemplateBindingCompletions).mockReturnValue([
+        { name: 'label', kind: 'property' as never, sortText: '0', replacementSpan: { start: 9, end: 11 } },
+        { name: '(picked)', kind: 'event', sortText: '1', replacementSpan: { start: 9, end: 11 } }
+      ]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 1, character: 4 } });
+
+      expect(getTemplateBindingCompletions).toHaveBeenCalledWith(result.analysis!.metadatas, document.getText(), 11);
+      const range = { start: { line: 1, character: 2 }, end: { line: 1, character: 4 } };
+      expect(items).toEqual([
+        { label: 'label', kind: CompletionItemKind.Field, sortText: '0', textEdit: { range, newText: 'label' } },
+        { label: '(picked)', kind: CompletionItemKind.Event, sortText: '1', textEdit: { range, newText: '(picked)' } }
+      ]);
+      expect(getTemplateCompletions).not.toHaveBeenCalled();
+    });
+
+    it('proposes nothing in a document that is not open, or in a template never compiled', async () => {
+      const { server } = setup(template());
+      vi.mocked(analyzeTemplate).mockResolvedValue({ analysis: undefined, error: new Error('boom'), ast: undefined });
+
+      expect(await server.onCompletion({ textDocument: { uri: 'file:///closed.html' }, position: { line: 0, character: 0 } })).toEqual([]);
+      expect(await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 0 } })).toEqual([]);
     });
   });
 

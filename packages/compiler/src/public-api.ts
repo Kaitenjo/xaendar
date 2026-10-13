@@ -1,6 +1,8 @@
 export * from './compile/compile';
 export * from './compile-options.type';
 export * from './compiler-host.interface';
+export type * from './lexer/types/binding-context/binding-context.type';
+export * from './lexer/utils/binding-context/binding-context.utils';
 export * from './models/cursor/cursor';
 export * from './models/template-error/template-error.model';
 export type * from './parser/types/ast.type';

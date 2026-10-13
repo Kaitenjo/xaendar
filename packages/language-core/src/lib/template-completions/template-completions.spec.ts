@@ -2,7 +2,7 @@ import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../template-analysis/template-analysis';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
-import { getTemplateCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -40,5 +40,44 @@ describe('getTemplateCompletions', () => {
 
     const languageService = { ...analysis.languageService, getCompletionsAtPosition: () => undefined } as unknown as LanguageService;
     expect(names(source.indexOf('title }'), { ...analysis, languageService })).toEqual([]);
+  });
+});
+
+describe('getTemplateBindingCompletions', () => {
+  const imports = '@import { Child } from \'./child\';\n@import { Tooltip, Media } from \'./directives\';\n';
+  let metadatas: TemplateAnalysis['metadatas'];
+
+  beforeAll(async () => {
+    metadatas = (await project.analyze(`${imports}<my-child label="a"></my-child>`)).analysis!.metadatas;
+  }, TIMEOUT);
+
+  /**
+   * Returns the completions at the end of a template being written after the imports, as `name@start-end`.
+   */
+  const completionsOf = (template: string) => getTemplateBindingCompletions(metadatas, `${imports}${template}`, imports.length + template.length)
+    ?.map(({ name, kind, sortText, replacementSpan }) => `${name}:${kind}:${sortText}@${replacementSpan!.start - imports.length}-${replacementSpan!.end - imports.length}`);
+
+  it('proposes the inputs of a component, aliased ones included, then its events, on the name of an attribute', () => {
+    expect(completionsOf('<my-child la')).toEqual(['label:property:0@10-12', 'size:property:0@10-12', '(closed):event:1@10-12', '(picked):event:1@10-12']);
+  });
+
+  it('proposes the events of a component, inherited ones included, after the ( of an event', () => {
+    expect(completionsOf('<my-child (')).toEqual(['closed:event:1@11-11', 'picked:event:1@11-11']);
+  });
+
+  it('proposes the bindings of the directive whose parentheses hold the name', () => {
+    expect(completionsOf('<my-child @@tooltip(')).toEqual(['text:property:0@20-20', '(shown):event:1@20-20']);
+    expect(completionsOf('<my-child @@tooltip((')).toEqual(['shown:event:1@21-21']);
+    expect(completionsOf('<my-child *media(')).toEqual(['query:property:0@17-17']);
+  });
+
+  it('proposes nothing on an element or directive that is not imported, even while the template doesn\'t compile', () => {
+    expect(completionsOf('<div ')).toEqual([]);
+    expect(completionsOf('<my-child @@missing(')).toEqual([]);
+  });
+
+  it('leaves to the other completions the offsets not on the name of an attribute or event', () => {
+    expect(completionsOf('<my-child label="')).toBeUndefined();
+    expect(completionsOf('{ la')).toBeUndefined();
   });
 });

@@ -31,7 +31,7 @@
         { "match": "[{}]", "name": "punctuation.definition.block.xaendar" },
         { "match": ",", "name": "punctuation.separator.comma.xaendar" },
         { "match": "(['\"])[^'\"]*\\1", "name": "string.quoted.xaendar" },
-        { "match": "[A-Za-z_$][\\w$]*", "name": "entity.name.type.class.xaendar" }
+        { "match": "[A-Za-z_$][\\w$]*", "name": "meta.import.specifier.xaendar" }
       ]
     },
     "custom-tag-open": {
@@ -81,8 +81,8 @@
         {
           "begin": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(\\()",
           "beginCaptures": {
-            "1": { "name": "keyword.operator.directive.xaendar" },
-            "2": { "name": "entity.name.function.decorator.xaendar" },
+            "1": { "name": "keyword.control.directive.xaendar" },
+            "2": { "name": "keyword.control.directive.xaendar" },
             "3": { "name": "punctuation.section.directive.begin.xaendar" }
           },
           "end": "\\)",
@@ -101,8 +101,8 @@
         {
           "match": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)",
           "captures": {
-            "1": { "name": "keyword.operator.directive.xaendar" },
-            "2": { "name": "entity.name.function.decorator.xaendar" }
+            "1": { "name": "keyword.control.directive.xaendar" },
+            "2": { "name": "keyword.control.directive.xaendar" }
           },
           "name": "meta.directive.xaendar"
         }

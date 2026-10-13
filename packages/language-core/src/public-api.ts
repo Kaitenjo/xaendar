@@ -1,3 +1,4 @@
+export * from './lib/component-definition/component-definition';
 export * from './lib/language-service/language-service';
 export * from './lib/template-analysis/template-analysis';
 export * from './lib/template-completions/template-completions';

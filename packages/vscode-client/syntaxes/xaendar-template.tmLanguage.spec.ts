@@ -107,15 +107,15 @@ describe('xaendar-template grammar', () => {
     const template = '@import { Child, Card as C, default as D, * as all } from \'./child\';\n@import {\n  Tooltip\n} from "./directives"\n<p></p>';
 
     expect(scopesOf(template, '@import')).toContain('keyword.control.xaendar');
-    expect(scopesOf(template, 'Child')).toContain('entity.name.type.class.xaendar');
+    expect(scopesOf(template, 'Child')).toContain('meta.import.specifier.xaendar');
     expect(scopesOf(template, 'as')).toContain('keyword.control.xaendar');
-    expect(scopesOf(template, 'C,')).toContain('entity.name.type.class.xaendar');
+    expect(scopesOf(template, 'C,')).toContain('meta.import.specifier.xaendar');
     expect(scopesOf(template, 'default')).toContain('keyword.control.xaendar');
     expect(scopesOf(template, '*')).toContain('keyword.operator.wildcard.xaendar');
     expect(scopesOf(template, 'from')).toContain('keyword.control.xaendar');
     expect(scopesOf(template, './child')).toContain('string.quoted.xaendar');
     expect(scopesOf(template, ';')).toContain('punctuation.terminator.statement.xaendar');
-    expect(scopesOf(template, 'Tooltip')).toContain('entity.name.type.class.xaendar');
+    expect(scopesOf(template, 'Tooltip')).toContain('meta.import.specifier.xaendar');
     expect(scopesOf(template, './directives')).toContain('string.quoted.xaendar');
     // The statement ends with its path
     expect(scopesOf(template, 'p>')).toContain('entity.name.tag.html');
@@ -142,18 +142,18 @@ describe('xaendar-template grammar', () => {
   it('colors the directives and structural directives, with their bindings', () => {
     const template = '<div @@tooltip(text="{ label }" (shown)="log()" disabled) *media(query="q") @@plain></div>';
 
-    expect(scopesOf(template, '@@')).toContain('keyword.operator.directive.xaendar');
-    expect(scopesOf(template, 'tooltip')).toContain('entity.name.function.decorator.xaendar');
+    expect(scopesOf(template, '@@')).toContain('keyword.control.directive.xaendar');
+    expect(scopesOf(template, 'tooltip')).toContain('keyword.control.directive.xaendar');
     expect(scopesOf(template, 'text')).toContain('entity.other.attribute-name.html');
     expect(scopesOf(template, 'label')).toContain('meta.embedded.expression.xaendar');
     expect(scopesOf(template, 'shown')).toContain('entity.name.function.event.xaendar');
     expect(scopesOf(template, 'disabled')).toContain('entity.other.attribute-name.html');
-    expect(scopesOf(template, '*')).toContain('keyword.operator.directive.xaendar');
-    expect(scopesOf(template, 'media')).toContain('entity.name.function.decorator.xaendar');
+    expect(scopesOf(template, '*')).toContain('keyword.control.directive.xaendar');
+    expect(scopesOf(template, 'media')).toContain('keyword.control.directive.xaendar');
     expect(scopesOf(template, 'q"')).toContain('string.quoted.double.html');
-    expect(scopesOf(template, 'plain')).toContain('entity.name.function.decorator.xaendar');
+    expect(scopesOf(template, 'plain')).toContain('keyword.control.directive.xaendar');
     // A multiplication is not a structural directive
-    expect(scopesOf('{ 2*size(1) }', 'size')).not.toContain('entity.name.function.decorator.xaendar');
+    expect(scopesOf('{ 2*size(1) }', 'size')).not.toContain('keyword.control.directive.xaendar');
   });
 
   it('colors the control flow, with its conditions as expressions', () => {

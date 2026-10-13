@@ -68,9 +68,9 @@ export function toSeverity(category: DiagnosticCategory): DiagnosticSeverity {
 }
 
 /**
- * Maps a TypeScript script element kind to an LSP completion item kind.
+ * Maps the kind of a template completion, a TypeScript script element kind or `event`, to an LSP completion item kind.
  *
- * @param kind - TypeScript script element kind.
+ * @param kind - The kind of the completion.
  * @returns The matching LSP completion item kind.
  */
 export function toCompletionItemKind(kind: string): CompletionItemKind {
@@ -89,6 +89,8 @@ export function toCompletionItemKind(kind: string): CompletionItemKind {
       return CompletionItemKind.Variable;
     case ScriptElementKind.classElement:
       return CompletionItemKind.Class;
+    case 'event':
+      return CompletionItemKind.Event;
     default:
       return CompletionItemKind.Text;
   }
