@@ -10,7 +10,7 @@ export type StructuralDirectiveToken = TokenWithSpan<{
    */
   type: TokenType.STRUCTURAL_DIRECTIVE
   /**
-   * The selector of the structural directive.
+   * The selector of the structural directive, then the text of its type arguments (`string` in `*hasRole<string>(...)`) if it declares them.
    */
-  parts: [selector: string];
+  parts: [selector: string, typeArguments?: string];
 }>

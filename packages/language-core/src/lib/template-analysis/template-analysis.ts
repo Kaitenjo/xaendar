@@ -1,9 +1,10 @@
-import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, type ImportSpecifier, parseTemplate, TemplateError, type TypeCheckResult, typeCheckTemplate } from '@xaendar/compiler';
-import { dirname } from 'node:path';
+import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, type ImportSpecifier, parseImportStatements, parseTemplate, TemplateError, type TypeCheckResult, typeCheckTemplateTolerant } from '@xaendar/compiler';
+import { dirname, resolve } from 'node:path';
 import { type CompilerOptions, createSourceFile, isClassDeclaration, type LanguageService, ScriptTarget } from 'typescript';
 import { getProjectLanguageService, type ProjectLanguageService, readDocument } from '../language-service/language-service';
 import { TemplateMetadataCache } from '../template-metadata-cache/template-metadata-cache';
 import { findTsConfigPath, loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
+import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
 
@@ -26,7 +27,22 @@ export type TemplateImport = {
 };
 
 /**
- * The result of a successful analysis of a template (see {@link analyzeTemplate}).
+ * A component or directive a template could import.
+ */
+export type ImportCandidate = {
+  /**
+   * The path of the file declaring it.
+   */
+  readonly fileName: string;
+  /**
+   * Its metadata.
+   */
+  readonly metadata: ComponentOrDirectiveMetadata;
+};
+
+/**
+ * The result of the analysis of a template that could be parsed (see {@link analyzeTemplate}), whose `errors`
+ * may not be empty.
  */
 export type TemplateAnalysis = {
   /**
@@ -49,6 +65,12 @@ export type TemplateAnalysis = {
    * The metadata of the components and directives imported by the template.
    */
   readonly metadatas: readonly ComponentOrDirectiveMetadata[];
+  /**
+   * The errors of the template that don't prevent the analysis: the modules and symbols of the `@import` statements
+   * that cannot be resolved, and the nodes failing type-checking, which the type-check body leaves out. A
+   * `TemplateError` when the error points to a part of the template.
+   */
+  readonly errors: readonly Error[];
   /**
    * The type-check body generated from the template, with the table mapping it to the template.
    */
@@ -115,19 +137,16 @@ export async function analyzeTemplate(templatePath: string, source: string, comp
   // TypeScript names the files of the program, the shim included, with forward slashes
   const componentFiles = new Map([...components].map(([fileName, classNames]) => [toPosixPath(fileName), classNames]));
   const templateDir = dirname(templatePath);
-  const configPath = findTsConfigPath(templateDir);
-  const { options, fileNames } = loadTsConfig(templateDir);
-  const project = getProjectLanguageService(configPath);
+  const { options, fileNames, project, cache } = getProjectContext(templateDir);
   const languageService = project.getLanguageService(options, fileNames);
-  const cache = metadataCaches.getOrInsertComputed(project, () => new TemplateMetadataCache(options));
   let ast: ASTNode[] | undefined;
 
   try {
     ast = parseTemplate(source);
     const { shadowingMembers, dependencies } = extractMembers(componentFiles, project, options);
-    const imports = await resolveImports(ast, templateDir, cache);
+    const { imports, errors: importErrors } = await resolveImports(ast, templateDir, cache);
     const metadatas = imports.map(({ metadata }) => metadata);
-    const typeCheck = await typeCheckTemplate(source, ast, metadatas, shadowingMembers);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers);
     const shim = createShim(componentFiles, typeCheck, project);
 
     const analysis: TemplateAnalysis = {
@@ -136,6 +155,7 @@ export async function analyzeTemplate(templatePath: string, source: string, comp
       ast,
       imports,
       metadatas,
+      errors: [...importErrors, ...typeCheckErrors],
       typeCheck,
       shimPath: shim.path,
       bodyLineOffset: shim.bodyLineOffset,
@@ -147,6 +167,81 @@ export async function analyzeTemplate(templatePath: string, source: string, comp
   } catch (error) {
     return { analysis: lastAnalyses.get(key), error: toError(error), ast };
   }
+}
+
+/**
+ * Resolves the components and directives imported by the current source of a template, read from its `@import`
+ * statements, so that it works while the rest of the template cannot be parsed (e.g. while the user is typing).
+ * The symbols that cannot be resolved, and the namespace imports, are ignored.
+ *
+ * @param templatePath - The path of the template.
+ * @param source - The current source of the template.
+ * @returns The metadata of the imported components and directives.
+ */
+export async function resolveTemplateImports(templatePath: string, source: string): Promise<ComponentOrDirectiveMetadata[]> {
+  const templateDir = dirname(templatePath);
+  const { cache } = getProjectContext(templateDir);
+  const metadatas = new Array<ComponentOrDirectiveMetadata>();
+
+  const statements = parseImportStatements(source);
+  for (let i = 0; i < statements.length; i++) {
+    const { path, specifiers } = statements[i];
+    const symbols = specifiers.filter(({ imported }) => imported !== '*');
+    for (let j = 0; j < symbols.length; j++) {
+      const { imported, local } = symbols[j];
+      try {
+        metadatas.push(await cache.getOrInsert(imported === 'default' ? local : imported, [templateDir, path]));
+      } catch {
+        // A symbol that cannot be resolved has nothing to propose
+      }
+    }
+  }
+
+  return metadatas;
+}
+
+/**
+ * Resolves the components and directives declared in a module a template imports from, the ones it could import.
+ *
+ * @param templatePath - The path of the template.
+ * @param modulePath - The path of the module, as written in the `@import` statement.
+ * @returns The metadata of the components and directives of the module, `undefined` if it cannot be resolved or read.
+ */
+export async function resolveModuleMetadatas(templatePath: string, modulePath: string): Promise<ComponentOrDirectiveMetadata[] | undefined> {
+  const templateDir = dirname(templatePath);
+  const { cache } = getProjectContext(templateDir);
+  const metadatas = await cache.getModuleMetadatas(templateDir, modulePath);
+  if (metadatas?.size) {
+    return Array.from(metadatas.values());
+  }
+}
+
+/**
+ * Finds the components and directives a template could import: the ones declared in the files of its TypeScript
+ * project, the component the template belongs to excluded.
+ *
+ * @param templatePath - The path of the template.
+ * @returns The declarations with the file declaring each one, `undefined` if the project declares none.
+ */
+export async function resolveImportCandidates(templatePath: string): Promise<ImportCandidate[] | undefined> {
+  const { fileNames, cache } = getProjectContext(dirname(templatePath));
+  const declarations = await cache.getDeclarations(fileNames);
+  if (!declarations) {
+    return undefined;
+  }
+
+  const templateKey = normalizeFileName(templatePath);
+  const candidates = new Array<ImportCandidate>();
+  for (const [fileName, metadatas] of declarations) {
+    for (const metadata of metadatas.values()) {
+      const isOwner = metadata.type === 'component' && normalizeFileName(resolve(dirname(fileName), metadata.templateUrl)) === templateKey;
+      if (!isOwner) {
+        candidates.push({ fileName, metadata });
+      }
+    }
+  }
+
+  return candidates.length ? candidates : undefined;
 }
 
 /**
@@ -167,6 +262,19 @@ export function invalidateTemplateMetadata(fileName: string): void {
   for (const cache of metadataCaches.values()) {
     cache.invalidate(fileName);
   }
+}
+
+/**
+ * Finds the TypeScript project of a template, with the options it is compiled with and the metadata cache of its components.
+ *
+ * @param templateDir - The directory of the template.
+ * @returns The options and the files of the project, the project itself and its metadata cache.
+ */
+function getProjectContext(templateDir: string): { options: CompilerOptions, fileNames: string[], project: ProjectLanguageService, cache: TemplateMetadataCache } {
+  const { options, fileNames } = loadTsConfig(templateDir);
+  const project = getProjectLanguageService(findTsConfigPath(templateDir));
+  const cache = metadataCaches.getOrInsertComputed(project, () => new TemplateMetadataCache(options));
+  return { options, fileNames, project, cache };
 }
 
 /**
@@ -204,20 +312,26 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
 }
 
 /**
- * Resolves the components and directives imported by a template.
+ * Resolves the components and directives imported by a template, going on after the ones it cannot resolve.
  *
  * @param ast - The top-level nodes of the template.
  * @param templateDir - The directory of the template, the `@import` paths are relative to.
  * @param cache - The metadata cache of the project.
- * @returns The imported components and directives.
- * @throws A `TemplateError` on the name of the first symbol that cannot be resolved.
+ * @returns The imported components and directives, and a `TemplateError` for each module that cannot be found (on its path) and for each symbol that cannot be resolved (on its name).
  */
-async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache): Promise<TemplateImport[]> {
+async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache): Promise<{ imports: TemplateImport[], errors: TemplateError[] }> {
   const imports = new Array<TemplateImport>();
+  const errors = new Array<TemplateError>();
   const importNodes = ast.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
 
   for (let i = 0; i < importNodes.length; i++) {
     const node = importNodes[i];
+    if (!resolveModulePath(templateDir, node.path)) {
+      const message = `Cannot find module "${node.path}"`;
+      errors.push(new TemplateError(message, node.pathSpan, message));
+      continue;
+    }
+
     const specifiers = node.specifiers.filter(({ imported }) => imported !== '*');
     for (let j = 0; j < specifiers.length; j++) {
       const specifier = specifiers[j];
@@ -226,12 +340,12 @@ async function resolveImports(ast: readonly ASTNode[], templateDir: string, cach
         imports.push({ node, specifier, metadata });
       } catch (error) {
         const { message } = toError(error);
-        throw new TemplateError(message, specifier.importedSpan, message);
+        errors.push(new TemplateError(message, specifier.importedSpan, message));
       }
     }
   }
 
-  return imports;
+  return { imports, errors };
 }
 
 /**

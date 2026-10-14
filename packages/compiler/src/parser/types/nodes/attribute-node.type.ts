@@ -23,4 +23,9 @@ export type AttributeNode = ASTNodeWithSpan<{
    * The attribute value, either a plain string or an interpolation node.
    */
   value: string | InterpolationNode;
+  /**
+   * Set when the attribute is declared without a value (`<input disabled>`), which is then `'true'`: that form is
+   * only valid for the attributes of a native element, a component or directive property always needs a value.
+   */
+  bare?: true;
 }>

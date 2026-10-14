@@ -804,6 +804,11 @@
           "p1": "L’argomento di <code>CustomDirective</code> può essere qualsiasi tipo di elemento. Una direttiva pensata per i cerchi SVG riceve l’API SVG del cerchio, come il suo raggio animato, senza cast.",
           "example1": "Cerchi che crescono sotto il puntatore"
         },
+        "generics": {
+          "title": "Direttive generiche",
+          "p1": "La classe di una direttiva può avere dei type parameter. Il template li passa come type argument subito dopo il selettore, tra <code>&lt;</code> e <code>&gt;</code>: i tipi degli input e degli output della direttiva vengono verificati rispetto a essi.",
+          "p2": "I type argument seguono l’ordine dei type parameter. Quelli omessi vengono inferiti dai valori legati agli input, come fa TypeScript con la chiamata di una funzione (<code>items=\"{ rows() }\"</code> dà a <code>Item</code> il tipo delle righe); se non si inferisce nulla assumono il tipo di default (<code>Key = string</code>), oppure <code>any</code> se non ne hanno. Il vincolo di un type parameter viene verificato sull’argomento. I type argument servono solo al type-check: non hanno effetto a runtime. Una direttiva strutturale li accetta allo stesso modo: <code>*each&lt;Item&gt;(…)</code>."
+        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Cosa vede una direttiva in onInit",
@@ -2840,26 +2845,6 @@
       "title": "Opzioni di stile che il plugin non sa compilare",
       "details": "xd new accetta scss, less e styl, che il plugin rifiuta; xd generate component ignora xaendar.json e scrive sempre CSS.",
       "workaround": "Usa css."
-    },
-    "the-published-packages-predate-this-documentation": {
-      "title": "I pacchetti pubblicati precedono questa documentazione",
-      "details": "I pacchetti 0.12.0 su npm esportano BaseWebComponent, non CustomElement: un progetto generato da una CLI compilata dal repository fallisce con MISSING_EXPORT.",
-      "workaround": "Lavora dentro il repository fino al prossimo rilascio."
-    },
-    "the-language-server-never-compiles-a": {
-      "title": "Il language server non compila mai un template",
-      "details": "L’indice che associa i template ai componenti non viene mai riempito, quindi diagnostica e completamenti non vengono mai prodotti. L’hover è dichiarato ma non implementato.",
-      "workaround": "Leggi gli errori nel terminale di xd start."
-    },
-    "the-grammar-highlights-instead-of": {
-      "title": "La grammatica evidenzia {{ }} invece di { }",
-      "details": "Interpolazioni e direttive mantengono i colori dell’HTML semplice.",
-      "workaround": "Nessuno per ora."
-    },
-    "documentation-inside-the-packages-is-out": {
-      "title": "La documentazione dentro i pacchetti non è aggiornata",
-      "details": "Il README di core cita attributeChangedCallback, InputSignal<a, b> e .get(); il README di signals importa effect da @xaendar/signals e dice che due set sincroni eseguono un effect due volte; il JSDoc di onCleanup dice che viene eseguito prima di ogni riesecuzione; il JSDoc di signal() usa any come default; QuerySlotOptions cita slot; l’alias di @for è documentato come $index = i.",
-      "workaround": "Fidati di questo sito: ogni comportamento descritto qui è stato osservato."
     }
   }
 }

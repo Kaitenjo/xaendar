@@ -20,7 +20,7 @@ export type TemplateDefinition = MemberDeclaration & {
 /**
  * A part of a template whose definition is known without asking TypeScript, e.g. the tag name of a component.
  */
-type DefinitionTarget = {
+export type DefinitionTarget = {
   /**
    * The span of the part in the template.
    */
@@ -44,8 +44,20 @@ type DefinitionTarget = {
  * @returns The definitions found, none if the offset is not on a symbol.
  */
 export function getTemplateDefinition(analysis: TemplateAnalysis, offset: number): TemplateDefinition[] {
-  const target = findInnermostSpan(collectTargets(analysis), offset);
+  const target = findDefinitionTarget(analysis, offset);
   return target ? [...target.definitions] : getTypeScriptDefinitions(analysis, offset);
+}
+
+/**
+ * Finds the part of a template, among those whose definition is known from the metadata of the components and
+ * directives it imports (see {@link getTemplateDefinition}), at an offset.
+ *
+ * @param analysis - The analysis of the template.
+ * @param offset - The offset in the template.
+ * @returns The innermost part containing the offset, `undefined` if the offset is not on one.
+ */
+export function findDefinitionTarget(analysis: TemplateAnalysis, offset: number): DefinitionTarget | undefined {
+  return findInnermostSpan(collectTargets(analysis), offset);
 }
 
 /**
@@ -123,16 +135,18 @@ function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLi
   const shimKey = normalizeFileName(shimPath);
   const definitions = new Array<TemplateDefinition>();
 
-  const shimDefinitions = languageService.getDefinitionAtPosition(shimPath, position) ?? [];
-  for (let i = 0; i < shimDefinitions.length; i++) {
-    const { fileName, textSpan } = shimDefinitions[i];
-    if (normalizeFileName(fileName) !== shimKey) {
-      definitions.push({ fileName, span: { start: textSpan.start, end: textSpan.start + textSpan.length } });
-    } else {
-      // A variable declared by the template, e.g. the item of a `@for`: its declaration is mapped onto the template
-      const span = toTemplateSpan(typeCheck, shimFile, bodyLineOffset, textSpan.start, textSpan.length);
-      if (span) {
-        definitions.push({ fileName: templatePath, span });
+  const shimDefinitions = languageService.getDefinitionAtPosition(shimPath, position);
+  if (shimDefinitions?.length) {
+    for (let i = 0; i < shimDefinitions.length; i++) {
+      const { fileName, textSpan } = shimDefinitions[i];
+      if (normalizeFileName(fileName) !== shimKey) {
+        definitions.push({ fileName, span: { start: textSpan.start, end: textSpan.start + textSpan.length } });
+      } else {
+        // A variable declared by the template, e.g. the item of a `@for`: its declaration is mapped onto the template
+        const span = toTemplateSpan(typeCheck, shimFile, bodyLineOffset, textSpan.start, textSpan.length);
+        if (span) {
+          definitions.push({ fileName: templatePath, span });
+        }
       }
     }
   }

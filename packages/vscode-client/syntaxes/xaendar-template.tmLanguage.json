@@ -79,11 +79,14 @@
     "directive": {
       "patterns": [
         {
-          "begin": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(\\()",
+          "begin": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(?:(<)((?:=>|[^<>=]|=(?!>)|<(?:=>|[^<>=]|=(?!>)|<[^<>]*>)*>)*)(>))?(\\()",
           "beginCaptures": {
             "1": { "name": "keyword.control.directive.xaendar" },
             "2": { "name": "keyword.control.directive.xaendar" },
-            "3": { "name": "punctuation.section.directive.begin.xaendar" }
+            "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
+            "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
+            "5": { "name": "punctuation.definition.typeparameters.end.xaendar" },
+            "6": { "name": "punctuation.section.directive.begin.xaendar" }
           },
           "end": "\\)",
           "endCaptures": {
@@ -99,10 +102,13 @@
           ]
         },
         {
-          "match": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)",
+          "match": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(?:(<)((?:=>|[^<>=]|=(?!>)|<(?:=>|[^<>=]|=(?!>)|<[^<>]*>)*>)*)(>))?",
           "captures": {
             "1": { "name": "keyword.control.directive.xaendar" },
-            "2": { "name": "keyword.control.directive.xaendar" }
+            "2": { "name": "keyword.control.directive.xaendar" },
+            "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
+            "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
+            "5": { "name": "punctuation.definition.typeparameters.end.xaendar" }
           },
           "name": "meta.directive.xaendar"
         }

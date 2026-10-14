@@ -1,6 +1,7 @@
 import { slice } from '@xaendar/common';
 import { TokenType } from '../../lexer/types/token-type.enum.js';
 import { Token } from '../../lexer/types/token.type.js';
+import { isImportSeparator } from '../../lexer/utils/import-header/import-header.utils.js';
 import { TemplateError } from '../../models/template-error/template-error.model.js';
 import { isSpan } from '../../utils/span/span.utils.js';
 import { ParserCursor } from '../models/parser-cursor/parser-cursor.model.js';
@@ -12,6 +13,7 @@ import { parseInterpolation } from '../states/parse-interpolation/parse-interpol
 import { parseSwitchControlFlow } from '../states/parse-switch/parse-switch.state.js';
 import { parseText } from '../states/parse-text/parse-text.state.js';
 import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
 import { ParserStates } from '../types/parser-states.type.js';
 
 /**
@@ -49,6 +51,14 @@ export class Parser {
    * 
    */
   private thrown = false;
+  /**
+   * Whether only `@import` statements have been parsed so far: they are valid only at the beginning of the template.
+   */
+  private _isHeader = true;
+  /**
+   * How many nodes enclose the one being parsed: `0` for a top-level node.
+   */
+  private _depth = 0;
 
   /**
    * Creates a new Parser instance.
@@ -75,6 +85,7 @@ export class Parser {
       const parseNode = this.parseNode();
       if (parseNode) {
         nodes.push(parseNode);
+        this._isHeader = this._isHeader && (parseNode.type === ASTNodeType.Import || parseNode.type === ASTNodeType.Text && isImportSeparator(parseNode.value));
       }
     }
 
@@ -102,7 +113,13 @@ export class Parser {
         throw `No transition function for token of type ${TokenType[token.type]}`;
       }
 
+      if (token.type === TokenType.IMPORT && (!this._isHeader || this._depth > 0)) {
+        throw 'An @import statement must be at the beginning of the template, before any other content';
+      }
+
+      this._depth++;
       const node = state(this._cursor, this.parseNode.bind(this), token as never);
+      this._depth--;
       const currentToken = this._cursor.getCurrentToken().value;
       const endOffset = 'span' in currentToken ? currentToken.span.end : token.span.end;
 

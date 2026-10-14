@@ -1,4 +1,4 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -21,9 +21,13 @@ vi.mock('@xaendar/language-core', async importOriginal => ({
   getTemplateDiagnostics: vi.fn(() => []),
   getTemplateDefinition: vi.fn(() => []),
   getComponentDefinition: vi.fn(async () => []),
+  getTemplateHover: vi.fn(() => undefined),
   getTemplateSemanticTokens: vi.fn(() => []),
   getTemplateCompletions: vi.fn(() => []),
-  getTemplateBindingCompletions: vi.fn(() => undefined),
+  getTemplateSourceBindingCompletions: vi.fn(async () => undefined),
+  getTemplateImportCompletions: vi.fn(async () => undefined),
+  getTemplateImportPathCompletions: vi.fn(() => undefined),
+  getTemplateSelectorCompletions: vi.fn(async () => undefined),
   setDocumentOverlay: vi.fn(),
   removeDocumentOverlay: vi.fn(),
   removeTemplateAnalysis: vi.fn(),
@@ -51,6 +55,7 @@ function setup(...documents: TextDocument[]) {
     onInitialized: capture('initialized'),
     onDidChangeWatchedFiles: capture('watchedFiles'),
     onDefinition: capture('definition'),
+    onHover: capture('hover'),
     onCompletion: capture('completion'),
     onShutdown: capture('shutdown'),
     languages: { semanticTokens: { on: capture('semanticTokens') } },
@@ -80,6 +85,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
   registry.resolve.mockReturnValue(components);
+  vi.mocked(getTemplateImportCompletions).mockResolvedValue(undefined);
+  vi.mocked(getTemplateImportPathCompletions).mockReturnValue(undefined);
+  vi.mocked(getTemplateSelectorCompletions).mockResolvedValue(undefined);
+  vi.mocked(getTemplateSourceBindingCompletions).mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -96,6 +105,7 @@ describe('XaendarLanguageServer', () => {
       onInitialized: vi.spyOn(server, 'onInitialized').mockResolvedValue(),
       onDidChangeWatchedFiles: vi.spyOn(server, 'onDidChangeWatchedFiles').mockResolvedValue(),
       onDefinition: vi.spyOn(server, 'onDefinition').mockResolvedValue([]),
+      onHover: vi.spyOn(server, 'onHover').mockResolvedValue(null),
       onCompletion: vi.spyOn(server, 'onCompletion').mockResolvedValue([]),
       onSemanticTokens: vi.spyOn(server, 'onSemanticTokens').mockResolvedValue({ data: [] }),
       onShutdown: vi.spyOn(server, 'onShutdown').mockReturnValue(),
@@ -107,6 +117,7 @@ describe('XaendarLanguageServer', () => {
     handlers.initialized();
     handlers.watchedFiles({ changes: [] });
     handlers.definition({});
+    handlers.hover({});
     handlers.completion({});
     handlers.semanticTokens({});
     handlers.shutdown();
@@ -127,7 +138,8 @@ describe('XaendarLanguageServer', () => {
       expect(server.onInitialize({ workspaceFolders: null } as never).capabilities).toEqual({
         textDocumentSync: 2,
         definitionProvider: true,
-        completionProvider: { triggerCharacters: ['.', '('] },
+        hoverProvider: true,
+        completionProvider: { triggerCharacters: ['.', '(', '<', '@', '*', '/'] },
         semanticTokensProvider: {
           legend: { tokenTypes: ['property', 'event', 'decorator', 'variable'], tokenModifiers: ['readonly'] },
           full: true
@@ -214,6 +226,20 @@ describe('XaendarLanguageServer', () => {
       expect(invalidateTemplateMetadata).toHaveBeenCalledWith(pathOf('file:///src/base.ts'));
       expect(registry.index).not.toHaveBeenCalled();
       expect(vi.mocked(analyzeTemplate).mock.calls.map(([templatePath]) => templatePath)).toEqual([pathOf(TEMPLATE_URI)]);
+    });
+
+    it('does not validate again a template that neither depends on the changed TypeScript file nor is used by it', async () => {
+      const unrelated = TextDocument.create('file:///src/unrelated.ts', 'typescript', 1, 'export class Unrelated {}');
+      const { server } = setup(template(), unrelated);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(template().getText()));
+      registry.resolve.mockReturnValue(components);
+      await server.validate(TEMPLATE_URI);
+      vi.mocked(analyzeTemplate).mockClear();
+
+      await server.onDidChangeContent(unrelated);
+      await vi.runAllTimersAsync();
+
+      expect(analyzeTemplate).not.toHaveBeenCalled();
     });
 
     it('indexes a component file again and validates the templates it uses', async () => {
@@ -304,6 +330,41 @@ describe('XaendarLanguageServer', () => {
     });
   });
 
+  describe('onHover', () => {
+    it('shows the documentation of the symbol under the cursor, as markdown on the span it refers to', async () => {
+      const contents = '```ts\nclass MyEl\n```\n\nA component.';
+      const document = template('<my-el value="a"></my-el>');
+      const { server } = setup(document);
+      const result = analysisOf(document.getText());
+      vi.mocked(analyzeTemplate).mockResolvedValue(result);
+      vi.mocked(getTemplateHover).mockReturnValue({ contents, span: { start: 1, end: 6 } });
+
+      expect(await server.onHover({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 3 } })).toEqual({
+        contents: { kind: 'markdown', value: contents },
+        range: { start: { line: 0, character: 1 }, end: { line: 0, character: 6 } }
+      });
+      expect(getTemplateHover).toHaveBeenCalledWith(result.analysis, 3);
+    });
+
+    it('shows nothing where there is nothing to show, in a template that doesn\'t compile, or in a document that is not open', async () => {
+      const { server } = setup(template('<my-el'));
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf('<my-el></my-el>'));
+
+      expect(await server.onHover({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 3 } })).toBeNull();
+      expect(await server.onHover({ textDocument: { uri: 'file:///closed.html' }, position: { line: 0, character: 3 } })).toBeNull();
+      expect(getTemplateHover).not.toHaveBeenCalled();
+    });
+
+    it('shows nothing when there is no hover at the position', async () => {
+      const document = template('<b></b>');
+      const { server } = setup(document);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(document.getText()));
+      vi.mocked(getTemplateHover).mockReturnValue(undefined);
+
+      expect(await server.onHover({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 0 } })).toBeNull();
+    });
+  });
+
   describe('onSemanticTokens', () => {
     it('encodes the semantic tokens of the template', async () => {
       const document = template('<my-el value="a">\n  { item }</my-el>');
@@ -354,19 +415,85 @@ describe('XaendarLanguageServer', () => {
       expect(getTemplateCompletions).not.toHaveBeenCalled();
     });
 
+    it('proposes the imported components and directives on a selector, also while the template doesn\'t compile', async () => {
+      const document = template('@import { MyEl } from \'./my-el\';\n<my');
+      const { server } = setup(document);
+      vi.mocked(getTemplateSelectorCompletions).mockResolvedValue([{ name: 'my-el', kind: 'component', sortText: '0', replacementSpan: { start: 34, end: 36 } }]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 1, character: 3 } });
+
+      expect(getTemplateSelectorCompletions).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), document.getText(), 36);
+      expect(items).toEqual([{ label: 'my-el', kind: CompletionItemKind.Class, sortText: '0', textEdit: { range: { start: { line: 1, character: 1 }, end: { line: 1, character: 3 } }, newText: 'my-el' } }]);
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+    });
+
+    it('adds the import of a component not imported yet to the completion item', async () => {
+      const document = template('<my');
+      const { server } = setup(document);
+      vi.mocked(getTemplateSelectorCompletions).mockResolvedValue([{
+        name: 'my-el',
+        kind: 'component',
+        detail: 'MyEl - ./my-el',
+        sortText: '1',
+        replacementSpan: { start: 1, end: 3 },
+        additionalEdits: [{ span: { start: 0, end: 0 }, newText: '@import { MyEl } from \'./my-el\';\n' }]
+      }]);
+
+      const [item] = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 3 } });
+
+      expect(item.additionalTextEdits).toEqual([{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, newText: '@import { MyEl } from \'./my-el\';\n' }]);
+      expect(item.detail).toBe('MyEl - ./my-el');
+    });
+
+    it('proposes the components and directives of a module between the braces of an @import, with their selector', async () => {
+      const document = template('@import {  } from \'./my-el\';');
+      const { server } = setup(document);
+      vi.mocked(getTemplateImportCompletions).mockResolvedValue([{ name: 'MyEl', kind: 'component', detail: 'my-el', sortText: '0', replacementSpan: { start: 10, end: 10 } }]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 10 } });
+
+      expect(getTemplateImportCompletions).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), document.getText(), 10);
+      expect(items).toEqual([{ label: 'MyEl', kind: CompletionItemKind.Class, detail: 'my-el', sortText: '0', textEdit: { range: { start: { line: 0, character: 10 }, end: { line: 0, character: 10 } }, newText: 'MyEl' } }]);
+      expect(getTemplateSelectorCompletions).not.toHaveBeenCalled();
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+    });
+
+    it('proposes the modules and directories in the path of an @import', async () => {
+      const document = template('@import { A } from \'./\';');
+      const { server } = setup(document);
+      vi.mocked(getTemplateImportPathCompletions).mockReturnValue([{ name: 'ui/', kind: 'directory' as never, sortText: '0', replacementSpan: { start: 22, end: 22 } }]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 22 } });
+
+      expect(getTemplateImportPathCompletions).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), document.getText(), 22);
+      expect(items).toEqual([{ label: 'ui/', kind: CompletionItemKind.Folder, sortText: '0', textEdit: { range: { start: { line: 0, character: 22 }, end: { line: 0, character: 22 } }, newText: 'ui/' } }]);
+      expect(getTemplateImportCompletions).not.toHaveBeenCalled();
+    });
+
+    it('does not look for selectors in a document that is not a template, or that is not open', async () => {
+      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, '<my');
+      const { server } = setup(component);
+
+      expect(await server.onCompletion({ textDocument: { uri: COMPONENT_URI }, position: { line: 0, character: 3 } })).toEqual([]);
+      expect(await server.onCompletion({ textDocument: { uri: 'file:///closed.html' }, position: { line: 0, character: 3 } })).toEqual([]);
+      expect(getTemplateSelectorCompletions).not.toHaveBeenCalled();
+      expect(getTemplateImportCompletions).not.toHaveBeenCalled();
+      expect(getTemplateImportPathCompletions).not.toHaveBeenCalled();
+    });
+
     it('proposes the bindings of a component on the name of an attribute, also while the template doesn\'t compile', async () => {
       const document = template('<my-el\n  la');
       const { server } = setup(document);
-      const result = analysisOf('<my-el></my-el>');
-      vi.mocked(analyzeTemplate).mockResolvedValue(result);
-      vi.mocked(getTemplateBindingCompletions).mockReturnValue([
+      vi.mocked(getTemplateSourceBindingCompletions).mockResolvedValue([
         { name: 'label', kind: 'property' as never, sortText: '0', replacementSpan: { start: 9, end: 11 } },
         { name: '(picked)', kind: 'event', sortText: '1', replacementSpan: { start: 9, end: 11 } }
       ]);
 
       const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 1, character: 4 } });
 
-      expect(getTemplateBindingCompletions).toHaveBeenCalledWith(result.analysis!.metadatas, document.getText(), 11);
+      // The template is not analyzed: its imports are read from the source
+      expect(getTemplateSourceBindingCompletions).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), document.getText(), 11);
+      expect(analyzeTemplate).not.toHaveBeenCalled();
       const range = { start: { line: 1, character: 2 }, end: { line: 1, character: 4 } };
       expect(items).toEqual([
         { label: 'label', kind: CompletionItemKind.Field, sortText: '0', textEdit: { range, newText: 'label' } },

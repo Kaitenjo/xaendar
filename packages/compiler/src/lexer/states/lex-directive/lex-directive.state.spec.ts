@@ -152,3 +152,61 @@ describe('lexStructuralDirective', () => {
     expect(() => lexStructuralDirective(afterStar('*hasRole="admin"'), context)).toThrow('Structural directive bindings must be declared between parentheses, e.g. *selector(name="value")');
   });
 });
+
+describe('type arguments', () => {
+  it.each([
+    ['one type', '@@list<string>(items="x")', 'string'],
+    ['several types', '@@list<string, number>(items="x")', 'string, number'],
+    ['nested generic types', '@@list<Map<string, Array<number>>, Set<T>>(items="x")', 'Map<string, Array<number>>, Set<T>'],
+    ['the arrow of a function type', '@@list<(value: string) => void>(items="x")', '(value: string) => void'],
+    ['a literal type holding angle brackets', '@@list<\'a>b\' | "<">(items="x")', '\'a>b\' | "<"'],
+    ['a template literal type', '@@list<`a>${string}`>(items="x")', '`a>${string}`']
+  ])('emits the type arguments as the second part of the directive and opens its body, for %s', (_description, input, typeArguments) => {
+    const cursor = new LexerCursor(input);
+    cursor.advance(2);
+
+    expect(lexDirective(cursor, context)).toEqual({
+      state: LexerState.DIRECTIVE_BODY,
+      tokens: [{ type: TokenType.DIRECTIVE, parts: ['list', typeArguments] }],
+      pushState: true
+    });
+    expect(cursor.peek()).toBe('i'.charCodeAt(0));
+  });
+
+  it('emits the type arguments of a structural directive', () => {
+    const cursor = new LexerCursor('*list<string>(items="x")');
+    cursor.advance();
+
+    expect(lexStructuralDirective(cursor, context).tokens).toEqual([{ type: TokenType.STRUCTURAL_DIRECTIVE, parts: ['list', 'string'] }]);
+  });
+
+  it('emits the type arguments of a directive declared without bindings, with its closure', () => {
+    const cursor = new LexerCursor('@@list<string> class="a"');
+    cursor.advance(2);
+
+    expect(lexDirective(cursor, context).tokens).toEqual([
+      { type: TokenType.DIRECTIVE, parts: ['list', 'string'] },
+      { type: TokenType.DIRECTIVE_CLOSE }
+    ]);
+  });
+
+  it.each([
+    ['empty type arguments', '@@list<>(items="x")', 'The type arguments of a directive cannot be empty'],
+    ['blank type arguments', '@@list< >(items="x")', 'The type arguments of a directive cannot be empty'],
+    ['a selector that is empty', '@@<string>(items="x")', 'Directive selector cannot be empty'],
+    ['type arguments declared twice', '@@list<string><number>(items="x")', 'A directive can declare its type arguments only once, right after its selector'],
+    ['something between the type arguments and the bindings', '@@list<string>x(items="x")', 'The type arguments of a directive must be followed by its bindings between parentheses']
+  ])('throws for %s', (_description, input, message) => {
+    const cursor = new LexerCursor(input);
+    cursor.advance(2);
+
+    expect(() => lexDirective(cursor, context)).toThrow(message);
+  });
+
+  it('throws when the input ends before the type arguments are closed', () => {
+    const cursor = new LexerCursor('@@list<Map<string, number>');
+    cursor.advance(2);
+
+    expect(() => lexDirective(cursor, context)).toThrow();
+  });
+});

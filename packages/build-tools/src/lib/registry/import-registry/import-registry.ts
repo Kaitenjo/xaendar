@@ -34,9 +34,10 @@ export function registerImport(importedPath: string, componentId: string): void 
  * Returns the set of component ids that currently import the given path.
  *
  * @param importedPath - Absolute path of the imported component file.
+ * @returns The component ids, `undefined` if no component imports the path.
  */
-export function findComponentsForImport(importedPath: string): Set<string> {
-  return importToComponents.get(importedPath) ?? new Set();
+export function findComponentsForImport(importedPath: string): Set<string> | undefined {
+  return importToComponents.get(importedPath);
 }
 
 /**

@@ -87,6 +87,20 @@ describe('typeCheckElement', () => {
       expect(text(run('<div (click)="f($event.target)"></div>'))).toEqual(['root.f($event.target);']);
     });
 
+    it.each(['$', '$e', '$ev', '$even'])('declares $event while its beginning %s is being written, so that it is proposed', beginning => {
+      expect(text(run(`<div (click)="f(${beginning})"></div>`))).toEqual([
+        '{',
+        '  let $event!: HTMLElementEventMap[\'click\'];',
+        `  root.f(${beginning});`,
+        '}'
+      ]);
+    });
+
+    it('does not declare $event for a name that merely starts like it', () => {
+      expect(text(run('<div (click)="f($eventual)"></div>'))).toEqual(['root.f(root.$eventual);']);
+      expect(text(run('<div (click)="f(event)"></div>'))).toEqual(['root.f(event);']);
+    });
+
     it('type-checks conditional bindings as nested if blocks', () => {
       const lines = run('<div @if (cond()) { title="{heading}" (click)="f($event)" @if (inner) { id="{b}" } }></div>');
 
@@ -245,6 +259,13 @@ describe('typeCheckElement', () => {
 
     it('throws when the selector is not imported', () => {
       expect(() => run('<my-el></my-el>')).toThrow('my-el selector is not associated to any WebComponent imported in the template');
+    });
+
+    it('throws when a property is bound without a value, which is only valid on a native attribute', () => {
+      expect(() => run('<my-el label></my-el>', metadata(properties))).toThrow('Property "label" needs a value: write label="…" or label="{ expression }". An attribute without a value is only valid on a native element.');
+      expect(() => run('<my-el title="x" label />', metadata(properties))).toThrow('Property "label" needs a value');
+      expect(() => run('<my-el other></my-el>', metadata(properties))).not.toThrow();
+      expect(() => run('<my-el label="true"></my-el>', metadata(properties))).not.toThrow();
     });
 
     it('throws when required properties are missing', () => {
@@ -517,6 +538,10 @@ describe('typeCheckElement directives', () => {
 
   it('throws for an unknown property', () => {
     expect(() => run('<div @@myDirective(other="x")></div>', directiveMetadata({}))).toThrow('Unknown property "other" on @@myDirective (MyDirective has no @Property with this name).');
+  });
+
+  it('throws when a property of a directive is bound without a value', () => {
+    expect(() => run('<div @@myDirective(display visible="{ true }")></div>', directiveMetadata(properties))).toThrow('Property "display" needs a value');
   });
 
   it('throws when required properties are missing', () => {
@@ -820,5 +845,140 @@ describe('isCustomElementTag', () => {
     ['-el', false]
   ])('classifies %s', (tag, expected) => {
     expect(isCustomElementTag(tag)).toBe(expected);
+  });
+});
+
+describe('typeCheckElement generic directives', () => {
+  const owner = 'import(\'/src/my.directive\').MyDirective';
+
+  /**
+   * A directive whose property `items` and event `picked` are typed through its class instantiated with its type parameters,
+   * as the metadata extraction writes them.
+   */
+  const genericDirective = (typeParameters: Array<[name: string, hasDefault?: boolean]> = [['T'], ['U']]) => {
+    const instantiated = `${owner}<${typeParameters.map(([name]) => name).join(', ')}>`;
+    return {
+      ...directiveMetadata({ items: new ComponentPropertyMetadata('items', `ReturnType<${instantiated}['items']>`) }, { picked: `${instantiated}['picked']` }),
+      typeParameters: typeParameters.map(([name, hasDefault = false]) => ({ name, hasDefault })),
+      typescriptNodes: {
+        klass: {
+          name: { text: 'MyDirective' },
+          typeParameters: typeParameters.map(([name]) => ({ name: { text: name } })),
+          getSourceFile: () => ({ fileName: '/src/my.directive.ts' })
+        }
+      }
+    } as unknown as DirectiveMetadata;
+  };
+
+  it('declares the type arguments of the template around the checks of the directive, and reads the types of its bindings through the class instantiated with them', () => {
+    const lines = run('<div @@myDirective<string, Map<string, number>>(items="{names}" (picked)="onPick($event)")></div>', genericDirective());
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  type T = string;',
+      '  type U = Map<string, number>;',
+      `  type __DirectiveInstance = ${owner}<T, U>;`,
+      '  {',
+      '    (root.names) satisfies ReturnType<__DirectiveInstance[\'items\']>;',
+      '  }',
+      '  {',
+      '    let $event!: CustomEvent<__DirectiveInstance[\'picked\']>;',
+      '    root.onPick($event);',
+      '  }',
+      '}'
+    ]);
+  });
+
+  it('maps the type arguments, and the instantiation of the class, onto the template', () => {
+    const template = '<div @@myDirective<string, number>(items="{names}")></div>';
+    const lines = run(template, genericDirective());
+
+    const mappings = lines.flatMap(({ mappings: lineMappings }) => lineMappings ?? []);
+    expect(mappings.map(({ original }) => template.slice(original.start, original.end))).toEqual(expect.arrayContaining(['string', 'number', 'string, number']));
+  });
+
+  it('infers the type parameters the template leaves out from the values it binds to the properties, with a call that is not checked', () => {
+    const lines = text(run('<div @@myDirective<string>(items="{names}")></div>', genericDirective([['T'], ['U']])));
+
+    expect(lines.slice(0, 7)).toEqual([
+      '{',
+      '  type T = string;',
+      '  // @ts-ignore',
+      `  function __probe<P0, P1>(value0: ${owner}<P0, P1>['items']): [P0, P1] { return null!; }`,
+      '  // @ts-ignore',
+      '  const __probed = __probe(() => (root.names));',
+      '  type __Probed = typeof __probed;'
+    ]);
+    expect(lines[7]).toBe(`  type __DirectiveInstance = ${owner}<T, unknown extends __Probed[1] ? any : __Probed[1]>;`);
+  });
+
+  it('maps the value of the call inferring the type parameters, and the instantiation of the class when there are no type arguments, onto the template', () => {
+    const template = '<div @@myDirective(items="{names}")></div>';
+    const lines = run(template, genericDirective());
+
+    const mappings = lines.flatMap(({ mappings: lineMappings }) => lineMappings ?? []);
+    expect(mappings.map(({ original }) => template.slice(original.start, original.end))).toEqual(expect.arrayContaining(['names', 'myDirective']));
+  });
+
+  it('infers from every bound property whose type is read from its accessor', () => {
+    const metadata = genericDirective();
+    metadata.properties.set('other', new ComponentPropertyMetadata('other', `ReturnType<${owner}<T, U>['other']>`));
+    const lines = text(run('<div @@myDirective(items="{names}" other="{count}")></div>', metadata));
+
+    expect(lines).toContain(`  function __probe<P0, P1>(value0: ${owner}<P0, P1>['items'], value1: ${owner}<P0, P1>['other']): [P0, P1] { return null!; }`);
+    expect(lines).toContain('  const __probed = __probe(() => (root.names), () => (root.count));');
+  });
+
+  it('infers from a literal value as a string', () => {
+    const literal = text(run('<div @@myDirective(items="abc")></div>', genericDirective()));
+
+    expect(literal).toContain('  const __probed = __probe((): string => \'\');');
+  });
+
+  it('infers from every property bound, and leaves the type parameters without a value to their default type', () => {
+    const metadata = genericDirective([['T'], ['U', true]]);
+    const instantiated = text(run('<div @@myDirective(items="{names}")></div>', metadata)).find(entry => entry.includes('type __DirectiveInstance'));
+
+    // The default type is the one of the class instantiated without it, when nothing is inferred for it
+    expect(instantiated).toBe(`  type __DirectiveInstance = [unknown] extends [__Probed[1]] ? ${owner}<unknown extends __Probed[0] ? any : __Probed[0]> : ${owner}<unknown extends __Probed[0] ? any : __Probed[0], unknown extends __Probed[1] ? any : __Probed[1]>;`);
+  });
+
+  it('writes a single condition for the type parameters that all have a default type', () => {
+    const instantiated = text(run('<div @@myDirective(items="{names}")></div>', genericDirective([['T', true], ['U', true]]))).find(entry => entry.includes('type __DirectiveInstance'));
+
+    expect(instantiated).toBe(`  type __DirectiveInstance = [unknown, unknown] extends [__Probed[0], __Probed[1]] ? ${owner} : ${owner}<unknown extends __Probed[0] ? any : __Probed[0], unknown extends __Probed[1] ? any : __Probed[1]>;`);
+  });
+
+  it('instantiates a directive that binds nothing to infer from with the default types, or any, without declaring anything', () => {
+    expect(text(run('<div @@myDirective((picked)="onPick($event)")></div>', genericDirective([['T', true], ['U', true]])))).toEqual([
+      '{',
+      `  let $event!: CustomEvent<${owner}['picked']>;`,
+      '  root.onPick($event);',
+      '}'
+    ]);
+    expect(text(run('<div @@myDirective((picked)="onPick($event)")></div>', genericDirective([['T'], ['U', true]])))).toContain(`  let $event!: CustomEvent<${owner}<any>['picked']>;`);
+    expect(text(run('<div @@myDirective((picked)="onPick($event)")></div>', genericDirective()))).toContain(`  let $event!: CustomEvent<${owner}<any, any>['picked']>;`);
+  });
+
+  it('does not infer from a property whose type is not read from its accessor', () => {
+    const metadata = genericDirective();
+    metadata.properties.set('items', new ComponentPropertyMetadata('items', 'any'));
+
+    expect(text(run('<div @@myDirective(items="{names}" (picked)="onPick($event)")></div>', metadata)).some(entry => entry.includes('__probe'))).toBe(false);
+  });
+
+  it('declares the type arguments of a structural directive', () => {
+    const lines = run('<div *myDirective<string>(items="{names}")></div>', genericDirective([['T']]));
+
+    expect(text(lines).slice(0, 2)).toEqual(['{', '  type T = string;']);
+    expect(text(lines)).toContain(`  type __DirectiveInstance = ${owner}<T>;`);
+  });
+
+  it('throws for type arguments on a directive that is not generic', () => {
+    expect(() => run('<div @@myDirective<string>(display="x")></div>', directiveMetadata({ display: new ComponentPropertyMetadata('display', 'string') }))).toThrow('@@myDirective declares type arguments, but MyDirective is not generic.');
+  });
+
+  it('throws for more type arguments than the directive has type parameters', () => {
+    expect(() => run('<div @@myDirective<string, number, boolean>(items="{names}")></div>', genericDirective())).toThrow('@@myDirective declares 3 type arguments, but MyDirective has 2 type parameters (T, U).');
   });
 });

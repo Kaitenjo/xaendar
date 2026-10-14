@@ -36,6 +36,7 @@ describe('parseAttribute', () => {
       name: 'disabled',
       nameSpan: { start: 0, end: 8 },
       value: 'true',
+      bare: true,
       span: { start: 0, end: 8 }
     });
   });

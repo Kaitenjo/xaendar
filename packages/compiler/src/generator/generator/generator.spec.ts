@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../lexer/lexer/lexer';
 import { Parser } from '../../parser/parser/parser';
 import { ASTNode } from '../../parser/types/ast.type';
+import type { ElementNode } from '../../parser/types/nodes/element-node.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import { Generator } from './generator';
 
@@ -83,8 +84,13 @@ describe('Generator', () => {
   });
 
   it('skips nodes that generate no code', async () => {
-    const code = await generate('@import { A } from \'./a\'\n<div>@import { B } from \'./b\'<span></span></div>');
-    expect(code).not.toContain('import');
+    const template = '@import { A } from \'./a\'\n<div><span></span></div>';
+    const nodes = parse(template);
+    // The parser accepts the statements only at the beginning of a template, but the generator skips them wherever they are
+    const [, element] = nodes;
+    (element as ElementNode).children.unshift(nodes[0]);
+
+    expect(await new Generator(template, nodes).generate([])).not.toContain('import');
   });
 
   it('registers signals as reactive class fields', async () => {

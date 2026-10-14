@@ -10,7 +10,7 @@ export type DirectiveToken = TokenWithSpan<{
    */
   type: TokenType.DIRECTIVE
   /**
-   * The selector of the directive.
+   * The selector of the directive, then the text of its type arguments (`string, number` in `@@list<string, number>(...)`) if it declares them.
    */
-  parts: [selector: string];
+  parts: [selector: string, typeArguments?: string];
 }>

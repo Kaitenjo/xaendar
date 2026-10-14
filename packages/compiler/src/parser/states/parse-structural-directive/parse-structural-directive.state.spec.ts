@@ -49,3 +49,20 @@ describe('parseStructuralDirective', () => {
     expect(() => new Parser('', tokens).parse()).toThrow('Unexpected token in structural directive');
   });
 });
+
+describe('parseStructuralDirective type arguments', () => {
+  it('parses the type arguments of a structural directive', () => {
+    const [node] = parse('<div *list<string, number>(items="x")></div>');
+
+    expect(node.structuralDirectives[0].typeArguments).toEqual([
+      { text: 'string', span: { start: 11, end: 17 } },
+      { text: 'number', span: { start: 19, end: 25 } }
+    ]);
+  });
+
+  it('leaves the type arguments out of a structural directive that declares none', () => {
+    const [node] = parse('<div *list(items="x")></div>');
+
+    expect(node.structuralDirectives[0]).not.toHaveProperty('typeArguments');
+  });
+});

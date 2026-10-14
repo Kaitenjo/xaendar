@@ -101,6 +101,16 @@ export class Lexer {
   }
 
   /**
+   * The tokens emitted so far: once the tokenization failed, the ones before the error, so that the part of a template
+   * that cannot be tokenized as a whole (e.g. while the user is typing) can still be read.
+   *
+   * @returns The tokens emitted.
+   */
+  public get tokens(): readonly Token[] {
+    return this._tokens;
+  }
+
+  /**
    * Creates a new Lexer instance for the given template content.
    *
    * @param _input - The full template text to tokenise.
@@ -111,11 +121,12 @@ export class Lexer {
 
   /**
    * Runs the lexer over the input string and returns the full token array.
-   * Drives the state machine until EOF is reached.
+   * Drives the state machine until EOF is reached, or until a token is emitted that ends the part of the input to lex.
    *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
    * @returns Array of all tokens produced from the input.
    */
-  public tokenize(): Token[] {
+  public tokenize(isLast?: (token: Token) => boolean): Token[] {
     let eof = false;
     const cursor = this._cursor;
     let stateStartIndex = -1;
@@ -143,6 +154,9 @@ export class Lexer {
         }
 
         this._state = state;
+        if (tokens?.length && isLast?.(this._tokens[this._tokens.length - 1])) {
+          eof = true;
+        }
       } catch (err) {
         const isError = err instanceof Error;
         if (isError && err.cause === endOfFile) {

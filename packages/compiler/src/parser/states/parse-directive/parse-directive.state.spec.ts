@@ -70,3 +70,30 @@ describe('parseDirective', () => {
     expect(() => new Parser('', tokens).parse()).toThrow('Unexpected token in directive');
   });
 });
+
+describe('parseDirective type arguments', () => {
+  it('parses the type arguments of a directive, with their span', () => {
+    const [node] = parse('<div @@list<string, Map<string, number>>(items="x")></div>');
+    const [directive] = node.directives;
+
+    expect(directive.selector).toBe('list');
+    expect(directive.selectorSpan).toEqual({ start: 7, end: 11 });
+    expect(directive.typeArguments).toEqual([
+      { text: 'string', span: { start: 12, end: 18 } },
+      { text: 'Map<string, number>', span: { start: 20, end: 39 } }
+    ]);
+    expect(directive.attributes.map(({ name }) => name)).toEqual(['items']);
+  });
+
+  it('parses a directive declaring type arguments without bindings', () => {
+    const [node] = parse('<div @@list<string>></div>');
+
+    expect(node.directives[0].typeArguments).toEqual([{ text: 'string', span: { start: 12, end: 18 } }]);
+  });
+
+  it('leaves the type arguments out of a directive that declares none', () => {
+    const [node] = parse('<div @@list(items="x")></div>');
+
+    expect(node.directives[0]).not.toHaveProperty('typeArguments');
+  });
+});

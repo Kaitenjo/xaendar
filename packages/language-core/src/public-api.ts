@@ -4,6 +4,7 @@ export * from './lib/template-analysis/template-analysis';
 export * from './lib/template-completions/template-completions';
 export * from './lib/template-definition/template-definition';
 export * from './lib/template-diagnostics/template-diagnostics';
+export * from './lib/template-hover/template-hover';
 export * from './lib/template-metadata-cache/template-metadata-cache';
 export * from './lib/template-semantic-tokens/template-semantic-tokens';
 export * from './lib/utils/compiler-options/compiler-options.utils';

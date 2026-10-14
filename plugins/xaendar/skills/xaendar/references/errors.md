@@ -123,6 +123,31 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A required input not bound.
 - **Fix:** Bind it on the tag.
 
+### `[TypeChecker] Property "name" needs a value: write name="…" or name="{ expression }". An attribute without a value is only valid on a native element.`
+
+- **Cause:** An input of a component or directive written like a boolean attribute (`<x-card name>`).
+- **Fix:** Give it a value: `name="text"` or `name="{ expression }"`. The form without a value is only for the attributes of native elements (`<input disabled>`).
+
+### `[TypeChecker] @@exList declares type arguments, but ListDirective is not generic.`
+
+- **Cause:** Type arguments (`@@exList<Row>(…)`) on a directive whose class has no type parameters.
+- **Fix:** Remove them, or add the type parameters to the class.
+
+### `[TypeChecker] @@exList declares 3 type arguments, but ListDirective has 2 type parameters (Item, Key).`
+
+- **Cause:** More type arguments than the class has type parameters.
+- **Fix:** Pass at most one argument per type parameter, in their order.
+
+### `The type arguments of a directive cannot be empty` / `A type argument of a directive cannot be empty`
+
+- **Cause:** `@@exList<>(…)`, or an empty argument between two commas (`<Row,, number>`).
+- **Fix:** Write the types, or drop the angle brackets.
+
+### `The type arguments of a directive must be followed by its bindings between parentheses`
+
+- **Cause:** Something other than `(` after the type arguments (`@@exList<Row>x`).
+- **Fix:** Open the bindings right after the type arguments: `@@exList<Row>(items="{ rows() }")`.
+
 ### `[TypeChecker] Required property "name" of <x-card> must always be bound: bind it in every branch of its conditional binding, including an @else or @default one, or outside of it.`
 
 - **Cause:** A required input bound only in some branches.

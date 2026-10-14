@@ -188,11 +188,7 @@ function getMainPackageJsonDependencies(): Partial<Record<string, string>> & { s
   const mainPackageJsonPath = resolve('..', 'package.json');
   const mainPackageJson: PackageJson = JSON.parse(readFileSync(mainPackageJsonPath, 'utf-8'));
 
-  return {
-    ...mainPackageJson.dependencies ?? {},
-    ...mainPackageJson.devDependencies ?? {},
-    self: mainPackageJson.version!
-  };
+  return Object.assign({}, mainPackageJson.dependencies, mainPackageJson.devDependencies, { self: mainPackageJson.version! });
 }
 
 checkDependencies();

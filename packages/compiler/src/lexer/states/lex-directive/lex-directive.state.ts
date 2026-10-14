@@ -1,7 +1,9 @@
-import { CR, EQUAL_THEN, GREATER_THEN, LF, LPAREN, RIGHT_BRACE, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { CR, DOUBLE_QUOTE, EQUAL_THEN, GRAVE_ACCENT, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { DirectiveToken } from '../../types/tokens/directive-token.type';
+import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
@@ -51,6 +53,7 @@ export function lexStructuralDirective(cursor: LexerCursor, context: LexerTransi
 function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContext, type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE): LexerTransitionFunctionReturnType {
   let read = true;
   let selector = '';
+  let typeArguments: string | undefined;
   let retVal!: LexerTransitionFunctionReturnType;
 
   while (read) {
@@ -61,10 +64,7 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
         cursor.advance();
         retVal = {
           state: LexerState.DIRECTIVE_BODY,
-          tokens: [{
-            type,
-            parts: [selector],
-          }],
+          tokens: [toDirectiveToken(type, selector, typeArguments)],
           pushState: true
         };
         read = false;
@@ -97,10 +97,7 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
         retVal = {
           state: resolveTagBodyState(context.history.at(-1)),
           tokens: [
-            {
-              type,
-              parts: [selector],
-            },
+            toDirectiveToken(type, selector, typeArguments),
             {
               type: TokenType.DIRECTIVE_CLOSE,
             }
@@ -109,18 +106,97 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
         read = false;
         break;
 
+      case LESS_THAN:
+        assertSelector(selector);
+        if (typeArguments !== undefined) {
+          throw 'A directive can declare its type arguments only once, right after its selector';
+        }
+
+        // Consume '<'
+        cursor.advance();
+        typeArguments = lexTypeArguments(cursor);
+        break;
+
       case EQUAL_THEN:
         throw type === TokenType.DIRECTIVE
           ? 'Directive bindings must be declared between parentheses, e.g. @@selector(name="value")'
           : 'Structural directive bindings must be declared between parentheses, e.g. *selector(name="value")';
 
       default:
+        if (typeArguments !== undefined) {
+          throw 'The type arguments of a directive must be followed by its bindings between parentheses, e.g. @@selector<string>(name="value")';
+        }
+
         cursor.advance();
         selector = `${selector}${cursor.currentChar.value}`;
     }
   }
 
   return retVal;
+}
+
+/**
+ * Builds the token of a directive or of a structural directive.
+ *
+ * @param type - The type of the token.
+ * @param selector - The selector of the directive.
+ * @param typeArguments - The text of the type arguments, if the directive declares them.
+ * @returns The token, whose second part is the text of the type arguments only when the directive declares them.
+ */
+function toDirectiveToken(type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE, selector: string, typeArguments: string | undefined): DirectiveToken | StructuralDirectiveToken {
+  return typeArguments === undefined ? { type, parts: [selector] } as DirectiveToken | StructuralDirectiveToken : { type, parts: [selector, typeArguments] } as DirectiveToken | StructuralDirectiveToken;
+}
+
+/**
+ * Consumes the type arguments of a directive, e.g. `string, Map<string, number>` in `@@selector<string, Map<string, number>>(...)`,
+ * up to the `>` closing the first `<`: the ones of nested types, and the `>` of the arrow of a function type, don't close them.
+ *
+ * @param cursor - The lexer cursor positioned right after the `<` opening the type arguments.
+ * @returns The text of the type arguments, without the angle brackets.
+ * @throws If the type arguments are empty, or the input ends before they are closed.
+ */
+function lexTypeArguments(cursor: LexerCursor): string {
+  let depth = 1;
+  let text = '';
+  let quote: number | undefined;
+
+  while (depth) {
+    cursor.advance();
+    const { code, value } = cursor.currentChar;
+
+    if (quote !== undefined) {
+      quote = code === quote ? undefined : quote;
+    } else {
+      switch (code) {
+        case SINGLE_QUOTE:
+        case DOUBLE_QUOTE:
+        case GRAVE_ACCENT:
+          quote = code;
+          break;
+
+        case LESS_THAN:
+          depth++;
+          break;
+
+        case GREATER_THEN:
+          // The `>` of the arrow of a function type (`() => void`) closes nothing
+          if (!text.endsWith('=')) {
+            depth--;
+          }
+          break;
+      }
+    }
+
+    if (depth) {
+      text = `${text}${value}`;
+    }
+  }
+
+  if (!text.trim()) {
+    throw 'The type arguments of a directive cannot be empty';
+  }
+
+  return text;
 }
 
 /**

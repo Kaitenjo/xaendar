@@ -1,6 +1,6 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateDefinition } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
-import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, FileChangeType, type InitializeParams, type InitializeResult, type LocationLink, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
+import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, FileChangeType, type Hover, type HoverParams, type InitializeParams, type InitializeResult, type LocationLink, MarkupKind, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
 import { Debouncer } from '../utils/debounce/debounce.utils';
 import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from '../utils/lsp/lsp.utils';
@@ -30,7 +30,7 @@ type DocumentAnalysis = {
 };
 
 /**
- * The Xaendar language server: diagnostics, definitions, semantic tokens and completions for the templates open in
+ * The Xaendar language server: diagnostics, definitions, hovers, semantic tokens and completions for the templates open in
  * the editor. The TypeScript files of the components the client synchronizes are only read, so that the templates
  * see their unsaved changes.
  */
@@ -69,6 +69,7 @@ export class XaendarLanguageServer {
     connection.onInitialized(() => this.onInitialized());
     connection.onDidChangeWatchedFiles(params => this.onDidChangeWatchedFiles(params));
     connection.onDefinition(params => this.onDefinition(params));
+    connection.onHover(params => this.onHover(params));
     connection.onCompletion(params => this.onCompletion(params));
     connection.languages.semanticTokens.on(params => this.onSemanticTokens(params));
     connection.onShutdown(() => this.onShutdown());
@@ -91,7 +92,8 @@ export class XaendarLanguageServer {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         definitionProvider: true,
-        completionProvider: { triggerCharacters: ['.', '('] },
+        hoverProvider: true,
+        completionProvider: { triggerCharacters: ['.', '(', '<', '@', '*', '/'] },
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
           full: true
@@ -184,6 +186,24 @@ export class XaendarLanguageServer {
   }
 
   /**
+   * Shows the signature and the JSDoc of the component, directive, property, event or symbol of an expression under
+   * the cursor in a template, nothing while it doesn't compile.
+   *
+   * @param params - The hover request.
+   * @returns The hover, `null` if there is nothing to show.
+   */
+  public async onHover({ textDocument, position }: HoverParams): Promise<Hover | null> {
+    const document = this._documents.get(textDocument.uri);
+    if (!document) {
+      return null;
+    }
+
+    const analysis = await this._getCurrentAnalysis(document);
+    const hover = analysis && getTemplateHover(analysis, document.offsetAt(position));
+    return hover ? { contents: { kind: MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
+  }
+
+  /**
    * Computes the semantic tokens of a template, none while it doesn't compile.
    *
    * @param params - The semantic tokens request.
@@ -206,30 +226,40 @@ export class XaendarLanguageServer {
   }
 
   /**
-   * Proposes the completions at the cursor in a template: on the name of an attribute or event, the bindings of the
-   * component or directive, also while the template doesn't compile; in an expression, the ones of TypeScript, none
-   * while the template doesn't compile or when the completion was triggered by the `(` of a call.
+   * Proposes the completions at the cursor in a template: in the path of an `@import`, the modules and directories;
+   * between its braces, the components and directives the module declares; on the tag name of an element or the
+   * selector of a directive, the components and directives imported by the template; on the name of an attribute or
+   * event, the bindings of the component or directive; all of them also while the template doesn't compile; in an
+   * expression, the ones of TypeScript, none while the template doesn't compile or when the completion was triggered by
+   * the `(` of a call.
    *
    * @param params - The completion request.
    * @returns The completion items.
    */
   public async onCompletion({ textDocument, position, context }: CompletionParams): Promise<CompletionItem[]> {
     const document = this._documents.get(textDocument.uri);
-    const analysis = document && (await this._getAnalysis(document))?.analysis;
-    if (!analysis) {
+    if (!document) {
       return [];
     }
 
     const offset = document.offsetAt(position);
-    const completions = getTemplateBindingCompletions(analysis.metadatas, document.getText(), offset)
-      ?? (analysis.source === document.getText() && context?.triggerCharacter !== '(' ? getTemplateCompletions(analysis, offset) : []);
+    const templatePath = fromUri(document.uri);
+    const imports = isTemplate(document)
+      ? getTemplateImportPathCompletions(templatePath, document.getText(), offset)
+        ?? await getTemplateImportCompletions(templatePath, document.getText(), offset)
+        ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset)
+        ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset)
+      : undefined;
+    if (imports) {
+      return this._toCompletionItems(imports, document);
+    }
 
-    return completions.map(({ name, kind, sortText, replacementSpan }) => ({
-      label: name,
-      kind: toCompletionItemKind(kind),
-      sortText,
-      ...replacementSpan && { textEdit: { range: toRange(document, replacementSpan), newText: name } }
-    }));
+    const analysis = (await this._getAnalysis(document))?.analysis;
+    if (!analysis) {
+      return [];
+    }
+
+    return this._toCompletionItems(analysis.source === document.getText() && context?.triggerCharacter !== '(' ? getTemplateCompletions(analysis, offset) : [], document);
   }
 
   /**
@@ -309,7 +339,34 @@ export class XaendarLanguageServer {
     return definitions.map(({ fileName, span, origin }) => {
       const target = getDocument(fileName, uri => this._documents.get(uri));
       const range = toRange(target, span);
-      return { targetUri: target.uri, targetRange: range, targetSelectionRange: range, ...origin && { originSelectionRange: toRange(source, origin) } };
+      const location: LocationLink = { targetUri: target.uri, targetRange: range, targetSelectionRange: range };
+      if (origin) {
+        location.originSelectionRange = toRange(source, origin);
+      }
+
+      return location;
+    });
+  }
+
+  /**
+   * Converts completions into the items of the client.
+   *
+   * @param completions - The completions.
+   * @param document - The document the completions were requested from.
+   * @returns The completion items.
+   */
+  private _toCompletionItems(completions: readonly TemplateCompletion[], document: TextDocument): CompletionItem[] {
+    return completions.map(({ name, kind, sortText, detail, replacementSpan, additionalEdits }) => {
+      const item: CompletionItem = { label: name, kind: toCompletionItemKind(kind), sortText, detail };
+      if (replacementSpan) {
+        item.textEdit = { range: toRange(document, replacementSpan), newText: name };
+      }
+
+      if (additionalEdits?.length) {
+        item.additionalTextEdits = additionalEdits.map(({ span, newText }) => ({ range: toRange(document, span), newText }));
+      }
+
+      return item;
     });
   }
 
@@ -330,8 +387,18 @@ export class XaendarLanguageServer {
     for (let i = 0; i < templates.length; i++) {
       const document = templates[i];
       const dependencies = this._analyses.get(document.uri)?.result.analysis?.dependencies;
-      const components = [...this._registry.resolve(fromUri(document.uri))?.keys() ?? []].map(normalizeFileName);
-      if (dependencies?.has(key) || components.includes(key)) {
+      let isAffected = !!dependencies?.has(key);
+      const components = this._registry.resolve(fromUri(document.uri));
+      if (!isAffected && components?.size) {
+        for (const componentFile of components.keys()) {
+          if (normalizeFileName(componentFile) === key) {
+            isAffected = true;
+            break;
+          }
+        }
+      }
+
+      if (isAffected) {
         this._scheduleValidation(document.uri);
       }
     }

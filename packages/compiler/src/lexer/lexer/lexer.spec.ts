@@ -417,3 +417,13 @@ describe('Lexer', () => {
     expect(`${caught}`).toContain('[Lexer]');
   });
 });
+
+describe('Lexer.tokens', () => {
+  it('exposes the tokens emitted before the tokenization failed', () => {
+    const lexer = new Lexer('<p>text</p>\n<button (click)="onClick foo()"></button>');
+
+    expect(() => lexer.tokenize()).toThrow(TemplateError);
+    expect(lexer.tokens.map(({ type }) => type)).toEqual(expect.arrayContaining([TokenType.TAG_OPEN_NAME, TokenType.TEXT]));
+    expect(lexer.tokens.length).toBeGreaterThan(0);
+  });
+});

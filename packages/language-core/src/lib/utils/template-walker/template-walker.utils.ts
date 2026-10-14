@@ -61,10 +61,17 @@ export function walkTemplate(ast: readonly ASTNode[], metadatas: readonly Compon
  * @returns The names of the variables.
  */
 export function getForVariables(node: ForNode): string[] {
-  return [
-    ...(node.itemAlias ? [node.itemAlias] : []),
-    ...FOR_IMPLICIT_VARIABLES.map(implicit => node.implicitAliases.get(implicit) ?? implicit)
-  ];
+  const variables = new Array<string>();
+  if (node.itemAlias) {
+    variables.push(node.itemAlias);
+  }
+
+  for (let i = 0; i < FOR_IMPLICIT_VARIABLES.length; i++) {
+    const implicit = FOR_IMPLICIT_VARIABLES[i];
+    variables.push(node.implicitAliases.get(implicit) ?? implicit);
+  }
+
+  return variables;
 }
 
 /**
@@ -176,9 +183,17 @@ class TemplateWalker {
       this._walkConditionalBinding(bindings.conditionalBindings[i], owner, variables);
     }
 
-    const directives = [...(bindings.directives ?? []), ...(bindings.structuralDirectives ?? [])];
-    for (let i = 0; i < directives.length; i++) {
-      this._walkDirective(directives[i], variables);
+    const { directives, structuralDirectives } = bindings;
+    if (directives?.length) {
+      for (let i = 0; i < directives.length; i++) {
+        this._walkDirective(directives[i], variables);
+      }
+    }
+
+    if (structuralDirectives?.length) {
+      for (let i = 0; i < structuralDirectives.length; i++) {
+        this._walkDirective(structuralDirectives[i], variables);
+      }
     }
   }
 

@@ -13,7 +13,11 @@ import { TypeCheckResult } from '../../types/type-checker-result.type.js';
  * @returns The narrowest mapping containing the position, or `undefined` if none does.
  */
 export function findTemplateMapping(table: TypeCheckResult['mappingTable'], position: TemplatePosition): LineMapping | undefined {
-  const mappings = table.get(position.line) ?? [];
+  const mappings = table.get(position.line);
+  if (!mappings?.length) {
+    return undefined;
+  }
+
   let narrowest: LineMapping | undefined;
 
   for (let i = 0; i < mappings.length; i++) {

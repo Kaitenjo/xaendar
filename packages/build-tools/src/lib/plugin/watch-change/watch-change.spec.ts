@@ -68,7 +68,7 @@ beforeEach(() => {
 describe('handleTsDelete()', () => {
   it('tears down every registry entry for the deleted component', () => {
     const state = createState();
-    vi.mocked(findComponentsForImport).mockReturnValue(new Set());
+    vi.mocked(findComponentsForImport).mockReturnValue(undefined);
 
     handleTsDelete('/src/foo.xd.component.ts', state);
 
@@ -136,7 +136,7 @@ describe('createWatchChangeHook()', () => {
   it('ignores change events other than "delete"', () => {
     const state = createState();
     const hook = createWatchChangeHook(state);
-    vi.mocked(findComponentsForImport).mockReturnValue(new Set());
+    vi.mocked(findComponentsForImport).mockReturnValue(undefined);
 
     hook.call({} as PluginContext, '/src/foo.xd.component.ts', { event: 'create' });
 
@@ -146,7 +146,7 @@ describe('createWatchChangeHook()', () => {
   it('dispatches to the TS-delete handler for component TS files', () => {
     const state = createState();
     const hook = createWatchChangeHook(state);
-    vi.mocked(findComponentsForImport).mockReturnValue(new Set());
+    vi.mocked(findComponentsForImport).mockReturnValue(undefined);
 
     hook.call({} as PluginContext, '/src/foo.xd.component.ts', { event: 'delete' });
 

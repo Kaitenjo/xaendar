@@ -39,6 +39,16 @@ describe('TemplateMetadataCache', () => {
     removeDocumentOverlay(project.path('src/directives.ts'));
   });
 
+  it('returns the metadata of every component and directive of a module, none if it cannot be resolved or read', async () => {
+    const cache = new TemplateMetadataCache();
+    const metadatas = await cache.getModuleMetadatas(project.path('src'), './directives');
+
+    expect([...metadatas!.keys()]).toEqual(['Tooltip', 'Media']);
+    expect(metadatas!.get('Tooltip')).toBe(await cache.getOrInsert('Tooltip', [project.path('src'), './directives']));
+    expect(await cache.getModuleMetadatas(project.path('src'), './missing')).toBeUndefined();
+    expect(await cache.getModuleMetadatas(project.path('src'), 'a-package')).toBeUndefined();
+  });
+
   it('returns the metadata stored by selector, until cleared', async () => {
     const cache = new TemplateMetadataCache();
     const metadata = { selector: 'stored' } as ComponentOrDirectiveMetadata;
@@ -64,5 +74,42 @@ describe('TemplateMetadataCache', () => {
     project.write('src/dynamic.ts', 'const name = \'x\';\n@WebComponent({ selector: name, templateUrl: name })\nexport class Dynamic {}\n@Directive({ selector: name })\nexport class DynamicDirective {}\n');
 
     await expect(cache.getOrInsert('Dynamic', [project.path('src'), './dynamic'])).rejects.toThrow('Class "Dynamic" was not found in the import from ./dynamic');
+  });
+
+  it('returns the declarations of the given files, skipping the ones that cannot declare any', async () => {
+    const cache = new TemplateMetadataCache();
+    project.write('src/clash.ts', [
+      'import { InputSignal, Property, WebComponent } from \'@xaendar/core\';',
+      '@WebComponent({ selector: \'clash-el\', templateUrl: \'./clash.html\' })',
+      'export class Clash {',
+      '  @Property(\'\') accessor first!: InputSignal<string>;',
+      '  @Property(\'\', { alias: \'first\' }) accessor second!: InputSignal<string>;',
+      '}',
+      ''
+    ].join('\n'));
+    const files = ['child.ts', 'directives.ts', 'child-base.ts', 'dynamic.ts', 'clash.ts', 'missing.ts', 'types.d.ts', 'child.spec.ts'].map(name => project.path(`src/${name}`));
+
+    const declarations = await cache.getDeclarations(files);
+
+    expect([...declarations!.keys()]).toEqual([project.path('src/child.ts'), project.path('src/directives.ts')]);
+    expect([...declarations!.get(project.path('src/directives.ts'))!.keys()]).toEqual(['Tooltip', 'Media']);
+    expect(await cache.getDeclarations([project.path('src/child-base.ts'), project.path('src/missing.ts')])).toBeUndefined();
+  });
+
+  it('reads again a file that was found to declare nothing once it is invalidated or the cache cleared', async () => {
+    const cache = new TemplateMetadataCache();
+    const fileName = project.path('src/late.ts');
+    project.write('src/late.ts', 'export class Late {}\n');
+    expect(await cache.getDeclarations([fileName])).toBeUndefined();
+
+    project.write('src/late.ts', '@Directive({ selector: \'late\' })\nexport class Late {}\n');
+    expect(await cache.getDeclarations([fileName])).toBeUndefined();
+
+    cache.invalidate(fileName);
+    expect([...(await cache.getDeclarations([fileName]))!.get(fileName)!.keys()]).toEqual(['Late']);
+
+    project.write('src/late.ts', 'export class Late {}\n');
+    cache.clear();
+    expect(await cache.getDeclarations([fileName])).toBeUndefined();
   });
 });

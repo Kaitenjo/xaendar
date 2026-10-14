@@ -44,6 +44,7 @@ Check at least the following:
 - Opening tags whose items are out of order. The order is: conditional structural directives → structural directives → conditional directives → directives → conditional attributes/inputs → attributes/inputs → conditional events → events. The last four also apply inside a directive's parentheses. Also report conditional blocks that mix groups when the branches could be split by group without testing a condition and its negation separately.
 - One-letter identifiers (variables, parameters, arrow callbacks, catch bindings, type parameters, `@for` items and aliases).
 - `void` in front of a call to discard its result (`void this._load(id)`), instead of a plain call statement, or `await` / `.then`/`.catch` when the promise must be handled.
+- Empty collections or objects created only to be looped over or spread (`?? []`, `|| []`, `?? new Map()`, `...(x ?? [])`, `...(condition ? [item] : [])`, `...(x ?? {})`, `...(condition ? { key: value } : {})`, `...condition && { key: value }`), a spread of an array or an object that may be empty, a function returning an empty array/`Map`/`Set` instead of `undefined` for "nothing", and a collection tested with a bare `if (items)` instead of `if (items?.length)` / `if (items?.size)`.
 - A condition and its negation tested in separate blocks (`if (x) { … } if (!x) { … }`, `@if (x)` … `@if (!x)`), instead of `if`/`else`.
 - The same value compared with several constants in separate `if`s or in an `else if` / `@else if` chain, instead of `switch` / `@switch`.
 - Line breaks:

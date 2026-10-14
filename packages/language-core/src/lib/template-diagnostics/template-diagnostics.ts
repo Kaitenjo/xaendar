@@ -1,4 +1,4 @@
-import { resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
+import { type ASTNode, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import type { TemplateAnalysis, TemplateAnalysisResult } from '../template-analysis/template-analysis';
 import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
@@ -26,8 +26,9 @@ export type TemplateDiagnostic = {
 };
 
 /**
- * Collects the problems of a template: the error preventing it from being compiled, reported on its span, or
- * the TypeScript diagnostics of its shim, mapped back onto the template.
+ * Collects the problems of a template: the error preventing it from being analyzed, reported on its span, or
+ * the errors found while analyzing it (every node failing type-checking, every import that cannot be resolved),
+ * reported on their spans, followed by the TypeScript diagnostics of its shim, mapped back onto the template.
  *
  * A TypeScript diagnostic falls on the narrowest part of the template it comes from: the exact characters of an
  * identifier or of a piece of an expression, or the whole binding otherwise. A diagnostic of a line of the shim not
@@ -38,21 +39,35 @@ export type TemplateDiagnostic = {
  */
 export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysisResult): TemplateDiagnostic[] {
   if (error) {
-    return [{
-      span: getErrorSpan(error, ast),
-      message: error instanceof TemplateError ? error.detail : error.message,
-      category: DiagnosticCategory.Error
-    }];
+    return [toTemplateDiagnostic(error, ast)];
   }
 
-  const { languageService, shimPath } = analysis!;
-  return [...languageService.getSyntacticDiagnostics(shimPath), ...languageService.getSemanticDiagnostics(shimPath)]
-    .map(diagnostic => ({
-      span: locateDiagnostic(analysis!, diagnostic),
-      message: flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
-      category: diagnostic.category,
-      code: diagnostic.code
-    }));
+  const { languageService, shimPath, errors } = analysis!;
+  return [
+    ...errors.map(templateError => toTemplateDiagnostic(templateError, ast)),
+    ...[...languageService.getSyntacticDiagnostics(shimPath), ...languageService.getSemanticDiagnostics(shimPath)]
+      .map(diagnostic => ({
+        span: locateDiagnostic(analysis!, diagnostic),
+        message: flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+        category: diagnostic.category,
+        code: diagnostic.code
+      }))
+  ];
+}
+
+/**
+ * Reports an error of the compiler on its span.
+ *
+ * @param error - The error.
+ * @param ast - The top-level nodes of the template, when it could be parsed.
+ * @returns The problem.
+ */
+function toTemplateDiagnostic(error: Error, ast: readonly ASTNode[] | undefined): TemplateDiagnostic {
+  return {
+    span: getErrorSpan(error, ast),
+    message: error instanceof TemplateError ? error.detail : error.message,
+    category: DiagnosticCategory.Error
+  };
 }
 
 /**

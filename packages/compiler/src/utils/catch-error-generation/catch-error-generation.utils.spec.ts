@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TemplateError } from '../../models/template-error/template-error.model';
-import { catchErrorWithPrefix } from './catch-error-generation.utils';
+import { catchErrorWithPrefix, formatErrorWithPrefix } from './catch-error-generation.utils';
 
 const capture = (fn: () => void): unknown => {
   try {
@@ -9,6 +9,16 @@ const capture = (fn: () => void): unknown => {
     return err;
   }
 };
+
+describe('formatErrorWithPrefix', () => {
+  it('returns the error without throwing it', () => {
+    const error = formatErrorWithPrefix('Prefix', 'hello world', new Error('boom', { cause: { start: 6, end: 11 } })) as TemplateError;
+
+    expect(error).toBeInstanceOf(TemplateError);
+    expect(`${error}`).toBe('[Prefix] boom\n----> world');
+    expect(formatErrorWithPrefix('Prefix', 'hello', 'oops').message).toBe('[Prefix] oops');
+  });
+});
 
 describe('catchErrorWithPrefix', () => {
   it('throws a TemplateError formatted with the source excerpt when the cause is a span', () => {

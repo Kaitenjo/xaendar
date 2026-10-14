@@ -62,17 +62,25 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   // The iterable, the track expression and the identifiers they read are mapped finely onto the template
   lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mappedExpression(node.iterableExpression, context, node.span), ')) {'));
 
-  lines.push(...indentLines([
-    ...(node.itemAlias ? [declareVariable(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`)] : []),
+  const body = new Array<Line>();
+  if (node.itemAlias) {
+    body.push(declareVariable(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`));
+  }
+
+  body.push(
     declareVariable(indexName, node.implicitAliasSpans.get('$index'), 'Signal<number>'),
     declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'Signal<boolean>'),
     declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'Signal<boolean>'),
     declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'Signal<boolean>'),
     declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>'),
-    line(mappedExpression(node.trackExpression, forContext, node.span, ';', {})),
-    ...node.children.flatMap(child => processNode(child, forContext)),
-  ]));
+    line(mappedExpression(node.trackExpression, forContext, node.span, ';', {}))
+  );
 
+  for (let i = 0; i < node.children.length; i++) {
+    body.push(...processNode(node.children[i], forContext));
+  }
+
+  lines.push(...indentLines(body));
   lines.push(plain('}'));
   return lines;
 }

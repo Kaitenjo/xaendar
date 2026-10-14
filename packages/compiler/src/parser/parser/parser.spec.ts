@@ -67,6 +67,23 @@ describe('Parser', () => {
     expect(capture('<div></div></span>').span).toEqual({ start: 11, end: 18 });
   });
 
+  it('accepts the @import statements at the beginning of the template, separated by spaces and semicolons', () => {
+    const nodes = parse('\n@import { A } from \'./a\';\n  @import { B } from \'./b\'\n\n<div></div>');
+
+    expect(nodes.filter(({ type }) => type === ASTNodeType.Import)).toHaveLength(2);
+  });
+
+  it.each([
+    ['text', '@import { A } from \'./a\';\nhello\n@import { B } from \'./b\';'],
+    ['an element', '<p></p>\n@import { A } from \'./a\';'],
+    ['an interpolation', '{ a }@import { A } from \'./a\';'],
+    ['a block', '@if (a) { x }\n@import { A } from \'./a\';'],
+    ['an element enclosing it', '@import { A } from \'./a\';\n<div>@import { B } from \'./b\'</div>'],
+    ['a block enclosing it', '@if (a) { @import { A } from \'./a\' }']
+  ])('rejects an @import statement after %s', (_name, template) => {
+    expect(() => parse(template)).toThrow('An @import statement must be at the beginning of the template, before any other content');
+  });
+
   it('does not wrap errors more than once when parsing nested nodes', () => {
     let message = '';
     try {

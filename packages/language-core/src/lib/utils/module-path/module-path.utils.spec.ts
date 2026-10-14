@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { resolvePosixPath } from '../path/path.utils';
-import { resolveModulePath } from './module-path.utils';
+import { resolveModulePath, toModulePath } from './module-path.utils';
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn()
@@ -42,5 +42,17 @@ describe('resolveModulePath()', () => {
     vi.mocked(existsSync).mockReturnValue(true);
 
     expect(resolveModulePath('/src', './button')).not.toContain('\\');
+  });
+});
+
+describe('toModulePath()', () => {
+  it.each([
+    ['a file of the same directory', '/src', '/src/button.ts', './button'],
+    ['a file of a subdirectory', '/src', '/src/ui/button.ts', './ui/button'],
+    ['a file of a parent directory', '/src/pages', '/src/ui/button.ts', '../ui/button'],
+    ['paths written with backslashes and another drive case', 'C:\\src\\pages', 'c:/src/ui/button.ts', '../ui/button'],
+    ['an index', '/src', '/src/ui/index.ts', './ui/index']
+  ])('writes the path of %s', (_name, baseDir, fileName, expected) => {
+    expect(toModulePath(baseDir, fileName)).toBe(expected);
   });
 });

@@ -170,7 +170,7 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
   const sourceText = node.getSourceFile().text;
   // Offset turning a position of the source file of the expression into an offset of the template
   const templateDelta = span && span.start - node.getStart();
-  let result: EmittedNode = { expression: '', segments: [] };
+  const result: EmittedNode = { expression: '', segments: [] };
   let lastEnd = node.getStart();
 
   /*
@@ -181,15 +181,13 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
     const verbatim = slice(sourceText, start, end);
     const verbatimSpan = templateDelta === undefined ? undefined : { start: templateDelta + start, end: templateDelta + end };
     const column = result.expression.length;
-    result = {
-      expression: `${result.expression}${verbatim}${child?.expression ?? ''}`,
-      reactive: result.reactive || child?.reactive,
-      segments: [
-        ...result.segments,
-        ...shiftSegments(segmentOf(verbatim, verbatimSpan), column),
-        ...shiftSegments(child?.segments ?? [], column + verbatim.length)
-      ]
-    };
+    result.segments.push(...shiftSegments(segmentOf(verbatim, verbatimSpan), column));
+    if (child) {
+      result.segments.push(...shiftSegments(child.segments, column + verbatim.length));
+    }
+
+    result.expression = `${result.expression}${verbatim}${child?.expression ?? ''}`;
+    result.reactive = result.reactive || child?.reactive;
   };
 
   forEachChild(node, child => {

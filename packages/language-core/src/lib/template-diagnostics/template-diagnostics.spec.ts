@@ -56,6 +56,18 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('reports every node failing, the imports that cannot be resolved among them, and still type-checks the others', async () => {
+    const source = '@import { Missing } from \'./child\';\n<my-unknown></my-unknown>\n<div @@tooltip></div>\n<p><my-unknown></my-unknown></p>\n<b>{ missing }</b>';
+
+    expect(await diagnose(source)).toEqual([
+      ['Missing', 'Class "Missing" was not found in the import from ./child', DiagnosticCategory.Error],
+      ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
+      ['tooltip', '@@tooltip selector is not associated to any Directive imported in the template', DiagnosticCategory.Error],
+      ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
+      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('reports a syntax error on its span', async () => {
     expect(await diagnose('<b>{ a = 1 }</b>')).toEqual([
       ['=', '\'FirstAssignment\' is not allowed inside template expressions.', DiagnosticCategory.Error]
@@ -84,6 +96,96 @@ describe('getTemplateDiagnostics', () => {
       { span: { start: 1, end: 3 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 },
       { span: { start: 0, end: 0 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 },
       { span: { start: 0, end: 0 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 }
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics generic directives', () => {
+  const imports = '@import { List } from \'./generic\';\n';
+
+  beforeAll(() => {
+    project.write('src/generic.ts', [
+      'import { Directive, Event, InputSignal, Output, Property } from \'@xaendar/core\';',
+      '@Directive({ selector: \'list\' })',
+      'export class List<Item extends { id: number }, Key = string> {',
+      '  @Property([]) accessor items!: InputSignal<Item[]>;',
+      '  @Event() accessor picked!: Output<Key>;',
+      '  @Event() accessor selected!: Output<Item>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  it('checks the properties and the events of a directive against the type arguments the template declares', async () => {
+    const events = (key: string) => `${imports}<p @@list<{ id: number; name: string }, ${key}>(items="{ items }" (picked)="select($event)")></p>`;
+
+    // The event of the directive carries the second type argument
+    expect((await diagnose(events('number')))[0][1]).toContain('CustomEvent<number>');
+    expect((await diagnose(events('string')))[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('checks the value of a property against the type argument', async () => {
+    const source = `${imports}<p @@list<{ id: number; name: string }>(items="{ items }")></p>\n<p @@list<{ id: number; name: string }>(items="{ [{ id: 1 }] }")></p>`;
+
+    const diagnostics = await diagnose(source);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0][1]).toContain('name');
+  }, TIMEOUT);
+
+  it('reports a type argument that does not satisfy the constraint of the type parameter on the type arguments', async () => {
+    const source = `${imports}<p @@list<string>(items="{ [] }")></p>`;
+
+    expect(await diagnose(source)).toContainEqual(['string', 'Type \'string\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]);
+  }, TIMEOUT);
+
+  it('accepts a generic directive without type arguments: a type parameter gets its default type, or any', async () => {
+    expect(await diagnose(`${imports}<p @@list(items="{ items }")></p>`)).toEqual([]);
+
+    // Key defaults to string, Item has no default
+    const events = await diagnose(`${imports}<p @@list(items="{ items }" (picked)="select($event)")></p>`);
+    expect(events[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('infers the type parameters from the values bound to the properties', async () => {
+    const events = await diagnose(`${imports}<p @@list(items="{ items }" (selected)="select($event)")></p>`);
+
+    // Item is the type of the elements of the array bound to items, which the component declares
+    expect(events).toHaveLength(1);
+    expect(events[0][1]).toContain('CustomEvent<{ id: number; name: string; }>');
+  }, TIMEOUT);
+
+  it('prefers the type arguments of the template to the inferred ones, and infers the others', async () => {
+    const source = `${imports}<p @@list<{ id: number }>(items="{ items }" (selected)="select($event)" (picked)="select($event)")></p>`;
+    const events = await diagnose(source);
+
+    // The type argument of the template is the local type named like the type parameter
+    expect(events.map(([, message]) => message.match(/CustomEvent<[^>]*>/)?.[0])).toEqual(['CustomEvent<Item>', 'CustomEvent<string>']);
+  }, TIMEOUT);
+
+  it('reports an inferred type that does not satisfy the constraint of the type parameter on the directive', async () => {
+    const diagnostics = await diagnose(`${imports}<p @@list(items="{ [1, 2] }")></p>`);
+
+    expect(diagnostics).toContainEqual(['list', 'Type \'number\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]);
+  }, TIMEOUT);
+
+  it('does not report the errors of the call inferring the type parameters, only those of the bindings', async () => {
+    const diagnostics = await diagnose(`${imports}<p @@list(items="{ missing }")></p>`);
+
+    expect(diagnostics).toEqual([['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]]);
+  }, TIMEOUT);
+
+  it('gives the type parameters the template leaves out their default type', async () => {
+    const events = await diagnose(`${imports}<p @@list<{ id: number; name: string }>(items="{ items }" (picked)="select($event)")></p>`);
+
+    expect(events[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('reports the type arguments of a directive that is not generic, or more than it has type parameters', async () => {
+    expect(await diagnose('@import { Tooltip } from \'./directives\';\n<p @@tooltip<string>(text="a")></p>')).toEqual([
+      ['string', '@@tooltip declares type arguments, but Tooltip is not generic.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose(`${imports}<p @@list<{ id: number }, string, number>(items="{ [] }")></p>`)).toEqual([
+      ['{ id: number }, string, number', '@@list declares 3 type arguments, but List has 2 type parameters (Item, Key).', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 });

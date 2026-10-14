@@ -4,7 +4,7 @@ import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
 import type { CompilerCache } from '../types/compiler-cache.type';
 import { TemplateError } from '../models/template-error/template-error.model';
-import { compile, parseTemplate, typeCheckTemplate } from './compile';
+import { compile, parseTemplate, typeCheckTemplate, typeCheckTemplateTolerant } from './compile';
 
 const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };
 const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
@@ -131,5 +131,25 @@ describe('typeCheckTemplate', () => {
     const result = await typeCheckTemplate(template, parseTemplate(template), [component as never]);
 
     expect(result.text).toBe('function typeCheck() {\n  root.heading;\n}');
+  });
+});
+
+describe('typeCheckTemplateTolerant', () => {
+  it('collects the errors of the nodes failing type-checking', async () => {
+    const template = '<a-b></a-b><c-d></c-d>{heading}';
+    const { text, errors } = await typeCheckTemplateTolerant(template, parseTemplate(template), [component as never]);
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('c-d selector is not associated');
+    expect(text).toBe('function typeCheck() {\n  root.heading;\n}');
+  });
+});
+
+describe('compile generic directives', () => {
+  it('generates the same javascript for a directive declaring type arguments, which only the type-check uses', async () => {
+    const withTypeArguments = await compile('<div @@list<string, Map<string, number>>(items="{ rows }")></div>', { signals: [], cache: createCache() });
+    const withoutTypeArguments = await compile('<div @@list(items="{ rows }")></div>', { signals: [], cache: createCache() });
+
+    expect(withTypeArguments).toBe(withoutTypeArguments);
   });
 });

@@ -50,7 +50,8 @@ describe('getBindingContext', () => {
     ['in an attribute value', '<my-child label="la'],
     ['after the ) of an event', '<my-child (picked)'],
     ['in an event handler', '<my-child (picked)="la'],
-    ['after an error', '<my-child @la']
+    ['after a name that cannot be an attribute', '<my-child @la'],
+    ['after a template that cannot be lexed', '<button (click)="onClick foo()"> la']
   ])('finds nothing %s', (_name, template) => {
     expect(contextOf(template)).toBeUndefined();
   });

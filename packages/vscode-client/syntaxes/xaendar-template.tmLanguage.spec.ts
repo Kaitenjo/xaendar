@@ -45,6 +45,12 @@ const TYPESCRIPT_GRAMMAR = {
   scopeName: 'source.ts',
   patterns: [{ include: '#expression' }],
   repository: {
+    type: {
+      patterns: [
+        { match: '\\b(?:string|number|boolean)\\b', name: 'support.type.primitive.ts' },
+        { match: '[A-Z][\\w$]*', name: 'entity.name.type.ts' }
+      ]
+    },
     expression: {
       patterns: [
         { match: '\'[^\']*\'', name: 'string.quoted.single.ts' },
@@ -154,6 +160,23 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'plain')).toContain('keyword.control.directive.xaendar');
     // A multiplication is not a structural directive
     expect(scopesOf('{ 2*size(1) }', 'size')).not.toContain('keyword.control.directive.xaendar');
+  });
+
+  it('colors the type arguments of a directive as types, and keeps coloring its bindings', () => {
+    const template = '<div @@list<string, Map<Item, number>>(items="{ rows }" (picked)="log()") *each<Item>(of="{ rows }") @@bare<string>></div>';
+
+    expect(scopesOf(template, 'list')).toContain('keyword.control.directive.xaendar');
+    expect(scopesOf(template, 'string,')).toContain('support.type.primitive.ts');
+    expect(scopesOf(template, 'Map')).toContain('entity.name.type.ts');
+    expect(scopesOf(template, 'Item, number')).toContain('meta.type.parameters.xaendar');
+    expect(scopesOf(template, '<string')).toContain('punctuation.definition.typeparameters.begin.xaendar');
+    expect(scopesOf(template, 'items')).toContain('entity.other.attribute-name.html');
+    expect(scopesOf(template, 'rows')).toContain('meta.embedded.expression.xaendar');
+    expect(scopesOf(template, 'picked')).toContain('entity.name.function.event.xaendar');
+    expect(scopesOf(template, 'each')).toContain('keyword.control.directive.xaendar');
+    expect(scopesOf(template, 'Item>(')).toContain('entity.name.type.ts');
+    expect(scopesOf(template, 'bare')).toContain('keyword.control.directive.xaendar');
+    expect(scopesOf(template, 'string>>')).toContain('support.type.primitive.ts');
   });
 
   it('colors the control flow, with its conditions as expressions', () => {

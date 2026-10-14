@@ -48,9 +48,11 @@ export function handleTsDelete(componentPath: string, state: XaendarPluginState)
   clearMetadataForFile(componentPath);
 
   const components = findComponentsForImport(componentPath);
-  for (const componentId of components) {
-    removeVirtualFile(`${componentId}.__typecheck__.ts`);
-    state.logError('', `Component "${componentPath}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
+  if (components?.size) {
+    for (const componentId of components) {
+      removeVirtualFile(`${componentId}.__typecheck__.ts`);
+      state.logError('', `Component "${componentPath}" was deleted but is still imported by "${componentId}". Update its @import statement.`);
+    }
   }
 
   clearImportToComponents(componentPath);

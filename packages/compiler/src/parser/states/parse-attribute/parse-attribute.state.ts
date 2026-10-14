@@ -69,6 +69,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
       name,
       nameSpan,
       value: 'true',
+      bare: true,
       span: {
         start: startOffset,
         end: cursor.getCurrentToken().value.span.end,

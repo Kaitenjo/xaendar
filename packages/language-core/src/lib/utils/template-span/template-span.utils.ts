@@ -46,20 +46,22 @@ export function getErrorSpan(error: Error, ast: readonly ASTNode[] | undefined):
   const { span } = error;
   const named = new Array<{ span: Span, name: Span }>();
 
-  walkTemplate(ast ?? [], [], {
-    element: node => {
-      named.push({ span: node.span, name: node.nameSpan });
-    },
-    directive: node => {
-      named.push({ span: node.span, name: node.selectorSpan });
-    },
-    attribute: node => {
-      named.push({ span: node.span, name: node.nameSpan });
-    },
-    event: node => {
-      named.push({ span: node.span, name: node.nameSpan });
-    }
-  });
+  if (ast?.length) {
+    walkTemplate(ast, [], {
+      element: node => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
+      directive: node => {
+        named.push({ span: node.span, name: node.selectorSpan });
+      },
+      attribute: node => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
+      event: node => {
+        named.push({ span: node.span, name: node.nameSpan });
+      }
+    });
+  }
 
   return named.find(node => node.span.start === span.start && node.span.end === span.end)?.name ?? span;
 }

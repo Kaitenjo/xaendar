@@ -31,7 +31,12 @@ type ComponentTarget = {
  * @returns The start of the files, those missing on disk excluded, none if the offset is not on one of those parts.
  */
 export async function getComponentDefinition(fileName: string, text: string, offset: number): Promise<TemplateDefinition[]> {
-  const targets = (await extractComponents(fileName, text)).flatMap(({ templateUrl, styleUrl, typescriptNodes: { decorator } }) => [
+  const components = await extractComponents(fileName, text);
+  if (!components?.length) {
+    return [];
+  }
+
+  const targets = components.flatMap(({ templateUrl, styleUrl, typescriptNodes: { decorator } }) => [
     { span: { start: decorator.getStart(), end: decorator.expression.expression.getEnd() }, urls: [templateUrl, styleUrl] },
     ...getUrlLiterals(decorator).map((literal): ComponentTarget => ({ span: { start: literal.getStart(), end: literal.getEnd() }, urls: [literal.text] }))
   ]);
@@ -45,15 +50,16 @@ export async function getComponentDefinition(fileName: string, text: string, off
  *
  * @param fileName - The path of the component file.
  * @param text - The text of the component file.
- * @returns The metadata of the components, none if they cannot be extracted.
+ * @returns The metadata of the components, `undefined` if they cannot be extracted.
  */
-async function extractComponents(fileName: string, text: string): Promise<ComponentMetadata[]> {
+async function extractComponents(fileName: string, text: string): Promise<ComponentMetadata[] | undefined> {
   try {
     const metadatas = await extractComponentsMetadataFromSourceFile(createSourceFile(fileName, text, ScriptTarget.Latest, true));
-    return [...metadatas?.values() ?? []];
+    if (metadatas?.size) {
+      return Array.from(metadatas.values());
+    }
   } catch {
     // The metadata of a component whose properties clash cannot be extracted
-    return [];
   }
 }
 

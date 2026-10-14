@@ -17,7 +17,14 @@ async function runBuildExtension(): Promise<void> {
     tsconfigPath: '../tsconfig.json',
     watch: true,
     extensionWatchPatterns: ['../packages/vscode-client/**/*.ts'],
-    serverWatchPatterns: ['../packages/language-server/**/*.ts'],
+    // The server bundles the packages it depends on, so a change in any of them must rebuild it
+    serverWatchPatterns: [
+      '../packages/language-server/**/*.ts',
+      '../packages/language-core/**/*.ts',
+      '../packages/compiler/**/*.ts',
+      '../packages/common/**/*.ts',
+      '../packages/types/**/*.ts'
+    ],
   });
 }
 

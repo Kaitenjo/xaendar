@@ -14,4 +14,10 @@ export class TemplatesBindingPage extends CustomElement {
    * The texts of the documentation, in the current language.
    */
   public readonly translations = translations;
+
+  a(x: CustomEvent<string>) {
+
+  }
+
+  b = 3
 }

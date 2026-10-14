@@ -4,6 +4,7 @@ import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
 import type { ConditionalBindingNode } from './conditional-binding-node.type';
 import type { EventNode } from './event-node.type';
+import type { TypeArgumentNode } from './type-argument-node.type';
 
 /**
  * AST node representing a directive applied to an element,
@@ -22,6 +23,10 @@ export type DirectiveNode = ASTNodeWithSpan<{
    * Span of the selector, without the `@@` prefix.
    */
   selectorSpan: Span;
+  /**
+   * The type arguments the directive declares for its generic class, e.g. `string` and `number` in `@@list<string, number>(...)`.
+   */
+  typeArguments?: TypeArgumentNode[];
   /**
    * Attribute nodes bound to the directive properties.
    */

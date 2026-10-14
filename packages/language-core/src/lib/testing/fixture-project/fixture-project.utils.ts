@@ -60,6 +60,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   'src/child-base.ts': [
     'import { Event, Output } from \'@xaendar/core\';',
     'export class ChildBase {',
+    '  /** Emitted when the child is closed. */',
     '  @Event() accessor closed!: Output<boolean>;',
     '}',
     ''
@@ -67,8 +68,14 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   'src/child.ts': [
     'import { Event, InputSignal, Output, Property, WebComponent } from \'@xaendar/core\';',
     'import { ChildBase } from \'./child-base\';',
+    '/** A child component. */',
     '@WebComponent({ selector: \'my-child\', templateUrl: \'./child.html\' })',
     'export class Child extends ChildBase {',
+    '  /**',
+    '   * The text of the child.',
+    '   *',
+    '   * @example <my-child label="a" />',
+    '   */',
     '  @Property.required() accessor label!: InputSignal<string>;',
     '  @Property(0, { alias: \'size\' }) accessor amount!: InputSignal<number>;',
     '  @Event() accessor picked!: Output<number>;',
@@ -77,6 +84,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   ].join('\n'),
   'src/directives.ts': [
     'import { Directive, Event, InputSignal, Output, Property } from \'@xaendar/core\';',
+    '/** Shows a tooltip. */',
     '@Directive({ selector: \'tooltip\' })',
     'export class Tooltip {',
     '  @Property(\'\') accessor text!: InputSignal<string>;',
@@ -93,6 +101,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     '@WebComponent({ selector: \'my-app\', templateUrl: \'./app.html\' })',
     'export class App {',
     '  items = [{ id: 1, name: \'a\' }];',
+    '  /** The title of the page. */',
     '  title = \'x\';',
     '  select(value: number): number { return value; }',
     '}',

@@ -63,11 +63,13 @@ export class TemplateRegistry {
     }
 
     const templates = new Set<string>();
-    for (const [className, { templateUrl }] of metadatas ?? []) {
-      const templateKey = normalizeFileName(resolve(dirname(componentPath), templateUrl));
-      const components = this._components.getOrInsertComputed(templateKey, () => new Map());
-      components.getOrInsertComputed(componentPath, () => []).push(className);
-      templates.add(templateKey);
+    if (metadatas?.size) {
+      for (const [className, { templateUrl }] of metadatas) {
+        const templateKey = normalizeFileName(resolve(dirname(componentPath), templateUrl));
+        const components = this._components.getOrInsertComputed(templateKey, () => new Map());
+        components.getOrInsertComputed(componentPath, () => []).push(className);
+        templates.add(templateKey);
+      }
     }
 
     this._templates.set(normalizeFileName(componentPath), templates);
@@ -80,15 +82,18 @@ export class TemplateRegistry {
    */
   public remove(componentPath: string): void {
     const componentKey = normalizeFileName(componentPath);
-    for (const templateKey of this._templates.get(componentKey) ?? []) {
-      const components = this._components.get(templateKey)!;
-      const fileNames = [...components.keys()].filter(fileName => normalizeFileName(fileName) === componentKey);
-      for (let j = 0; j < fileNames.length; j++) {
-        components.delete(fileNames[j]);
-      }
+    const templateKeys = this._templates.get(componentKey);
+    if (templateKeys?.size) {
+      for (const templateKey of templateKeys) {
+        const components = this._components.get(templateKey)!;
+        const fileNames = [...components.keys()].filter(fileName => normalizeFileName(fileName) === componentKey);
+        for (let j = 0; j < fileNames.length; j++) {
+          components.delete(fileNames[j]);
+        }
 
-      if (!components.size) {
-        this._components.delete(templateKey);
+        if (!components.size) {
+          this._components.delete(templateKey);
+        }
       }
     }
 

@@ -1,7 +1,7 @@
 import type { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type.js';
-import { catchErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
+import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { TypeCheckContext } from '../models/type-checker-context/type-checker-context.js';
 import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
@@ -10,6 +10,7 @@ import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.s
 import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
 import type { Line, LineMapping } from '../types/generated-line.type.js';
 import type { TypeCheckResult } from '../types/type-checker-result.type.js';
+import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result/type-checker-tolerant-result.type.js';
 import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
 
@@ -36,12 +37,12 @@ import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js'
  * one single `typeCheck()` function.
  */
 export class TypeChecker {
-  /** 
-   * Shared mutable state threaded through all state functions during a single `generate()` call. 
+  /**
+   * Shared mutable state threaded through all state functions during a single `generate()` call.
    */
   private readonly _context = new TypeCheckContext();
-  /** 
-   * Maps each `ASTNodeType` to the state function responsible for emitting its type-check lines. 
+  /**
+   * Maps each `ASTNodeType` to the state function responsible for emitting its type-check lines.
    */
   private readonly _states: TypeCheckerStates = {
     [ASTNodeType.Text]: typeCheckTextAndInterpolation,
@@ -52,13 +53,18 @@ export class TypeChecker {
     [ASTNodeType.Switch]: typeCheckSwitch,
     [ASTNodeType.Import]: () => []
   };
+  /**
+   * The errors of the nodes that failed type-checking during a `generateTolerant()` call; `undefined` while a node
+   * failing must stop the type-check, i.e. during a `generate()` call.
+   */
+  private _errors: Error[] | undefined;
 
   /**
    * @param _input - Raw template source string, used only to slice diagnostic spans into error messages.
    * @param _ast   - Parsed AST produced by the `Parser` for this template.
    */
   constructor(
-    private _input: string, 
+    private _input: string,
     private _ast: ASTNode[],
   ) { }
 
@@ -79,26 +85,62 @@ export class TypeChecker {
    */
   public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
     try {
-      this._context.addImport(...metadatas);
-      for (let i = 0; i < shadowingMembers.length; i++) {
-        this._context.addShadowingMember(shadowingMembers[i]);
-      }
-      this._context.addCustomElementPatterns(...customElements);
-      const body = this._ast.flatMap(node => this._processNode(node, this._context));
-
-      const lines: Line[] = [
-        plain('function typeCheck() {'),
-        ...indentLines(body),
-        plain('}'),
-      ];
-
-      return {
-        text: lines.map(line => line.text).join('\n'),
-        mappingTable: this.buildMappingTable(lines)
-      };
+      return this._generate(metadatas, shadowingMembers, customElements);
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
+  }
+
+  /**
+   * Generates the shim like {@link generate}, but a node failing type-checking does not stop it: the error is
+   * collected and the shim leaves out the node, so that the other nodes are checked too, e.g. to report every
+   * use of a selector that is not imported. The children of an element failing are checked anyway.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
+   * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
+   * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
+   * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
+   * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
+   */
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckTolerantResult> {
+    const errors = new Array<Error>();
+    this._errors = errors;
+    try {
+      return { ...this._generate(metadatas, shadowingMembers, customElements), errors };
+    } catch (err) {
+      throw catchErrorWithPrefix('TypeChecker', this._input, err);
+    } finally {
+      this._errors = undefined;
+    }
+  }
+
+  /**
+   * Generates the shim, stopping at the first node failing unless the errors are being collected.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template.
+   * @param shadowingMembers - Class members named like a global identifier.
+   * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+   * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
+   * @throws The error of the first node failing, when the errors are not being collected.
+   */
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[]): TypeCheckResult {
+    this._context.addImport(...metadatas);
+    for (let i = 0; i < shadowingMembers.length; i++) {
+      this._context.addShadowingMember(shadowingMembers[i]);
+    }
+    this._context.addCustomElementPatterns(...customElements);
+    const body = this._ast.flatMap(node => this._processNode(node, this._context));
+
+    const lines: Line[] = [
+      plain('function typeCheck() {'),
+      ...indentLines(body),
+      plain('}'),
+    ];
+
+    return {
+      text: lines.map(line => line.text).join('\n'),
+      mappingTable: this.buildMappingTable(lines)
+    };
   }
 
   /**
@@ -121,6 +163,9 @@ export class TypeChecker {
    * Dispatches a single AST node to its state function, passing itself
    * back down as `processNode` so state functions can recurse into their
    * own children inline.
+   *
+   * While the errors are being collected, a node failing is recorded and generates no lines, but for the
+   * children of an element, which are checked on their own.
    */
   private _processNode = (node: ASTNode, context: TypeCheckContext): Line[] => {
     const state = this._states[node.type];
@@ -129,6 +174,16 @@ export class TypeChecker {
       throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span })
     }
 
-    return state(node as never, this._processNode, context);
+    if (!this._errors) {
+      return state(node as never, this._processNode, context);
+    }
+
+    try {
+      return state(node as never, this._processNode, context);
+    } catch (err) {
+      this._errors.push(formatErrorWithPrefix('TypeChecker', this._input, err));
+      // The state of an element fails on its own bindings before it reaches the children, which have not been checked
+      return node.type === ASTNodeType.Element ? node.children.flatMap(child => this._processNode(child, context)) : [];
+    }
   };
 }

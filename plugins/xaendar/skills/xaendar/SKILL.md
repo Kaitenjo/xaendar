@@ -124,6 +124,15 @@ Follow these in every class you write or edit (components, directives, plain cla
   Any type works, imported aliases included. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union.
 - **Names**: never one-letter identifiers (variables, parameters and arrow callbacks, catch bindings, type parameters, `@for` items and aliases): name what the value is. The build minifies the names anyway.
 - **`void`**: never put `void` in front of a call to discard its result (`void this._load(id)`). Call the function as a plain statement, or `await` it / chain `.then`/`.catch` when the promise must be handled.
+- **Empty collections and objects**: never create an empty array, `Map`, `Set` or object only to loop over it or spread it, and never spread an array or an object that may be empty (a spread is several times slower than an `if`). A function whose collection may be missing returns `undefined`, not an empty collection. The caller takes the result in a `const`, checks it with `?.length` (array) or `?.size` (`Map`, `Set`) and only then loops or pushes. Never write `?? []`, `|| []`, `?? new Map()`, `...(x ?? [])`, `...(condition ? [item] : [])`, `...(x ?? {})`, `...(condition ? { key: value } : {})` or `...condition && { key: value }` (assign an optional member under an `if` after creating the object instead), and never test a collection with a bare `if (items)`:
+  ```ts
+  const entries = await loadEntries(file);
+  if (entries?.length) {
+    for (let i = 0; i < entries.length; i++) {
+      result.push(entries[i]);
+    }
+  }
+  ```
 - **Module constants** used by a single class become members of that class: a private field, or a public one if the template reads it. Keep at module level only what is exported, shared by several classes, or state shared by every instance (counters, caches).
 
 Follow these in every template you write or edit:

@@ -48,10 +48,12 @@ export function line(...parts: LinePart[]): Line {
       text = `${text}${part.text}`;
       mappings.push({ columnStart, columnEnd: text.length, original: part.span });
 
-      const segments = part.segments ?? [];
-      for (let i = 0; i < segments.length; i++) {
-        const { columnStart: segmentStart, columnEnd: segmentEnd, original } = segments[i];
-        mappings.push({ columnStart: columnStart + segmentStart, columnEnd: columnStart + segmentEnd, original });
+      const { segments } = part;
+      if (segments?.length) {
+        for (let j = 0; j < segments.length; j++) {
+          const { columnStart: segmentStart, columnEnd: segmentEnd, original } = segments[j];
+          mappings.push({ columnStart: columnStart + segmentStart, columnEnd: columnStart + segmentEnd, original });
+        }
       }
     }
   }

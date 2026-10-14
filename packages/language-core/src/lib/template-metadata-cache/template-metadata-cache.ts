@@ -1,6 +1,7 @@
 import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
+import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
 
@@ -19,6 +20,12 @@ type MetadataEntry = {
 };
 
 /**
+ * What a file declaring a component or a directive contains: the decorator, whose presence tells it from the files that
+ * can be skipped without parsing them.
+ */
+const DECLARATION_DECORATOR = /@(?:WebComponent|Directive)\s*\(/;
+
+/**
  * Cache of the metadata of the components and directives imported by the templates open in an editor:
  * the implementation of the `CompilerCache` the compiler resolves the `@import`s of a template through.
  *
@@ -34,6 +41,10 @@ export class TemplateMetadataCache implements CompilerCache {
    * The metadata stored by selector (see `set`).
    */
   private readonly _selectors = new Map<string, ComponentOrDirectiveMetadata>();
+  /**
+   * The normalized paths of the files known to declare no component or directive, so that they are not read again.
+   */
+  private readonly _withoutDeclarations = new Set<string>();
 
   /**
    * Creates a cache.
@@ -66,6 +77,57 @@ export class TemplateMetadataCache implements CompilerCache {
   }
 
   /**
+   * Returns the metadata of every component and directive declared in a module, extracting them from its file.
+   *
+   * @param baseDir - The directory the path of the module is relative to.
+   * @param modulePath - The path of the module, as written in the `@import`.
+   * @returns The metadata, keyed by class name; `undefined` if the module cannot be resolved or read.
+   */
+  public async getModuleMetadatas(baseDir: string, modulePath: string): Promise<ReadonlyMap<string, ComponentOrDirectiveMetadata> | undefined> {
+    const fileName = resolveModulePath(baseDir, modulePath);
+    if (fileName) {
+      return this._getFileMetadatas(fileName);
+    }
+  }
+
+  /**
+   * Returns the metadata of the components and directives declared in some files, extracting them from the ones
+   * that were not read yet: the files that are not modules to import (declarations, specs and tests), those that
+   * cannot be read and those whose metadata cannot be extracted (e.g. properties that clash) are skipped.
+   *
+   * @param fileNames - The paths of the files.
+   * @returns The metadata of each file declaring some, keyed by class name, `undefined` if none does.
+   */
+  public async getDeclarations(fileNames: readonly string[]): Promise<Map<string, ReadonlyMap<string, ComponentOrDirectiveMetadata>> | undefined> {
+    let declarations: Map<string, ReadonlyMap<string, ComponentOrDirectiveMetadata>> | undefined;
+    for (let i = 0; i < fileNames.length; i++) {
+      const fileName = fileNames[i];
+      const key = normalizeFileName(fileName);
+      if (NOT_IMPORTABLE.test(fileName) || this._withoutDeclarations.has(key)) {
+        continue;
+      }
+
+      const text = readDocument(fileName);
+      if (text === undefined || !DECLARATION_DECORATOR.test(text)) {
+        this._withoutDeclarations.add(key);
+        continue;
+      }
+
+      try {
+        const metadatas = await this._getFileMetadatas(fileName);
+        if (metadatas?.size) {
+          declarations ??= new Map();
+          declarations.set(fileName, metadatas);
+        }
+      } catch {
+        // The metadata of a file whose properties clash cannot be extracted: it has nothing to propose
+      }
+    }
+
+    return declarations;
+  }
+
+  /**
    * Stores the metadata of a component or directive by its selector.
    *
    * @param selector - The selector.
@@ -81,7 +143,9 @@ export class TemplateMetadataCache implements CompilerCache {
    * @param fileName - The path of the file.
    */
   public invalidate(fileName: string): void {
-    this._entries.delete(normalizeFileName(fileName));
+    const key = normalizeFileName(fileName);
+    this._entries.delete(key);
+    this._withoutDeclarations.delete(key);
   }
 
   /**
@@ -90,6 +154,7 @@ export class TemplateMetadataCache implements CompilerCache {
   public clear(): void {
     this._entries.clear();
     this._selectors.clear();
+    this._withoutDeclarations.clear();
   }
 
   /**
@@ -111,10 +176,15 @@ export class TemplateMetadataCache implements CompilerCache {
     }
 
     const sourceFile = createSourceFile(fileName, text, ScriptTarget.Latest, true);
-    const metadatas = new Map<string, ComponentOrDirectiveMetadata>([
-      ...(await extractComponentsMetadataFromSourceFile(sourceFile, this._compilerOptions) ?? []),
-      ...(await extractDirectivesMetadataFromSourceFile(sourceFile, this._compilerOptions) ?? [])
-    ]);
+    const components = await extractComponentsMetadataFromSourceFile(sourceFile, this._compilerOptions);
+    const metadatas = new Map<string, ComponentOrDirectiveMetadata>(components);
+    const directives = await extractDirectivesMetadataFromSourceFile(sourceFile, this._compilerOptions);
+    if (directives?.size) {
+      for (const [className, directive] of directives) {
+        metadatas.set(className, directive);
+      }
+    }
+
     this._entries.set(key, { text, metadatas });
     return metadatas;
   }

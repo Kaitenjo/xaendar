@@ -35,9 +35,12 @@ export function createHotUpdateHook(): NonNullable<HookHandler<Plugin['hotUpdate
     const moduleGraph = this.environment.moduleGraph;
     const updatedModules = new Set<EnvironmentModuleNode>(modules);
     for (const componentPath of componentPaths) {
-      for (const componentModule of moduleGraph.getModulesByFile(componentPath) ?? []) {
-        moduleGraph.invalidateModule(componentModule, new Set(), timestamp, true);
-        updatedModules.add(componentModule);
+      const componentModules = moduleGraph.getModulesByFile(componentPath);
+      if (componentModules?.size) {
+        for (const componentModule of componentModules) {
+          moduleGraph.invalidateModule(componentModule, new Set(), timestamp, true);
+          updatedModules.add(componentModule);
+        }
       }
     }
 

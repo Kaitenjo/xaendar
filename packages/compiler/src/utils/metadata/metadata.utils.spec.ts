@@ -323,3 +323,37 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
     expect(Object.fromEntries(metadata!.events)).toMatchObject({ toggled: { type: eventType('MyDirective', 'toggled') } });
   });
 });
+
+describe('extractDirectivesMetadataFromSourceFile generics', () => {
+  it('extracts the type parameters of a generic directive, and references its accessors through the class instantiated with them', async () => {
+    const metadata = (await extractDirectives(`
+      @Directive({ selector: 'list' })
+      class MyDirective<Item extends { id: number }, Key = string> {
+        @Property([]) accessor items!: InputSignal<Item[]>;
+        @Event() accessor picked!: Output<Key>;
+      }
+    `))?.get('MyDirective');
+
+    expect(metadata?.typeParameters).toEqual([{ name: 'Item', hasDefault: false }, { name: 'Key', hasDefault: true }]);
+    expect(metadata?.properties.get('items')?.type).toBe('ReturnType<import(\'component\').MyDirective<Item, Key>[\'items\']>');
+    expect(metadata?.events.get('picked')?.type).toBe('(import(\'component\').MyDirective<Item, Key>[\'picked\'] extends import(\'@xaendar/core\').Output<infer Value> ? Value : never)');
+  });
+
+  it('leaves the type parameters out of a directive that is not generic', async () => {
+    const metadata = (await extractDirectives(directive('@Property(\'\') accessor text!: InputSignal<string>;')))?.get('MyDirective');
+
+    expect(metadata).not.toHaveProperty('typeParameters');
+    expect(metadata?.properties.get('text')?.type).toBe(propertyType('MyDirective', 'text'));
+  });
+
+  it('references the accessors of a generic component without its type parameters, which a template cannot declare', async () => {
+    const metadata = (await extract(`
+      @WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })
+      class MyEl<Item> {
+        @Property([]) accessor items!: InputSignal<Item[]>;
+      }
+    `))?.get('MyEl');
+
+    expect(metadata?.properties.get('items')?.type).toBe(propertyType('MyEl', 'items'));
+  });
+});

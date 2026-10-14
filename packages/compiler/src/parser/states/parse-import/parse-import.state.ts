@@ -49,7 +49,7 @@ export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
  * @returns An `ImportSpecifier` with `imported` and `local` fields and their spans.
  * @throws If the specifier format is invalid.
  */
-function parseSpecifier(raw: string, offset: number): ImportSpecifier {
+export function parseSpecifier(raw: string, offset: number): ImportSpecifier {
   const trimmed = raw.trim();
   // The exported name always starts the specifier, the local alias always ends it
   const withSpans = (imported: string, local: string): ImportSpecifier => ({

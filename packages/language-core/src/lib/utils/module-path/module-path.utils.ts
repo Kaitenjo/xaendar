@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
-import { resolvePosixPath } from '../path/path.utils';
+import { posix } from 'node:path';
+import { normalizeFileName, resolvePosixPath } from '../path/path.utils';
 
 /**
  * Resolves a module import path to an actual file system path.
@@ -32,4 +33,21 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
 
   // TODO: Handle package imports and tsconfig aliases
   return undefined;
+}
+
+/**
+ * Writes the path to import a TypeScript file from a directory, the inverse of {@link resolveModulePath}: relative to
+ * the directory, with forward slashes and without the `.ts` extension.
+ *
+ * @example
+ * toModulePath('/src/pages', '/src/ui/button.ts');  // '../ui/button'
+ * toModulePath('/src', '/src/button.ts');           // './button'
+ *
+ * @param baseDir - The directory the path is relative to.
+ * @param fileName - The path of the file to import.
+ * @returns The path, to write in an `@import`.
+ */
+export function toModulePath(baseDir: string, fileName: string): string {
+  const path = posix.relative(normalizeFileName(baseDir), normalizeFileName(fileName)).replace(/\.ts$/, '');
+  return path.startsWith('.') ? path : `./${path}`;
 }

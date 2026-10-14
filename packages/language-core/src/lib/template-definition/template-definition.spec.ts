@@ -1,3 +1,4 @@
+import { ASTNodeType } from '@xaendar/compiler';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../template-analysis/template-analysis';
@@ -108,12 +109,21 @@ describe('getTemplateDefinition', () => {
     expect(textsOf(getTemplateDefinition(analysis, at('$event')))).toEqual([['src/app.html', '(picked)="select($event)"']]);
   });
 
-  it('finds nothing for an import whose module cannot be resolved, or when the shim is not in the program', async () => {
-    const result = await project.analyze('@import { * as all } from \'./missing\';\n<b>{ title }</b>');
-    const { analysis: unresolved } = result;
+  it('finds nothing for an import whose module cannot be resolved anymore, or when the shim is not in the program', () => {
+    // The module was deleted after the analysis
+    const unresolved = { ...analysis, ast: analysis.ast.map(node => node.type === ASTNodeType.Import ? { ...node, path: './missing' } : node) };
+    const importOffset = analysis.source.indexOf('./child') + 2;
 
-    expect(getTemplateDefinition(unresolved!, unresolved!.source.indexOf('./missing') + 2)).toEqual([]);
-    expect(getTemplateDefinition({ ...unresolved!, shimPath: '/missing.ts' }, unresolved!.source.indexOf('title') + 2)).toEqual([]);
+    expect(getTemplateDefinition(unresolved, importOffset)).toEqual([]);
+    expect(getTemplateDefinition({ ...analysis, shimPath: '/missing.ts' }, analysis.source.indexOf('title') + 2)).toEqual([]);
+  });
+
+  it('finds nothing for a directive whose import was removed, while the rest of the template still leads to its definitions', async () => {
+    const { analysis: removed } = await project.analyze('@import { Child } from \'./child\';\n<my-child label="a" @@tooltip(text="a")></my-child>\n<b (click)="select(1)">x</b>');
+
+    expect(removed!.errors).toHaveLength(1);
+    expect(getTemplateDefinition(removed!, removed!.source.indexOf('tooltip') + 2)).toEqual([]);
+    expect(textsOf(getTemplateDefinition(removed!, removed!.source.indexOf('my-child') + 2))).toEqual([['src/child.ts', 'Child']]);
   }, TIMEOUT);
 
   it('finds nothing for a symbol TypeScript doesn\'t define, or for an implicit variable without alias', async () => {

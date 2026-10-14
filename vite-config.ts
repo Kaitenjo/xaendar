@@ -25,18 +25,47 @@ export default function getViteConfig(name: string, dirName: string, options?: V
   const outDir = resolve(dirName, `../../dist/${name}`);
   const distDir = join(outDir, 'dist');
   const secondaryEntryPoints = options?.secondaryEntryPoints ?? {};
+  const entry: Record<string, string> = { [fileName]: resolve(dirName, 'src/public-api.ts') };
+  for (const [entryPoint, path] of Object.entries(secondaryEntryPoints)) {
+    entry[entryPoint] = resolve(dirName, path);
+  }
+
+  const plugins: PluginOption[] = [
+    createGeneratePackageJsonPlugin(dirName, fileName, outDir, secondaryEntryPoints),
+    createCopyReadmePlugin(dirName, outDir),
+    dts({
+      exclude: [`**/packages/${fileName.split('-')[1]}/**/*.spec.ts`],
+      include: [
+        `**/packages/${fileName.split('-')[1]}/**/*.ts`,
+        '**/packages/signals/**/global.d.ts'
+      ],
+      bundleTypes: true,
+      outDirs: distDir,
+      root: resolve(dirName, 'src'),
+      afterBuild() {
+        const pkgImportRegex = /from (['"])(?:\.\.\/)*([^/'"]+)\/src\/public-api\1/g;
+        const dts = readdirSync(distDir, { recursive: true, encoding: 'utf-8' }).filter(entry => entry.endsWith('.d.ts')).map((entry) => join(distDir, entry));
+        for (const filePath of dts) {
+          const content = readFileSync(filePath, 'utf-8');
+          const result = content.replace(pkgImportRegex, (_match, quote, pkg) => `from ${quote}@xaendar/${pkg}${quote}`);
+
+          console.log(result === content, filePath);
+          if (result !== content) {
+            writeFileSync(filePath, result);
+          }
+        }
+      }
+    })
+  ];
+  if (options?.plugins?.length) {
+    plugins.push(...options.plugins);
+  }
 
   return {
     build: {
       target: 'esnext',
       lib: {
-        entry: {
-          [fileName]: resolve(dirName, 'src/public-api.ts'),
-          ...(Object.entries(secondaryEntryPoints).reduce<Record<string, string>>((acc, [entryPoint, path]) => {
-            acc[entryPoint] = resolve(dirName, path);
-            return acc;
-          }, {}))
-        },
+        entry,
         name,
         fileName: (_, entryName) => `${entryName}.js`,
         formats: ['es']
@@ -57,34 +86,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
       sourcemap: false
     },
     logLevel: 'info',
-    plugins: [
-      createGeneratePackageJsonPlugin(dirName, fileName, outDir, secondaryEntryPoints),
-      createCopyReadmePlugin(dirName, outDir),
-      dts({
-        exclude: [`**/packages/${fileName.split('-')[1]}/**/*.spec.ts`],
-        include: [
-          `**/packages/${fileName.split('-')[1]}/**/*.ts`, 
-          '**/packages/signals/**/global.d.ts'
-        ],
-        bundleTypes: true,
-        outDirs: distDir,
-        root: resolve(dirName, 'src'),
-        afterBuild() {
-          const pkgImportRegex = /from (['"])(?:\.\.\/)*([^/'"]+)\/src\/public-api\1/g;
-          const dts = readdirSync(distDir, { recursive: true, encoding: 'utf-8' }).filter(entry => entry.endsWith('.d.ts')).map((entry) => join(distDir, entry));
-          for (const filePath of dts) {
-            const content = readFileSync(filePath, 'utf-8');
-            const result = content.replace(pkgImportRegex, (_match, quote, pkg) => `from ${quote}@xaendar/${pkg}${quote}`);
-
-            console.log(result === content, filePath);
-            if (result !== content) {
-              writeFileSync(filePath, result);
-            }
-          }
-        }
-      }),
-      ...(options?.plugins ?? [])
-    ],
+    plugins
   };
 }
 
@@ -104,7 +106,24 @@ function createGeneratePackageJsonPlugin(dirName: string, fileName: string, outD
       const pkgPath = resolve(dirName, 'package.json');
       const pkg: PackageJson = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
-      const distPkg = {
+      const exports: PackageJson.ExportConditions = {
+        '.': {
+          import: {
+            types: `./dist/${fileName}.d.ts`,
+            default: `./dist/${fileName}.js`
+          }
+        }
+      };
+      for (const entryPoint of Object.keys(secondaryEntryPoints)) {
+        exports[`./${entryPoint}`] = {
+          import: {
+            types: `./dist/${entryPoint}.d.ts`,
+            default: `./dist/${entryPoint}.js`
+          }
+        };
+      }
+
+      const distPkg: Record<string, unknown> = {
         name: pkg.name,
         version: pkg.version,
         description: pkg.description,
@@ -113,26 +132,17 @@ function createGeneratePackageJsonPlugin(dirName: string, fileName: string, outD
         main: `./dist/${fileName}.js`,
         module: `./dist/${fileName}.js`,
         types: `./dist/${fileName}.d.ts`,
-        exports: {
-          '.': {
-            import: {
-              types: `./dist/${fileName}.d.ts`,
-              default: `./dist/${fileName}.js`
-            }
-          },
-          ...(Object.keys(secondaryEntryPoints).reduce<PackageJson.ExportConditions>((acc, entryPoint) => {
-            acc[`./${entryPoint}`] = {
-              import: {
-                types: `./dist/${entryPoint}.d.ts`,
-                default: `./dist/${entryPoint}.js`
-              }
-            }
-            return acc;
-          }, {}))
-        },
-        ...(Object.keys(pkg.peerDependencies ?? {}).length ? { peerDependencies: pkg.peerDependencies } : {}),
-        ...(Object.keys(pkg.dependencies ?? {}).length ? { dependencies: pkg.dependencies } : {}),
+        exports
       };
+
+      const { peerDependencies, dependencies } = pkg;
+      if (peerDependencies && Object.keys(peerDependencies).length) {
+        distPkg.peerDependencies = peerDependencies;
+      }
+
+      if (dependencies && Object.keys(dependencies).length) {
+        distPkg.dependencies = dependencies;
+      }
 
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, 'package.json'), JSON.stringify(distPkg, null, 2));

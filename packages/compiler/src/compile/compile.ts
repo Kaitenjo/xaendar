@@ -7,6 +7,7 @@ import { ASTNodeType } from '../parser/types/node.enum';
 import { ImportNode } from '../parser/types/nodes/import-node.type';
 import { TypeChecker } from '../type-checker/type-checker/type-checker';
 import type { TypeCheckResult } from '../type-checker/types/type-checker-result.type';
+import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result/type-checker-tolerant-result.type';
 import type { CompilerCache } from '../types/compiler-cache.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
 
@@ -86,6 +87,21 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  */
 export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
   return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements);
+}
+
+/**
+ * Generates the type-checking result like {@link typeCheckTemplate}, but a node failing type-checking does not
+ * stop it: its error is collected and the other nodes are checked too, e.g. to report every use of a selector
+ * that is not imported, for the callers reporting the problems of a template, like the editor tooling.
+ * @param input - The raw HTML-like template source to compile.
+ * @param nodes - The parsed AST nodes from the template (see {@link parseTemplate}).
+ * @param metadatas - Array of component and directive metadata extracted from the template.
+ * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
+ * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+ * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
+ */
+export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckTolerantResult> {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements);
 }
 
 /**

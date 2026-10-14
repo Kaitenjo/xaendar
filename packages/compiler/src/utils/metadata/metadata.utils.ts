@@ -103,13 +103,18 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
     }
 
     const className = klass.name.text;
-    metadatas.set(className, {
+    const metadata: DirectiveMetadata = {
       type: 'directive',
       className,
       selector,
       ...extractBindingsMetadata(klass, sourceFile, 'directive', compilerOptions),
       typescriptNodes: declarations[i]
-    });
+    };
+    if (klass.typeParameters?.length) {
+      metadata.typeParameters = klass.typeParameters.map(({ name, default: defaultType }) => ({ name: name.text, hasDefault: !!defaultType }));
+    }
+
+    metadatas.set(className, metadata);
   }
 
   return metadatas;
@@ -127,7 +132,7 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
  */
 function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], compilerOptions: CompilerOptions | undefined): Pick<ComponentMetadata, 'properties' | 'events'> {
   // Inherited accessors are referenced through the class too: its type exposes them, even when the base class isn't exported
-  const accessorOwner = getAccessorOwnerType(klass, sourceFile);
+  const accessorOwner = getAccessorOwnerType(klass, sourceFile, kind === 'directive');
   const bindings: CollectedBindings = { properties: new Map(), events: new Map() };
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
@@ -185,7 +190,10 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, 
     }
 
     // Look for decorators in modifiers (TypeScript stores them there)
-    const memberModifiers = member.modifiers ?? [];
+    const memberModifiers = member.modifiers;
+    if (!memberModifiers?.length) {
+      continue;
+    }
 
     let required = false;
     const propDecorator = Array.from(memberModifiers).find((member): member is PropertyDecorator => {
@@ -480,11 +488,15 @@ function toMemberDeclaration(nameNode: Identifier, sourceFile: SourceFile): Memb
  *
  * @param klass - The class to reference.
  * @param sourceFile - The source file declaring the class.
- * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`.
+ * @param withTypeParameters - Whether a generic class is referenced with its own type parameters as type arguments, which the
+ *   type-check of a directive declares as the type arguments the template passes (see `typeParameters` of `DirectiveMetadata`).
+ * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`, or
+ *   `import('/src/list.directive').List<Item>` for a generic class whose type parameters are referenced.
  */
-function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: SourceFile): string {
+export function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: SourceFile, withTypeParameters: boolean): string {
   const modulePath = sourceFile.fileName.replaceAll('\\', '/').replace(/\.ts$/, '');
-  return `import('${modulePath}').${klass.name.text}`;
+  const owner = `import('${modulePath}').${klass.name.text}`;
+  return withTypeParameters && klass.typeParameters?.length ? `${owner}<${klass.typeParameters.map(({ name }) => name.text).join(', ')}>` : owner;
 }
 
 /**
