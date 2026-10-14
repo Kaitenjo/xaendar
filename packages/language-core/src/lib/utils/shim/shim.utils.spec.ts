@@ -71,4 +71,10 @@ describe('createShim()', () => {
     expect(project.upsertVirtualFile).toHaveBeenCalledWith(shim.path, shim.code);
     expect(upsertVirtualFile).not.toHaveBeenCalled();
   });
+
+  it('names the shim with the given name', () => {
+    const shim = createShim(new Map([['/src/foo/foo.component.ts', ['FooComponent']]]), typecheckBody('body'), undefined, 'completion');
+
+    expect(shim.path).toBe('/src/foo/foo.component.ts.__completion__.ts');
+  });
 });

@@ -2,7 +2,7 @@ import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../template-analysis/template-analysis';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -57,6 +57,115 @@ describe('getTemplateCompletions of the beginning of $event', () => {
 
     expect(names(template.indexOf('$e') + 2, analysis!)).toContain('$event');
   }, TIMEOUT);
+});
+
+describe('getTemplateExpressionCompletions', () => {
+  const FOR = '@for (item of items; track item.id) { ';
+
+  /**
+   * Returns the completions at the `|` marking the offset of a template, as `name:kind:sortText@start-end`.
+   */
+  const completionsOf = async (template: string, triggerCharacter?: string) => (await getTemplateExpressionCompletions(project.path('src/app.html'), template.replace('|', ''), template.indexOf('|'), new Map([[project.path('src/app.ts'), ['App']]]), triggerCharacter))
+    ?.map(({ name, kind, sortText, replacementSpan }) => `${name}:${kind}:${sortText}@${replacementSpan!.start}-${replacementSpan!.end}`);
+
+  /**
+   * Returns the completions at the `|` marking the offset of a template sorted like the editor sorts them, as `name:kind:sortText`.
+   */
+  const sortedCompletionsOf = async (template: string, triggerCharacter?: string) => (await getTemplateExpressionCompletions(project.path('src/app.html'), template.replace('|', ''), template.indexOf('|'), new Map([[project.path('src/app.ts'), ['App']]]), triggerCharacter))!
+    .toSorted((first, second) => first.sortText.localeCompare(second.sortText))
+    .map(({ name, kind, sortText }) => `${name}:${kind}:${sortText}`);
+
+  it('proposes the members of the component in an interpolation being written, while the template doesn\'t compile', async () => {
+    const completions = await completionsOf('<b>{|</b>');
+    expect(completions).toEqual(expect.arrayContaining(['items:property:1@4-4', 'title:property:1@4-4', 'select:method:2@4-4']));
+    expect((await completionsOf('<b>{ ti|</b>'))).toContain('title:property:1@5-7');
+    expect((await completionsOf('<b title="{ |"></b>'))).toContain('title:property:1@12-12');
+    expect((await completionsOf('@import { Child } from \'./child\';\n<my-child label="{ | }"></my-child>'))).toContain('title:property:1@53-53');
+  }, TIMEOUT);
+
+  it('sorts the members of the classes of the component first, then the ones of CustomElement, then the ones of the DOM, fields before methods', async () => {
+    const completions = await sortedCompletionsOf('<b>{|</b>');
+
+    expect(completions.slice(0, 3)).toEqual(['items:property:1', 'title:property:1', 'select:method:2']);
+    expect(completions).toEqual(expect.arrayContaining(['effect:method:4', 'onInit:method:4', 'hidden:property:5', 'click:method:6']));
+    // A member of the DOM declared again by the component is one of its own
+    expect(completions.filter(completion => completion.startsWith('title:'))).toEqual(['title:property:1']);
+  }, TIMEOUT);
+
+  it('proposes the variables of the template in scope first, in the order they are declared, a member named like one of them left out', async () => {
+    expect((await sortedCompletionsOf('@for (title of items; track title.id) { { | } }')).slice(0, 8)).toEqual([
+      'title:let:0000', '$index:let:0001', '$first:let:0002', '$last:let:0003', '$even:let:0004', '$odd:let:0005',
+      'items:property:1', 'select:method:2'
+    ]);
+  }, TIMEOUT);
+
+  it('proposes only the variables of the template on one of them, and only the members of an object after its dot', async () => {
+    expect(await completionsOf(`${FOR}{ item| } }`)).toEqual(['item:let:0000@40-44', '$index:let:0001@40-44', '$first:let:0002@40-44', '$last:let:0003@40-44', '$even:let:0004@40-44', '$odd:let:0005@40-44']);
+    expect(await completionsOf(`${FOR}{ items[0].| } }`)).toEqual(['id:property:11@49-49', 'name:property:11@49-49']);
+  }, TIMEOUT);
+
+  it('proposes only the methods of the component on the name of the method an event calls, in the same order', async () => {
+    const completions = await sortedCompletionsOf(`${FOR}<b (click)="|">x</b> }`);
+
+    expect(completions[0]).toBe('select:method:2');
+    expect(completions).toEqual(expect.arrayContaining(['effect:method:4', 'click:method:6']));
+    expect(completions.every(completion => completion.includes(':method:'))).toBe(true);
+    expect(await completionsOf('<b (click)="se|">x</b>')).toContain('select:method:2@12-14');
+  }, TIMEOUT);
+
+  it('proposes $event first in the arguments of the method of an event, also after the ( triggering the completion', async () => {
+    expect((await sortedCompletionsOf('<b (click)="select(|">x</b>', '(')).slice(0, 4)).toEqual(['$event:let:0000', 'items:property:1', 'title:property:1', 'select:method:2']);
+    expect(await completionsOf('<b (click)="select(|">x</b>', '(')).toContain('$event:let:0000@19-19');
+    expect(await completionsOf('<b (click)="select($e|)">x</b>')).toEqual(['$event:let:0000@19-21']);
+    expect((await sortedCompletionsOf(`${FOR}<b (click)="select(|)">x</b> }`)).slice(0, 3)).toEqual(['$event:let:0000', 'item:let:0001', '$index:let:0002']);
+  }, TIMEOUT);
+
+  it('proposes the variables of the template and the members of the component in the condition of a block, also after the ( opening it', async () => {
+    expect((await sortedCompletionsOf('@if (|', '(')).slice(0, 3)).toEqual(['items:property:1', 'title:property:1', 'select:method:2']);
+    expect((await sortedCompletionsOf('@if (title) {\n} @else if (|)\n<p></p>')).slice(0, 3)).toEqual(['items:property:1', 'title:property:1', 'select:method:2']);
+    expect((await sortedCompletionsOf(`${FOR}@if (|) {\n} }`)).slice(0, 2)).toEqual(['item:let:0000', '$index:let:0001']);
+    expect((await sortedCompletionsOf('@switch (|) {\n}')).slice(0, 3)).toEqual(['items:property:1', 'title:property:1', 'select:method:2']);
+    expect(await completionsOf('@for (item of ite|')).toContain('items:property:1@14-17');
+  }, TIMEOUT);
+
+  it('proposes nothing after the ( of a call triggering the completion in an interpolation', async () => {
+    expect(await completionsOf('<b>{ select(| }</b>', '(')).toEqual([]);
+  }, TIMEOUT);
+
+  it('proposes nothing when the closed template doesn\'t compile either, or leaves out the expression', async () => {
+    expect(await completionsOf('<b>{ ti|</div>')).toEqual([]);
+    expect(await completionsOf('@import { Child } from \'./child\';\n<my-child (picked)="select(|)"></my-child>')).toEqual([]);
+  }, TIMEOUT);
+
+  it('leaves the offsets not in an expression to the other completions', async () => {
+    expect(await completionsOf('<b>ti|</b>')).toBeUndefined();
+  }, TIMEOUT);
+});
+
+describe('getTemplateKeywordCompletions', () => {
+  it('proposes the blocks that can be written after a @, as snippets replacing the keyword written so far, proposing the completions of their condition again', () => {
+    const source = '@if (a) {\n}\n@el';
+    const replacementSpan = { start: 12, end: 15 };
+
+    expect(getTemplateKeywordCompletions(source, source.length)).toEqual([
+      { name: '@if', kind: 'keyword', sortText: '0', replacementSpan, snippet: '@if ($1) {\n\t$0\n}', retrigger: true },
+      { name: '@for', kind: 'keyword', sortText: '1', replacementSpan, snippet: '@for (item of $1) {\n\t$0\n}', retrigger: true },
+      { name: '@switch', kind: 'keyword', sortText: '2', replacementSpan, snippet: '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}', retrigger: true },
+      { name: '@else', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
+      { name: '@else if', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+    ]);
+  });
+
+  it('proposes @case and @default in a @switch block, @import before anything else, proposing the completions of its path again', () => {
+    const switchBlock = '@switch (a) {\n  @';
+
+    expect(getTemplateKeywordCompletions(switchBlock, switchBlock.length)?.map(({ snippet, retrigger }) => [snippet, retrigger])).toEqual([['@case ($1) {\n\t$0\n}', false], ['@default {\n\t$0\n}', false]]);
+    expect(getTemplateKeywordCompletions('@', 1)?.at(-1)).toEqual(expect.objectContaining({ snippet: '@import { $2 } from \'$1\';', retrigger: true }));
+  });
+
+  it('leaves the offsets not on the keyword of a block to the other completions', () => {
+    expect(getTemplateKeywordCompletions('<b @@', 5)).toBeUndefined();
+  });
 });
 
 describe('getTemplateSourceBindingCompletions', () => {

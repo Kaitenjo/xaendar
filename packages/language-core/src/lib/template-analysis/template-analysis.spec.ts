@@ -2,7 +2,7 @@ import { TemplateError } from '@xaendar/compiler';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
-import { analyzeTemplate, invalidateTemplateMetadata, removeTemplateAnalysis, resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports } from './template-analysis';
+import { analyzeCompletionTemplate, analyzeTemplate, invalidateTemplateMetadata, removeTemplateAnalysis, resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports } from './template-analysis';
 
 const TIMEOUT = 60_000;
 let project: FixtureProject;
@@ -31,7 +31,8 @@ describe('analyzeTemplate', () => {
     expect([...analysis!.dependencies].sort()).toEqual([
       normalizeFileName(project.path('src/app.ts')),
       normalizeFileName(project.path('src/child.ts')),
-      normalizeFileName(project.path('src/directives.ts'))
+      normalizeFileName(project.path('src/directives.ts')),
+      normalizeFileName(project.path('stubs/core.ts'))
     ].sort());
   }, TIMEOUT);
 
@@ -71,6 +72,19 @@ describe('analyzeTemplate', () => {
 
     removeTemplateAnalysis(path);
     expect((await analyzeTemplate(path, '<div>', components)).analysis).toBeUndefined();
+  }, TIMEOUT);
+
+  it('analyzes the version of a template a completion is asked on beside its shim, without keeping it as the last analysis', async () => {
+    const components = new Map([[project.path('src/app.ts'), ['App']]]);
+    const path = project.path('src/completed.html');
+    const { analysis } = await analyzeTemplate(path, '<b>{ title }</b>', components);
+
+    const completion = await analyzeCompletionTemplate(path, '<b>{ items }</b>', components);
+    expect(completion!.shimPath).toBe(`${project.path('src/app.ts')}.__completion__.ts`);
+    expect(completion!.typeCheck.text).toContain('root.items');
+    expect(analysis!.languageService.getProgram()!.getSourceFile(analysis!.shimPath)!.text).toContain('root.title');
+    expect((await analyzeTemplate(path, '<div>', components)).analysis).toBe(analysis);
+    expect(await analyzeCompletionTemplate(path, '<div>', components)).toBeUndefined();
   }, TIMEOUT);
 
   it('analyzes a template with nodes failing type-checking, collecting the error of each of them', async () => {

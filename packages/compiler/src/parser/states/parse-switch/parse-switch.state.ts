@@ -18,6 +18,8 @@ import { parseBlockChildren } from '../parse-block-children/parse-block-children
  * @param parseNode - Parser function for recursive child parsing.
  * @param _token - The SWITCH token (consumed for position advancement).
  * @returns The parsed `SwitchNode`.
+ * @throws If the condition or a case condition is missing, anything but a `@case` or a `@default` branch is declared
+ *   in the block, or a second `@default` is.
  */
 export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, _token: SwitchToken): MaybeASTNodeWithSpan<SwitchNode> {
   // consume SWITCH
@@ -89,6 +91,11 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
         break;
 
       case TokenType.DEFAULT:
+        // A second `@default` would replace the first one, which is selected whenever no case matches
+        if (cases.some(({ condition }) => condition === null)) {
+          throw new Error('A @switch can declare only one @default', { cause: token.span });
+        }
+
         const defaultStartOffset = token.span.start;
         // consume DEFAULT and BLOCK_OPEN
         cursor.advance(2);

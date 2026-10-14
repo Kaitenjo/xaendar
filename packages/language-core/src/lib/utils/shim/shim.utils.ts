@@ -11,12 +11,14 @@ import { type ProjectLanguageService, upsertVirtualFile } from '../../language-s
  * @param typecheckBody - The compiler's `TypeCheckResult` whose `text` supplies
  *   the fictitious-TS type-check body to wrap.
  * @param project - The language service of the project the shim belongs to, the default one if not given.
+ * @param name - The name of the shim, written in its suffix (`.__typecheck__.ts` by default): a template can have
+ *   several shims, e.g. one for its current version and one for the version a completion is asked on.
  * @returns The shim's full source, its path, the line offset at which the
  *   type-check body starts, and the collected class names.
  */
-export function createShim(componentData: ReadonlyMap<string, readonly string[]>, typecheckBody: TypeCheckResult, project?: ProjectLanguageService): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
+export function createShim(componentData: ReadonlyMap<string, readonly string[]>, typecheckBody: TypeCheckResult, project?: ProjectLanguageService, name = 'typecheck'): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
   const entries = Array.from(componentData.entries());
-  const shimPath = `${entries[0][0]}.__typecheck__.ts`;
+  const shimPath = `${entries[0][0]}.__${name}__.ts`;
   const shim = buildTypecheckShim(entries, shimPath, typecheckBody.text);
   project ? project.upsertVirtualFile(shimPath, shim.code) : upsertVirtualFile(shimPath, shim.code);
   return shim;

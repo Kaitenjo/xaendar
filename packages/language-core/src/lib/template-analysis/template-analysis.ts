@@ -134,6 +134,39 @@ const metadataCaches = new Map<ProjectLanguageService, TemplateMetadataCache>();
  */
 export async function analyzeTemplate(templatePath: string, source: string, components: ReadonlyMap<string, readonly string[]>): Promise<TemplateAnalysisResult> {
   const key = normalizeFileName(templatePath);
+  const result = await analyze(templatePath, source, components, 'typecheck');
+  if (result.analysis) {
+    lastAnalyses.set(key, result.analysis);
+    return result;
+  }
+
+  return { analysis: lastAnalyses.get(key), error: result.error, ast: result.ast };
+}
+
+/**
+ * Analyzes the version of a template a completion is asked on, closed at the offset of the completion (see
+ * `getExpressionContext`): its shim is registered beside the one of the template, which keeps type-checking the
+ * version being edited, and the analysis is not kept as the last successful one.
+ *
+ * @param templatePath - The path of the template.
+ * @param source - The version of the template.
+ * @param components - The files of the components using the template, mapped to the names of their classes using it.
+ * @returns The analysis, `undefined` if the version cannot be compiled.
+ */
+export async function analyzeCompletionTemplate(templatePath: string, source: string, components: ReadonlyMap<string, readonly string[]>): Promise<TemplateAnalysis | undefined> {
+  return (await analyze(templatePath, source, components, 'completion')).analysis;
+}
+
+/**
+ * Analyzes a template with a single compilation (see {@link analyzeTemplate}), registering its shim under a name.
+ *
+ * @param templatePath - The path of the template.
+ * @param source - The source of the template.
+ * @param components - The files of the components using the template, mapped to the names of their classes using it.
+ * @param shimName - The name of the shim (see `createShim`).
+ * @returns The analysis, or the error preventing the template from being compiled.
+ */
+async function analyze(templatePath: string, source: string, components: ReadonlyMap<string, readonly string[]>, shimName: string): Promise<TemplateAnalysisResult> {
   // TypeScript names the files of the program, the shim included, with forward slashes
   const componentFiles = new Map([...components].map(([fileName, classNames]) => [toPosixPath(fileName), classNames]));
   const templateDir = dirname(templatePath);
@@ -147,7 +180,7 @@ export async function analyzeTemplate(templatePath: string, source: string, comp
     const { imports, errors: importErrors } = await resolveImports(ast, templateDir, cache);
     const metadatas = imports.map(({ metadata }) => metadata);
     const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers);
-    const shim = createShim(componentFiles, typeCheck, project);
+    const shim = createShim(componentFiles, typeCheck, project, shimName);
 
     const analysis: TemplateAnalysis = {
       templatePath,
@@ -162,10 +195,9 @@ export async function analyzeTemplate(templatePath: string, source: string, comp
       languageService,
       dependencies: new Set([...dependencies, ...metadatas.map(metadata => normalizeFileName(metadata.typescriptNodes.klass.getSourceFile().fileName))])
     };
-    lastAnalyses.set(key, analysis);
     return { analysis, error: undefined, ast };
   } catch (error) {
-    return { analysis: lastAnalyses.get(key), error: toError(error), ast };
+    return { analysis: undefined, error: toError(error), ast };
   }
 }
 

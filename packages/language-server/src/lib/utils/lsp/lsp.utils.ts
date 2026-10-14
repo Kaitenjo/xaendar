@@ -98,6 +98,7 @@ export function toCompletionItemKind(kind: string): CompletionItemKind {
     case 'component':
       return CompletionItemKind.Class;
     case 'directive':
+    case ScriptElementKind.keyword:
       return CompletionItemKind.Keyword;
     default:
       return CompletionItemKind.Text;

@@ -6,8 +6,8 @@ import { toPosixPath } from '../../utils/path/path.utils';
 
 /**
  * A TypeScript project written in a temporary directory, for the specs analyzing real templates: a component `App`
- * using the template `src/app.html`, a component `Child` (`my-child`, inheriting the event `closed` from `ChildBase`)
- * and the directives `Tooltip` (`tooltip`) and `Media` (`media`).
+ * extending `CustomElement` (an `HTMLElement`) using the template `src/app.html`, a component `Child` (`my-child`,
+ * inheriting the event `closed` from `ChildBase`) and the directives `Tooltip` (`tooltip`) and `Media` (`media`).
  */
 export type FixtureProject = {
   /**
@@ -55,6 +55,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     'export declare function Directive(options: { selector: string }): Decorator;',
     'export declare const Property: ((...args: any[]) => Decorator) & { required: (...args: any[]) => Decorator };',
     'export declare function Event(): Decorator;',
+    'export declare class CustomElement extends HTMLElement { onInit?(): void; effect(callback: () => void): () => void; }',
     ''
   ].join('\n'),
   'src/child-base.ts': [
@@ -97,9 +98,9 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     ''
   ].join('\n'),
   'src/app.ts': [
-    'import { WebComponent } from \'@xaendar/core\';',
+    'import { CustomElement, WebComponent } from \'@xaendar/core\';',
     '@WebComponent({ selector: \'my-app\', templateUrl: \'./app.html\' })',
-    'export class App {',
+    'export class App extends CustomElement {',
     '  items = [{ id: 1, name: \'a\' }];',
     '  /** The title of the page. */',
     '  title = \'x\';',

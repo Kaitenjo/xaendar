@@ -56,6 +56,13 @@ describe('parseSwitchControlFlow', () => {
     expect(() => new Parser('', head).parse()).toThrow('Unexpected EOF inside SWITCH, expected CASE or DEFAULT');
   });
 
+  it('throws on a second @default, on its keyword, while a case may follow the @default', () => {
+    const template = '@switch (x) { @default { a } @default { b } }';
+
+    expect(() => parse(template)).toThrow(expect.objectContaining({ detail: 'A @switch can declare only one @default', span: { start: 29, end: 38 } }));
+    expect((parse('@switch (x) { @default { a } @case (1) { b } }') as SwitchNode[])[0].children.map(({ condition }) => condition)).toEqual([null, ['1']]);
+  });
+
   it('locates the expression and the case conditions in the template', () => {
     const template = '@switch (kind()) { @case (\'a\') @case (Kind.B) { x } @default { y } }';
     const [node] = parse(template) as SwitchNode[];

@@ -1,8 +1,8 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { CompletionItemKind, type Connection, DiagnosticSeverity, FileChangeType, type TextDocuments } from 'vscode-languageserver/node';
+import { CompletionItemKind, type Connection, InsertTextFormat, DiagnosticSeverity, FileChangeType, type TextDocuments } from 'vscode-languageserver/node';
 import { URI } from 'vscode-uri';
 import { XaendarLanguageServer } from './server-handlers';
 
@@ -25,6 +25,8 @@ vi.mock('@xaendar/language-core', async importOriginal => ({
   getTemplateSemanticTokens: vi.fn(() => []),
   getTemplateCompletions: vi.fn(() => []),
   getTemplateSourceBindingCompletions: vi.fn(async () => undefined),
+  getTemplateExpressionCompletions: vi.fn(async () => undefined),
+  getTemplateKeywordCompletions: vi.fn(() => undefined),
   getTemplateImportCompletions: vi.fn(async () => undefined),
   getTemplateImportPathCompletions: vi.fn(() => undefined),
   getTemplateSelectorCompletions: vi.fn(async () => undefined),
@@ -89,6 +91,8 @@ beforeEach(() => {
   vi.mocked(getTemplateImportPathCompletions).mockReturnValue(undefined);
   vi.mocked(getTemplateSelectorCompletions).mockResolvedValue(undefined);
   vi.mocked(getTemplateSourceBindingCompletions).mockResolvedValue(undefined);
+  vi.mocked(getTemplateExpressionCompletions).mockResolvedValue(undefined);
+  vi.mocked(getTemplateKeywordCompletions).mockReturnValue(undefined);
 });
 
 afterEach(() => {
@@ -413,6 +417,56 @@ describe('XaendarLanguageServer', () => {
 
       expect(await callServer.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 7 }, context: { triggerKind: 2, triggerCharacter: '(' } })).toEqual([]);
       expect(getTemplateCompletions).not.toHaveBeenCalled();
+    });
+
+    it('proposes the blocks that can be written after a @ as snippets, suggesting again in their condition once inserted', async () => {
+      const document = template('<p></p>\n@');
+      const { server } = setup(document);
+      const replacementSpan = { start: 8, end: 9 };
+      vi.mocked(getTemplateKeywordCompletions).mockReturnValue([
+        { name: '@if', kind: 'keyword' as never, sortText: '0', replacementSpan, snippet: '@if ($1) {\n\t$0\n}', retrigger: true },
+        { name: '@else', kind: 'keyword' as never, sortText: '1', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false }
+      ]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 1, character: 1 }, context: { triggerKind: 2, triggerCharacter: '@' } });
+
+      expect(getTemplateKeywordCompletions).toHaveBeenCalledWith(document.getText(), 9);
+      const range = { start: { line: 1, character: 0 }, end: { line: 1, character: 1 } };
+      expect(items).toEqual([{
+        label: '@if',
+        kind: CompletionItemKind.Keyword,
+        sortText: '0',
+        textEdit: { range, newText: '@if ($1) {\n\t$0\n}' },
+        insertTextFormat: InsertTextFormat.Snippet,
+        command: { title: 'Suggest', command: 'editor.action.triggerSuggest' }
+      }, {
+        label: '@else',
+        kind: CompletionItemKind.Keyword,
+        sortText: '1',
+        textEdit: { range, newText: '@else {\n\t$0\n}' },
+        insertTextFormat: InsertTextFormat.Snippet
+      }]);
+      expect(getTemplateExpressionCompletions).not.toHaveBeenCalled();
+    });
+
+    it('proposes the variables of the template and the members of the component in an expression, also while the template doesn\'t compile', async () => {
+      const document = template('<b (click)="pick($e">x</b>');
+      const { server } = setup(document);
+      vi.mocked(getTemplateExpressionCompletions).mockResolvedValue([{ name: '$event', kind: 'let' as never, sortText: '0', replacementSpan: { start: 17, end: 19 } }]);
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 19 }, context: { triggerKind: 2, triggerCharacter: '(' } });
+
+      expect(getTemplateExpressionCompletions).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), document.getText(), 19, components, '(');
+      expect(items).toEqual([{ label: '$event', kind: CompletionItemKind.Variable, sortText: '0', textEdit: { range: { start: { line: 0, character: 17 }, end: { line: 0, character: 19 } }, newText: '$event' } }]);
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+    });
+
+    it('leaves the expressions of a template no component uses to TypeScript', async () => {
+      const { server } = setup(template('<b>{ ti }</b>'));
+      registry.resolve.mockReturnValue(undefined);
+
+      expect(await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 7 } })).toEqual([]);
+      expect(getTemplateExpressionCompletions).not.toHaveBeenCalled();
     });
 
     it('proposes the imported components and directives on a selector, also while the template doesn\'t compile', async () => {

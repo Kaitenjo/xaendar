@@ -1,7 +1,7 @@
-import { type ComponentOrDirectiveMetadata, getBindingContext, getImportContext, getImportInsertion, getImportPathContext, getSelectorContext, type ImportInsertion, resolveShimPosition, type Span } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, type ImportInsertion, type KeywordContext, resolveShimPosition, type Span } from '@xaendar/compiler';
 import { dirname } from 'node:path';
-import { type CompletionEntry, ScriptElementKind } from 'typescript';
-import { resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports, type TemplateAnalysis } from '../template-analysis/template-analysis';
+import { type CompletionEntry, forEachChild, isClassDeclaration, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags } from 'typescript';
+import { analyzeCompletionTemplate, resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports, type TemplateAnalysis } from '../template-analysis/template-analysis';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
 import { toModulePath } from '../utils/module-path/module-path.utils';
 import { resolvePosixPath } from '../utils/path/path.utils';
@@ -27,6 +27,48 @@ export type TemplateCompletion = Pick<CompletionEntry, 'name' | 'sortText'> & {
    * The changes to apply to the template together with the completion, e.g. the `@import` of the component it names.
    */
   readonly additionalEdits?: readonly ImportInsertion[];
+  /**
+   * The snippet inserted in place of the name, with the tab stops the cursor moves through (`$1`, `$2`…, `$0` last).
+   */
+  readonly snippet?: string;
+  /**
+   * Whether the completions are proposed again once the snippet is inserted, at its first tab stop.
+   */
+  readonly retrigger?: boolean;
+};
+
+/**
+ * The snippet writing the block of each keyword.
+ */
+const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], string>> = {
+  'if': '@if ($1) {\n\t$0\n}',
+  'else': '@else {\n\t$0\n}',
+  'else if': '@else if ($1) {\n\t$0\n}',
+  'for': '@for (item of $1) {\n\t$0\n}',
+  'switch': '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}',
+  'case': '@case ($1) {\n\t$0\n}',
+  'default': '@default {\n\t$0\n}',
+  'import': '@import { $2 } from \'$1\';'
+};
+
+/**
+ * The keywords whose snippet starts on an expression or on the path of a module, which have completions of their own:
+ * the completions are proposed there again once the snippet is inserted.
+ */
+const RETRIGGERING_KEYWORDS: ReadonlySet<KeywordContext['keywords'][number]> = new Set(['if', 'else if', 'for', 'switch', 'import']);
+
+/**
+ * A position of the shim of a template.
+ */
+type ShimPosition = {
+  /**
+   * The shim.
+   */
+  readonly shimFile: SourceFile;
+  /**
+   * The position in the shim.
+   */
+  readonly position: number;
 };
 
 /**
@@ -37,16 +79,106 @@ export type TemplateCompletion = Pick<CompletionEntry, 'name' | 'sortText'> & {
  * @param offset - The offset in the template.
  * @returns The completions, none if the offset is not in an expression.
  */
-export function getTemplateCompletions({ typeCheck, languageService, shimPath, bodyLineOffset }: TemplateAnalysis, offset: number): TemplateCompletion[] {
-  const shimPosition = resolveShimPosition(typeCheck.mappingTable, offset);
-  const shimFile = languageService.getProgram()?.getSourceFile(shimPath);
-  if (!shimPosition || !shimFile) {
+export function getTemplateCompletions(analysis: TemplateAnalysis, offset: number): TemplateCompletion[] {
+  const shimPosition = findShimPosition(analysis, offset);
+  if (!shimPosition) {
     return [];
   }
 
-  const position = shimFile.getPositionOfLineAndCharacter(shimPosition.line + bodyLineOffset, shimPosition.character);
-  const completions = languageService.getCompletionsAtPosition(shimPath, position, {});
+  const completions = analysis.languageService.getCompletionsAtPosition(analysis.shimPath, shimPosition.position, {});
   return completions?.entries.map(({ name, kind, sortText }) => ({ name, kind, sortText })) ?? [];
+}
+
+/**
+ * Proposes the completions of an expression being written at an offset of a template, asking TypeScript about the
+ * template closed at the offset (see `getExpressionContext`), so that they are proposed while it doesn't compile:
+ * - on an identifier read from the component, in an interpolation (in the text or as the value of an attribute), in
+ *   the arguments of the method of an event or in the condition of `@if`, `@else if`, `@for` or `@switch`: the variables of the template in scope (`$event` in the arguments), in
+ *   the order they are declared, then the fields and then the methods of the classes of the component, then the ones
+ *   inherited from `CustomElement`, then the ones inherited from the DOM;
+ * - on a variable of the template, or the beginning of `$event`: the variables of the template in scope;
+ * - after the dot of an object: its members;
+ * - on the name of the method an event calls: the methods of the component, in the same order.
+ *
+ * After the `(` of a call, which triggers the completions, nothing is proposed, except in the arguments of the
+ * method of an event, where `$event` can be passed, and after the `(` opening a condition.
+ *
+ * @param templatePath - The path of the template.
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @param components - The files of the components using the template, mapped to the names of their classes using it.
+ * @param triggerCharacter - The character whose typing triggered the completion, if any.
+ * @returns The completions, none if the closed template doesn't compile either, `undefined` if the offset is not in an expression.
+ */
+export async function getTemplateExpressionCompletions(templatePath: string, source: string, offset: number, components: ReadonlyMap<string, readonly string[]>, triggerCharacter?: string): Promise<TemplateCompletion[] | undefined> {
+  const context = getExpressionContext(source, offset);
+  if (!context) {
+    return undefined;
+  }
+
+  const { kind, span } = context;
+  const analysis = triggerCharacter !== '(' || kind === 'argument' || kind === 'condition' ? await analyzeCompletionTemplate(templatePath, context.source, components) : undefined;
+  // The identifier is not in the type-check body of an element failing type-checking, e.g. missing a required property
+  const identifier = analysis && findShimPosition(analysis, span.start);
+  if (!identifier) {
+    return [];
+  }
+
+  const { shimFile: { text }, position } = identifier;
+  const isMember = text[position - 1] === '.';
+  // The completions replace the identifier written so far, `$` included, which is not part of a word of the editor
+  const allCompletions = isMember ? getTemplateCompletions(analysis, offset).map((completion): TemplateCompletion => ({ ...completion, replacementSpan: span })) : [];
+  if (isMember && !text.endsWith('root.', position)) {
+    return allCompletions;
+  }
+
+  // The members of the component, sorted by the class declaring them: an event calls a method
+  const origins = getMemberOrigins(analysis, identifier);
+  const members = new Array<TemplateCompletion>();
+  for (let i = 0; i < allCompletions.length; i++) {
+    const completion = allCompletions[i];
+    const isMethod = completion.kind === ScriptElementKind.memberFunctionElement;
+    if (kind !== 'handler' || isMethod) {
+      members.push({ ...completion, sortText: getMemberSortText(origins.get(completion.name)!, isMethod) });
+    }
+  }
+
+  if (kind === 'handler') {
+    return members;
+  }
+
+  // The variables come first, in the order they are declared (e.g. the item of a `@for`, then its implicit variables)
+  const variables = getTemplateVariables(analysis, identifier);
+  const names = new Set(variables);
+  const proposed = variables.map((name, index): TemplateCompletion => ({ name, kind: ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, '0')}`, replacementSpan: span }));
+  for (let i = 0; i < members.length; i++) {
+    if (!names.has(members[i].name)) {
+      proposed.push(members[i]);
+    }
+  }
+
+  return proposed;
+}
+
+/**
+ * Proposes the blocks whose keyword is being written after a `@` at an offset of a template (see `getKeywordContext`),
+ * as snippets writing the whole block, its condition and body to fill: the item of a `@for` is written as `item`, its
+ * iterable is filled first. The completions are proposed again in a condition or in a path once the snippet is inserted.
+ *
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @returns The completions, `undefined` if the offset is not on the keyword of a block.
+ */
+export function getTemplateKeywordCompletions(source: string, offset: number): TemplateCompletion[] | undefined {
+  const context = getKeywordContext(source, offset);
+  return context?.keywords.map((keyword, index): TemplateCompletion => ({
+    name: `@${keyword}`,
+    kind: ScriptElementKind.keyword,
+    sortText: String(index),
+    replacementSpan: context.span,
+    snippet: KEYWORD_SNIPPETS[keyword],
+    retrigger: RETRIGGERING_KEYWORDS.has(keyword)
+  }));
 }
 
 /**
@@ -207,4 +339,86 @@ export function getTemplateImportPathCompletions(templatePath: string, source: s
     sortText: isDirectory ? '0' : '1',
     replacementSpan: span
   }));
+}
+
+/**
+ * Converts an offset of a template into the position of the shim it is mapped onto.
+ *
+ * @param analysis - The analysis of the template.
+ * @param offset - The offset in the template.
+ * @returns The shim and the position, `undefined` if the offset is not in an expression or the shim is not in the program.
+ */
+function findShimPosition({ typeCheck, languageService, shimPath, bodyLineOffset }: TemplateAnalysis, offset: number): ShimPosition | undefined {
+  const shimPosition = resolveShimPosition(typeCheck.mappingTable, offset);
+  const shimFile = languageService.getProgram()?.getSourceFile(shimPath);
+  if (shimPosition && shimFile) {
+    return { shimFile, position: shimFile.getPositionOfLineAndCharacter(shimPosition.line + bodyLineOffset, shimPosition.character) };
+  }
+}
+
+/**
+ * Finds the variables of the template in scope at a position of its shim: the ones the type-check body declares (the
+ * items of `@for` and their implicit variables, `$event`…), its internal ones (named with `$$` or `__` first) excluded.
+ *
+ * @param analysis - The analysis of the template.
+ * @param shimPosition - The shim and the position in it.
+ * @returns The names of the variables.
+ */
+function getTemplateVariables({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile, position }: ShimPosition): string[] {
+  const bodyStart = shimFile.getPositionOfLineAndCharacter(bodyLineOffset, 0);
+  const isTemplateVariable = ({ name, valueDeclaration }: Symbol) => valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
+  return languageService.getProgram()!.getTypeChecker()
+    .getSymbolsInScope(findNode(shimFile, position), SymbolFlags.Variable)
+    .filter(isTemplateVariable)
+    .map(({ name }) => name);
+}
+
+/**
+ * Tells where each member of the components using a template is declared, in the order the members are proposed:
+ * `0` for the classes of the components (their own base classes included), `1` for `CustomElement`, `2` for the DOM
+ * (the default libraries of TypeScript).
+ *
+ * @param analysis - The analysis of the template.
+ * @param shimPosition - The shim and a position in it, anywhere in the body.
+ * @returns The origin of each member, keyed by its name.
+ */
+function getMemberOrigins({ languageService }: TemplateAnalysis, { shimFile }: ShimPosition): Map<string, number> {
+  const program = languageService.getProgram()!;
+  const checker = program.getTypeChecker();
+  // The shim declares `root` as the components using the template
+  const root = shimFile.statements.find(isVariableStatement)!.declarationList.declarations[0];
+  const properties = checker.getPropertiesOfType(checker.getTypeAtLocation(root));
+  const origins = new Map<string, number>();
+  for (let i = 0; i < properties.length; i++) {
+    const { name, valueDeclaration } = properties[i];
+    const isDom = !valueDeclaration || program.isSourceFileDefaultLibrary(valueDeclaration.getSourceFile());
+    const isCustomElement = !isDom && isClassDeclaration(valueDeclaration.parent) && valueDeclaration.parent.name?.text === 'CustomElement';
+    origins.set(name, isDom ? 2 : isCustomElement ? 1 : 0);
+  }
+
+  return origins;
+}
+
+/**
+ * Returns the sort text of a member of the components using a template: the members of the classes of the components
+ * first, then the ones of `CustomElement`, then the ones of the DOM, fields before methods for each of them, all of
+ * them after the variables of the template (sorted from `0000`).
+ *
+ * @param origin - Where the member is declared (see {@link getMemberOrigins}).
+ * @param isMethod - Whether the member is a method.
+ * @returns The sort text, from `1` to `6`.
+ */
+function getMemberSortText(origin: number, isMethod: boolean): string {
+  return String(origin * 2 + (isMethod ? 1 : 0) + 1);
+}
+
+/**
+ * Finds the innermost node containing a position, its end included.
+ *
+ * @param node - The node to search in.
+ * @param position - The position.
+ * @returns The innermost node containing the position, `node` itself if none of its children does.
+ */
+function findNode(node: Node, position: number): Node {
+  return forEachChild(node, child => (child.getStart() <= position && position <= child.getEnd() ? findNode(child, position) : undefined)) ?? node;
 }

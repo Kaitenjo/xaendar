@@ -67,7 +67,8 @@ describe('toCompletionItemKind', () => {
     ['event', CompletionItemKind.Event],
     ['component', CompletionItemKind.Class],
     ['directive', CompletionItemKind.Keyword],
-    [ScriptElementKind.keyword, CompletionItemKind.Text]
+    [ScriptElementKind.keyword, CompletionItemKind.Keyword],
+    [ScriptElementKind.interfaceElement, CompletionItemKind.Text]
   ])('maps the kind %s to the completion kind %s', (kind, completionKind) => {
     expect(toCompletionItemKind(kind)).toBe(completionKind);
   });
