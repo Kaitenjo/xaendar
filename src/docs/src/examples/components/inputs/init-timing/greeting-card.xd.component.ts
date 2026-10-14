@@ -7,8 +7,8 @@ import { write } from './init-timing.log';
  */
 @WebComponent({
   selector: 'ex-greeting-card',
-  templateUrl: './greeting-card.xd.component.html',
-  styleUrl: './init-timing.css'
+  styleUrl: './init-timing.css',
+  templateUrl: './greeting-card.xd.component.html'
 })
 export class GreetingCardComponent extends CustomElement {
   /**

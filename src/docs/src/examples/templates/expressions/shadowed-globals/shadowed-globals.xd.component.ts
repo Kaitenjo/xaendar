@@ -5,8 +5,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-shadowed-globals',
-  templateUrl: './shadowed-globals.xd.component.html',
-  styleUrl: './shadowed-globals.css'
+  styleUrl: './shadowed-globals.css',
+  templateUrl: './shadowed-globals.xd.component.html'
 })
 export class ShadowedGlobalsComponent extends CustomElement {
   /**

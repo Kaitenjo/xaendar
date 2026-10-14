@@ -10,8 +10,8 @@ import type { DocsPage } from '../../core/routes/routes';
  */
 @WebComponent({
   selector: 'docs-pager',
-  templateUrl: './docs-pager.xd.component.html',
-  styleUrl: './docs-pager.xd.component.css'
+  styleUrl: './docs-pager.xd.component.css',
+  templateUrl: './docs-pager.xd.component.html'
 })
 export class DocsPagerComponent extends CustomElement {
   /**

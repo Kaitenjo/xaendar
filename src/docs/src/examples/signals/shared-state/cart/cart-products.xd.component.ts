@@ -6,8 +6,8 @@ import { add, count } from './cart.store';
  */
 @WebComponent({
   selector: 'ex-cart-products',
-  templateUrl: './cart-products.xd.component.html',
-  styleUrl: './cart.css'
+  styleUrl: './cart.css',
+  templateUrl: './cart-products.xd.component.html'
 })
 export class CartProductsComponent extends CustomElement {
   /**

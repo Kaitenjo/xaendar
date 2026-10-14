@@ -8,8 +8,8 @@ import type { User } from './api';
  */
 @WebComponent({
   selector: 'ex-user-loader',
-  templateUrl: './user-loader.xd.component.html',
-  styleUrl: './user-loader.css'
+  styleUrl: './user-loader.css',
+  templateUrl: './user-loader.xd.component.html'
 })
 export class UserLoaderComponent extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-avatar',
-  templateUrl: './avatar.xd.component.html',
-  styleUrl: './people.css'
+  styleUrl: './people.css',
+  templateUrl: './avatar.xd.component.html'
 })
 export class AvatarComponent extends CustomElement {
   /**
@@ -36,8 +36,8 @@ export class AvatarComponent extends CustomElement {
  */
 @WebComponent({
   selector: 'ex-role-badge',
-  templateUrl: './role-badge.xd.component.html',
-  styleUrl: './people.css'
+  styleUrl: './people.css',
+  templateUrl: './role-badge.xd.component.html'
 })
 export class RoleBadgeComponent extends CustomElement {
   /**

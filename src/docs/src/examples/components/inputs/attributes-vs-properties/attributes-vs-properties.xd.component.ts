@@ -8,8 +8,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-attributes-vs-properties',
-  templateUrl: './attributes-vs-properties.xd.component.html',
-  styleUrl: './attributes-vs-properties.css'
+  styleUrl: './attributes-vs-properties.css',
+  templateUrl: './attributes-vs-properties.xd.component.html'
 })
 export class AttributesVsPropertiesComponent extends CustomElement {
   /**

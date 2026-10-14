@@ -38,8 +38,8 @@ import type { InputSignal } from '@xaendar/core/signals';
 
 @WebComponent({
   selector: 'app-counter',                       // lowercase, with a dash; string literals only
-  templateUrl: './counter.xd.component.html',
-  styleUrl: './counter.xd.component.css'         // optional; plain .css only
+  styleUrl: './counter.xd.component.css',        // optional; plain .css only
+  templateUrl: './counter.xd.component.html'
 })
 export class CounterComponent extends CustomElement {
   @Property(0)

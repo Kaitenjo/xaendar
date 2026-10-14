@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-computed-lazy',
-  templateUrl: './lazy.xd.component.html',
-  styleUrl: './lazy.css'
+  styleUrl: './lazy.css',
+  templateUrl: './lazy.xd.component.html'
 })
 export class ComputedLazyComponent extends CustomElement {
   /**

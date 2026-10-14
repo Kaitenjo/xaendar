@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-dropdown-menu',
-  templateUrl: './dropdown-menu.xd.component.html',
-  styleUrl: './dropdown-menu.css'
+  styleUrl: './dropdown-menu.css',
+  templateUrl: './dropdown-menu.xd.component.html'
 })
 export class DropdownMenuComponent extends CustomElement {
   /**

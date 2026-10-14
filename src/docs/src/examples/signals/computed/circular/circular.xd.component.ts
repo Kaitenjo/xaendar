@@ -7,8 +7,8 @@ import type { Computed } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-computed-circular',
-  templateUrl: './circular.xd.component.html',
-  styleUrl: './circular.css'
+  styleUrl: './circular.css',
+  templateUrl: './circular.xd.component.html'
 })
 export class ComputedCircularComponent extends CustomElement {
   /**

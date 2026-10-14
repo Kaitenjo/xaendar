@@ -6,7 +6,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-encapsulation',
-  templateUrl: './encapsulation.xd.component.html',
-  styleUrl: './encapsulation.css'
+  styleUrl: './encapsulation.css',
+  templateUrl: './encapsulation.xd.component.html'
 })
 export class EncapsulationComponent extends CustomElement {}

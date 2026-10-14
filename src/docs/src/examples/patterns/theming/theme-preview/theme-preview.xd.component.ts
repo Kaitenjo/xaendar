@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-theme-preview',
-  templateUrl: './theme-preview.xd.component.html',
-  styleUrl: './theme-preview.css'
+  styleUrl: './theme-preview.css',
+  templateUrl: './theme-preview.xd.component.html'
 })
 export class ThemePreviewComponent extends CustomElement {
   /**

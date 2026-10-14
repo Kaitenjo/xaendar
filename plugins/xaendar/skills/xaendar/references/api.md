@@ -7,7 +7,7 @@ Every export applications use, by module. Symbols exported only for the compiled
 ### WebComponent (decorator)
 
 ```ts
-@WebComponent({ selector: 'x-y', templateUrl: './x.xd.component.html', styleUrl?: './x.css' })
+@WebComponent({ selector: 'x-y', styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
 Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet. The options must be string literals.
@@ -119,7 +119,7 @@ The options of an output, given to @Event or to a single emit. At least one key 
 ### WebComponentOptions (type)
 
 ```ts
-{ selector: string; templateUrl: string; styleUrl?: string }
+{ selector: string; styleUrl?: string; templateUrl: string }
 ```
 
 The options of @WebComponent.

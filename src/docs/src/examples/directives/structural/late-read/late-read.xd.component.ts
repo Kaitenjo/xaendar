@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-late-read',
-  templateUrl: './late-read.xd.component.html',
-  styleUrl: './late-read.css'
+  styleUrl: './late-read.css',
+  templateUrl: './late-read.xd.component.html'
 })
 export class LateReadComponent extends CustomElement {
   /**

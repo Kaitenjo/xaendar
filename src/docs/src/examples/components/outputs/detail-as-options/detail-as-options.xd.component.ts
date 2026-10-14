@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-detail-as-options',
-  templateUrl: './detail-as-options.xd.component.html',
-  styleUrl: './detail-as-options.css'
+  styleUrl: './detail-as-options.css',
+  templateUrl: './detail-as-options.xd.component.html'
 })
 export class DetailAsOptionsComponent extends CustomElement {
   /**

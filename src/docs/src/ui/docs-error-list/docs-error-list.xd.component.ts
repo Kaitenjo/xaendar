@@ -10,8 +10,8 @@ import type { ErrorEntry } from '../../pages/reference/errors/errors.data';
  */
 @WebComponent({
   selector: 'docs-error-list',
-  templateUrl: './docs-error-list.xd.component.html',
-  styleUrl: '../reference-list.css'
+  styleUrl: '../reference-list.css',
+  templateUrl: './docs-error-list.xd.component.html'
 })
 export class DocsErrorListComponent extends CustomElement {
   /**

@@ -11,8 +11,8 @@ import type { DocsPage } from '../../core/routes/routes';
  */
 @WebComponent({
   selector: 'docs-search',
-  templateUrl: './docs-search.xd.component.html',
-  styleUrl: './docs-search.xd.component.css'
+  styleUrl: './docs-search.xd.component.css',
+  templateUrl: './docs-search.xd.component.html'
 })
 export class DocsSearchComponent extends CustomElement {
   /**

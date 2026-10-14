@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-slot-timing',
-  templateUrl: './slot-timing.xd.component.html',
-  styleUrl: './slot-timing.css'
+  styleUrl: './slot-timing.css',
+  templateUrl: './slot-timing.xd.component.html'
 })
 export class SlotTimingComponent extends CustomElement {
   /**

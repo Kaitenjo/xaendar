@@ -11,8 +11,8 @@ import type { DocsPage, NavItem } from '../../core/routes/routes';
  */
 @WebComponent({
   selector: 'docs-sidenav',
-  templateUrl: './docs-sidenav.xd.component.html',
-  styleUrl: './docs-sidenav.xd.component.css'
+  styleUrl: './docs-sidenav.xd.component.css',
+  templateUrl: './docs-sidenav.xd.component.html'
 })
 export class DocsSidenavComponent extends CustomElement {
   /**

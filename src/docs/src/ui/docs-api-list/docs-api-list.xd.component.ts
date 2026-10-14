@@ -10,8 +10,8 @@ import type { ApiEntry } from '../../pages/reference/api/api.data';
  */
 @WebComponent({
   selector: 'docs-api-list',
-  templateUrl: './docs-api-list.xd.component.html',
-  styleUrl: '../reference-list.css'
+  styleUrl: '../reference-list.css',
+  templateUrl: './docs-api-list.xd.component.html'
 })
 export class DocsApiListComponent extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-foreign-object',
-  templateUrl: './foreign-object.xd.component.html',
-  styleUrl: './foreign-object.css'
+  styleUrl: './foreign-object.css',
+  templateUrl: './foreign-object.xd.component.html'
 })
 export class ForeignObjectComponent extends CustomElement {
   /**

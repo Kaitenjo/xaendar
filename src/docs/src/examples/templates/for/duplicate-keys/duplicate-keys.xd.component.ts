@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-duplicate-keys',
-  templateUrl: './duplicate-keys.xd.component.html',
-  styleUrl: './duplicate-keys.css'
+  styleUrl: './duplicate-keys.css',
+  templateUrl: './duplicate-keys.xd.component.html'
 })
 export class DuplicateKeysComponent extends CustomElement {
   /**

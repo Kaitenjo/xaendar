@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-directive-timing',
-  templateUrl: './directive-timing.xd.component.html',
-  styleUrl: './directive-timing.css'
+  styleUrl: './directive-timing.css',
+  templateUrl: './directive-timing.xd.component.html'
 })
 export class DirectiveTimingComponent extends CustomElement {
   /**

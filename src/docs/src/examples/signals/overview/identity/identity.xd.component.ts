@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-signal-identity',
-  templateUrl: './identity.xd.component.html',
-  styleUrl: './identity.css'
+  styleUrl: './identity.css',
+  templateUrl: './identity.xd.component.html'
 })
 export class SignalIdentityComponent extends CustomElement {
   /**

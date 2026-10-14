@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-lazy-loading',
-  templateUrl: './lazy-loading.xd.component.html',
-  styleUrl: './lazy-loading.css'
+  styleUrl: './lazy-loading.css',
+  templateUrl: './lazy-loading.xd.component.html'
 })
 export class LazyLoadingComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-effect-batching',
-  templateUrl: './batching.xd.component.html',
-  styleUrl: './batching.css'
+  styleUrl: './batching.css',
+  templateUrl: './batching.xd.component.html'
 })
 export class EffectBatchingComponent extends CustomElement {
   /**

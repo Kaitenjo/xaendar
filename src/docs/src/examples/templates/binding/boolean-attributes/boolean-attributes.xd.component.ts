@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-boolean-attributes',
-  templateUrl: './boolean-attributes.xd.component.html',
-  styleUrl: './boolean-attributes.css'
+  styleUrl: './boolean-attributes.css',
+  templateUrl: './boolean-attributes.xd.component.html'
 })
 export class BooleanAttributesComponent extends CustomElement {
   /**

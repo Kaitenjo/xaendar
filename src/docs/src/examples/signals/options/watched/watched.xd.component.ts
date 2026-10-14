@@ -7,8 +7,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-signal-watched',
-  templateUrl: './watched.xd.component.html',
-  styleUrl: './watched.css'
+  styleUrl: './watched.css',
+  templateUrl: './watched.xd.component.html'
 })
 export class SignalWatchedComponent extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-host-selectors',
-  templateUrl: './host-selectors.xd.component.html',
-  styleUrl: './host-selectors.css'
+  styleUrl: './host-selectors.css',
+  templateUrl: './host-selectors.xd.component.html'
 })
 export class HostSelectorsComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-computed-dynamic',
-  templateUrl: './dynamic-dependencies.xd.component.html',
-  styleUrl: './dynamic-dependencies.css'
+  styleUrl: './dynamic-dependencies.css',
+  templateUrl: './dynamic-dependencies.xd.component.html'
 })
 export class ComputedDynamicComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-dynamic-slot',
-  templateUrl: './dynamic-slot.xd.component.html',
-  styleUrl: './dynamic-slot.css'
+  styleUrl: './dynamic-slot.css',
+  templateUrl: './dynamic-slot.xd.component.html'
 })
 export class DynamicSlotComponent extends CustomElement {
   /**

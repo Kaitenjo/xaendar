@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-media-layout',
-  templateUrl: './media-layout.xd.component.html',
-  styleUrl: './media-layout.css'
+  styleUrl: './media-layout.css',
+  templateUrl: './media-layout.xd.component.html'
 })
 export class MediaLayoutComponent extends CustomElement {}

@@ -24,8 +24,8 @@ type Item = {
  */
 @WebComponent({
   selector: 'ex-shopping-list',
-  templateUrl: './shopping-list.xd.component.html',
-  styleUrl: './shopping-list.css'
+  styleUrl: './shopping-list.css',
+  templateUrl: './shopping-list.xd.component.html'
 })
 export class ShoppingListComponent extends CustomElement {
   /**

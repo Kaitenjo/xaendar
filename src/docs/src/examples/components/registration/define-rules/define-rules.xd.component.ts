@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-define-rules',
-  templateUrl: './define-rules.xd.component.html',
-  styleUrl: './define-rules.css'
+  styleUrl: './define-rules.css',
+  templateUrl: './define-rules.xd.component.html'
 })
 export class DefineRulesComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-svg-chart',
-  templateUrl: './svg-chart.xd.component.html',
-  styleUrl: './svg-chart.css'
+  styleUrl: './svg-chart.css',
+  templateUrl: './svg-chart.xd.component.html'
 })
 export class SvgChartComponent extends CustomElement {
   /**

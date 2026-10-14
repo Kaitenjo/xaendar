@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-shared-base',
-  templateUrl: './shared-base.xd.component.html',
-  styleUrl: './shared-base.css'
+  styleUrl: './shared-base.css',
+  templateUrl: './shared-base.xd.component.html'
 })
 export class SharedBaseComponent extends CustomElement {}

@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-forwarded-content',
-  templateUrl: './forwarded-content.xd.component.html',
-  styleUrl: './forwarded-content.css'
+  styleUrl: './forwarded-content.css',
+  templateUrl: './forwarded-content.xd.component.html'
 })
 export class ForwardedContentComponent extends CustomElement {
   /**

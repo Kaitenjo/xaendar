@@ -35,6 +35,7 @@ Check at least the following:
 
 **Code conventions**: report these after the bugs, grouped by file:
 - Member order: public fields → protected fields → private fields → constructor → `onInit` → `afterRender` → public methods → protected methods → private methods → `onDestroy`.
+- Options of `@WebComponent` / `@Directive` out of order: `selector` first, then the other fields alphabetically (`selector`, `styleUrl`, `templateUrl`).
 - Private fields and methods without the `_` prefix.
 - `computed` fields with an inline callback instead of `computed(() => this._computeX())` and a private `_computeX(): T` method.
 - Module-level constants used by a single class, which should be members of that class.

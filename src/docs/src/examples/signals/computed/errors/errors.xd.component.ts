@@ -7,8 +7,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-computed-errors',
-  templateUrl: './errors.xd.component.html',
-  styleUrl: './errors.css'
+  styleUrl: './errors.css',
+  templateUrl: './errors.xd.component.html'
 })
 export class ComputedErrorsComponent extends CustomElement {
   /**

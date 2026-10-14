@@ -7,8 +7,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-computed-diamond',
-  templateUrl: './diamond.xd.component.html',
-  styleUrl: './diamond.css'
+  styleUrl: './diamond.css',
+  templateUrl: './diamond.xd.component.html'
 })
 export class ComputedDiamondComponent extends CustomElement {
   /**

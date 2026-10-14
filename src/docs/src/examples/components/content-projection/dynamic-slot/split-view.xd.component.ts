@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-split-view',
-  templateUrl: './split-view.xd.component.html',
-  styleUrl: './split-view.css'
+  styleUrl: './split-view.css',
+  templateUrl: './split-view.xd.component.html'
 })
 export class SplitViewComponent extends CustomElement {}

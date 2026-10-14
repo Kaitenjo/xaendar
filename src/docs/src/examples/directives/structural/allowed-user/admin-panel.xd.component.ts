@@ -7,8 +7,8 @@ import { checks } from './permissions';
  */
 @WebComponent({
   selector: 'ex-admin-panel',
-  templateUrl: './admin-panel.xd.component.html',
-  styleUrl: './admin-panel.css'
+  styleUrl: './admin-panel.css',
+  templateUrl: './admin-panel.xd.component.html'
 })
 export class AdminPanelComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import type { Output } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-event-source',
-  templateUrl: './event-source.xd.component.html',
-  styleUrl: './event-source.css'
+  styleUrl: './event-source.css',
+  templateUrl: './event-source.xd.component.html'
 })
 export class EventSourceComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-attribute-binding',
-  templateUrl: './attribute-binding.xd.component.html',
-  styleUrl: './attribute-binding.css'
+  styleUrl: './attribute-binding.css',
+  templateUrl: './attribute-binding.xd.component.html'
 })
 export class AttributeBindingComponent extends CustomElement {
   /**

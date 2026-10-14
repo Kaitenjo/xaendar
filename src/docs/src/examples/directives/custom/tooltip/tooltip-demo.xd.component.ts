@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-tooltip-demo',
-  templateUrl: './tooltip-demo.xd.component.html',
-  styleUrl: './tooltip-demo.css'
+  styleUrl: './tooltip-demo.css',
+  templateUrl: './tooltip-demo.xd.component.html'
 })
 export class TooltipDemoComponent extends CustomElement {
   /**

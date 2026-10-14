@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-essentials-signals',
-  templateUrl: './signals.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './signals.xd.component.html'
 })
 export class EssentialsSignalsPage extends CustomElement {
   /**

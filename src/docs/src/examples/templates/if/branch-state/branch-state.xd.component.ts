@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-branch-state',
-  templateUrl: './branch-state.xd.component.html',
-  styleUrl: './branch-state.css'
+  styleUrl: './branch-state.css',
+  templateUrl: './branch-state.xd.component.html'
 })
 export class BranchStateComponent extends CustomElement {
   /**

@@ -12,8 +12,8 @@ import { theme, toggleTheme } from '../../core/theme/theme';
  */
 @WebComponent({
   selector: 'docs-topbar',
-  templateUrl: './docs-topbar.xd.component.html',
-  styleUrl: './docs-topbar.xd.component.css'
+  styleUrl: './docs-topbar.xd.component.css',
+  templateUrl: './docs-topbar.xd.component.html'
 })
 export class DocsTopbarComponent extends CustomElement {
   /**

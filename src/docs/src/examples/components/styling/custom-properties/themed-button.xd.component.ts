@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-themed-button',
-  templateUrl: './themed-button.xd.component.html',
-  styleUrl: './themed-button.css'
+  styleUrl: './themed-button.css',
+  templateUrl: './themed-button.xd.component.html'
 })
 export class ThemedButtonComponent extends CustomElement {}

@@ -6,8 +6,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-theme-card',
-  templateUrl: './theme-card.xd.component.html',
-  styleUrl: './theme-card.css'
+  styleUrl: './theme-card.css',
+  templateUrl: './theme-card.xd.component.html'
 })
 export class ThemeCardComponent extends CustomElement {
   /**

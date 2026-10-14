@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-todo-step-1',
-  templateUrl: './step-1.xd.component.html',
-  styleUrl: './step-1.css'
+  styleUrl: './step-1.css',
+  templateUrl: './step-1.xd.component.html'
 })
 export class TodoStep1Component extends CustomElement {}

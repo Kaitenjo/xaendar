@@ -7,8 +7,8 @@ import { log } from './init-timing.log';
  */
 @WebComponent({
   selector: 'ex-init-timing',
-  templateUrl: './init-timing.xd.component.html',
-  styleUrl: './init-timing.css'
+  styleUrl: './init-timing.css',
+  templateUrl: './init-timing.xd.component.html'
 })
 export class InitTimingComponent extends CustomElement {
   /**

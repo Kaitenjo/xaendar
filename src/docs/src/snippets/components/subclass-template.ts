@@ -3,7 +3,7 @@
  */
 @WebComponent({
   selector: 'ex-big-stepper',
-  templateUrl: '../stepper/stepper.xd.component.html',
-  styleUrl: './big-stepper.css'
+  styleUrl: './big-stepper.css',
+  templateUrl: '../stepper/stepper.xd.component.html'
 })
 export class BigStepperComponent extends StepperComponent {}

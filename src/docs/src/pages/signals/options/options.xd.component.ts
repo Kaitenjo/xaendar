@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-signals-options',
-  templateUrl: './options.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './options.xd.component.html'
 })
 export class SignalsOptionsPage extends CustomElement {
   /**

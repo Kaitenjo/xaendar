@@ -7,8 +7,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-tag-list',
-  templateUrl: './tag-list.xd.component.html',
-  styleUrl: './tag-list.css'
+  styleUrl: './tag-list.css',
+  templateUrl: './tag-list.xd.component.html'
 })
 export class TagListComponent extends CustomElement {
   /**

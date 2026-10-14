@@ -7,8 +7,8 @@ import { renderMarkdown } from './markdown';
  */
 @WebComponent({
   selector: 'ex-markdown-preview',
-  templateUrl: './markdown-preview.xd.component.html',
-  styleUrl: './markdown-preview.css'
+  styleUrl: './markdown-preview.css',
+  templateUrl: './markdown-preview.xd.component.html'
 })
 export class MarkdownPreviewComponent extends CustomElement {
   /**

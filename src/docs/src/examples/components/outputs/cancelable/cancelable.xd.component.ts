@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-cancelable',
-  templateUrl: './cancelable.xd.component.html',
-  styleUrl: './cancelable.css'
+  styleUrl: './cancelable.css',
+  templateUrl: './cancelable.xd.component.html'
 })
 export class CancelableComponent extends CustomElement {
   /**

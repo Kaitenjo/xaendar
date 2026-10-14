@@ -29,8 +29,8 @@ type Filter = 'all' | 'active' | 'done';
  */
 @WebComponent({
   selector: 'ex-todo-step-5',
-  templateUrl: './step-5.xd.component.html',
-  styleUrl: './step-5.css'
+  styleUrl: './step-5.css',
+  templateUrl: './step-5.xd.component.html'
 })
 export class TodoStep5Component extends CustomElement {
   /**

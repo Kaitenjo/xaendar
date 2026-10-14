@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-item-counter',
-  templateUrl: './item-counter.xd.component.html',
-  styleUrl: './item-counter.css'
+  styleUrl: './item-counter.css',
+  templateUrl: './item-counter.xd.component.html'
 })
 export class ItemCounterComponent extends CustomElement {
   /**

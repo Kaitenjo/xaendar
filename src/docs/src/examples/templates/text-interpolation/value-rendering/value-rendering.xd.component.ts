@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-value-rendering',
-  templateUrl: './value-rendering.xd.component.html',
-  styleUrl: './value-rendering.css'
+  styleUrl: './value-rendering.css',
+  templateUrl: './value-rendering.xd.component.html'
 })
 export class ValueRenderingComponent extends CustomElement {
   /**

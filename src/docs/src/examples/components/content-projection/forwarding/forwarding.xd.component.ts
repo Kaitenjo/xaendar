@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-forwarding',
-  templateUrl: './forwarding.xd.component.html',
-  styleUrl: './forwarding.css'
+  styleUrl: './forwarding.css',
+  templateUrl: './forwarding.xd.component.html'
 })
 export class ForwardingComponent extends CustomElement {}

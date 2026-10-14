@@ -8,8 +8,8 @@ import { CounterBadgeComponent } from './counter-badge.xd.component';
  */
 @WebComponent({
   selector: 'ex-view-query',
-  templateUrl: './view-query.xd.component.html',
-  styleUrl: './view-query.css'
+  styleUrl: './view-query.css',
+  templateUrl: './view-query.xd.component.html'
 })
 export class ViewQueryComponent extends CustomElement {
   /**

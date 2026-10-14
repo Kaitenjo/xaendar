@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-content-inspector',
-  templateUrl: './content-inspector.xd.component.html',
-  styleUrl: './content-inspector.css'
+  styleUrl: './content-inspector.css',
+  templateUrl: './content-inspector.xd.component.html'
 })
 export class ContentInspectorComponent extends CustomElement {}

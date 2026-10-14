@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-tools-cli',
-  templateUrl: './cli.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './cli.xd.component.html'
 })
 export class ToolsCliPage extends CustomElement {
   /**

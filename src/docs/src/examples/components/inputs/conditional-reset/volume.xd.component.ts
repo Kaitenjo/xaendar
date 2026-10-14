@@ -6,8 +6,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-volume',
-  templateUrl: './volume.xd.component.html',
-  styleUrl: './conditional-reset.css'
+  styleUrl: './conditional-reset.css',
+  templateUrl: './volume.xd.component.html'
 })
 export class VolumeComponent extends CustomElement {
   /**

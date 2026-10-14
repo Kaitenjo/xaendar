@@ -7,8 +7,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-quantity-picker',
-  templateUrl: './quantity-picker.xd.component.html',
-  styleUrl: './quantity-picker.css'
+  styleUrl: './quantity-picker.css',
+  templateUrl: './quantity-picker.xd.component.html'
 })
 export class QuantityPickerComponent extends CustomElement {
   /**

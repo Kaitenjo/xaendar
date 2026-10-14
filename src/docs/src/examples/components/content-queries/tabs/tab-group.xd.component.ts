@@ -8,8 +8,8 @@ import { TabPanelComponent } from './tab-panel.xd.component';
  */
 @WebComponent({
   selector: 'ex-tab-group',
-  templateUrl: './tab-group.xd.component.html',
-  styleUrl: './tab-group.css'
+  styleUrl: './tab-group.css',
+  templateUrl: './tab-group.xd.component.html'
 })
 export class TabGroupComponent extends CustomElement {
   /**

@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-card',
-  templateUrl: './card.xd.component.html',
-  styleUrl: './card.css'
+  styleUrl: './card.css',
+  templateUrl: './card.xd.component.html'
 })
 export class CardComponent extends CustomElement {}

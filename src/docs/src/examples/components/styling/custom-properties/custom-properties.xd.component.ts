@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-custom-properties',
-  templateUrl: './custom-properties.xd.component.html',
-  styleUrl: './custom-properties.css'
+  styleUrl: './custom-properties.css',
+  templateUrl: './custom-properties.xd.component.html'
 })
 export class CustomPropertiesComponent extends CustomElement {
   /**

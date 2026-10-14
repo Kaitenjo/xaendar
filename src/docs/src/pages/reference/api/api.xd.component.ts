@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-reference-api',
-  templateUrl: './api.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './api.xd.component.html'
 })
 export class ReferenceApiPage extends CustomElement {
   /**

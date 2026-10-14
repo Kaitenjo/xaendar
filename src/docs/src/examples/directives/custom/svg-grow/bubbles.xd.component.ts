@@ -5,8 +5,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-bubbles',
-  templateUrl: './bubbles.xd.component.html',
-  styleUrl: './bubbles.css'
+  styleUrl: './bubbles.css',
+  templateUrl: './bubbles.xd.component.html'
 })
 export class BubblesComponent extends CustomElement {
   /**

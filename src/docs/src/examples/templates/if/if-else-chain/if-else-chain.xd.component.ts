@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-if-else-chain',
-  templateUrl: './if-else-chain.xd.component.html',
-  styleUrl: './if-else-chain.css'
+  styleUrl: './if-else-chain.css',
+  templateUrl: './if-else-chain.xd.component.html'
 })
 export class IfElseChainComponent extends CustomElement {
   /**

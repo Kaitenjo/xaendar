@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-canvas-chart',
-  templateUrl: './canvas-chart.xd.component.html',
-  styleUrl: './canvas-chart.css'
+  styleUrl: './canvas-chart.css',
+  templateUrl: './canvas-chart.xd.component.html'
 })
 export class CanvasChartComponent extends CustomElement {
   /**

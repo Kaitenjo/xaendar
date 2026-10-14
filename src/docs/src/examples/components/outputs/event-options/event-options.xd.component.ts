@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-event-options',
-  templateUrl: './event-options.xd.component.html',
-  styleUrl: './event-options.css'
+  styleUrl: './event-options.css',
+  templateUrl: './event-options.xd.component.html'
 })
 export class EventOptionsComponent extends CustomElement {
   /**

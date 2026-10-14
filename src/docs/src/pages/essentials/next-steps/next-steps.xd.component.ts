@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'page-essentials-next-steps',
-  templateUrl: './next-steps.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './next-steps.xd.component.html'
 })
 export class EssentialsNextStepsPage extends CustomElement {}

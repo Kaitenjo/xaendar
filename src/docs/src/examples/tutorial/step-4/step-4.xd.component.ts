@@ -24,8 +24,8 @@ type Todo = {
  */
 @WebComponent({
   selector: 'ex-todo-step-4',
-  templateUrl: './step-4.xd.component.html',
-  styleUrl: './step-4.css'
+  styleUrl: './step-4.css',
+  templateUrl: './step-4.xd.component.html'
 })
 export class TodoStep4Component extends CustomElement {
   /**

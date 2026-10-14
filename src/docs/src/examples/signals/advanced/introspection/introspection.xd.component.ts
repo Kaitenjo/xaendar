@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-signal-introspection',
-  templateUrl: './introspection.xd.component.html',
-  styleUrl: './introspection.css'
+  styleUrl: './introspection.css',
+  templateUrl: './introspection.xd.component.html'
 })
 export class SignalIntrospectionComponent extends CustomElement {
   /**

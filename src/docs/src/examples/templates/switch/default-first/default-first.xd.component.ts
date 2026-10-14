@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-default-first',
-  templateUrl: './default-first.xd.component.html',
-  styleUrl: './default-first.css'
+  styleUrl: './default-first.css',
+  templateUrl: './default-first.xd.component.html'
 })
 export class DefaultFirstComponent extends CustomElement {
   /**

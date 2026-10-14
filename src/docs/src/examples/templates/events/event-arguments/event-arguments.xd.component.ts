@@ -7,8 +7,8 @@ import type { Signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-event-arguments',
-  templateUrl: './event-arguments.xd.component.html',
-  styleUrl: './event-arguments.css'
+  styleUrl: './event-arguments.css',
+  templateUrl: './event-arguments.xd.component.html'
 })
 export class EventArgumentsComponent extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-attribute-changes',
-  templateUrl: './attribute-changes.xd.component.html',
-  styleUrl: './attribute-changes.css'
+  styleUrl: './attribute-changes.css',
+  templateUrl: './attribute-changes.xd.component.html'
 })
 export class AttributeChangesComponent extends CustomElement {
   /**

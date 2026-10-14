@@ -7,8 +7,8 @@ import { write } from './hook-order.log';
  */
 @WebComponent({
   selector: 'ex-hook-child',
-  templateUrl: './hook-child.xd.component.html',
-  styleUrl: './hook-child.css'
+  styleUrl: './hook-child.css',
+  templateUrl: './hook-child.xd.component.html'
 })
 export class HookChildComponent extends CustomElement {
   /**

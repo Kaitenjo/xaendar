@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-card-slots',
-  templateUrl: './card-slots.xd.component.html',
-  styleUrl: './card-slots.css'
+  styleUrl: './card-slots.css',
+  templateUrl: './card-slots.xd.component.html'
 })
 export class CardSlotsComponent extends CustomElement {
   /**

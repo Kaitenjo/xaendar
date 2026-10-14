@@ -7,8 +7,8 @@ import { leaked, log } from './clock';
  */
 @WebComponent({
   selector: 'ex-component-effects',
-  templateUrl: './component-effects.xd.component.html',
-  styleUrl: './component-effects.css'
+  styleUrl: './component-effects.css',
+  templateUrl: './component-effects.xd.component.html'
 })
 export class ComponentEffectsComponent extends CustomElement {
   /**

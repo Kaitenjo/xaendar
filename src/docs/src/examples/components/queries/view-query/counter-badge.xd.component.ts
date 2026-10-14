@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-counter-badge',
-  templateUrl: './counter-badge.xd.component.html',
-  styleUrl: './counter-badge.css'
+  styleUrl: './counter-badge.css',
+  templateUrl: './counter-badge.xd.component.html'
 })
 export class CounterBadgeComponent extends CustomElement {
   /**

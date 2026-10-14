@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-parts-and-slotted',
-  templateUrl: './parts-and-slotted.xd.component.html',
-  styleUrl: './parts-and-slotted.css'
+  styleUrl: './parts-and-slotted.css',
+  templateUrl: './parts-and-slotted.xd.component.html'
 })
 export class PartsAndSlottedComponent extends CustomElement {
   /**

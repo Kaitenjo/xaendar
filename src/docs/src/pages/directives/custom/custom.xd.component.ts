@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-directives-custom',
-  templateUrl: './custom.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './custom.xd.component.html'
 })
 export class DirectivesCustomPage extends CustomElement {
   /**

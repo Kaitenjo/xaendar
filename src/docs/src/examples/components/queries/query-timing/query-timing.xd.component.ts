@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-query-timing',
-  templateUrl: './query-timing.xd.component.html',
-  styleUrl: './query-timing.css'
+  styleUrl: './query-timing.css',
+  templateUrl: './query-timing.xd.component.html'
 })
 export class QueryTimingComponent extends CustomElement {
   /**

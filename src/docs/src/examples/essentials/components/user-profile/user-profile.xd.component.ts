@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-user-profile',
-  templateUrl: './user-profile.xd.component.html',
-  styleUrl: './user-profile.css'
+  styleUrl: './user-profile.css',
+  templateUrl: './user-profile.xd.component.html'
 })
 export class UserProfileComponent extends CustomElement {
   /**

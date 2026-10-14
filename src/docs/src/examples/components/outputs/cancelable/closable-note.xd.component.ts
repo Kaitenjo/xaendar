@@ -8,8 +8,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-closable-note',
-  templateUrl: './closable-note.xd.component.html',
-  styleUrl: './closable-note.css'
+  styleUrl: './closable-note.css',
+  templateUrl: './closable-note.xd.component.html'
 })
 export class ClosableNoteComponent extends CustomElement {
   /**

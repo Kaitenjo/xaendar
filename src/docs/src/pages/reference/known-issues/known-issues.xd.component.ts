@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'page-reference-known-issues',
-  templateUrl: './known-issues.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './known-issues.xd.component.html'
 })
 export class ReferenceKnownIssuesPage extends CustomElement {}

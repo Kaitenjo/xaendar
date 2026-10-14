@@ -7,8 +7,8 @@ import { effect, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-effect-errors',
-  templateUrl: './errors.xd.component.html',
-  styleUrl: './errors.css'
+  styleUrl: './errors.css',
+  templateUrl: './errors.xd.component.html'
 })
 export class EffectErrorsComponent extends CustomElement {
   /**

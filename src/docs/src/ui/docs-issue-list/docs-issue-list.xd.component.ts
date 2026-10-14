@@ -10,8 +10,8 @@ import type { IssueEntry } from '../../pages/reference/known-issues/known-issues
  */
 @WebComponent({
   selector: 'docs-issue-list',
-  templateUrl: './docs-issue-list.xd.component.html',
-  styleUrl: '../reference-list.css'
+  styleUrl: '../reference-list.css',
+  templateUrl: './docs-issue-list.xd.component.html'
 })
 export class DocsIssueListComponent extends CustomElement {
   /**

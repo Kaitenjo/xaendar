@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-signal-frozen',
-  templateUrl: './frozen.xd.component.html',
-  styleUrl: './frozen.css'
+  styleUrl: './frozen.css',
+  templateUrl: './frozen.xd.component.html'
 })
 export class SignalFrozenComponent extends CustomElement {
   /**

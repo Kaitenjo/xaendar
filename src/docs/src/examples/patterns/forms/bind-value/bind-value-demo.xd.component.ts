@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-bind-value-demo',
-  templateUrl: './bind-value-demo.xd.component.html',
-  styleUrl: './bind-value-demo.css'
+  styleUrl: './bind-value-demo.css',
+  templateUrl: './bind-value-demo.xd.component.html'
 })
 export class BindValueDemoComponent extends CustomElement {
   /**

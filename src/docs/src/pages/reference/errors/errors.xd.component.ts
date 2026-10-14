@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-reference-errors',
-  templateUrl: './errors.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './errors.xd.component.html'
 })
 export class ReferenceErrorsPage extends CustomElement {
   /**

@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'page-not-found',
-  templateUrl: './not-found.xd.component.html',
-  styleUrl: '../page.css'
+  styleUrl: '../page.css',
+  templateUrl: './not-found.xd.component.html'
 })
 export class NotFoundPage extends CustomElement {}

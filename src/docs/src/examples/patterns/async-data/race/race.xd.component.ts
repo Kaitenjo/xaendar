@@ -7,8 +7,8 @@ import { fetchUser } from '../user-loader/api';
  */
 @WebComponent({
   selector: 'ex-race',
-  templateUrl: './race.xd.component.html',
-  styleUrl: './race.css'
+  styleUrl: './race.css',
+  templateUrl: './race.xd.component.html'
 })
 export class RaceComponent extends CustomElement {
   /**
@@ -66,10 +66,9 @@ export class RaceComponent extends CustomElement {
    */
   private async _loadSafe(id: number): Promise<void> {
     this._controller?.abort();
-    const controller = new AbortController();
-    this._controller = controller;
+    this._controller = new AbortController();
     try {
-      const user = await fetchUser(id, controller.signal);
+      const user = await fetchUser(id, this._controller.signal);
       this.safe.set(user.name);
     } catch {
       // Aborted: a newer request owns the state

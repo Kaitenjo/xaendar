@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-dynamic-styles',
-  templateUrl: './dynamic-styles.xd.component.html',
-  styleUrl: './dynamic-styles.css'
+  styleUrl: './dynamic-styles.css',
+  templateUrl: './dynamic-styles.xd.component.html'
 })
 export class DynamicStylesComponent extends CustomElement {
   /**

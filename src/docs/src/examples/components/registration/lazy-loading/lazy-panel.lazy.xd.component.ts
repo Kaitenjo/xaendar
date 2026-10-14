@@ -6,8 +6,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-lazy-panel',
-  templateUrl: './lazy-panel.xd.component.html',
-  styleUrl: './lazy-loading.css'
+  styleUrl: './lazy-loading.css',
+  templateUrl: './lazy-panel.xd.component.html'
 })
 export class LazyPanelComponent extends CustomElement {
   /**

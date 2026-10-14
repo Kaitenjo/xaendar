@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-templates-binding',
-  templateUrl: './binding.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './binding.xd.component.html'
 })
 export class TemplatesBindingPage extends CustomElement {
   /**

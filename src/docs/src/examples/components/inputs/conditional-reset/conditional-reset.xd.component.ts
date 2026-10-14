@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-conditional-reset',
-  templateUrl: './conditional-reset.xd.component.html',
-  styleUrl: './conditional-reset.css'
+  styleUrl: './conditional-reset.css',
+  templateUrl: './conditional-reset.xd.component.html'
 })
 export class ConditionalResetComponent extends CustomElement {
   /**

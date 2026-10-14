@@ -8,8 +8,8 @@ import { VanillaGauge } from './vanilla-gauge';
  */
 @WebComponent({
   selector: 'ex-third-party',
-  templateUrl: './third-party.xd.component.html',
-  styleUrl: './third-party.css'
+  styleUrl: './third-party.css',
+  templateUrl: './third-party.xd.component.html'
 })
 export class ThirdPartyComponent extends CustomElement {
   /**

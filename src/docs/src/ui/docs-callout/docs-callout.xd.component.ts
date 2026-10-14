@@ -15,8 +15,8 @@ export type CalloutKind = keyof Messages['callout'];
  */
 @WebComponent({
   selector: 'docs-callout',
-  templateUrl: './docs-callout.xd.component.html',
-  styleUrl: './docs-callout.xd.component.css'
+  styleUrl: './docs-callout.xd.component.css',
+  templateUrl: './docs-callout.xd.component.html'
 })
 export class DocsCalloutComponent extends CustomElement {
   /**

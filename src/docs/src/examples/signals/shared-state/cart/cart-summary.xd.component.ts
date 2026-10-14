@@ -6,8 +6,8 @@ import { clear, lines } from './cart.store';
  */
 @WebComponent({
   selector: 'ex-cart-summary',
-  templateUrl: './cart-summary.xd.component.html',
-  styleUrl: './cart.css'
+  styleUrl: './cart.css',
+  templateUrl: './cart-summary.xd.component.html'
 })
 export class CartSummaryComponent extends CustomElement {
   /**

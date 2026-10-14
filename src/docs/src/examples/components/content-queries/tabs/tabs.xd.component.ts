@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-tabs',
-  templateUrl: './tabs.xd.component.html',
-  styleUrl: './tabs.css'
+  styleUrl: './tabs.css',
+  templateUrl: './tabs.xd.component.html'
 })
 export class TabsComponent extends CustomElement {
   /**

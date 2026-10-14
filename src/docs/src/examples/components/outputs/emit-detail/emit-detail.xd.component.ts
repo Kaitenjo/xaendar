@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-emit-detail',
-  templateUrl: './emit-detail.xd.component.html',
-  styleUrl: './emit-detail.css'
+  styleUrl: './emit-detail.css',
+  templateUrl: './emit-detail.xd.component.html'
 })
 export class EmitDetailComponent extends CustomElement {
   /**

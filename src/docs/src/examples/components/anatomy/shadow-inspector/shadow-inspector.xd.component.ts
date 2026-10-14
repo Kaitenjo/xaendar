@@ -8,8 +8,8 @@ import { RatingComponent } from '../rating/rating.xd.component';
  */
 @WebComponent({
   selector: 'ex-shadow-inspector',
-  templateUrl: './shadow-inspector.xd.component.html',
-  styleUrl: './shadow-inspector.css'
+  styleUrl: './shadow-inspector.css',
+  templateUrl: './shadow-inspector.xd.component.html'
 })
 export class ShadowInspectorComponent extends CustomElement {
   /**

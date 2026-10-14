@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-patterns-async-data',
-  templateUrl: './async-data.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './async-data.xd.component.html'
 })
 export class PatternsAsyncDataPage extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-interpolation-basics',
-  templateUrl: './interpolation-basics.xd.component.html',
-  styleUrl: './interpolation-basics.css'
+  styleUrl: './interpolation-basics.css',
+  templateUrl: './interpolation-basics.xd.component.html'
 })
 export class InterpolationBasicsComponent extends CustomElement {
   /**

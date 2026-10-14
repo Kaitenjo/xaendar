@@ -6,8 +6,8 @@ import { translations } from '../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-home',
-  templateUrl: './home.xd.component.html',
-  styleUrl: '../page.css'
+  styleUrl: '../page.css',
+  templateUrl: './home.xd.component.html'
 })
 export class HomePage extends CustomElement {
   /**

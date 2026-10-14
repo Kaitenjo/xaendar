@@ -8,8 +8,8 @@ import { USERS } from './users';
  */
 @WebComponent({
   selector: 'ex-user-page',
-  templateUrl: './user-page.xd.component.html',
-  styleUrl: './mini-router.css'
+  styleUrl: './mini-router.css',
+  templateUrl: './user-page.xd.component.html'
 })
 export class UserPageComponent extends CustomElement {
   /**

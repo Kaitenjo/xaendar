@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-granular-updates',
-  templateUrl: './granular-updates.xd.component.html',
-  styleUrl: './granular-updates.css'
+  styleUrl: './granular-updates.css',
+  templateUrl: './granular-updates.xd.component.html'
 })
 export class GranularUpdatesComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-templates-svg-mathml',
-  templateUrl: './svg-mathml.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './svg-mathml.xd.component.html'
 })
 export class TemplatesSvgMathmlPage extends CustomElement {
   /**

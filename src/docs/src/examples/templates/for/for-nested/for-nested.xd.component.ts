@@ -5,8 +5,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-for-nested',
-  templateUrl: './for-nested.xd.component.html',
-  styleUrl: './for-nested.css'
+  styleUrl: './for-nested.css',
+  templateUrl: './for-nested.xd.component.html'
 })
 export class ForNestedComponent extends CustomElement {
   /**

@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-chip',
-  templateUrl: './chip.xd.component.html',
-  styleUrl: './chip.css'
+  styleUrl: './chip.css',
+  templateUrl: './chip.xd.component.html'
 })
 export class ChipComponent extends CustomElement {}

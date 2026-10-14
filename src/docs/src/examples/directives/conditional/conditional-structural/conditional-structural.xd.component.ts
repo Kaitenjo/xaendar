@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-conditional-structural',
-  templateUrl: './conditional-structural.xd.component.html',
-  styleUrl: './conditional-structural.css'
+  styleUrl: './conditional-structural.css',
+  templateUrl: './conditional-structural.xd.component.html'
 })
 export class ConditionalStructuralComponent extends CustomElement {
   /**

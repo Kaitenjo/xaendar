@@ -6,7 +6,7 @@ import { CounterBase } from './counter-base';
  */
 @WebComponent({
   selector: 'ex-click-counter',
-  templateUrl: './click-counter.xd.component.html',
-  styleUrl: './counters.css'
+  styleUrl: './counters.css',
+  templateUrl: './click-counter.xd.component.html'
 })
 export class ClickCounterComponent extends CounterBase {}

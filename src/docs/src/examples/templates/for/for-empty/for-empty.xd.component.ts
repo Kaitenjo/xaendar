@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-for-empty',
-  templateUrl: './for-empty.xd.component.html',
-  styleUrl: './for-empty.css'
+  styleUrl: './for-empty.css',
+  templateUrl: './for-empty.xd.component.html'
 })
 export class ForEmptyComponent extends CustomElement {
   /**

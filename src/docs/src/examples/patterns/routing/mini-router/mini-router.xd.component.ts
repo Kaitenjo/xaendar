@@ -7,8 +7,8 @@ import { USERS } from './users';
  */
 @WebComponent({
   selector: 'ex-mini-router',
-  templateUrl: './mini-router.xd.component.html',
-  styleUrl: './mini-router.css'
+  styleUrl: './mini-router.css',
+  templateUrl: './mini-router.xd.component.html'
 })
 export class MiniRouterComponent extends CustomElement {
   /**

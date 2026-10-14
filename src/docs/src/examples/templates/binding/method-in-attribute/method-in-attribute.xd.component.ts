@@ -8,8 +8,8 @@ import { level, readPercent } from './level.store';
  */
 @WebComponent({
   selector: 'ex-method-in-attribute',
-  templateUrl: './method-in-attribute.xd.component.html',
-  styleUrl: './method-in-attribute.css'
+  styleUrl: './method-in-attribute.css',
+  templateUrl: './method-in-attribute.xd.component.html'
 })
 export class MethodInAttributeComponent extends CustomElement {
   /**

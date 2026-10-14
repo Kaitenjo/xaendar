@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-resizable-box',
-  templateUrl: './resizable-box.xd.component.html',
-  styleUrl: './resizable-box.css'
+  styleUrl: './resizable-box.css',
+  templateUrl: './resizable-box.xd.component.html'
 })
 export class ResizableBoxComponent extends CustomElement {
   /**

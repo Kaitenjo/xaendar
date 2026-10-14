@@ -6,7 +6,7 @@ import { CounterBase } from './counter-base';
  */
 @WebComponent({
   selector: 'ex-stepper',
-  templateUrl: './stepper.xd.component.html',
-  styleUrl: './counters.css'
+  styleUrl: './counters.css',
+  templateUrl: './stepper.xd.component.html'
 })
 export class StepperComponent extends CounterBase {}

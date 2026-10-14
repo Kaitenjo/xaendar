@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-templates-events',
-  templateUrl: './events.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './events.xd.component.html'
 })
 export class TemplatesEventsPage extends CustomElement {
   /**

@@ -8,8 +8,8 @@ import type { Todo } from './step-5.xd.component';
  */
 @WebComponent({
   selector: 'ex-todo-item',
-  templateUrl: './todo-item.xd.component.html',
-  styleUrl: './step-5.css'
+  styleUrl: './step-5.css',
+  templateUrl: './todo-item.xd.component.html'
 })
 export class TodoItemComponent extends CustomElement {
   /**

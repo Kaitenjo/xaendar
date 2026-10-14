@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-slot-inspector',
-  templateUrl: './slot-inspector.xd.component.html',
-  styleUrl: './slot-inspector.css'
+  styleUrl: './slot-inspector.css',
+  templateUrl: './slot-inspector.xd.component.html'
 })
 export class SlotInspectorComponent extends CustomElement {
   /**

@@ -5,7 +5,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'page-reference-template-syntax',
-  templateUrl: './template-syntax.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './template-syntax.xd.component.html'
 })
 export class ReferenceTemplateSyntaxPage extends CustomElement {}

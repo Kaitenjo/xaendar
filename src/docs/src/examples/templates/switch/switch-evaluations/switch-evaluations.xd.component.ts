@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-switch-evaluations',
-  templateUrl: './switch-evaluations.xd.component.html',
-  styleUrl: './switch-evaluations.css'
+  styleUrl: './switch-evaluations.css',
+  templateUrl: './switch-evaluations.xd.component.html'
 })
 export class SwitchEvaluationsComponent extends CustomElement {
   /**

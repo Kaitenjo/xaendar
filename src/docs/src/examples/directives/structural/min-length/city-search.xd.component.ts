@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-city-search',
-  templateUrl: './city-search.xd.component.html',
-  styleUrl: './city-search.css'
+  styleUrl: './city-search.css',
+  templateUrl: './city-search.xd.component.html'
 })
 export class CitySearchComponent extends CustomElement {
   /**

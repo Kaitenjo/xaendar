@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-resize-observer',
-  templateUrl: './resize-observer.xd.component.html',
-  styleUrl: './resize-observer.css'
+  styleUrl: './resize-observer.css',
+  templateUrl: './resize-observer.xd.component.html'
 })
 export class ResizeObserverComponent extends CustomElement {
   /**

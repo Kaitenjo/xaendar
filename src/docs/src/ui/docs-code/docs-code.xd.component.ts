@@ -15,8 +15,8 @@ import type { SourceFile } from '../../core/sources/source-files.utils';
  */
 @WebComponent({
   selector: 'docs-code',
-  templateUrl: './docs-code.xd.component.html',
-  styleUrl: './docs-code.xd.component.css'
+  styleUrl: './docs-code.xd.component.css',
+  templateUrl: './docs-code.xd.component.html'
 })
 export class DocsCodeComponent extends CustomElement {
   /**

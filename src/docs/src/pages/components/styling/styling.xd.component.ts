@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-components-styling',
-  templateUrl: './styling.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './styling.xd.component.html'
 })
 export class ComponentsStylingPage extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-expression-table',
-  templateUrl: './expression-table.xd.component.html',
-  styleUrl: './expression-table.css'
+  styleUrl: './expression-table.css',
+  templateUrl: './expression-table.xd.component.html'
 })
 export class ExpressionTableComponent extends CustomElement {
   /**

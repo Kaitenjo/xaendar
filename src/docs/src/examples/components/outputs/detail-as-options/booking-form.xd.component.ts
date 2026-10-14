@@ -6,8 +6,8 @@ import type { Output } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-booking-form',
-  templateUrl: './booking-form.xd.component.html',
-  styleUrl: './booking-form.css'
+  styleUrl: './booking-form.css',
+  templateUrl: './booking-form.xd.component.html'
 })
 export class BookingFormComponent extends CustomElement {
   /**

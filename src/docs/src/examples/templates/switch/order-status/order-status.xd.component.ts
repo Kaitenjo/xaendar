@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-order-status',
-  templateUrl: './order-status.xd.component.html',
-  styleUrl: './order-status.css'
+  styleUrl: './order-status.css',
+  templateUrl: './order-status.xd.component.html'
 })
 export class OrderStatusComponent extends CustomElement {
   /**

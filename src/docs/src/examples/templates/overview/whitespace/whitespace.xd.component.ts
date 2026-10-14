@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-whitespace',
-  templateUrl: './whitespace.xd.component.html',
-  styleUrl: './whitespace.css'
+  styleUrl: './whitespace.css',
+  templateUrl: './whitespace.xd.component.html'
 })
 export class WhitespaceComponent extends CustomElement {
   /**

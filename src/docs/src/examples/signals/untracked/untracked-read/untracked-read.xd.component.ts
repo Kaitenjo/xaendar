@@ -6,8 +6,8 @@ import { signal, untracked } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-untracked-read',
-  templateUrl: './untracked-read.xd.component.html',
-  styleUrl: './untracked-read.css'
+  styleUrl: './untracked-read.css',
+  templateUrl: './untracked-read.xd.component.html'
 })
 export class UntrackedReadComponent extends CustomElement {
   /**

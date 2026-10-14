@@ -7,8 +7,8 @@ import { log } from './hook-order.log';
  */
 @WebComponent({
   selector: 'ex-hook-order',
-  templateUrl: './hook-order.xd.component.html',
-  styleUrl: './hook-order.css'
+  styleUrl: './hook-order.css',
+  templateUrl: './hook-order.xd.component.html'
 })
 export class HookOrderComponent extends CustomElement {
   /**

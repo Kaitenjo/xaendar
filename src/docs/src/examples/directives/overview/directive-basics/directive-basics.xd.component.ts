@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-directive-basics',
-  templateUrl: './directive-basics.xd.component.html',
-  styleUrl: './directive-basics.css'
+  styleUrl: './directive-basics.css',
+  templateUrl: './directive-basics.xd.component.html'
 })
 export class DirectiveBasicsComponent extends CustomElement {
   /**

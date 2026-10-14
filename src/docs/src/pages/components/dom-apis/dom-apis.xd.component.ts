@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-components-dom-apis',
-  templateUrl: './dom-apis.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './dom-apis.xd.component.html'
 })
 export class ComponentsDomApisPage extends CustomElement {
   /**

@@ -26,8 +26,8 @@ type Item = {
  */
 @WebComponent({
   selector: 'ex-inventory',
-  templateUrl: './inventory.xd.component.html',
-  styleUrl: './inventory.css'
+  styleUrl: './inventory.css',
+  templateUrl: './inventory.xd.component.html'
 })
 export class InventoryComponent extends CustomElement {
   /**

@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-temperature',
-  templateUrl: './temperature.xd.component.html',
-  styleUrl: './temperature.css'
+  styleUrl: './temperature.css',
+  templateUrl: './temperature.xd.component.html'
 })
 export class TemperatureComponent extends CustomElement {
   /**

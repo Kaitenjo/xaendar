@@ -8,8 +8,8 @@ import { level, readLevel } from './level.store';
  */
 @WebComponent({
   selector: 'ex-signal-members',
-  templateUrl: './signal-members.xd.component.html',
-  styleUrl: './signal-members.css'
+  styleUrl: './signal-members.css',
+  templateUrl: './signal-members.xd.component.html'
 })
 export class SignalMembersComponent extends CustomElement {
   /**

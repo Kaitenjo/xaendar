@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-keyed-state',
-  templateUrl: './keyed-state.xd.component.html',
-  styleUrl: './keyed-state.css'
+  styleUrl: './keyed-state.css',
+  templateUrl: './keyed-state.xd.component.html'
 })
 export class KeyedStateComponent extends CustomElement {
   /**

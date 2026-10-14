@@ -6,8 +6,8 @@ import { translations } from '../../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-signals-shared-state',
-  templateUrl: './shared-state.xd.component.html',
-  styleUrl: '../../page.css'
+  styleUrl: '../../page.css',
+  templateUrl: './shared-state.xd.component.html'
 })
 export class SignalsSharedStatePage extends CustomElement {
   /**

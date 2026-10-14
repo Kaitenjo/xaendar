@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-effect-options',
-  templateUrl: './options.xd.component.html',
-  styleUrl: './options.css'
+  styleUrl: './options.css',
+  templateUrl: './options.xd.component.html'
 })
 export class EffectOptionsComponent extends CustomElement {
   /**

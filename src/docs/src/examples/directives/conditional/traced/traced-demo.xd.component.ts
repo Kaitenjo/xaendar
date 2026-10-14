@@ -7,8 +7,8 @@ import { trace } from './trace.directive';
  */
 @WebComponent({
   selector: 'ex-traced-demo',
-  templateUrl: './traced-demo.xd.component.html',
-  styleUrl: './traced-demo.css'
+  styleUrl: './traced-demo.css',
+  templateUrl: './traced-demo.xd.component.html'
 })
 export class TracedDemoComponent extends CustomElement {
   /**

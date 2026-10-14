@@ -7,8 +7,8 @@ import type { QuerySignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-auto-focus',
-  templateUrl: './auto-focus.xd.component.html',
-  styleUrl: './auto-focus.css'
+  styleUrl: './auto-focus.css',
+  templateUrl: './auto-focus.xd.component.html'
 })
 export class AutoFocusComponent extends CustomElement {
   /**

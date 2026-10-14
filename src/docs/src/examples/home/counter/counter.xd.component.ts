@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-home-counter',
-  templateUrl: './counter.xd.component.html',
-  styleUrl: './counter.css'
+  styleUrl: './counter.css',
+  templateUrl: './counter.xd.component.html'
 })
 export class CounterComponent extends CustomElement {
   /**

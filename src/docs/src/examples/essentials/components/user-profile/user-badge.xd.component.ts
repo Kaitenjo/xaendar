@@ -7,8 +7,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-user-badge',
-  templateUrl: './user-badge.xd.component.html',
-  styleUrl: './user-badge.css'
+  styleUrl: './user-badge.css',
+  templateUrl: './user-badge.xd.component.html'
 })
 export class UserBadgeComponent extends CustomElement {
   /**

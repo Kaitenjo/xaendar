@@ -18,8 +18,8 @@ import type { SourceFile } from '../../core/sources/source-files.utils';
  */
 @WebComponent({
   selector: 'docs-example',
-  templateUrl: './docs-example.xd.component.html',
-  styleUrl: './docs-example.xd.component.css'
+  styleUrl: './docs-example.xd.component.css',
+  templateUrl: './docs-example.xd.component.html'
 })
 export class DocsExampleComponent extends CustomElement {
   /**

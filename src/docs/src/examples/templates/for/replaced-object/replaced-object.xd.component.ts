@@ -7,8 +7,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-replaced-object',
-  templateUrl: './replaced-object.xd.component.html',
-  styleUrl: './replaced-object.css'
+  styleUrl: './replaced-object.css',
+  templateUrl: './replaced-object.xd.component.html'
 })
 export class ReplacedObjectComponent extends CustomElement {
   /**

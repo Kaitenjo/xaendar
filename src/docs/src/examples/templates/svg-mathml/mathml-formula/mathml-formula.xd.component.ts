@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-mathml-formula',
-  templateUrl: './mathml-formula.xd.component.html',
-  styleUrl: './mathml-formula.css'
+  styleUrl: './mathml-formula.css',
+  templateUrl: './mathml-formula.xd.component.html'
 })
 export class MathmlFormulaComponent extends CustomElement {
   /**

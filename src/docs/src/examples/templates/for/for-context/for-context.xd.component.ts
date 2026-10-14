@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-for-context',
-  templateUrl: './for-context.xd.component.html',
-  styleUrl: './for-context.css'
+  styleUrl: './for-context.css',
+  templateUrl: './for-context.xd.component.html'
 })
 export class ForContextComponent extends CustomElement {
   /**

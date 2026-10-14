@@ -5,8 +5,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
  */
 @WebComponent({
   selector: 'ex-team-card',
-  templateUrl: './team-card.xd.component.html',
-  styleUrl: './team-card.css'
+  styleUrl: './team-card.css',
+  templateUrl: './team-card.xd.component.html'
 })
 export class TeamCardComponent extends CustomElement {
   /**

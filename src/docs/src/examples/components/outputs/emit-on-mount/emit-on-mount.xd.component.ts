@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-emit-on-mount',
-  templateUrl: './emit-on-mount.xd.component.html',
-  styleUrl: './emit-on-mount.css'
+  styleUrl: './emit-on-mount.css',
+  templateUrl: './emit-on-mount.xd.component.html'
 })
 export class EmitOnMountComponent extends CustomElement {
   /**

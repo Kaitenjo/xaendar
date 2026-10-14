@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-key-filter',
-  templateUrl: './key-filter.xd.component.html',
-  styleUrl: './key-filter.css'
+  styleUrl: './key-filter.css',
+  templateUrl: './key-filter.xd.component.html'
 })
 export class KeyFilterComponent extends CustomElement {
   /**

@@ -7,8 +7,8 @@ import type { InputSignal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-progress-meter',
-  templateUrl: './progress-meter.xd.component.html',
-  styleUrl: './progress-meter.css'
+  styleUrl: './progress-meter.css',
+  templateUrl: './progress-meter.xd.component.html'
 })
 export class ProgressMeterComponent extends CustomElement {
   /**

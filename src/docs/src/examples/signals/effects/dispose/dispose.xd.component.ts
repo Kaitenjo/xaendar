@@ -6,8 +6,8 @@ import { effect, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-effect-dispose',
-  templateUrl: './dispose.xd.component.html',
-  styleUrl: './dispose.css'
+  styleUrl: './dispose.css',
+  templateUrl: './dispose.xd.component.html'
 })
 export class EffectDisposeComponent extends CustomElement {
   /**

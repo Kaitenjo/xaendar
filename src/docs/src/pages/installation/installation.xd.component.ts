@@ -6,8 +6,8 @@ import { translations } from '../../core/i18n/i18n';
  */
 @WebComponent({
   selector: 'page-installation',
-  templateUrl: './installation.xd.component.html',
-  styleUrl: '../page.css'
+  styleUrl: '../page.css',
+  templateUrl: './installation.xd.component.html'
 })
 export class InstallationPage extends CustomElement {
   /**

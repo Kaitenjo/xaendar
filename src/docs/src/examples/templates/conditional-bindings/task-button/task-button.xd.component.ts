@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-task-button',
-  templateUrl: './task-button.xd.component.html',
-  styleUrl: './task-button.css'
+  styleUrl: './task-button.css',
+  templateUrl: './task-button.xd.component.html'
 })
 export class TaskButtonComponent extends CustomElement {
   /**

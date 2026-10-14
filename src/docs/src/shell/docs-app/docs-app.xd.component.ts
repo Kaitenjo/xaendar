@@ -7,8 +7,8 @@ import { path } from '../../core/router/router';
  */
 @WebComponent({
   selector: 'docs-app',
-  templateUrl: './docs-app.xd.component.html',
-  styleUrl: './docs-app.xd.component.css'
+  styleUrl: './docs-app.xd.component.css',
+  templateUrl: './docs-app.xd.component.html'
 })
 export class DocsAppComponent extends CustomElement {
   /**

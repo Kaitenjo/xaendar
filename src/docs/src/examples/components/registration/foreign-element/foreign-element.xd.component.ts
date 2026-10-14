@@ -7,8 +7,8 @@ import './vanilla-stars';
  */
 @WebComponent({
   selector: 'ex-foreign-element',
-  templateUrl: './foreign-element.xd.component.html',
-  styleUrl: './foreign-element.css'
+  styleUrl: './foreign-element.css',
+  templateUrl: './foreign-element.xd.component.html'
 })
 export class ForeignElementComponent extends CustomElement {
   /**

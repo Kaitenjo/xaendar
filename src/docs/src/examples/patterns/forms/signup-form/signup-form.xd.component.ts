@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-signup-form',
-  templateUrl: './signup-form.xd.component.html',
-  styleUrl: './signup-form.css'
+  styleUrl: './signup-form.css',
+  templateUrl: './signup-form.xd.component.html'
 })
 export class SignupFormComponent extends CustomElement {
   /**

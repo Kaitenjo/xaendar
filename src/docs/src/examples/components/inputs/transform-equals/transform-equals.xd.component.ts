@@ -6,8 +6,8 @@ import { computed, signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-transform-equals',
-  templateUrl: './transform-equals.xd.component.html',
-  styleUrl: './transform-equals.css'
+  styleUrl: './transform-equals.css',
+  templateUrl: './transform-equals.xd.component.html'
 })
 export class TransformEqualsComponent extends CustomElement {
   /**

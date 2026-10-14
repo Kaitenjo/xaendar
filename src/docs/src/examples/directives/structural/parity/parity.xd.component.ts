@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-parity',
-  templateUrl: './parity.xd.component.html',
-  styleUrl: './parity.css'
+  styleUrl: './parity.css',
+  templateUrl: './parity.xd.component.html'
 })
 export class ParityComponent extends CustomElement {
   /**

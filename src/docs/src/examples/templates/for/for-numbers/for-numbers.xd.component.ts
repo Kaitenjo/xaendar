@@ -6,8 +6,8 @@ import { signal } from '@xaendar/core/signals';
  */
 @WebComponent({
   selector: 'ex-for-numbers',
-  templateUrl: './for-numbers.xd.component.html',
-  styleUrl: './for-numbers.css'
+  styleUrl: './for-numbers.css',
+  templateUrl: './for-numbers.xd.component.html'
 })
 export class ForNumbersComponent extends CustomElement {
   /**
