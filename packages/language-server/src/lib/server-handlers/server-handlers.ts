@@ -1,9 +1,9 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getComponentLinks, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateDefinition } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateDefinition } from '@xaendar/language-core';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
-import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, type DocumentLink, type DocumentLinkParams, FileChangeType, type InitializeParams, type InitializeResult, type Location, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
+import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, FileChangeType, type InitializeParams, type InitializeResult, type LocationLink, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
 import { Debouncer } from '../utils/debounce/debounce.utils';
-import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity, toUri } from '../utils/lsp/lsp.utils';
+import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from '../utils/lsp/lsp.utils';
 
 /**
  * Suffix of the templates of the components.
@@ -70,7 +70,6 @@ export class XaendarLanguageServer {
     connection.onDidChangeWatchedFiles(params => this.onDidChangeWatchedFiles(params));
     connection.onDefinition(params => this.onDefinition(params));
     connection.onCompletion(params => this.onCompletion(params));
-    connection.onDocumentLinks(params => this.onDocumentLinks(params));
     connection.languages.semanticTokens.on(params => this.onSemanticTokens(params));
     connection.onShutdown(() => this.onShutdown());
     this._documents.onDidChangeContent(({ document }) => this.onDidChangeContent(document));
@@ -93,7 +92,6 @@ export class XaendarLanguageServer {
         textDocumentSync: TextDocumentSyncKind.Incremental,
         definitionProvider: true,
         completionProvider: { triggerCharacters: ['.', '('] },
-        documentLinkProvider: { resolveProvider: false },
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
           full: true
@@ -166,7 +164,7 @@ export class XaendarLanguageServer {
    * @param params - The definition request.
    * @returns The locations of the definitions.
    */
-  public async onDefinition({ textDocument, position }: DefinitionParams): Promise<Location[]> {
+  public async onDefinition({ textDocument, position }: DefinitionParams): Promise<LocationLink[]> {
     const document = this._documents.get(textDocument.uri);
     if (!document) {
       return [];
@@ -174,11 +172,11 @@ export class XaendarLanguageServer {
 
     const offset = document.offsetAt(position);
     if (!isTemplate(document)) {
-      return this._toLocations(await getComponentDefinition(fromUri(document.uri), document.getText(), offset));
+      return this._toLocations(await getComponentDefinition(fromUri(document.uri), document.getText(), offset), document);
     }
 
     const analysis = (await this._getAnalysis(document))?.analysis;
-    return analysis ? this._toLocations(getTemplateDefinition(analysis, offset)) : [];
+    return analysis ? this._toLocations(getTemplateDefinition(analysis, offset), document) : [];
   }
 
   /**
@@ -226,22 +224,6 @@ export class XaendarLanguageServer {
       sortText,
       ...replacementSpan && { textEdit: { range: toRange(document, replacementSpan), newText: name } }
     }));
-  }
-
-  /**
-   * Finds the links of a component file to the templates and the styles of its components, none in a template.
-   *
-   * @param params - The document links request.
-   * @returns The links.
-   */
-  public async onDocumentLinks({ textDocument }: DocumentLinkParams): Promise<DocumentLink[]> {
-    const document = this._documents.get(textDocument.uri);
-    if (!document || isTemplate(document)) {
-      return [];
-    }
-
-    const links = await getComponentLinks(fromUri(document.uri), document.getText());
-    return links.map(({ span, fileName }) => ({ range: toRange(document, span), target: toUri(fileName) }));
   }
 
   /**
@@ -314,12 +296,14 @@ export class XaendarLanguageServer {
    * Converts definitions into the locations of the client, reading the files not open in the editor from disk.
    *
    * @param definitions - The definitions.
+   * @param source - The document the definitions were requested from.
    * @returns The locations of the definitions.
    */
-  private _toLocations(definitions: readonly TemplateDefinition[]): Location[] {
-    return definitions.map(({ fileName, span }) => {
+  private _toLocations(definitions: readonly TemplateDefinition[], source: TextDocument): LocationLink[] {
+    return definitions.map(({ fileName, span, origin }) => {
       const target = getDocument(fileName, uri => this._documents.get(uri));
-      return { uri: target.uri, range: toRange(target, span) };
+      const range = toRange(target, span);
+      return { targetUri: target.uri, targetRange: range, targetSelectionRange: range, ...origin && { originSelectionRange: toRange(source, origin) } };
     });
   }
 

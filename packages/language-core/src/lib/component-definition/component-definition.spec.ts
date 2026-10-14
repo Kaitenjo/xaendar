@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
-import { getComponentDefinition, getComponentLinks } from './component-definition';
+import { getComponentDefinition } from './component-definition';
 
 const component = [
   'import { Property, WebComponent } from \'@xaendar/core\';',
@@ -87,22 +87,10 @@ describe('getComponentDefinition', () => {
     expect(await pathsAt(1, clashing)).toEqual([]);
     expect(await pathsAt(1, literalLess)).toEqual([]);
   });
-});
 
-describe('getComponentLinks', () => {
-  it('links the values of the templateUrl and styleUrl, quotes excluded, to their files', async () => {
-    const links = (await getComponentLinks(fileName, component)).map(({ span, fileName }) => [component.slice(span.start, span.end), fileName.replace(`${project.root}/`, '')]);
+  it('reports the whole part the definition was requested from as the origin', async () => {
+    const [{ origin }] = await getComponentDefinition(fileName, component, at('./styled.css'));
 
-    expect(links).toEqual([
-      ['./styled.html', 'src/styled.html'],
-      ['./styled.css', 'src/styled.css'],
-      ['./plain.html', 'src/plain.html'],
-      ['./lost.html', 'src/lost.html'],
-      ['./plain.html', 'src/plain.html']
-    ]);
-  });
-
-  it('finds no links in a file whose components metadata cannot be extracted', async () => {
-    expect(await getComponentLinks(fileName, '@WebComponent({ selector: \'my-a\', templateUrl: url })\nclass A {}')).toEqual([]);
+    expect(component.slice(origin!.start, origin!.end)).toBe("'./styled.css'");
   });
 });

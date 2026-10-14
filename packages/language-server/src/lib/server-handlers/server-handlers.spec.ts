@@ -1,4 +1,4 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getComponentLinks, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateBindingCompletions, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateSemanticTokens, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -21,7 +21,6 @@ vi.mock('@xaendar/language-core', async importOriginal => ({
   getTemplateDiagnostics: vi.fn(() => []),
   getTemplateDefinition: vi.fn(() => []),
   getComponentDefinition: vi.fn(async () => []),
-  getComponentLinks: vi.fn(async () => []),
   getTemplateSemanticTokens: vi.fn(() => []),
   getTemplateCompletions: vi.fn(() => []),
   getTemplateBindingCompletions: vi.fn(() => undefined),
@@ -53,7 +52,6 @@ function setup(...documents: TextDocument[]) {
     onDidChangeWatchedFiles: capture('watchedFiles'),
     onDefinition: capture('definition'),
     onCompletion: capture('completion'),
-    onDocumentLinks: capture('documentLinks'),
     onShutdown: capture('shutdown'),
     languages: { semanticTokens: { on: capture('semanticTokens') } },
     listen: vi.fn(),
@@ -99,7 +97,6 @@ describe('XaendarLanguageServer', () => {
       onDidChangeWatchedFiles: vi.spyOn(server, 'onDidChangeWatchedFiles').mockResolvedValue(),
       onDefinition: vi.spyOn(server, 'onDefinition').mockResolvedValue([]),
       onCompletion: vi.spyOn(server, 'onCompletion').mockResolvedValue([]),
-      onDocumentLinks: vi.spyOn(server, 'onDocumentLinks').mockResolvedValue([]),
       onSemanticTokens: vi.spyOn(server, 'onSemanticTokens').mockResolvedValue({ data: [] }),
       onShutdown: vi.spyOn(server, 'onShutdown').mockReturnValue(),
       onDidChangeContent: vi.spyOn(server, 'onDidChangeContent').mockResolvedValue(),
@@ -111,7 +108,6 @@ describe('XaendarLanguageServer', () => {
     handlers.watchedFiles({ changes: [] });
     handlers.definition({});
     handlers.completion({});
-    handlers.documentLinks({});
     handlers.semanticTokens({});
     handlers.shutdown();
     handlers.change({ document });
@@ -132,7 +128,6 @@ describe('XaendarLanguageServer', () => {
         textDocumentSync: 2,
         definitionProvider: true,
         completionProvider: { triggerCharacters: ['.', '('] },
-        documentLinkProvider: { resolveProvider: false },
         semanticTokensProvider: {
           legend: { tokenTypes: ['property', 'event', 'decorator', 'variable'], tokenModifiers: ['readonly'] },
           full: true
@@ -269,7 +264,7 @@ describe('XaendarLanguageServer', () => {
       const result = analysisOf(document.getText());
       vi.mocked(analyzeTemplate).mockResolvedValue(result);
       vi.mocked(getTemplateDefinition).mockReturnValue([
-        { fileName: pathOf(COMPONENT_URI), span: { start: 14, end: 19 } },
+        { fileName: pathOf(COMPONENT_URI), span: { start: 14, end: 19 }, origin: { start: 6, end: 11 } },
         { fileName: pathOf('file:///src/missing.ts'), span: { start: 0, end: 0 } }
       ]);
 
@@ -277,8 +272,8 @@ describe('XaendarLanguageServer', () => {
 
       expect(getTemplateDefinition).toHaveBeenCalledWith(result.analysis, 6);
       expect(locations).toEqual([
-        { uri: COMPONENT_URI, range: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } } },
-        { uri: 'file:///src/missing.ts', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } }
+        { targetUri: COMPONENT_URI, targetRange: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } }, targetSelectionRange: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } }, originSelectionRange: { start: { line: 0, character: 6 }, end: { line: 0, character: 11 } } },
+        { targetUri: 'file:///src/missing.ts', targetRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, targetSelectionRange: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } } }
       ]);
       // The analysis of the current version of the template is reused
       await server.onDefinition({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 6 } });
@@ -304,7 +299,7 @@ describe('XaendarLanguageServer', () => {
       const locations = await server.onDefinition({ textDocument: { uri: COMPONENT_URI }, position: { line: 1, character: 3 } });
 
       expect(getComponentDefinition).toHaveBeenCalledWith(pathOf(COMPONENT_URI), component.getText(), 13);
-      expect(locations.map(({ uri }) => uri)).toEqual([TEMPLATE_URI, 'file:///src/app.css']);
+      expect(locations.map(({ targetUri }) => targetUri)).toEqual([TEMPLATE_URI, 'file:///src/app.css']);
       expect(analyzeTemplate).not.toHaveBeenCalled();
     });
   });
@@ -330,27 +325,6 @@ describe('XaendarLanguageServer', () => {
       expect((await server.onSemanticTokens({ textDocument: { uri: TEMPLATE_URI } })).data).toEqual([]);
       expect((await server.onSemanticTokens({ textDocument: { uri: 'file:///closed.html' } })).data).toEqual([]);
       expect(getTemplateSemanticTokens).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('onDocumentLinks', () => {
-    it('links a component file to the templates and the styles of its components', async () => {
-      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, 'import x;\nconst url = \'./app.css\';');
-      const { server } = setup(component);
-      vi.mocked(getComponentLinks).mockResolvedValue([{ span: { start: 23, end: 32 }, fileName: pathOf('file:///src/app.css') }]);
-
-      const links = await server.onDocumentLinks({ textDocument: { uri: COMPONENT_URI } });
-
-      expect(getComponentLinks).toHaveBeenCalledWith(pathOf(COMPONENT_URI), component.getText());
-      expect(links).toEqual([{ range: { start: { line: 1, character: 13 }, end: { line: 1, character: 22 } }, target: 'file:///src/app.css' }]);
-    });
-
-    it('finds no links in a template, or in a document that is not open', async () => {
-      const { server } = setup(template());
-
-      expect(await server.onDocumentLinks({ textDocument: { uri: TEMPLATE_URI } })).toEqual([]);
-      expect(await server.onDocumentLinks({ textDocument: { uri: COMPONENT_URI } })).toEqual([]);
-      expect(getComponentLinks).not.toHaveBeenCalled();
     });
   });
 

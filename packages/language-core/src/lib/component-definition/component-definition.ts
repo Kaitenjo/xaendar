@@ -21,20 +21,6 @@ type ComponentTarget = {
 };
 
 /**
- * A link of a component file to the template or the style of a component: the value of a `templateUrl` or `styleUrl`.
- */
-export type ComponentLink = {
-  /**
-   * The span of the value, quotes excluded.
-   */
-  readonly span: Span;
-  /**
-   * The path of the linked file, in posix format.
-   */
-  readonly fileName: string;
-};
-
-/**
  * Finds the files a `@WebComponent` decorator of a component file leads to:
  * - its name (`@` included): the template and, if declared, the style of the component;
  * - the value of its `templateUrl` or `styleUrl`: the template or the style.
@@ -51,21 +37,7 @@ export async function getComponentDefinition(fileName: string, text: string, off
   ]);
   const target = findInnermostSpan(targets, offset);
 
-  return target ? resolveUrls(fileName, target.urls).map(path => ({ fileName: path, span: { start: 0, end: 0 } })) : [];
-}
-
-/**
- * Finds the links of a component file to the templates and the styles of its components: the values of the
- * `templateUrl` and `styleUrl` of their `@WebComponent` decorators.
- *
- * @param fileName - The path of the component file.
- * @param text - The text of the component file.
- * @returns The links, those to files missing on disk excluded.
- */
-export async function getComponentLinks(fileName: string, text: string): Promise<ComponentLink[]> {
-  return (await extractComponents(fileName, text))
-    .flatMap(({ typescriptNodes: { decorator } }) => getUrlLiterals(decorator))
-    .flatMap(literal => resolveUrls(fileName, [literal.text]).map(path => ({ span: { start: literal.getStart() + 1, end: literal.getEnd() - 1 }, fileName: path })));
+  return target ? resolveUrls(fileName, target.urls).map(path => ({ fileName: path, span: { start: 0, end: 0 }, origin: target.span })) : [];
 }
 
 /**

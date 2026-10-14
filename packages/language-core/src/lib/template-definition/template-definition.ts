@@ -9,7 +9,13 @@ import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 /**
  * Where a symbol used in a template is defined: a span of a file, or of the template itself.
  */
-export type TemplateDefinition = MemberDeclaration;
+export type TemplateDefinition = MemberDeclaration & {
+  /**
+   * The whole span the definition was requested from, when the part is longer than the word under the cursor,
+   * e.g. a tag name with dashes or the path of an `@import`.
+   */
+  readonly origin?: Span;
+};
 
 /**
  * A part of a template whose definition is known without asking TypeScript, e.g. the tag name of a component.
@@ -52,7 +58,7 @@ function collectTargets({ ast, metadatas, imports, templatePath }: TemplateAnaly
   const targets = new Array<DefinitionTarget>();
   const add = (span: Span | undefined, declaration: TemplateDefinition | undefined) => {
     if (span && declaration) {
-      targets.push({ span, definitions: [declaration] });
+      targets.push({ span, definitions: [{ ...declaration, origin: span }] });
     }
   };
 

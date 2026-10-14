@@ -57,7 +57,10 @@ describe('getTemplateDefinition', () => {
   });
 
   it('leads the path of an @import to the imported file', () => {
-    expect(getTemplateDefinition(analysis, at('./directives'))).toEqual([{ fileName: project.path('src/directives.ts'), span: { start: 0, end: 0 } }]);
+    expect(getTemplateDefinition(analysis, at('./directives'))).toEqual([{ fileName: project.path('src/directives.ts'), span: { start: 0, end: 0 }, origin: expect.objectContaining({ start: expect.any(Number), end: expect.any(Number) }) }]);
+    const [{ origin }] = getTemplateDefinition(analysis, at('./directives'));
+
+    expect(analysis.source.slice(origin!.start, origin!.end)).toContain('./directives');
   });
 
   it('leads the tag name of a component, in the opening and in the closing tag, to its class', () => {
