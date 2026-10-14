@@ -117,7 +117,8 @@ function collectClassChain(klass: ResolvedClass, context: ResolutionContext): Re
  */
 function collectSignalMembers(chain: readonly ResolvedClass[], context: ResolutionContext): string[] {
   let members = new Array<string>();
-  for (const klass of chain) {
+  for (let i = 0; i < chain.length; i++) {
+    const klass = chain[i];
     const declared = new Set(klass.declaration.members.flatMap(member => isNamedMember(member) ? [member.name.text] : []));
     members = [...new Set([...members.filter(name => !declared.has(name)), ...extractOwnSignalMembers(klass, context)])];
   }
@@ -137,8 +138,10 @@ function collectSignalMembers(chain: readonly ResolvedClass[], context: Resoluti
  */
 function collectReactiveMethods(chain: readonly ResolvedClass[], signals: ReadonlySet<string>, context: ResolutionContext): string[] {
   const methods = new Map<string, MemberReads>();
-  for (const { sourceFile, declaration } of chain) {
-    for (const member of declaration.members) {
+  for (let i = 0; i < chain.length; i++) {
+    const { sourceFile, declaration } = chain[i];
+    for (let j = 0; j < declaration.members.length; j++) {
+      const member = declaration.members[j];
       if (!isNamedMember(member)) {
         continue;
       }
@@ -258,8 +261,8 @@ function collectSignalImportBindings(sourceFile: SourceFile): SignalImportBindin
     if (isNamespaceImport(namedBindings)) {
       namespaces.add(namedBindings.name.text);
     } else {
-      for (const element of namedBindings.elements) {
-        named.add(element.name.text);
+      for (let i = 0; i < namedBindings.elements.length; i++) {
+        named.add(namedBindings.elements[i].name.text);
       }
     }
   });
@@ -277,7 +280,8 @@ function collectSignalImportBindings(sourceFile: SourceFile): SignalImportBindin
 function extractOwnSignalMembers({ sourceFile, declaration }: ResolvedClass, context: ResolutionContext): string[] {
   const bindings = collectSignalImportBindings(sourceFile);
   const result = new Array<string>();
-  for (const member of declaration.members) {
+  for (let i = 0; i < declaration.members.length; i++) {
+    const member = declaration.members[i];
     if (isPropertyDeclaration(member) && isIdentifier(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
       result.push(member.name.text);
     }

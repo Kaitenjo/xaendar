@@ -164,7 +164,9 @@ export function removeTemplateAnalysis(templatePath: string): void {
  * @param fileName - The path of the file.
  */
 export function invalidateTemplateMetadata(fileName: string): void {
-  metadataCaches.forEach(cache => cache.invalidate(fileName));
+  for (const cache of metadataCaches.values()) {
+    cache.invalidate(fileName);
+  }
 }
 
 /**
@@ -180,7 +182,7 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
   const shadowingMembers = new Set<string>();
   const dependencies = new Set<string>();
 
-  components.forEach((classNames, fileName) => {
+  for (const [fileName, classNames] of components) {
     project.registerRealFile(fileName);
     dependencies.add(normalizeFileName(fileName));
 
@@ -188,10 +190,15 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
     const classes = sourceFile.statements.filter((statement): statement is ClassDeclarationWithName => isClassDeclaration(statement) && !!statement.name && classNames.includes(statement.name.text));
     for (let i = 0; i < classes.length; i++) {
       const members = extractComponentMembers(sourceFile, classes[i], compilerOptions);
-      members.shadowingMembers.forEach(member => shadowingMembers.add(member));
-      members.dependencies.forEach(dependency => dependencies.add(normalizeFileName(dependency)));
+      for (let j = 0; j < members.shadowingMembers.length; j++) {
+        shadowingMembers.add(members.shadowingMembers[j]);
+      }
+
+      for (let j = 0; j < members.dependencies.length; j++) {
+        dependencies.add(normalizeFileName(members.dependencies[j]));
+      }
     }
-  });
+  }
 
   return { shadowingMembers: [...shadowingMembers], dependencies: [...dependencies] };
 }
@@ -209,8 +216,11 @@ async function resolveImports(ast: readonly ASTNode[], templateDir: string, cach
   const imports = new Array<TemplateImport>();
   const importNodes = ast.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
 
-  for (const node of importNodes) {
-    for (const specifier of node.specifiers.filter(({ imported }) => imported !== '*')) {
+  for (let i = 0; i < importNodes.length; i++) {
+    const node = importNodes[i];
+    const specifiers = node.specifiers.filter(({ imported }) => imported !== '*');
+    for (let j = 0; j < specifiers.length; j++) {
+      const specifier = specifiers[j];
       try {
         const metadata = await cache.getOrInsert(specifier.imported === 'default' ? specifier.local : specifier.imported, [templateDir, node.path]);
         imports.push({ node, specifier, metadata });

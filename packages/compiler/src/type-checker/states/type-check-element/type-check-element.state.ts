@@ -155,7 +155,9 @@ function typeCheckComponentBindings(node: ElementNode, metadata: ComponentMetada
     requiredProperties.delete(name);
   }
 
-  alwaysBoundAttributes.forEach(name => requiredProperties.delete(name));
+  for (const name of alwaysBoundAttributes) {
+    requiredProperties.delete(name);
+  }
 
   if (requiredProperties.size) {
     throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
@@ -223,7 +225,9 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
       requiredProperties.delete(attributes[j].name);
     }
 
-    alwaysBoundAttributes.forEach(name => requiredProperties.delete(name));
+    for (const name of alwaysBoundAttributes) {
+      requiredProperties.delete(name);
+    }
 
     if (requiredProperties.size) {
       throw new Error(`${owner} on <${tagName}> is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: span });
@@ -302,11 +306,11 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
       ...getAlwaysBoundAttributes(branch.conditionalBindings)
     ]));
 
-    first.forEach(name => {
+    for (const name of first) {
       if (others.every(boundInBranch => boundInBranch.has(name))) {
         alwaysBoundAttributes.add(name);
       }
-    });
+    }
   }
 
   return alwaysBoundAttributes;

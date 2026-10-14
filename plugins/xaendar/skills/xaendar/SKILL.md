@@ -122,7 +122,7 @@ Follow these in every class you write or edit (components, directives, plain cla
   public accessor language!: InputSignal<CodeLang>;
   ```
   Any type works, imported aliases included. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union.
-- **Names**: never one-letter identifiers (variables, parameters and arrow callbacks, loop counters, catch bindings, type parameters, `@for` items and aliases): name what the value is. The build minifies the names anyway.
+- **Names**: never one-letter identifiers (variables, parameters and arrow callbacks, catch bindings, type parameters, `@for` items and aliases): name what the value is. The build minifies the names anyway.
 - **`void`**: never put `void` in front of a call to discard its result (`void this._load(id)`). Call the function as a plain statement, or `await` it / chain `.then`/`.catch` when the promise must be handled.
 - **Module constants** used by a single class become members of that class: a private field, or a public one if the template reads it. Keep at module level only what is exported, shared by several classes, or state shared by every instance (counters, caches).
 

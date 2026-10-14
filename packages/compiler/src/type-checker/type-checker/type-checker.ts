@@ -80,8 +80,8 @@ export class TypeChecker {
   public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
     try {
       this._context.addImport(...metadatas);
-      for (const member of shadowingMembers) {
-        this._context.addShadowingMember(member);
+      for (let i = 0; i < shadowingMembers.length; i++) {
+        this._context.addShadowingMember(shadowingMembers[i]);
       }
       this._context.addCustomElementPatterns(...customElements);
       const body = this._ast.flatMap(node => this._processNode(node, this._context));
@@ -108,11 +108,12 @@ export class TypeChecker {
    */
   private buildMappingTable(lines: Line[]): TypeCheckResult['mappingTable'] {
     const table = new Map<number, readonly LineMapping[]>();
-    lines.forEach((line, index) => {
-      if (line.mappings) {
-        table.set(index, line.mappings)
+    for (let i = 0; i < lines.length; i++) {
+      const { mappings } = lines[i];
+      if (mappings) {
+        table.set(i, mappings)
       };
-    });
+    }
     return table;
   }
 

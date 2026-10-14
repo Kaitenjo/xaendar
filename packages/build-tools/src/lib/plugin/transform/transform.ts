@@ -124,7 +124,9 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
-      for (const importedPath of extractImportedComponentPaths(templateSource, dirname(templatePath))) {
+      const importedPaths = extractImportedComponentPaths(templateSource, dirname(templatePath));
+      for (let j = 0; j < importedPaths.length; j++) {
+        const importedPath = importedPaths[j];
         if (state.host.fileExists(importedPath)) {
           this.addWatchFile(importedPath);
           registerImport(importedPath, componentPath);
@@ -170,7 +172,8 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         re-runs the transform in build watch mode, while the registry lets the hotUpdate hook fully
         invalidate the component in dev mode, where a statically imported file is only soft-invalidated.
       */
-      for (const dependency of componentMembers.dependencies) {
+      for (let j = 0; j < componentMembers.dependencies.length; j++) {
+        const dependency = componentMembers.dependencies[j];
         this.addWatchFile(dependency);
         registerDependency(dependency, componentPath);
       }
@@ -192,7 +195,9 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         The type-check reads files the dev server does not relate to the component, as the ones holding only
         types: watching them re-runs the transform, and the registry lets the hotUpdate hook invalidate it
       */
-      for (const dependency of collectProjectDependencies(languageService.getProgram()!, shim.path, state.compilerOptions)) {
+      const projectDependencies = collectProjectDependencies(languageService.getProgram()!, shim.path, state.compilerOptions);
+      for (let j = 0; j < projectDependencies.length; j++) {
+        const dependency = projectDependencies[j];
         if (dependency !== componentPath) {
           this.addWatchFile(dependency);
           registerDependency(dependency, componentPath);

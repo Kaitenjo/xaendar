@@ -62,10 +62,11 @@ function collectTargets({ ast, metadatas, imports, templatePath }: TemplateAnaly
     }
   };
 
-  imports.forEach(({ specifier, metadata }) => {
+  for (let i = 0; i < imports.length; i++) {
+    const { specifier, metadata } = imports[i];
     add(specifier.importedSpan, getClassDefinition(metadata));
     add(specifier.localSpan, getClassDefinition(metadata));
-  });
+  }
 
   walkTemplate(ast, metadatas, {
     importNode: node => add(node.pathSpan, getModuleDefinition(dirname(templatePath), node.path)),
@@ -122,7 +123,9 @@ function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLi
   const shimKey = normalizeFileName(shimPath);
   const definitions = new Array<TemplateDefinition>();
 
-  for (const { fileName, textSpan } of languageService.getDefinitionAtPosition(shimPath, position) ?? []) {
+  const shimDefinitions = languageService.getDefinitionAtPosition(shimPath, position) ?? [];
+  for (let i = 0; i < shimDefinitions.length; i++) {
+    const { fileName, textSpan } = shimDefinitions[i];
     if (normalizeFileName(fileName) !== shimKey) {
       definitions.push({ fileName, span: { start: textSpan.start, end: textSpan.start + textSpan.length } });
     } else {

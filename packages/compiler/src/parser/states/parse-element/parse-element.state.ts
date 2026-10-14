@@ -212,10 +212,14 @@ function assertUniqueInBranches(conditionalBindings: ConditionalBindingNode[], d
     for (let j = 0; j < branches.length; j++) {
       const declaredInBranch = new Set(declared);
       assertUnique(branches[j], declaredInBranch);
-      declaredInBranch.forEach(name => declaredInBranches.add(name));
+      for (const name of declaredInBranch) {
+        declaredInBranches.add(name);
+      }
     }
 
-    declaredInBranches.forEach(name => declared.add(name));
+    for (const name of declaredInBranches) {
+      declared.add(name);
+    }
   }
 }
 

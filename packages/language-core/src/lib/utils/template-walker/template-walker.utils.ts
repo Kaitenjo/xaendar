@@ -123,7 +123,9 @@ class TemplateWalker {
 
       case ASTNodeType.Switch:
         this._visitor.expression?.(node.expression, variables);
-        node.children.forEach(caseNode => this.walkNodes(caseNode.children, variables));
+        for (let i = 0; i < node.children.length; i++) {
+          this.walkNodes(node.children[i].children, variables);
+        }
         break;
 
       default:
@@ -153,21 +155,31 @@ class TemplateWalker {
    * @param variables - The variables declared in the scope of the bindings.
    */
   private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
-    bindings.attributes.forEach(attribute => {
+    for (let i = 0; i < bindings.attributes.length; i++) {
+      const attribute = bindings.attributes[i];
       this._visitor.attribute?.(attribute, owner);
       if (typeof attribute.value === 'object') {
         this._visitor.expression?.(attribute.value.expression, variables);
       }
-    });
+    }
 
     const eventVariables = new Set([...variables, '$event']);
-    bindings.events.forEach(event => {
+    for (let i = 0; i < bindings.events.length; i++) {
+      const event = bindings.events[i];
       this._visitor.event?.(event, owner);
-      event.parameters.forEach(parameter => this._visitor.expression?.(parameter, eventVariables));
-    });
+      for (let j = 0; j < event.parameters.length; j++) {
+        this._visitor.expression?.(event.parameters[j], eventVariables);
+      }
+    }
 
-    bindings.conditionalBindings.forEach(conditionalBinding => this._walkConditionalBinding(conditionalBinding, owner, variables));
-    [...(bindings.directives ?? []), ...(bindings.structuralDirectives ?? [])].forEach(directive => this._walkDirective(directive, variables));
+    for (let i = 0; i < bindings.conditionalBindings.length; i++) {
+      this._walkConditionalBinding(bindings.conditionalBindings[i], owner, variables);
+    }
+
+    const directives = [...(bindings.directives ?? []), ...(bindings.structuralDirectives ?? [])];
+    for (let i = 0; i < directives.length; i++) {
+      this._walkDirective(directives[i], variables);
+    }
   }
 
   /**
@@ -180,15 +192,18 @@ class TemplateWalker {
   private _walkConditionalBinding(node: ConditionalBindingNode, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
     if (node.type === ASTNodeType.SwitchBinding) {
       this._visitor.expression?.(node.expression, variables);
-      node.branches.forEach(branch => this._walkBindings(branch, owner, variables));
+      for (let i = 0; i < node.branches.length; i++) {
+        this._walkBindings(node.branches[i], owner, variables);
+      }
     } else {
-      node.branches.forEach(branch => {
+      for (let i = 0; i < node.branches.length; i++) {
+        const branch = node.branches[i];
         if (branch.condition) {
           this._visitor.expression?.(branch.condition, variables);
         }
 
         this._walkBindings(branch, owner, variables);
-      });
+      }
     }
   }
 

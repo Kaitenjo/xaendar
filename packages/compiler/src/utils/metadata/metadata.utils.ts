@@ -132,7 +132,9 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
   const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-  bindings.properties.entries().forEach(([propName, { name, type, required, alias, declaration }]) => mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration })));
+  for (const [propName, { name, type, required, alias, declaration }] of bindings.properties.entries()) {
+    mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration }));
+  }
 
   return {
     properties: mappedProperties,

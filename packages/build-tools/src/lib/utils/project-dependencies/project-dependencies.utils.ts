@@ -49,7 +49,8 @@ function getDirectDependencies(sourceFile: SourceFile, compilerOptions: Compiler
   }
 
   dependencies = sourceFile.referencedFiles.map(reference => resolvePosixPath(dirname(sourceFile.fileName), reference.fileName));
-  for (const statement of sourceFile.statements) {
+  for (let i = 0; i < sourceFile.statements.length; i++) {
+    const statement = sourceFile.statements[i];
     if ((isImportDeclaration(statement) || isExportDeclaration(statement)) && statement.moduleSpecifier && isStringLiteralLike(statement.moduleSpecifier)) {
       const { resolvedModule } = resolveModuleName(statement.moduleSpecifier.text, sourceFile.fileName, compilerOptions, sys);
       if (resolvedModule) {

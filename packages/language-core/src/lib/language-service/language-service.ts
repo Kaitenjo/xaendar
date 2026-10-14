@@ -260,7 +260,10 @@ export function getProjectLanguageService(configPath: string | undefined): Proje
  * language server shuts down. The default instance is left untouched.
  */
 export function disposeProjectLanguageServices(): void {
-  projectLanguageServices.forEach(instance => instance.dispose());
+  for (const instance of projectLanguageServices.values()) {
+    instance.dispose();
+  }
+
   projectLanguageServices.clear();
 }
 

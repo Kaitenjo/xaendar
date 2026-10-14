@@ -105,7 +105,9 @@ export class CustomElement extends HTMLElement {
     const unwatchFns = this._context.getUnlistenFns();
     this._context = render.call(this);
     this._context.addUnlistener(...unwatchFns);
-    this[CONNECTED_HOOKS].forEach(hook => hook());
+    for (let i = 0; i < this[CONNECTED_HOOKS].length; i++) {
+      this[CONNECTED_HOOKS][i]();
+    }
     this.afterRender?.();
   }
 
@@ -120,7 +122,9 @@ export class CustomElement extends HTMLElement {
   private disconnectedCallback(): void {
     this.onDestroy?.();
     this._context.clear();
-    this[DISCONNECTED_HOOKS].forEach(hook => hook());
+    for (let i = 0; i < this[DISCONNECTED_HOOKS].length; i++) {
+      this[DISCONNECTED_HOOKS][i]();
+    }
   }
 
   /**

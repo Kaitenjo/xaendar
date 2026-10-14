@@ -114,7 +114,11 @@ export function createFixtureProject(): FixtureProject {
     writeFileSync(path(relativePath), text);
   };
 
-  Object.entries(FIXTURE_FILES).forEach(([relativePath, text]) => write(relativePath, text));
+  const fixtureFiles = Object.entries(FIXTURE_FILES);
+  for (let i = 0; i < fixtureFiles.length; i++) {
+    const [relativePath, text] = fixtureFiles[i];
+    write(relativePath, text);
+  }
 
   return {
     root,

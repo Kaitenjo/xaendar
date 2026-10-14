@@ -75,7 +75,9 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
     directive: node => add(node.selectorSpan, 'decorator'),
     forBlock: node => {
       add(node.itemAliasSpan, 'variable', ['readonly']);
-      node.implicitAliasSpans.forEach(span => add(span, 'variable', ['readonly']));
+      for (const span of node.implicitAliasSpans.values()) {
+        add(span, 'variable', ['readonly']);
+      }
     },
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => add(span, 'variable', ['readonly']))
   });

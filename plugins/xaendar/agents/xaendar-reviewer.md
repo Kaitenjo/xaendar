@@ -42,7 +42,7 @@ Check at least the following:
 - Members initialized with a module signal and annotated anyway (`count: Computed<number> = count`): drop the annotation and the type imports it needed.
 - Inputs typed wider than they are (`InputSignal<string>`) and cast on read (`this.x() as T`), instead of `@Property<InputSignal<T>>(default)` with the same type on the accessor.
 - Opening tags whose items are out of order. The order is: conditional structural directives → structural directives → conditional directives → directives → conditional attributes/inputs → attributes/inputs → conditional events → events. The last four also apply inside a directive's parentheses. Also report conditional blocks that mix groups when the branches could be split by group without testing a condition and its negation separately.
-- One-letter identifiers (variables, parameters, arrow callbacks, loop counters, catch bindings, type parameters, `@for` items and aliases).
+- One-letter identifiers (variables, parameters, arrow callbacks, catch bindings, type parameters, `@for` items and aliases).
 - `void` in front of a call to discard its result (`void this._load(id)`), instead of a plain call statement, or `await` / `.then`/`.catch` when the promise must be handled.
 - A condition and its negation tested in separate blocks (`if (x) { … } if (!x) { … }`, `@if (x)` … `@if (!x)`), instead of `if`/`else`.
 - The same value compared with several constants in separate `if`s or in an `else if` / `@else if` chain, instead of `switch` / `@switch`.

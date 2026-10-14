@@ -115,7 +115,8 @@ export function resolveReference<D extends Declaration>(sourceFile: SourceFile, 
  * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
  */
 function resolveLocal<D extends Declaration>(sourceFile: SourceFile, localName: string, finder: DeclarationFinder<D>, context: ResolutionContext, visitedExports: Set<string>): ResolvedDeclaration<D> | undefined {
-  for (const statement of sourceFile.statements) {
+  for (let i = 0; i < sourceFile.statements.length; i++) {
+    const statement = sourceFile.statements[i];
     // class Base {} / const count = ...
     const declaration = finder.local(statement, localName);
     if (declaration) {
@@ -226,7 +227,8 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
   visitedExports.add(key);
 
   const wildcardSpecifiers = new Array<Expression>();
-  for (const statement of sourceFile.statements) {
+  for (let i = 0; i < sourceFile.statements.length; i++) {
+    const statement = sourceFile.statements[i];
     /*
       export class X {}
       export default class X {}
@@ -272,7 +274,8 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
   }
 
   // export * from './x' (first module exporting the name wins)
-  for (const moduleSpecifier of wildcardSpecifiers) {
+  for (let i = 0; i < wildcardSpecifiers.length; i++) {
+    const moduleSpecifier = wildcardSpecifiers[i];
     const resolved = resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports);
     if (resolved) {
       return resolved;

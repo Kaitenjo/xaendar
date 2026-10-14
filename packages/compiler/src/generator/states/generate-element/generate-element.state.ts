@@ -58,8 +58,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, '${tagName}',`);
 
-  for (const member of [attributes, events, conditionalBindings, directives, structuralDirectives, structuralConditionalBindings]) {
-    appendArgument(retVal.code, member);
+  const members = [attributes, events, conditionalBindings, directives, structuralDirectives, structuralConditionalBindings];
+  for (let i = 0; i < members.length; i++) {
+    appendArgument(retVal.code, members[i]);
   }
 
   hasChildren

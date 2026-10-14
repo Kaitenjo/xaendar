@@ -39,7 +39,8 @@ export function line(...parts: LinePart[]): Line {
   let text = '';
   const mappings = new Array<LineMapping>();
 
-  for (const part of parts) {
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
     if (typeof part === 'string') {
       text = `${text}${part}`;
     } else {

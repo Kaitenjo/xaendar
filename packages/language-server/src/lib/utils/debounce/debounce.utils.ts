@@ -45,7 +45,10 @@ export class Debouncer {
    * Cancels every pending task.
    */
   public dispose(): void {
-    this._timers.forEach(timer => clearTimeout(timer));
+    for (const timer of this._timers.values()) {
+      clearTimeout(timer);
+    }
+
     this._timers.clear();
   }
 }

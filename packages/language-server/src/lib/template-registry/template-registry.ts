@@ -31,10 +31,11 @@ export class TemplateRegistry {
    * @param workspaceRoots - The absolute paths of the workspace folders.
    */
   public async build(workspaceRoots: readonly string[]): Promise<void> {
-    for (const root of workspaceRoots) {
+    for (let i = 0; i < workspaceRoots.length; i++) {
+      const root = workspaceRoots[i];
       const componentFiles = await fg(`**/*${COMPONENT_FILE_SUFFIX}`, { cwd: root, absolute: true, ignore: ['**/node_modules/**', '**/dist/**'] });
-      for (const componentFile of componentFiles) {
-        await this.index(componentFile);
+      for (let j = 0; j < componentFiles.length; j++) {
+        await this.index(componentFiles[j]);
       }
     }
   }
@@ -62,12 +63,12 @@ export class TemplateRegistry {
     }
 
     const templates = new Set<string>();
-    metadatas?.forEach(({ templateUrl }, className) => {
+    for (const [className, { templateUrl }] of metadatas ?? []) {
       const templateKey = normalizeFileName(resolve(dirname(componentPath), templateUrl));
       const components = this._components.getOrInsertComputed(templateKey, () => new Map());
       components.getOrInsertComputed(componentPath, () => []).push(className);
       templates.add(templateKey);
-    });
+    }
 
     this._templates.set(normalizeFileName(componentPath), templates);
   }
@@ -79,13 +80,17 @@ export class TemplateRegistry {
    */
   public remove(componentPath: string): void {
     const componentKey = normalizeFileName(componentPath);
-    this._templates.get(componentKey)?.forEach(templateKey => {
+    for (const templateKey of this._templates.get(componentKey) ?? []) {
       const components = this._components.get(templateKey)!;
-      [...components.keys()].filter(fileName => normalizeFileName(fileName) === componentKey).forEach(fileName => components.delete(fileName));
+      const fileNames = [...components.keys()].filter(fileName => normalizeFileName(fileName) === componentKey);
+      for (let j = 0; j < fileNames.length; j++) {
+        components.delete(fileNames[j]);
+      }
+
       if (!components.size) {
         this._components.delete(templateKey);
       }
-    });
+    }
 
     this._templates.delete(componentKey);
   }

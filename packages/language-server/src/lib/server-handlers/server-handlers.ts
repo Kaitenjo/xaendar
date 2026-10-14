@@ -105,7 +105,10 @@ export class XaendarLanguageServer {
    */
   public async onInitialized(): Promise<void> {
     await this._registry.build(this._workspaceRoots);
-    this._documents.all().filter(isTemplate).forEach(document => this._scheduleValidation(document.uri));
+    const templates = this._documents.all().filter(isTemplate);
+    for (let i = 0; i < templates.length; i++) {
+      this._scheduleValidation(templates[i].uri);
+    }
   }
 
   /**
@@ -147,7 +150,8 @@ export class XaendarLanguageServer {
    * @param params - The changes.
    */
   public async onDidChangeWatchedFiles({ changes }: DidChangeWatchedFilesParams): Promise<void> {
-    for (const { uri, type } of changes) {
+    for (let i = 0; i < changes.length; i++) {
+      const { uri, type } = changes[i];
       const fileName = fromUri(uri);
       if (type === FileChangeType.Deleted) {
         this._registry.remove(fileName);
@@ -190,7 +194,9 @@ export class XaendarLanguageServer {
     const document = this._documents.get(textDocument.uri);
     const analysis = document && await this._getCurrentAnalysis(document);
 
-    for (const { span, type, modifiers } of analysis ? getTemplateSemanticTokens(analysis) : []) {
+    const tokens = analysis ? getTemplateSemanticTokens(analysis) : [];
+    for (let i = 0; i < tokens.length; i++) {
+      const { span, type, modifiers } = tokens[i];
       const { line, character } = document!.positionAt(span.start);
       const modifierBits = modifiers.reduce((bits, modifier) => bits | 1 << TEMPLATE_SEMANTIC_TOKEN_MODIFIERS.indexOf(modifier), 0);
       builder.push(line, character, span.end - span.start, TEMPLATE_SEMANTIC_TOKEN_TYPES.indexOf(type), modifierBits);
@@ -320,13 +326,15 @@ export class XaendarLanguageServer {
     }
 
     const key = normalizeFileName(fileName);
-    this._documents.all().filter(isTemplate).forEach(document => {
+    const templates = this._documents.all().filter(isTemplate);
+    for (let i = 0; i < templates.length; i++) {
+      const document = templates[i];
       const dependencies = this._analyses.get(document.uri)?.result.analysis?.dependencies;
       const components = [...this._registry.resolve(fromUri(document.uri))?.keys() ?? []].map(normalizeFileName);
       if (dependencies?.has(key) || components.includes(key)) {
         this._scheduleValidation(document.uri);
       }
-    });
+    }
   }
 
   /**

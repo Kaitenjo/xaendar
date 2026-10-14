@@ -71,8 +71,8 @@ export class Generator {
       for (let i = 0; i < signals.length; i++) {
         compilerContext.addSignalClassField(signals[i]);
       }
-      for (const member of shadowingMembers) {
-        compilerContext.addShadowingMember(member);
+      for (let i = 0; i < shadowingMembers.length; i++) {
+        compilerContext.addShadowingMember(shadowingMembers[i]);
       }
       compilerContext.addCustomElementPatterns(...customElements);
 
