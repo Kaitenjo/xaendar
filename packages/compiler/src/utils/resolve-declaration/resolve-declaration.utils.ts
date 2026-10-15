@@ -45,6 +45,19 @@ export function resolveBaseClassOf(klass: ResolvedClass, compilerOptions = DEFAU
 }
 
 /**
+ * Resolves the class an expression of a file refers to, through imports, namespace imports and re-exports,
+ * with a resolution state of its own: the directive a `hostDirectives` entry of a component names.
+ *
+ * @param sourceFile - The file containing the expression.
+ * @param expression - The expression referring to the class: a name (`Tooltip`) or a member of a namespace import (`ns.Tooltip`).
+ * @param compilerOptions - Project compiler options, driving how the module declaring the class is resolved.
+ * @returns The class with the file declaring it, or `undefined` when it can't be resolved.
+ */
+export function resolveClassReference(sourceFile: SourceFile, expression: Expression, compilerOptions = DEFAULT_COMPILER_OPTIONS): ResolvedClass | undefined {
+  return resolveReference(sourceFile, expression, CLASS_FINDER, { compilerOptions, dependencies: new Set(), visitedClasses: new Set() }, new Set());
+}
+
+/**
  * Resolves the class `klass` directly extends, if any.
  *
  * @param klass - The class whose base class is resolved.

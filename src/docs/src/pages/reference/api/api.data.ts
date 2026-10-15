@@ -43,7 +43,7 @@ export const API: readonly ApiEntry[] = [
     name: 'WebComponent',
     module: '@xaendar/core',
     kind: 'decorator',
-    signature: "@WebComponent({ selector: 'x-y', templateUrl: './x.xd.component.html', styleUrl?: './x.css' })",
+    signature: "@WebComponent({ selector: 'x-y', hostDirectives?: [TipDirective], styleUrl?: './x.css', templateUrl: './x.xd.component.html' })",
     page: 'components/anatomy'
   },
   {
@@ -106,7 +106,7 @@ export const API: readonly ApiEntry[] = [
     name: 'CustomElement',
     module: '@xaendar/core',
     kind: 'class',
-    signature: 'class X extends CustomElement { onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }',
+    signature: 'class X extends CustomElement { hostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }',
     page: 'components/lifecycle'
   },
   {
@@ -126,8 +126,8 @@ export const API: readonly ApiEntry[] = [
   {
     name: 'Output',
     module: '@xaendar/core',
-    kind: 'type',
-    signature: 'Output<T = void> = { emit(detail?: T, options?: EventOptions): void }',
+    kind: 'class',
+    signature: 'class Output<T = void> { emit(detail?: T, options?: EventOptions): void }',
     page: 'components/outputs'
   },
   {
@@ -141,8 +141,29 @@ export const API: readonly ApiEntry[] = [
     name: 'WebComponentOptions',
     module: '@xaendar/core',
     kind: 'type',
-    signature: '{ selector: string; templateUrl: string; styleUrl?: string }',
+    signature: '{ selector: string; hostDirectives?: Array<Class | HostDirectiveOptions>; styleUrl?: string; templateUrl: string }',
     page: 'components/anatomy'
+  },
+  {
+    name: 'HostDirectiveOptions',
+    module: '@xaendar/core',
+    kind: 'type',
+    signature: '{ directive: Class; properties?: HostDirectiveMember[]; events?: HostDirectiveMember[] }',
+    page: 'directives/custom'
+  },
+  {
+    name: 'HostDirectiveMember',
+    module: '@xaendar/core',
+    kind: 'type',
+    signature: 'string | { name: string; alias: string }',
+    page: 'directives/custom'
+  },
+  {
+    name: 'HostDirectives',
+    module: '@xaendar/core',
+    kind: 'type',
+    signature: 'ReadonlyMap<Class, CustomDirective> with get<D>(directive: Class<D>): D | undefined',
+    page: 'directives/custom'
   },
   {
     name: 'DirectiveOptions',

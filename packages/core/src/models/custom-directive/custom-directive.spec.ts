@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { _Context } from '../../utils/context/context.util';
 import { CustomDirective } from './custom-directive';
@@ -224,5 +224,55 @@ describe('CustomDirective', () => {
     const event = new CustomEvent('changed');
     expect(create(TestDirective, element).dispatchEvent(event)).toBe(true);
     expect(listener).toHaveBeenCalledWith(event);
+  });
+
+  describe('exposed events', () => {
+    /**
+     * Builds a host directive exposing the given events, and listens to the events of its element.
+     */
+    function createHost(events: Array<[string, string]>) {
+      const element = document.createElement('div');
+      const directive = create(TestDirective, element);
+      directive[SET_DIRECTIVE_EVENTS] = new Map(events);
+      const listener = vi.fn();
+      for (const name of ['changed', 'renamed', 'hidden']) {
+        element.addEventListener(name, listener);
+      }
+
+      return { directive, listener };
+    }
+
+    it('dispatches an exposed event as it is', () => {
+      const { directive, listener } = createHost([['changed', 'changed']]);
+      const event = new CustomEvent('changed');
+
+      expect(directive.dispatchEvent(event)).toBe(true);
+      expect(listener).toHaveBeenCalledExactlyOnceWith(event);
+    });
+
+    it('dispatches an exposed event under the name it is exposed with, keeping what it carries', () => {
+      const { directive, listener } = createHost([['changed', 'renamed']]);
+      directive.dispatchEvent(new CustomEvent('changed', { detail: 7, bubbles: true, cancelable: true, composed: true }));
+
+      const event: CustomEvent = listener.mock.calls[0][0];
+      expect(listener).toHaveBeenCalledOnce();
+      expect(event.type).toBe('renamed');
+      expect(event.detail).toBe(7);
+      expect([event.bubbles, event.cancelable, event.composed]).toEqual([true, true, true]);
+    });
+
+    it('does not dispatch an event it does not expose', () => {
+      const { directive, listener } = createHost([['changed', 'changed']]);
+
+      expect(directive.dispatchEvent(new CustomEvent('hidden'))).toBe(true);
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('does not dispatch any event when it exposes none', () => {
+      const { directive, listener } = createHost([]);
+      directive.dispatchEvent(new CustomEvent('changed'));
+
+      expect(listener).not.toHaveBeenCalled();
+    });
   });
 });

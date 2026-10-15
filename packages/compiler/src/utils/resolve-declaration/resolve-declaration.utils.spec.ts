@@ -1,9 +1,9 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { createSourceFile, isClassDeclaration, ScriptTarget } from 'typescript';
+import { createSourceFile, isClassDeclaration, ScriptTarget, VariableStatement } from 'typescript';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearSourceFileCache, resolveBaseClassOf } from './resolve-declaration.utils';
+import { clearSourceFileCache, resolveBaseClassOf, resolveClassReference } from './resolve-declaration.utils';
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
@@ -88,6 +88,36 @@ describe('resolveBaseClassOf', () => {
   it('resolves nothing when the class extends nothing or an unknown class', () => {
     expect(resolve('class Cmp {}')).toBeUndefined();
     expect(resolve('class Cmp extends Missing {}')).toBeUndefined();
+  });
+});
+
+describe('resolveClassReference', () => {
+  /**
+   * Parses `source`, placed in a fresh directory, and resolves the class its last statement, an expression, refers to.
+   */
+  const resolveExpression = (source: string, expression: string, prepare: (dir: string) => void = () => undefined) => {
+    const dir = posix(join(root, `case-${counter++}`));
+    mkdirSync(dir, { recursive: true });
+    prepare(dir);
+    const sourceFile = createSourceFile(`${dir}/main.ts`, `${source}\nconst target = ${expression};`, ScriptTarget.Latest, true);
+    const statement = sourceFile.statements.at(-1) as VariableStatement;
+    const resolved = resolveClassReference(sourceFile, statement.declarationList.declarations[0].initializer!);
+
+    return resolved && { name: resolved.declaration.name?.text, file: posix(resolved.sourceFile.fileName).replace(`${dir}/`, '') };
+  };
+
+  it('resolves a class declared in the file or imported into it', () => {
+    expect(resolveExpression('class Tooltip {}', 'Tooltip')).toEqual({ name: 'Tooltip', file: 'main.ts' });
+    expect(resolveExpression('import { Tooltip } from \'./tooltip\';', 'Tooltip', dir => write(`${dir}/tooltip.ts`, 'export class Tooltip {}'))).toEqual({ name: 'Tooltip', file: 'tooltip.ts' });
+  });
+
+  it('resolves a class through a namespace import', () => {
+    expect(resolveExpression('import * as ns from \'./tooltip\';', 'ns.Tooltip', dir => write(`${dir}/tooltip.ts`, 'export class Tooltip {}'))).toEqual({ name: 'Tooltip', file: 'tooltip.ts' });
+  });
+
+  it('resolves nothing for an unknown class or an expression that is not a name', () => {
+    expect(resolveExpression('', 'Missing')).toBeUndefined();
+    expect(resolveExpression('', 'make()')).toBeUndefined();
   });
 });
 

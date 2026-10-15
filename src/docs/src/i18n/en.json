@@ -809,6 +809,13 @@
           "p1": "A directive class can have type parameters. The template gives them as type arguments right after the selector, between <code>&lt;</code> and <code>&gt;</code>: the types of the inputs and of the outputs of the directive are checked against them.",
           "p2": "The type arguments follow the order of the type parameters. The ones left out are inferred from the values bound to the inputs, as TypeScript does for a function call (<code>items=\"{ rows() }\"</code> gives <code>Item</code> the type of the rows); when nothing is inferred they take their default type (<code>Key = string</code>), or <code>any</code> when they have none. A constraint of the type parameter is checked on the argument. Type arguments are only for the type-check: they have no effect at runtime. A structural directive takes them the same way: <code>*each&lt;Item&gt;(…)</code>."
         },
+        "hostDirectives": {
+          "title": "Host directives",
+          "p1": "A component can apply custom directives to its own element, without anyone writing them in a template: they are listed in the <code>hostDirectives</code> option of <code>@WebComponent</code>. Each entry is the class of a directive, or an object with the class (<code>directive</code>) and the <code>properties</code> and <code>events</code> of the directive the component exposes.",
+          "p2": "An exposed input is bound by the templates using the component as if it were its own (<code>hint=\"…\"</code>), and an exposed output is dispatched on the component, so they listen to it with <code>(shown)=\"…\"</code>. Each entry of <code>properties</code> and <code>events</code> is a name, exposed as it is, or an object with the <code>name</code> and the <code>alias</code> to expose it with: <code>{ name: 'text', alias: 'hint' }</code> exposes the input <code>text</code> as <code>hint</code>. What is not listed stays private to the directive: its events are not dispatched on the component at all. The metadata of the exposed inputs and outputs are read from the class of the directive, so they are type-checked and suggested like the ones of the component.",
+          "p3": "The instances are in <code>hostDirectives</code>, a map keyed by the class of the directive: <code>this.hostDirectives.get(TooltipDirective)</code> is typed as the directive, so the component reads its inputs and calls its methods. A template cannot name a class: keep the instance in a field of the component, and the template reads it from there.",
+          "p4": "The directives start before <code>onInit</code> of the component, which finds them ready, and stop after its <code>onDestroy</code>, with their effects disposed. A directive can be listed once, and an exposed input cannot have the name of an input of the component or of another host directive: both are errors raised when the element is created."
+        },
         "edgeCases": {
           "title": "Edge cases",
           "example1": "What a directive sees in onInit",
@@ -2565,12 +2572,15 @@
     "Query.content": "The first element projected into the slots of the component that matches a selector or a component class.",
     "Query.content.all": "Every projected element matching a selector or a component class, in the order of the slots.",
     "Directive": "Registers a class extending CustomDirective or StructuralDirective under a selector, used as @@selector or *selector.",
-    "CustomElement": "Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection.",
+    "CustomElement": "Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. hostDirectives holds the instances of the host directives, keyed by their class.",
     "CustomDirective": "Base class of the directives acting on the element they are applied to.",
     "StructuralDirective": "Base class of the directives deciding whether the element they are applied to is rendered.",
-    "Output": "The type of an @Event accessor. Without a type argument the event carries no detail, and templates cannot read $event.",
+    "Output": "The class of an @Event accessor: emit(detail?, options?) dispatches the event. Without a type argument the event carries no detail, and templates cannot read $event.",
     "EventOptions": "The options of an output, given to @Event or to a single emit. At least one key is required.",
     "WebComponentOptions": "The options of @WebComponent.",
+    "HostDirectiveOptions": "A directive applied to the element of a component, with the inputs and the outputs of the directive the component exposes, as strings or as { name, alias } objects. HostDirectiveMember is the type of each one.",
+    "HostDirectiveMember": "A property or an event of a host directive exposed on its component: its name, or the name and the alias it is exposed with.",
+    "HostDirectives": "The host directives of a component, keyed by class: hostDirectives.get(Tooltip) is the instance, typed as the directive.",
     "DirectiveOptions": "The options of @Directive.",
     "_Context, _if, _for, _switch, _renderElement, _renderText, _defineRender, mountNode, createAnchor, RenderFunction, RenderDefinition, …": "The runtime of the compiled templates, and its types (BindingHost, RenderElementAttribute, …). They are exported for the generated code, not for applications.",
     "signal": "A writable signal: read it by calling it, write it with set or update.",

@@ -202,3 +202,30 @@ describe('getTemplateDiagnostics generic directives', () => {
     ]);
   }, TIMEOUT);
 });
+
+describe('getTemplateDiagnostics host directives', () => {
+  beforeAll(() => {
+    project.write('src/field.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import { Tooltip } from \'./directives\';',
+      '@WebComponent({ selector: \'my-field\', hostDirectives: [{ directive: Tooltip, properties: [{ name: \'text\', alias: \'hint\' }], events: [\'shown\'] }], templateUrl: \'./field.html\' })',
+      'export class Field extends CustomElement {}',
+      ''
+    ].join('\n'));
+  });
+
+  it('checks the inputs and the events the component exposes against the ones of the directive', async () => {
+    const source = '@import { Field } from \'./field\';\n<my-field hint="a" (shown)="select($event)"></my-field>\n<my-field hint="{ 3 }"></my-field>';
+
+    expect(await diagnose(source)).toEqual([
+      ['$event', 'Argument of type \'CustomEvent<string>\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['my-field', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('treats what the component does not expose as an attribute and a native event of the element', async () => {
+    expect(await diagnose('@import { Field } from \'./field\';\n<my-field text="a" (nope)="select(1)"></my-field>')).toEqual([
+      ['(nope)="select(1)"', 'Property \'nope\' does not exist on type \'HTMLElementEventMap\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+});

@@ -2,6 +2,7 @@ import { CR, DOUBLE_QUOTE, EQUAL_THEN, GRAVE_ACCENT, GREATER_THEN, LESS_THAN, LF
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import { MaybeTokenWithSpan } from '../../types/token.type';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
@@ -143,8 +144,8 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
  * @param typeArguments - The text of the type arguments, if the directive declares them.
  * @returns The token, whose second part is the text of the type arguments only when the directive declares them.
  */
-function toDirectiveToken(type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE, selector: string, typeArguments: string | undefined): DirectiveToken | StructuralDirectiveToken {
-  return typeArguments === undefined ? { type, parts: [selector] } as DirectiveToken | StructuralDirectiveToken : { type, parts: [selector, typeArguments] } as DirectiveToken | StructuralDirectiveToken;
+function toDirectiveToken(type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE, selector: string, typeArguments: string | undefined): MaybeTokenWithSpan<DirectiveToken | StructuralDirectiveToken> {
+  return typeArguments === undefined ? { type, parts: [selector] } : { type, parts: [selector, typeArguments] }
 }
 
 /**

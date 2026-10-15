@@ -1,8 +1,8 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
 import type { EventHost } from '../../types/event/event-host.type';
 import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
-import { Output } from '../../types/event/output.type';
 import { EventOptions } from '../../models/event-options/event-options';
+import { Output } from '../../models/output/output';
 
 /**
  * Merges the options of an emission over the default ones of the output. The options are read
@@ -52,16 +52,14 @@ export function Event<
 
     return {
       init(): Output<Data> {
-        return {
-          emit: (valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
-            const eventOptions: CustomEventInit<Data> = valueOrOverrideOptions instanceof EventOptions
-              ? mergeOptions(options, valueOrOverrideOptions)
-              : { ...mergeOptions(options, overrideOptions), detail: valueOrOverrideOptions };
+        return new Output<Data>((valueOrOverrideOptions?: Data | EventOptions, overrideOptions?: EventOptions) => {
+          const eventOptions: CustomEventInit<Data> = valueOrOverrideOptions instanceof EventOptions
+            ? mergeOptions(options, valueOrOverrideOptions)
+            : { ...mergeOptions(options, overrideOptions), detail: valueOrOverrideOptions };
 
-            const event = new CustomEvent(name, eventOptions);
-            this.dispatchEvent(event);
-          }
-        };
+          const event = new CustomEvent(name, eventOptions);
+          this.dispatchEvent(event);
+        });
       }
     }
   }

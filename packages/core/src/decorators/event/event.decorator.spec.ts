@@ -2,7 +2,7 @@
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CustomElement, EventOptions } from '../../models';
-import type { Output } from '../../types/event/output.type';
+import { Output } from '../../models/output/output';
 import { Event } from '../event/event.decorator';
 
 type Decorated<ReturnType> = { init(this: Element): Output<ReturnType> };
@@ -24,7 +24,9 @@ function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?
   const element = document.createElement('div');
   const listener = listen(element);
 
-  return { emit: decorated.init.call(element).emit, listener };
+  const output = decorated.init.call(element);
+
+  return { output, emit: output.emit, listener };
 }
 
 function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
@@ -34,6 +36,12 @@ function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
 describe('Event decorator', () => {
   it('throws for symbol names', () => {
     expect(() => setup(Symbol('clicked'))).toThrow('Symbol properties are not supported as event names');
+  });
+
+  it('creates an Output', () => {
+    const { output } = setup();
+
+    expect(output).toBeInstanceOf(Output);
   });
 
   it('creates a separate output for each instance, dispatching on its own element', () => {

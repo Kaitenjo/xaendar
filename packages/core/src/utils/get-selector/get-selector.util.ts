@@ -1,5 +1,6 @@
 import type { Constructor } from '@xaendar/types';
 import { INTERNAL_SELECTOR } from '../../costants';
+import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
 
 /**
  * Reads the selector a web component class has been registered with, from the metadata
@@ -10,7 +11,7 @@ import { INTERNAL_SELECTOR } from '../../costants';
  * @throws When the class is not decorated with `@WebComponent`.
  */
 export function getSelector(constructor: Constructor<HTMLElement>): string {
-  const metadata = (constructor as unknown as { [key: symbol]: { [INTERNAL_SELECTOR]?: string } | undefined })[Symbol.for('Symbol.metadata')];
+  const metadata = getWebComponentMetadata(constructor)
   const selector = metadata?.[INTERNAL_SELECTOR];
   if (!selector) {
     throw new Error(`${constructor.name} does not seems to be decorated with @WebComponent`);

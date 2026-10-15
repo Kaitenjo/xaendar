@@ -7,10 +7,12 @@ Every export applications use, by module. Symbols exported only for the compiled
 ### WebComponent (decorator)
 
 ```ts
-@WebComponent({ selector: 'x-y', styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
+@WebComponent({ selector: 'x-y', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
-Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet. The options must be string literals.
+Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet. The options must be string literals; `hostDirectives` an array literal.
+
+`hostDirectives` lists custom directives applied to every instance of the component, on its own element. An entry is the class of the directive, or an object with the class (`directive`) and the `properties` and `events` of the directive the component exposes, each as `'name'` or as `{ name, alias }`: an exposed input is bound from the templates using the component, an exposed output is dispatched on it. The events not exposed are not dispatched. Templates cannot name the class, so expose the instance as a member (`public readonly tip = this.hostDirectives.get(Tip)`, a field of the subclass) to use it in the template.
 
 ### Property (decorator)
 
@@ -79,10 +81,10 @@ Registers a class extending CustomDirective or StructuralDirective under a selec
 ### CustomElement (class)
 
 ```ts
-class X extends CustomElement { onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }
+class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }
 ```
 
-Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection.
+Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`.
 
 ### CustomDirective (class)
 
@@ -100,13 +102,13 @@ class X extends StructuralDirective { shouldRender(): boolean | Promise<boolean>
 
 Base class of the directives deciding whether the element they are applied to is rendered.
 
-### Output (type)
+### Output (class)
 
 ```ts
-Output<T = void> = { emit(detail?: T, options?: EventOptions): void }
+class Output<T = void> { emit(detail?: T, options?: EventOptions): void }
 ```
 
-The type of an @Event accessor. Without a type argument the event carries no detail, and templates cannot read $event.
+The class of an @Event accessor: emit(detail?, options?) dispatches the event. Without a type argument the event carries no detail, and templates cannot read $event.
 
 ### EventOptions (type)
 
@@ -119,10 +121,26 @@ The options of an output, given to @Event or to a single emit. At least one key 
 ### WebComponentOptions (type)
 
 ```ts
-{ selector: string; styleUrl?: string; templateUrl: string }
+{ selector: string; hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>; styleUrl?: string; templateUrl: string }
 ```
 
 The options of @WebComponent.
+
+### HostDirectiveOptions (type)
+
+```ts
+{ directive: Constructor<CustomDirective>; properties?: HostDirectiveMember[]; events?: HostDirectiveMember[] }
+```
+
+A host directive of a component, with the properties and the events of the directive it exposes.
+
+### HostDirectiveMember (type)
+
+```ts
+string | { name: string; alias: string }
+```
+
+A property or an event of a host directive exposed on its component: its name, or the name with the alias it is exposed with.
 
 ### DirectiveOptions (type)
 

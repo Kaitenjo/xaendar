@@ -6,6 +6,7 @@ import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyD
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { MemberDeclaration } from '../../types/member-declaration/member-declaration.type';
 import { Span } from '../../types/span.type';
+import { addHostDirectiveBindings } from '../host-directives/host-directives.utils';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
 
@@ -68,13 +69,15 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     }
 
     const className = klass.name.text;
+    const bindings = extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions);
+    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, ({ declaration, sourceFile: directiveFile }) => classDeclarationHasName(declaration) ? extractBindingsMetadata(declaration, directiveFile, 'directive', compilerOptions) : undefined);
     metadatas.set(className, {
       type: 'component',
       className,
       selector,
       styleUrl,
       templateUrl,
-      ...extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions),
+      ...bindings,
       typescriptNodes: declarations[i]
     });
   }

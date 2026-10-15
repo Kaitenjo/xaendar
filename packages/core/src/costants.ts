@@ -7,6 +7,10 @@ export const INTERNAL_ALIAS_TO_ATTRIBUTE = 'aliasToAttribute';
  */
 export const INTERNAL_SELECTOR = 'selector';
 /**
+ * Internal metadata key holding the host directives a web component is declared with (see `WebComponent`).
+ */
+export const INTERNAL_HOST_DIRECTIVES = 'hostDirectives';
+/**
  * Namespace for SVG elements.
  */
 export const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -19,6 +23,11 @@ export const MATHML_NS = 'http://www.w3.org/1998/Math/MathML';
  * element it is applied to, before starting it (see `CustomDirective`).
  */
 export const SET_DIRECTIVE_ELEMENT = Symbol('SetDirectiveElement');
+/**
+ * Key of the internal setter a `CustomElement` invokes to give a host directive the events it exposes, as a map from the
+ * name of the event the directive dispatches to the name it is dispatched with on the host (see `CustomDirective`).
+ */
+export const SET_DIRECTIVE_EVENTS = Symbol('SetDirectiveEvents');
 /**
  * Key of the internal method the template runtime invokes to start a directive,
  * once its inputs have been bound (see `CustomDirective`).

@@ -809,6 +809,13 @@
           "p1": "La classe di una direttiva può avere dei type parameter. Il template li passa come type argument subito dopo il selettore, tra <code>&lt;</code> e <code>&gt;</code>: i tipi degli input e degli output della direttiva vengono verificati rispetto a essi.",
           "p2": "I type argument seguono l’ordine dei type parameter. Quelli omessi vengono inferiti dai valori legati agli input, come fa TypeScript con la chiamata di una funzione (<code>items=\"{ rows() }\"</code> dà a <code>Item</code> il tipo delle righe); se non si inferisce nulla assumono il tipo di default (<code>Key = string</code>), oppure <code>any</code> se non ne hanno. Il vincolo di un type parameter viene verificato sull’argomento. I type argument servono solo al type-check: non hanno effetto a runtime. Una direttiva strutturale li accetta allo stesso modo: <code>*each&lt;Item&gt;(…)</code>."
         },
+        "hostDirectives": {
+          "title": "Host directive",
+          "p1": "Un componente può applicare direttive custom al proprio elemento, senza che nessuno le scriva in un template: si elencano nell’opzione <code>hostDirectives</code> di <code>@WebComponent</code>. Ogni voce è la classe di una direttiva, oppure un oggetto con la classe (<code>directive</code>) e le <code>properties</code> e gli <code>events</code> della direttiva che il componente espone.",
+          "p2": "Un input esposto si lega dai template che usano il componente come se fosse suo (<code>hint=\"…\"</code>), e un output esposto viene emesso sul componente, che quindi lo ascolta con <code>(shown)=\"…\"</code>. Ogni voce di <code>properties</code> e <code>events</code> è un nome, esposto così com’è, oppure un oggetto con il <code>name</code> e l’<code>alias</code> con cui esporlo: <code>{ name: 'text', alias: 'hint' }</code> espone l’input <code>text</code> come <code>hint</code>. Quello che non è elencato resta privato della direttiva: i suoi eventi non vengono emessi sul componente. I metadati degli input e degli output esposti si leggono dalla classe della direttiva, quindi vengono verificati e suggeriti come quelli del componente.",
+          "p3": "Le istanze sono in <code>hostDirectives</code>, una mappa con chiave la classe della direttiva: <code>this.hostDirectives.get(TooltipDirective)</code> è tipizzato come la direttiva, quindi il componente ne legge gli input e ne chiama i metodi. Un template non può nominare una classe: conserva l’istanza in un campo del componente, e il template la legge da lì.",
+          "p4": "Le direttive partono prima di <code>onInit</code> del componente, che le trova pronte, e si fermano dopo il suo <code>onDestroy</code>, con gli effect eliminati. Una direttiva si può elencare una sola volta, e un input esposto non può avere il nome di un input del componente o di un’altra host directive: entrambi sono errori sollevati alla creazione dell’elemento."
+        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Cosa vede una direttiva in onInit",
@@ -2565,12 +2572,15 @@
     "Query.content": "Il primo elemento proiettato negli slot del componente che corrisponde a un selettore o a una classe componente.",
     "Query.content.all": "Tutti gli elementi proiettati che corrispondono a un selettore o a una classe componente, nell’ordine degli slot.",
     "Directive": "Registra una classe che estende CustomDirective o StructuralDirective con un selettore, usato come @@selettore o *selettore.",
-    "CustomElement": "Classe base dei componenti: una shadow root aperta, gli hook del ciclo di vita, e effect eliminati alla disconnessione.",
+    "CustomElement": "Classe base dei componenti: una shadow root aperta, gli hook del ciclo di vita, e effect eliminati alla disconnessione. hostDirectives contiene le istanze delle host directive, con chiave la loro classe.",
     "CustomDirective": "Classe base delle direttive che agiscono sull’elemento a cui sono applicate.",
     "StructuralDirective": "Classe base delle direttive che decidono se l’elemento a cui sono applicate viene renderizzato.",
-    "Output": "Il tipo di un accessor @Event. Senza argomento di tipo l’evento non porta un detail, e i template non possono leggere $event.",
+    "Output": "La classe di un accessor @Event: emit(detail?, options?) emette l’evento. Senza argomento di tipo l’evento non porta un detail, e i template non possono leggere $event.",
     "EventOptions": "Le opzioni di un output, passate a @Event o a un singolo emit. Serve almeno una chiave.",
     "WebComponentOptions": "Le opzioni di @WebComponent.",
+    "HostDirectiveOptions": "Una direttiva applicata all’elemento di un componente, con gli input e gli output della direttiva che il componente espone, come stringhe o come oggetti { name, alias }. HostDirectiveMember è il tipo di ciascuna.",
+    "HostDirectiveMember": "Una proprietà o un evento di una host directive esposto sul componente: il suo nome, oppure il nome e l’alias con cui viene esposto.",
+    "HostDirectives": "Le host directive di un componente, con chiave la classe: hostDirectives.get(Tooltip) è l’istanza, tipizzata come la direttiva.",
     "DirectiveOptions": "Le opzioni di @Directive.",
     "_Context, _if, _for, _switch, _renderElement, _renderText, _defineRender, mountNode, createAnchor, RenderFunction, RenderDefinition, …": "Il runtime dei template compilati, con i suoi tipi (BindingHost, RenderElementAttribute, …). Sono esportati per il codice generato, non per le applicazioni.",
     "signal": "Un signal scrivibile: si legge chiamandolo, si scrive con set o update.",

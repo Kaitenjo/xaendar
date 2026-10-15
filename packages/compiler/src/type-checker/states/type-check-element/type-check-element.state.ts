@@ -665,8 +665,9 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
   eventContext.addUnresolvableIdentifier('$event');
   for (let i = 0; i < parameters.length; i++) {
     // The beginning of `$event` is left as written, not read from the component, so that TypeScript proposes `$event`
-    if (isEventBeginning(parameters[i]) && parameters[i].text !== '$event') {
-      eventContext.addUnresolvableIdentifier(parameters[i].text);
+    const parameter = parameters[i];
+    if (isEventBeginning(parameter) && parameter.text !== '$event') {
+      eventContext.addUnresolvableIdentifier(parameter.text);
     }
   }
 

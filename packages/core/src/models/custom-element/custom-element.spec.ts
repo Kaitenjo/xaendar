@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { EffectOptions, loadSignals } from '@xaendar/signals';
-import { NoArgsVoidFunction } from '@xaendar/types';
+import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
+import { CustomDirective } from '../custom-directive/custom-directive';
 import { CustomElement } from './custom-element';
 
 loadSignals();
@@ -222,6 +223,98 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'clear', 'hook']);
+    });
+  });
+
+  describe('host directives', () => {
+    /**
+     * Directive recording the calls of its lifecycle in the given list, and the effects it creates.
+     */
+    function createDirective(calls: string[], onCleanup?: NoArgsVoidFunction) {
+      return class extends CustomDirective {
+        public onInit(): void {
+          calls.push('directive onInit');
+          this.effect(() => undefined, { onCleanup });
+        }
+
+        public onDestroy(): void {
+          calls.push('directive onDestroy');
+        }
+      };
+    }
+
+    /**
+     * Builds a component declaring the given host directives, recording its own lifecycle in the same list.
+     */
+    function createHost(calls: string[], Directive: Constructor<CustomDirective>) {
+      const context = createContext(() => calls.push('clear'));
+      const klass = class extends CustomElement {
+        public onInit(): void {
+          calls.push('onInit');
+        }
+
+        public onDestroy(): void {
+          calls.push('onDestroy');
+        }
+      };
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [Directive] } });
+      _defineRender(klass, () => {
+        calls.push('render');
+        return context;
+      });
+      const name = `x-base-${counter++}`;
+      customElements.define(name, klass);
+
+      return document.createElement(name) as unknown as TestElement;
+    }
+
+    it('are available before the component is connected', () => {
+      const Directive = createDirective([]);
+      const element = createHost([], Directive);
+
+      expect((element as unknown as CustomElement).hostDirectives.get(Directive)).toBeInstanceOf(Directive);
+    });
+
+    it('is empty for a component declaring none', () => {
+      expect((create() as unknown as CustomElement).hostDirectives.size).toBe(0);
+    });
+
+    it('are started before the component, which finds them ready, and stopped after it', () => {
+      const calls = new Array<string>();
+      const element = createHost(calls, createDirective(calls));
+
+      document.body.appendChild(element);
+      element.remove();
+
+      expect(calls).toEqual(['directive onInit', 'onInit', 'render', 'onDestroy', 'clear', 'directive onDestroy']);
+    });
+
+    it('dispose their effects on disconnection, and are started again on reconnection', () => {
+      const calls = new Array<string>();
+      const onCleanup = vi.fn();
+      const element = createHost(calls, createDirective(calls, onCleanup));
+
+      document.body.appendChild(element);
+      expect(onCleanup).not.toHaveBeenCalled();
+      element.remove();
+      expect(onCleanup).toHaveBeenCalledOnce();
+
+      document.body.appendChild(element);
+      element.remove();
+      expect(onCleanup).toHaveBeenCalledTimes(2);
+      expect(calls.filter(call => call === 'directive onInit')).toHaveLength(2);
+    });
+
+    it('are not started when the component cannot render', () => {
+      const calls = new Array<string>();
+      const klass = class extends CustomElement { };
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [createDirective(calls)] } });
+      const name = `x-base-${counter++}`;
+      customElements.define(name, klass);
+      const element = document.createElement(name) as unknown as TestElement;
+
+      expect(() => element.connectedCallback()).toThrow('does not seems to have a Render Function');
+      expect(calls).toEqual([]);
     });
   });
 

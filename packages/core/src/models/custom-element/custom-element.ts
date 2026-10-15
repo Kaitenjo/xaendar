@@ -1,8 +1,10 @@
 import { NoArgsVoidFunction } from '@xaendar/types';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { _Context } from '../../utils/context/context.util';
+import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
@@ -24,14 +26,35 @@ export class CustomElement extends HTMLElement {
    */
   public readonly [DISCONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
   /**
+   * The custom directives declared by `hostDirectives` of `@WebComponent`, applied to this element, keyed by the class
+   * of the directive: their properties and methods can be used by the component and by its template.
+   * Empty when the component declares none.
+   */
+  public readonly hostDirectives: HostDirectives;
+  /**
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
   private _context = new _Context({} as unknown as _Context);
   /**
+   * The context the host directives are connected to: it lives from the connection to the disconnection of the element,
+   * disposing the effects of the directives.
+   */
+  private readonly _hostDirectivesContext = new _Context({} as unknown as _Context);
+  /**
    * The root of the Web Component, where the content is rendered
    */
   private readonly _root = this.attachShadow({ mode: 'open' });
+
+  /**
+   * Creates the element and the host directives declared by its `@WebComponent`, applied to it.
+   *
+   * @throws When a host directive is declared twice or exposes an input or an event it does not declare.
+   */
+  constructor() {
+    super();
+    this.hostDirectives = _createHostDirectives(this);
+  }
 
   /**
    * Optional lifecycle hook, invoked each time the element is inserted into the DOM, before the render:
@@ -93,10 +116,15 @@ export class CustomElement extends HTMLElement {
       this._root.adoptedStyleSheets = [styleSheet];
     }
 
+    // The host directives are started before the component, so its `onInit` finds them ready
+    for (const directive of this.hostDirectives.values()) {
+      directive[DIRECTIVE_CONNECT](this._hostDirectivesContext);
+    }
+
     /*
       Effect called in the constructor and on init would raise an error
       due to context field being undefined until the onInit has finished its
-      execution. 
+      execution.
 
       We create a temporaney context on field initialize and move his unlistener functions
       to the real context when render has ended
@@ -122,6 +150,11 @@ export class CustomElement extends HTMLElement {
   private disconnectedCallback(): void {
     this.onDestroy?.();
     this._context.clear();
+    // The host directives are stopped after the component, then their effects are disposed
+    for (const directive of this.hostDirectives.values()) {
+      directive[DIRECTIVE_DISCONNECT]();
+    }
+    this._hostDirectivesContext.clear();
     for (let i = 0; i < this[DISCONNECTED_HOOKS].length; i++) {
       this[DISCONNECTED_HOOKS][i]();
     }
