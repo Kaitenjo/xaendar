@@ -1,6 +1,7 @@
 import type { AbstractConstructor, Constructor, Dictionary, Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { CustomElement } from '../../models/custom-element/custom-element';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';
 import { effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
@@ -272,12 +273,15 @@ function selectBranch<Bindings extends { conditionalBindings: RenderConditionalB
  * @param element - The element to apply the directives to.
  * @param context - The current template execution scope.
  * @param directives - The list of directives to apply to the element.
- * @throws When no custom directive is registered for a selector.
+ * @throws When no custom directive is registered for a selector, or when the element is a component already declaring the directive as a host directive.
  */
 function bindDirectives(element: Element, context: _Context, directives: RenderElementDirective[]): void {
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes, events, conditionalBindings } = directives[i];
     const Directive = resolveDirective(selector, CustomDirective);
+    if (element instanceof CustomElement && element.hostDirectives?.has(Directive)) {
+      throw new Error(`Directive "${selector}" is applied more than once on <${element.localName}>: it is already a host directive of the component`);
+    }
 
     // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
     const directive = new Directive();

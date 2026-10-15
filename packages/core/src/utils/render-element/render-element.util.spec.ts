@@ -874,6 +874,16 @@ describe('_renderElement', () => {
       expect(lastInstance().element).toBe(element);
     });
 
+    it('throws when the element is a component already declaring the directive as a host directive', () => {
+      Object.defineProperty(HTMLDivElement.prototype, 'hostDirectives', { value: new Map([[LabelDirective, new LabelDirective()]]), configurable: true });
+
+      try {
+        expect(() => render(document.createElement('div'), createRoot(), { directives: [directive()] })).toThrow('is applied more than once on <div>');
+      } finally {
+        delete (HTMLDivElement.prototype as unknown as Record<string, unknown>)['hostDirectives'];
+      }
+    });
+
     it('binds the directive properties before reacting to changes', () => {
       render(document.createElement('div'), createRoot(), {
         directives: [directive({ attributes: [{ name: 'label', value: 'bound', setter: _setProperty }] })]
