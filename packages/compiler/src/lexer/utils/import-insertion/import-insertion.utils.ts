@@ -1,12 +1,7 @@
 import type { ImportInsertion } from '../../types/import-insertion/import-insertion.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { ImportToken } from '../../types/tokens/import-token.type';
-import { lexImportHeader } from '../import-header/import-header.utils';
-
-/**
- * What follows the braces of an `@import` statement: the `from` keyword, the quoted path of the module and the optional `;`.
- */
-const STATEMENT_END = /^\}\s*from\s*(['"])[^'"]*\1(;?)/;
+import { IMPORT_STATEMENT_END, lexImportHeader } from '../import-header/import-header.utils';
 
 /**
  * Computes how to import a symbol in a template: the symbol is added to the statement importing from the same module if
@@ -41,7 +36,7 @@ export function getImportInsertion(source: string, path: string, symbol: string)
       case TokenType.IMPORT_PATH: {
         const braceEnd = specifiers[specifiers.length - 1].span.end;
         // The lexer only emits the path of a statement that has its braces and its quoted path, which the pattern matches
-        const [text, quote, semicolon] = STATEMENT_END.exec(source.slice(braceEnd))!;
+        const [text, quote, semicolon] = IMPORT_STATEMENT_END.exec(source.slice(braceEnd))!;
         last = { quote, semicolon, end: braceEnd + text.length };
         if (token.parts[0] === path) {
           return addToStatement(source, specifiers, symbol);

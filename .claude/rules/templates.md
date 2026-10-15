@@ -29,11 +29,11 @@ After the tag name, write the items of the opening tag in this order:
 
 ```html
 <button
-  *exVisibleWhen(condition="{ shown() }")
+  *exVisibleWhen(condition="{shown()}")
   @if (highlighted()) {
     @@exTint(color="#fde68a")
   }
-  @@exTooltip(text="{ hint() }" (opened)="track($event)")
+  @@exTooltip(text="{hint()}" (opened)="track($event)")
   @if (locked()) {
     disabled
   }
@@ -70,6 +70,13 @@ Between elements and inside a tag alike:
 }
 ```
 
+## Spaces
+
+The language server formats the templates (Format Document, `xaendar.format.printWidth` for the width of the lines) and applies these rules:
+- An interpolation in a property binding has no spaces inside its braces: `title="{title()}"`, not `title="{ title() }"`. This holds in the parentheses of a directive too.
+- An interpolation in the text has one space on each side: `{ title() }`, not `{title()}`.
+- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else` (`} @else {`).
+
 ## Names
 
 Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row().id; index = $index)`, not `r` / `i`).
@@ -92,8 +99,9 @@ Self-close every element without content, native ones included: `<div class="spa
   </tr>
   ```
 
+- Every element and block starts on a line of its own after another node, also when the template had them on one line (`</button> <button>`): the formatter writes a line break there and the space is dropped, so write `{ ' ' }` when it matters. A text is never separated from the element that follows it (`Use <code>x</code>.` stays on one line), and nothing is moved next to a comment or inside `<pre>`.
 - An element that contains only text and interpolations stays on one line (`<span class="count">{ total() } items</span>`), as long as its opening tag is short and the line stays within about 120 characters. Otherwise, the text goes on its own line, indented one level. Exception: text that already touches both tags (`<x-card>Text</x-card>`) stays inline even when long, because on its own line it would gain spaces at both ends, and they are visible when the content flows inline (slotted next to other content, for example).
-- An opening tag that does not fit on one line, or contains a conditional block, has one item per line, indented one level, and ends with `>` (or `/>`) on its own line, as in the example above.
+- An opening tag that does not fit the line (`xaendar.format.printWidth`) is wrapped like the default HTML formatter does: the items fill each line up to the width, the next lines indented one level, and `>` (or `/>`) ends the last line. A tag that contains a conditional block has one item per line instead, indented one level, and ends with `>` (or `/>`) on its own line, as in the example above.
 - Control-flow blocks, inside a tag or between elements, are never inline: one block per line, with its content indented.
 
 Xaendar keeps the line breaks inside a text, as HTML does, and drops whitespace-only text holding a line break; a space between two elements or interpolations on the same line stays. As a result:

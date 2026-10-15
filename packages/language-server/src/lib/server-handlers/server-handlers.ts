@@ -1,6 +1,6 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
-import { type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DidChangeWatchedFilesParams, FileChangeType, type Hover, type HoverParams, type InitializeParams, type InitializeResult, InsertTextFormat, type LocationLink, MarkupKind, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
+import { type CodeAction, CodeActionKind, type CodeActionParams, type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DocumentFormattingParams, type Diagnostic, DiagnosticTag, type DidChangeWatchedFilesParams, FileChangeType, type Hover, type HoverParams, type InitializeParams, type TextEdit, type InitializeResult, InsertTextFormat, type LocationLink, MarkupKind, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
 import { Debouncer } from '../utils/debounce/debounce.utils';
 import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from '../utils/lsp/lsp.utils';
@@ -14,6 +14,16 @@ const TEMPLATE_SUFFIX = '.xd.component.html';
  * Milliseconds a template waits, after the last change, before being validated again.
  */
 const VALIDATION_DELAY = 250;
+
+/**
+ * The width, in columns, a line of a template stays within when it is formatted, unless the user sets `xaendar.format.printWidth`.
+ */
+const DEFAULT_PRINT_WIDTH = 120;
+
+/**
+ * The narrowest width accepted for `xaendar.format.printWidth`.
+ */
+const MIN_PRINT_WIDTH = 40;
 
 /**
  * The analysis of an open template, together with the version of the document it was made from.
@@ -51,6 +61,10 @@ export class XaendarLanguageServer {
    * The absolute paths of the workspace folders.
    */
   private _workspaceRoots = new Array<string>();
+  /**
+   * Whether the client answers the requests for its settings.
+   */
+  private _hasConfiguration = false;
 
   /**
    * Creates the server.
@@ -71,6 +85,8 @@ export class XaendarLanguageServer {
     connection.onDefinition(params => this.onDefinition(params));
     connection.onHover(params => this.onHover(params));
     connection.onCompletion(params => this.onCompletion(params));
+    connection.onCodeAction(params => this.onCodeAction(params));
+    connection.onDocumentFormatting(params => this.onDocumentFormatting(params));
     connection.languages.semanticTokens.on(params => this.onSemanticTokens(params));
     connection.onShutdown(() => this.onShutdown());
     this._documents.onDidChangeContent(({ document }) => this.onDidChangeContent(document));
@@ -85,8 +101,9 @@ export class XaendarLanguageServer {
    * @param params - The initialize request.
    * @returns The capabilities of the server.
    */
-  public onInitialize({ workspaceFolders, rootUri }: InitializeParams): InitializeResult {
+  public onInitialize({ workspaceFolders, rootUri, capabilities }: InitializeParams): InitializeResult {
     this._workspaceRoots = workspaceFolders?.map(({ uri }) => fromUri(uri)) ?? (rootUri ? [fromUri(rootUri)] : []);
+    this._hasConfiguration = !!capabilities?.workspace?.configuration;
 
     return {
       capabilities: {
@@ -94,6 +111,8 @@ export class XaendarLanguageServer {
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: ['.', '(', '<', '@', '*', '/'] },
+        codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix, CodeActionKind.SourceOrganizeImports] },
+        documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
           full: true
@@ -204,6 +223,84 @@ export class XaendarLanguageServer {
   }
 
   /**
+   * Proposes the changes of the imports of a template: removing the unused import under the cursor (quick fix), and
+   * organizing all of them, that is removing the unused ones, merging the statements importing from the same module
+   * and sorting them (`source.organizeImports`, e.g. Alt+Shift+O).
+   *
+   * @param params - The code action request.
+   * @returns The code actions, none for a document that is not a template.
+   */
+  public async onCodeAction({ textDocument, range, context }: CodeActionParams): Promise<CodeAction[]> {
+    const document = this._documents.get(textDocument.uri);
+    if (!document || !isTemplate(document)) {
+      return [];
+    }
+
+    const { only } = context;
+    const isWanted = (kind: string): boolean => !only?.length || only.some(wanted => kind === wanted || kind.startsWith(`${wanted}.`));
+    const source = document.getText();
+    const analysis = (await this._getAnalysis(document))?.analysis;
+    const actions = new Array<CodeAction>();
+
+    const unused = analysis?.source === source && isWanted(CodeActionKind.QuickFix) ? findUnusedImports(analysis) : undefined;
+    if (unused) {
+      const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
+      for (let i = 0; i < unused.length; i++) {
+        const change = start <= unused[i].span.end && end >= unused[i].span.start ? removeTemplateImport(source, unused[i]) : undefined;
+        if (change) {
+          actions.push({ title: `Remove unused import '${unused[i].name}'`, kind: CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
+        }
+      }
+    }
+
+    const organization = isWanted(CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : undefined;
+    if (organization) {
+      actions.push({ title: 'Organize imports', kind: CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
+    }
+
+    return actions;
+  }
+
+  /**
+   * Formats a template: its elements and control-flow blocks indented, the opening tags that don't fit the line written
+   * one item per line, the spaces of its interpolations and block keywords made regular. The indentation is the one of
+   * the editor, the width of the lines is `xaendar.format.printWidth`. It works while the template doesn't compile, as
+   * long as its tags and blocks are closed.
+   *
+   * @param params - The formatting request.
+   * @returns The edits, none if the document is not a template, is already formatted or cannot be read.
+   */
+  public async onDocumentFormatting({ textDocument, options }: DocumentFormattingParams): Promise<TextEdit[]> {
+    const document = this._documents.get(textDocument.uri);
+    if (!document || !isTemplate(document)) {
+      return [];
+    }
+
+    const formatting = getTemplateFormatting(document.getText(), {
+      indent: options.insertSpaces ? ' '.repeat(options.tabSize) : '\t',
+      indentWidth: options.tabSize,
+      printWidth: await this._getPrintWidth(document.uri)
+    });
+
+    return formatting ? [{ range: toRange(document, formatting.span), newText: formatting.newText }] : [];
+  }
+
+  /**
+   * Reads the width of the lines of a formatted template from the settings of the client.
+   *
+   * @param uri - The URI of the template, which the settings can depend on.
+   * @returns The width, the default one if the client has no such setting, or it is not a valid width.
+   */
+  private async _getPrintWidth(uri: string): Promise<number> {
+    if (!this._hasConfiguration) {
+      return DEFAULT_PRINT_WIDTH;
+    }
+
+    const settings = await this._connection.workspace.getConfiguration({ scopeUri: uri, section: 'xaendar.format' }) as { printWidth?: unknown } | null;
+    return typeof settings?.printWidth === 'number' && settings.printWidth >= MIN_PRINT_WIDTH ? settings.printWidth : DEFAULT_PRINT_WIDTH;
+  }
+
+  /**
    * Computes the semantic tokens of a template, none while it doesn't compile.
    *
    * @param params - The semantic tokens request.
@@ -298,13 +395,15 @@ export class XaendarLanguageServer {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code }) => ({
-        range: toRange(document, span),
-        message,
-        severity: toSeverity(category),
-        code,
-        source: 'xaendar'
-      }))
+      diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code, unnecessary }) => {
+        const diagnostic: Diagnostic = { range: toRange(document, span), message, severity: toSeverity(category), code, source: 'xaendar' };
+        if (unnecessary) {
+          // The editor fades what the template doesn't need, like the unused imports of a TypeScript file
+          diagnostic.tags = [DiagnosticTag.Unnecessary];
+        }
+
+        return diagnostic;
+      })
     });
 
     return result;

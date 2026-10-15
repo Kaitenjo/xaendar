@@ -12,7 +12,7 @@
   <button (click)="clear()">Clear the log</button>
 </div>
 @if (shown()) {
-  <ex-hook-parent label="{ label() }" />
+  <ex-hook-parent label="{label()}" />
 }
 <ol class="log">
   @for (line of log(); track line().id) {

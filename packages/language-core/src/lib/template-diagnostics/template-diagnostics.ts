@@ -1,6 +1,7 @@
 import { type ASTNode, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import type { TemplateAnalysis, TemplateAnalysisResult } from '../template-analysis/template-analysis';
+import { findUnusedImports } from '../template-imports/template-imports';
 import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
 
 /**
@@ -23,6 +24,10 @@ export type TemplateDiagnostic = {
    * The TypeScript error code, for the problems found by type-checking the template.
    */
   readonly code?: number;
+  /**
+   * Set for what the template doesn't need (an import it never uses): the editor shows it faded, not as a problem.
+   */
+  readonly unnecessary?: true;
 };
 
 /**
@@ -43,7 +48,7 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
   }
 
   const { languageService, shimPath, errors } = analysis!;
-  return [
+  const diagnostics = [
     ...errors.map(templateError => toTemplateDiagnostic(templateError, ast)),
     ...[...languageService.getSyntacticDiagnostics(shimPath), ...languageService.getSemanticDiagnostics(shimPath)]
       .map(diagnostic => ({
@@ -53,6 +58,15 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
         code: diagnostic.code
       }))
   ];
+
+  const unused = findUnusedImports(analysis!);
+  if (unused) {
+    for (let i = 0; i < unused.length; i++) {
+      diagnostics.push({ span: unused[i].span, message: `'${unused[i].name}' is declared but never used.`, category: DiagnosticCategory.Suggestion, unnecessary: true });
+    }
+  }
+
+  return diagnostics;
 }
 
 /**

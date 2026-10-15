@@ -140,11 +140,11 @@ Follow these in every template you write or edit:
 - **Order inside an opening tag**: conditional structural directives (`@if (…) { *x(…) }`) → structural directives (`*x(…)`) → conditional directives (`@if (…) { @@x(…) }`) → directives (`@@x(…)`) → conditional attributes and inputs (`@if (…) { name="…" }`) → attributes and inputs → conditional events (`@if (…) { (name)="…" }`) → events (`(name)="…"`). "Conditional" means any `@if`/`@else`/`@switch` block inside the tag. The last four groups keep this order inside a directive's parentheses too. Keep each conditional block to a single group when you can. When the branches of one condition need different groups, keep a single `@if`/`@else` in the position of its first group.
   ```html
   <button
-    *exVisibleWhen(condition="{ shown() }")
+    *exVisibleWhen(condition="{shown()}")
     @if (highlighted()) {
       @@exTint(color="#fde68a")
     }
-    @@exTooltip(text="{ hint() }" (opened)="track($event)")
+    @@exTooltip(text="{hint()}" (opened)="track($event)")
     @if (locked()) {
       disabled
     }
@@ -158,6 +158,7 @@ Follow these in every template you write or edit:
     Edit
   </button>
   ```
+- **Spaces**: an interpolation in a property binding has no spaces inside its braces (`title="{title()}"`), one in the text has one on each side (`{ title() }`), and a control-flow keyword is followed by a space (`@if (x)`). The language server formats a template with these rules (Format Document), the width of the lines is the setting `xaendar.format.printWidth` (default 120).
 - **Conditions** (in classes and templates alike):
   - Never test a condition and its negation separately (`if (x) { … } if (!x) { … }`, `@if (x) { … }` … `@if (!x) { … }`): use `if`/`else`, `@if`/`@else`.
   - Never compare the same value with several constants in separate `if`s or in an `else if` chain (`if (kind === 'a') … else if (kind === 'b') …`): use `switch (kind)` / `@switch (kind())`, with a `default` when the other values need handling too. In templates, `@switch` also avoids the generated names shared by `@else if` branches.

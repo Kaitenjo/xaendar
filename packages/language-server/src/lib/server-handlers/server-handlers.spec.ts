@@ -1,8 +1,8 @@
-import { analyzeTemplate, disposeProjectLanguageServices, getComponentDefinition, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, removeDocumentOverlay, removeTemplateAnalysis, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { CompletionItemKind, type Connection, InsertTextFormat, DiagnosticSeverity, FileChangeType, type TextDocuments } from 'vscode-languageserver/node';
+import { CompletionItemKind, type Connection, InsertTextFormat, DiagnosticSeverity, DiagnosticTag, FileChangeType, type TextDocuments } from 'vscode-languageserver/node';
 import { URI } from 'vscode-uri';
 import { XaendarLanguageServer } from './server-handlers';
 
@@ -34,6 +34,10 @@ vi.mock('@xaendar/language-core', async importOriginal => ({
   removeDocumentOverlay: vi.fn(),
   removeTemplateAnalysis: vi.fn(),
   invalidateTemplateMetadata: vi.fn(),
+  findUnusedImports: vi.fn(() => undefined),
+  getTemplateFormatting: vi.fn(() => undefined),
+  organizeTemplateImports: vi.fn(() => undefined),
+  removeTemplateImport: vi.fn(() => undefined),
   disposeProjectLanguageServices: vi.fn()
 }));
 
@@ -59,6 +63,9 @@ function setup(...documents: TextDocument[]) {
     onDefinition: capture('definition'),
     onHover: capture('hover'),
     onCompletion: capture('completion'),
+    onCodeAction: capture('codeAction'),
+    onDocumentFormatting: capture('formatting'),
+    workspace: { getConfiguration: vi.fn(async () => null) },
     onShutdown: capture('shutdown'),
     languages: { semanticTokens: { on: capture('semanticTokens') } },
     listen: vi.fn(),
@@ -90,6 +97,10 @@ beforeEach(() => {
   vi.mocked(getTemplateImportCompletions).mockResolvedValue(undefined);
   vi.mocked(getTemplateImportPathCompletions).mockReturnValue(undefined);
   vi.mocked(getTemplateSelectorCompletions).mockResolvedValue(undefined);
+  vi.mocked(findUnusedImports).mockReturnValue(undefined);
+  vi.mocked(organizeTemplateImports).mockReturnValue(undefined);
+  vi.mocked(getTemplateFormatting).mockReturnValue(undefined);
+  vi.mocked(removeTemplateImport).mockReturnValue(undefined);
   vi.mocked(getTemplateSourceBindingCompletions).mockResolvedValue(undefined);
   vi.mocked(getTemplateExpressionCompletions).mockResolvedValue(undefined);
   vi.mocked(getTemplateKeywordCompletions).mockReturnValue(undefined);
@@ -111,6 +122,8 @@ describe('XaendarLanguageServer', () => {
       onDefinition: vi.spyOn(server, 'onDefinition').mockResolvedValue([]),
       onHover: vi.spyOn(server, 'onHover').mockResolvedValue(null),
       onCompletion: vi.spyOn(server, 'onCompletion').mockResolvedValue([]),
+      onCodeAction: vi.spyOn(server, 'onCodeAction').mockResolvedValue([]),
+      onDocumentFormatting: vi.spyOn(server, 'onDocumentFormatting').mockResolvedValue([]),
       onSemanticTokens: vi.spyOn(server, 'onSemanticTokens').mockResolvedValue({ data: [] }),
       onShutdown: vi.spyOn(server, 'onShutdown').mockReturnValue(),
       onDidChangeContent: vi.spyOn(server, 'onDidChangeContent').mockResolvedValue(),
@@ -123,6 +136,8 @@ describe('XaendarLanguageServer', () => {
     handlers.definition({});
     handlers.hover({});
     handlers.completion({});
+    handlers.codeAction({});
+    handlers.formatting({});
     handlers.semanticTokens({});
     handlers.shutdown();
     handlers.change({ document });
@@ -144,6 +159,8 @@ describe('XaendarLanguageServer', () => {
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: ['.', '(', '<', '@', '*', '/'] },
+        codeActionProvider: { codeActionKinds: ['quickfix', 'source.organizeImports'] },
+        documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: ['property', 'event', 'decorator', 'variable'], tokenModifiers: ['readonly'] },
           full: true
@@ -183,6 +200,21 @@ describe('XaendarLanguageServer', () => {
         uri: TEMPLATE_URI,
         version: 3,
         diagnostics: [{ range: { start: { line: 1, character: 2 }, end: { line: 1, character: 6 } }, message: 'boom', severity: DiagnosticSeverity.Error, code: 2339, source: 'xaendar' }]
+      });
+    });
+
+    it('tags what the template doesn\'t need as unnecessary, so that the editor fades it', async () => {
+      const document = template('@import { A } from \'./a\';\n<b></b>');
+      const { server, connection } = setup(document);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(document.getText()));
+      vi.mocked(getTemplateDiagnostics).mockReturnValue([{ span: { start: 10, end: 11 }, message: '\'A\' is declared but never used.', category: DiagnosticCategory.Suggestion, unnecessary: true }]);
+
+      await server.validate(TEMPLATE_URI);
+
+      expect(connection.sendDiagnostics).toHaveBeenCalledWith({
+        uri: TEMPLATE_URI,
+        version: 1,
+        diagnostics: [{ range: { start: { line: 0, character: 10 }, end: { line: 0, character: 11 } }, message: '\'A\' is declared but never used.', severity: DiagnosticSeverity.Hint, code: undefined, source: 'xaendar', tags: [DiagnosticTag.Unnecessary] }]
       });
     });
 
@@ -390,6 +422,141 @@ describe('XaendarLanguageServer', () => {
       expect((await server.onSemanticTokens({ textDocument: { uri: TEMPLATE_URI } })).data).toEqual([]);
       expect((await server.onSemanticTokens({ textDocument: { uri: 'file:///closed.html' } })).data).toEqual([]);
       expect(getTemplateSemanticTokens).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onDocumentFormatting', () => {
+    const request = (insertSpaces = true, tabSize = 2) => ({ textDocument: { uri: TEMPLATE_URI }, options: { insertSpaces, tabSize } });
+    const formatting = { span: { start: 0, end: 8 }, newText: '<p>\n</p>\n' };
+
+    it('replaces the template with the formatted one, indented like the editor', async () => {
+      const { server } = setup(template('<p></p>'));
+      vi.mocked(getTemplateFormatting).mockReturnValue(formatting);
+
+      const edits = await server.onDocumentFormatting(request(true, 4));
+
+      expect(getTemplateFormatting).toHaveBeenCalledWith('<p></p>', { indent: '    ', indentWidth: 4, printWidth: 120 });
+      expect(edits).toEqual([{ range: { start: { line: 0, character: 0 }, end: { line: 0, character: 7 } }, newText: '<p>\n</p>\n' }]);
+    });
+
+    it('indents with a tab when the editor does', async () => {
+      const { server } = setup(template('<p></p>'));
+
+      await server.onDocumentFormatting(request(false, 4));
+
+      expect(getTemplateFormatting).toHaveBeenCalledWith('<p></p>', { indent: '\t', indentWidth: 4, printWidth: 120 });
+    });
+
+    it('reads the width of the lines from the settings of the client', async () => {
+      const { server, connection } = setup(template('<p></p>'));
+      server.onInitialize({ workspaceFolders: null, capabilities: { workspace: { configuration: true } } } as never);
+      connection.workspace.getConfiguration.mockResolvedValue({ printWidth: 80 });
+
+      await server.onDocumentFormatting(request());
+
+      expect(connection.workspace.getConfiguration).toHaveBeenCalledWith({ scopeUri: TEMPLATE_URI, section: 'xaendar.format' });
+      expect(getTemplateFormatting).toHaveBeenCalledWith('<p></p>', expect.objectContaining({ printWidth: 80 }));
+    });
+
+    it.each([
+      ['no setting', null],
+      ['a width that is not a number', { printWidth: '80' }],
+      ['a width that is too narrow', { printWidth: 10 }]
+    ])('uses the default width for %s', async (_name, settings) => {
+      const { server, connection } = setup(template('<p></p>'));
+      server.onInitialize({ workspaceFolders: null, capabilities: { workspace: { configuration: true } } } as never);
+      connection.workspace.getConfiguration.mockResolvedValue(settings);
+
+      await server.onDocumentFormatting(request());
+
+      expect(getTemplateFormatting).toHaveBeenCalledWith('<p></p>', expect.objectContaining({ printWidth: 120 }));
+    });
+
+    it('does not ask for the settings when the client cannot give them', async () => {
+      const { server, connection } = setup(template('<p></p>'));
+
+      await server.onDocumentFormatting(request());
+
+      expect(connection.workspace.getConfiguration).not.toHaveBeenCalled();
+    });
+
+    it('returns no edits for a template that is already formatted or cannot be read, a document that is not a template, or not open', async () => {
+      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, 'export class App {}');
+      const { server } = setup(template('<p></p>'), component);
+
+      expect(await server.onDocumentFormatting(request())).toEqual([]);
+      expect(await server.onDocumentFormatting({ ...request(), textDocument: { uri: COMPONENT_URI } })).toEqual([]);
+      expect(await server.onDocumentFormatting({ ...request(), textDocument: { uri: 'file:///closed.xd.component.html' } })).toEqual([]);
+      expect(getTemplateFormatting).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('onCodeAction', () => {
+    const source = '@import { A, B } from \'./a\';\n<a-b></a-b>';
+    const request = (only?: string[], character = 13) => ({ textDocument: { uri: TEMPLATE_URI }, range: { start: { line: 0, character }, end: { line: 0, character } }, context: { diagnostics: [], only } });
+    const change = { span: { start: 10, end: 15 }, newText: ' A ' };
+    const edit = { changes: { [TEMPLATE_URI]: [{ range: { start: { line: 0, character: 10 }, end: { line: 0, character: 15 } }, newText: ' A ' }] } };
+
+    it('proposes to remove the unused import under the cursor, and to organize the imports', async () => {
+      const document = template(source);
+      const { server } = setup(document);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(source));
+      vi.mocked(findUnusedImports).mockReturnValue([{ span: { start: 13, end: 14 }, name: 'B', key: './a|B' }]);
+      vi.mocked(removeTemplateImport).mockReturnValue(change);
+      vi.mocked(organizeTemplateImports).mockReturnValue(change);
+
+      const actions = await server.onCodeAction(request());
+
+      expect(removeTemplateImport).toHaveBeenCalledWith(source, { span: { start: 13, end: 14 }, name: 'B', key: './a|B' });
+      expect(organizeTemplateImports).toHaveBeenCalledWith(source, expect.objectContaining({ source }));
+      expect(actions).toEqual([
+        { title: 'Remove unused import \'B\'', kind: 'quickfix', isPreferred: true, edit },
+        { title: 'Organize imports', kind: 'source.organizeImports', edit }
+      ]);
+    });
+
+    it('proposes to remove an unused import only where the cursor is on it', async () => {
+      const { server } = setup(template(source));
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(source));
+      vi.mocked(findUnusedImports).mockReturnValue([{ span: { start: 13, end: 14 }, name: 'B', key: './a|B' }]);
+      vi.mocked(removeTemplateImport).mockReturnValue(change);
+
+      expect(await server.onCodeAction(request(undefined, 0))).toEqual([]);
+      expect(removeTemplateImport).not.toHaveBeenCalled();
+    });
+
+    it('proposes only the kind of action asked for', async () => {
+      const { server } = setup(template(source));
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(source));
+      vi.mocked(findUnusedImports).mockReturnValue([{ span: { start: 13, end: 14 }, name: 'B', key: './a|B' }]);
+      vi.mocked(removeTemplateImport).mockReturnValue(change);
+      vi.mocked(organizeTemplateImports).mockReturnValue(change);
+
+      expect((await server.onCodeAction(request(['source.organizeImports']))).map(({ kind }) => kind)).toEqual(['source.organizeImports']);
+      expect((await server.onCodeAction(request(['source']))).map(({ kind }) => kind)).toEqual(['source.organizeImports']);
+      expect((await server.onCodeAction(request(['quickfix']))).map(({ kind }) => kind)).toEqual(['quickfix']);
+      expect(await server.onCodeAction(request(['refactor']))).toEqual([]);
+    });
+
+    it('does not remove anything when the analysis is not the one of the current text, and only proposes to organize', async () => {
+      const { server } = setup(template(source));
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf('<b></b>'));
+      vi.mocked(organizeTemplateImports).mockReturnValue(change);
+
+      const actions = await server.onCodeAction(request());
+
+      expect(findUnusedImports).not.toHaveBeenCalled();
+      expect(actions.map(({ kind }) => kind)).toEqual(['source.organizeImports']);
+    });
+
+    it('proposes nothing when the imports are organized, for a document that is not open, or not a template', async () => {
+      const component = TextDocument.create(COMPONENT_URI, 'typescript', 1, 'export class App {}');
+      const { server } = setup(template(source), component);
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf(source));
+
+      expect(await server.onCodeAction(request())).toEqual([]);
+      expect(await server.onCodeAction({ ...request(), textDocument: { uri: COMPONENT_URI } })).toEqual([]);
+      expect(await server.onCodeAction({ ...request(), textDocument: { uri: 'file:///closed.xd.component.html' } })).toEqual([]);
     });
   });
 

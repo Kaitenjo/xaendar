@@ -19,6 +19,17 @@
     "onLanguage:typescript"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Xaendar",
+      "properties": {
+        "xaendar.format.printWidth": {
+          "type": "number",
+          "default": 120,
+          "minimum": 40,
+          "markdownDescription": "The width, in columns, a line of a template should stay within when it is formatted: the opening tags that don't fit are written one item per line. The indentation follows the editor (`editor.tabSize`, `editor.insertSpaces`)."
+        }
+      }
+    },
     "grammars": [
       {
         "scopeName": "xaendar.template.injection",

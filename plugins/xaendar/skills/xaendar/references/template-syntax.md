@@ -127,7 +127,7 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 <p @@exTint(color="{ color() }" (painted)="log($event)")>…</p>
 
 <!-- Structural directive: decides whether the element exists; AND between several -->
-<p *exVisibleWhen(condition="{ shown() }")>…</p>
+<p *exVisibleWhen(condition="{shown()}")>…</p>
 
 <!-- Applied conditionally -->
 <p

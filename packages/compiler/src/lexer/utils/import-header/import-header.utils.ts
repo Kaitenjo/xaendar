@@ -3,6 +3,11 @@ import { TokenType } from '../../types/token-type.enum';
 import type { Token } from '../../types/token.type';
 
 /**
+ * What follows the braces of an `@import` statement: the `from` keyword, the quoted path of the module and the optional `;`.
+ */
+export const IMPORT_STATEMENT_END = /^\}\s*from\s*(['"])[^'"]*\1(;?)/;
+
+/**
  * The text that may separate the `@import` statements: spaces, line breaks and the `;` closing a statement.
  */
 const STATEMENT_SEPARATOR = /^[;\s]*$/;

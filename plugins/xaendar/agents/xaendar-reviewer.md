@@ -47,10 +47,11 @@ Check at least the following:
 - Empty collections or objects created only to be looped over or spread (`?? []`, `|| []`, `?? new Map()`, `...(x ?? [])`, `...(condition ? [item] : [])`, `...(x ?? {})`, `...(condition ? { key: value } : {})`, `...condition && { key: value }`), a spread of an array or an object that may be empty, a function returning an empty array/`Map`/`Set` instead of `undefined` for "nothing", and a collection tested with a bare `if (items)` instead of `if (items?.length)` / `if (items?.size)`.
 - A condition and its negation tested in separate blocks (`if (x) { … } if (!x) { … }`, `@if (x)` … `@if (!x)`), instead of `if`/`else`.
 - The same value compared with several constants in separate `if`s or in an `else if` / `@else if` chain, instead of `switch` / `@switch`.
+- Spaces: an interpolation in a property binding with spaces inside its braces (`title="{ title() }"` instead of `title="{title()}"`), an interpolation in the text without them (`{title()}` instead of `{ title() }`), a control-flow keyword glued to its parenthesis (`@if(x)` instead of `@if (x)`).
 - Line breaks:
   - an element that contains another element on a single line;
   - an element with only text whose opening tag is long or spans several lines, but whose text is not on its own line;
-  - a long opening tag not split into one item per line;
+  - a long opening tag not wrapped (the items fill each line up to the width, the next lines indented, `>` at the end of the last one), or one with a conditional block not split into one item per line;
   - inline control-flow blocks.
   - Content of `<pre>` is exempt. When suggesting a fix, keep spaces that matter: `{ ' ' }` between two elements, and punctuation on the line of the element it follows.
 

@@ -100,6 +100,19 @@ describe('getTemplateDiagnostics', () => {
   }, TIMEOUT);
 });
 
+describe('getTemplateDiagnostics unused imports', () => {
+  it('reports the imports the template never uses as unnecessary, not as problems', async () => {
+    const source = '@import { Child } from \'./child\';\n@import { Tooltip, Media as M } from \'./directives\';\n<my-child label="a" @@tooltip></my-child>';
+    const diagnostics = getTemplateDiagnostics(await project.analyze(source));
+
+    expect(diagnostics).toEqual([{ span: { start: source.indexOf('Media as M'), end: source.indexOf('Media as M') + 'Media as M'.length }, message: '\'M\' is declared but never used.', category: DiagnosticCategory.Suggestion, unnecessary: true }]);
+  }, TIMEOUT);
+
+  it('reports nothing for a template using its imports', async () => {
+    expect(await diagnose('@import { Child } from \'./child\';\n<my-child label="a"></my-child>')).toEqual([]);
+  }, TIMEOUT);
+});
+
 describe('getTemplateDiagnostics generic directives', () => {
   const imports = '@import { List } from \'./generic\';\n';
 
