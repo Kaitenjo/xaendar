@@ -138,7 +138,8 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 ```
 
 - A directive whose class has type parameters (`class List<Item, Key = string>`) takes its type arguments right after the selector: `@@exList<Row, number>(items="{ rows() }")`, `*exEach<Row>(…)`. They follow the order of the type parameters; the ones left out are inferred from the values bound to the inputs, like TypeScript infers a function call (`items="{ rows() }"` gives `Item` the type of the rows), then take their default type (`Key = string`), or `any` when they have none. The constraint of a type parameter is checked on its argument or on the inferred type. They are only for the type-check, with no effect at runtime. More arguments than type parameters, or arguments on a directive that is not generic, is an error.
-- A directive can be applied once per element.
+- A component whose class has type parameters (`class Picker<Item, Key = string>`) gets them inferred from the values bound to its inputs, the same way, and nothing else: a tag name takes no type arguments, so a component can only ever infer them. A type parameter nothing is inferred for takes its default type, or `any`; its constraint is checked on the inferred type and reported on the tag name.
+- A directive can be applied once per element, and cannot be applied in the template of an element that already declares it as a host directive.
 
 ## Imports
 

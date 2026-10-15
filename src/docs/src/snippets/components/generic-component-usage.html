@@ -1,0 +1,7 @@
+@import { PickerComponent } from './picker.xd.component.ts'
+
+<!-- Item is inferred from the bound value: the type of the rows -->
+<ex-picker items="{rows()}" (selected)="open($event)" />
+
+<!-- Nothing is bound to infer Key from, so it takes its default type, string -->
+<ex-picker items="{rows()}" (picked)="open($event)" />

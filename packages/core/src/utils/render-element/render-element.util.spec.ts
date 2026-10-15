@@ -22,6 +22,7 @@ const {
 } = await import('./render-element.util');
 const { signal } = await import('../../signals');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
+const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
 
@@ -875,13 +876,12 @@ describe('_renderElement', () => {
     });
 
     it('throws when the element is a component already declaring the directive as a host directive', () => {
-      Object.defineProperty(HTMLDivElement.prototype, 'hostDirectives', { value: new Map([[LabelDirective, new LabelDirective()]]), configurable: true });
+      const klass = class extends CustomElement { };
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [LabelDirective] } });
+      customElements.define('host-el', klass);
 
-      try {
-        expect(() => render(document.createElement('div'), createRoot(), { directives: [directive()] })).toThrow('is applied more than once on <div>');
-      } finally {
-        delete (HTMLDivElement.prototype as unknown as Record<string, unknown>)['hostDirectives'];
-      }
+      expect(() => _renderElement(document.createElement('div'), createRoot(), null, 'host-el', [], [], [], [directive()], [], [], null))
+        .toThrow('Directive "label" is applied more than once on <host-el>: it is already a host directive of the component');
     });
 
     it('binds the directive properties before reacting to changes', () => {

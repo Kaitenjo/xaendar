@@ -35,10 +35,29 @@ export type ComponentMetadata = {
    */
   events: Map<string, ComponentEventMetadata>;
   /**
+   * The type parameters of the class, if it is generic. The types of its properties and events are written in
+   * terms of them, so that the type-check instantiates the class with the types the template gives them.
+   */
+  typeParameters?: ClassTypeParameter[];
+  /**
    * TypeScript AST nodes related to the component, including the class declaration and its decorator.
    * These nodes are useful for forward operations without needing to re-parse the source file to extract them.
    */
   typescriptNodes: ComponentDeclaration;
+};
+
+/**
+ * A type parameter of the class of a component or of a directive.
+ */
+export type ClassTypeParameter = {
+  /**
+   * The name of the type parameter.
+   */
+  name: string;
+  /**
+   * Whether it has a default type (`T = string`), which a template giving it no type gets.
+   */
+  hasDefault: boolean;
 };
 
 /**

@@ -1,0 +1,5 @@
+@for (item of items(); track item()) {
+  <button class="{item().value === selected()?.value ? 'lang lang--active' : 'lang'}" type="button" (click)="onButtonClick(item())">
+    { item().value }
+  </button>
+}

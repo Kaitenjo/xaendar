@@ -174,6 +174,11 @@
           "example1": "Cosa prepara la classe base",
           "p2": "La classe è un vero <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> restituisce un’istanza di <code>RatingComponent</code>, e tutte le API del DOM (attributi, eventi, <code>classList</code>, ...) funzionano come su un elemento nativo."
         },
+        "generics": {
+          "title": "Componenti generici",
+          "p1": "La classe di un componente può avere dei parametri di tipo. I tipi dei suoi input e dei suoi output vengono allora controllati contro i tipi che TypeScript inferisce dai valori passati agli input, come fa per la chiamata di una funzione: <code>items=\"{rows()}\"</code> dà a <code>Item</code> il tipo delle righe, e quindi <code>$event</code> di <code>selected</code> porta lo stesso tipo.",
+          "p2": "A differenza di una direttiva, un elemento non ha una sintassi per gli argomenti di tipo: il nome di un tag non può prendere <code>&lt;</code> e <code>&gt;</code>, quindi i tipi di un componente sono sempre e solo inferiti. Un parametro di tipo per cui non si inferisce nulla prende il suo tipo di default (<code>Key = string</code>), oppure <code>any</code> se non ne ha uno, e un vincolo del parametro di tipo viene controllato sul tipo inferito, segnalandolo sul nome del tag. I parametri di tipo servono solo al controllo dei tipi: a runtime non hanno alcun effetto."
+        },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {

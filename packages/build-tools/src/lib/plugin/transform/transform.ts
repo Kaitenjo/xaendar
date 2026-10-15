@@ -48,6 +48,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       return code;
     }
 
+    console.log('Start Transform: ', componentPath)
     /**
      * Leaves the component without its render function, once its errors are reported, failing the build
      * when the plugin runs in one.
@@ -215,6 +216,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
     fixDecoratorExport(magicString, code);
 
+    console.log('End Transform: ', componentPath)
     return {
       code: magicString.toString(),
       map: magicString.generateMap({ source: componentPath, includeContent: true, hires: true })

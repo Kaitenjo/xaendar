@@ -1,6 +1,6 @@
 import { slice } from '@xaendar/common';
 import { ClassDeclaration, CompilerOptions, Decorator, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
-import { ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
+import { ClassTypeParameter, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
@@ -71,7 +71,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     const className = klass.name.text;
     const bindings = extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions);
     addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, ({ declaration, sourceFile: directiveFile }) => classDeclarationHasName(declaration) ? extractBindingsMetadata(declaration, directiveFile, 'directive', compilerOptions) : undefined);
-    metadatas.set(className, {
+    const metadata: ComponentMetadata = {
       type: 'component',
       className,
       selector,
@@ -79,7 +79,14 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       templateUrl,
       ...bindings,
       typescriptNodes: declarations[i]
-    });
+    };
+
+    const typeParameters = extractTypeParameters(klass);
+    if (typeParameters) {
+      metadata.typeParameters = typeParameters;
+    }
+
+    metadatas.set(className, metadata);
   }
 
   return metadatas;
@@ -113,14 +120,29 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
       ...extractBindingsMetadata(klass, sourceFile, 'directive', compilerOptions),
       typescriptNodes: declarations[i]
     };
-    if (klass.typeParameters?.length) {
-      metadata.typeParameters = klass.typeParameters.map(({ name, default: defaultType }) => ({ name: name.text, hasDefault: !!defaultType }));
+    const typeParameters = extractTypeParameters(klass);
+    if (typeParameters) {
+      metadata.typeParameters = typeParameters;
     }
 
     metadatas.set(className, metadata);
   }
 
   return metadatas;
+}
+
+/**
+ * Extracts the type parameters of the class of a component or of a directive.
+ *
+ * @param klass - The class declaration.
+ * @returns The name of each type parameter and whether it has a default type, `undefined` when the class is not generic.
+ */
+function extractTypeParameters(klass: ClassDeclarationWithName): ClassTypeParameter[] | undefined {
+  if (!klass.typeParameters?.length) {
+    return undefined;
+  }
+
+  return klass.typeParameters.map(({ name, default: defaultType }) => ({ name: name.text, hasDefault: !!defaultType }));
 }
 
 /**
@@ -135,7 +157,7 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
  */
 function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], compilerOptions: CompilerOptions | undefined): Pick<ComponentMetadata, 'properties' | 'events'> {
   // Inherited accessors are referenced through the class too: its type exposes them, even when the base class isn't exported
-  const accessorOwner = getAccessorOwnerType(klass, sourceFile, kind === 'directive');
+  const accessorOwner = getAccessorOwnerType(klass, sourceFile, true);
   const bindings: CollectedBindings = { properties: new Map(), events: new Map() };
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
@@ -492,7 +514,7 @@ function toMemberDeclaration(nameNode: Identifier, sourceFile: SourceFile): Memb
  * @param klass - The class to reference.
  * @param sourceFile - The source file declaring the class.
  * @param withTypeParameters - Whether a generic class is referenced with its own type parameters as type arguments, which the
- *   type-check of a directive declares as the type arguments the template passes (see `typeParameters` of `DirectiveMetadata`).
+ *   type-check of the templates instantiates with the types they give them (see `typeParameters` of `ComponentMetadata`).
  * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`, or
  *   `import('/src/list.directive').List<Item>` for a generic class whose type parameters are referenced.
  */

@@ -1,4 +1,5 @@
 @import { DocsSearchComponent } from '../docs-search/docs-search.xd.component.ts'
+@import { SwitchButtonComponent } from '../../pages/components/switch-button/switch-button.xd.component'
 
 <header class="bar">
   <button class="icon menu" type="button" aria-label="{ translations().topbar.menu }" (click)="toggleMenu()">
@@ -14,15 +15,7 @@
   <docs-search class="search" />
   <div class="actions">
     <div class="langs" role="group" aria-label="{ translations().topbar.language }">
-      @for (code of langs; track code()) {
-        <button
-          class="{ code() === currentLang() ? 'lang lang--active' : 'lang' }"
-          type="button"
-          (click)="switchTo(code())"
-        >
-          { code().toUpperCase() }
-        </button>
-      }
+      <ex-switch-button items="{langs}" (valueChange)="switchTo($event)" />
     </div>
     <button class="icon" type="button" aria-label="{ translations().topbar.theme }" (click)="toggleTheme()">
       @if (theme() === 'dark') {
