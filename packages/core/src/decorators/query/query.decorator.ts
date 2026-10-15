@@ -20,10 +20,10 @@ import type { QueryTarget } from '../../signals/types/query-target.type';
  *
  * @example
  * ```ts
- * @Query('[preview]')
+ * \@Query('[preview]')
  * accessor preview: QuerySignal<HTMLElement | null>;
  *
- * @Query(MyButtonComponent)
+ * \@Query(MyButtonComponent)
  * accessor button: QuerySignal<MyButtonComponent | null>;
  * ```
  */
@@ -49,10 +49,10 @@ export function Query<ElementType extends HTMLElement = HTMLElement, Target exte
  *
  * @example
  * ```ts
- * @Query.all('[item]')
+ * \@Query.all('[item]')
  * accessor items: QuerySignal<HTMLElement[]>;
  *
- * @Query.all(MyButtonComponent)
+ * \@Query.all(MyButtonComponent)
  * accessor buttons: QuerySignal<MyButtonComponent[]>;
  * ```
  */
@@ -80,13 +80,13 @@ Query.all = function all<ElementType extends HTMLElement = HTMLElement, Target e
  *
  * @example
  * ```ts
- * @Query.content('[header]')
+ * \@Query.content('[header]')
  * accessor header: QuerySignal<HTMLElement | null>;
  *
- * @Query.content(MyButtonComponent, { slots: 'footer' })
+ * \@Query.content(MyButtonComponent, { slots: 'footer' })
  * accessor footerButton: QuerySignal<MyButtonComponent | null>;
  *
- * @Query.content('[item]', { lightDom: true })
+ * \@Query.content('[item]', { lightDom: true })
  * accessor item: QuerySignal<HTMLElement | null>;
  * ```
  */
@@ -113,10 +113,10 @@ Query.content = Object.assign(function slot<ElementType extends HTMLElement = HT
    *
    * @example
    * ```ts
-   * @Query.content.all('[item]')
+   * \@Query.content.all('[item]')
    * accessor items: QuerySignal<HTMLElement[]>;
    *
-   * @Query.content.all(MyButtonComponent, { slots: 'footer' })
+   * \@Query.content.all(MyButtonComponent, { slots: 'footer' })
    * accessor footerButtons: QuerySignal<MyButtonComponent[]>;
    * ```
    */

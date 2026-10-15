@@ -36,7 +36,7 @@ function mergeOptions(options?: Partial<EventOptions>, overrideOptions?: EventOp
  *
  * @example
  * ```ts
- * @Event({ bubbles: true })
+ * \@Event({ bubbles: true })
  * accessor clicked: Output<MouseEvent>;
  * ```
  */

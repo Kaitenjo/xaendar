@@ -71,10 +71,10 @@ function createPropertyDecorator<
  *
  * @example
  * ```ts
- * @Property()
+ * \@Property()
  * accessor label: InputSignal<string>;
  *
- * @Property(0)
+ * \@Property(0)
  * accessor count: InputSignal<number>;
  * ```
  */
@@ -103,10 +103,10 @@ export function Property<
  *
  * @example
  * ```ts
- * @Property.required()
+ * \@Property.required()
  * accessor userId: InputSignal<string>;
  *
- * @Property.required({ alias: 'user-id' })
+ * \@Property.required({ alias: 'user-id' })
  * accessor userId: InputSignal<string>;
  * ```
  */

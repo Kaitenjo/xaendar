@@ -19,13 +19,13 @@ import { WebComponentOptions } from '../../types/web-component/web-component-opt
  *
  * @example
  * ```ts
- * @WebComponent({ selector: 'my-button', templateUrl: './my-button.html' })
+ * \@WebComponent({ selector: 'my-button', templateUrl: './my-button.html' })
  * class MyButtonComponent extends CustomElement {}
  * ```
  *
  * @example
  * ```ts
- * @WebComponent({
+ * \@WebComponent({
  *   selector: 'my-field',
  *   hostDirectives: [{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'hint' }], events: ['opened'] }],
  *   templateUrl: './my-field.html'

@@ -321,7 +321,7 @@ function findClassDecorator<D extends ClassDecoratorNode>(classDecl: ClassDeclar
  * Directives only declare a selector.
  *
  * @example
- * @WebComponent({ selector: 'my-button', templateUrl: './my-button.xd.component.html' })
+ * \@WebComponent({ selector: 'my-button', templateUrl: './my-button.xd.component.html' })
  *
  * @param decorator - The decorator node to read the arguments from.
  * @returns The literal values declared by the decorator, empty when missing or not literal.
