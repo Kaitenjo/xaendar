@@ -1,1 +1,38 @@
-/* component styles */
+:host {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--xd-border);
+  border-radius: 999px;
+  background: var(--xd-bg-soft);
+  position: relative;
+}
+
+.lang {
+  padding: 0.2rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--xd-text-muted);
+  font: 600 0.75rem/1.5 var(--xd-font);
+  cursor: pointer;
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+  transition: color .15s ease-in-out;
+}
+
+.label--active {
+  color: #fff;
+}
+
+.selected {
+  background: var(--xd-accent);
+  border-radius: 999px;
+  color: #fff;
+  height: calc(100% - 4px);
+  position: absolute;
+  transition: left .15s ease-in-out,
+    width .15s ease-in-out;
+}

@@ -61,29 +61,6 @@
   gap: 0.5rem;
 }
 
-.langs {
-  display: flex;
-  padding: 2px;
-  border: 1px solid var(--xd-border);
-  border-radius: 999px;
-  background: var(--xd-bg-soft);
-}
-
-.lang {
-  padding: 0.2rem 0.6rem;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--xd-text-muted);
-  font: 600 0.75rem/1.5 var(--xd-font);
-  cursor: pointer;
-}
-
-.lang--active {
-  background: var(--xd-accent);
-  color: #fff;
-}
-
 .icon {
   display: grid;
   place-items: center;
@@ -95,6 +72,7 @@
   background: none;
   color: var(--xd-text-soft);
   cursor: pointer;
+  transition: background .1s ease-in-out;
 }
 
 .icon:hover {

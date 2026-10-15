@@ -1,5 +1,5 @@
-import { CustomElement, Event, Output, Property, WebComponent } from '@xaendar/core';
-import { InputSignal, signal } from '@xaendar/core/signals';
+import { CustomElement, Event, Output, Property, Query, WebComponent } from '@xaendar/core';
+import { InputSignal, QuerySignal, signal } from '@xaendar/core/signals';
 
 type Item<T> = {
   label: string,
@@ -12,30 +12,42 @@ type Item<T> = {
   templateUrl: './switch-button.xd.component.html'
 })
 export class SwitchButtonComponent<T = string> extends CustomElement {
-  @Property.required()
+  @Property.required({ transform: items => items.map(item => { item.label = item.label.toUpperCase(); return item }) })
   public accessor items!: InputSignal<Item<T>[]>
 
   @Event()
   public accessor valueChange!: Output<Item<T>>
 
-  public selected = signal<Item<T> | null>(null);
+  @Query('.selected')
+  public accessor selectedCircle!: QuerySignal<HTMLSpanElement | null>
 
-  public onInit(): void {
+  @Query.all('button.lang')
+  public accessor buttons!: QuerySignal<HTMLButtonElement[]>
+
+  public readonly selected = signal<Item<T> | null>(null);
+
+  public afterRender(): void {
     if (!this.selected()) {
       this.updateSelectedOnItemsChange();
     }
-    
-    this.effect(() => this.updateSelectedOnItemsChange());
   }
-  
+
   public onButtonClick(item: Item<T>): void {
-    this.selected.set(item)
+    this._selectItem(item);
   }
 
   public updateSelectedOnItemsChange(): void {
     const items = this.items();
     if (items.length) {
-      this.selected.set(items[0]);
+      this._selectItem(items[0]);
     }
+  }
+
+  private _selectItem(item: Item<T>): void {
+    this.selected.set(item);
+    this.valueChange.emit(item);
+    const button = this.buttons()[this.items().indexOf(item)]
+    this.selectedCircle()!.style.left = `${button.offsetLeft}px`;
+    this.selectedCircle()!.style.width = `${button.offsetWidth}px`;
   }
 }

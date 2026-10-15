@@ -37,7 +37,11 @@ export class DocsTopbarComponent extends CustomElement {
    * The languages the reader can switch to.
    */
   public readonly langs = LANGS.map(lang => {
-    let retVal: { label: string, value : Lang}
+    const retVal: { label: string, value: Lang } = {
+      label: lang,
+      value: lang
+    }
+    return retVal
   });
   /**
    * The link to the home page.
