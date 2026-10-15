@@ -2,6 +2,7 @@ import { BACKSLASH, DOLLAR, DOUBLE_QUOTE, GRAVE_ACCENT, LEFT_BRACE, RIGHT_BRACE,
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { TokenWithOptionalSpan } from '../../types/token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
@@ -110,12 +111,20 @@ export function lexInterpolationExpression(cursor: LexerCursor, context: LexerTr
       throw `Unexpected state '${previousState}' after interpolation expression`;
   };
 
+  const expression = interpolation.trimEnd();
+  const tokens = new Array<TokenWithOptionalSpan>();
+
+  // An empty interpolation in the text or in the body of a tag generates nothing; in an attribute it would leave it without a value
+  if (expression.trim().length || previousState === LexerState.ATTRIBUTE) {
+    tokens.push({
+      type: TokenType.INTERPOLATION_EXPRESSION,
+      parts: [expression]
+    });
+  }
+
   return {
     state,
-    tokens: [{
-      type: TokenType.INTERPOLATION_EXPRESSION,
-      parts: [interpolation.trimEnd()]
-    }],
+    tokens,
     popState: true
   };
 }

@@ -16,6 +16,18 @@ describe('lexInterpolationExpression', () => {
     });
   });
 
+  it('emits no token for an empty interpolation in the text or in the body of a tag', () => {
+    for (const state of [LexerState.TEXT, LexerState.TAG_BODY]) {
+      const context: LexerTransitionFunctionContext = { history: [state], tokens: [] };
+      expect(lexInterpolationExpression(new LexerCursor('  }'), context)).toEqual({ state, tokens: [], popState: true });
+    }
+  });
+
+  it('keeps the token of an empty interpolation in an attribute', () => {
+    const context: LexerTransitionFunctionContext = { history: [LexerState.ATTRIBUTE], tokens: [] };
+    expect(lexInterpolationExpression(new LexerCursor('}"'), context).tokens).toHaveLength(1);
+  });
+
   it('restores the TAG_BODY state', () => {
     const cursor = new LexerCursor('value}');
     const context: LexerTransitionFunctionContext = { history: [LexerState.TAG_BODY], tokens: [] };
