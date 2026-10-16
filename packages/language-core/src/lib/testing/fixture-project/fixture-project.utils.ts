@@ -7,7 +7,8 @@ import { toPosixPath } from '../../utils/path/path.utils';
 /**
  * A TypeScript project written in a temporary directory, for the specs analyzing real templates: a component `App`
  * extending `CustomElement` (an `HTMLElement`) using the template `src/app.html`, a component `Child` (`my-child`,
- * inheriting the event `closed` from `ChildBase`) and the directives `Tooltip` (`tooltip`) and `Media` (`media`).
+ * inheriting the event `closed` from `ChildBase`) and the directives `Tooltip` (`tooltip`) and `Media` (`media`). The
+ * alias `@app/*` leads to the files of `src`, and the package `@acme/format` declares `formatPrice` and `CURRENCY`.
  */
 export type FixtureProject = {
   /**
@@ -42,10 +43,21 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
       target: 'esnext',
       module: 'esnext',
       moduleResolution: 'bundler',
-      paths: { '@xaendar/core': ['./stubs/core.ts'], '@xaendar/core/signals': ['./stubs/signals.ts'] }
+      paths: { '@xaendar/core': ['./stubs/core.ts'], '@xaendar/core/signals': ['./stubs/signals.ts'], '@app/*': ['./src/*'] }
     },
     include: ['src', 'stubs']
   }),
+  'node_modules/@acme/format/package.json': JSON.stringify({
+    name: '@acme/format',
+    exports: { '.': { types: './index.d.ts', default: './index.js' } }
+  }),
+  'node_modules/@acme/format/index.d.ts': [
+    '/** Formats a price. */',
+    'export declare function formatPrice(value: number): string;',
+    'export declare const CURRENCY: string;',
+    ''
+  ].join('\n'),
+  'node_modules/@acme/format/index.js': 'export const formatPrice = value => `${value}`;\nexport const CURRENCY = \'EUR\';\n',
   'stubs/signals.ts': 'export type Signal<T> = () => T;\n',
   'stubs/core.ts': [
     'export type InputSignal<T> = () => T;',

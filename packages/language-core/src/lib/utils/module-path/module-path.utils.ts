@@ -1,38 +1,59 @@
 import { existsSync } from 'node:fs';
 import { posix } from 'node:path';
-import { normalizeFileName, resolvePosixPath } from '../path/path.utils';
+import { type CompilerOptions, ModuleKind, ModuleResolutionKind, resolveModuleName, sys } from 'typescript';
+import { normalizeFileName, resolvePosixPath, toPosixPath } from '../path/path.utils';
 
 /**
- * Resolves a module import path to an actual file system path.
- * Handles both relative paths (./button.component) and package paths (@scope/pkg).
- *
- * @param baseDir - The directory to resolve relative imports from
- * @param modulePath - The import module path
- * @returns The resolved file path, in posix format, or undefined if not found
+ * The module an `@import` path leads to.
  */
-export function resolveModulePath(baseDir: string, modulePath: string): string | undefined {
-  // Handle relative imports
+export type ResolvedModule = {
+  /**
+   * The path of the file declaring the module, in posix format: a TypeScript source, or the declarations of a package.
+   */
+  readonly fileName: string;
+  /**
+   * Whether the module belongs to a package: the code generated for the template imports it by the path written in
+   * the `@import`, as the application does, rather than by the path of its declarations.
+   */
+  readonly external: boolean;
+};
+
+/**
+ * How the paths that are not relative are resolved when the project has no options: as a bundler does, reading the
+ * `exports` of the packages.
+ */
+const DEFAULT_COMPILER_OPTIONS: CompilerOptions = { module: ModuleKind.ESNext, moduleResolution: ModuleResolutionKind.Bundler };
+
+/**
+ * Resolves the path of an `@import` to the module it leads to. A relative path (`./button.component`) is resolved
+ * against the directory of the template; any other one, the name of a package (`@scope/pkg`) or an alias of the
+ * project (`paths`, `baseUrl`), as the TypeScript files of the project resolve it.
+ *
+ * @param baseDir - The directory of the template.
+ * @param modulePath - The path, as written in the `@import`.
+ * @param compilerOptions - The options of the project, which drive how the paths that are not relative are resolved.
+ * @returns The module, `undefined` if the path leads to no file.
+ */
+export function resolveModule(baseDir: string, modulePath: string, compilerOptions = DEFAULT_COMPILER_OPTIONS): ResolvedModule | undefined {
   if (modulePath.startsWith('.')) {
-    const resolvedPath = resolvePosixPath(baseDir, modulePath);
-
-    // Try as-is (might already have extension)
-    if (existsSync(resolvedPath)) {
-      return resolvedPath;
-    }
-
-    // Try with .ts extension
-    if (existsSync(`${resolvedPath}.ts`)) {
-      return `${resolvedPath}.ts`;
-    }
-
-    // Try with /index.ts if directory
-    if (existsSync(`${resolvedPath}/index.ts`)) {
-      return `${resolvedPath}/index.ts`;
-    }
+    const fileName = resolveRelativePath(baseDir, modulePath);
+    return fileName ? { fileName, external: false } : undefined;
   }
 
-  // TODO: Handle package imports and tsconfig aliases
-  return undefined;
+  const { resolvedModule } = resolveModuleName(modulePath, resolvePosixPath(baseDir, '__template__.ts'), compilerOptions, sys);
+  return resolvedModule && { fileName: toPosixPath(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
+}
+
+/**
+ * Resolves the path of an `@import` to the file declaring the module it leads to (see {@link resolveModule}).
+ *
+ * @param baseDir - The directory of the template.
+ * @param modulePath - The path, as written in the `@import`.
+ * @param compilerOptions - The options of the project, which drive how the paths that are not relative are resolved.
+ * @returns The path of the file, in posix format, `undefined` if the path leads to no file.
+ */
+export function resolveModulePath(baseDir: string, modulePath: string, compilerOptions?: CompilerOptions): string | undefined {
+  return resolveModule(baseDir, modulePath, compilerOptions)?.fileName;
 }
 
 /**
@@ -50,4 +71,18 @@ export function resolveModulePath(baseDir: string, modulePath: string): string |
 export function toModulePath(baseDir: string, fileName: string): string {
   const path = posix.relative(normalizeFileName(baseDir), normalizeFileName(fileName)).replace(/\.ts$/, '');
   return path.startsWith('.') ? path : `./${path}`;
+}
+
+/**
+ * Resolves a relative path to a file: the path itself, the path with the `.ts` extension, or the `index.ts` of the
+ * directory.
+ *
+ * @param baseDir - The directory the path is relative to.
+ * @param modulePath - The relative path.
+ * @returns The path of the file, in posix format, `undefined` if none exists.
+ */
+function resolveRelativePath(baseDir: string, modulePath: string): string | undefined {
+  const resolvedPath = resolvePosixPath(baseDir, modulePath);
+  const candidates = [resolvedPath, `${resolvedPath}.ts`, `${resolvedPath}/index.ts`];
+  return candidates.find(candidate => existsSync(candidate));
 }

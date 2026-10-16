@@ -1,6 +1,6 @@
 import { slice } from '@xaendar/common';
 import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
-import { resolveModulePath } from '@xaendar/language-core';
+import { resolveModule, resolveModulePath } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
 import { ClassLikeDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, Expression, forEachChild, isBinaryExpression, isCallExpression, isClassDeclaration, isClassExpression, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, isParenthesizedExpression, isPropertyAccessExpression, Node, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
@@ -12,6 +12,12 @@ import type { TemplateModuleRequest } from '../../types/template-module-request.
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 
 /**
+ * The declaration files, whose classes keep no decorator: a package compiled to JavaScript declares no component nor
+ * directive a template can read the metadata of.
+ */
+const DECLARATION_FILE = /\.d\.[cm]?ts$/;
+
+/**
  * TODO: This could be eliminated if we find a way to extract the metadata informations
  * from the AST after the compile function has been invoked.
  * Currently we watch the improted files BEFORE compile function has been called, making
@@ -21,20 +27,27 @@ import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
  * Extracts the absolute paths of every module (of a component, a directive or any other symbol) imported via `@import { X }
  * from '...'` inside a DSL template, resolving them relative to the
  * template's own directory (paths in the template are relative to the
- * .html file, not to the component's .ts file).
+ * .html file, not to the component's .ts file), or as the TypeScript files of the project resolve the paths of the
+ * aliases. The modules of the packages are left out: they change only when the packages are installed again.
  *
  * @param templateSource - The raw content of the `.xd.component.html` template.
  * @param templateDir - The directory containing the template file.
+ * @param compilerOptions - Project compiler options, driving how the paths that are not relative are resolved.
  * @returns The list of imported absolute paths, in posix format (may be empty).
  */
-export function extractImportedComponentPaths(templateSource: string, templateDir: string): string[] {
+export function extractImportedComponentPaths(templateSource: string, templateDir: string, compilerOptions?: CompilerOptions): string[] {
   const importRegex = /@import\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
   const paths = new Array<string>();
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(templateSource)) !== null) {
     // The module of a symbol can be imported without its extension, like any TypeScript module
-    paths.push(resolveModulePath(templateDir, match[1]) ?? resolvePosixPath(templateDir, match[1]));
+    const resolved = resolveModule(templateDir, match[1], compilerOptions);
+    if (!resolved) {
+      paths.push(resolvePosixPath(templateDir, match[1]));
+    } else if (!resolved.external) {
+      paths.push(resolved.fileName);
+    }
   }
 
   return paths;
@@ -283,7 +296,7 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
  */
 export async function getMetadataOrExtract(classNameOrSelector: string, path?: string | string[], compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata> {
   // Posix paths, to match the owner file keys of the metadata registry (TS source file names)
-  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1]) : resolvePosixPath(path));
+  const resolvedPath = path && (Array.isArray(path) ? resolveModulePath(path[0], path[1], compilerOptions) : resolvePosixPath(path));
   let metadata = getMetadata(classNameOrSelector, resolvedPath) ?? getMetadata(classNameOrSelector);
   if (metadata) {
     return metadata;
@@ -307,23 +320,29 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
 
 /**
  * Base implementation for the getImport method of the plugin cache: resolves what an `@import` specifier of a template
- * imports, the metadata of the component or of the directive it names, or any other export of the module.
+ * imports, the metadata of the component or of the directive it names, or any other export of the module. A symbol of a
+ * package keeps the path written in the `@import`, which the generated code imports it with: the bundler resolves it
+ * like the imports of the application, to the same instance of the module. The declarations of a package declare no
+ * component nor directive: their decorators are not part of them.
  * @param imported The name of the export (`'default'` for the default one, `'*'` for a namespace import).
  * @param local The name the template imports it as, which names a component or a directive exported as default.
  * @param baseDir The directory of the template.
- * @param path The path of the module, as written in the `@import`.
- * @param compilerOptions Project compiler options, driving how the modules the export is read through are resolved.
+ * @param path The path of the module, as written in the `@import`: relative to the template, an alias of the project
+ *   or the name of a package.
+ * @param compilerOptions Project compiler options, driving how the path and the modules the export is read through
+ *   are resolved.
  * @returns The metadata of the component or of the directive, or the imported symbol, reactive when reading it can read
  *   a signal (a namespace always is, its members are not analyzed).
  * @throws {Error} If the module can't be resolved, or the metadata of the class it names can't be extracted.
  */
 export async function getImportOrExtract(imported: string, local: string, baseDir: string, path: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
-  const modulePath = resolveModulePath(baseDir, path);
-  if (!modulePath) {
+  const resolved = resolveModule(baseDir, path, compilerOptions);
+  if (!resolved) {
     throw new Error(`Unable to resolve module path "${path}" for "${local}".`);
   }
 
-  if (imported !== '*') {
+  const { fileName: modulePath, external } = resolved;
+  if (imported !== '*' && !DECLARATION_FILE.test(modulePath)) {
     const className = imported === 'default' ? local : imported;
     const metadata = getMetadata(className, modulePath) ?? await extractAndRegisterMetadata(className, modulePath, compilerOptions);
     if (metadata) {
@@ -331,7 +350,12 @@ export async function getImportOrExtract(imported: string, local: string, baseDi
     }
   }
 
-  return { type: 'symbol', modulePath, reactive: imported === '*' || isReactiveExport(modulePath, imported, compilerOptions) };
+  const symbol: ImportedSymbol = { type: 'symbol', modulePath, reactive: imported === '*' || isReactiveExport(modulePath, imported, compilerOptions) };
+  if (external) {
+    symbol.importPath = path;
+  }
+
+  return symbol;
 }
 
 /**

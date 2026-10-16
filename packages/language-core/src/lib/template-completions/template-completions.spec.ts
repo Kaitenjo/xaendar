@@ -373,6 +373,13 @@ describe('getTemplateImportCompletions', () => {
     expect(completions!.find(({ name }) => name === 'default')).toEqual(expect.objectContaining({ snippet: 'default as $1', sortText: '1' }));
   }, TIMEOUT);
 
+  it('proposes the exports of a package, and the components of a module reached through an alias of the project', async () => {
+    expect(await completionsOf('@import { | } from \'@app/child\';')).toEqual(['Child:component:my-child@10-10']);
+    // The declarations of a package are part of the program once the template imports from it
+    await project.analyze('@import { formatPrice } from \'@acme/format\';\n{ formatPrice(1) }');
+    expect(await completionsOf('@import { formatPrice, | } from \'@acme/format\';')).toEqual(['CURRENCY:const:undefined@23-23']);
+  }, TIMEOUT);
+
   it('proposes nothing for a module that cannot be resolved, and leaves to the other completions the offsets not on a symbol of an @import', async () => {
     expect(await completionsOf('@import { | } from \'./missing\';')).toEqual([]);
     expect(await completionsOf('@import { Child } from \'./child\';\n<|')).toBeUndefined();

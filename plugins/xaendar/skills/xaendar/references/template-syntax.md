@@ -152,9 +152,11 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 @import { format as formatDate, default as shout, * as utils } from '../utils.ts'
 ```
 
-- Only relative paths: package names and tsconfig aliases are not resolved. The imports come first in the template.
+- A relative path is resolved against the template (extension optional, a folder means its `index.ts`). Any other path, the name of a package (`@scope/pkg`, through the `exports` of its `package.json`) or an alias of the `paths` of `tsconfig.json`, is resolved as the TypeScript files of the project resolve it; the generated code imports a package by its name, so the bundler shares one instance with the application. The imports come first in the template.
+- The components and directives of a package compiled to JavaScript cannot be imported yet: its `.d.ts` keeps no decorator. Its functions, constants, enums, classes and types can; the components of a package publishing its TypeScript sources, of the same monorepo, or reached through an alias, are imported like local ones.
 - Any export can be imported: functions, constants, enums, classes, module signals, types, interfaces; `default as name` for the default export, `* as name` for the whole module. The expressions read them by their local name, like members: `{ formatPrice(price, Currency.Euro) }`, `@if (value instanceof Shape)`, `(click)="addItem()"`; a type can be a type argument (`<ex-list(Row)>`). Only the names the expressions read are imported at runtime, so a type costs nothing.
-- A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one; prefer importing a store's signals to copying them into members.
+- A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one. A signal of a compiled package is recognized from its type in the declarations, but the body of its functions is not there: an attribute binding calling one is evaluated once (wrap it in a `computed` member).
+- Import what belongs to another module: types for the type arguments of generic components and directives, enums and classes for particular conditions (`@if (task().status === Status.Archived)`, `@if (shape() instanceof Circle)`), helpers shared by many templates, the signals of a store. The state of the component and the logic reading or changing it stay in its class (signals, computed signals, methods): never import a function or a constant only because it is possible.
 - The variables of the template (`@for` items and aliases) hide an import named like them. Importing a name that is also a member of the component (inherited and DOM ones included, e.g. `title`) is an error: import it `as` another name. `root`, `$event` and the names starting with `__` are reserved.
 - A `const enum` is erased at runtime: use a regular `enum` or an object `as const`.
 - Every tag containing a dash must be an imported Xaendar component, or match a pattern of `customElements` in `xaendar.json` (`["sl-*"]`; `xaendarPlugin({ customElements })` with plain Vite). Those custom elements of other libraries are used like native elements: bindings write attributes (strings only; set object properties from code), and `$event` is typed through `HTMLElementEventMap`, or `any` for events it does not declare.
@@ -172,7 +174,7 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
              the names of a module that the template doesn't import
 ```
 
-- Members used by the template must be `public`. A module constant, function or signal is imported in the template (`@import { LIMIT } from './limits.ts'`), not copied into a member.
+- Members used by the template must be `public`. A module constant, function or signal the template reads is imported (`@import { LIMIT } from './limits.ts'`) rather than copied into a member that only aliases it; what is state of the component stays in its class.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 
 ## What does not exist

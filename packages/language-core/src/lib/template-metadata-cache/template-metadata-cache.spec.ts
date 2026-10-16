@@ -1,6 +1,7 @@
 import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { removeDocumentOverlay, setDocumentOverlay } from '../language-service/language-service';
+import { loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import { TemplateMetadataCache } from './template-metadata-cache';
 
@@ -77,6 +78,23 @@ describe('TemplateMetadataCache', () => {
     expect(await cache.getImport('formatDate', 'format', src, './utils')).toEqual({ type: 'symbol', modulePath: project.path('src/utils.ts'), reactive: false });
     expect(await cache.getImport('*', 'child', src, './child')).toEqual({ type: 'symbol', modulePath: project.path('src/child.ts'), reactive: false });
     await expect(cache.getImport('Child', 'Child', src, './missing')).rejects.toThrow('Cannot find module "./missing"');
+  });
+
+  it('resolves the imports of a package and of an alias of the project, with the options of the project', async () => {
+    const cache = new TemplateMetadataCache(loadTsConfig(project.root).options);
+    const src = project.path('src');
+
+    expect(await cache.getImport('formatPrice', 'formatPrice', src, '@acme/format')).toEqual({
+      type: 'symbol',
+      modulePath: project.path('node_modules/@acme/format/index.d.ts'),
+      importPath: '@acme/format',
+      reactive: false
+    });
+    expect(await cache.getImport('Child', 'Child', src, '@app/child')).toMatchObject({ type: 'component', className: 'Child' });
+    expect(await cache.getImport('LIMIT', 'LIMIT', src, '@app/utils')).toEqual({ type: 'symbol', modulePath: project.path('src/utils.ts'), reactive: false });
+    expect(await cache.getModuleMetadatas(src, '@app/directives')).toBeDefined();
+    expect(await cache.getOrInsert('Media', [src, '@app/directives'])).toMatchObject({ selector: 'media' });
+    await expect(cache.getImport('x', 'x', src, '@acme/missing')).rejects.toThrow('Cannot find module "@acme/missing"');
   });
 
   it('finds no metadata in a file whose decorators don\'t declare literal selectors', async () => {

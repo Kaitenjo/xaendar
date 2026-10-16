@@ -3,7 +3,7 @@
 
 <div class="controls">
   <ex-button (click)="toggleApplied()">{ applied() ? 'Remove' : 'Apply' } the directive</ex-button>
-  <ex-button (click)="toggleWarm()">Make it { warm() ? 'cold' : 'warm' }</ex-button>
+  <ex-button (click)="toggleColorOrBackgroundColor()">Make it { background() ? 'background' : 'color' }</ex-button>
 </div>
 <p
   @if (applied()) {
@@ -14,14 +14,14 @@
 </p>
 <p
   @@exTraced(
-    @if (warm()) {
-      color="#fecaca"
+    @if (background()) {
+      backgroundColor="#bfdbfe"
     } @else {
-      color="#bfdbfe"
+      color="#fbcec1"
     }
   )
 >
-  The input of the directive is bound by a condition.
+  Different inputs can be bound by a condition
 </p>
 <ol class="log">
   @for (line of trace(); track line().id) {

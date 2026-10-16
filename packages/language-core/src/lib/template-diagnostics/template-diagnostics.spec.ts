@@ -160,6 +160,26 @@ describe('getTemplateDiagnostics imported symbols', () => {
     ]);
   }, TIMEOUT);
 
+  it('reads the exports of a package, and the components and the symbols reached through an alias of the project', async () => {
+    const source = '@import { CURRENCY, formatPrice } from \'@acme/format\';\n@import { Child } from \'@app/child\';\n@import { LIMIT } from \'@app/utils\';\n<my-child label="{ formatPrice(LIMIT) }" />{ CURRENCY }';
+
+    expect(await diagnose(source)).toEqual([]);
+    expect(await diagnose('@import { formatPrice } from \'@acme/format\';\n{ formatPrice(\'a\') }')).toEqual([
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@import { nope } from \'@acme/format\';')).toEqual([
+      ['nope', 'Module \'"@acme/format"\' has no exported member \'nope\'.', DiagnosticCategory.Error],
+      ['nope', '\'nope\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a package that is not installed, and an alias the project doesn\'t declare, on their path', async () => {
+    expect(await diagnose('@import { x } from \'@acme/missing\';\n@import { y } from \'@nope/utils\';')).toEqual([
+      ['@acme/missing', 'Cannot find module "@acme/missing"', DiagnosticCategory.Error],
+      ['@nope/utils', 'Cannot find module "@nope/utils"', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('reports the symbols no expression and no type argument reads as unnecessary', async () => {
     const source = '@import { formatDate, Status, Row as Line } from \'./utils\';\n{ formatDate(1) }';
 

@@ -1,6 +1,7 @@
 import type { HookHandler, Plugin } from 'vite';
 import { STYLE_MODULE_PREFIX } from '../../costants/style-module-prefix';
 import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
+import { parseTemplateModuleId } from '../plugin-utils/plugin.utils';
 
 /**
  * Resolves the import specifiers of compiled template and style modules (injected in
@@ -11,6 +12,10 @@ import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
  * "Failed to resolve import". The returned id is prefixed with a null byte, the
  * Rollup/Vite convention marking a virtual module, so that no other plugin (nor
  * Vite itself) tries to read it from disk.
+ *
+ * What a template module imports (the runtime helpers, the symbols of the template) is resolved from the template, as
+ * from a file next to it: a virtual module has no directory, and the package a template imports from is installed
+ * where the template lives, e.g. in a package of a monorepo.
  *
  * @example
  * // foo.xd.component.ts, after the `transform` hook
@@ -30,11 +35,20 @@ import { TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
  * // resolved to '\0virtual:xaendar-style?path=/src/foo/foo.css&lang.js'
  *
  * @example
+ * // A template module importing a package: resolved by the other plugins as imported by /src/foo/foo.xd.component.html
+ * import { formatPrice as __import_formatPrice } from '@acme/format';
+ *
+ * @example
  * // Any other specifier is left to the other plugins
  * import { CustomElement } from '@xaendar/core'; // → null
  */
 export function createResolveIdHook(): NonNullable<HookHandler<Plugin['resolveId']>> {
-  return function resolveId(source) {
-    return source.startsWith(TEMPLATE_MODULE_PREFIX) || source.startsWith(STYLE_MODULE_PREFIX) ? `\0${source}` : null;
+  return function resolveId(source, importer) {
+    if (source.startsWith(TEMPLATE_MODULE_PREFIX) || source.startsWith(STYLE_MODULE_PREFIX)) {
+      return `\0${source}`;
+    }
+
+    const template = importer && parseTemplateModuleId(importer);
+    return template ? this.resolve(source, template.templatePath, { skipSelf: true }) : null;
   };
 }

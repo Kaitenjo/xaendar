@@ -64,6 +64,18 @@ describe('getTemplateDefinition', () => {
     expect(analysis.source.slice(origin!.start, origin!.end)).toContain('./directives');
   });
 
+  it('leads the path of a package and of an alias of the project to the file they resolve to', async () => {
+    const source = '@import { formatPrice } from \'@acme/format\';\n@import { Child } from \'@app/child\';\n<my-child label="{ formatPrice(1) }" />';
+    const aliased = (await project.analyze(source)).analysis!;
+    const definitionAt = (text: string) => getTemplateDefinition(aliased, source.indexOf(text) + 2).map(({ fileName }) => fileName);
+
+    expect(definitionAt('@acme/format')).toEqual([project.path('node_modules/@acme/format/index.d.ts')]);
+    expect(definitionAt('@app/child')).toEqual([project.path('src/child.ts')]);
+
+    // The shim of App is written again for the other template: the next tests read the one of the template above
+    analysis = (await project.analyze(template)).analysis!;
+  }, TIMEOUT);
+
   it('leads the tag name of a component, in the opening and in the closing tag, to its class', () => {
     expect(textsOf(getTemplateDefinition(analysis, at('my-child')))).toEqual([['src/child.ts', 'Child']]);
     expect(textsOf(getTemplateDefinition(analysis, at('my-child', 1)))).toEqual([['src/child.ts', 'Child']]);

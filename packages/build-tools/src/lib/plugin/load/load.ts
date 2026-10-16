@@ -84,7 +84,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       Watching all the components imported in the template, and linking them to this module: 
       editing any of them invalidates the compiled render function.
     */
-    const importedComponentPaths = extractImportedComponentPaths(templateSource, dirname(templatePath));
+    const importedComponentPaths = extractImportedComponentPaths(templateSource, dirname(templatePath), state.compilerOptions);
     for (let i = 0; i < importedComponentPaths.length; i++) {
       const importedPath = importedComponentPaths[i]
       if (state.host.fileExists(importedPath)) {

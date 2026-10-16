@@ -125,7 +125,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       // ! is a safe assertion because we check if the fileExists before reading it
       const templateSource = state.host.readFile(templatePath)!;
 
-      const importedPaths = extractImportedComponentPaths(templateSource, dirname(templatePath));
+      const importedPaths = extractImportedComponentPaths(templateSource, dirname(templatePath), state.compilerOptions);
       for (let j = 0; j < importedPaths.length; j++) {
         const importedPath = importedPaths[j];
         if (state.host.fileExists(importedPath)) {

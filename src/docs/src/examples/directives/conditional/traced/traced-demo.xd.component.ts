@@ -15,9 +15,9 @@ export class TracedDemoComponent extends CustomElement {
    */
   public readonly applied = signal(true);
   /**
-   * Whether the second paragraph is warm.
+   * Whether the second paragraph is applied color or background color
    */
-  public readonly warm = signal(true);
+  public readonly background = signal(true);
 
   /**
    * Applies or removes the directive.
@@ -27,9 +27,9 @@ export class TracedDemoComponent extends CustomElement {
   }
 
   /**
-   * Switches the color of the second paragraph.
+   * Switches the color or background color of the second paragraph.
    */
-  public toggleWarm(): void {
-    this.warm.update(warm => !warm);
+  public toggleColorOrBackgroundColor(): void {
+    this.background.update(warm => !warm);
   }
 }

@@ -1,7 +1,9 @@
 import type { ComponentMetadata, ComponentOrDirectiveMetadata, DirectiveMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn()
@@ -33,9 +35,9 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
 
 import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, isReactiveExport, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
-import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
+import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
-import { resolvePosixPath } from '../../utils/path/path.utils';
+import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
@@ -722,6 +724,65 @@ describe('getImportOrExtract()', () => {
     expect(await getImportOrExtract('*', 'utils', '/src', './utils')).toEqual({ type: 'symbol', modulePath, reactive: true });
     expect(readFile).not.toHaveBeenCalled();
     expect(isReactiveExport).not.toHaveBeenCalled();
+  });
+});
+
+describe('packages and aliases of the project', () => {
+  let root: string;
+  let compilerOptions: CompilerOptions;
+
+  beforeAll(async () => {
+    // TypeScript resolves the packages on the real file system: node:fs is mocked for the relative paths only
+    const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
+    root = toPosixPath(fs.mkdtempSync(join(tmpdir(), 'xd-plugin-utils-')));
+    const write = (path: string, content: string) => {
+      fs.mkdirSync(dirname(join(root, path)), { recursive: true });
+      fs.writeFileSync(join(root, path), content);
+    };
+    write('node_modules/@acme/format/package.json', JSON.stringify({ name: '@acme/format', exports: { '.': { types: './index.d.ts', default: './index.js' } } }));
+    write('node_modules/@acme/format/index.d.ts', 'export declare function formatPrice(value: number): string;');
+    write('src/lib/format.ts', 'export const LIMIT = 5;');
+    compilerOptions = { module: ModuleKind.ESNext, moduleResolution: ModuleResolutionKind.Bundler, paths: { '@lib/*': ['./src/lib/*'] }, pathsBasePath: root };
+  });
+
+  afterAll(async () => {
+    (await vi.importActual<typeof import('node:fs')>('node:fs')).rmSync(root, { recursive: true, force: true });
+  });
+
+  beforeEach(() => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(readFile).mockResolvedValue('export const LIMIT = 5;');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(undefined);
+    vi.mocked(extractDirectivesMetadataFromSourceFile).mockResolvedValue(undefined);
+    vi.mocked(isReactiveExport).mockReturnValue(false);
+  });
+
+  it('imports a symbol of a package by the path written in the template, without reading its declarations for metadata', async () => {
+    expect(await getImportOrExtract('formatPrice', 'formatPrice', `${root}/src`, '@acme/format', compilerOptions)).toEqual({
+      type: 'symbol',
+      modulePath: `${root}/node_modules/@acme/format/index.d.ts`,
+      importPath: '@acme/format',
+      reactive: false
+    });
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('imports a symbol reached through an alias by the path of its file, and reads it for metadata', async () => {
+    expect(await getImportOrExtract('LIMIT', 'LIMIT', `${root}/src`, '@lib/format', compilerOptions)).toEqual({
+      type: 'symbol',
+      modulePath: `${root}/src/lib/format.ts`,
+      reactive: false
+    });
+    expect(readFile).toHaveBeenCalledWith(`${root}/src/lib/format.ts`, 'utf-8');
+  });
+
+  it('resolves the components imported through an alias, and watches the modules of the aliases but not the packages', async () => {
+    const metadata = createMetadata('lib-el', 'Lib', `${root}/src/lib/format.ts`);
+    vi.mocked(getMetadata).mockImplementation((name, path) => (name === 'Lib' && path === `${root}/src/lib/format.ts` ? metadata : undefined));
+    expect(await getMetadataOrExtract('Lib', [`${root}/src`, '@lib/format'], compilerOptions)).toBe(metadata);
+
+    const template = '@import { formatPrice } from \'@acme/format\';\n@import { LIMIT } from \'@lib/format\';';
+    expect(extractImportedComponentPaths(template, `${root}/src`, compilerOptions)).toEqual([`${root}/src/lib/format.ts`]);
   });
 });
 

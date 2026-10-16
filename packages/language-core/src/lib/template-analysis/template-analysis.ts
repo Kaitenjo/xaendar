@@ -201,7 +201,7 @@ async function analyze(templatePath: string, source: string, components: Readonl
   try {
     ast = parseTemplate(source);
     const { shadowingMembers, dependencies } = extractMembers(componentFiles, project, options);
-    const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache);
+    const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
     const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, [], symbols);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
@@ -310,9 +310,9 @@ export async function resolveImportCandidates(templatePath: string): Promise<Imp
  * @returns The exports, `undefined` if the module cannot be resolved or is not in the program of the project.
  */
 export function resolveModuleExports(templatePath: string, modulePath: string): ExportCandidate[] | undefined {
-  const templateDir = dirname(templatePath);
-  const fileName = resolveModulePath(templateDir, modulePath);
-  return fileName ? listExports(getProgram(getProjectContext(templateDir)), fileName) : undefined;
+  const context = getProjectContext(dirname(templatePath));
+  const fileName = resolveModulePath(dirname(templatePath), modulePath, context.options);
+  return fileName ? listExports(getProgram(context), fileName) : undefined;
 }
 
 /**
@@ -437,10 +437,11 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
  * @param ast - The top-level nodes of the template.
  * @param templateDir - The directory of the template, the `@import` paths are relative to.
  * @param cache - The metadata cache of the project.
+ * @param options - The options of the project, which drive how the paths that are not relative are resolved.
  * @returns The imported components and directives, the other imported symbols, and a `TemplateError` for each module
  *   that cannot be found (on its path) and for each specifier that cannot be resolved (on its name).
  */
-async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache): Promise<{ imports: TemplateImport[], symbols: SymbolImport[], errors: TemplateError[] }> {
+async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache, options: CompilerOptions): Promise<{ imports: TemplateImport[], symbols: SymbolImport[], errors: TemplateError[] }> {
   const imports = new Array<TemplateImport>();
   const symbols = new Array<SymbolImport>();
   const errors = new Array<TemplateError>();
@@ -448,7 +449,7 @@ async function resolveImports(ast: readonly ASTNode[], templateDir: string, cach
 
   for (let i = 0; i < importNodes.length; i++) {
     const node = importNodes[i];
-    if (!resolveModulePath(templateDir, node.path)) {
+    if (!resolveModulePath(templateDir, node.path, options)) {
       const message = `Cannot find module "${node.path}"`;
       errors.push(new TemplateError(message, node.pathSpan, message));
       continue;

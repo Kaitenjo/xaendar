@@ -1,4 +1,4 @@
-import { ClassElement, EntityName, Expression, FunctionDeclaration, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, VariableDeclaration, forEachChild, getCombinedModifierFlags, isArrowFunction, isCallExpression, isFunctionDeclaration, isFunctionExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
+import { ClassElement, EntityName, Expression, FunctionDeclaration, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, TypeNode, VariableDeclaration, forEachChild, getCombinedModifierFlags, isArrowFunction, isCallExpression, isFunctionDeclaration, isFunctionExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
 import { GLOBAL_IDENTIFIERS } from '../../generator/utils/generator/generator.utils';
 import type { ComponentMembers } from '../../types/component-members/component-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
@@ -314,7 +314,7 @@ function isSignalMember(member: PropertyDeclaration, sourceFile: SourceFile, bin
     declared without initializer, and members initialised by a function returning a signal
     (`log: Signal<string> = createLog()`)
   */
-  if (member.type && isTypeReferenceNode(member.type) && resolvesEntityNameToSignalBinding(member.type.typeName, bindings)) {
+  if (member.type && isSignalType(member.type, bindings)) {
     return true;
   }
 
@@ -371,7 +371,7 @@ function isSignalVariable(variable: ResolvedDeclaration<VariableDeclaration>, co
   const { declaration } = variable;
   const bindings = collectSignalImportBindings(variable.sourceFile);
   if (declaration.type) {
-    return isTypeReferenceNode(declaration.type) && resolvesEntityNameToSignalBinding(declaration.type.typeName, bindings);
+    return isSignalType(declaration.type, bindings);
   }
 
   if (!declaration.initializer) {
@@ -415,6 +415,27 @@ function resolvesToSignalBinding(expr: Expression, bindings: SignalImportBinding
   }
 
   return false;
+}
+
+/**
+ * Checks whether the annotation of a member or of a variable is a signal type: a type of a signal module, referenced
+ * through the import of the file, or through an import type, as declaration files write the types they infer.
+ *
+ * @example
+ * count: Signal<number>                                     // import { Signal } from '@xaendar/core/signals'
+ * count: signals.Signal<number>                             // import * as signals from '@xaendar/core/signals'
+ * count: import('@xaendar/core/signals').Signal<number>     // a declaration file
+ *
+ * @param type - The annotation.
+ * @param bindings - The signal module bindings of the file declaring the member or the variable.
+ * @returns `true` if the annotation is a type of a signal module.
+ */
+function isSignalType(type: TypeNode, bindings: SignalImportBindings): boolean {
+  if (isTypeReferenceNode(type)) {
+    return resolvesEntityNameToSignalBinding(type.typeName, bindings);
+  }
+
+  return isImportTypeNode(type) && !type.isTypeOf && !!type.qualifier && isLiteralTypeNode(type.argument) && isStringLiteralLike(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
 }
 
 /**

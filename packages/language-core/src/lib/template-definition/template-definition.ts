@@ -1,5 +1,6 @@
 import { type ComponentOrDirectiveMetadata, type MemberDeclaration, resolveShimPosition, type Span } from '@xaendar/compiler';
 import { dirname } from 'node:path';
+import type { CompilerOptions } from 'typescript';
 import type { TemplateAnalysis } from '../template-analysis/template-analysis';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
@@ -66,7 +67,7 @@ export function findDefinitionTarget(analysis: TemplateAnalysis, offset: number)
  * @param analysis - The analysis of the template.
  * @returns The parts, with their definitions.
  */
-function collectTargets({ ast, metadatas, imports, templatePath }: TemplateAnalysis): DefinitionTarget[] {
+function collectTargets({ ast, metadatas, imports, templatePath, languageService }: TemplateAnalysis): DefinitionTarget[] {
   const targets = new Array<DefinitionTarget>();
   const add = (span: Span | undefined, declaration: TemplateDefinition | undefined) => {
     if (span && declaration) {
@@ -81,7 +82,7 @@ function collectTargets({ ast, metadatas, imports, templatePath }: TemplateAnaly
   }
 
   walkTemplate(ast, metadatas, {
-    importNode: node => add(node.pathSpan, getModuleDefinition(dirname(templatePath), node.path)),
+    importNode: node => add(node.pathSpan, getModuleDefinition(dirname(templatePath), node.path, languageService.getProgram()!.getCompilerOptions())),
     element: (node, component) => {
       add(node.nameSpan, component && getClassDefinition(component));
       add(node.closeNameSpan, component && getClassDefinition(component));
@@ -110,10 +111,11 @@ function getClassDefinition({ typescriptNodes: { klass } }: ComponentOrDirective
  *
  * @param templateDir - The directory of the template.
  * @param path - The path of the `@import`.
+ * @param options - The options of the project, which drive how the paths that are not relative are resolved.
  * @returns The start of the imported file, `undefined` if it cannot be resolved.
  */
-function getModuleDefinition(templateDir: string, path: string): TemplateDefinition | undefined {
-  const fileName = resolveModulePath(templateDir, path);
+function getModuleDefinition(templateDir: string, path: string, options: CompilerOptions): TemplateDefinition | undefined {
+  const fileName = resolveModulePath(templateDir, path, options);
   return fileName ? { fileName, span: { start: 0, end: 0 } } : undefined;
 }
 

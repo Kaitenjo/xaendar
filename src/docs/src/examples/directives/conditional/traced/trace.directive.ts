@@ -33,20 +33,15 @@ let nextLine = 0;
 let nextInstance = 1;
 
 /**
- * Writes a line in the trace.
- *
- * @param text - The line.
- */
-function write(text: string): void {
-  const line = { id: nextLine++, text };
-  trace.update(lines => [...lines, line]);
-}
-
-/**
  * Traces its own lifecycle, and the values of its input.
  */
 @Directive({ selector: 'exTraced' })
 export class TracedDirective extends CustomDirective<HTMLElement> {
+  /**
+   * A label, shown as the background color of the element.
+   */
+  @Property('none')
+  public accessor backgroundColor!: InputSignal<string>;
   /**
    * A label, shown as the background color of the element.
    */
@@ -61,18 +56,34 @@ export class TracedDirective extends CustomDirective<HTMLElement> {
    * Starts tracing.
    */
   public onInit(): void {
-    write(`#${this._instance} onInit`);
+    this._write(`#${this._instance} onInit`);
     this.effect(() => {
-      write(`#${this._instance} color=${this.color()}`);
-      this.element.style.backgroundColor = this.color() === 'none' ? '' : this.color();
+      const color = this.color();
+      this._write(`#${this._instance} color=${color}`);
+      this.element.style.backgroundColor = color === 'none' ? '' : color;
     });
+    this.effect(() => {
+      const backgroundColor = this.backgroundColor();
+      this._write(`#${this._instance} backgroundColor=${backgroundColor}`);
+      this.element.style.backgroundColor = backgroundColor === 'none' ? '' : backgroundColor;
+    });
+  }
+
+  /**
+   * Writes a line in the trace.
+   *
+   * @param text - The line.
+   */
+  private _write(text: string): void {
+    const line = { id: nextLine++, text };
+    trace.update(lines => [...lines, line]);
   }
 
   /**
    * Clears the background, since the element outlives the directive.
    */
   public onDestroy(): void {
-    write(`#${this._instance} onDestroy`);
+    this._write(`#${this._instance} onDestroy`);
     this.element.style.backgroundColor = '';
   }
 }

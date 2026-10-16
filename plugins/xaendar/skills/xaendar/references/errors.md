@@ -257,8 +257,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Error: Unable to resolve module path "./nope" for "Nope".`
 
-- **Cause:** An @import whose path does not resolve: only relative paths to files or folders are supported.
-- **Fix:** Use a relative path; packages and tsconfig aliases are not resolved.
+- **Cause:** An @import whose path does not resolve: a relative path leading to no file or folder, a package that is not installed, or an alias that tsconfig.json does not declare.
+- **Fix:** Fix the path, install the package, or declare the alias in the paths of tsconfig.json.
 
 ### `Module '"<path>"' has no exported member 'Callout'.`
 

@@ -31,7 +31,7 @@ Check at least the following:
 - Members whose names clash with `HTMLElement`.
 - An `Output` without a type whose parent needs `$event`.
 - Non-`.css` stylesheets, `@import` in a component stylesheet, and relative `url()`.
-- Private or protected members used in a template, module constants copied into members only for the template instead of imported with `@import`, and imports named like a member of the component.
+- Private or protected members used in a template, module constants copied into members only for the template instead of imported with `@import`, imports named like a member of the component, and state or logic of the component moved out of its class into imported functions only because a template can import them.
 
 **Code conventions**: report these after the bugs, grouped by file:
 - Member order: public fields → protected fields → private fields → constructor → `onInit` → `afterRender` → public methods → protected methods → private methods → `onDestroy`.

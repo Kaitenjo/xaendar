@@ -2164,7 +2164,8 @@
           "title": "Forme",
           "example1": "Due componenti da un solo file",
           "p1": "La sintassi è quella degli import con nome di TypeScript: uno o più nomi tra graffe, <code>as</code> per importarne uno con un altro nome, <code>default as nome</code> per l’export di default, <code>* as nome</code> per l’intero modulo, e un percorso tra apici singoli o doppi. Un file può esportare più componenti, e un solo <code>@import</code> porta tutti quelli che servono al template. Gli import vengono per primi nel template, prima di qualsiasi altro contenuto.",
-          "p2": "Il percorso è relativo al template, e viene risolto come file, con o senza l’estensione <code>.ts</code>, oppure come cartella con un <code>index.ts</code>. I pacchetti e gli alias di percorso del <code>tsconfig.json</code> non vengono ancora risolti."
+          "p2": "Un percorso relativo si risolve rispetto al template, come file, con o senza l’estensione <code>.ts</code>, oppure come cartella con un <code>index.ts</code>. Ogni altro percorso si risolve come lo risolvono i file TypeScript del progetto: il nome di un pacchetto (<code>@scope/pkg</code>), tramite gli <code>exports</code> del suo <code>package.json</code>, o un alias dei <code>paths</code> del <code>tsconfig.json</code> (<code>@app/models</code>).",
+          "p3": "Il codice generato per il template importa il modulo di un pacchetto con il nome scritto nell’<code>@import</code>, come fa il resto dell’applicazione: il bundler lo risolve con le stesse condizioni, e ogni componente condivide un’unica istanza del modulo."
         },
         "values": {
           "title": "Funzioni, costanti, enum e tipi",
@@ -2172,6 +2173,12 @@
           "p1": "Le espressioni del template leggono gli altri export con il nome con cui sono importati, come i membri del componente: una funzione si chiama, come fa <code>{ formatPrice(price, Currency.Euro) }</code>, una costante o un enum si legge, una classe si controlla con <code>instanceof</code>, un namespace (<code>* as utils</code>) legge ogni export del suo modulo. Un evento può chiamare una funzione importata: <code>(click)=\"addItem()\"</code>.",
           "p2": "Un signal di modulo resta reattivo: un binding che lo legge, o che chiama una funzione esportata che ne legge uno, si aggiorna quando cambia, come un binding che legge un membro signal. Il browser importa solo i nomi che le espressioni leggono: un tipo o un’interfaccia serve solo al type-check, ad esempio come type argument, <code>&lt;my-list(Row)&gt;</code>.",
           "p3": "Le variabili del template (l’item di un <code>@for</code> e i suoi alias) nascondono un import con lo stesso nome. Non si può importare un nome che è anche un membro del componente, ereditati compresi: un’espressione che lo legge sarebbe ambigua, quindi va importato con un altro nome con <code>as</code>. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> sono riservati al compilatore."
+        },
+        "whenToImport": {
+          "title": "Quando importare",
+          "p1": "Poter importare qualsiasi export non fa del template il posto giusto per tutto. Lo stato di un componente, e la logica che lo legge e lo modifica, vivono nella sua classe quando le appartengono: i suoi membri mostrano da cosa dipende il template, la classe si legge e si testa da sola, e il template resta una descrizione della vista. In un template si importa ciò che appartiene davvero a un altro modulo.",
+          "p2": "I tipi sono il caso più chiaro: un type argument di un componente o di una direttiva generici, <code>&lt;ex-list(Row)&gt;</code>, a runtime non costa nulla. Enum e classi meritano l’import in condizioni particolari, come <code>@if (task().status === Status.Archived)</code> o <code>@if (shape() instanceof Circle)</code>, dove un membro che li avvolge non aggiungerebbe niente. Si possono importare anche funzioni, costanti e signal, ad esempio un formatter condiviso da molti template o i signal di uno store, ma non sono la scelta predefinita: un computed o un metodo della classe di solito dice meglio cosa mostra il componente.",
+          "p3": "Gli esempi di questa pagina e di <a href=\"#/it/signals/shared-state\">Stato condiviso</a> importano funzioni e signal per mostrare cosa supporta il compilatore, non perché ogni componente vada scritto così."
         },
         "importingIsNotRegistering": {
           "title": "Importare non è registrare",
@@ -2184,12 +2191,16 @@
             "p1": "Con un percorso che non si risolve, un import di default scritto senza graffe (si scrive <code>default as nome</code>) o un nome che il modulo non esporta, il template non compila. L’editor segnala come superflui gli import che nessuno usa, e li rimuove con Organize Imports."
           },
           "callout2": {
-            "heading": "Pacchetti e alias di percorso",
-            "body": "Un componente, una funzione o un tipo pubblicati in un pacchetto, o raggiunti tramite un alias di percorso, non si possono ancora importare in un template: il resolver segue solo percorsi relativi."
+            "heading": "Componenti di librerie compilate",
+            "body": "Un pacchetto compilato in JavaScript pubblica file di dichiarazioni (<code>.d.ts</code>), che non conservano i decorator: le sue funzioni, costanti, enum, classi e tipi si importano in un template, i suoi componenti e le sue direttive non ancora. I componenti di un pacchetto che pubblica i sorgenti TypeScript, di un pacchetto dello stesso monorepo, o raggiunti tramite un alias, si importano come quelli locali."
           },
           "callout3": {
             "heading": "Const enum",
             "body": "Un <code>const enum</code> esiste solo per TypeScript: il suo modulo non lo esporta a runtime, quindi un template può nominarlo in un type argument ma non leggerlo in un’espressione. Usa un <code>enum</code> normale, o un oggetto dichiarato <code>as const</code>."
+          },
+          "callout4": {
+            "heading": "Reattività dei pacchetti compilati",
+            "body": "Un signal esportato da un pacchetto compilato si riconosce dal suo tipo nelle dichiarazioni (<code>Signal&lt;number&gt;</code>), e resta reattivo. Il corpo delle sue funzioni non fa parte delle dichiarazioni: un binding di attributo che ne chiama una viene valutato una sola volta, anche se la funzione legge un signal. Avvolgi la chiamata in un membro <code>computed</code> della classe."
           }
         },
         "apiSummary": {
@@ -2199,7 +2210,7 @@
           "td1": "Un componente o una direttiva.",
           "td2": "Più classi dello stesso file.",
           "td3": "Percorso",
-          "td4": "Relativo al template; estensione facoltativa; una cartella indica il suo <code>index.ts</code>.",
+          "td4": "Relativo al template (estensione facoltativa, una cartella indica il suo <code>index.ts</code>), il nome di un pacchetto, o un alias del <code>tsconfig.json</code>.",
           "td5": "Uno o più export di qualsiasi tipo: funzioni, costanti, enum, classi, signal, tipi.",
           "td6": "L’export di default con un nome, l’intero modulo come namespace."
         }
@@ -2792,8 +2803,8 @@
       "fix": "Correggi gli errori stampati prima."
     },
     "Error: Unable to resolve module path \"./nope\" for \"Nope\".": {
-      "cause": "Un @import il cui percorso non si risolve: sono supportati solo percorsi relativi a file o cartelle.",
-      "fix": "Usa un percorso relativo; pacchetti e alias del tsconfig non vengono risolti."
+      "cause": "Un @import il cui percorso non si risolve: un percorso relativo che non porta a nessun file o cartella, un pacchetto non installato, o un alias che il tsconfig.json non dichiara.",
+      "fix": "Correggi il percorso, installa il pacchetto, o dichiara l’alias nei paths del tsconfig.json."
     },
     "Module '\"<path>\"' has no exported member 'Callout'.": {
       "cause": "Un @import che nomina qualcosa che il modulo non esporta.",

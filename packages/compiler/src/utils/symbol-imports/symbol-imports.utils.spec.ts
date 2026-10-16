@@ -33,6 +33,12 @@ describe('toRuntimeImport', () => {
     expect(toRuntimeImport(symbol('default', 'fmt'))).toBe('import { default as __import_fmt } from \'/src/utils.ts\';');
     expect(toRuntimeImport(symbol('*', 'utils'))).toBe('import * as __import_utils from \'/src/utils.ts\';');
   });
+
+  it('imports a symbol of a package by the path written in the template', () => {
+    const fromPackage = Object.assign(symbol('LIMIT'), { modulePath: '/node_modules/pkg/index.d.ts', importPath: '@scope/pkg' });
+
+    expect(toRuntimeImport(fromPackage)).toBe('import { LIMIT as __import_LIMIT } from \'@scope/pkg\';');
+  });
 });
 
 describe('toTypeCheckModuleSpecifier', () => {
@@ -43,6 +49,10 @@ describe('toTypeCheckModuleSpecifier', () => {
     ['/src/esm.mts', '/src/esm'],
     ['/src/legacy.js', '/src/legacy.js']
   ])('drops the TypeScript extension of %s', (modulePath, specifier) => {
-    expect(toTypeCheckModuleSpecifier(modulePath)).toBe(specifier);
+    expect(toTypeCheckModuleSpecifier({ modulePath })).toBe(specifier);
+  });
+
+  it('imports the module of a package by the path written in the template', () => {
+    expect(toTypeCheckModuleSpecifier({ modulePath: '/node_modules/pkg/index.d.mts', importPath: '@scope/pkg' })).toBe('@scope/pkg');
   });
 });

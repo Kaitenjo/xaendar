@@ -1,9 +1,13 @@
-import { existsSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { loadTsConfig } from '../compiler-options/compiler-options.utils';
 import { resolvePosixPath } from '../path/path.utils';
-import { resolveModulePath, toModulePath } from './module-path.utils';
+import { resolveModule, resolveModulePath, toModulePath } from './module-path.utils';
 
-vi.mock('node:fs', () => ({
+vi.mock('node:fs', async importOriginal => ({
+  ...await importOriginal<typeof import('node:fs')>(),
   existsSync: vi.fn()
 }));
 
@@ -34,14 +38,73 @@ describe('resolveModulePath()', () => {
     expect(resolveModulePath('/src', './button')).toBeUndefined();
   });
 
-  it('returns undefined for package (non-relative) import specifiers', () => {
-    expect(resolveModulePath('/src', '@scope/pkg')).toBeUndefined();
-  });
-
   it('returns a posix path, matching the owner file keys of the metadata registry', () => {
     vi.mocked(existsSync).mockReturnValue(true);
 
     expect(resolveModulePath('/src', './button')).not.toContain('\\');
+  });
+});
+
+describe('resolveModule()', () => {
+  let root: string;
+
+  /**
+   * Writes a file of the project, creating its directories.
+   */
+  const write = (path: string, content: string) => {
+    const fileName = join(root, path);
+    mkdirSync(dirname(fileName), { recursive: true });
+    writeFileSync(fileName, content);
+  };
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'xd-module-path-'));
+    write('tsconfig.json', JSON.stringify({
+      compilerOptions: { module: 'ESNext', moduleResolution: 'bundler', paths: { '@lib/*': ['./src/lib/*'] } },
+      include: ['src/**/*.ts']
+    }));
+    write('src/lib/format.ts', 'export const format = (value: number) => `${value}`;');
+    write('node_modules/@scope/pkg/package.json', JSON.stringify({
+      name: '@scope/pkg',
+      exports: { '.': { types: './dist/index.d.ts', default: './dist/index.js' } }
+    }));
+    write('node_modules/@scope/pkg/dist/index.d.ts', 'export declare const LIMIT: number;');
+    write('node_modules/@scope/pkg/dist/index.js', 'export const LIMIT = 5;');
+  });
+
+  afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+  it('resolves a relative path to a file of the project', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    expect(resolveModule('/src', './button')).toEqual({ fileName: resolvePosixPath('/src', './button'), external: false });
+  });
+
+  it('returns undefined for a relative path leading to no file', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    expect(resolveModule('/src', './button')).toBeUndefined();
+  });
+
+  it('resolves the name of a package to its declarations, through the exports of its package.json', () => {
+    expect(resolveModule(join(root, 'src/pages'), '@scope/pkg')).toEqual({
+      fileName: resolvePosixPath(root, 'node_modules/@scope/pkg/dist/index.d.ts'),
+      external: true
+    });
+  });
+
+  it('resolves an alias of the project to its source file, with the options of the project', () => {
+    const { options } = loadTsConfig(root);
+
+    expect(resolveModule(join(root, 'src/pages'), '@lib/format', options)).toEqual({
+      fileName: resolvePosixPath(root, 'src/lib/format.ts'),
+      external: false
+    });
+  });
+
+  it('returns undefined for a package that is not installed, and for an alias the options do not declare', () => {
+    expect(resolveModule(join(root, 'src/pages'), '@scope/missing')).toBeUndefined();
+    expect(resolveModule(join(root, 'src/pages'), '@lib/format')).toBeUndefined();
   });
 });
 

@@ -32,8 +32,8 @@ export function typeCheckImport(node: ImportNode, _processNode: ProcessNode, con
     const symbol = context.getSymbolImport(specifiers[i]);
     if (symbol) {
       assertImportableSymbol(symbol);
-      const { imported, local, importedSpan, localSpan, modulePath } = symbol;
-      const from = ` from '${toTypeCheckModuleSpecifier(modulePath)}';`;
+      const { imported, local, importedSpan, localSpan } = symbol;
+      const from = ` from '${toTypeCheckModuleSpecifier(symbol)}';`;
 
       if (imported === '*') {
         lines.push(line('import * as ', mapped(local, localSpan), from));

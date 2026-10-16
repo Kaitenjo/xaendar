@@ -354,7 +354,8 @@ export async function getTemplateImportCompletions(templatePath: string, source:
 /**
  * Proposes what the path of the module of an `@import` statement can continue with where one of its segments is being
  * written: `./` and `../` for the first one, the modules and the directories of the directory written so far for the
- * next ones. Only relative paths are proposed: the others cannot be resolved (see `resolveModulePath`).
+ * next ones. Only relative paths are proposed: the names of the packages and the aliases of the project are written
+ * by hand, then resolved as the TypeScript files of the project resolve them (see `resolveModule`).
  *
  * @param templatePath - The path of the template.
  * @param source - The current source of the template.

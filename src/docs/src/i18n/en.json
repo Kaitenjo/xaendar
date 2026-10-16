@@ -2164,7 +2164,8 @@
           "title": "Forms",
           "example1": "Two components from one file",
           "p1": "The syntax is the one of the named imports of TypeScript: one or more names in braces, <code>as</code> to import one under another name, <code>default as name</code> for the default export, <code>* as name</code> for the whole module, and a path in single or double quotes. A file can export several components, and one <code>@import</code> brings all those the template needs. The imports come first in the template, before any other content.",
-          "p2": "The path is relative to the template, and it is resolved as a file, with or without the <code>.ts</code> extension, or as a folder with an <code>index.ts</code>. Packages and the path aliases of <code>tsconfig.json</code> are not resolved yet."
+          "p2": "A relative path is resolved against the template, as a file, with or without the <code>.ts</code> extension, or as a folder with an <code>index.ts</code>. Any other path is resolved as the TypeScript files of the project resolve it: the name of a package (<code>@scope/pkg</code>), through the <code>exports</code> of its <code>package.json</code>, or an alias of the <code>paths</code> of <code>tsconfig.json</code> (<code>@app/models</code>).",
+          "p3": "The code generated for the template imports the module of a package by the name written in the <code>@import</code>, as the rest of the application does: the bundler resolves it with the same conditions, and every component shares one instance of the module."
         },
         "values": {
           "title": "Functions, constants, enums and types",
@@ -2172,6 +2173,12 @@
           "p1": "The expressions of the template read the other exports under the name they are imported as, like the members of the component: a function is called, as <code>{ formatPrice(price, Currency.Euro) }</code> does, a constant or an enum is read, a class is checked with <code>instanceof</code>, a namespace (<code>* as utils</code>) reads every export of its module. An event can call an imported function: <code>(click)=\"addItem()\"</code>.",
           "p2": "A module signal stays reactive: a binding reading it, or calling an exported function that reads one, is updated when it changes, like a binding reading a signal member. The browser imports only the names the expressions read: a type or an interface is only for the type-check, e.g. as a type argument, <code>&lt;my-list(Row)&gt;</code>.",
           "p3": "The variables of the template (the item of a <code>@for</code> and its aliases) hide an import named like them. A name cannot be imported if it is also a member of the component, inherited ones included: an expression reading it would be ambiguous, so import it under another name with <code>as</code>. <code>root</code>, <code>$event</code> and the names starting with <code>__</code> are reserved by the compiler."
+        },
+        "whenToImport": {
+          "title": "When to import",
+          "p1": "Being able to import any export does not make the template the place for everything. The state of a component, and the logic that reads and changes it, live in its class whenever they belong to it: its members show what the template depends on, the class can be read and tested on its own, and the template stays a description of the view. Import in a template what really belongs to another module.",
+          "p2": "Types are the clearest case: a type argument of a generic component or directive, <code>&lt;ex-list(Row)&gt;</code>, costs nothing at runtime. Enums and classes are worth their import in particular conditions, such as <code>@if (task().status === Status.Archived)</code> or <code>@if (shape() instanceof Circle)</code>, where a member wrapping them would add nothing. Functions, constants and signals can be imported too, e.g. a formatter shared by many templates or the signals of a store, but they are not the default choice: a computed signal or a method of the class usually tells better what the component shows.",
+          "p3": "The examples of this page and of <a href=\"#/en/signals/shared-state\">Sharing state</a> import functions and signals to show what the compiler supports, not because every component should be written that way."
         },
         "importingIsNotRegistering": {
           "title": "Importing is not registering",
@@ -2184,12 +2191,16 @@
             "p1": "With a path that does not resolve, a default import written without braces (write <code>default as name</code>) or a name the module does not export, the template does not compile. The editor reports the imports nobody uses as unnecessary, and removes them with Organize Imports."
           },
           "callout2": {
-            "heading": "Packages and path aliases",
-            "body": "A component, a function or a type published in a package, or reached through a path alias, cannot be imported in a template yet: the resolver only follows relative paths."
+            "heading": "Components of compiled libraries",
+            "body": "A package compiled to JavaScript publishes declaration files (<code>.d.ts</code>), which keep no decorator: its functions, constants, enums, classes and types can be imported in a template, its components and directives not yet. The components of a package that publishes its TypeScript sources, of a package of the same monorepo, or reached through an alias, are imported like the local ones."
           },
           "callout3": {
             "heading": "Const enums",
             "body": "A <code>const enum</code> exists only for TypeScript: its module does not export it at runtime, so a template can name it in a type argument but not read it in an expression. Use a regular <code>enum</code>, or an object declared <code>as const</code>."
+          },
+          "callout4": {
+            "heading": "Reactivity of compiled packages",
+            "body": "A signal exported by a compiled package is recognized from its type in the declarations (<code>Signal&lt;number&gt;</code>), and stays reactive. The body of its functions is not part of the declarations: an attribute binding calling one is evaluated once, even if the function reads a signal. Wrap the call in a <code>computed</code> member of the class."
           }
         },
         "apiSummary": {
@@ -2199,7 +2210,7 @@
           "td1": "One component or directive.",
           "td2": "Several classes of the same file.",
           "td3": "Path",
-          "td4": "Relative to the template; extension optional; a folder means its <code>index.ts</code>.",
+          "td4": "Relative to the template (extension optional, a folder means its <code>index.ts</code>), the name of a package, or an alias of <code>tsconfig.json</code>.",
           "td5": "One or more exports of any kind: functions, constants, enums, classes, signals, types.",
           "td6": "The default export under a name, the whole module as a namespace."
         }
@@ -2792,8 +2803,8 @@
       "fix": "Fix the errors printed before it."
     },
     "Error: Unable to resolve module path \"./nope\" for \"Nope\".": {
-      "cause": "An @import whose path does not resolve: only relative paths to files or folders are supported.",
-      "fix": "Use a relative path; packages and tsconfig aliases are not resolved."
+      "cause": "An @import whose path does not resolve: a relative path leading to no file or folder, a package that is not installed, or an alias that tsconfig.json does not declare.",
+      "fix": "Fix the path, install the package, or declare the alias in the paths of tsconfig.json."
     },
     "Module '\"<path>\"' has no exported member 'Callout'.": {
       "cause": "An @import naming something the module does not export.",

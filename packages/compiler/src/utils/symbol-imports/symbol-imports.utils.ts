@@ -38,25 +38,28 @@ export function getRuntimeAlias(local: string): string {
  *
  * @example
  * toRuntimeImport({ imported: 'formatDate', local: 'format', modulePath: '/src/format.ts', … });  // "import { formatDate as __import_format } from '/src/format.ts';"
+ * toRuntimeImport({ imported: 'LIMIT', local: 'LIMIT', importPath: '@scope/pkg', … });             // "import { LIMIT as __import_LIMIT } from '@scope/pkg';"
  *
  * @param symbol - The imported symbol.
  * @returns The import declaration.
  */
-export function toRuntimeImport({ imported, local, modulePath }: SymbolImport): string {
+export function toRuntimeImport({ imported, local, modulePath, importPath = modulePath }: SymbolImport): string {
   const alias = getRuntimeAlias(local);
-  return imported === '*' ? `import * as ${alias} from '${modulePath}';` : `import { ${imported} as ${alias} } from '${modulePath}';`;
+  return imported === '*' ? `import * as ${alias} from '${importPath}';` : `import { ${imported} as ${alias} } from '${importPath}';`;
 }
 
 /**
- * Returns the specifier the type-check code imports the module of a symbol with: its path without the TypeScript
- * extension, which TypeScript resolves without `allowImportingTsExtensions`.
+ * Returns the specifier the type-check code imports the module of a symbol with: the path of a package as written in
+ * the `@import`, resolved like the imports of the project, or the path of a file of the project without the
+ * TypeScript extension, which TypeScript resolves without `allowImportingTsExtensions`.
  *
  * @example
- * toTypeCheckModuleSpecifier('/src/format.ts');  // '/src/format'
+ * toTypeCheckModuleSpecifier({ modulePath: '/src/format.ts', … });                                 // '/src/format'
+ * toTypeCheckModuleSpecifier({ modulePath: '/node_modules/pkg/index.d.ts', importPath: 'pkg', … }); // 'pkg'
  *
- * @param modulePath - The absolute path of the file of the module.
+ * @param symbol - The imported symbol.
  * @returns The module specifier.
  */
-export function toTypeCheckModuleSpecifier(modulePath: string): string {
-  return modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, '');
+export function toTypeCheckModuleSpecifier({ modulePath, importPath }: Pick<SymbolImport, 'modulePath' | 'importPath'>): string {
+  return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, '');
 }

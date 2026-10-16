@@ -1,6 +1,8 @@
-<!-- Every component and directive a template uses, and every value or type of a module it reads, is imported by it -->
+<!-- Every component and directive a template uses, and every value or type of a module it reads, is imported by it: relative paths, aliases of tsconfig.json, packages -->
 @import { CardComponent } from './card/card.xd.component.ts'
 @import { AvatarComponent, BadgeComponent } from '../people.xd.component'
 @import { TintDirective } from '../../directives/tint.directive.ts'
 @import { formatPrice, Currency, quantity } from '../cart.ts'
 @import { default as shout, * as utils } from '../utils.ts'
+@import { Row } from '@app/models/row'
+@import { formatBytes } from '@acme/format'

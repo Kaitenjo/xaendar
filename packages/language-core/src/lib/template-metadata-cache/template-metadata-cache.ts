@@ -2,7 +2,7 @@ import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponent
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
-import { resolveModulePath } from '../utils/module-path/module-path.utils';
+import { resolveModule, resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
 
 /**
@@ -67,7 +67,7 @@ export class TemplateMetadataCache implements CompilerCache {
       return stored;
     }
 
-    const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1]) : path && resolvePosixPath(path);
+    const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
     const metadata = fileName && (await this._getFileMetadatas(fileName))?.get(name);
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
@@ -79,6 +79,7 @@ export class TemplateMetadataCache implements CompilerCache {
   /**
    * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
    * names, or any other export of the module. The editor only type-checks the template: a symbol is never reactive.
+   * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
    *
    * @param imported - The name of the export (`'default'` for the default one, `'*'` for a namespace import).
    * @param local - The name the template imports it as, which names a component or a directive exported as default.
@@ -88,13 +89,23 @@ export class TemplateMetadataCache implements CompilerCache {
    * @throws If the module cannot be resolved or read.
    */
   public async getImport(imported: string, local: string, baseDir: string, path: string): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
-    const fileName = resolveModulePath(baseDir, path);
-    const metadatas = fileName && await this._getFileMetadatas(fileName);
-    if (!metadatas) {
+    const resolved = resolveModule(baseDir, path, this._compilerOptions);
+    const metadatas = resolved && await this._getFileMetadatas(resolved.fileName);
+    if (!resolved || !metadatas) {
       throw new Error(`Cannot find module "${path}"`);
     }
 
-    return (imported !== '*' && metadatas.get(imported === 'default' ? local : imported)) || { type: 'symbol', modulePath: fileName, reactive: false };
+    const metadata = imported !== '*' && metadatas.get(imported === 'default' ? local : imported);
+    if (metadata) {
+      return metadata;
+    }
+
+    const symbol: ImportedSymbol = { type: 'symbol', modulePath: resolved.fileName, reactive: false };
+    if (resolved.external) {
+      symbol.importPath = path;
+    }
+
+    return symbol;
   }
 
   /**
@@ -105,7 +116,7 @@ export class TemplateMetadataCache implements CompilerCache {
    * @returns The metadata, keyed by class name; `undefined` if the module cannot be resolved or read.
    */
   public async getModuleMetadatas(baseDir: string, modulePath: string): Promise<ReadonlyMap<string, ComponentOrDirectiveMetadata> | undefined> {
-    const fileName = resolveModulePath(baseDir, modulePath);
+    const fileName = resolveModulePath(baseDir, modulePath, this._compilerOptions);
     if (fileName) {
       return this._getFileMetadatas(fileName);
     }

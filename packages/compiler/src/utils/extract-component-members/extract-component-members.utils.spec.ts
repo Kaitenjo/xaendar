@@ -117,6 +117,12 @@ describe('extractComponentMembers', () => {
           f = 5;
           g!: InputSignal<boolean>;
           h!: s.InputSignal<number>;
+          n!: import('@xaendar/core/signals').InputSignal<number>;
+          o!: import('./other').Signal<number>;
+          p!: typeof import('@xaendar/core/signals');
+          q!: import('@xaendar/core/signals');
+          r!: import(1).Signal<number>;
+          s!: import(other).Signal<number>;
           i!: Other<string>;
           j!: a.b.C;
           k!: string;
@@ -126,7 +132,7 @@ describe('extractComponentMembers', () => {
         }
       `);
 
-      expect(members).toEqual(['a', 'b', 'c', 'g', 'h']);
+      expect(members).toEqual(['a', 'b', 'c', 'g', 'h', 'n']);
     });
 
     it('detects members typed as signals whatever initialises them', () => {
@@ -546,6 +552,7 @@ describe('isReactiveExport', () => {
   it.each([
     ['initialised through a signal function', `${SIGNALS_IMPORT}export const count = signal(0);`],
     ['typed as a signal', 'import { Signal } from \'@xaendar/core/signals\';\nexport declare const count: Signal<number>;'],
+    ['typed as a signal through an import type, as declaration files write it', 'export declare const count: import(\'@xaendar/core/signals\').Signal<number>;'],
     ['initialised with another module signal', `${SIGNALS_IMPORT}const total = signal(0);\nexport const count = total;`],
     ['exported as default', `${SIGNALS_IMPORT}const count = signal(0);\nexport default count;`]
   ])('is true for a module signal %s', (_description, source) => {
