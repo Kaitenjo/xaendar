@@ -21,6 +21,6 @@ describe('parseTypeArguments', () => {
   });
 
   it('throws for an empty type argument', () => {
-    expect(() => parseTypeArguments('A,, B', 0)).toThrow('A type argument of a directive cannot be empty');
+    expect(() => parseTypeArguments('A,, B', 0)).toThrow('A type argument cannot be empty');
   });
 });

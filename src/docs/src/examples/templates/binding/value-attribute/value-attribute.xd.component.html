@@ -1,3 +1,5 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <label>
   value attribute
   <input type="text" value="{ text() }" (input)="onInput($event)" />
@@ -6,5 +8,5 @@
   value property
   <input class="by-property" type="text" (input)="onInput($event)" />
 </label>
-<button (click)="reset()">Reset the text</button>
+<ex-button (click)="reset()">Reset the text</ex-button>
 <p>The signal holds: "{ text() }"</p>

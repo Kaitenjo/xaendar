@@ -897,19 +897,12 @@ describe('typeCheckElement generic directives', () => {
     expect(mappings.map(({ original }) => template.slice(original.start, original.end))).toEqual(expect.arrayContaining(['string', 'number', 'string, number']));
   });
 
-  it('infers the type parameters the template leaves out from the values it binds to the properties, with a call that is not checked', () => {
-    const lines = text(run('<div @@myDirective<string>(items="{names}")></div>', genericDirective([['T'], ['U']])));
+  it('infers nothing when the template passes type arguments: the class is instantiated with them only, as TypeScript does for a call', () => {
+    const lines = text(run('<div @@myDirective<string>(items="{names}")></div>', genericDirective([['T'], ['U', true]])));
 
-    expect(lines.slice(0, 7)).toEqual([
-      '{',
-      '  type T = string;',
-      '  // @ts-ignore',
-      `  function __probe<P0, P1>(value0: ${owner}<P0, P1>['items']): [P0, P1] { return null!; }`,
-      '  // @ts-ignore',
-      '  const __probed = __probe(() => (root.names));',
-      '  type __Probed = typeof __probed;'
-    ]);
-    expect(lines[7]).toBe(`  type __Instance = ${owner}<T, unknown extends __Probed[1] ? any : __Probed[1]>;`);
+    // The type parameters left out take their default type, or are reported by TypeScript when they have none
+    expect(lines.slice(0, 3)).toEqual(['{', '  type T = string;', `  type __Instance = ${owner}<T>;`]);
+    expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
   });
 
   it('maps the value of the call inferring the type parameters, and the instantiation of the class when there are no type arguments, onto the template', () => {
@@ -1039,5 +1032,46 @@ describe('typeCheckElement generic components', () => {
       '  root.onPick($event);',
       '}'
     ]);
+  });
+
+  it('declares the type arguments of the element as local types named like the type parameters, mapped onto the template', () => {
+    const template = '<my-el(string, Map<string, number>) items="{names}"></my-el>';
+    const lines = run(template, genericComponent());
+
+    expect(text(lines)).toEqual([
+      '{',
+      '  type T = string;',
+      '  type U = Map<string, number>;',
+      `  type __Instance = ${owner}<T, U>;`,
+      '  {',
+      '    (root.names) satisfies ReturnType<__Instance[\'items\']>;',
+      '  }',
+      '}'
+    ]);
+    expect(lines[2].mappings![0].original).toEqual({ start: template.indexOf('Map'), end: template.indexOf(') items') });
+    // The instantiation is mapped onto the type arguments, where a type that doesn't satisfy a constraint is reported
+    expect(lines[3].mappings![0].original).toEqual({ start: template.indexOf('string'), end: template.indexOf(') items') });
+  });
+
+  it('infers nothing when the element declares type arguments, leaving the others to their default type', () => {
+    const lines = text(run('<my-el(string) items="{names}"></my-el>', genericComponent([['T'], ['U', true]])));
+
+    expect(lines.slice(0, 3)).toEqual(['{', '  type T = string;', `  type __Instance = ${owner}<T>;`]);
+    expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
+  });
+
+  it('throws for type arguments on a component that is not generic', () => {
+    expect(() => run('<my-el(string)></my-el>', metadata({}))).toThrow('<my-el> declares type arguments, but MyEl is not generic.');
+  });
+
+  it('throws for more type arguments than the type parameters of the component', () => {
+    expect(() => run('<my-el(string, number, boolean)></my-el>', genericComponent())).toThrow('<my-el> declares 3 type arguments, but MyEl has 2 type parameters (T, U).');
+  });
+
+  it('throws for type arguments on a native element, or a custom element of another library', () => {
+    expect(() => run('<div(string)></div>')).toThrow('<div> declares type arguments, but only a WebComponent imported in the template can declare them.');
+    const foreignContext = new TypeCheckContext();
+    foreignContext.addCustomElementPatterns('sl-*');
+    expect(() => typeCheckElement(parse('<sl-button(string)></sl-button>'), processNode, foreignContext)).toThrow('<sl-button> declares type arguments, but only a WebComponent imported in the template can declare them.');
   });
 });

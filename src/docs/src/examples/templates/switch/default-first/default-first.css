@@ -2,10 +2,8 @@
   display: block;
 }
 
-button {
-  font: inherit;
+ex-button {
   font-family: ui-monospace, monospace;
-  cursor: pointer;
 }
 
 .columns {

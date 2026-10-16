@@ -1,6 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="dismiss()">Dismiss one</button>
-  <button (click)="receive()">Receive one</button>
+  <ex-button (click)="dismiss()">Dismiss one</ex-button>
+  <ex-button (click)="receive()">Receive one</ex-button>
 </div>
 @if (messages().length) {
   <ul>

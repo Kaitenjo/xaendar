@@ -61,6 +61,12 @@ describe('highlight', () => {
     ]);
   });
 
+  it('highlights the type arguments following the name of a tag', () => {
+    expect(tokens(highlight(`<ex-picker(Row, number) items="a" /></ex-picker>`, 'html'))).toEqual([
+      'punc:<', 'tag:ex-picker', 'punc:(', 'type:Row', 'kw:number', 'punc:)', 'attr:items', 'punc:=', 'str:"a"', 'punc:/>', 'punc:</', 'tag:ex-picker', 'punc:>'
+    ]);
+  });
+
   it('highlights imports and comments in templates', () => {
     expect(tokens(highlight(`@import { Card } from './card.ts'\n<!-- note -->`, 'html'))).toEqual(['ctl:@import', 'type:Card', 'kw:from', 'str:\'./card.ts\'', 'com:<!-- note -->']);
   });

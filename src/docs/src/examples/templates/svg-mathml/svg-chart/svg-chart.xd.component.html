@@ -1,4 +1,6 @@
-<button (click)="shuffle()">New values</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="shuffle()">New values</ex-button>
 <svg viewBox="0 0 300 130" role="img" aria-label="Visits per day" (mouseleave)="clear()">
   <line x1="0" y1="110" x2="300" y2="110" class="axis" />
   @for (bar of bars(); track bar()) {

@@ -1,4 +1,5 @@
 @import { BindValueDirective } from './bind-value.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <label>
   Attribute
@@ -17,7 +18,7 @@
   </select>
 </label>
 <div class="controls">
-  <button (click)="reset()">Reset</button>
-  <button (click)="shout()">Upper case</button>
+  <ex-button (click)="reset()">Reset</ex-button>
+  <ex-button (click)="shout()">Upper case</ex-button>
   <span>Signals: "{ text() }", { size() }</span>
 </div>

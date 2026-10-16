@@ -8,11 +8,6 @@
   margin-bottom: 0.5rem;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 ol {
   margin: 0.5rem 0 0;
   font-family: ui-monospace, monospace;

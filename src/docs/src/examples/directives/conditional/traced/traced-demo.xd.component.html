@@ -1,8 +1,9 @@
 @import { TracedDirective } from './trace.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggleApplied()">{ applied() ? 'Remove' : 'Apply' } the directive</button>
-  <button (click)="toggleWarm()">Make it { warm() ? 'cold' : 'warm' }</button>
+  <ex-button (click)="toggleApplied()">{ applied() ? 'Remove' : 'Apply' } the directive</ex-button>
+  <ex-button (click)="toggleWarm()">Make it { warm() ? 'cold' : 'warm' }</ex-button>
 </div>
 <p
   @if (applied()) {

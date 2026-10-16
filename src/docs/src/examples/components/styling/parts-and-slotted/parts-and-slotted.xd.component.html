@@ -1,6 +1,7 @@
 @import { StyledPanelComponent } from './styled-panel.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<button (click)="toggle()">Highlight the header</button>
+<ex-button (click)="toggle()">Highlight the header</ex-button>
 <ex-styled-panel class="{ highlighted() ? 'highlighted' : '' }">
   <span slot="title">Release notes</span>
   <strong>A direct child: matched by ::slotted(strong)</strong>

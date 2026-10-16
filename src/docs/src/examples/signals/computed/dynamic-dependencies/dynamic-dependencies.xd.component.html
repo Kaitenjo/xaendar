@@ -1,3 +1,5 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <p class="label">{ label() }</p>
 <p>
   label evaluated
@@ -5,5 +7,5 @@
   times · showTitle is
   <strong>{ showTitle() }</strong>
 </p>
-<button (click)="changeTitle()">Change title</button>
-<button (click)="toggleTitle()">Toggle showTitle</button>
+<ex-button (click)="changeTitle()">Change title</ex-button>
+<ex-button (click)="toggleTitle()">Toggle showTitle</ex-button>

@@ -217,7 +217,10 @@ describe('generateStyleModule()', () => {
 
 describe('injectTemplate()', () => {
   const jsSource = [
-    'class Foo {',
+    'class Foo extends Base {',
+    '  static {',
+    '    [_Foo, _initClass] = _applyDecs(this, [WebComponent({ selector: "x-foo" })], [], 0, void 0, Base).c;',
+    '  }',
     '  static {',
     '    _initClass();',
     '  }',
@@ -245,15 +248,21 @@ describe('injectTemplate()', () => {
     expect(error).toBe('Could not find class "Missing" in the transpiled output.');
   });
 
-  it('throws when the decorator static initializer block is missing', () => {
+  it('throws when no class of that name has the static block applying its decorators', () => {
     const source = [
       'class Foo {',
       '  bar = 1;',
       '  static { }',
-      '  static { doA(); doB(); }',
+      '  static { _initClass(); }',
       '  static { const x = 1; }',
-      '  static { _initClass(1); }',
-      '  static { doSomethingElse(); }',
+      '  static { _applyDecs(this, []); }',
+      '  static { x += _applyDecs(this, []); }',
+      '  static { [_Foo] = _applyDecs(other, []).c; }',
+      '  static { [_Foo] = _applyDecs().c; }',
+      '  static { [_Foo] = helpers.applyDecs(this, []).c; }',
+      '  static { [_Foo] = _decorate(this, []).c; }',
+      '  static { [_Foo] = _applyDecs(this, []).c; doMore(); }',
+      '  static { class Inner { static { [_Inner] = _applyDecs(this, []).c; } } }',
       '}'
     ].join('\n');
 
@@ -264,7 +273,7 @@ describe('injectTemplate()', () => {
       error = err;
     }
 
-    expect(error).toContain('Could not find the static initializer block for class "Foo"');
+    expect(error).toContain('Could not find the static block applying the decorators of class "Foo"');
   });
 
   it('leaves the source untouched when the static initializer block is missing', () => {
@@ -279,7 +288,7 @@ describe('injectTemplate()', () => {
   it('imports the render function from the template module', () => {
     const result = inject(jsSource, false, 'Foo');
 
-    expect(result.startsWith(`import { render as __Foo_render } from ${JSON.stringify(specifier)};\nclass Foo {`)).toBe(true);
+    expect(result.startsWith(`import { render as __Foo_render } from ${JSON.stringify(specifier)};\nclass Foo extends Base {`)).toBe(true);
   });
 
   it('registers the render function in a static block before the static initializer block', () => {
@@ -312,6 +321,58 @@ describe('injectTemplate()', () => {
     expect(result.split('_defineRender(').length).toBe(2);
   });
 
+  it('recognizes the static block applying both class and member decorators', () => {
+    const source = [
+      'class Foo extends Base {',
+      '  static {',
+      '    ({',
+      '      e: [_init_items, _init_extra_items],',
+      '      c: [_Foo, _initClass]',
+      '    } = _applyDecs(this, [WebComponent({ selector: "x-foo" })], [[Property(), 1, "items"]], 0, void 0, Base));',
+      '  }',
+      '  #A = _init_items(this);',
+      '}'
+    ].join('\n');
+    const result = inject(source, false, 'Foo');
+
+    expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static {\n    ({');
+  });
+
+  it('finds a class babel nests in a wrapper class, as it does when the class has static fields', () => {
+    const source = [
+      'let _Foo;',
+      'new class extends _identity {',
+      '  static [class Foo extends Base {',
+      '    static {',
+      '      [_Foo, _initClass] = _applyDecs(this, [WebComponent({ selector: "x-foo" })], [], 0, void 0, Base).c;',
+      '    }',
+      '  }];',
+      '  observedAttributes = ["disabled"];',
+      '  constructor() {',
+      '    super(_Foo), _initClass();',
+      '  }',
+      '}();',
+      'export { _Foo as Foo };'
+    ].join('\n');
+    const result = inject(source, false, 'Foo');
+
+    expect(result).toContain('static [class Foo extends Base {\n    static { _defineRender(this, __Foo_render); }\n\n  static {\n      [_Foo, _initClass] = _applyDecs(');
+    expect(result.split('_defineRender(').length).toBe(2);
+  });
+
+  it('skips the classes of that name that do not apply decorators', () => {
+    const source = [
+      'function helper() {',
+      '  return class Foo { static { _initClass(); } };',
+      '}',
+      jsSource
+    ].join('\n');
+    const result = inject(source, false, 'Foo');
+
+    expect(result).toContain('return class Foo { static { _initClass(); } };');
+    expect(result).toContain('class Foo extends Base {\n  static { _defineRender(this, __Foo_render); }\n\n  static {\n    [_Foo, _initClass] = _applyDecs(');
+  });
+
   it('neither imports nor registers a stylesheet when there is no style module', () => {
     const result = inject(jsSource, false, 'Foo');
 
@@ -342,10 +403,10 @@ describe('injectTemplate()', () => {
   describe('with multiple components in the same file', () => {
     const source = [
       'class Foo {',
-      '  static { _initClass(); }',
+      '  static { [_Foo, _initClass] = _applyDecs(this, [], []).c; }',
       '}',
       'class Bar {',
-      '  static { _initClass2(); }',
+      '  static { [_Bar, _initClass2] = _applyDecs(this, [], []).c; }',
       '}'
     ].join('\n');
 
@@ -365,8 +426,8 @@ describe('injectTemplate()', () => {
       expect(result.split(JSON.stringify(specifier)).length).toBe(2);
       expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
       expect(result).not.toContain('__Bar_render');
-      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
-      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass2(); }');
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { [_Foo, _initClass]');
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { [_Bar, _initClass2]');
     });
 
     it('imports each distinct template module of the file', () => {
@@ -375,8 +436,8 @@ describe('injectTemplate()', () => {
 
       expect(result).toContain(`import { render as __Foo_render } from ${JSON.stringify(specifier)};`);
       expect(result).toContain(`import { render as __Bar_render } from ${JSON.stringify(barSpecifier)};`);
-      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { _initClass(); }');
-      expect(result).toContain('static { _defineRender(this, __Bar_render); }\n\n  static { _initClass2(); }');
+      expect(result).toContain('static { _defineRender(this, __Foo_render); }\n\n  static { [_Foo, _initClass]');
+      expect(result).toContain('static { _defineRender(this, __Bar_render); }\n\n  static { [_Bar, _initClass2]');
     });
 
     it('prepends the required runtime imports only once', () => {
@@ -392,7 +453,7 @@ describe('injectTemplate()', () => {
       expect(result.split(JSON.stringify(styleSpecifier)).length).toBe(2);
       expect(result).toContain(`import { sheet as __Foo_sheet } from ${JSON.stringify(styleSpecifier)};`);
       expect(result).not.toContain('__Bar_sheet');
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { _initClass2(); }');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { [_Bar, _initClass2]');
     });
 
     it('imports each distinct style module of the file', () => {
@@ -401,8 +462,8 @@ describe('injectTemplate()', () => {
 
       expect(result).toContain(`import { sheet as __Foo_sheet } from ${JSON.stringify(styleSpecifier)};`);
       expect(result).toContain(`import { sheet as __Bar_sheet } from ${JSON.stringify(barStyleSpecifier)};`);
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { _initClass(); }');
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Bar_sheet); }\n\n  static { _initClass2(); }');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { [_Foo, _initClass]');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, __Bar_sheet); }\n\n  static { [_Bar, _initClass2]');
     });
   });
 });

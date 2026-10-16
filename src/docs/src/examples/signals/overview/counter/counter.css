@@ -11,7 +11,6 @@ output {
   font-weight: 700;
 }
 
-button {
-  font: 0.85rem ui-monospace, monospace;
-  cursor: pointer;
+ex-button {
+  font-family: ui-monospace, monospace;
 }

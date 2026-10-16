@@ -3,8 +3,8 @@
 <!-- Item is the type of the rows, Key the type of the event -->
 <ul @@exEach<Row, number>(items="{ rows() }" (picked)="open($event)")>…</ul>
 
-<!-- The type arguments left out are inferred from the bound values: Item is the type of the rows... -->
+<!-- Without type arguments, they are inferred from the bound values: Item is the type of the rows... -->
 <ul @@exEach(items="{ rows() }")>…</ul>
 
-<!-- ...and, when nothing is inferred for them, take their default type: Key is string here -->
+<!-- ...with some of them, nothing is inferred: the ones left out take their default type, Key is string here -->
 <ul @@exEach<Row>(items="{ rows() }")>…</ul>

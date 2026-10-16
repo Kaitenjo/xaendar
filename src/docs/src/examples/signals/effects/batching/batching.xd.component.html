@@ -1,7 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="changeFirst()">first++</button>
-  <button (click)="changeThreeTimes()">first++, second++, first++</button>
-  <button (click)="changeAndRevert()">first++, first--</button>
+  <ex-button (click)="changeFirst()">first++</ex-button>
+  <ex-button (click)="changeThreeTimes()">first++, second++, first++</ex-button>
+  <ex-button (click)="changeAndRevert()">first++, first--</ex-button>
 </div>
 <ol reversed>
   @for (run of runs(); track run().id) {

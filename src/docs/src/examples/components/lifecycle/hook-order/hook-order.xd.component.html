@@ -1,15 +1,16 @@
 @import { HookParentComponent } from './hook-parent.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggle()">
+  <ex-button (click)="toggle()">
     @if (shown()) {
       Remove the parent
     } @else {
       Add the parent
     }
-  </button>
-  <button (click)="rename()">Change the label: { label() }</button>
-  <button (click)="clear()">Clear the log</button>
+  </ex-button>
+  <ex-button (click)="rename()">Change the label: { label() }</ex-button>
+  <ex-button (click)="clear()">Clear the log</ex-button>
 </div>
 @if (shown()) {
   <ex-hook-parent label="{label()}" />

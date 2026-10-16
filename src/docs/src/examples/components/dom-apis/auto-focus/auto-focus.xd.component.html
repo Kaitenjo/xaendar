@@ -1,7 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 @if (editing()) {
   <input type="text" value="{ heading() }" aria-label="Title" (keydown)="onKeydown($event)" />
   <span class="hint">Enter to save, Escape to cancel</span>
 } @else {
   <strong>{ heading() }</strong>
-  <button (click)="edit()">Edit</button>
+  <ex-button (click)="edit()">Edit</ex-button>
 }

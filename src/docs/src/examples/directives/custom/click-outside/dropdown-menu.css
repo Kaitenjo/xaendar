@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .dropdown {
   display: inline-block;
 }
@@ -31,6 +26,8 @@ button {
   color: inherit;
   padding: 0.3rem 0.6rem;
   border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
 }
 
 .menu button:hover {

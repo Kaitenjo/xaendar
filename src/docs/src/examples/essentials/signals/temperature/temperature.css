@@ -13,11 +13,6 @@
   gap: 0.5rem;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .log {
   margin: 0.75rem 0 0;
   font-family: ui-monospace, monospace;

@@ -8,10 +8,8 @@
   gap: 0.5rem;
 }
 
-button {
+ex-button {
   min-width: 2.5rem;
-  font: inherit;
-  cursor: pointer;
 }
 
 .caption {

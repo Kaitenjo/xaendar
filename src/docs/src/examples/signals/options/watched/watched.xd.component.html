@@ -1,10 +1,12 @@
-<button (click)="toggle()">
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggle()">
   @if (visible()) {
     Hide the clock
   } @else {
     Show the clock
   }
-</button>
+</ex-button>
 @if (visible()) {
   <p class="clock">{ now() }</p>
 } @else {

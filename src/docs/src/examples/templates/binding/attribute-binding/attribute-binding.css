@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .link {
   padding: 0.2rem 0.5rem;
   border-radius: 4px;

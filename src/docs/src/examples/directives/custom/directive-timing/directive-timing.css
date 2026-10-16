@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 ul {
   display: flex;
   gap: 1rem;

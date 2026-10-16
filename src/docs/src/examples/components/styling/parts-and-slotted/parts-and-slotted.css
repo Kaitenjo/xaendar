@@ -2,10 +2,8 @@
   display: block;
 }
 
-button {
+ex-button {
   margin-bottom: 0.75rem;
-  font: inherit;
-  cursor: pointer;
 }
 
 /* The header inside the panel, exposed with part="header" */

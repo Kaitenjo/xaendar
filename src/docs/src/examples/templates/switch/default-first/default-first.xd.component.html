@@ -1,4 +1,6 @@
-<button (click)="toggle()">size: { size() }</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggle()">size: { size() }</ex-button>
 <div class="columns">
   <section>
     <h5>{'@default'} last</h5>

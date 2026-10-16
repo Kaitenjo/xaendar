@@ -29,7 +29,7 @@ function getDefaultThemeValue(): Theme {
     return storageValue;
   }
 
-  document.documentElement.dataset['theme'] = storageValue;
+  document.documentElement.dataset['theme'] = 'dark';
   return 'dark';
 }
 

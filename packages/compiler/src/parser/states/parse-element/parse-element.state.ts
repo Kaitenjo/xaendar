@@ -16,6 +16,7 @@ import { parseConditionalBinding } from '../parse-conditional-binding/parse-cond
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
+import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
  * Parses a TAG_OPEN_NAME token and the subsequent attributes, events, conditional bindings, directives, structural directives and children
@@ -23,7 +24,7 @@ import { parseStructuralDirective } from '../parse-structural-directive/parse-st
  *
  * @param cursor - Parser cursor positioned at the TAG_OPEN_NAME token.
  * @param parseNode - Parser function for recursive child parsing.
- * @param token - The TAG_OPEN_NAME token containing the tag name.
+ * @param token - The TAG_OPEN_NAME token containing the tag name, and the text of the type arguments if the element declares them.
  * @returns The parsed `ElementNode`.
  * @throws If an attribute or a directive is bound more than once, or the element is not closed correctly.
  */
@@ -72,34 +73,41 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, branch => branch.structuralDirectives);
 
+  const node: MaybeASTNodeWithSpan<ElementNode> = {
+    type: ASTNodeType.Element,
+    tagName,
+    nameSpan,
+    attributes,
+    events,
+    children: [],
+    conditionalBindings,
+    directives,
+    structuralDirectives
+  };
+
+  // The type arguments follow the tag name, after the `(` opening them
+  if (token.parts[1] !== undefined) {
+    node.typeArguments = parseTypeArguments(token.parts[1], nameSpan.end + 1);
+  }
+
   const peekedTokenType = cursor.peek().type;
   switch (peekedTokenType) {
     // Consume TAG_OPEN_END if present: <div>
-    case TokenType.TAG_OPEN_END: 
+    case TokenType.TAG_OPEN_END:
       cursor.advance();
       break;
 
     // Handle self-closing tags: <div />
     case TokenType.TAG_SELF_CLOSE:
       cursor.advance();
-      return {
-        type: ASTNodeType.Element,
-        tagName,
-        nameSpan,
-        attributes,
-        events,
-        children: [],
-        conditionalBindings,
-        directives,
-        structuralDirectives
-      };
-    
+      return node;
+
     default:
       throw new Error(`Unexpected token ${TokenType[peekedTokenType]}`);
   }
 
   // Parse children recursively until closing tag
-  const children = new Array<ASTNode>;
+  const { children } = node;
   while (!isTagClose(cursor, tagName)) {
     const child = parseNode();
     if (child) {
@@ -109,20 +117,9 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   // Consume closing tag </div>
   cursor.advance();
-  const closeNameSpan = cursor.findSpan(tagName, cursor.getCurrentToken().value.span.start);
+  node.closeNameSpan = cursor.findSpan(tagName, cursor.getCurrentToken().value.span.start);
 
-  return {
-    type: ASTNodeType.Element,
-    tagName,
-    nameSpan,
-    closeNameSpan,
-    attributes,
-    events,
-    children,
-    conditionalBindings,
-    directives,
-    structuralDirectives
-  };
+  return node;
 }
 
 /**

@@ -34,6 +34,25 @@ describe('parseElement', () => {
     expect(node.children).toEqual([]);
   });
 
+  it('parses the type arguments following the tag name, with their span in the template', () => {
+    const template = '<my-list(string, Map<string, number>) items="{rows}"></my-list>';
+    const [node] = parse(template) as ElementNode[];
+
+    expect(node.tagName).toBe('my-list');
+    expect(node.nameSpan).toEqual({ start: 1, end: 8 });
+    expect(node.typeArguments).toEqual([
+      { text: 'string', span: { start: 9, end: 15 } },
+      { text: 'Map<string, number>', span: { start: template.indexOf('Map'), end: template.indexOf(') items') } }
+    ]);
+    expect(node.closeNameSpan).toEqual({ start: template.lastIndexOf('my-list'), end: template.lastIndexOf('>') });
+  });
+
+  it('parses the type arguments of a self-closing element', () => {
+    const [node] = parse('<my-list(string)/>') as ElementNode[];
+
+    expect(node).toMatchObject({ tagName: 'my-list', typeArguments: [{ text: 'string' }], children: [] });
+  });
+
   it('parses directives', () => {
     const [node] = parse('<div @@first @@second(display="block")></div>') as ElementNode[];
     expect(node.directives.map(({ selector }) => selector)).toEqual(['first', 'second']);

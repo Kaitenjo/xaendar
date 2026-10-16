@@ -22,8 +22,3 @@
   flex: 1;
   font-weight: 600;
 }
-
-button {
-  font: inherit;
-  cursor: pointer;
-}

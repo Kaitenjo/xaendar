@@ -1,4 +1,6 @@
-<button (click)="next()">Next list</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="next()">Next list</ex-button>
 <p>
   In the signal:
   <code>{ JSON.stringify(tags()) }</code>

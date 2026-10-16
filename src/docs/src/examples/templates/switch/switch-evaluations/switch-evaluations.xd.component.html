@@ -1,6 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="next()">Next day</button>
-  <button (click)="resetCount()">Reset the count</button>
+  <ex-button (click)="next()">Next day</ex-button>
+  <ex-button (click)="resetCount()">Reset the count</ex-button>
   <span>dayName() ran { evaluations() } times</span>
 </div>
 @switch (dayName()) {

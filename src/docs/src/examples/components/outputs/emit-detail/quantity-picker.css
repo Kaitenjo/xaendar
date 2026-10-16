@@ -4,10 +4,8 @@
   gap: 0.4rem;
 }
 
-button {
+ex-button {
   min-width: 2.25rem;
-  font: inherit;
-  cursor: pointer;
 }
 
 output {

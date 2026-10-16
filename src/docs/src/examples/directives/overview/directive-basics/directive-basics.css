@@ -10,13 +10,8 @@
   margin-bottom: 0.6rem;
 }
 
-button,
 select {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 p {

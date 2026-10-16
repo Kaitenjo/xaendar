@@ -16,16 +16,12 @@ label {
   gap: 0.35rem;
 }
 
-select,
-button {
+select {
   font: inherit;
 }
 
 .task {
-  padding: 0.5rem 1rem;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  cursor: pointer;
+  border-width: 2px;
 }
 
 .task[data-priority='high'] {
@@ -35,11 +31,6 @@ button {
 .task[data-priority='urgent'] {
   border-color: #d32f2f;
   font-weight: 700;
-}
-
-.task[disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 p {

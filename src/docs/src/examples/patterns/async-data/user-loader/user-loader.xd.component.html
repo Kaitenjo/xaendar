@@ -1,6 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
   @for (id of ids) {
-    <button (click)="load(id())">User { id() }</button>
+    <ex-button (click)="load(id())">User { id() }</ex-button>
   }
 </div>
 <div class="state">

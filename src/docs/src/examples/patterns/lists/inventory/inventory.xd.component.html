@@ -1,7 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../../shared/submit/submit.directive.ts'
+
 <form (submit)="add($event)">
   <input name="name" placeholder="New item" autocomplete="off" />
-  <button type="submit">Add</button>
-  <button type="button" (click)="insertRandom()">Insert at random</button>
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
+  <ex-button (click)="insertRandom()">Insert at random</ex-button>
 </form>
 <div class="tools">
   <input type="search" placeholder="Filter" (input)="setFilter($event)" />
@@ -27,12 +30,12 @@
             <td>{ item().id }</td>
             <td>{ item().name }</td>
             <td class="quantity">
-              <button (click)="changeQuantity(item(), -1)">−</button>
+              <ex-button (click)="changeQuantity(item(), -1)">−</ex-button>
               <span>{ item().quantity() }</span>
-              <button (click)="changeQuantity(item(), 1)">+</button>
+              <ex-button (click)="changeQuantity(item(), 1)">+</ex-button>
             </td>
             <td>
-              <button class="remove" (click)="removeItem(item())">Remove</button>
+              <ex-button class="remove" (click)="removeItem(item())">Remove</ex-button>
             </td>
           </tr>
         }

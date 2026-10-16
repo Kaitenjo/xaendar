@@ -19,7 +19,7 @@ const NAME = /[^\s=<>/(){}"'@*]+/y;
 /**
  * The name of an element.
  */
-const TAG_NAME = /[^\s/>]+/y;
+const TAG_NAME = /[^\s/>(]+/y;
 
 /**
  * What the layout of a template is read from, and where it is read at.
@@ -212,21 +212,36 @@ function readComment(reader: Reader): LayoutAtom {
 }
 
 /**
- * Reads an element, with its content.
+ * Reads an element, with its type arguments if it has them, and its content.
  *
  * @param reader - The reader, on the `<`.
  * @returns The element.
- * @throws If the element is not closed, or closed by another one.
+ * @throws If the element is not closed, or closed by another one, or its type arguments are not closed.
  */
 function readElement(reader: Reader): LayoutElement {
   const { source } = reader;
   reader.position++;
   const name = readName(reader, TAG_NAME);
+  let typeArguments: string | undefined;
+  if (source[reader.position] === '(') {
+    const end = findClosing(source, reader.position);
+    if (end === undefined) {
+      return fail('The type arguments of an element are not closed');
+    }
+
+    typeArguments = source.slice(reader.position + 1, end);
+    reader.position = end + 1;
+  }
+
   const items = readItems(reader, 'tag');
   const selfClosing = source.startsWith('/>', reader.position);
   reader.position += selfClosing ? 2 : 1;
 
   const element: { -readonly [Key in keyof LayoutElement]: LayoutElement[Key] } = { kind: 'element', name, items, selfClosing };
+  if (typeArguments !== undefined) {
+    element.typeArguments = typeArguments;
+  }
+
   if (selfClosing || VOID_ELEMENTS.has(name)) {
     return element;
   }

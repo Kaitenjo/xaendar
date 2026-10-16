@@ -12,8 +12,7 @@ label {
 }
 
 input,
-select,
-button {
+select {
   font: inherit;
 }
 
@@ -22,8 +21,4 @@ button {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-}
-
-button {
-  cursor: pointer;
 }

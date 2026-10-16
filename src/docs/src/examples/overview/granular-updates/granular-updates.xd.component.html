@@ -1,3 +1,5 @@
+@import { ButtonComponent } from '../../shared/button/button.xd.component.ts'
+
 <div class="card">
   <p>
     Hello,
@@ -12,8 +14,8 @@
   <p>This paragraph is static: it is never touched again.</p>
 </div>
 <div class="controls">
-  <button (click)="increment()">Increment</button>
-  <button (click)="rename()">Change name</button>
+  <ex-button (click)="increment()">Increment</ex-button>
+  <ex-button (click)="rename()">Change name</ex-button>
 </div>
 <p class="title">DOM mutations, most recent first:</p>
 <ol class="log">

@@ -51,18 +51,19 @@ export function findComponentsForImport(importedPath: string): Set<string> | und
  */
 export function clearComponentToImports(componentId: string): void {
   const previousImports = componentToImports.get(componentId);
-  if (previousImports) {
-    for (const importedPath of previousImports) {
-      const components = importToComponents.get(importedPath);
-      if (components) {
-        components.delete(componentId);
-        if (!components.size) {
-          importToComponents.delete(importedPath);
-        }
-      }
+  if (!previousImports) {
+    return;
+  }
+
+  for (const importedPath of previousImports) {
+    // ! is a safe assertion because both maps are always updated together
+    const components = importToComponents.get(importedPath)!;
+    components.delete(componentId);
+    if (!components.size) {
+      importToComponents.delete(importedPath);
     }
   }
-  
+
   componentToImports.delete(componentId);
 }
 
@@ -79,12 +80,11 @@ export function clearImportToComponents(importedPath: string): void {
   }
 
   for (const componentId of components) {
-    const imports = componentToImports.get(componentId);
-    if (imports) {
-      imports.delete(importedPath);
-      if (!imports.size) {
-        componentToImports.delete(componentId);
-      }
+    // ! is a safe assertion because both maps are always updated together
+    const imports = componentToImports.get(componentId)!;
+    imports.delete(importedPath);
+    if (!imports.size) {
+      componentToImports.delete(componentId);
     }
   }
 

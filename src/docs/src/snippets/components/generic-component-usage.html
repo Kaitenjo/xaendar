@@ -5,3 +5,6 @@
 
 <!-- Nothing is bound to infer Key from, so it takes its default type, string -->
 <ex-picker items="{rows()}" (picked)="open($event)" />
+
+<!-- Item and Key given explicitly, between parentheses after the tag name -->
+<ex-picker(Row, number) items="{rows()}" (picked)="open($event)" />

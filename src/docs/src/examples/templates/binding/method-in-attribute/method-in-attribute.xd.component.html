@@ -1,4 +1,6 @@
-<button (click)="raise()">Raise the level: { level() }</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="raise()">Raise the level: { level() }</ex-button>
 <p>
   <meter min="0" max="100" value="{ percentOf() }" />
   a method reading the signal: percentOf()

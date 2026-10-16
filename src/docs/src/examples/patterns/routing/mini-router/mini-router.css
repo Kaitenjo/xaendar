@@ -11,11 +11,6 @@ nav {
   border-bottom: 1px solid rgba(127, 127, 127, 0.3);
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 a {
   color: #6750a4;
 }

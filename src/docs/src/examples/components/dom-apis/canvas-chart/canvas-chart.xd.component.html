@@ -1,6 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="shuffle()">New values</button>
-  <button (click)="recolor()">Change the color</button>
+  <ex-button (click)="shuffle()">New values</ex-button>
+  <ex-button (click)="recolor()">Change the color</ex-button>
   <span>Drawn { draws() } times</span>
 </div>
 <canvas width="400" height="160" aria-label="A bar chart" />

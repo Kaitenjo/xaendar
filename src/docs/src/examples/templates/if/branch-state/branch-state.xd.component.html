@@ -1,6 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="change(-1)">−1</button>
-  <button (click)="change(1)">+1</button>
+  <ex-button (click)="change(-1)">−1</ex-button>
+  <ex-button (click)="change(1)">+1</ex-button>
   <span>{ guests() } guests</span>
 </div>
 @if (guests() > 0) {

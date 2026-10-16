@@ -1,9 +1,9 @@
-import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
-import { LANGS } from '../../core/router/route-hash.utils';
 import type { Lang } from '../../core/router/route-hash.utils';
+import { LANGS } from '../../core/router/route-hash.utils';
 import { href, lang, switchLang } from '../../core/router/router';
 import { theme, toggleTheme } from '../../core/theme/theme';
 

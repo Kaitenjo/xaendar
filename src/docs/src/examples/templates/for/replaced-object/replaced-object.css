@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));

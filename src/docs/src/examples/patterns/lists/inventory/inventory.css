@@ -11,13 +11,8 @@ form,
   margin-bottom: 0.6rem;
 }
 
-input,
-button {
+input {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 .table-wrap {

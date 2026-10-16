@@ -1,5 +1,5 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
-import { signal, untracked } from '@xaendar/core/signals';
+import { CustomElement, Property, WebComponent } from '@xaendar/core';
+import { InputSignal, signal, untracked } from '@xaendar/core/signals';
 import { path } from '../../core/router/router';
 
 /**
@@ -40,3 +40,19 @@ export class DocsAppComponent extends CustomElement {
     this.navOpen.set(false);
   }
 }
+
+/**
+ * The root of the documentation: top bar, navigation and the page being read.
+ */
+@WebComponent({
+  selector: 'test-test',
+  templateUrl: './x.xd.html'
+})
+export class Test<T extends string | number, K = T extends string ? Array<string> : Array<number>> extends CustomElement {
+  /**
+   * Whether the navigation drawer is open, on narrow screens.
+   */
+  @Property.required()
+  public accessor navOpen!: InputSignal<K>
+}
+

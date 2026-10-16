@@ -12,6 +12,7 @@ import type { Line, LineMapping } from '../types/generated-line.type.js';
 import type { TypeCheckResult } from '../types/type-checker-result.type.js';
 import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result/type-checker-tolerant-result.type.js';
 import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
+import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils.js';
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
 
 /**
@@ -131,11 +132,12 @@ export class TypeChecker {
     this._context.addCustomElementPatterns(...customElements);
     const body = this._ast.flatMap(node => this._processNode(node, this._context));
 
-    const lines: Line[] = [
+    // The modules the types of the bindings reference are imported once, before the function
+    const lines = hoistImportTypes([
       plain('function typeCheck() {'),
       ...indentLines(body),
       plain('}'),
-    ];
+    ]);
 
     return {
       text: lines.map(line => line.text).join('\n'),

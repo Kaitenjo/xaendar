@@ -32,14 +32,16 @@ function create(): CustomElement {
 
 /**
  * Registers a web component through the `WebComponent` decorator, reproducing the class metadata
- * the runtime attaches to the decorated class, with an empty render so its instances can be connected.
+ * the runtime attaches to the decorated class and running the initializers the decorator adds, with an empty render
+ * so its instances can be connected.
  */
 function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
   const selector = `x-query-target-${counter++}`;
   const klass = class extends base { };
   _defineRender(klass, () => new _Context({} as never));
   const metadata = {};
-  WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
+  const addInitializer = (initializer: (this: Constructor<CustomElement>) => void) => initializer.call(klass);
+  WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata, addInitializer } as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: metadata });
   return { klass, selector };
 }

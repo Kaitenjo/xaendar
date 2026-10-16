@@ -62,6 +62,19 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
+  it('reads the type arguments of an element, between the parentheses following its tag name', () => {
+    expect(parseTemplateLayout('<ex-list(Map<string, number>, (value: string) => void) items="a"></ex-list>')).toEqual([
+      {
+        kind: 'element',
+        name: 'ex-list',
+        typeArguments: 'Map<string, number>, (value: string) => void',
+        selfClosing: false,
+        items: [{ kind: 'attribute', name: 'items', value: 'a' }],
+        children: []
+      }
+    ]);
+  });
+
   it('reads the conditional bindings of a tag, the @else branches and the cases of a @switch included', () => {
     const [element] = parseTemplateLayout('<p @if ( a ) { id="x" } @else if (b) { hidden } @else { lang="it" } @switch (c) { @case (1) @case (2) { dir="ltr" } @default { } }></p>') as [{ items: unknown[] }];
 
@@ -137,6 +150,7 @@ describe('parseTemplateLayout', () => {
     ['an event that is not followed by its handler', '<p (click)></p>'],
     ['an event whose parenthesis is not closed', '<p (click="x"></p>'],
     ['a directive whose type arguments are not closed', '<p @@a<b(c="d")'],
+    ['an element whose type arguments are not closed', '<ex-a(b c="d"></ex-a>'],
     ['a directive whose bindings are not closed', '<p @@a(b="c"></p>'],
     ['a tag that is not closed', '<p a="b"'],
     ['a @for in a tag', '<p @for (a of b) { c="d" }></p>'],

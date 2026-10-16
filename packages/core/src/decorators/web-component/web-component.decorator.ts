@@ -6,8 +6,9 @@ import { WebComponentOptions } from '../../types/web-component/web-component-opt
 /**
  * Decorator that registers a class as a custom web component.
  *
- * Registers the component with the browser's Custom Elements registry under the given selector,
- * which is also stored in the class metadata so that the component can be queried by class (see `Query`).
+ * Registers the component with the browser's Custom Elements registry under the given selector, once the class is
+ * complete (its static fields, such as `observedAttributes`, included). The selector is also stored in the class
+ * metadata so that the component can be queried by class (see `Query`).
  *
  * The custom directives listed in `hostDirectives` are applied to every instance of the component, on the component
  * element itself: they are reached through `hostDirectives` of the component, and the inputs and outputs
@@ -45,6 +46,10 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       metadata[INTERNAL_HOST_DIRECTIVES] = options.hostDirectives;
     }
 
-    customElements.define(options.selector, klass);
+    /*
+      Class decorators run before the static fields are initialized, while the registry reads `observedAttributes`
+      when the class is defined: the class is registered by an initializer, which runs once the static fields are set.
+    */
+    context.addInitializer(() => customElements.define(options.selector, klass));
   };
 }

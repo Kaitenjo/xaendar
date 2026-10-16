@@ -1,10 +1,11 @@
 @import { InnerHtmlDirective } from './inner-html.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="panes">
   <textarea rows="9" (input)="edit($event)">{ source() }</textarea>
   <div @@exInnerHtml(html="{ html() }") class="preview" />
 </div>
-<button (click)="toggleSource()">{ showSource() ? 'Hide' : 'Show' } the generated HTML</button>
+<ex-button (click)="toggleSource()">{ showSource() ? 'Hide' : 'Show' } the generated HTML</ex-button>
 @if (showSource()) {
   <pre>{ html() }</pre>
 }

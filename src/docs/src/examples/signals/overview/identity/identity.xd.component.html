@@ -1,3 +1,5 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <p>
   Rendered list:
   <strong>{ fruits().join(', ') }</strong>
@@ -5,6 +7,6 @@
   <strong>{ runs() }</strong>
   times
 </p>
-<button (click)="pushInPlace()">fruits().push('pear')</button>
-<button (click)="setSame()">fruits.set(fruits())</button>
-<button (click)="replace()">fruits.update(f => [...f, 'cherry'])</button>
+<ex-button (click)="pushInPlace()">fruits().push('pear')</ex-button>
+<ex-button (click)="setSame()">fruits.set(fruits())</ex-button>
+<ex-button (click)="replace()">fruits.update(f => [...f, 'cherry'])</ex-button>

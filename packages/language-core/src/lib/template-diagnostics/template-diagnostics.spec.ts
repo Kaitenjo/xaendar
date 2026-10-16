@@ -1,6 +1,6 @@
 import { createSourceFile, type Diagnostic, DiagnosticCategory, type LanguageService, ScriptTarget } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysisResult } from '../template-analysis/template-analysis';
+import { analyzeTemplate, type TemplateAnalysisResult } from '../template-analysis/template-analysis';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import { getTemplateDiagnostics } from './template-diagnostics';
 
@@ -167,7 +167,7 @@ describe('getTemplateDiagnostics generic directives', () => {
     expect(events[0][1]).toContain('CustomEvent<{ id: number; name: string; }>');
   }, TIMEOUT);
 
-  it('prefers the type arguments of the template to the inferred ones, and infers the others', async () => {
+  it('uses the type arguments of the template instead of inferring, leaving the others to their default type', async () => {
     const source = `${imports}<p @@list<{ id: number }>(items="{ items }" (selected)="select($event)" (picked)="select($event)")></p>`;
     const events = await diagnose(source);
 
@@ -212,6 +212,7 @@ describe('getTemplateDiagnostics generic components', () => {
       '@WebComponent({ selector: \'my-grid\', templateUrl: \'./grid.html\' })',
       'export class Grid<Row extends { id: number }, Key = string> {',
       '  @Property([]) accessor rows!: InputSignal<Row[]>;',
+      '  @Property(null!) accessor key!: InputSignal<Key>;',
       '  @Event() accessor picked!: Output<Key>;',
       '  @Event() accessor selected!: Output<Row>;',
       '}',
@@ -247,6 +248,40 @@ describe('getTemplateDiagnostics generic components', () => {
     expect(events[0][1]).toContain('CustomEvent<string>');
   }, TIMEOUT);
 
+  it('instantiates the component with the type arguments the element declares, leaving the others to their default type', async () => {
+    const explicit = await diagnose(`${imports}<my-grid({ id: number }, number) rows="{ items }" (picked)="select($event)"></my-grid>`);
+    expect(explicit).toHaveLength(1);
+    expect(explicit[0][1]).toContain('CustomEvent<number>');
+
+    const partial = await diagnose(`${imports}<my-grid({ id: number }) rows="{ items }" (selected)="select($event)"></my-grid>`);
+    expect(partial).toHaveLength(1);
+    // The type argument is declared as a local type named like the type parameter, which TypeScript names it by
+    expect(partial[0][1]).toContain('CustomEvent<Row>');
+  }, TIMEOUT);
+
+  it('does not infer the type parameters the element leaves out from the bindings: they take their default type', async () => {
+    // Key would be inferred as number from the value without type arguments, it is string with them
+    expect(await diagnose(`${imports}<my-grid rows="{ items }" key="{ 1 }"></my-grid>`)).toEqual([]);
+    expect(await diagnose(`${imports}<my-grid({ id: number }) key="{ 1 }"></my-grid>`)).toEqual([
+      ['key="{ 1 }"', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('type-checks the template of a generic component, reading its type parameters as their constraints', async () => {
+    const source = '{ rows()[0].id }{ rows()[0].missing }';
+    const analysis = await analyzeTemplate(project.path('src/grid.html'), source, new Map([[project.path('src/grid.ts'), ['Grid']]]));
+
+    expect(getTemplateDiagnostics(analysis).map(({ span, message }) => [source.slice(span.start, span.end), message])).toEqual([
+      ['missing', 'Property \'missing\' does not exist on type \'{ id: number; }\'.']
+    ]);
+  }, TIMEOUT);
+
+  it('reports a type argument that does not satisfy the constraint of the type parameter on the type arguments', async () => {
+    expect(await diagnose(`${imports}<my-grid(string)></my-grid>`)).toContainEqual(
+      ['string', 'Type \'string\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]
+    );
+  }, TIMEOUT);
+
   it('does not report the errors of the call inferring the type parameters, only those of the bindings', async () => {
     expect(await diagnose(`${imports}<my-grid rows="{ missing }"></my-grid>`)).toEqual([
       ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]
@@ -270,7 +305,7 @@ describe('getTemplateDiagnostics host directives', () => {
 
     expect(await diagnose(source)).toEqual([
       ['$event', 'Argument of type \'CustomEvent<string>\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
-      ['my-field', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
+      ['hint="{ 3 }"', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 

@@ -181,7 +181,7 @@ async function analyze(templatePath: string, source: string, components: Readonl
     const metadatas = imports.map(({ metadata }) => metadata);
     const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
-
+    
     const analysis: TemplateAnalysis = {
       templatePath,
       source,

@@ -9,10 +9,8 @@ h4 {
   margin: 0 0 0.5rem;
 }
 
-button {
+ex-button {
   margin: 0 0.4rem 0.4rem 0;
-  font: inherit;
-  cursor: pointer;
 }
 
 p,

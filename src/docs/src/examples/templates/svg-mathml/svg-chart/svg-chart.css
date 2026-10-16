@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 svg {
   display: block;
   width: 100%;

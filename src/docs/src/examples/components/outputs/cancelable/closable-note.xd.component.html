@@ -1,11 +1,13 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 @if (open()) {
   <div class="note">
     <span>
       <slot />
     </span>
-    <button aria-label="Close" (click)="close()">✕</button>
+    <ex-button aria-label="Close" (click)="close()">✕</ex-button>
   </div>
 } @else {
-  <button (click)="reopen()">Reopen</button>
+  <ex-button (click)="reopen()">Reopen</ex-button>
 }
 <p class="status">{ status() }</p>

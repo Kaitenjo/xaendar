@@ -1,15 +1,16 @@
 @import { LazyPanelComponent } from './lazy-panel.lazy.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="increment()">count + 1</button>
-  <button
+  <ex-button (click)="increment()">count + 1</ex-button>
+  <ex-button
     @if (loaded()) {
       disabled
     }
     (click)="load()"
   >
     Load the panel
-  </button>
+  </ex-button>
   <span class="status">
     @if (loaded()) {
       Defined: reload the page to start over

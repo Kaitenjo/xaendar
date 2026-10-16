@@ -10,7 +10,7 @@ export type TagOpenNameToken = TokenWithSpan<{
    */
   type: TokenType.TAG_OPEN_NAME;
   /**
-   * `parts[0]` is the tag name string.
+   * The tag name, then the text of its type arguments (`string, number` in `<my-list(string, number)`) if it declares them.
    */
-  parts: [string];
+  parts: [tagName: string, typeArguments?: string];
 }>

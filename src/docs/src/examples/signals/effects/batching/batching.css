@@ -8,9 +8,8 @@
   gap: 0.5rem;
 }
 
-button {
-  font: 0.85rem ui-monospace, monospace;
-  cursor: pointer;
+ex-button {
+  font-family: ui-monospace, monospace;
 }
 
 ol {

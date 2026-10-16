@@ -15,7 +15,6 @@ import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-bindi
 import { ComponentEventMetadata, ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
-import type { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import type { ElementEventMap } from '../../types/element-event-map.type';
@@ -126,18 +125,20 @@ function getChildrenEventMap(tagName: string, eventMap: ElementEventMap): Elemen
  * property bound inside a conditional binding is only set while its branch
  * is the selected one (see {@link getAlwaysBoundAttributes}).
  *
- * A generic component is instantiated with the types inferred from the values bound to its properties
- * (see {@link instantiateTypeParameters}): an element has no syntax to declare type arguments, unlike a directive.
+ * A generic component is instantiated with the type arguments the element declares (`<my-list(Row)>`), then with the
+ * types inferred from the values bound to its properties (see {@link instantiateTypeParameters}).
  *
  * @param node - The custom element node.
  * @param declaredMetadata - Metadata of the component registered for the element's selector.
  * @param nativeEventType - Builds the type of `$event` for the native events bound on the element and in its directives.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If a required property is missing, or is bound inside a conditional binding that may not bind it.
+ * @throws If the element declares type arguments its component doesn't accept, a required property is missing, or is
+ *   bound inside a conditional binding that may not bind it.
  */
 function typeCheckComponentBindings(node: ElementNode, declaredMetadata: ComponentMetadata, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
-  const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, undefined, node.attributes, node.nameSpan, context);
+  assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
+  const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
@@ -264,20 +265,21 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
 }
 
 /**
- * Ensures the type arguments a directive declares fit its class: a directive that is not generic declares none, and a
- * generic one declares at most as many as it has type parameters (see {@link instantiateTypeParameters} for the omitted ones).
+ * Ensures the type arguments a directive or an element declares fit the class of the directive or of the web component:
+ * a class that is not generic accepts none, and a generic one at most as many as it has type parameters (see
+ * {@link instantiateTypeParameters} for the omitted ones).
  *
- * @param typeArguments - The type arguments the directive declares, if any.
- * @param metadata - Metadata of the directive.
- * @param owner - The directive (`@@selector`) or the structural directive (`*selector`), used in error messages.
- * @throws If the directive declares type arguments and is not generic, or declares more than its type parameters.
+ * @param typeArguments - The type arguments the directive or the element declares, if any.
+ * @param metadata - Metadata of the directive or of the web component.
+ * @param owner - The directive (`@@selector`), the structural directive (`*selector`) or the element (`<tag-name>`), used in error messages.
+ * @throws If type arguments are declared and the class is not generic, or more than its type parameters are declared.
  */
-function assertTypeArguments(typeArguments: DirectiveNode['typeArguments'], metadata: DirectiveMetadata, owner: string): void {
+function assertTypeArguments(typeArguments: DirectiveNode['typeArguments'], metadata: ComponentOrDirectiveMetadata, owner: string): void {
   if (!typeArguments) {
     return;
   }
 
-  const cause = { start: typeArguments[0].span.start, end: typeArguments[typeArguments.length - 1].span.end };
+  const cause = getTypeArgumentsSpan(typeArguments);
   if (!metadata.typeParameters) {
     throw new Error(`${owner} declares type arguments, but ${metadata.className} is not generic.`, { cause });
   }
@@ -285,6 +287,16 @@ function assertTypeArguments(typeArguments: DirectiveNode['typeArguments'], meta
   if (typeArguments.length > metadata.typeParameters.length) {
     throw new Error(`${owner} declares ${typeArguments.length} type arguments, but ${metadata.className} has ${metadata.typeParameters.length} type parameters (${metadata.typeParameters.map(({ name }) => name).join(', ')}).`, { cause });
   }
+}
+
+/**
+ * Returns the span of a list of type arguments, from the start of the first one to the end of the last one.
+ *
+ * @param typeArguments - The type arguments, at least one.
+ * @returns The span covering them.
+ */
+function getTypeArgumentsSpan(typeArguments: NonNullable<DirectiveNode['typeArguments']>): Span {
+  return { start: typeArguments[0].span.start, end: typeArguments[typeArguments.length - 1].span.end };
 }
 
 /**
@@ -312,15 +324,14 @@ const INSTANCE = '__Instance';
  * Instantiates the type parameters of a generic component or directive, so that the types of its properties and events,
  * written in terms of its type parameters, resolve to the types of the template.
  *
- * A type parameter gets, in this order:
- * - the type argument the template passes for it (`@@list<Row>(…)`), declared as a local type named like the type
- *   parameter (`type Item = Row;`) in a line mapped onto the template. Only a directive declares type arguments: an
- *   element has no syntax for them, so a component only ever gets the types inferred from its bindings;
- * - the type TypeScript infers from the values bound to the properties, when it finds one: a call to
- *   a function declared with the same type parameters and the types of those properties infers them, as it does for
- *   a function. The call is not checked: the real checks of the bindings report its errors;
- * - its default type, if it has one;
- * - `any`.
+ * As TypeScript does for a call, the type parameters are either all given or all inferred:
+ * - when the template passes type arguments (`@@list<Row>(…)`, `<my-list(Row)>`), each one is declared as a local type
+ *   named like its type parameter (`type Item = Row;`) in a line mapped onto the template, and the class is instantiated
+ *   with them only: the type parameters left out take their default type, and TypeScript reports the ones without it;
+ * - otherwise, a type parameter gets the type TypeScript infers from the values bound to the properties, when it finds
+ *   one: a call to a function declared with the same type parameters and the types of those properties infers them, as
+ *   it does for a function. The call is not checked: the real checks of the bindings report its errors. A type parameter
+ *   nothing is inferred for gets its default type, if it has one, or `any`.
  *
  * The type parameters are always read through the class instantiated with them, in a line mapped onto the type arguments
  * (or the selector of the directive, or the tag name of the element, when there are none), so that a type that doesn't
@@ -344,47 +355,42 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
   const sourceFile = klass.getSourceFile();
   const base = getAccessorOwnerType(klass, sourceFile, false);
   const generic = getAccessorOwnerType(klass, sourceFile, true);
-  const declared = typeArguments?.length ?? 0;
-  const probe = declared < typeParameters.length ? inferTypeParameters(metadata, base, attributes, context) : undefined;
-  let declarations: Line[] | undefined;
+  const instantiate = (names: string[]): string => (names.length ? `${base}<${names.join(', ')}>` : base);
 
   if (typeArguments) {
-    declarations = new Array<Line>();
+    const declarations = new Array<Line>();
     for (let i = 0; i < typeArguments.length; i++) {
       declarations.push(line(`type ${typeParameters[i].name} = `, mapped(typeArguments[i].text, typeArguments[i].span), ';'));
     }
+
+    const instance = instantiate(typeParameters.slice(0, typeArguments.length).map(({ name }) => name));
+    declarations.push(line(`type ${INSTANCE} = `, mapped(instance, getTypeArgumentsSpan(typeArguments)), ';'));
+    return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations };
   }
 
-  if (probe) {
-    declarations ??= new Array<Line>();
-    declarations.push(...probe);
-  }
-
-  const argumentsOf = (index: number): string => (index < declared ? typeParameters[index].name : probe ? `unknown extends ${PROBED}[${index}] ? any : ${PROBED}[${index}]` : 'any');
+  const probe = inferTypeParameters(metadata, base, attributes, context);
+  const argumentsOf = (index: number): string => (probe ? `unknown extends ${PROBED}[${index}] ? any : ${PROBED}[${index}]` : 'any');
 
   // The parameters with a default type come last: the ones nothing gives a type to take it when the class is instantiated without them
-  const firstDefault = typeParameters.findIndex(({ hasDefault }, index) => hasDefault && index >= declared);
+  const firstDefault = typeParameters.findIndex(({ hasDefault }) => hasDefault);
   const given = new Array<string>();
   for (let i = 0; i < (firstDefault === -1 ? typeParameters.length : firstDefault); i++) {
     given.push(argumentsOf(i));
   }
 
-  const instantiate = (names: string[]): string => (names.length ? `${base}<${names.join(', ')}>` : base);
   let instance = instantiate(given);
-  if (firstDefault !== -1 && probe) {
+  if (!probe) {
+    return { metadata: withOwnerType(metadata, generic, instance) };
+  }
+
+  if (firstDefault !== -1) {
     const defaults = typeParameters.slice(firstDefault).map((_, offset) => firstDefault + offset);
     const inferred = instantiate([...given, ...defaults.map(argumentsOf)]);
     const none = `[${defaults.map(() => 'unknown').join(', ')}] extends [${defaults.map(index => `${PROBED}[${index}]`).join(', ')}]`;
     instance = `${none} ? ${instance} : ${inferred}`;
   }
 
-  if (!declarations) {
-    return { metadata: withOwnerType(metadata, generic, instance) };
-  }
-
-  const span = typeArguments ? { start: typeArguments[0].span.start, end: typeArguments[typeArguments.length - 1].span.end } : ownerSpan;
-  declarations.push(line(`type ${INSTANCE} = `, mapped(instance, span), ';'));
-  return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations };
+  return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations: [...probe, line(`type ${INSTANCE} = `, mapped(instance, ownerSpan), ';')] };
 }
 
 /**
@@ -561,7 +567,8 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
       lines.push(
         plain('{'),
         ...indentLines(typeof value === 'object'
-          ? [line('(', mappedExpression(value.expression, context, value.span), `) satisfies ${property.type};`)]
+          // `satisfies` and the type are mapped onto the binding, as TypeScript reports a value that doesn't satisfy the type on `satisfies`
+          ? [line('(', mappedExpression(value.expression, context, value.span), ') ', mapped(`satisfies ${property.type}`, span), ';')]
           : [plain('let x!: string;'), line(mapped(`x satisfies ${property.type};`, span))]
         ),
         plain('}')
@@ -615,8 +622,13 @@ function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDire
  * @param nativeEventType - Builds the type of `$event` for the native events of the element and of the directives applied to it.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
+ * @throws If the element declares type arguments: only a web component imported in the template has a class to pass them to.
  */
 function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
+  if (node.typeArguments) {
+    throw new Error(`<${node.tagName}> declares type arguments, but only a WebComponent imported in the template can declare them.`, { cause: getTypeArgumentsSpan(node.typeArguments) });
+  }
+
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
     ...typeCheckNativeEvents(node.events, nativeEventType, context),

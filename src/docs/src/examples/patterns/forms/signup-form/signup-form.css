@@ -20,14 +20,12 @@ label.inline {
 }
 
 input,
-select,
-button {
+select {
   font: inherit;
 }
 
-button {
+ex-button {
   justify-self: start;
-  cursor: pointer;
 }
 
 .errors {

@@ -7,13 +7,8 @@ form {
   gap: 0.5rem;
 }
 
-input,
-button {
+input {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 ul {

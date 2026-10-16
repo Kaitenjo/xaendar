@@ -1,9 +1,10 @@
 @import { CounterBadgeComponent } from './counter-badge.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
   <input type="text" value="Templates" aria-label="New item" />
-  <button (click)="add()">Add</button>
-  <button (click)="focusField()">Focus the field</button>
+  <ex-button (click)="add()">Add</ex-button>
+  <ex-button (click)="focusField()">Focus the field</ex-button>
   <ex-counter-badge />
 </div>
 <ul>

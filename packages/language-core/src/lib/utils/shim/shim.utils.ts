@@ -52,7 +52,11 @@ function buildTypecheckShim(componentData: [string, readonly string[]][], shimPa
     prefixLines[i] = `import { ${classes.join(', ')} } from './${basename(path, extname(path))}';`
   }
   prefixLines[prefixLinesLength - 4] = 'import { Signal } from \'@xaendar/core/signals\'';
-  prefixLines[prefixLinesLength - 2] = `declare const root: ${classNames.join(' & ')};`
+  /*
+    A generic class cannot be named without its type arguments: its instance type is read from its constructor, where
+    each type parameter is its constraint (`unknown` without one), so the template of a generic component compiles
+  */
+  prefixLines[prefixLinesLength - 2] = `declare const root: ${classNames.map(className => `InstanceType<typeof ${className}>`).join(' & ')};`
 
   return {
     code: [...prefixLines, body].join('\n'),

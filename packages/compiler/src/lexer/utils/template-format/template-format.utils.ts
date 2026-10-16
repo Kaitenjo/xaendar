@@ -354,7 +354,8 @@ function printBlockBody(atoms: readonly LayoutAtom[], level: number, options: Te
 function printOpeningTag(element: LayoutElement, level: number, column: number, options: TemplateFormatOptions): { text: string, multiline: boolean, endColumn: number } {
   const items = element.items.map(item => printItem(item, level + 1, options));
   const closer = element.selfClosing ? ' />' : '>';
-  const flat = `<${element.name}${items.map(item => ` ${item}`).join('')}${closer}`;
+  const name = element.typeArguments === undefined ? `<${element.name}` : `<${element.name}(${element.typeArguments.trim()})`;
+  const flat = `${name}${items.map(item => ` ${item}`).join('')}${closer}`;
   const hasConditionalBinding = element.items.some(isMultiline);
   if (!element.items.length || (!hasConditionalBinding && column + flat.length <= options.printWidth)) {
     return { text: flat, multiline: false, endColumn: column + flat.length };
@@ -362,10 +363,10 @@ function printOpeningTag(element: LayoutElement, level: number, column: number, 
 
   if (hasConditionalBinding) {
     const rows = items.map(item => `\n${pad(level + 1, options)}${item}`).join('');
-    return { text: `<${element.name}${rows}\n${pad(level, options)}${element.selfClosing ? '/>' : '>'}`, multiline: true, endColumn: options.indentWidth * level + 1 };
+    return { text: `${name}${rows}\n${pad(level, options)}${element.selfClosing ? '/>' : '>'}`, multiline: true, endColumn: options.indentWidth * level + 1 };
   }
 
-  const rows = [`<${element.name}`];
+  const rows = [name];
   let width = column + rows[0].length;
   for (let i = 0; i < items.length; i++) {
     const reserved = i === items.length - 1 ? closer.length : 0;

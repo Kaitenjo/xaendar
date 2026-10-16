@@ -2,8 +2,6 @@
   display: block;
 }
 
-button {
+ex-button {
   margin-bottom: 0.5rem;
-  font: inherit;
-  cursor: pointer;
 }

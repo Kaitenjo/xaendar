@@ -255,6 +255,21 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('writes the type arguments of an element right after its tag name, also when the tag is wrapped', () => {
+      expect(format('<ex-list(  string,  number ) items="{rows}"/>')).toBe(lines('<ex-list(string,  number) items="{rows}" />'));
+      expect(format('<ex-list(Row) items="{rows()}" label="A long enough label" (picked)="open($event)"></ex-list>')).toBe(lines(
+        '<ex-list(Row) items="{rows()}" label="A long enough label"',
+        '  (picked)="open($event)"></ex-list>'
+      ));
+      expect(format('<ex-list(Row) @if(a){items="{rows()}"}></ex-list>')).toBe(lines(
+        '<ex-list(Row)',
+        '  @if (a) {',
+        '    items="{rows()}"',
+        '  }',
+        '></ex-list>'
+      ));
+    });
+
     it('writes an empty directive, and the attribute written with single quotes that holds double quotes', () => {
       expect(format('<p @@tip() title=\'say "hi"\'></p>')).toBe(lines('<p @@tip() title=\'say "hi"\'></p>'));
     });

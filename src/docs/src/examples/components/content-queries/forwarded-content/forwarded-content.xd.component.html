@@ -1,6 +1,7 @@
 @import { ListWrapperComponent } from './list-wrapper.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<button (click)="add()">Add an item</button>
+<ex-button (click)="add()">Add an item</ex-button>
 <ex-list-wrapper>
   @for (item of items(); track item()) {
     <li>{ item() }</li>

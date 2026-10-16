@@ -32,8 +32,8 @@ export class SwitchButtonComponent<T = string> extends CustomElement {
     }
   }
 
-  public onButtonClick(item: Item<T>): void {
-    this._selectItem(item);
+  public onButtonClick(item: Item<T>, index: number): void {
+    this._selectItem(item, index);
   }
 
   public updateSelectedOnItemsChange(): void {
@@ -43,10 +43,10 @@ export class SwitchButtonComponent<T = string> extends CustomElement {
     }
   }
 
-  private _selectItem(item: Item<T>): void {
+  private _selectItem(item: Item<T>, index = 0): void {
     this.selected.set(item);
     this.valueChange.emit(item);
-    const button = this.buttons()[this.items().indexOf(item)]
+    const button = this.buttons()[index];
     this.selectedCircle()!.style.left = `${button.offsetLeft}px`;
     this.selectedCircle()!.style.width = `${button.offsetWidth}px`;
   }

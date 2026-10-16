@@ -191,8 +191,8 @@ describe('type arguments', () => {
   });
 
   it.each([
-    ['empty type arguments', '@@list<>(items="x")', 'The type arguments of a directive cannot be empty'],
-    ['blank type arguments', '@@list< >(items="x")', 'The type arguments of a directive cannot be empty'],
+    ['empty type arguments', '@@list<>(items="x")', 'Type arguments cannot be empty'],
+    ['blank type arguments', '@@list< >(items="x")', 'Type arguments cannot be empty'],
     ['a selector that is empty', '@@<string>(items="x")', 'Directive selector cannot be empty'],
     ['type arguments declared twice', '@@list<string><number>(items="x")', 'A directive can declare its type arguments only once, right after its selector'],
     ['something between the type arguments and the bindings', '@@list<string>x(items="x")', 'The type arguments of a directive must be followed by its bindings between parentheses']

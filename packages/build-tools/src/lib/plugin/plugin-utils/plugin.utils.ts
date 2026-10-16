@@ -3,7 +3,7 @@ import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSour
 import { resolveModulePath } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
-import { ClassDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, forEachChild, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, Node, ScriptTarget, SourceFile } from 'typescript';
+import { ClassLikeDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, Expression, forEachChild, isBinaryExpression, isCallExpression, isClassDeclaration, isClassExpression, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, isParenthesizedExpression, isPropertyAccessExpression, Node, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { LANG_JS_FLAG, RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX, STYLE_PATH_PARAM } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
@@ -210,26 +210,21 @@ export function generateStyleModule(cssText: string | undefined): string {
  *   (see {@link createTemplateModuleSpecifier}).
  * @param styleModuleSpecifier - The import specifier of the compiled style module
  *   (see {@link createStyleModuleSpecifier}), if the component has a stylesheet.
- * @throws When `className` isn't found, or its decorator finalizer static
- *   block isn't found — meaning the component file wasn't scaffolded
- *   correctly, or the babel decorators plugin didn't run before xaendarPlugin().
+ * @throws When no class named `className` is found, or none of them has the static block applying
+ *   its decorators — meaning the babel decorators plugin didn't run before xaendarPlugin().
  */
 export function injectTemplate(s: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, styleModuleSpecifier?: string): void {
-  const classDecl = findClassDeclarationByName(sourceFile, className);
-  if (!classDecl) {
+  const classes = findClassesByName(sourceFile, className);
+  if (!classes?.length) {
     throw `Could not find class "${className}" in the transpiled output.`;
   }
 
-  const placeholderBlock = classDecl.members.find(isDecoratorInitStaticBlock);
-  if (!placeholderBlock) {
-    throw `Could not find the static initializer block for class "${className}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
+  // The registration must run before the decorators are applied, so it goes before the static block calling babel's `_applyDecs` helper
+  const registrationBlock = findApplyDecoratorsStaticBlock(classes);
+  if (!registrationBlock) {
+    throw `Could not find the static block applying the decorators of class "${className}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
   }
 
-  /*
-    The registration must run before the decorators are applied, so it goes before the static block
-    calling babel's `_applyDecs` helper (falling back to the finalizer block when there's none).
-  */
-  const registrationBlock = classDecl.members.find(isApplyDecoratorsStaticBlock) ?? placeholderBlock;
   const first = moduleImports.size === 0;
   const renderName = insertModuleImport(s, moduleImports, 'render', `__${className}_render`, templateModuleSpecifier);
   const styleSheetName = styleModuleSpecifier && insertModuleImport(s, moduleImports, 'sheet', `__${className}_sheet`, styleModuleSpecifier);
@@ -438,69 +433,94 @@ function insertRequiredImports(s: MagicString): void {
 }
 
 /**
- * Finds a top-level class declaration by name.
+ * Finds every class named `name`, at any depth: babel keeps a decorated class as a declaration, but turns it
+ * into a class expression nested in a wrapper class when it has static fields, which must be initialized
+ * once the class decorators are applied:
  *
- * @param sourceFile - The AST to search in.
+ * ```js
+ * new class extends _identity {
+ *   static [class Foo extends Base { static { … = _applyDecs(this, …); } }];
+ *   field = 1; // the static field
+ *   constructor() { super(_Foo), _initClass(); }
+ * }();
+ * ```
+ *
+ * @param node - The node to search in.
  * @param name - The name of the class.
- * @returns The first class declaration named `name`, or `undefined` if there's none.
+ * @param found - The classes found so far, created by the first class found.
+ * @returns The classes named `name`, in source order, or `undefined` if there's none.
  */
-function findClassDeclarationByName(sourceFile: SourceFile, name: string): ClassDeclaration | undefined {
-  let found: ClassDeclaration | undefined;
-  forEachChild(sourceFile, node => {
-    if (!found && isClassDeclaration(node) && node.name?.text === name) {
-      found = node;
-    }
+function findClassesByName(node: Node, name: string, found?: ClassLikeDeclaration[]): ClassLikeDeclaration[] | undefined {
+  if ((isClassDeclaration(node) || isClassExpression(node)) && node.name?.text === name) {
+    found ??= new Array<ClassLikeDeclaration>();
+    found.push(node);
+  }
+
+  forEachChild(node, child => {
+    found = findClassesByName(child, name, found);
   });
   return found;
 }
 
 /**
- * Checks whether `node` is the static block emitted by babel to finalize the decorated class,
- * i.e. a static block containing only an argument-less call to `_initClass` (e.g. `_initClass2()`).
+ * Finds the static block emitted by babel to apply the decorators of a class, in the first of `classes` having one.
  *
- * @param node - The node to check.
- * @returns `true` if `node` is the decorator finalizer static block.
+ * @param classes - The classes to search in.
+ * @returns The static block applying the decorators, or `undefined` if none of the classes has one.
  */
-function isDecoratorInitStaticBlock(node: Node): node is ClassStaticBlockDeclaration {
-  if (!isClassStaticBlockDeclaration(node)) {
-    return false;
+function findApplyDecoratorsStaticBlock(classes: ClassLikeDeclaration[]): ClassStaticBlockDeclaration | undefined {
+  for (let i = 0; i < classes.length; i++) {
+    const block = classes[i].members.find(isApplyDecoratorsStaticBlock);
+    if (block) {
+      return block;
+    }
   }
 
-  const statements = node.body.statements;
-  if (statements.length !== 1) {
-    return false;
-  }
-
-  const statement = statements[0];
-  if (!isExpressionStatement(statement) || !isCallExpression(statement.expression)) {
-    return false;
-  }
-
-  const { expression: callee, arguments: args } = statement.expression;
-  return args.length === 0 && isIdentifier(callee) && /^_initClass\d*$/.test(callee.text);
+  return undefined;
 }
 
 /**
- * Checks whether `node` is the static block emitted by babel to apply the class decorators,
- * i.e. a static block containing a call to the `_applyDecs` helper (e.g. `_applyDecs2311`).
+ * Checks whether `node` is the static block emitted by babel to apply the decorators of its own class: a block whose
+ * only statement assigns the result of the `_applyDecs` helper (e.g. `_applyDecs2311`) called on `this`, either
+ * directly (`({ e: […], c: […] } = _applyDecs(this, …))`, with member decorators) or through one of its properties
+ * (`[_Foo, _initClass] = _applyDecs(this, …).c`). A call nested anywhere else, e.g. in a class declared inside the
+ * block, does not count.
  *
  * @param node - The node to check.
  * @returns `true` if `node` is the static block applying the decorators.
  */
 function isApplyDecoratorsStaticBlock(node: Node): node is ClassStaticBlockDeclaration {
-  return isClassStaticBlockDeclaration(node) && containsApplyDecoratorsCall(node);
+  if (!isClassStaticBlockDeclaration(node) || node.body.statements.length !== 1) {
+    return false;
+  }
+
+  const statement = node.body.statements[0];
+  if (!isExpressionStatement(statement)) {
+    return false;
+  }
+
+  const assignment = skipParentheses(statement.expression);
+  if (!isBinaryExpression(assignment) || assignment.operatorToken.kind !== SyntaxKind.EqualsToken) {
+    return false;
+  }
+
+  const call = isPropertyAccessExpression(assignment.right) ? assignment.right.expression : assignment.right;
+  return isCallExpression(call)
+    && isIdentifier(call.expression)
+    && /^_applyDecs\w*$/.test(call.expression.text)
+    && call.arguments[0]?.kind === SyntaxKind.ThisKeyword;
 }
 
 /**
- * Checks whether `node`, or any of its descendants, is a call to babel's `_applyDecs` helper.
+ * Removes the parentheses wrapping an expression.
  *
- * @param node - The node to search in.
- * @returns `true` if a call to the `_applyDecs` helper is found.
+ * @param expression - The expression, possibly parenthesized.
+ * @returns The innermost expression.
  */
-function containsApplyDecoratorsCall(node: Node): boolean {
-  if (isCallExpression(node) && isIdentifier(node.expression) && /^_applyDecs\w*$/.test(node.expression.text)) {
-    return true;
+function skipParentheses(expression: Expression): Expression {
+  while (isParenthesizedExpression(expression)) {
+    expression = expression.expression;
   }
 
-  return forEachChild(node, containsApplyDecoratorsCall) ?? false;
+  return expression;
 }

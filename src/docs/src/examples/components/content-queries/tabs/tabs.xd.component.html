@@ -1,7 +1,8 @@
 @import { TabGroupComponent } from './tab-group.xd.component.ts'
 @import { TabPanelComponent } from './tab-panel.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<button class="add" (click)="addPanel()">Add a panel</button>
+<ex-button class="add" (click)="addPanel()">Add a panel</ex-button>
 <ex-tab-group>
   <ex-tab-panel label="Signals">Values that notify their readers.</ex-tab-panel>
   <ex-tab-panel label="Components">Custom elements with a template.</ex-tab-panel>

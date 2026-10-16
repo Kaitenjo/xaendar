@@ -8,11 +8,6 @@
   margin-bottom: 0.6rem;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .table-wrap {
   overflow-x: auto;
 }

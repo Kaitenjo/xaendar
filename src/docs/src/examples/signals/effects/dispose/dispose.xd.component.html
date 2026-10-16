@@ -1,8 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <p>
-  <button (click)="disposeStandaloneTwice()">effect(): dispose twice</button>
+  <ex-button (click)="disposeStandaloneTwice()">effect(): dispose twice</ex-button>
   <output>{ standaloneOutcome() }</output>
 </p>
 <p>
-  <button (click)="disposeBoundTwice()">this.effect(): dispose twice</button>
+  <ex-button (click)="disposeBoundTwice()">this.effect(): dispose twice</ex-button>
   <output>{ boundOutcome() }</output>
 </p>

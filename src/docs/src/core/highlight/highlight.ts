@@ -152,12 +152,17 @@ function highlightTemplate(code: string): string {
   };
 
   /**
-   * Highlights the tag starting at the cursor, up to its closing `>`.
+   * Highlights the tag starting at the cursor, with the type arguments following its name, up to its closing `>`.
    */
   const tag = (): void => {
-    const name = /^<\/?\s*[^\s/>]*/.exec(code.slice(position))![0];
+    const name = /^<\/?\s*[^\s/>(]*/.exec(code.slice(position))![0];
     out += `${token('punc', name.startsWith('</') ? '</' : '<')}${token('tag', name.replace(/^<\/?/, ''))}`;
     position += name.length;
+    if (code[position] === '(') {
+      const end = findClosing(code, position, '(', ')');
+      out += `${token('punc', '(')}${highlightTs(code.slice(position + 1, end))}${token('punc', code[end] ?? '')}`;
+      position = end + 1;
+    }
     // Whether the next quoted value is the handler of an event binding
     let handler = false;
     while (position < code.length) {

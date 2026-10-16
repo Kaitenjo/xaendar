@@ -24,6 +24,10 @@ export type ElementNode = ASTNodeWithSpan<{
    */
   nameSpan: Span;
   /**
+   * The type arguments the element declares for the generic class of its web component, e.g. `string` and `number` in `<my-list(string, number)>`.
+   */
+  typeArguments?: DirectiveNode['typeArguments'];
+  /**
    * Span of the tag name in the closing tag, e.g. `docs-search` in `</docs-search>`, `undefined` for a self-closing tag.
    */
   closeNameSpan?: Span;

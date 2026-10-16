@@ -1,7 +1,8 @@
 @import { ClickOutsideDirective } from './click-outside.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div @@exClickOutside((outside)="close()") class="dropdown">
-  <button (click)="toggle()">Sort by ▾</button>
+  <ex-button (click)="toggle()">Sort by ▾</ex-button>
   @if (open()) {
     <ul class="menu">
       <li>

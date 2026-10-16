@@ -1,4 +1,5 @@
 @import { CardComponent } from './card.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <label>
   <input type="checkbox" checked (change)="toggleFooter()" />
@@ -9,7 +10,7 @@
     <strong slot="header">Signals</strong>
     <p>Values that notify their readers when they change.</p>
     @if (withFooter()) {
-      <button slot="footer" (click)="like()">Like: { likes() }</button>
+      <ex-button slot="footer" (click)="like()">Like: { likes() }</ex-button>
     }
   </ex-card>
   <ex-card>

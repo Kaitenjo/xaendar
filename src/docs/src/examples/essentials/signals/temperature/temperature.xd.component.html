@@ -1,7 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <p class="reading">{ celsius() } °C = { fahrenheit() } °F</p>
 <div class="controls">
-  <button (click)="colder()">−1 °C</button>
-  <button (click)="warmer()">+1 °C</button>
+  <ex-button (click)="colder()">−1 °C</ex-button>
+  <ex-button (click)="warmer()">+1 °C</ex-button>
 </div>
 <ul class="log">
   @for (line of log(); track line().id) {

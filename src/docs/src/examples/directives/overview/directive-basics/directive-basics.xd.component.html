@@ -1,5 +1,6 @@
 @import { TintDirective } from './tint.directive.ts'
 @import { VisibleWhenDirective } from './visible-when.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
   <select (change)="pick($event)">
@@ -7,7 +8,7 @@
     <option value="#bbf7d0">Green</option>
     <option value="#bfdbfe">Blue</option>
   </select>
-  <button (click)="toggle()">{ shown() ? 'Hide' : 'Show' } the second paragraph</button>
+  <ex-button (click)="toggle()">{ shown() ? 'Hide' : 'Show' } the second paragraph</ex-button>
 </div>
 <p @@exTint(color="{ color() }")>A custom directive paints this paragraph.</p>
 <p *exVisibleWhen(condition="{ shown() }")>A structural directive decides whether this paragraph exists.</p>

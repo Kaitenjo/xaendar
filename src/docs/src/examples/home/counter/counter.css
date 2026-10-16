@@ -4,13 +4,6 @@
   gap: 1rem;
 }
 
-button {
-  border-radius: 999px;
-  padding: 0.5rem 1rem;
-  font: inherit;
-  cursor: pointer;
-}
-
 p {
   margin: 0;
 }

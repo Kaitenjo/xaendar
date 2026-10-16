@@ -31,10 +31,8 @@ textarea {
   background: rgba(127, 127, 127, 0.18);
 }
 
-button {
+ex-button {
   margin-top: 0.6rem;
-  font: inherit;
-  cursor: pointer;
 }
 
 pre {

@@ -1,7 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="read()">total.get()</button>
-  <button (click)="watch()">watcher.watch(total)</button>
-  <button (click)="unwatch()">watcher.unwatch(total)</button>
+  <ex-button (click)="read()">total.get()</ex-button>
+  <ex-button (click)="watch()">watcher.watch(total)</ex-button>
+  <ex-button (click)="unwatch()">watcher.unwatch(total)</ex-button>
 </div>
 <table>
   @for (row of rows(); track row()) {

@@ -1,8 +1,9 @@
 @import { ProgressMeterComponent } from './progress-meter.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="step(-1)">−1</button>
-  <button (click)="step(1)">+1</button>
+  <ex-button (click)="step(-1)">−1</ex-button>
+  <ex-button (click)="step(1)">+1</ex-button>
   <label>
     <input type="checkbox" checked (change)="toggleValue()" />
     show-value

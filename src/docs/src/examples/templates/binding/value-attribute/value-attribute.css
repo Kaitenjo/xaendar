@@ -13,13 +13,8 @@ label {
   font-size: 0.85rem;
 }
 
-input,
-button {
+input {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 p {

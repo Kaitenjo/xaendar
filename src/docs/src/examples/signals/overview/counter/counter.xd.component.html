@@ -1,4 +1,6 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <output>{ count() }</output>
-<button (click)="increment()">update(n => n + 1)</button>
-<button (click)="double()">set(count() + count.get())</button>
-<button (click)="reset()">set(0)</button>
+<ex-button (click)="increment()">update(n => n + 1)</ex-button>
+<ex-button (click)="double()">set(count() + count.get())</ex-button>
+<ex-button (click)="reset()">set(0)</ex-button>

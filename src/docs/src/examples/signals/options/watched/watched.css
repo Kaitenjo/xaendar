@@ -2,11 +2,6 @@
   display: block;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .clock {
   font: 700 1.5rem ui-monospace, monospace;
 }

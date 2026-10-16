@@ -1,9 +1,11 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="failOnFirstRun()">Effect failing on its first run</button>
+  <ex-button (click)="failOnFirstRun()">Effect failing on its first run</ex-button>
   @if (created()) {
-    <button (click)="increment()">value++ (now { value() })</button>
+    <ex-button (click)="increment()">value++ (now { value() })</ex-button>
   } @else {
-    <button (click)="create()">Effect failing on odd values</button>
+    <ex-button (click)="create()">Effect failing on odd values</ex-button>
   }
 </div>
 <ol>

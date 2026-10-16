@@ -1,6 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../../shared/submit/submit.directive.ts'
+
 <form (submit)="add($event)">
   <input name="item" placeholder="Add an item" autocomplete="off" />
-  <button>Add</button>
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
 </form>
 @if (items().length) {
   <ul>
@@ -22,7 +25,7 @@
   </ul>
   <p>
     { remaining() } of { items().length } left ·
-    <button (click)="clear()">Clear</button>
+    <ex-button (click)="clear()">Clear</ex-button>
   </p>
 } @else {
   <p>The list is empty: add something!</p>

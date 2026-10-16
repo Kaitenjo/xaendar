@@ -1,4 +1,4 @@
-import { CR, DOUBLE_QUOTE, EQUAL_THEN, GRAVE_ACCENT, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPAREN, SINGLE_QUOTE, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { CR, EQUAL_THEN, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -8,6 +8,7 @@ import type { StructuralDirectiveToken } from '../../types/tokens/structural-dir
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
+import { lexTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
  * Consumes the selector of a directive, after the `@@` already consumed by the state the directive is declared in.
@@ -115,7 +116,7 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
 
         // Consume '<'
         cursor.advance();
-        typeArguments = lexTypeArguments(cursor);
+        typeArguments = lexTypeArguments(cursor, LESS_THAN);
         break;
 
       case EQUAL_THEN:
@@ -146,58 +147,6 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
  */
 function toDirectiveToken(type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE, selector: string, typeArguments: string | undefined): MaybeTokenWithSpan<DirectiveToken | StructuralDirectiveToken> {
   return typeArguments === undefined ? { type, parts: [selector] } : { type, parts: [selector, typeArguments] }
-}
-
-/**
- * Consumes the type arguments of a directive, e.g. `string, Map<string, number>` in `@@selector<string, Map<string, number>>(...)`,
- * up to the `>` closing the first `<`: the ones of nested types, and the `>` of the arrow of a function type, don't close them.
- *
- * @param cursor - The lexer cursor positioned right after the `<` opening the type arguments.
- * @returns The text of the type arguments, without the angle brackets.
- * @throws If the type arguments are empty, or the input ends before they are closed.
- */
-function lexTypeArguments(cursor: LexerCursor): string {
-  let depth = 1;
-  let text = '';
-  let quote: number | undefined;
-
-  while (depth) {
-    cursor.advance();
-    const { code, value } = cursor.currentChar;
-
-    if (quote !== undefined) {
-      quote = code === quote ? undefined : quote;
-    } else {
-      switch (code) {
-        case SINGLE_QUOTE:
-        case DOUBLE_QUOTE:
-        case GRAVE_ACCENT:
-          quote = code;
-          break;
-
-        case LESS_THAN:
-          depth++;
-          break;
-
-        case GREATER_THEN:
-          // The `>` of the arrow of a function type (`() => void`) closes nothing
-          if (!text.endsWith('=')) {
-            depth--;
-          }
-          break;
-      }
-    }
-
-    if (depth) {
-      text = `${text}${value}`;
-    }
-  }
-
-  if (!text.trim()) {
-    throw 'The type arguments of a directive cannot be empty';
-  }
-
-  return text;
 }
 
 /**

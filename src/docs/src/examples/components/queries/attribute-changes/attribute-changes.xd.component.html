@@ -1,3 +1,5 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <ul>
   @for (task of tasks(); track task().id) {
     <li class="{ selectedIds().includes(task().id) ? 'task selected' : 'task' }" (click)="toggle(task().id)">
@@ -5,7 +7,7 @@
     </li>
   }
 </ul>
-<button (click)="addTask()">Add a task</button>
+<ex-button (click)="addTask()">Add a task</ex-button>
 <p>
   Query on .selected:
   <strong>{ fromQuery() }</strong>

@@ -28,7 +28,7 @@ describe('createShim()', () => {
       "import { FooComponent } from './foo.component';",
       "import { Signal } from '@xaendar/core/signals'",
       '',
-      'declare const root: FooComponent;',
+      'declare const root: InstanceType<typeof FooComponent>;',
       '',
       'function typeCheck() {}'
     ].join('\n'));
@@ -57,7 +57,7 @@ describe('createShim()', () => {
       "import { BarDirective, BarBaseDirective } from './bar.directive';",
       "import { Signal } from '@xaendar/core/signals'",
       '',
-      'declare const root: FooComponent & BarDirective & BarBaseDirective;',
+      'declare const root: InstanceType<typeof FooComponent> & InstanceType<typeof BarDirective> & InstanceType<typeof BarBaseDirective>;',
       '',
       'body'
     ].join('\n'));

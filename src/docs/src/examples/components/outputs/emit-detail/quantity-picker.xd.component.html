@@ -1,4 +1,6 @@
-<button aria-label="Less" (click)="step(-1)">−</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button aria-label="Less" (click)="step(-1)">−</ex-button>
 <output>{ value() }</output>
-<button aria-label="More" (click)="step(1)">+</button>
-<button class="clear" (click)="clear()">Clear</button>
+<ex-button aria-label="More" (click)="step(1)">+</ex-button>
+<ex-button class="clear" (click)="clear()">Clear</ex-button>

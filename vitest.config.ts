@@ -27,7 +27,8 @@ export default defineConfig({
       coverage: {
         clean: true,
         include: ['packages/**/*.ts'],
-        exclude: ['packages/**/*.spec.ts'],
+        // the build configurations of the packages are not library code
+        exclude: ['packages/**/*.spec.ts', 'packages/*/vite.config.ts'],
         thresholds: {
           lines: 100,
           functions: 100,

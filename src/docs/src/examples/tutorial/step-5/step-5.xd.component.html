@@ -1,9 +1,11 @@
 @import { TodoItemComponent } from './todo-item.xd.component.ts'
+@import { ButtonComponent } from '../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../shared/submit/submit.directive.ts'
 
 <h3>My todos</h3>
 <form (submit)="add($event)">
   <input name="title" placeholder="What needs to be done?" autocomplete="off" />
-  <button>Add</button>
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
 </form>
 <ul>
   @for (todo of visible(); track todo().id) {
@@ -13,9 +15,9 @@
   }
 </ul>
 <div class="filters">
-  <button class="{ filter() === 'all' ? 'active' : '' }" (click)="show('all')">All</button>
-  <button class="{ filter() === 'active' ? 'active' : '' }" (click)="show('active')">Active</button>
-  <button class="{ filter() === 'done' ? 'active' : '' }" (click)="show('done')">Done</button>
+  <ex-button class="{ filter() === 'all' ? 'active' : '' }" (click)="show('all')">All</ex-button>
+  <ex-button class="{ filter() === 'active' ? 'active' : '' }" (click)="show('active')">Active</ex-button>
+  <ex-button class="{ filter() === 'done' ? 'active' : '' }" (click)="show('done')">Done</ex-button>
 </div>
 @switch (filter()) {
   @case ('all') {

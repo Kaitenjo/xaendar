@@ -152,4 +152,11 @@ describe('compile generic directives', () => {
 
     expect(withTypeArguments).toBe(withoutTypeArguments);
   });
+
+  it('generates the same javascript for an element declaring type arguments, which only the type-check uses', async () => {
+    const withTypeArguments = await compile('<my-list(string, (value: number) => void) items="{ rows }"><span /></my-list>', { signals: [], cache: createCache() });
+    const withoutTypeArguments = await compile('<my-list items="{ rows }"><span /></my-list>', { signals: [], cache: createCache() });
+
+    expect(withTypeArguments).toBe(withoutTypeArguments);
+  });
 });

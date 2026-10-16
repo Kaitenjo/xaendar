@@ -1,5 +1,7 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <p class="total">Total: { total() }</p>
-<button (click)="raise()">price += 25</button>
+<ex-button (click)="raise()">price += 25</ex-button>
 <p>Evaluations of total, most recent first:</p>
 <ol>
   @for (line of evaluations(); track line()) {

@@ -66,13 +66,12 @@ export function removeComponentPath(componentPath: string): void {
     return;
   }
 
-  for (const templatePath of [...templatePaths]) {
-    const ownerIds = templateToComponentsPath.get(templatePath);
-    if (ownerIds) {
-      ownerIds.delete(componentPath);
-      if (!ownerIds.size) {
-        templateToComponentsPath.delete(templatePath);
-      }
+  for (const templatePath of templatePaths) {
+    // ! is a safe assertion because both maps are always updated together
+    const ownerIds = templateToComponentsPath.get(templatePath)!;
+    ownerIds.delete(componentPath);
+    if (!ownerIds.size) {
+      templateToComponentsPath.delete(templatePath);
     }
   }
 

@@ -9,8 +9,6 @@
   opacity: 0.75;
 }
 
-button {
+ex-button {
   margin-top: 0.75rem;
-  font: inherit;
-  cursor: pointer;
 }

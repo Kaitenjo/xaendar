@@ -12,14 +12,14 @@ const OPENERS = '<([{';
 const CLOSERS = '>)]}';
 
 /**
- * Splits the text of the type arguments of a directive at the commas outside of any group, so that
+ * Splits the text of the type arguments of a directive or of a web component at the commas outside of any group, so that
  * `string, Map<string, number>` holds the two types `string` and `Map<string, number>`. A trailing comma is accepted,
  * like TypeScript does.
  *
  * @example
  * parseTypeArguments('string, Map<string, number>', 10);  // [{ text: 'string', span: { start: 10, end: 16 } }, { text: 'Map<string, number>', span: { start: 18, end: 37 } }]
  *
- * @param text - The text of the type arguments, without the angle brackets.
+ * @param text - The text of the type arguments, without the characters enclosing them.
  * @param offset - The offset of the template the text starts at.
  * @returns The type arguments, with their span in the template.
  * @throws If a type argument is empty.
@@ -37,7 +37,7 @@ export function parseTypeArguments(text: string, offset: number): TypeArgumentNo
       const spanStart = offset + start + segment.indexOf(trimmed);
       typeArguments.push({ text: trimmed, span: { start: spanStart, end: spanStart + trimmed.length } });
     } else if (!isLast) {
-      throw 'A type argument of a directive cannot be empty';
+      throw 'A type argument cannot be empty';
     }
 
     start = end + 1;

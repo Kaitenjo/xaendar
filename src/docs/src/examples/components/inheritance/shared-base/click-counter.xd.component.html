@@ -1,4 +1,6 @@
-<button class="big" (click)="increment()">Clicked: { count() }</button>
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button class="big" (click)="increment()">Clicked: { count() }</ex-button>
 @if (!atZero()) {
-  <button class="link" (click)="reset()">Start again</button>
+  <ex-button class="link" (click)="reset()">Start again</ex-button>
 }

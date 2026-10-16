@@ -1,14 +1,15 @@
 @import { CountingListComponent } from './counting-list.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="toggle()">
+  <ex-button (click)="toggle()">
     @if (shown()) {
       Remove the list
     } @else {
       Add the list
     }
-  </button>
-  <button (click)="add()">Add an item</button>
+  </ex-button>
+  <ex-button (click)="add()">Add an item</ex-button>
 </div>
 @if (shown()) {
   <ex-counting-list>

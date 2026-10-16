@@ -1,10 +1,12 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
 <div class="controls">
-  <button (click)="defineNew()">A new name</button>
-  <button (click)="define('nohyphen')">nohyphen</button>
-  <button (click)="define('Ex-Upper')">Ex-Upper</button>
-  <button (click)="define('font-face')">font-face</button>
-  <button (click)="define('ex-define-rules')">ex-define-rules</button>
-  <button (click)="defineClassAgain()">The same class again</button>
+  <ex-button (click)="defineNew()">A new name</ex-button>
+  <ex-button (click)="define('nohyphen')">nohyphen</ex-button>
+  <ex-button (click)="define('Ex-Upper')">Ex-Upper</ex-button>
+  <ex-button (click)="define('font-face')">font-face</ex-button>
+  <ex-button (click)="define('ex-define-rules')">ex-define-rules</ex-button>
+  <ex-button (click)="defineClassAgain()">The same class again</ex-button>
 </div>
 <ul>
   @for (attempt of attempts(); track attempt().id) {

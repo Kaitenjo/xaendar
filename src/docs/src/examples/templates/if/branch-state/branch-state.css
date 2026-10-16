@@ -9,13 +9,8 @@
   margin-bottom: 0.6rem;
 }
 
-button,
 input {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 label {

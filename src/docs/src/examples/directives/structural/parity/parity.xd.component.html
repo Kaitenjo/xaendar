@@ -1,10 +1,11 @@
 @import { IsEvenDirective } from './is-even.directive.ts'
 @import { PositiveDirective } from './positive.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  <button (click)="change(-1)">−1</button>
-  <button (click)="change(1)">+1</button>
-  <button (click)="change(2)">+2</button>
+  <ex-button (click)="change(-1)">−1</ex-button>
+  <ex-button (click)="change(1)">+1</ex-button>
+  <ex-button (click)="change(2)">+2</ex-button>
   <strong>value = { value() }</strong>
 </div>
 <p *exIsEven(value="{ value() }") class="even">

@@ -1,3 +1,6 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../../shared/submit/submit.directive.ts'
+
 <form novalidate (submit)="submit($event)">
   <label>
     Name
@@ -18,7 +21,7 @@
     <input type="checkbox" (change)="setTerms($event)" />
     I accept the terms
   </label>
-  <button type="submit">Sign up</button>
+  <ex-button @@exSubmit variant="primary">Sign up</ex-button>
 </form>
 @if (attempted() && errors().length > 0) {
   <ul class="errors">

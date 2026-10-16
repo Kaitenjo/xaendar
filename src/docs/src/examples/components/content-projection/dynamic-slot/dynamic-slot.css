@@ -2,11 +2,9 @@
   display: block;
 }
 
-button {
+ex-button {
   margin-bottom: 0.6rem;
-  font: inherit;
   font-family: ui-monospace, monospace;
-  cursor: pointer;
 }
 
 .note {

@@ -179,6 +179,22 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'string>>')).toContain('support.type.primitive.ts');
   });
 
+  it('colors the type arguments of a web component as types, and keeps coloring its bindings', () => {
+    const template = '<ex-list(string, Map<Item, (value: number) => void>) items="{ rows }" (picked)="log()"></ex-list><ex-bare(Item)/>';
+
+    expect(scopesOf(template, 'ex-list')).toContain('entity.name.tag.html');
+    expect(scopesOf(template, '(string')).toContain('punctuation.definition.typeparameters.begin.xaendar');
+    expect(scopesOf(template, 'string,')).toContain('support.type.primitive.ts');
+    expect(scopesOf(template, 'Map')).toContain('entity.name.type.ts');
+    expect(scopesOf(template, 'number)')).toContain('meta.type.parameters.xaendar');
+    expect(scopesOf(template, ') items')).toContain('punctuation.definition.typeparameters.end.xaendar');
+    expect(scopesOf(template, 'items')).toContain('entity.other.attribute-name.html');
+    expect(scopesOf(template, 'rows')).toContain('meta.embedded.expression.xaendar');
+    expect(scopesOf(template, 'picked')).toContain('entity.name.function.event.xaendar');
+    expect(scopesOf(template, 'ex-bare')).toContain('entity.name.tag.html');
+    expect(scopesOf(template, 'Item)/')).toContain('entity.name.type.ts');
+  });
+
   it('colors the control flow, with its conditions as expressions', () => {
     const template = [
       '@if (a() && (b)) { x } @else if (c) { y } @else { z }',

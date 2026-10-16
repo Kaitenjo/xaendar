@@ -1,8 +1,9 @@
 @import { ValueTypeComponent } from './value-type.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <p class="caption">value="3"</p>
 <ex-value-type value="3" />
 <p class="caption">{'value="{ 3 }"'}</p>
 <ex-value-type value="{ 3 }" />
-<button (click)="writeAttribute()">first.setAttribute('value', '42')</button>
+<ex-button (click)="writeAttribute()">first.setAttribute('value', '42')</ex-button>
 <p class="caption">Attributes of the first: { attributesProp() }</p>

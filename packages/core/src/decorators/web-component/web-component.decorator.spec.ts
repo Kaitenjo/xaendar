@@ -1,13 +1,26 @@
 // @vitest-environment happy-dom
 import { Constructor } from '@xaendar/types';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_HOST_DIRECTIVES, INTERNAL_SELECTOR } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
+import type { WebComponentOptions } from '../../types/web-component/web-component-options.type';
 import { WebComponent } from './web-component.decorator';
 
-function decorate(selector: string, klass: Constructor<CustomElement>, metadata: object = {}): void {
-  WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
+type Initializer = (this: Constructor<CustomElement>) => void;
+
+/**
+ * Applies the decorator as the runtime does: the decorator first, then the static fields (`setStaticFields`),
+ * then the initializers the decorator added.
+ */
+function decorate(selector: string, klass: Constructor<CustomElement>, metadata: object = {}, hostDirectives?: WebComponentOptions['hostDirectives'], setStaticFields?: () => void): void {
+  const initializers = new Array<Initializer>();
+  const context = { metadata, addInitializer: (initializer: Initializer) => initializers.push(initializer) };
+  WebComponent({ selector, hostDirectives, templateUrl: './x.html' })(klass, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+  setStaticFields?.();
+  for (let i = 0; i < initializers.length; i++) {
+    initializers[i].call(klass);
+  }
 }
 
 describe('WebComponent decorator', () => {
@@ -16,6 +29,23 @@ describe('WebComponent decorator', () => {
     decorate('x-single', Single);
 
     expect(customElements.get('x-single')).toBe(Single);
+  });
+
+  it('registers the class only once its static fields are set, so that the registry reads observedAttributes', () => {
+    const changed = vi.fn();
+    class Observing extends CustomElement {
+      public attributeChangedCallback(name: string): void {
+        changed(name);
+      }
+    }
+    decorate('x-observing', Observing, {}, undefined, () => {
+      expect(customElements.get('x-observing')).toBeUndefined();
+      Object.assign(Observing, { observedAttributes: ['disabled'] });
+    });
+
+    document.createElement('x-observing').setAttribute('disabled', '');
+
+    expect(changed).toHaveBeenCalledWith('disabled');
   });
 
   it('stores the selector in the class metadata', () => {
@@ -29,14 +59,14 @@ describe('WebComponent decorator', () => {
     class Directive extends CustomDirective { }
     const hostDirectives = [Directive, { directive: Directive, properties: ['text'] }];
     const metadata = {};
-    WebComponent({ selector: 'x-with-host-directives', hostDirectives, templateUrl: './x.html' })(class extends CustomElement { }, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
+    decorate('x-with-host-directives', class extends CustomElement { }, metadata, hostDirectives);
 
     expect(metadata).toEqual({ [INTERNAL_SELECTOR]: 'x-with-host-directives', [INTERNAL_HOST_DIRECTIVES]: hostDirectives });
   });
 
   it('stores no host directives when it declares none', () => {
     const metadata = {};
-    WebComponent({ selector: 'x-without-host-directives', hostDirectives: [], templateUrl: './x.html' })(class extends CustomElement { }, { metadata } as ClassDecoratorContext<Constructor<CustomElement>>);
+    decorate('x-without-host-directives', class extends CustomElement { }, metadata, []);
 
     expect(metadata).toEqual({ [INTERNAL_SELECTOR]: 'x-without-host-directives' });
   });

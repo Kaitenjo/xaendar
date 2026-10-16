@@ -1,14 +1,15 @@
 @import { UserPageComponent } from './user-page.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <nav>
-  <button
+  <ex-button
     @if (!canGoBack()) {
       disabled
     }
     (click)="goBack()"
   >
     ← Back
-  </button>
+  </ex-button>
   <a
     @if (route().name === 'home') {
       aria-current="page"

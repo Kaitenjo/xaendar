@@ -123,6 +123,10 @@ export type LayoutElement = {
    */
   readonly name: string;
   /**
+   * The type arguments written between the parentheses after the tag name, `undefined` if the element declares none.
+   */
+  readonly typeArguments?: string;
+  /**
    * The items of the opening tag.
    */
   readonly items: LayoutItem[];

@@ -19,6 +19,9 @@ const componentPathToStyleDependencies = new Map<string, Set<string>>();
 
 /**
  * Registers that `componentPath` depends on `dependencyPath`.
+ *
+ * @param dependencyPath - Absolute path of the style file.
+ * @param componentPath - Absolute path of the component file depending on it.
  */
 export function registerStyleDependency(dependencyPath: string, componentPath: string): void {
   styleDependencyToComponentPaths.getOrInsert(dependencyPath, new Set()).add(componentPath);
@@ -27,6 +30,9 @@ export function registerStyleDependency(dependencyPath: string, componentPath: s
 
 /**
  * Returns the component files that currently depend on `dependencyPath`.
+ *
+ * @param dependencyPath - Absolute path of the style file.
+ * @returns The component paths, `undefined` if no component depends on the file.
  */
 export function findComponentPathsForStyleDependency(dependencyPath: string): Set<string> | undefined {
   return styleDependencyToComponentPaths.get(dependencyPath);
@@ -34,6 +40,8 @@ export function findComponentPathsForStyleDependency(dependencyPath: string): Se
 
 /**
  * Clears all style dependencies previously registered for `componentPath`.
+ *
+ * @param componentPath - Absolute path of the component file.
  */
 export function clearStyleDependenciesForComponent(componentPath: string): void {
   const dependencyPaths = componentPathToStyleDependencies.get(componentPath);
@@ -42,12 +50,11 @@ export function clearStyleDependenciesForComponent(componentPath: string): void 
   }
 
   for (const dependencyPath of dependencyPaths) {
-    const componentPaths = styleDependencyToComponentPaths.get(dependencyPath);
-    if (componentPaths) {
-      componentPaths.delete(componentPath);
-      if (!componentPaths.size) {
-        styleDependencyToComponentPaths.delete(dependencyPath);
-      }
+    // ! is a safe assertion because both maps are always updated together
+    const componentPaths = styleDependencyToComponentPaths.get(dependencyPath)!;
+    componentPaths.delete(componentPath);
+    if (!componentPaths.size) {
+      styleDependencyToComponentPaths.delete(dependencyPath);
     }
   }
 

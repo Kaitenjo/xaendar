@@ -13,11 +13,6 @@
   font-size: 0.9rem;
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
 .status {
   min-height: 1.2em;
   margin: 0.3rem 0 0;
