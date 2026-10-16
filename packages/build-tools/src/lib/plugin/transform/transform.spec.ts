@@ -32,6 +32,7 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   return {
     ...actual,
     createShim: vi.fn(),
+    getImportConflictDiagnostics: vi.fn(),
     getLanguageService: vi.fn(),
     registerRealFile: vi.fn()
   };
@@ -77,13 +78,14 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
   createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
   extractImportedComponentPaths: vi.fn(),
+  getImportOrExtract: vi.fn(),
   getMetadataOrExtract: vi.fn(),
   injectTemplate: vi.fn()
 }));
 
 import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers } from '@xaendar/compiler';
-import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
+import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
@@ -93,7 +95,7 @@ import { registerTemplatePath, removeComponentPath } from '../../registry/templa
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
 /**
@@ -416,9 +418,11 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
     await vi.mocked(compile).mock.calls[0][1].cache?.getOrInsert('Bar', '/src/bar.ts');
+    await vi.mocked(compile).mock.calls[0][1].cache?.getImport('format', 'fmt', '/src', './format');
 
     expect(extractComponentsMetadataFromSourceFile).toHaveBeenCalledWith(expect.anything(), state.compilerOptions);
     expect(getMetadataOrExtract).toHaveBeenCalledWith('Bar', '/src/bar.ts', state.compilerOptions);
+    expect(getImportOrExtract).toHaveBeenCalledWith('format', 'fmt', '/src', './format', state.compilerOptions);
   });
 
   it('extracts the signal members with the project compiler options, watching and registering the base class files they depend on', async () => {
@@ -536,6 +540,23 @@ describe('createTransformHook()', () => {
     expect(result).toBeNull();
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('first problem'));
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('second problem'));
+  });
+
+  it('fails on a symbol the template imports under the name of a member of the component', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    vi.mocked(createShim).mockReturnValue({ path: '/virtual/foo.__typecheck__.ts', bodyLineOffset: 2 } as ReturnType<typeof createShim>);
+    const languageService = { getSemanticDiagnostics: vi.fn().mockReturnValue([]), getProgram: vi.fn().mockReturnValue(PROGRAM) };
+    vi.mocked(getLanguageService).mockReturnValue(languageService as unknown as ReturnType<typeof getLanguageService>);
+    vi.mocked(getImportConflictDiagnostics).mockReturnValueOnce(['conflict' as never]);
+    vi.mocked(describeDiagnostic).mockReturnValueOnce('conflict problem');
+    const state = createState();
+
+    const result = await createTransformHook(state).call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(getImportConflictDiagnostics).toHaveBeenCalledWith(languageService, '/virtual/foo.__typecheck__.ts', 2);
+    expect(result).toBeNull();
+    expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('conflict problem'));
   });
 
   it('processes every declared component sharing the same module imports of the file', async () => {

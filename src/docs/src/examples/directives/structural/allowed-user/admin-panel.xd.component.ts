@@ -1,6 +1,5 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
-import { checks } from './permissions';
 
 /**
  * A panel shown after an asynchronous permission check.
@@ -15,10 +14,6 @@ export class AdminPanelComponent extends CustomElement {
    * The current user.
    */
   public readonly user = signal('admin');
-  /**
-   * The log of the checks, shared with the directive.
-   */
-  public readonly checks = checks;
 
   /**
    * Switches user.

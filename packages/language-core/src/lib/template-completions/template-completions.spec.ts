@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../template-analysis/template-analysis';
@@ -109,7 +110,8 @@ describe('getTemplateExpressionCompletions', () => {
 
     expect(completions[0]).toBe('select:method:2');
     expect(completions).toEqual(expect.arrayContaining(['effect:method:4', 'click:method:6']));
-    expect(completions.every(completion => completion.includes(':method:'))).toBe(true);
+    // The functions of the project can be called too
+    expect(completions.every(completion => completion.includes(':method:') || completion.includes(':function:'))).toBe(true);
     expect(await completionsOf('<b (click)="se|">x</b>')).toContain('select:method:2@12-14');
   }, TIMEOUT);
 
@@ -126,6 +128,54 @@ describe('getTemplateExpressionCompletions', () => {
     expect((await sortedCompletionsOf(`${FOR}@if (|) {\n} }`)).slice(0, 2)).toEqual(['item:let:0000', '$index:let:0001']);
     expect((await sortedCompletionsOf('@switch (|) {\n}')).slice(0, 3)).toEqual(['items:property:1', 'title:property:1', 'select:method:2']);
     expect(await completionsOf('@for (item of ite|')).toContain('items:property:1@14-17');
+  }, TIMEOUT);
+
+  it('proposes the values the template imports with the fields of the component, its types left out', async () => {
+    const template = '@import { formatDate, Status as State, Row, * as utils } from \'./utils\';\n<b>{|</b>';
+    const at = template.indexOf('|');
+    const completions = await completionsOf(template);
+
+    expect(completions).toEqual(expect.arrayContaining([`formatDate:function:1@${at}-${at}`, `State:enum:1@${at}-${at}`, `utils:module:1@${at}-${at}`, `title:property:1@${at}-${at}`]));
+    // A type, and an export imported already under another name
+    expect(completions!.some(completion => completion.startsWith('Row:') || completion.startsWith('Status:'))).toBe(false);
+  }, TIMEOUT);
+
+  it('proposes the values of the project the template doesn\'t import yet last, adding their @import, the ones named like a member left out', async () => {
+    const header = '@import { formatDate } from \'./utils\';\n';
+    const source = `${header}<b>{ LI }</b>`;
+    const completions = await getTemplateExpressionCompletions(project.path('src/app.html'), source, source.lastIndexOf(' }'), new Map([[project.path('src/app.ts'), ['App']]]));
+    const insertAt = header.indexOf(' }');
+
+    expect(completions!.find(({ name }) => name === 'LIMIT')).toEqual({
+      name: 'LIMIT',
+      kind: 'const',
+      detail: './utils',
+      sortText: '9',
+      replacementSpan: { start: source.indexOf('LI'), end: source.lastIndexOf(' }') },
+      additionalEdits: [{ span: { start: insertAt, end: insertAt }, newText: ', LIMIT' }]
+    });
+    // Imported already, a member of the component, a type, the class of the component itself
+    expect(completions!.filter(({ name }) => ['formatDate', 'title', 'Row', 'App'].includes(name)).map(({ name, sortText }) => `${name}:${sortText}`).toSorted()).toEqual(['formatDate:1', 'title:1']);
+  }, TIMEOUT);
+
+  it('proposes no value to import when the files of the project export none', async () => {
+    const other = createFixtureProject();
+    const tsconfig = JSON.parse(readFileSync(other.path('tsconfig.json'), 'utf-8'));
+    other.write('tsconfig.json', JSON.stringify({ ...tsconfig, include: ['src/*.html'] }));
+    const completions = await getTemplateExpressionCompletions(other.path('src/app.html'), '<b>{  }</b>', 5, new Map([[other.path('src/app.ts'), ['App']]]));
+
+    expect(completions).toContainEqual(expect.objectContaining({ name: 'title', sortText: '1' }));
+    expect(completions!.some(({ sortText }) => sortText === '9')).toBe(false);
+    other.dispose();
+  }, TIMEOUT);
+
+  it('proposes the functions the template imports or could import on the name of the method an event calls', async () => {
+    const template = '@import { formatDate, Status } from \'./utils\';\n<b (click)="|">x</b>';
+    const at = template.indexOf('|');
+    const completions = await completionsOf(template);
+
+    expect(completions).toEqual(expect.arrayContaining([`formatDate:function:1@${at}-${at}`]));
+    expect(completions!.some(completion => completion.startsWith('Status:') || completion.startsWith('Shape:'))).toBe(false);
   }, TIMEOUT);
 
   it('proposes nothing after the ( of a call triggering the completion in an interpolation', async () => {
@@ -308,6 +358,19 @@ describe('getTemplateImportCompletions', () => {
 
   it('leaves out the symbols already imported', async () => {
     expect(await completionsOf('@import { Tooltip, | } from \'./directives\';')).toEqual(['Media:directive:media@19-19']);
+  }, TIMEOUT);
+
+  it('proposes the other exports of the module with what they declare, the default one as a snippet naming it', async () => {
+    expect(await completionsOf('@import { LIMIT, | } from \'./utils\';')).toEqual([
+      'formatDate:function:undefined@17-17',
+      'title:function:undefined@17-17',
+      'default:function:undefined@17-17',
+      'Status:enum:undefined@17-17',
+      'Row:interface:undefined@17-17',
+      'Shape:class:undefined@17-17'
+    ]);
+    const completions = await getTemplateImportCompletions(project.path('src/app.html'), '@import {  } from \'./utils\';', 10);
+    expect(completions!.find(({ name }) => name === 'default')).toEqual(expect.objectContaining({ snippet: 'default as $1', sortText: '1' }));
   }, TIMEOUT);
 
   it('proposes nothing for a module that cannot be resolved, and leaves to the other completions the offsets not on a symbol of an @import', async () => {

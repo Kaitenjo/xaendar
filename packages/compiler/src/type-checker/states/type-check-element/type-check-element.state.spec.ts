@@ -870,14 +870,12 @@ describe('typeCheckElement generic directives', () => {
     } as unknown as DirectiveMetadata;
   };
 
-  it('declares the type arguments of the template around the checks of the directive, and reads the types of its bindings through the class instantiated with them', () => {
+  it('instantiates the class with the type arguments of the template around the checks of the directive, and reads the types of its bindings through it', () => {
     const lines = run('<div @@myDirective<string, Map<string, number>>(items="{names}" (picked)="onPick($event)")></div>', genericDirective());
 
     expect(text(lines)).toEqual([
       '{',
-      '  type T = string;',
-      '  type U = Map<string, number>;',
-      `  type __Instance = ${owner}<T, U>;`,
+      `  type __Instance = ${owner}<string, Map<string, number>>;`,
       '  {',
       '    (root.names) satisfies ReturnType<__Instance[\'items\']>;',
       '  }',
@@ -893,15 +891,20 @@ describe('typeCheckElement generic directives', () => {
     const template = '<div @@myDirective<string, number>(items="{names}")></div>';
     const lines = run(template, genericDirective());
 
-    const mappings = lines.flatMap(({ mappings: lineMappings }) => lineMappings ?? []);
-    expect(mappings.map(({ original }) => template.slice(original.start, original.end))).toEqual(expect.arrayContaining(['string', 'number', 'string, number']));
+    expect(lines[1].mappings!.map(({ original }) => template.slice(original.start, original.end))).toEqual(['string, number', 'string', 'number']);
+  });
+
+  it('writes a type argument naming a type the template imports like the type parameter as is, without a circular alias', () => {
+    const lines = text(run('<div @@myDirective<T>(items="{names}")></div>', genericDirective([['T'], ['U', true]])));
+
+    expect(lines[1]).toBe(`  type __Instance = ${owner}<T>;`);
   });
 
   it('infers nothing when the template passes type arguments: the class is instantiated with them only, as TypeScript does for a call', () => {
     const lines = text(run('<div @@myDirective<string>(items="{names}")></div>', genericDirective([['T'], ['U', true]])));
 
     // The type parameters left out take their default type, or are reported by TypeScript when they have none
-    expect(lines.slice(0, 3)).toEqual(['{', '  type T = string;', `  type __Instance = ${owner}<T>;`]);
+    expect(lines.slice(0, 2)).toEqual(['{', `  type __Instance = ${owner}<string>;`]);
     expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
   });
 
@@ -960,11 +963,10 @@ describe('typeCheckElement generic directives', () => {
     expect(text(run('<div @@myDirective(items="{names}" (picked)="onPick($event)")></div>', metadata)).some(entry => entry.includes('__probe'))).toBe(false);
   });
 
-  it('declares the type arguments of a structural directive', () => {
+  it('instantiates the class of a structural directive with its type arguments', () => {
     const lines = run('<div *myDirective<string>(items="{names}")></div>', genericDirective([['T']]));
 
-    expect(text(lines).slice(0, 2)).toEqual(['{', '  type T = string;']);
-    expect(text(lines)).toContain(`  type __Instance = ${owner}<T>;`);
+    expect(text(lines).slice(0, 2)).toEqual(['{', `  type __Instance = ${owner}<string>;`]);
   });
 
   it('throws for type arguments on a directive that is not generic', () => {
@@ -1034,29 +1036,27 @@ describe('typeCheckElement generic components', () => {
     ]);
   });
 
-  it('declares the type arguments of the element as local types named like the type parameters, mapped onto the template', () => {
+  it('instantiates the class with the type arguments of the element, each one mapped onto the template', () => {
     const template = '<my-el(string, Map<string, number>) items="{names}"></my-el>';
     const lines = run(template, genericComponent());
 
     expect(text(lines)).toEqual([
       '{',
-      '  type T = string;',
-      '  type U = Map<string, number>;',
-      `  type __Instance = ${owner}<T, U>;`,
+      `  type __Instance = ${owner}<string, Map<string, number>>;`,
       '  {',
       '    (root.names) satisfies ReturnType<__Instance[\'items\']>;',
       '  }',
       '}'
     ]);
-    expect(lines[2].mappings![0].original).toEqual({ start: template.indexOf('Map'), end: template.indexOf(') items') });
-    // The instantiation is mapped onto the type arguments, where a type that doesn't satisfy a constraint is reported
-    expect(lines[3].mappings![0].original).toEqual({ start: template.indexOf('string'), end: template.indexOf(') items') });
+    // The instantiation is mapped onto all the type arguments, and each one onto its own span, where a type that doesn't satisfy a constraint is reported
+    expect(lines[1].mappings!.map(({ original }) => template.slice(original.start, original.end))).toEqual(['string, Map<string, number>', 'string', 'Map<string, number>']);
+    expect(lines[1].mappings![2]).toMatchObject({ columnStart: lines[1].text.indexOf('Map'), columnEnd: lines[1].text.lastIndexOf('>') });
   });
 
   it('infers nothing when the element declares type arguments, leaving the others to their default type', () => {
     const lines = text(run('<my-el(string) items="{names}"></my-el>', genericComponent([['T'], ['U', true]])));
 
-    expect(lines.slice(0, 3)).toEqual(['{', '  type T = string;', `  type __Instance = ${owner}<T>;`]);
+    expect(lines.slice(0, 2)).toEqual(['{', `  type __Instance = ${owner}<string>;`]);
     expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
   });
 

@@ -250,12 +250,22 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
-    message: 'Error: Unable to resolve module path for "Nope".',
+    message: 'Error: Unable to resolve module path "./nope" for "Nope".',
     page: 'templates/imports'
   },
   {
-    phase: 'Build',
-    message: 'Class "Callout" was not found in the import from <path>',
+    phase: 'TypeChecker',
+    message: 'Module \'"<path>"\' has no exported member \'Callout\'.',
+    page: 'templates/imports'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '\'title\' is also a member of XCard: import it under another name (… as name), or rename the member.',
+    page: 'templates/imports'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] "root" is reserved in templates: import it under another name (… as name).',
     page: 'templates/imports'
   },
   {

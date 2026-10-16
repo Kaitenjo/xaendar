@@ -202,7 +202,8 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
 
 /**
  * Resolves an identifier of an expression: to a signal member, an identifier left as written,
- * a variable of the template scope, or a member reached through the resolver.
+ * a variable of the template scope, a name the template imports, or a member reached through the resolver.
+ * The variables of the template shadow the imported names.
  *
  * @param text - The name of the identifier.
  * @param compilerContext - Current render scope context.
@@ -225,6 +226,12 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
   if (compilerContext.hasIdentifier(text)) {
     const kind = compilerContext.getIdentifierKind(text);
     return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
+  }
+
+  const imported = compilerContext.getImportedIdentifier(text);
+  if (imported) {
+    imported.used = true;
+    return { expression: imported.expression, reactive: imported.kind === 'signal' };
   }
 
   if (options.resolver) {
@@ -261,14 +268,15 @@ function containsResolvableIdentifier(node: Node, parent: Node, compilerContext:
  * or prefixed with `this.` — i.e. it is not the property-name side of a member
  * access expression, and it is not a global/builtin identifier. A local identifier
  * (class member, inherited ones included, or template variable) named like a global
- * shadows it: the global stays reachable as `window.name` or `globalThis.name`.
+ * shadows it, and so does a name the template imports: the global stays reachable as `window.name` or `globalThis.name`.
  */
 function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext): boolean {
   const { text } = node;
   const isLocal = compilerContext.hasSignalField(text)
     || compilerContext.hasShadowingMember(text)
     || compilerContext.hasUnresolvableIdentifier(text)
-    || compilerContext.hasIdentifier(text);
+    || compilerContext.hasIdentifier(text)
+    || !!compilerContext.getImportedIdentifier(text);
 
   return !(
     (isPropertyAccessExpression(parent) && parent.name === node)  // obj.prop -> prop should not be resolved

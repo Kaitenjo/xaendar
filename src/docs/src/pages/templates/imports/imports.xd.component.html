@@ -1,7 +1,9 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { TeamCardComponent } from '../../../examples/templates/imports/team-card/team-card.xd.component.ts'
+@import { CartTotalComponent } from '../../../examples/templates/imports/cart-total/cart-total.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.templates.imports.eyebrow") class="eyebrow" />
@@ -15,6 +17,14 @@
 </docs-example>
 <p @@i18n(key="pages.templates.imports.forms.p1") />
 <p @@i18n(key="pages.templates.imports.forms.p2") />
+
+<h2 @@i18n(key="pages.templates.imports.values.title") />
+<docs-example name="templates/imports/cart-total" heading="{ translations().pages.templates.imports.values.example1 }">
+  <ex-cart-total />
+</docs-example>
+<p @@i18n(key="pages.templates.imports.values.p1") />
+<p @@i18n(key="pages.templates.imports.values.p2") />
+<p @@i18n(key="pages.templates.imports.values.p3") />
 
 <h2 @@i18n(key="pages.templates.imports.importingIsNotRegistering.title") />
 <p @@i18n(key="pages.templates.imports.importingIsNotRegistering.p1") />
@@ -58,6 +68,18 @@
           <code>{"@import { A, B } from './people.xd.component.ts'"}</code>
         </td>
         <td @@i18n(key="pages.templates.imports.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{"@import { formatPrice, Currency } from './format.ts'"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.imports.apiSummary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>{"@import { default as format, * as utils } from './utils.ts'"}</code>
+        </td>
+        <td @@i18n(key="pages.templates.imports.apiSummary.td6") />
       </tr>
       <tr>
         <td @@i18n(key="pages.templates.imports.apiSummary.td3") />

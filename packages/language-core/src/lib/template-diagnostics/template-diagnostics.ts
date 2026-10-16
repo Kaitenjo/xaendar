@@ -2,6 +2,7 @@ import { type ASTNode, resolveTemplateSpan, type Span, TemplateError } from '@xa
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import type { TemplateAnalysis, TemplateAnalysisResult } from '../template-analysis/template-analysis';
 import { findUnusedImports } from '../template-imports/template-imports';
+import { getImportConflictDiagnostics } from '../utils/import-conflicts/import-conflicts.utils';
 import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
 
 /**
@@ -47,10 +48,16 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
     return [toTemplateDiagnostic(error, ast)];
   }
 
-  const { languageService, shimPath, errors } = analysis!;
+  const { languageService, shimPath, errors, bodyLineOffset } = analysis!;
+  const shimDiagnostics = [...languageService.getSyntacticDiagnostics(shimPath), ...languageService.getSemanticDiagnostics(shimPath)];
+  const conflicts = getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset);
+  if (conflicts?.length) {
+    shimDiagnostics.push(...conflicts);
+  }
+
   const diagnostics = [
     ...errors.map(templateError => toTemplateDiagnostic(templateError, ast)),
-    ...[...languageService.getSyntacticDiagnostics(shimPath), ...languageService.getSemanticDiagnostics(shimPath)]
+    ...shimDiagnostics
       .map(diagnostic => ({
         span: locateDiagnostic(analysis!, diagnostic),
         message: flattenDiagnosticMessageText(diagnostic.messageText, '\n'),

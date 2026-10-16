@@ -2,3 +2,6 @@
 @import { AvatarComponent, RoleBadgeComponent } from './people.xd.component.ts'  <!-- several classes of one file -->
 @import { TooltipDirective } from '../directives/tooltip.directive.ts'          <!-- directives too -->
 @import { ChartComponent } from "./chart/chart.xd.component"                     <!-- double quotes, no extension -->
+@import { formatPrice, Currency, quantity } from './cart.ts'                     <!-- functions, enums, signals, types -->
+@import { format as formatDate } from './dates.ts'                                <!-- under another name -->
+@import { default as shout, * as utils } from './utils.ts'                       <!-- the default export, the whole module -->

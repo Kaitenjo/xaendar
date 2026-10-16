@@ -3,11 +3,20 @@ import { Parser } from '../parser/parser/parser';
 import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
 import type { CompilerCache } from '../types/compiler-cache.type';
+import type { ImportedSymbol } from '../types/imported-symbol/imported-symbol.type';
 import { TemplateError } from '../models/template-error/template-error.model';
 import { compile, parseTemplate, typeCheckTemplate, typeCheckTemplateTolerant } from './compile';
 
 const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };
-const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
+const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), getImport: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
+
+/**
+ * A cache resolving every import as a symbol of `/base/utils.ts`, reactive for the given names.
+ */
+const createSymbolCache = (...reactive: string[]) => ({
+  ...createCache(),
+  getImport: vi.fn(async (imported: string): Promise<ImportedSymbol> => ({ type: 'symbol', modulePath: '/base/utils.ts', reactive: reactive.includes(imported) }))
+}) satisfies CompilerCache;
 
 describe('compile', () => {
   afterEach(() => {
@@ -24,8 +33,8 @@ describe('compile', () => {
     const result = await compile('@import { A, default } from \'./a\'\n{heading}', { baseDir: '/base', cache });
 
     expect(result).toMatchObject({ text: 'function typeCheck() {\n  root.heading;\n}' });
-    expect(cache.getOrInsert).toHaveBeenCalledWith('A', ['/base', './a']);
-    expect(cache.getOrInsert).toHaveBeenCalledWith('default', ['/base', './a']);
+    expect(cache.getImport).toHaveBeenCalledWith('A', 'A', '/base', './a');
+    expect(cache.getImport).toHaveBeenCalledWith('default', 'default', '/base', './a');
   });
 
   it('compiles the custom elements of other libraries matching the customElements patterns like native elements', async () => {
@@ -100,7 +109,7 @@ describe('compile', () => {
     expect(multiLine.typescript.text).toContain('if (root.dark) {');
   });
 
-  it('resolves default imports through their local name and skips namespace imports', async () => {
+  it('resolves every specifier, default and namespace ones included, with the name it imports and its local name', async () => {
     const importNode = {
       type: ASTNodeType.Import,
       specifiers: [{ imported: 'default', local: 'D' }, { imported: '*', local: 'ns' }, { imported: 'A', local: 'A' }],
@@ -111,7 +120,7 @@ describe('compile', () => {
 
     await compile('', { baseDir: '/base', cache });
 
-    expect(cache.getOrInsert.mock.calls.map(([name]) => name)).toEqual(['D', 'A']);
+    expect(cache.getImport.mock.calls).toEqual([['default', 'D', '/base', './x'], ['*', 'ns', '/base', './x'], ['A', 'A', '/base', './x']]);
   });
 });
 
@@ -158,5 +167,74 @@ describe('compile generic directives', () => {
     const withoutTypeArguments = await compile('<my-list items="{ rows }"><span /></my-list>', { signals: [], cache: createCache() });
 
     expect(withTypeArguments).toBe(withoutTypeArguments);
+  });
+});
+
+describe('compile imported symbols', () => {
+  const template = '@import { formatDate, Status, count, Row, track, default as fmt, * as utils } from \'./utils\'\n<p title="{ formatDate(d) }" data-count="{ count() }" (click)="track($event)">{ Status.Active } { utils.x } { fmt(1) }</p>';
+
+  it('imports in the render code, under an alias, only the symbols an expression reads, and reads them through it', async () => {
+    const { javascript } = await compile(template, { baseDir: '/base', signals: [], cache: createSymbolCache('count') });
+
+    expect(javascript.split('\n').slice(0, 6)).toEqual([
+      'import { formatDate as __import_formatDate } from \'/base/utils.ts\';',
+      'import { Status as __import_Status } from \'/base/utils.ts\';',
+      'import { count as __import_count } from \'/base/utils.ts\';',
+      'import { track as __import_track } from \'/base/utils.ts\';',
+      'import { default as __import_fmt } from \'/base/utils.ts\';',
+      'import * as __import_utils from \'/base/utils.ts\';'
+    ]);
+    // A type is not a value at runtime
+    expect(javascript).not.toContain('Row');
+    expect(javascript).toContain('value: () => __import_formatDate(this.d),\n        setter: _setExpressionProperty');
+    // A symbol reading a signal makes the binding reactive
+    expect(javascript).toContain('value: () => __import_count(),\n        setter: _setReactiveProperty');
+    expect(javascript).toContain('handler: ($event) => __import_track($event)');
+    expect(javascript).toContain('() => __import_Status.Active');
+    expect(javascript).toContain('() => __import_utils.x');
+  });
+
+  it('imports every symbol in the type-check code under its own name, mapped onto the template, and reads it as written', async () => {
+    const { typescript } = await compile(template, { baseDir: '/base', signals: [], cache: createSymbolCache() });
+    const lines = typescript.text.split('\n');
+
+    expect(lines.slice(0, 8)).toEqual([
+      'import { formatDate } from \'/base/utils\';',
+      'import { Status } from \'/base/utils\';',
+      'import { count } from \'/base/utils\';',
+      'import { Row } from \'/base/utils\';',
+      'import { track } from \'/base/utils\';',
+      'import { default as fmt } from \'/base/utils\';',
+      'import * as utils from \'/base/utils\';',
+      'function typeCheck() {'
+    ]);
+    expect(typescript.mappingTable.get(5)!.map(({ original }) => template.slice(original.start, original.end))).toEqual(['default', 'fmt']);
+    expect(typescript.mappingTable.get(6)!.map(({ original }) => template.slice(original.start, original.end))).toEqual(['utils']);
+    expect(lines).toContain('  formatDate(root.d);');
+    expect(lines).toContain('    track($event);');
+    expect(lines).toContain('  Status.Active;');
+  });
+
+  it('reads a variable of the template rather than a symbol named like it, and a symbol rather than a global named like it', async () => {
+    const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item) { {item} } { Map.size }';
+    const { javascript } = await compile(source, { baseDir: '/base', signals: [], cache: createSymbolCache() });
+
+    expect(javascript).toContain('context.get(\'item\')');
+    expect(javascript).not.toContain('__import_item');
+    expect(javascript).toContain('() => __import_Map.size');
+  });
+
+  it('resolves the imports of the JavaScript code against templateDir, and leaves them unresolved without it', async () => {
+    const source = '@import { formatDate } from \'./utils\'\n{ formatDate(d) }';
+
+    await expect(compile(source, { signals: [], templateDir: '/base', cache: createSymbolCache() })).resolves.toContain('() => __import_formatDate(this.d)');
+    await expect(compile(source, { signals: [], cache: createSymbolCache() })).resolves.toContain('() => this.formatDate(this.d)');
+  });
+
+  it.each(['root', '$event', '__probe'])('rejects a symbol imported as %s, a name the generated code reserves', async name => {
+    const source = `@import { x as ${name} } from './utils'`;
+
+    await expect(compile(source, { baseDir: '/base', cache: createSymbolCache() })).rejects.toThrow(`"${name}" is reserved in templates`);
+    await expect(compile(source, { signals: [], templateDir: '/base', cache: createSymbolCache() })).rejects.toThrow(`"${name}" is reserved in templates`);
   });
 });

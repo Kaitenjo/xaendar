@@ -15,14 +15,6 @@ import type { ApiEntry } from '../../pages/reference/api/api.data';
 })
 export class DocsApiListComponent extends CustomElement {
   /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
-   * The language of the links.
-   */
-  public readonly currentLang = lang;
-  /**
    * The modules offered by the filter.
    */
   public readonly modules = [...new Set(API.map(entry => entry.module))];
@@ -65,8 +57,8 @@ export class DocsApiListComponent extends CustomElement {
   private _computeEntries(): Array<ApiEntry & { text: string; href: string }> {
     const query = this.query().trim().toLowerCase();
     const module = this.module();
-    const current = this.currentLang();
-    const descriptions = this.translations().api;
+    const current = lang();
+    const descriptions = translations().api;
     return API
       .filter(entry => !module || entry.module === module)
       .map(entry => ({ ...entry, text: descriptions[entry.name], href: `#/${current}/${entry.page}` }))

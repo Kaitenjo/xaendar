@@ -31,10 +31,6 @@ export class DocsCalloutComponent extends CustomElement {
   @Property('')
   public accessor heading!: InputSignal<string>;
   /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
    * The label of the kind.
    */
   public readonly label = computed(() => this._computeLabel());
@@ -45,6 +41,6 @@ export class DocsCalloutComponent extends CustomElement {
    * @returns The label of the kind.
    */
   private _computeLabel(): string {
-    return this.translations().callout[this.kind() as CalloutKind] ?? this.kind();
+    return translations().callout[this.kind() as CalloutKind] ?? this.kind();
   }
 }

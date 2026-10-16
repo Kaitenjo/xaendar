@@ -1,11 +1,12 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { level } from './level.store.ts'
 
 <ex-button (click)="raise()">Raise the level</ex-button>
 <dl>
-  <dt>shared = level</dt>
+  <dt>{ '@import { level }' }</dt>
   <dd>
-    <progress max="10" value="{ shared() }" />
-    text: { shared() }
+    <progress max="10" value="{ level() }" />
+    text: { level() }
   </dd>
   <dt>fromHelper = readLevel()</dt>
   <dd>

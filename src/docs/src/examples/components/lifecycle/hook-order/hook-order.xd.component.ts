@@ -19,10 +19,6 @@ export class HookOrderComponent extends CustomElement {
    * The label passed down to the child.
    */
   public readonly label = signal('Ada');
-  /**
-   * What the parent and the child logged.
-   */
-  public readonly log = log;
 
   /**
    * Adds or removes the parent.
@@ -42,6 +38,6 @@ export class HookOrderComponent extends CustomElement {
    * Clears the log.
    */
   public clear(): void {
-    this.log.set([]);
+    log.set([]);
   }
 }

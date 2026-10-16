@@ -1,11 +1,13 @@
 import type { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type.js';
+import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type.js';
 import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { TypeCheckContext } from '../models/type-checker-context/type-checker-context.js';
 import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
 import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';
+import { typeCheckImport } from '../states/type-check-import/type-check-import.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
 import type { Line, LineMapping } from '../types/generated-line.type.js';
@@ -52,7 +54,7 @@ export class TypeChecker {
     [ASTNodeType.If]: typeCheckIf,
     [ASTNodeType.For]: typeCheckFor,
     [ASTNodeType.Switch]: typeCheckSwitch,
-    [ASTNodeType.Import]: () => []
+    [ASTNodeType.Import]: typeCheckImport
   };
   /**
    * The errors of the nodes that failed type-checking during a `generateTolerant()` call; `undefined` while a node
@@ -81,12 +83,13 @@ export class TypeChecker {
    * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
+   * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckResult> {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols);
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
@@ -100,14 +103,15 @@ export class TypeChecker {
    * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
+   * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckTolerantResult> {
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckTolerantResult> {
     const errors = new Array<Error>();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols), errors };
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     } finally {
@@ -121,23 +125,23 @@ export class TypeChecker {
    * @param metadatas - Metadata of the components and directives imported in the template.
    * @param shadowingMembers - Class members named like a global identifier.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+   * @param symbols - The symbols the template imports from modules.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[]): TypeCheckResult {
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[]): TypeCheckResult {
     this._context.addImport(...metadatas);
+    this._context.addSymbolImport(...symbols);
     for (let i = 0; i < shadowingMembers.length; i++) {
       this._context.addShadowingMember(shadowingMembers[i]);
     }
     this._context.addCustomElementPatterns(...customElements);
-    const body = this._ast.flatMap(node => this._processNode(node, this._context));
+    // The declarations importing the symbols of the template are written at the top level, before the function
+    const imports = this._ast.filter(node => node.type === ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
+    const body = this._ast.filter(node => node.type !== ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
 
     // The modules the types of the bindings reference are imported once, before the function
-    const lines = hoistImportTypes([
-      plain('function typeCheck() {'),
-      ...indentLines(body),
-      plain('}'),
-    ]);
+    const lines = hoistImportTypes(imports.concat(plain('function typeCheck() {'), indentLines(body), plain('}')));
 
     return {
       text: lines.map(line => line.text).join('\n'),

@@ -10,6 +10,7 @@ export * from './lib/template-imports/template-imports';
 export * from './lib/template-metadata-cache/template-metadata-cache';
 export * from './lib/template-semantic-tokens/template-semantic-tokens';
 export * from './lib/utils/compiler-options/compiler-options.utils';
+export * from './lib/utils/import-conflicts/import-conflicts.utils';
 export * from './lib/utils/module-path/module-path.utils';
 export * from './lib/utils/path/path.utils';
 export * from './lib/utils/shim/shim.utils';

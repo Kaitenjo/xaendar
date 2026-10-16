@@ -1,5 +1,4 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import { clear, lines } from './cart.store';
 
 /**
  * Shows the shared cart. It knows nothing about the products component: they only share the store.
@@ -9,16 +8,4 @@ import { clear, lines } from './cart.store';
   styleUrl: './cart.css',
   templateUrl: './cart-summary.xd.component.html'
 })
-export class CartSummaryComponent extends CustomElement {
-  /**
-   * The lines of the cart.
-   */
-  public readonly lines = lines;
-
-  /**
-   * Empties the cart.
-   */
-  public clear(): void {
-    clear();
-  }
-}
+export class CartSummaryComponent extends CustomElement {}

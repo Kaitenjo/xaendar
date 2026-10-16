@@ -1,3 +1,6 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../core/router/router.ts'
+
 @if (previous() || next()) {
   <nav class="pager">
     @if (previous()) {

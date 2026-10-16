@@ -1,4 +1,6 @@
+@import { back, canGoBack, path, route } from './router.ts'
 @import { UserPageComponent } from './user-page.xd.component.ts'
+@import { USERS } from './users.ts'
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <nav>
@@ -6,7 +8,7 @@
     @if (!canGoBack()) {
       disabled
     }
-    (click)="goBack()"
+    (click)="back()"
   >
     ← Back
   </ex-button>
@@ -40,7 +42,7 @@
     @case ('users') {
       <h3>Users</h3>
       <ul>
-        @for (user of users; track user().id) {
+        @for (user of USERS; track user().id) {
           <li>
             <a href="{`/users/${user().id}`}" (click)="follow($event)">{ user().name }</a>
           </li>

@@ -1,5 +1,4 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import { translations } from '../../../core/i18n/i18n';
 
 /**
  * The "Expression syntax" page.
@@ -9,9 +8,4 @@ import { translations } from '../../../core/i18n/i18n';
   styleUrl: '../../page.css',
   templateUrl: './expressions.xd.component.html'
 })
-export class TemplatesExpressionsPage extends CustomElement {
-  /**
-   * The texts of the documentation, in the current language.
-   */
-  public readonly translations = translations;
-}
+export class TemplatesExpressionsPage extends CustomElement {}

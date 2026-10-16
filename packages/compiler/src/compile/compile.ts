@@ -10,6 +10,7 @@ import type { TypeCheckResult } from '../type-checker/types/type-checker-result.
 import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result/type-checker-tolerant-result.type';
 import type { CompilerCache } from '../types/compiler-cache.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
+import type { SymbolImport } from '../types/imported-symbol/imported-symbol.type';
 
 /**
  * Compiles a template string into a Javascript render function body.
@@ -29,13 +30,13 @@ export async function compile(input: string, options: CompileOptions): Promise<{
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
   const nodes = parseTemplate(input);
 
-  const { baseDir, signals, shadowingMembers = [], customElements = [], cache } = options;
+  const { baseDir, templateDir, signals, shadowingMembers = [], customElements = [], cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (baseDir && signals) {
-    const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
+    const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
-      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache),
-      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements)
+      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
+      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols)
     ]);
     
     return {
@@ -43,11 +44,12 @@ export async function compile(input: string, options: CompileOptions): Promise<s
       typescript
     }
   } else if (baseDir) {
-    const metadatas = await extractComponentMetadataReferredInTemplate(importNodes, baseDir, cache);
-    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements);
+    const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
+    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols);
   } else {
+    const symbols = templateDir ? (await resolveTemplateImports(importNodes, templateDir, cache)).symbols : undefined;
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
-    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache);
+    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache, symbols);
   }
 }
 /**
@@ -68,10 +70,12 @@ export function parseTemplate(input: string): ASTNode[] {
  * @param signals - Array of signal names to be used in the generated render function.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+ * @param cache - The cache of the metadata of the components and directives.
+ * @param symbols - The symbols the template imports from modules, if they are resolved.
  * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: CompilerCache): Promise<string> {
-  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements);
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: CompilerCache, symbols?: readonly SymbolImport[]): Promise<string> {
+  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols);
 }
 
 /**
@@ -82,11 +86,12 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param metadatas - Array of component and directive metadata extracted from the template.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+ * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
  * @returns A promise that resolves to the type-checking result.
  * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
  */
-export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckResult> {
-  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements);
+export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckResult> {
+  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements, symbols);
 }
 
 /**
@@ -98,33 +103,44 @@ export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadat
  * @param metadatas - Array of component and directive metadata extracted from the template.
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+ * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
  * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
  */
-export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<TypeCheckTolerantResult> {
-  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements);
+export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckTolerantResult> {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols);
 }
 
 /**
- * Extracts all component metadata referred in the template by analyzing the import nodes.
- * @param nodes - The parsed AST nodes from the template.
+ * Resolves what the `@import` statements of a template import: the metadata of the components and of the directives,
+ * and the other symbols (functions, constants, enums, classes, types, namespaces).
+ * @param importNodes - The `@import` nodes of the template.
  * @param baseDir - Absolute path used to resolve relative import paths for `@import` nodes.
- * @param cache - Optional cache for storing previously computed type-checking results to improve performance.
- * @returns A promise that resolves when all component metadata referred in the template has been extracted.
+ * @param cache - The cache resolving the imports.
+ * @returns The metadata of the components and directives, and the symbols, in the order they are imported.
+ * @throws If a module can't be resolved.
  */
-async function extractComponentMetadataReferredInTemplate(nodes: ASTNode[], baseDir: string, cache: CompilerCache): Promise<ComponentOrDirectiveMetadata[]> {
-  const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
-  const promises = new Array<Promise<ComponentOrDirectiveMetadata>>();
+async function resolveTemplateImports(importNodes: ImportNode[], baseDir: string, cache: CompilerCache): Promise<{ metadatas: ComponentOrDirectiveMetadata[], symbols: SymbolImport[] }> {
+  const resolutions = new Array<Promise<SymbolImport | ComponentOrDirectiveMetadata>>();
 
   for (let i = 0; i < importNodes.length; i++) {
     const { specifiers, path } = importNodes[i];
     for (let j = 0; j < specifiers.length; j++) {
-      const { imported, local } = specifiers[j];
-      if (imported !== '*') {
-        const name = imported === 'default' ? local : imported;
-        promises.push(cache.getOrInsert(name, [baseDir, path]));
-      }
+      const specifier = specifiers[j];
+      resolutions.push(cache.getImport(specifier.imported, specifier.local, baseDir, path).then(imported => (imported.type === 'symbol' ? { ...specifier, ...imported } : imported)));
     }
   }
 
-  return await Promise.all(promises);
+  const metadatas = new Array<ComponentOrDirectiveMetadata>();
+  const symbols = new Array<SymbolImport>();
+  const resolved = await Promise.all(resolutions);
+  for (let i = 0; i < resolved.length; i++) {
+    const imported = resolved[i];
+    if (imported.type === 'symbol') {
+      symbols.push(imported);
+    } else {
+      metadatas.push(imported);
+    }
+  }
+
+  return { metadatas, symbols };
 }

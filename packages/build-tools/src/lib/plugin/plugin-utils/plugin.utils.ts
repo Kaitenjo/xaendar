@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { ComponentOrDirectiveMetadata, Cursor, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModulePath } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -18,7 +18,7 @@ import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
  * this optimization impossible.
  * When a global cache of the import metadata will be implemented we can safely remove this
  *
- * Extracts the absolute paths of every component declared via `@import { X }
+ * Extracts the absolute paths of every module (of a component, a directive or any other symbol) imported via `@import { X }
  * from '...'` inside a DSL template, resolving them relative to the
  * template's own directory (paths in the template are relative to the
  * .html file, not to the component's .ts file).
@@ -33,7 +33,8 @@ export function extractImportedComponentPaths(templateSource: string, templateDi
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(templateSource)) !== null) {
-    paths.push(resolvePosixPath(templateDir, match[1]));
+    // The module of a symbol can be imported without its extension, like any TypeScript module
+    paths.push(resolveModulePath(templateDir, match[1]) ?? resolvePosixPath(templateDir, match[1]));
   }
 
   return paths;
@@ -296,10 +297,57 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
     throw new Error(`Unable to resolve module path for "${classNameOrSelector}".`);
   }
 
-  const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
-  metadata = await extractClassMetadata(sourceFile, className, compilerOptions);
+  metadata = await extractAndRegisterMetadata(className, filePath, compilerOptions);
   if (!metadata) {
     throw `Class "${classNameOrSelector}" was not found in the import from ${Array.isArray(path) ? path[1] : filePath}`;
+  }
+
+  return metadata;
+}
+
+/**
+ * Base implementation for the getImport method of the plugin cache: resolves what an `@import` specifier of a template
+ * imports, the metadata of the component or of the directive it names, or any other export of the module.
+ * @param imported The name of the export (`'default'` for the default one, `'*'` for a namespace import).
+ * @param local The name the template imports it as, which names a component or a directive exported as default.
+ * @param baseDir The directory of the template.
+ * @param path The path of the module, as written in the `@import`.
+ * @param compilerOptions Project compiler options, driving how the modules the export is read through are resolved.
+ * @returns The metadata of the component or of the directive, or the imported symbol, reactive when reading it can read
+ *   a signal (a namespace always is, its members are not analyzed).
+ * @throws {Error} If the module can't be resolved, or the metadata of the class it names can't be extracted.
+ */
+export async function getImportOrExtract(imported: string, local: string, baseDir: string, path: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
+  const modulePath = resolveModulePath(baseDir, path);
+  if (!modulePath) {
+    throw new Error(`Unable to resolve module path "${path}" for "${local}".`);
+  }
+
+  if (imported !== '*') {
+    const className = imported === 'default' ? local : imported;
+    const metadata = getMetadata(className, modulePath) ?? await extractAndRegisterMetadata(className, modulePath, compilerOptions);
+    if (metadata) {
+      return metadata;
+    }
+  }
+
+  return { type: 'symbol', modulePath, reactive: imported === '*' || isReactiveExport(modulePath, imported, compilerOptions) };
+}
+
+/**
+ * Extracts the metadata of a component or a directive from the file declaring it, and registers it, claiming its selector.
+ *
+ * @param className - The name of the class.
+ * @param filePath - The path of the file declaring it.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring its base classes are resolved.
+ * @returns The metadata, `undefined` if the file doesn't declare a component or a directive with that name.
+ * @throws If the metadata can't be extracted, or the selector is already used by another component or directive.
+ */
+async function extractAndRegisterMetadata(className: string, filePath: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | undefined> {
+  const sourceFile = createSourceFile(filePath, await readFile(filePath, 'utf-8'), ScriptTarget.Latest, true);
+  const metadata = await extractClassMetadata(sourceFile, className, compilerOptions);
+  if (!metadata) {
+    return undefined;
   }
 
   const selectorConflict = await claimSelectors(metadata);

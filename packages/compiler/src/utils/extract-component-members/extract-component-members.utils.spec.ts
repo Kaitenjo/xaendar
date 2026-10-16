@@ -5,7 +5,7 @@ import { CompilerOptions, createSourceFile, forEachChild, isClassDeclaration, Mo
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ComponentMembers } from '../../types/component-members/component-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
-import { clearComponentMembersCache, extractComponentMembers } from './extract-component-members.utils';
+import { clearComponentMembersCache, extractComponentMembers, isReactiveExport } from './extract-component-members.utils';
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
@@ -527,5 +527,64 @@ describe('extractComponentMembers', () => {
 
       expect(members).toEqual(['x']);
     });
+  });
+});
+
+describe('isReactiveExport', () => {
+  /**
+   * Writes the files of a module in a sub-directory of its own and tells whether its export is reactive.
+   */
+  const check = (files: Record<string, string>, exportName: string, entry = 'store.ts'): boolean => {
+    const dir = join(root, `exports-${counter++}`);
+    for (const [name, content] of Object.entries(files)) {
+      write(join(dir, name), content);
+    }
+
+    return isReactiveExport(join(dir, entry), exportName);
+  };
+
+  it.each([
+    ['initialised through a signal function', `${SIGNALS_IMPORT}export const count = signal(0);`],
+    ['typed as a signal', 'import { Signal } from \'@xaendar/core/signals\';\nexport declare const count: Signal<number>;'],
+    ['initialised with another module signal', `${SIGNALS_IMPORT}const total = signal(0);\nexport const count = total;`],
+    ['exported as default', `${SIGNALS_IMPORT}const count = signal(0);\nexport default count;`]
+  ])('is true for a module signal %s', (_description, source) => {
+    expect(check({ 'store.ts': source }, source.includes('export default') ? 'default' : 'count')).toBe(true);
+  });
+
+  it('follows the re-exports to the module declaring the signal', () => {
+    expect(check({ 'store.ts': 'export { count } from \'./count\';', 'count.ts': `${SIGNALS_IMPORT}export const count = signal(0);` }, 'count')).toBe(true);
+  });
+
+  it.each([
+    ['a function declaration', `${SIGNALS_IMPORT}const count = signal(0);\nexport function double() { return count() * 2; }`],
+    ['an arrow function', `${SIGNALS_IMPORT}const count = signal(0);\nexport const double = () => count() * 2;`],
+    ['a function expression', `${SIGNALS_IMPORT}const count = signal(0);\nexport const double = function () { return count() * 2; };`]
+  ])('is true for %s reading a module signal', (_description, source) => {
+    expect(check({ 'store.ts': source }, 'double')).toBe(true);
+  });
+
+  it.each([
+    ['declared as default', `${SIGNALS_IMPORT}const count = signal(0);\nexport default function () { return count() * 2; }`],
+    ['declared, then exported as default', `${SIGNALS_IMPORT}const count = signal(0);\nfunction double() { return count() * 2; }\nexport default double;`]
+  ])('is true for a function %s reading a module signal', (_description, source) => {
+    expect(check({ 'store.ts': source }, 'default')).toBe(true);
+  });
+
+  it.each([
+    ['a constant', 'export const limit = 10;'],
+    ['a function reading no signal', 'export function format(value: number) { return `${value}`; }'],
+    ['an arrow function reading no signal', 'export const format = (value: number) => `${value}`;'],
+    ['a function overload without body', 'export declare function format(value: number): string;'],
+    ['a variable declared without initializer', 'export let pending: number;'],
+    ['an enum', 'export enum Status { Active }'],
+    ['an interface', 'export interface Row { id: number }'],
+    ['a name the module does not export', 'export const limit = 10;']
+  ])('is false for %s', (description, source) => {
+    expect(check({ 'store.ts': source }, description.startsWith('a name') ? 'missing' : source.match(/(?:const|let|function|enum|interface) (\w+)/)![1])).toBe(false);
+  });
+
+  it('is false for a module that cannot be read', () => {
+    expect(isReactiveExport(join(root, 'missing.ts'), 'count')).toBe(false);
   });
 });

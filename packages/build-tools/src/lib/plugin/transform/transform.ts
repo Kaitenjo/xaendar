@@ -1,6 +1,6 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, TypeCheckResult } from '@xaendar/compiler';
-import { createShim, getLanguageService, registerRealFile } from '@xaendar/language-core';
+import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -17,7 +17,7 @@ import type { XaendarPluginState } from '../../types/plugin.types';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**
  * Vite plugin `transform` hook: for every Xaendar component declared in a `.xd.component.ts`
@@ -160,6 +160,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
           customElements: state.customElements,
           cache: {
             getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
+            getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
             set: registerMetadata
           }
         });
@@ -190,7 +191,12 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
       const shim = createShim(new Map([[componentPath, [className]]]), typecheckBody);
       const languageService = getLanguageService(state.compilerOptions, state.projectFileNames);
-      const diagnostics = languageService.getSemanticDiagnostics(shim.path);
+      const diagnostics = languageService.getSemanticDiagnostics(shim.path).slice();
+      // A symbol imported under the name of a member of the component makes the expressions reading it ambiguous
+      const conflicts = getImportConflictDiagnostics(languageService, shim.path, shim.bodyLineOffset);
+      if (conflicts?.length) {
+        diagnostics.push(...conflicts);
+      }
 
       /*
         The type-check reads files the dev server does not relate to the component, as the ones holding only

@@ -55,4 +55,3 @@ export class Test<T extends string | number, K = T extends string ? Array<string
   @Property.required()
   public accessor navOpen!: InputSignal<K>
 }
-

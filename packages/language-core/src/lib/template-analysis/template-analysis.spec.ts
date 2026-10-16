@@ -2,7 +2,7 @@ import { TemplateError } from '@xaendar/compiler';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
-import { analyzeCompletionTemplate, analyzeTemplate, invalidateTemplateMetadata, removeTemplateAnalysis, resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports } from './template-analysis';
+import { analyzeCompletionTemplate, analyzeTemplate, invalidateTemplateMetadata, removeTemplateAnalysis, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports } from './template-analysis';
 
 const TIMEOUT = 60_000;
 let project: FixtureProject;
@@ -102,15 +102,15 @@ describe('analyzeTemplate', () => {
     expect(analysis!.typeCheck.text).toContain('root.title');
   }, TIMEOUT);
 
-  it('reports a symbol that cannot be imported on its name, and goes on with the others', async () => {
+  it('imports a specifier naming neither a component nor a directive as a symbol, which the type-check imports from its module', async () => {
     const { analysis, error } = await project.analyze('@import { Missing, Child } from \'./child\';');
 
     expect(error).toBeUndefined();
-    expect(analysis!.errors).toHaveLength(1);
-    expect(analysis!.errors[0]).toBeInstanceOf(TemplateError);
-    expect((analysis!.errors[0] as TemplateError).span).toEqual({ start: 10, end: 17 });
-    expect(analysis!.errors[0].message).toBe('Class "Missing" was not found in the import from ./child');
+    expect(analysis!.errors).toEqual([]);
     expect(analysis!.imports.map(({ metadata }) => metadata.className)).toEqual(['Child']);
+    expect(analysis!.symbols).toEqual([expect.objectContaining({ imported: 'Missing', local: 'Missing', type: 'symbol', modulePath: project.path('src/child.ts'), reactive: false })]);
+    expect(analysis!.typeCheck.text).toContain(`import { Missing } from '${project.path('src/child')}';`);
+    expect(analysis!.dependencies.has(normalizeFileName(project.path('src/child.ts')))).toBe(true);
   }, TIMEOUT);
 
   it('reports a module that cannot be found on its path, even when only a namespace is imported from it, and goes on with the others', async () => {
@@ -182,6 +182,33 @@ describe('resolveModuleMetadatas', () => {
 
     expect(metadatas?.map(({ className }) => className)).toEqual(['Tooltip', 'Media']);
     expect(await resolveModuleMetadatas(project.path('src/app.html'), './missing')).toBeUndefined();
+  }, TIMEOUT);
+});
+
+describe('resolveModuleExports', () => {
+  it('lists the exports of a module with what they declare', () => {
+    expect(resolveModuleExports(project.path('src/app.html'), './utils')?.map(({ name, kind }) => `${name}:${kind}`)).toEqual([
+      'formatDate:function', 'title:function', 'default:function', 'Status:enum', 'Row:interface', 'LIMIT:const', 'Shape:class'
+    ]);
+  }, TIMEOUT);
+
+  it('lists nothing for a module that cannot be resolved, is not in the program, or is not a module', () => {
+    project.write('outside/module.ts', 'export const outside = 1;\n');
+    project.write('src/script.ts', 'const local = 1;\n');
+
+    expect(resolveModuleExports(project.path('src/app.html'), './missing')).toBeUndefined();
+    expect(resolveModuleExports(project.path('src/app.html'), '../outside/module')).toBeUndefined();
+    expect(resolveModuleExports(project.path('src/app.html'), './script')).toBeUndefined();
+  }, TIMEOUT);
+});
+
+describe('resolveExportCandidates', () => {
+  it('lists the exports of the files of the project, the declarations, specs and tests excluded', () => {
+    project.write('src/helper.spec.ts', 'export const fromSpec = 1;\n');
+    const candidates = resolveExportCandidates(project.path('src/app.html'))!;
+
+    expect(candidates).toContainEqual({ fileName: project.path('src/utils.ts'), name: 'formatDate', kind: 'function' });
+    expect(candidates.some(({ name }) => name === 'fromSpec')).toBe(false);
   }, TIMEOUT);
 });
 

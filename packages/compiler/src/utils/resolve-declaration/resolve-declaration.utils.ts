@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from 'node:fs';
-import { ClassDeclaration, CompilerOptions, Declaration, Expression, ImportDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, ImportDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
 import type { CachedSourceFile } from './types/cached-source-file.type';
 import type { DeclarationFinder } from './types/declaration-finder.type';
 import type { ResolutionContext } from './types/resolution-context.type';
@@ -21,7 +21,7 @@ export const DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
  */
 const CLASS_FINDER: DeclarationFinder<ClassDeclaration> = {
   local: (statement, localName) => isClassDeclaration(statement) && statement.name?.text === localName ? statement : undefined,
-  exported: (statement, exportedName) => isClassDeclaration(statement) && isClassExportedAs(statement, exportedName) ? statement : undefined
+  exported: (statement, exportedName) => isClassDeclaration(statement) && isExportedAs(statement, exportedName) ? statement : undefined
 };
 
 /**
@@ -220,6 +220,20 @@ function resolveImported<D extends Declaration>(sourceFile: SourceFile, moduleSp
 }
 
 /**
+ * Resolves the declaration a module exports as `exportedName`, following re-exports to the file actually declaring it.
+ *
+ * @param fileName - Path of the file of the module.
+ * @param exportedName - The name the declaration is exported as, `'default'` for the default export.
+ * @param finder - Finds the declarations of the searched kind.
+ * @param context - State of the current resolution.
+ * @returns The declaration with the file declaring it, or `undefined` if it can't be resolved.
+ */
+export function resolveModuleExport<D extends Declaration>(fileName: string, exportedName: string, finder: DeclarationFinder<D>, context: ResolutionContext): ResolvedDeclaration<D> | undefined {
+  const sourceFile = getSourceFile(fileName, context);
+  return sourceFile && resolveExported(sourceFile, exportedName, finder, context, new Set());
+}
+
+/**
  * Resolves the declaration exported by `sourceFile` as `exportedName`, following
  * re-exports to the file actually declaring it.
  *
@@ -299,14 +313,14 @@ function resolveExported<D extends Declaration>(sourceFile: SourceFile, exported
 }
 
 /**
- * Checks whether `declaration` is the class exported as `exportedName`.
+ * Checks whether `declaration` is the class or the function exported as `exportedName`.
  *
- * @param declaration - The class declaration to check.
+ * @param declaration - The class or function declaration to check.
  * @param exportedName - The exported name, `'default'` for the default export.
- * @returns `true` if the class is exported under that name.
+ * @returns `true` if the declaration is exported under that name.
  */
-function isClassExportedAs(declaration: ClassDeclaration, exportedName: string): boolean {
-  // export default class X {}
+export function isExportedAs(declaration: ClassDeclaration | FunctionDeclaration, exportedName: string): boolean {
+  // export default class X {}, export default function x() {}
   if (exportedName === 'default') {
     return !!declaration.modifiers?.some(modifier => modifier.kind === SyntaxKind.DefaultKeyword);
   }

@@ -1,17 +1,13 @@
-/**
- * A constant of the module.
- */
-const LIMIT = 5;
+// limits.ts
 
 /**
- * A cart with a maximum number of items.
+ * The maximum number of items in a cart, exported for the templates that show it.
  */
-export class CartComponent extends CustomElement {
-  /**
-   * ✓ The constant, exposed as a member.
-   */
-  public readonly limit = LIMIT;
-}
+export const LIMIT = 5;
 
+// cart.xd.component.html
+// @import { LIMIT } from './limits.ts'
+// <p>{ LIMIT }</p>   ✓
+//
+// Without the @import:
 // <p>{ LIMIT }</p>   ✗ Property 'LIMIT' does not exist on type 'CartComponent'.
-// <p>{ limit }</p>   ✓

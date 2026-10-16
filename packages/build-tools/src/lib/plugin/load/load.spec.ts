@@ -20,6 +20,7 @@ vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../plugin-utils/plugin.utils')>();
   return {
     ...actual,
+    getImportOrExtract: vi.fn(),
     getMetadataOrExtract: vi.fn()
   };
 });
@@ -27,7 +28,7 @@ vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
 import { compile } from '@xaendar/compiler';
 import type { PluginContext } from 'rolldown';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
-import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
+import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getImportOrExtract, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
 import { createLoadHook } from './load';
 
 const TEMPLATE_PATH = '/src/foo/foo.xd.component.html';
@@ -82,7 +83,8 @@ describe('createLoadHook()', () => {
 
     const result = await load(createState({ [TEMPLATE_PATH]: 'template source' }), ctx, TEMPLATE_MODULE_ID);
 
-    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], shadowingMembers: [], customElements: [], cache: { getOrInsert: expect.any(Function), set: registerMetadata } });
+    // The symbols the template imports are resolved against its directory
+    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], cache: { getOrInsert: expect.any(Function), getImport: expect.any(Function), set: registerMetadata } });
     expect(result).toEqual({ code: expect.stringContaining('function render() {}\n\nexport { render };'), map: { mappings: '' }, moduleType: 'js' });
     expect(ctx.addWatchFile).toHaveBeenCalledWith(TEMPLATE_PATH);
   });
@@ -92,8 +94,10 @@ describe('createLoadHook()', () => {
 
     await load(state, createPluginContext(), TEMPLATE_MODULE_ID);
     await vi.mocked(compile).mock.calls[0][1].cache?.getOrInsert('Foo', '/src/foo.ts');
+    await vi.mocked(compile).mock.calls[0][1].cache?.getImport('format', 'fmt', '/src/foo', './format');
 
     expect(getMetadataOrExtract).toHaveBeenCalledWith('Foo', '/src/foo.ts', state.compilerOptions);
+    expect(getImportOrExtract).toHaveBeenCalledWith('format', 'fmt', '/src/foo', './format', state.compilerOptions);
   });
 
   it('watches the imported components that exist on disk', async () => {

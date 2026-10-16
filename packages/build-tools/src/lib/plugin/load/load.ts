@@ -5,7 +5,7 @@ import { registerMetadata } from '../../registry/metadata-registry/metadata-regi
 import type { XaendarPluginState } from '../../types/plugin.types';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
-import { extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
+import { extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
 
@@ -96,10 +96,13 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
     try {
       compiledFunctions = await compile(templateSource, {
         signals,
+        // The symbols the template imports are imported by the render code, resolved against the directory of the template
+        templateDir: dirname(templatePath),
         shadowingMembers,
         customElements: state.customElements,
         cache: {
           getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
+          getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
           set: registerMetadata
         }
       });

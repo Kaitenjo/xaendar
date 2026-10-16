@@ -60,11 +60,13 @@ describe('getTemplateDiagnostics', () => {
     const source = '@import { Missing } from \'./child\';\n<my-unknown></my-unknown>\n<div @@tooltip></div>\n<p><my-unknown></my-unknown></p>\n<b>{ missing }</b>';
 
     expect(await diagnose(source)).toEqual([
-      ['Missing', 'Class "Missing" was not found in the import from ./child', DiagnosticCategory.Error],
       ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
       ['tooltip', '@@tooltip selector is not associated to any Directive imported in the template', DiagnosticCategory.Error],
       ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
-      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+      // An export the module doesn't have is reported by TypeScript on its name
+      ['Missing', expect.stringMatching(/child"' has no exported member 'Missing'\.$/), DiagnosticCategory.Error],
+      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error],
+      ['Missing', '\'Missing\' is declared but never used.', DiagnosticCategory.Suggestion]
     ]);
   }, TIMEOUT);
 
@@ -89,7 +91,8 @@ describe('getTemplateDiagnostics', () => {
     const diagnostic = (file: Diagnostic['file'], start?: number): Diagnostic => ({ file, start, length: 1, messageText: { messageText: 'chain', category: DiagnosticCategory.Warning, code: 1, next: [{ messageText: 'next', category: DiagnosticCategory.Warning, code: 2 }] }, category: DiagnosticCategory.Warning, code: 1 });
     const languageService = {
       getSyntacticDiagnostics: () => [diagnostic(shimFile, unmapped)],
-      getSemanticDiagnostics: () => [diagnostic(shimFile, 0), diagnostic(undefined)]
+      getSemanticDiagnostics: () => [diagnostic(shimFile, 0), diagnostic(undefined)],
+      getProgram: () => analysis!.languageService.getProgram()
     } as unknown as LanguageService;
 
     expect(getTemplateDiagnostics({ analysis: { ...analysis!, languageService }, error: undefined, ast: analysis!.ast })).toEqual([
@@ -110,6 +113,60 @@ describe('getTemplateDiagnostics unused imports', () => {
 
   it('reports nothing for a template using its imports', async () => {
     expect(await diagnose('@import { Child } from \'./child\';\n<my-child label="a"></my-child>')).toEqual([]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics imported symbols', () => {
+  const imports = '@import { formatDate, Status, Shape, Row, LIMIT, default as shout, * as utils } from \'./utils\';\n@import { Rows } from \'./rows\';\n';
+
+  beforeAll(() => {
+    project.write('src/rows.ts', [
+      'import { Directive, InputSignal, Property } from \'@xaendar/core\';',
+      '@Directive({ selector: \'rows\' })',
+      'export class Rows<Item extends { id: number }> {',
+      '  @Property([]) accessor items!: InputSignal<Item[]>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  it('reads functions, enums, constants, classes, default exports and namespaces in the expressions, and types in the type arguments', async () => {
+    const source = `${imports}<p title="{ formatDate(LIMIT) }" @@rows<Row>(items="{ items }")>{ Status.Active } { items[0] instanceof Shape } { shout('a') } { utils.LIMIT }</p>`;
+
+    expect(await diagnose(source)).toEqual([]);
+  }, TIMEOUT);
+
+  it('reports what TypeScript reports about the symbols, on the template', async () => {
+    const source = '@import { formatDate, Row } from \'./utils\';\n{ formatDate(\'a\') } { Row }';
+
+    expect(await diagnose(source)).toEqual([
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['Row', '\'Row\' only refers to a type, but is being used as a value here.', DiagnosticCategory.Error],
+      // A type read as a value is not a reference to it
+      ['Row', '\'Row\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a symbol imported under the name of a member of the component on its name', async () => {
+    expect(await diagnose('@import { title } from \'./utils\';\n{ title() }')).toEqual([
+      ['title', '\'title\' is also a member of App: import it under another name (… as name), or rename the member.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@import { title as heading } from \'./utils\';\n{ heading() }')).toEqual([]);
+  }, TIMEOUT);
+
+  it('reports a symbol imported under a name the generated code reserves, without telling it unused', async () => {
+    expect(await diagnose('@import { title as root } from \'./utils\';')).toEqual([
+      ['root', '"root" is reserved in templates: import it under another name (… as name).', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the symbols no expression and no type argument reads as unnecessary', async () => {
+    const source = '@import { formatDate, Status, Row as Line } from \'./utils\';\n{ formatDate(1) }';
+
+    expect(await diagnose(source)).toEqual([
+      ['Status', '\'Status\' is declared but never used.', DiagnosticCategory.Suggestion],
+      ['Row as Line', '\'Line\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
   }, TIMEOUT);
 });
 
@@ -171,8 +228,8 @@ describe('getTemplateDiagnostics generic directives', () => {
     const source = `${imports}<p @@list<{ id: number }>(items="{ items }" (selected)="select($event)" (picked)="select($event)")></p>`;
     const events = await diagnose(source);
 
-    // The type argument of the template is the local type named like the type parameter
-    expect(events.map(([, message]) => message.match(/CustomEvent<[^>]*>/)?.[0])).toEqual(['CustomEvent<Item>', 'CustomEvent<string>']);
+    // The type argument is written as is in the instantiation of the class
+    expect(events.map(([, message]) => message.match(/CustomEvent<[^>]*>/)?.[0])).toEqual(['CustomEvent<{ id: number; }>', 'CustomEvent<string>']);
   }, TIMEOUT);
 
   it('reports an inferred type that does not satisfy the constraint of the type parameter on the directive', async () => {
@@ -255,8 +312,7 @@ describe('getTemplateDiagnostics generic components', () => {
 
     const partial = await diagnose(`${imports}<my-grid({ id: number }) rows="{ items }" (selected)="select($event)"></my-grid>`);
     expect(partial).toHaveLength(1);
-    // The type argument is declared as a local type named like the type parameter, which TypeScript names it by
-    expect(partial[0][1]).toContain('CustomEvent<Row>');
+    expect(partial[0][1]).toContain('CustomEvent<{ id: number; }>');
   }, TIMEOUT);
 
   it('does not infer the type parameters the element leaves out from the bindings: they take their default type', async () => {

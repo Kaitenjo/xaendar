@@ -2,7 +2,9 @@ import { indent } from '@xaendar/common';
 import { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import { CompilerCache } from '../../types/compiler-cache.type.js';
+import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type.js';
 import { catchErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
+import { assertImportableSymbol, getRuntimeAlias, toRuntimeImport } from '../../utils/symbol-imports/symbol-imports.utils.js';
 import { CompilerContext } from '../models/compiler-context/compiler-context.model.js';
 import { generateElement } from '../states/generate-element/generate-element.state.js';
 import { generateFor } from '../states/generate-for/generate-for.state.js';
@@ -52,10 +54,12 @@ export class Generator {
    * @param signals An array of signal names to be included in the generated code.
    * @param shadowingMembers Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements Patterns of the tag names of the custom elements of other libraries, generated like native elements.
-   * @returns The generated code as a string: module-level functions, the entry point being `render`,
-   *   each expecting to be invoked with the component instance bound as `this`.
+   * @param symbols The symbols the template imports from modules: the expressions read them through the declarations
+   *   importing them, written first, only for the ones an expression reads (a type is never imported at runtime).
+   * @returns The generated code as a string: the declarations importing the symbols, then module-level functions, the
+   *   entry point being `render`, each expecting to be invoked with the component instance bound as `this`.
    */
-  public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = []): Promise<string> {
+  public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<string> {
     const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess']) => {
       if (functionsToProcess) {
         for (const [key, value] of functionsToProcess.entries()) {
@@ -75,6 +79,11 @@ export class Generator {
         compilerContext.addShadowingMember(shadowingMembers[i]);
       }
       compilerContext.addCustomElementPatterns(...customElements);
+      for (let i = 0; i < symbols.length; i++) {
+        const symbol = symbols[i];
+        assertImportableSymbol(symbol);
+        compilerContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
+      }
 
       const generatedCode = [
         'function render() {',
@@ -130,7 +139,9 @@ export class Generator {
         );
       }
 
-      return generatedCode.join('\n');
+      // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
+      const imports = symbols.filter(({ local }) => compilerContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
+      return (imports.length ? imports.concat(generatedCode) : generatedCode).join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
     }

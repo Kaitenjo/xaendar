@@ -1,0 +1,6 @@
+@import { addItem, Currency, quantity } from './cart.store.ts'
+@import { formatPrice } from './format.ts'
+
+<p>{ quantity() } × { formatPrice(price, Currency.Euro) } = { formatPrice(quantity() * price, Currency.Euro) }</p>
+<progress max="10" value="{quantity()}" />
+<button type="button" (click)="addItem()">Add one</button>

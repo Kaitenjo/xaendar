@@ -1,10 +1,11 @@
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, type ImportInsertion, type KeywordContext, resolveShimPosition, type Span } from '@xaendar/compiler';
 import { dirname } from 'node:path';
-import { type CompletionEntry, forEachChild, isClassDeclaration, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags } from 'typescript';
-import { analyzeCompletionTemplate, resolveImportCandidates, resolveModuleMetadatas, resolveTemplateImports, type TemplateAnalysis } from '../template-analysis/template-analysis';
+import { type CompletionEntry, forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags } from 'typescript';
+import { analyzeCompletionTemplate, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports, type TemplateAnalysis } from '../template-analysis/template-analysis';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
 import { toModulePath } from '../utils/module-path/module-path.utils';
-import { resolvePosixPath } from '../utils/path/path.utils';
+import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
+import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
 
 /**
  * A completion proposed in a template.
@@ -58,6 +59,11 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
 const RETRIGGERING_KEYWORDS: ReadonlySet<KeywordContext['keywords'][number]> = new Set(['if', 'else if', 'for', 'switch', 'import']);
 
 /**
+ * The kinds of the symbols that are only types, which an expression cannot read.
+ */
+const TYPE_KINDS: ReadonlySet<TemplateCompletion['kind']> = new Set([ScriptElementKind.interfaceElement, ScriptElementKind.typeElement]);
+
+/**
  * A position of the shim of a template.
  */
 type ShimPosition = {
@@ -94,11 +100,14 @@ export function getTemplateCompletions(analysis: TemplateAnalysis, offset: numbe
  * template closed at the offset (see `getExpressionContext`), so that they are proposed while it doesn't compile:
  * - on an identifier read from the component, in an interpolation (in the text or as the value of an attribute), in
  *   the arguments of the method of an event or in the condition of `@if`, `@else if`, `@for` or `@switch`: the variables of the template in scope (`$event` in the arguments), in
- *   the order they are declared, then the fields and then the methods of the classes of the component, then the ones
- *   inherited from `CustomElement`, then the ones inherited from the DOM;
+ *   the order they are declared, then the symbols the template imports together with the fields and then the methods
+ *   of the classes of the component, then the ones inherited from `CustomElement`, then the ones inherited from the
+ *   DOM, then the exports of the files of the project the template doesn't import yet, which add their `@import` to
+ *   the template when chosen;
  * - on a variable of the template, or the beginning of `$event`: the variables of the template in scope;
  * - after the dot of an object: its members;
- * - on the name of the method an event calls: the methods of the component, in the same order.
+ * - on the name of the method an event calls: the methods of the component, in the same order, and the functions the
+ *   template imports or could import.
  *
  * After the `(` of a call, which triggers the completions, nothing is proposed, except in the arguments of the
  * method of an event, where `$event` can be passed, and after the `(` opening a condition.
@@ -140,6 +149,19 @@ export async function getTemplateExpressionCompletions(templatePath: string, sou
     const isMethod = completion.kind === ScriptElementKind.memberFunctionElement;
     if (kind !== 'handler' || isMethod) {
       members.push({ ...completion, sortText: getMemberSortText(origins.get(completion.name)!, isMethod) });
+    }
+  }
+
+  /*
+    The symbols the template imports, with the members of its classes, then the ones of the project it could import:
+    values only, the ones named like a member left out, since importing them would be an error
+  */
+  const symbols = isMember ? getImportedSymbolCompletions(analysis, identifier, span).concat(getExportCompletions(analysis, templatePath, source, components, span)) : [];
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    const isValue = !TYPE_KINDS.has(symbol.kind);
+    if (isValue && !origins.has(symbol.name) && (kind !== 'handler' || symbol.kind === ScriptElementKind.functionElement)) {
+      members.push(symbol);
     }
   }
 
@@ -283,8 +305,9 @@ export async function getTemplateSelectorCompletions(templatePath: string, sourc
 }
 
 /**
- * Proposes the components and directives a module declares where a symbol is being written between the braces of an
- * `@import` statement, the ones the statement already imports excluded.
+ * Proposes what a module exports where a symbol is being written between the braces of an `@import` statement, the
+ * ones the statement already imports excluded: its components and directives first, with their selector, then its
+ * other exports (functions, constants, enums, classes, types), the default one as `default as …`.
  *
  * @param templatePath - The path of the template.
  * @param source - The current source of the template.
@@ -298,14 +321,34 @@ export async function getTemplateImportCompletions(templatePath: string, source:
   }
 
   const { path, span, imported } = context;
+  const proposed = new Set(imported);
+  const completions = new Array<TemplateCompletion>();
   const metadatas = await resolveModuleMetadatas(templatePath, path);
-  if (!metadatas?.length) {
-    return [];
+  if (metadatas?.length) {
+    for (let i = 0; i < metadatas.length; i++) {
+      const { className, type, selector } = metadatas[i];
+      if (!proposed.has(className)) {
+        completions.push({ name: className, kind: type, detail: selector, sortText: '0', replacementSpan: span });
+      }
+
+      proposed.add(className);
+    }
   }
 
-  return metadatas
-    .filter(({ className }) => !imported.includes(className))
-    .map(({ className, type, selector }): TemplateCompletion => ({ name: className, kind: type, detail: selector, sortText: '0', replacementSpan: span }));
+  const exported = resolveModuleExports(templatePath, path);
+  if (exported?.length) {
+    for (let i = 0; i < exported.length; i++) {
+      const { name, kind } = exported[i];
+      if (!proposed.has(name)) {
+        // The default export needs a name to be imported as
+        completions.push(name === 'default'
+          ? { name, kind, sortText: '1', replacementSpan: span, snippet: 'default as $1' }
+          : { name, kind, sortText: '1', replacementSpan: span });
+      }
+    }
+  }
+
+  return completions;
 }
 
 /**
@@ -397,6 +440,77 @@ function getMemberOrigins({ languageService }: TemplateAnalysis, { shimFile }: S
   }
 
   return origins;
+}
+
+/**
+ * Proposes the symbols a template imports, read from the declarations importing them in the type-check code (see
+ * `typeCheckImport`), with the kind of what they declare.
+ *
+ * @param analysis - The analysis of the template.
+ * @param shimPosition - The shim and a position in it, anywhere in the body.
+ * @param span - The span of the identifier being written, which the completions replace.
+ * @returns The completions, sorted with the members of the classes of the component.
+ */
+function getImportedSymbolCompletions({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile }: ShimPosition, span: Span): TemplateCompletion[] {
+  const checker = languageService.getProgram()!.getTypeChecker();
+  const completions = new Array<TemplateCompletion>();
+  const add = (name: Identifier) => {
+    const symbol = checker.getSymbolAtLocation(name);
+    // The modules the types of the bindings are read through are imported under names starting with `__`
+    if (symbol && !name.text.startsWith('__')) {
+      completions.push({ name: name.text, kind: getSymbolKind(checker, symbol), sortText: '1', replacementSpan: span });
+    }
+  };
+
+  for (let i = 0; i < shimFile.statements.length; i++) {
+    const statement = shimFile.statements[i];
+    const namedBindings = isImportDeclaration(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : undefined;
+    if (namedBindings && isNamespaceImport(namedBindings)) {
+      add(namedBindings.name);
+    } else if (namedBindings) {
+      for (let j = 0; j < namedBindings.elements.length; j++) {
+        add(namedBindings.elements[j].name);
+      }
+    }
+  }
+
+  return completions;
+}
+
+/**
+ * Proposes the exports of the files of the project a template doesn't import yet, which add their `@import` to the
+ * template when chosen: the default exports, which need a name, and the files of the components using the template excluded.
+ *
+ * @param analysis - The analysis of the template.
+ * @param templatePath - The path of the template.
+ * @param source - The current source of the template, which the `@import` is added to.
+ * @param components - The files of the components using the template.
+ * @param span - The span of the identifier being written, which the completions replace.
+ * @returns The completions, sorted after every other one.
+ */
+function getExportCompletions({ symbols, imports }: TemplateAnalysis, templatePath: string, source: string, components: ReadonlyMap<string, readonly string[]>, span: Span): TemplateCompletion[] {
+  const candidates = resolveExportCandidates(templatePath);
+  if (!candidates) {
+    return [];
+  }
+
+  // The names the template declares, and the exports it imports already, under any name or through a namespace
+  const declared = new Set(symbols.map(({ local }) => local).concat(imports.map(({ specifier }) => specifier.local)));
+  const imported = new Set(symbols.map(({ modulePath, imported: name }) => `${normalizeFileName(modulePath)}#${name}`));
+  const owners = new Set(Array.from(components.keys(), normalizeFileName));
+  const templateDir = dirname(templatePath);
+  const completions = new Array<TemplateCompletion>();
+  for (let i = 0; i < candidates.length; i++) {
+    const { fileName, name, kind } = candidates[i];
+    const key = normalizeFileName(fileName);
+    const isImported = imported.has(`${key}#${name}`) || imported.has(`${key}#*`);
+    if (name !== 'default' && !declared.has(name) && !isImported && !owners.has(key)) {
+      const path = toModulePath(templateDir, fileName);
+      completions.push({ name, kind, detail: path, sortText: '9', replacementSpan: span, additionalEdits: [getImportInsertion(source, path, name)] });
+    }
+  }
+
+  return completions;
 }
 
 /**

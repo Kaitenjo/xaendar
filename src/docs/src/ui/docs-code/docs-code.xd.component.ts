@@ -2,7 +2,6 @@ import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
 import type { CodeLang } from '../../core/highlight/highlight';
-import { translations } from '../../core/i18n/i18n';
 import { getSnippet } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
 
@@ -55,10 +54,6 @@ export class DocsCodeComponent extends CustomElement {
    */
   @Property(false)
   public accessor bare!: InputSignal<boolean>;
-  /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
   /**
    * Whether the code was just copied.
    */

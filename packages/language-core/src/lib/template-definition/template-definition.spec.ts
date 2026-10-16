@@ -140,3 +140,18 @@ describe('getTemplateDefinition', () => {
     expect(getTemplateDefinition({ ...analysis, languageService }, at('title'))).toEqual([]);
   });
 });
+
+describe('getTemplateDefinition of imported symbols', () => {
+  it('leads the name of an imported symbol, its alias and the expressions reading it to its declaration', async () => {
+    const source = '@import { formatDate, Status as State, default as shout } from \'./utils\';\n{ formatDate(1) } { State.Active } { shout(\'a\') }';
+    const symbols = (await project.analyze(source)).analysis!;
+    const offset = (text: string, occurrence = 0) => source.split(text, occurrence + 1).join(text).length + 1;
+    const definitionsAt = (text: string, occurrence = 0) => getTemplateDefinition(symbols, offset(text, occurrence)).map(({ fileName, span }) => [fileName.replace(`${project.root}/`, ''), readFileSync(fileName, 'utf-8').slice(span.start, span.end)]);
+
+    expect(definitionsAt('formatDate')).toEqual([['src/utils.ts', 'formatDate']]);
+    expect(definitionsAt('formatDate', 1)).toEqual([['src/utils.ts', 'formatDate']]);
+    expect(definitionsAt('State')).toEqual([['src/utils.ts', 'Status']]);
+    expect(definitionsAt('State', 1)).toEqual([['src/utils.ts', 'Status']]);
+    expect(definitionsAt('shout', 1)[0][0]).toBe('src/utils.ts');
+  }, TIMEOUT);
+});

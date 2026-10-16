@@ -144,28 +144,35 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 ## Imports
 
 ```html
-<!-- Every component and directive used by a template is imported by it: relative paths, named imports -->
+<!-- Every component and directive a template uses, and every value or type of a module it reads, is imported by it -->
 @import { CardComponent } from './card/card.xd.component.ts'
 @import { AvatarComponent, BadgeComponent } from '../people.xd.component'
 @import { TintDirective } from '../../directives/tint.directive.ts'
+@import { formatPrice, Currency, quantity } from '../cart.ts'
+@import { format as formatDate, default as shout, * as utils } from '../utils.ts'
 ```
 
-- Only relative paths: package names and tsconfig aliases are not resolved.
+- Only relative paths: package names and tsconfig aliases are not resolved. The imports come first in the template.
+- Any export can be imported: functions, constants, enums, classes, module signals, types, interfaces; `default as name` for the default export, `* as name` for the whole module. The expressions read them by their local name, like members: `{ formatPrice(price, Currency.Euro) }`, `@if (value instanceof Shape)`, `(click)="addItem()"`; a type can be a type argument (`<ex-list(Row)>`). Only the names the expressions read are imported at runtime, so a type costs nothing.
+- A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one; prefer importing a store's signals to copying them into members.
+- The variables of the template (`@for` items and aliases) hide an import named like them. Importing a name that is also a member of the component (inherited and DOM ones included, e.g. `title`) is an error: import it `as` another name. `root`, `$event` and the names starting with `__` are reserved.
+- A `const enum` is erased at runtime: use a regular `enum` or an object `as const`.
 - Every tag containing a dash must be an imported Xaendar component, or match a pattern of `customElements` in `xaendar.json` (`["sl-*"]`; `xaendarPlugin({ customElements })` with plain Vite). Those custom elements of other libraries are used like native elements: bindings write attributes (strings only; set object properties from code), and `$event` is typed through `HTMLElementEventMap`, or `any` for events it does not declare.
 
 ## Expressions
 
 ```
 Allowed      members and methods of the class, literals, arithmetic and comparisons, && || ?? ?: !,
-             typeof, ?. and optional calls, indexes, array and object literals, spread, template literals,
-             globals such as Math, JSON and String, the variables of @for, $event in listeners
+             typeof, instanceof, ?. and optional calls, indexes, array and object literals, spread, template literals,
+             globals such as Math, JSON and String, the variables of @for, $event in listeners,
+             the functions, constants, enums, classes and signals imported with @import
 
 Forbidden    assignments, new, arrow and function expressions, this, as, regular expressions,
              the comma operator, more than one expression, private and protected members,
-             module constants (expose them as members)
+             the names of a module that the template doesn't import
 ```
 
-- Members used by the template must be `public`. Module constants must be exposed as members (`public readonly limit = LIMIT;`).
+- Members used by the template must be `public`. A module constant, function or signal is imported in the template (`@import { LIMIT } from './limits.ts'`), not copied into a member.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 
 ## What does not exist

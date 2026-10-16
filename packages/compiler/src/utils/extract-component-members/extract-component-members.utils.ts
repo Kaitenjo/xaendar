@@ -1,11 +1,12 @@
-import { ClassElement, EntityName, Expression, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, VariableDeclaration, forEachChild, getCombinedModifierFlags, isCallExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
+import { ClassElement, EntityName, Expression, FunctionDeclaration, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, VariableDeclaration, forEachChild, getCombinedModifierFlags, isArrowFunction, isCallExpression, isFunctionDeclaration, isFunctionExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
 import { GLOBAL_IDENTIFIERS } from '../../generator/utils/generator/generator.utils';
 import type { ComponentMembers } from '../../types/component-members/component-members.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
-import { DEFAULT_COMPILER_OPTIONS, clearSourceFileCache, resolveBaseClass, resolveReference } from '../resolve-declaration/resolve-declaration.utils';
+import { DEFAULT_COMPILER_OPTIONS, clearSourceFileCache, isExportedAs, resolveBaseClass, resolveModuleExport, resolveReference } from '../resolve-declaration/resolve-declaration.utils';
 import type { DeclarationFinder } from '../resolve-declaration/types/declaration-finder.type';
 import type { ResolutionContext } from '../resolve-declaration/types/resolution-context.type';
 import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
+import type { ResolvedDeclaration } from '../resolve-declaration/types/resolved-declaration.type';
 import type { MemberReads } from './types/member-reads.type';
 import type { SignalImportBindings } from './types/signal-import-bindings.type';
 
@@ -14,6 +15,14 @@ import type { SignalImportBindings } from './types/signal-import-bindings.type';
  * must be initialised with, or typed as, to be recognised as a signal.
  */
 const SIGNAL_MODULE_SPECIFIERS: ReadonlySet<string> = new Set(['@xaendar/core/signals']);
+
+/**
+ * Finds the function declarations of a file: the module functions a template imports.
+ */
+const FUNCTION_FINDER: DeclarationFinder<FunctionDeclaration> = {
+  local: (statement, localName) => isFunctionDeclaration(statement) && statement.name?.text === localName ? statement : undefined,
+  exported: (statement, exportedName) => isFunctionDeclaration(statement) && isExportedAs(statement, exportedName) ? statement : undefined
+};
 
 /**
  * Finds the module-level variable declarations of a file: the module signals a member can be initialised with.
@@ -341,7 +350,20 @@ function isSignalMember(member: PropertyDeclaration, sourceFile: SourceFile, bin
  */
 function isSignalReference(sourceFile: SourceFile, expression: Expression, context: ResolutionContext, visitedVariables: Set<VariableDeclaration>): boolean {
   const variable = resolveReference(sourceFile, expression, VARIABLE_FINDER, context, new Set());
-  if (!variable || visitedVariables.has(variable.declaration)) {
+  return !!variable && isSignalVariable(variable, context, visitedVariables);
+}
+
+/**
+ * Checks whether a module-level variable is a signal: initialised through a signal function, typed as a signal, or
+ * initialised with another module-level signal.
+ *
+ * @param variable - The variable, with the file declaring it.
+ * @param context - State of the current extraction.
+ * @param visitedVariables - Variables already visited, to stop on circular initialisations.
+ * @returns `true` if the variable is a signal.
+ */
+function isSignalVariable(variable: ResolvedDeclaration<VariableDeclaration>, context: ResolutionContext, visitedVariables: Set<VariableDeclaration>): boolean {
+  if (visitedVariables.has(variable.declaration)) {
     return false;
   }
   visitedVariables.add(variable.declaration);
@@ -428,6 +450,40 @@ function resolvesEntityNameToSignalBinding(entityName: EntityName, bindings: Sig
   }
 
   return false;
+}
+
+/**
+ * Tells whether reading an export of a module in a template binding can read a signal, statically, like the members of
+ * a component (see {@link extractComponentMembers}): the export is
+ * - a module signal: a variable initialised through a signal function, typed as a signal, or initialised with another
+ *   module signal (`export const total = count`), re-exports followed;
+ * - a function reading a module signal: a function declaration, or a variable initialised with an arrow function or a
+ *   function expression, whose body calls one.
+ *
+ * Any other export (a constant, a class, an enum, a type, a function reading no signal) is not reactive: a binding
+ * reading it is evaluated once.
+ *
+ * @param modulePath - Path of the file of the module.
+ * @param exportName - The name of the export, `'default'` for the default one.
+ * @param compilerOptions - Project compiler options, driving how the modules the export is read through are resolved.
+ * @returns `true` if the export can read a signal.
+ */
+export function isReactiveExport(modulePath: string, exportName: string, compilerOptions = DEFAULT_COMPILER_OPTIONS): boolean {
+  const context: ResolutionContext = { compilerOptions, dependencies: new Set(), visitedClasses: new Set() };
+  const variable = resolveModuleExport(modulePath, exportName, VARIABLE_FINDER, context);
+  if (variable) {
+    const { initializer } = variable.declaration;
+    // export const total = () => count() * 2;
+    if (initializer && (isArrowFunction(initializer) || isFunctionExpression(initializer))) {
+      return collectMemberReads(initializer.body, variable.sourceFile, false, context).readsModuleSignal;
+    }
+
+    return isSignalVariable(variable, context, new Set());
+  }
+
+  // export function total() { return count() * 2; }
+  const moduleFunction = resolveModuleExport(modulePath, exportName, FUNCTION_FINDER, context);
+  return !!moduleFunction?.declaration.body && collectMemberReads(moduleFunction.declaration.body, moduleFunction.sourceFile, false, context).readsModuleSignal;
 }
 
 /**

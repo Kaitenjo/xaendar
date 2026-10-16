@@ -10,6 +10,24 @@ import type { CompilerCache } from '../../../types/compiler-cache.type';
 export type IdentifierKind = 'value' | 'signal';
 
 /**
+ * A name a template imports from a module (see `SymbolImport`), as an expression reads it.
+ */
+export type ImportedIdentifier = {
+  /**
+   * The expression replacing the name: the alias the module is imported as in the generated code.
+   */
+  expression: string;
+  /**
+   * Whether reading the name can read a signal.
+   */
+  kind: IdentifierKind;
+  /**
+   * Whether an expression has read the name, i.e. whether the generated code must import it.
+   */
+  used: boolean;
+};
+
+/**
  * Tracks identifier scope during render code generation.
  * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
  * and can be chained to a parent context for outer-scope resolution.
@@ -51,6 +69,10 @@ export class CompilerContext {
    * (e.g. $event)
    */
   private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>();
+  /**
+   * Names the template imports from modules, mapped to how an expression reads them
+   */
+  private readonly _importedIdentifiers = new Map<string, ImportedIdentifier>();
 
   /**
    * Creates a new scope context.
@@ -97,6 +119,18 @@ export class CompilerContext {
     }
 
     this._unresolvableIdentifiers.set(name, kind);
+  }
+
+  /**
+   * Registers a name the template imports from a module, which its expressions read in place of a member of the
+   * component. The variables of the template shadow it.
+   *
+   * @param name - The name the template imports.
+   * @param expression - The expression replacing the name in the generated code.
+   * @param kind - Whether reading the name can read a signal. Defaults to `'value'`.
+   */
+  public addImportedIdentifier(name: string, expression: string, kind: IdentifierKind = 'value'): void {
+    this._importedIdentifiers.set(name, { expression, kind, used: false });
   }
 
   /**
@@ -206,6 +240,17 @@ export class CompilerContext {
    */
   public isForeignElement(tagName: string): boolean {
     return matchesCustomElementPattern(tagName, this._customElementPatterns) || (this.parent?.isForeignElement(tagName) ?? false);
+  }
+
+  /**
+   * Returns how an expression reads a name the template imports, looking in this scope first and then in the
+   * ancestor scopes.
+   *
+   * @param name - The name to look up.
+   * @returns The imported identifier, `undefined` if the template doesn't import the name.
+   */
+  public getImportedIdentifier(name: string): ImportedIdentifier | undefined {
+    return this._importedIdentifiers.get(name) ?? this.parent?.getImportedIdentifier(name);
   }
 
   /**

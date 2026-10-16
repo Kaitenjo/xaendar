@@ -13,10 +13,6 @@ import { level, readPercent } from './level.store';
 })
 export class MethodInAttributeComponent extends CustomElement {
   /**
-   * The shared level, from 0 to 10.
-   */
-  public readonly level = level;
-  /**
    * The level as a percentage, computed.
    */
   public readonly percent = computed(() => this._computePercent());
@@ -27,7 +23,7 @@ export class MethodInAttributeComponent extends CustomElement {
    * @returns The percentage.
    */
   public percentOf(): number {
-    return this.level() * 10;
+    return level() * 10;
   }
 
   /**

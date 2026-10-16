@@ -1,5 +1,4 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import { translations } from '../../../core/i18n/i18n';
 
 /**
  * The "Language service and VS Code" page.
@@ -9,9 +8,4 @@ import { translations } from '../../../core/i18n/i18n';
   styleUrl: '../../page.css',
   templateUrl: './language-service.xd.component.html'
 })
-export class ToolsLanguageServicePage extends CustomElement {
-  /**
-   * The texts of the documentation, in the current language.
-   */
-  public readonly translations = translations;
-}
+export class ToolsLanguageServicePage extends CustomElement {}

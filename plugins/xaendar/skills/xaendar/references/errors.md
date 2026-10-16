@@ -42,7 +42,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[Lexer] Expected { after @import`
 
 - **Cause:** A default import: @import Card from …
-- **Fix:** Use a named import: @import { Card } from …
+- **Fix:** Use a named import: @import { Card } from …, or @import { default as Card } from … for a default export.
 
 ### `[Lexer] Directives cannot be declared inside another directive`
 
@@ -185,8 +185,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Property 'LIMIT' does not exist on type 'XCard'.`
 
-- **Cause:** A module constant read by the template, which only sees the members of the class.
-- **Fix:** Expose it as a member: readonly limit = LIMIT.
+- **Cause:** A module constant read by the template without importing it: the expressions read the members of the class and the names the template imports.
+- **Fix:** Import it in the template: @import { LIMIT } from './limits.ts'.
 
 ### `This comparison appears to be unintentional because the types '1' and '2' have no overlap.`
 
@@ -255,15 +255,25 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** In a build, a component that cannot be compiled: its errors are printed before this message.
 - **Fix:** Fix the errors printed before it.
 
-### `Error: Unable to resolve module path for "Nope".`
+### `Error: Unable to resolve module path "./nope" for "Nope".`
 
 - **Cause:** An @import whose path does not resolve: only relative paths to files or folders are supported.
 - **Fix:** Use a relative path; packages and tsconfig aliases are not resolved.
 
-### `Class "Callout" was not found in the import from <path>`
+### `Module '"<path>"' has no exported member 'Callout'.`
 
-- **Cause:** An @import naming a class the file does not declare, or a type.
-- **Fix:** Import the component or directive class by its exact name.
+- **Cause:** An @import naming something the module does not export.
+- **Fix:** Import it by its exact exported name; the default export is imported as default as name.
+
+### `'title' is also a member of XCard: import it under another name (… as name), or rename the member.`
+
+- **Cause:** A name the template imports is also a member of the component, inherited ones included: an expression reading it would be ambiguous.
+- **Fix:** Import it under another name: @import { title as heading } from './utils.ts'.
+
+### `[TypeChecker] "root" is reserved in templates: import it under another name (… as name).`
+
+- **Cause:** A symbol imported as root, $event or a name starting with __, which the compiler uses for itself.
+- **Fix:** Import it under another name with as.
 
 ## Runtime
 

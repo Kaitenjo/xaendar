@@ -15,14 +15,6 @@ import type { IssueEntry } from '../../pages/reference/known-issues/known-issues
 })
 export class DocsIssueListComponent extends CustomElement {
   /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
-   * The language of the links.
-   */
-  public readonly currentLang = lang;
-  /**
    * The areas offered by the filter.
    */
   public readonly areas = [...new Set(ISSUES.map(entry => entry.area))];
@@ -65,8 +57,8 @@ export class DocsIssueListComponent extends CustomElement {
   private _computeEntries(): Array<IssueEntry & { titleText: string; detailsText: string; workaroundText: string; href: string }> {
     const query = this.query().trim().toLowerCase();
     const area = this.area();
-    const current = this.currentLang();
-    const texts = this.translations().issues;
+    const current = lang();
+    const texts = translations().issues;
     return ISSUES
       .filter(entry => !area || entry.area === area)
       .map(entry => ({

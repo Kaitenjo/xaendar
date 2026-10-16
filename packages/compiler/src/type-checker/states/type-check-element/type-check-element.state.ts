@@ -325,9 +325,10 @@ const INSTANCE = '__Instance';
  * written in terms of its type parameters, resolve to the types of the template.
  *
  * As TypeScript does for a call, the type parameters are either all given or all inferred:
- * - when the template passes type arguments (`@@list<Row>(…)`, `<my-list(Row)>`), each one is declared as a local type
- *   named like its type parameter (`type Item = Row;`) in a line mapped onto the template, and the class is instantiated
- *   with them only: the type parameters left out take their default type, and TypeScript reports the ones without it;
+ * - when the template passes type arguments (`@@list<Row>(…)`, `<my-list(Row)>`), the class is instantiated with them
+ *   only, each one written as is and mapped onto its span in the template (`List<Row>`): the type parameters left out
+ *   take their default type, and TypeScript reports the ones without it. A type argument can name a type the template
+ *   imports, even one named like the type parameter;
  * - otherwise, a type parameter gets the type TypeScript infers from the values bound to the properties, when it finds
  *   one: a call to a function declared with the same type parameters and the types of those properties infers them, as
  *   it does for a function. The call is not checked: the real checks of the bindings report its errors. A type parameter
@@ -358,14 +359,18 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
   const instantiate = (names: string[]): string => (names.length ? `${base}<${names.join(', ')}>` : base);
 
   if (typeArguments) {
-    const declarations = new Array<Line>();
+    // Each type argument is written as is, mapped onto its own span, inside the instantiation mapped onto all of them
+    let instance = `${base}<`;
+    const segments = new Array<LineMapping>();
     for (let i = 0; i < typeArguments.length; i++) {
-      declarations.push(line(`type ${typeParameters[i].name} = `, mapped(typeArguments[i].text, typeArguments[i].span), ';'));
+      const { text, span } = typeArguments[i];
+      instance = `${instance}${i ? ', ' : ''}`;
+      segments.push({ columnStart: instance.length, columnEnd: instance.length + text.length, original: span });
+      instance = `${instance}${text}`;
     }
 
-    const instance = instantiate(typeParameters.slice(0, typeArguments.length).map(({ name }) => name));
-    declarations.push(line(`type ${INSTANCE} = `, mapped(instance, getTypeArgumentsSpan(typeArguments)), ';'));
-    return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations };
+    const declaration = line(`type ${INSTANCE} = `, mappedSegments(`${instance}>`, getTypeArgumentsSpan(typeArguments), segments), ';');
+    return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations: [declaration] };
   }
 
   const probe = inferTypeParameters(metadata, base, attributes, context);
@@ -675,7 +680,8 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
 }
 
 /**
- * Type-checks an event binding by emitting a call to the handler on `root` with its resolved arguments.
+ * Type-checks an event binding by emitting a call to the handler on `root`, or as written for a handler the template
+ * imports, with its resolved arguments.
  * When the handler is passed `$event`, the call is wrapped in a block declaring `$event` with the type
  * of the event, so that the following events can declare it again.
  *
@@ -699,8 +705,11 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
     The whole call is mapped onto the span of the event binding (the whole `(click)="handler($event)"`),
     the handler onto its name and each argument finely, like any other expression.
   */
-  const callee = `root.${handler}(`;
-  const segments: LineMapping[] = [{ columnStart: 5, columnEnd: 5 + handler.length, original: handlerSpan }];
+  // A handler the template imports (`track()`, `analytics.track()`) is called as written, a method on the component
+  const head = handler.split(/\?\.|[.[]/)[0];
+  const receiver = context.getImportedIdentifier(head) && !context.hasUnresolvableIdentifier(head) ? '' : 'root.';
+  const callee = `${receiver}${handler}(`;
+  const segments: LineMapping[] = [{ columnStart: receiver.length, columnEnd: receiver.length + handler.length, original: handlerSpan }];
   let call = callee;
 
   for (let i = 0; i < parameters.length; i++) {

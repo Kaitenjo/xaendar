@@ -108,7 +108,18 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     '}',
     ''
   ].join('\n'),
-  'src/app.html': ''
+  'src/app.html': '',
+  'src/utils.ts': [
+    '/** Formats a date. */',
+    'export function formatDate(value: number): string { return `${value}`; }',
+    'export enum Status { Active, Archived }',
+    'export interface Row { id: number }',
+    'export const LIMIT = 10;',
+    'export class Shape {}',
+    'export function title(): string { return \'\'; }',
+    'export default function shout(value: string): string { return value; }',
+    ''
+  ].join('\n')
 };
 
 /**

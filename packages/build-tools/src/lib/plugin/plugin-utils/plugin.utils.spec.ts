@@ -17,6 +17,7 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     ...actual,
     extractComponentsMetadataFromSourceFile: vi.fn(),
     extractDirectivesMetadataFromSourceFile: vi.fn(),
+    isReactiveExport: vi.fn(),
     resolveTemplateSpan: vi.fn()
   };
 });
@@ -30,12 +31,12 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
   registerSelectors: vi.fn()
 }));
 
-import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, resolveTemplateSpan } from '@xaendar/compiler';
+import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, isReactiveExport, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { createSourceFile, Diagnostic, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
@@ -69,6 +70,13 @@ describe('extractImportedComponentPaths()', () => {
     const result = extractImportedComponentPaths(template, '/src/features/user');
 
     expect(result).toEqual([resolvePosixPath('/src/features/user', './button.xd.component')]);
+  });
+
+  it('resolves the path of a module written without its extension, like TypeScript does', () => {
+    const resolved = resolvePosixPath('/src/features/user', './utils.ts');
+    vi.mocked(existsSync).mockImplementation(path => path === resolved);
+
+    expect(extractImportedComponentPaths('@import { formatDate } from \'./utils\';', '/src/features/user')).toEqual([resolved]);
   });
 
   it('returns posix paths, matching the Vite ids used as registry keys', () => {
@@ -673,6 +681,47 @@ describe('getMetadataOrExtract()', () => {
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
 
     await expect(getMetadataOrExtract('Foo', ['/src', './foo'])).rejects.toThrow('Class "Foo" was not found in the import from ./foo');
+  });
+});
+
+describe('getImportOrExtract()', () => {
+  const modulePath = resolvePosixPath('/src', './utils.ts');
+
+  beforeEach(() => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockImplementation(path => path === modulePath);
+    vi.mocked(readFile).mockResolvedValue('export const x = 1;');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(undefined);
+    vi.mocked(extractDirectivesMetadataFromSourceFile).mockResolvedValue(undefined);
+  });
+
+  it('throws when the module cannot be resolved', async () => {
+    await expect(getImportOrExtract('x', 'x', '/src', './missing')).rejects.toThrow('Unable to resolve module path "./missing" for "x".');
+  });
+
+  it('returns the metadata of a component or directive registered or declared in the module, the default one by its local name', async () => {
+    const registered = createMetadata('my-el');
+    vi.mocked(getMetadata).mockReturnValueOnce(registered);
+    expect(await getImportOrExtract('Foo', 'Foo', '/src', './utils')).toBe(registered);
+
+    const declared = createMetadata('my-bar', 'Bar');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Bar', declared as unknown as ComponentMetadata]]));
+    expect(await getImportOrExtract('default', 'Bar', '/src', './utils')).toBe(declared);
+    expect(registerMetadata).toHaveBeenCalledWith('Bar', declared);
+  });
+
+  it('returns any other export as a symbol of the module, reactive when it reads a signal', async () => {
+    vi.mocked(isReactiveExport).mockImplementation((_path, name) => name === 'count');
+
+    expect(await getImportOrExtract('count', 'count', '/src', './utils', { baseUrl: '/src' })).toEqual({ type: 'symbol', modulePath, reactive: true });
+    expect(await getImportOrExtract('format', 'fmt', '/src', './utils')).toEqual({ type: 'symbol', modulePath, reactive: false });
+    expect(isReactiveExport).toHaveBeenCalledWith(modulePath, 'count', { baseUrl: '/src' });
+  });
+
+  it('returns a namespace import as a reactive symbol of the module, without analyzing it', async () => {
+    expect(await getImportOrExtract('*', 'utils', '/src', './utils')).toEqual({ type: 'symbol', modulePath, reactive: true });
+    expect(readFile).not.toHaveBeenCalled();
+    expect(isReactiveExport).not.toHaveBeenCalled();
   });
 });
 

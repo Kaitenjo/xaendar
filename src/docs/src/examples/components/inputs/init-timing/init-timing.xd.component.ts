@@ -19,10 +19,6 @@ export class InitTimingComponent extends CustomElement {
    * The name bound to the card.
    */
   public readonly name = signal('Ada');
-  /**
-   * What the card logged. Typed, so that the template compiler knows it is a signal.
-   */
-  public readonly log = log;
 
   /**
    * Adds or removes the card.
@@ -42,6 +38,6 @@ export class InitTimingComponent extends CustomElement {
    * Clears the log.
    */
   public clear(): void {
-    this.log.set([]);
+    log.set([]);
   }
 }

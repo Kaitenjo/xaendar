@@ -2,8 +2,8 @@ import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
-import { lang, navigate } from '../../core/router/router';
-import { pageTitle, searchPages } from '../../core/routes/routes';
+import { navigate } from '../../core/router/router';
+import { searchPages } from '../../core/routes/routes';
 import type { DocsPage } from '../../core/routes/routes';
 
 /**
@@ -20,14 +20,6 @@ export class DocsSearchComponent extends CustomElement {
    */
   @Query<HTMLInputElement>('input')
   public accessor input!: QuerySignal<HTMLInputElement | null>;
-  /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
-   * The current language.
-   */
-  public readonly currentLang = lang;
   /**
    * The text typed by the reader.
    */
@@ -128,32 +120,12 @@ export class DocsSearchComponent extends CustomElement {
   }
 
   /**
-   * Builds the link to a page.
-   *
-   * @param target - The path of the page.
-   * @returns The `href` of the page.
-   */
-  public linkTo(target: string): string {
-    return `#/${this.currentLang()}/${target}`;
-  }
-
-  /**
-   * Reads the title of a page, in the current language.
-   *
-   * @param page - The page.
-   * @returns The title of the page.
-   */
-  public titleOf(page: DocsPage): string {
-    return pageTitle(page, this.translations());
-  }
-
-  /**
    * Computes the value of `results`.
    *
    * @returns The pages matching the query.
    */
   private _computeResults(): DocsPage[] {
-    return searchPages(this.query(), this.translations());
+    return searchPages(this.query(), translations());
   }
 
   /**

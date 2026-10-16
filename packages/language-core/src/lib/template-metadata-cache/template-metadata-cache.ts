@@ -1,4 +1,4 @@
-import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile } from '@xaendar/compiler';
+import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
@@ -74,6 +74,27 @@ export class TemplateMetadataCache implements CompilerCache {
     }
 
     return metadata;
+  }
+
+  /**
+   * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
+   * names, or any other export of the module. The editor only type-checks the template: a symbol is never reactive.
+   *
+   * @param imported - The name of the export (`'default'` for the default one, `'*'` for a namespace import).
+   * @param local - The name the template imports it as, which names a component or a directive exported as default.
+   * @param baseDir - The directory of the template.
+   * @param path - The path of the module, as written in the `@import`.
+   * @returns The metadata of the component or of the directive, or the imported symbol.
+   * @throws If the module cannot be resolved or read.
+   */
+  public async getImport(imported: string, local: string, baseDir: string, path: string): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
+    const fileName = resolveModulePath(baseDir, path);
+    const metadatas = fileName && await this._getFileMetadatas(fileName);
+    if (!metadatas) {
+      throw new Error(`Cannot find module "${path}"`);
+    }
+
+    return (imported !== '*' && metadatas.get(imported === 'default' ? local : imported)) || { type: 'symbol', modulePath: fileName, reactive: false };
   }
 
   /**

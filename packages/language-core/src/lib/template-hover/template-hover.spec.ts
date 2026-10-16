@@ -103,3 +103,13 @@ describe('getTemplateHover', () => {
     expect(getTemplateHover(withQuickInfo({ displayParts, textSpan }), at('my-child'))?.contents).toBe('```ts\nfoo\n```');
   });
 });
+
+describe('getTemplateHover of imported symbols', () => {
+  it('shows what TypeScript knows about an imported symbol, on its @import and in the expressions', async () => {
+    const source = '@import { formatDate } from \'./utils\';\n{ formatDate(1) }';
+    const symbols = (await project.analyze(source)).analysis!;
+
+    expect(getTemplateHover(symbols, source.indexOf('formatDate') + 1)?.contents).toContain('formatDate(value: number): string');
+    expect(getTemplateHover(symbols, source.lastIndexOf('formatDate') + 1)?.contents).toContain('Formats a date.');
+  }, TIMEOUT);
+});

@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
-import { leaked, log } from './clock';
+import { leaked } from './clock';
 
 /**
  * Mounts and removes a child component, to compare its two effects.
@@ -15,10 +15,6 @@ export class ComponentEffectsComponent extends CustomElement {
    * Whether the child is in the page.
    */
   public readonly mounted = signal(false);
-  /**
-   * What the effects logged.
-   */
-  public readonly log = log;
   /**
    * How many standalone effects are still alive.
    */

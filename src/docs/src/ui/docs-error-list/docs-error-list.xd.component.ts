@@ -15,14 +15,6 @@ import type { ErrorEntry } from '../../pages/reference/errors/errors.data';
 })
 export class DocsErrorListComponent extends CustomElement {
   /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
-   * The language of the links.
-   */
-  public readonly currentLang = lang;
-  /**
    * The phases offered by the filter, in pipeline order.
    */
   public readonly phases = [...new Set(ERRORS.map(entry => entry.phase))];
@@ -65,8 +57,8 @@ export class DocsErrorListComponent extends CustomElement {
   private _computeEntries(): Array<ErrorEntry & { causeText: string; fixText: string; href: string }> {
     const query = this.query().trim().toLowerCase();
     const phase = this.phase();
-    const current = this.currentLang();
-    const texts = this.translations().errors;
+    const current = lang();
+    const texts = translations().errors;
     return ERRORS
       .filter(entry => !phase || entry.phase === phase)
       .map(entry => ({ ...entry, causeText: texts[entry.message].cause, fixText: texts[entry.message].fix, href: `#/${current}/${entry.page}` }))

@@ -116,7 +116,7 @@
       "templates/switch": "Diramazioni con @switch",
       "templates/conditional-bindings": "Binding condizionali",
       "templates/expressions": "Sintassi delle espressioni",
-      "templates/imports": "Importare componenti",
+      "templates/imports": "Import",
       "templates/svg-mathml": "SVG e MathML",
       "directives/overview": "Panoramica",
       "directives/custom": "Direttive custom",
@@ -1388,7 +1388,7 @@
         "aRouterInA": {
           "title": "Un router in un modulo",
           "example1": "Pagine, parametri e un pulsante indietro",
-          "p1": "<code>router.ts</code> contiene lo stato dell’intera applicazione: <code>path</code>, la cronologia dei percorsi visitati, e <code>route</code>, un computed che confronta il percorso con pattern come <code>/users/:id</code>. Ogni componente che importa il modulo condivide quello stato, senza injection: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>. I membri che espongono signal di modulo sono annotati con il loro tipo, così gli attributi che li leggono sono reattivi.",
+          "p1": "<code>router.ts</code> contiene lo stato dell’intera applicazione: <code>path</code>, la cronologia dei percorsi visitati, e <code>route</code>, un computed che confronta il percorso con pattern come <code>/users/:id</code>. Ogni componente che importa il modulo condivide quello stato, senza injection: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>. La shell importa <code>path</code>, <code>route</code> e <code>canGoBack</code> nel suo template, e i suoi attributi che li leggono sono reattivi.",
           "p2": "I link mantengono il loro <code>href</code>, quindi restano link per il browser e per le tecnologie assistive; un listener del clic chiama <code>preventDefault()</code> e naviga al loro posto. Il link attivo riceve <code>aria-current</code> con un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, e il foglio di stile lo usa.",
           "p3": "Il parametro della pagina utente arriva a un componente come input. Passare dall’utente 1 all’utente 2 mantiene lo stesso componente e cambia l’input; andare a un’altra route lo distrugge, insieme al suo stato."
         },
@@ -1552,7 +1552,7 @@
         },
         "imports": {
           "title": "Import",
-          "p1": "Vedi <a href=\"#/it/templates/imports\">Importare componenti</a>."
+          "p1": "Vedi <a href=\"#/it/templates/imports\">Import</a>."
         },
         "expressions": {
           "title": "Espressioni",
@@ -1794,7 +1794,7 @@
         },
         "types": {
           "title": "Tipi",
-          "p1": "<code>Signal</code> e <code>Computed</code> sono i tipi restituiti da <code>signal()</code> e <code>computed()</code>. Usali per annotare i membri di un componente quando un signal arriva da altrove, per esempio da un modulo condiviso: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
+          "p1": "<code>Signal</code> e <code>Computed</code> sono i tipi restituiti da <code>signal()</code> e <code>computed()</code>. Usali per annotare i membri di un componente quando contengono un signal creato altrove, per esempio restituito da una funzione di un modulo condiviso: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -1843,16 +1843,16 @@
           "p2": "Esportare un signal scrivibile permette a chiunque di modificarlo. Per tenere ogni modifica dentro lo store, mantieni il signal privato ed esporta viste <code>computed</code> in sola lettura più le operazioni:"
         },
         "exposingSharedSignalsTo": {
-          "title": "Esporre signal condivisi a un template",
-          "p1": "I template vedono solo i membri del loro componente, quindi il componente espone il signal condiviso come campo: <code>readonly level = level</code>, senza annotazione, perché TypeScript ne ricava il tipo. Il modo in cui inizializzi quel campo conta: il compilatore decide se un binding di attributo è reattivo guardando la <strong>dichiarazione</strong> dei membri che legge, non i loro valori.",
-          "example1": "Lo stesso signal, esposto in tre modi",
-          "p2": "Aumenta il livello: i tre testi lo seguono, ma la seconda barra resta dov’era. Le interpolazioni di testo sono sempre reattive; un binding di attributo è reattivo solo se nomina un membro che il compilatore riconosce come signal — inizializzato chiamando una funzione di <code>@xaendar/core/signals</code>, annotato con uno dei suoi tipi, o inizializzato con una variabile di modulo che è a sua volta un signal. Il compilatore segue quella variabile attraverso import e re-export fino alla sua dichiarazione."
+          "title": "Leggere signal condivisi in un template",
+          "p1": "Un template legge un signal condiviso importandolo, come qualsiasi altro export di un modulo: <code>@import { level } from './level.store.ts'</code>. I binding di attributo che lo leggono restano reattivi, perché il compilatore segue l’import fino alla dichiarazione del signal. Funziona anche un membro che contiene un signal, ma il modo in cui lo inizializzi conta: il compilatore decide se un binding di attributo è reattivo guardando la <strong>dichiarazione</strong> dei membri che legge, non i loro valori.",
+          "example1": "Lo stesso signal, letto in tre modi",
+          "p2": "Aumenta il livello: i tre testi lo seguono, ma la seconda barra resta dov’era. Le interpolazioni di testo sono sempre reattive; un binding di attributo è reattivo solo se nomina un signal che il compilatore riconosce — un signal di modulo importato dal template, o un membro inizializzato chiamando una funzione di <code>@xaendar/core/signals</code>, annotato con uno dei suoi tipi, o inizializzato con una variabile di modulo che è a sua volta un signal. Il compilatore segue le variabili di modulo attraverso import e re-export fino alla loro dichiarazione."
         },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
             "heading": "I signal restituiti da tue funzioni bloccano i binding degli attributi",
-            "body": "Un membro come <code>readonly level = readLevel()</code> viene valutato una sola volta negli attributi: il compilatore non guarda dentro la funzione. Inizializza il membro con il signal del modulo, annotalo con il suo tipo signal, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, oppure avvolgi la chiamata in <code>computed()</code>."
+            "body": "Un membro come <code>readonly level = readLevel()</code> viene valutato una sola volta negli attributi: il compilatore non guarda dentro la funzione. Importa il signal del modulo nel template, annota il membro con il suo tipo signal, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, oppure avvolgi la chiamata in <code>computed()</code>."
           },
           "callout2": {
             "heading": "L’annotazione deve essere un tipo di @xaendar/core/signals",
@@ -2029,7 +2029,7 @@
       "expressions": {
         "eyebrow": "Template",
         "title": "Sintassi delle espressioni",
-        "lead": "Interpolazioni, binding, condizioni e cicli accettano tutti un’espressione: una singola espressione TypeScript, che legge per nome i membri pubblici del componente. Le espressioni possono calcolare e combinare valori, ma non cambiare nulla né dichiarare funzioni: la logica a più passi va nella classe.",
+        "lead": "Interpolazioni, binding, condizioni e cicli accettano tutti un’espressione: una singola espressione TypeScript, che legge per nome i membri pubblici del componente e quello che il template importa. Le espressioni possono calcolare e combinare valori, ma non cambiare nulla né dichiarare funzioni: la logica a più passi va nella classe.",
         "whatAnExpressionCan": {
           "title": "Cosa può fare un’espressione",
           "example1": "Un’espressione per ogni tipo",
@@ -2042,7 +2042,7 @@
         },
         "whatItCanRead": {
           "title": "Cosa può leggere",
-          "p1": "Le espressioni vengono controllate come codice esterno alla classe, quindi vedono i suoi membri pubblici e quelli ereditati, senza <code>this</code>, più i globali. Le costanti del modulo non sono membri, e i membri <code>private</code> o <code>protected</code> sono irraggiungibili: esponi come membri pubblici ciò che serve al template. I controlli usano le opzioni del tuo <code>tsconfig.json</code>, comprese quelle strict."
+          "p1": "Le espressioni vengono controllate come codice esterno alla classe, quindi vedono i suoi membri pubblici e quelli ereditati, senza <code>this</code>, più i globali. Le funzioni, le costanti, gli enum e i signal di altri moduli si leggono una volta che il template li importa (vedi <a href=\"#/it/templates/imports\">Import</a>). I membri <code>private</code> o <code>protected</code> sono irraggiungibili: esponi come membri pubblici ciò che serve al template. I controlli usano le opzioni del tuo <code>tsconfig.json</code>, comprese quelle strict."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2054,7 +2054,7 @@
           },
           "callout2": {
             "heading": "La reattività dipende da dove si trova l’espressione",
-            "body": "Ogni signal letto da un’espressione viene tracciato nel testo, nelle condizioni e nei cicli. In un attributo, solo i membri signal che l’espressione nomina: vedi <a href=\"#/it/templates/binding\">Binding</a>. Gli handler degli eventi seguono una propria sintassi, più limitata: vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
+            "body": "Ogni signal letto da un’espressione viene tracciato nel testo, nelle condizioni e nei cicli. In un attributo, solo i membri signal e i signal importati che l’espressione nomina: vedi <a href=\"#/it/templates/binding\">Binding</a>. Gli handler degli eventi seguono una propria sintassi, più limitata: vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
           }
         },
         "apiSummary": {
@@ -2064,7 +2064,7 @@
           "td1": "Operatori aritmetici, di confronto, logici, <code>!</code>, ternario",
           "td2": "Assegnazioni",
           "td3": "<code>?.</code>, <code>??</code>, indici, <code>typeof</code>",
-          "td4": "Chiamate a membri, a metodi dei valori, a globali",
+          "td4": "Chiamate a membri, a metodi dei valori, a globali, a funzioni importate",
           "td5": "<code>new</code>, arrow function, function expression",
           "td6": "Letterali di array e oggetti, spread",
           "td7": "Letterali di espressioni regolari",
@@ -2158,13 +2158,20 @@
       },
       "imports": {
         "eyebrow": "Template",
-        "title": "Importare componenti",
-        "lead": "<code>@import</code> dice al compilatore quali componenti e direttive usa un template. Funziona solo a build time: il compilatore legge le classi che nomina per conoscerne selettori, input ed eventi, e controlla ogni utilizzo rispetto a esse. Non carica nulla nel browser.",
+        "title": "Import",
+        "lead": "<code>@import</code> porta in un template quello che usa da altri moduli. I componenti e le direttive li legge il compilatore a build time, che controlla rispetto a essi ogni uso dei loro selettori, input ed eventi. Qualsiasi altro export (una funzione, una costante, un enum, una classe, un signal, un tipo) lo leggono le espressioni e i type argument del template.",
         "forms": {
           "title": "Forme",
           "example1": "Due componenti da un solo file",
-          "p1": "La sintassi è quella di un import con nome in TypeScript: uno o più nomi di classe tra graffe, e un percorso tra apici singoli o doppi. Un file può dichiarare più componenti, e un solo <code>@import</code> porta tutti quelli che servono al template. Gli import possono stare in qualsiasi punto del template; tenerli in cima li rende facili da trovare.",
+          "p1": "La sintassi è quella degli import con nome di TypeScript: uno o più nomi tra graffe, <code>as</code> per importarne uno con un altro nome, <code>default as nome</code> per l’export di default, <code>* as nome</code> per l’intero modulo, e un percorso tra apici singoli o doppi. Un file può esportare più componenti, e un solo <code>@import</code> porta tutti quelli che servono al template. Gli import vengono per primi nel template, prima di qualsiasi altro contenuto.",
           "p2": "Il percorso è relativo al template, e viene risolto come file, con o senza l’estensione <code>.ts</code>, oppure come cartella con un <code>index.ts</code>. I pacchetti e gli alias di percorso del <code>tsconfig.json</code> non vengono ancora risolti."
+        },
+        "values": {
+          "title": "Funzioni, costanti, enum e tipi",
+          "example1": "Una funzione, un enum e un signal da due moduli",
+          "p1": "Le espressioni del template leggono gli altri export con il nome con cui sono importati, come i membri del componente: una funzione si chiama, come fa <code>{ formatPrice(price, Currency.Euro) }</code>, una costante o un enum si legge, una classe si controlla con <code>instanceof</code>, un namespace (<code>* as utils</code>) legge ogni export del suo modulo. Un evento può chiamare una funzione importata: <code>(click)=\"addItem()\"</code>.",
+          "p2": "Un signal di modulo resta reattivo: un binding che lo legge, o che chiama una funzione esportata che ne legge uno, si aggiorna quando cambia, come un binding che legge un membro signal. Il browser importa solo i nomi che le espressioni leggono: un tipo o un’interfaccia serve solo al type-check, ad esempio come type argument, <code>&lt;my-list(Row)&gt;</code>.",
+          "p3": "Le variabili del template (l’item di un <code>@for</code> e i suoi alias) nascondono un import con lo stesso nome. Non si può importare un nome che è anche un membro del componente, ereditati compresi: un’espressione che lo legge sarebbe ambigua, quindi va importato con un altro nome con <code>as</code>. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> sono riservati al compilatore."
         },
         "importingIsNotRegistering": {
           "title": "Importare non è registrare",
@@ -2174,15 +2181,15 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "Errori",
-            "p1": "Con un percorso che non si risolve, un import di default o un nome che il file non dichiara, il template non compila. Gli import che nessuno usa non vengono segnalati."
+            "p1": "Con un percorso che non si risolve, un import di default scritto senza graffe (si scrive <code>default as nome</code>) o un nome che il modulo non esporta, il template non compila. L’editor segnala come superflui gli import che nessuno usa, e li rimuove con Organize Imports."
           },
           "callout2": {
             "heading": "Pacchetti e alias di percorso",
-            "body": "Un componente pubblicato in un pacchetto, o raggiunto tramite un alias di percorso, non si può ancora importare in un template: il resolver segue solo percorsi relativi, e la classe deve essere dichiarata nel file a cui puntano."
+            "body": "Un componente, una funzione o un tipo pubblicati in un pacchetto, o raggiunti tramite un alias di percorso, non si possono ancora importare in un template: il resolver segue solo percorsi relativi."
           },
           "callout3": {
-            "heading": "I tipi non vengono importati",
-            "body": "<code>@import</code> accetta solo classi di componenti e direttive. I tipi usati dai loro input non vengono importati con esse, quindi gli input devono usare tipi inline. Vedi i casi limite di <a href=\"#/it/components/inputs\">Input</a>."
+            "heading": "Const enum",
+            "body": "Un <code>const enum</code> esiste solo per TypeScript: il suo modulo non lo esporta a runtime, quindi un template può nominarlo in un type argument ma non leggerlo in un’espressione. Usa un <code>enum</code> normale, o un oggetto dichiarato <code>as const</code>."
           }
         },
         "apiSummary": {
@@ -2192,7 +2199,9 @@
           "td1": "Un componente o una direttiva.",
           "td2": "Più classi dello stesso file.",
           "td3": "Percorso",
-          "td4": "Relativo al template; estensione facoltativa; una cartella indica il suo <code>index.ts</code>."
+          "td4": "Relativo al template; estensione facoltativa; una cartella indica il suo <code>index.ts</code>.",
+          "td5": "Uno o più export di qualsiasi tipo: funzioni, costanti, enum, classi, signal, tipi.",
+          "td6": "L’export di default con un nome, l’intero modulo come namespace."
         }
       },
       "overview": {
@@ -2727,8 +2736,8 @@
       "fix": "Rendi pubblico il membro."
     },
     "Property 'LIMIT' does not exist on type 'XCard'.": {
-      "cause": "Una costante di modulo letta dal template, che vede solo i membri della classe.",
-      "fix": "Esponila come membro: readonly limit = LIMIT."
+      "cause": "Una costante di modulo letta dal template senza importarla: le espressioni leggono i membri della classe e i nomi che il template importa.",
+      "fix": "Importala nel template: @import { LIMIT } from './limits.ts'."
     },
     "This comparison appears to be unintentional because the types '1' and '2' have no overlap.": {
       "cause": "Un membro readonly inizializzato con un letterale ha un tipo letterale, e il template viene controllato con quello.",
@@ -2782,13 +2791,21 @@
       "cause": "In una build, un componente che non può essere compilato: i suoi errori sono stampati prima di questo messaggio.",
       "fix": "Correggi gli errori stampati prima."
     },
-    "Error: Unable to resolve module path for \"Nope\".": {
+    "Error: Unable to resolve module path \"./nope\" for \"Nope\".": {
       "cause": "Un @import il cui percorso non si risolve: sono supportati solo percorsi relativi a file o cartelle.",
       "fix": "Usa un percorso relativo; pacchetti e alias del tsconfig non vengono risolti."
     },
-    "Class \"Callout\" was not found in the import from <path>": {
-      "cause": "Un @import che nomina una classe che il file non dichiara, o un tipo.",
-      "fix": "Importa la classe del componente o della direttiva con il suo nome esatto."
+    "Module '\"<path>\"' has no exported member 'Callout'.": {
+      "cause": "Un @import che nomina qualcosa che il modulo non esporta.",
+      "fix": "Importalo con il nome esatto con cui è esportato; l’export di default si importa come default as nome."
+    },
+    "'title' is also a member of XCard: import it under another name (… as name), or rename the member.": {
+      "cause": "Un nome che il template importa è anche un membro del componente, ereditati compresi: un’espressione che lo legge sarebbe ambigua.",
+      "fix": "Importalo con un altro nome: @import { title as heading } from './utils.ts'."
+    },
+    "[TypeChecker] \"root\" is reserved in templates: import it under another name (… as name).": {
+      "cause": "Un simbolo importato come root, $event o un nome che inizia con __, che il compilatore usa per sé.",
+      "fix": "Importalo con un altro nome con as."
     },
     "XCard does not seems to have a Render Function": {
       "cause": "Il template del componente non è stato compilato, il suo templateUrl non è una stringa letterale, il suo file non termina con .xd.component.ts, o la classe è una sottoclasse senza un proprio @WebComponent.",

@@ -1,11 +1,9 @@
 import type { Output } from '@xaendar/core';
 import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import { translations } from '../../core/i18n/i18n';
 import type { Lang } from '../../core/router/route-hash.utils';
 import { LANGS } from '../../core/router/route-hash.utils';
 import { href, lang, switchLang } from '../../core/router/router';
-import { theme, toggleTheme } from '../../core/theme/theme';
 
 /**
  * The top bar: logo, search, language and theme switches, and the menu button on narrow screens.
@@ -21,18 +19,6 @@ export class DocsTopbarComponent extends CustomElement {
    */
   @Event()
   public accessor menuToggle!: Output;
-  /**
-   * The texts of the user interface.
-   */
-  public readonly translations = translations;
-  /**
-   * The current language.
-   */
-  public readonly currentLang = lang;
-  /**
-   * The current theme.
-   */
-  public readonly theme = theme;
   /**
    * The languages the reader can switch to.
    */
@@ -65,18 +51,11 @@ export class DocsTopbarComponent extends CustomElement {
   }
 
   /**
-   * Switches between the light and the dark theme.
-   */
-  public toggleTheme(): void {
-    toggleTheme();
-  }
-
-  /**
    * Computes the value of `home`.
    *
    * @returns The link to the home page.
    */
   private _computeHome(): string {
-    return href('', this.currentLang());
+    return href('', lang());
   }
 }

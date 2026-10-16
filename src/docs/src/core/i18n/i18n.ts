@@ -30,8 +30,8 @@ const loaded = signal<Messages | undefined>(undefined);
 /**
  * The texts of the documentation in the current language.
  *
- * Components expose it as a member (`readonly translations = translations;`): the template compiler follows the
- * member to this declaration, so attribute bindings reading it are reactive.
+ * Templates import it (`@import { translations } from '…/core/i18n/i18n.ts'`): the template compiler follows the
+ * import to this declaration, so attribute bindings reading it are reactive.
  *
  * @throws When read before {@link startI18n} has loaded the first language.
  */

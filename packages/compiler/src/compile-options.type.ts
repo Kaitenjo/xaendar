@@ -39,6 +39,12 @@ export type CompileOptions = {
    */
   baseDir?: string;
   /**
+   * Directory of the template, the paths of its `@import` statements are relative to, when only the JavaScript code is
+   * generated (`baseDir` is used otherwise): the symbols the template imports are then imported by the render code.
+   * Without it, the imports are not resolved, and the expressions read every name from the component.
+   */
+  templateDir?: string;
+  /**
    * Array of signal member names extracted from the component class.
    *
    * Used during code generation to properly inject reactive signal bindings

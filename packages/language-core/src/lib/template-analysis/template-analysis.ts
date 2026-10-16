@@ -1,12 +1,14 @@
-import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, type ImportSpecifier, parseImportStatements, parseTemplate, TemplateError, type TypeCheckResult, typeCheckTemplateTolerant } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, type ImportSpecifier, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, type TypeCheckResult, typeCheckTemplateTolerant } from '@xaendar/compiler';
 import { dirname, resolve } from 'node:path';
-import { type CompilerOptions, createSourceFile, isClassDeclaration, type LanguageService, ScriptTarget } from 'typescript';
+import { type CompilerOptions, createSourceFile, isClassDeclaration, type LanguageService, type Program, type ScriptElementKind, ScriptTarget } from 'typescript';
 import { getProjectLanguageService, type ProjectLanguageService, readDocument } from '../language-service/language-service';
 import { TemplateMetadataCache } from '../template-metadata-cache/template-metadata-cache';
 import { findTsConfigPath, loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
+import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
+import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
 
 /**
  * A symbol imported by a template through an `@import` statement.
@@ -41,6 +43,24 @@ export type ImportCandidate = {
 };
 
 /**
+ * An export of a module a template can import.
+ */
+export type ExportCandidate = {
+  /**
+   * The path of the file of the module.
+   */
+  readonly fileName: string;
+  /**
+   * The name the module exports it as, `default` for its default export.
+   */
+  readonly name: string;
+  /**
+   * What it declares (see `getSymbolKind`).
+   */
+  readonly kind: ScriptElementKind;
+};
+
+/**
  * The result of the analysis of a template that could be parsed (see {@link analyzeTemplate}), whose `errors`
  * may not be empty.
  */
@@ -65,6 +85,10 @@ export type TemplateAnalysis = {
    * The metadata of the components and directives imported by the template.
    */
   readonly metadatas: readonly ComponentOrDirectiveMetadata[];
+  /**
+   * The other symbols imported by the template: functions, constants, enums, classes, types, namespaces.
+   */
+  readonly symbols: readonly SymbolImport[];
   /**
    * The errors of the template that don't prevent the analysis: the modules and symbols of the `@import` statements
    * that cannot be resolved, and the nodes failing type-checking, which the type-check body leaves out. A
@@ -177,9 +201,9 @@ async function analyze(templatePath: string, source: string, components: Readonl
   try {
     ast = parseTemplate(source);
     const { shadowingMembers, dependencies } = extractMembers(componentFiles, project, options);
-    const { imports, errors: importErrors } = await resolveImports(ast, templateDir, cache);
+    const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache);
     const metadatas = imports.map(({ metadata }) => metadata);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, [], symbols);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     
     const analysis: TemplateAnalysis = {
@@ -188,12 +212,13 @@ async function analyze(templatePath: string, source: string, components: Readonl
       ast,
       imports,
       metadatas,
+      symbols,
       errors: [...importErrors, ...typeCheckErrors],
       typeCheck,
       shimPath: shim.path,
       bodyLineOffset: shim.bodyLineOffset,
       languageService,
-      dependencies: new Set([...dependencies, ...metadatas.map(metadata => normalizeFileName(metadata.typescriptNodes.klass.getSourceFile().fileName))])
+      dependencies: new Set([...dependencies, ...metadatas.map(metadata => normalizeFileName(metadata.typescriptNodes.klass.getSourceFile().fileName)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
     };
     return { analysis, error: undefined, ast };
   } catch (error) {
@@ -277,6 +302,44 @@ export async function resolveImportCandidates(templatePath: string): Promise<Imp
 }
 
 /**
+ * Lists the exports of a module a template imports from, whatever they declare: components, directives, functions,
+ * constants, enums, classes, types.
+ *
+ * @param templatePath - The path of the template.
+ * @param modulePath - The path of the module, as written in the `@import` statement.
+ * @returns The exports, `undefined` if the module cannot be resolved or is not in the program of the project.
+ */
+export function resolveModuleExports(templatePath: string, modulePath: string): ExportCandidate[] | undefined {
+  const templateDir = dirname(templatePath);
+  const fileName = resolveModulePath(templateDir, modulePath);
+  return fileName ? listExports(getProgram(getProjectContext(templateDir)), fileName) : undefined;
+}
+
+/**
+ * Lists the exports of the files of the TypeScript project of a template, the ones it can import: the files that are
+ * not modules to import (declarations, specs and tests) excluded.
+ *
+ * @param templatePath - The path of the template.
+ * @returns The exports, `undefined` if the project exports nothing.
+ */
+export function resolveExportCandidates(templatePath: string): ExportCandidate[] | undefined {
+  const context = getProjectContext(dirname(templatePath));
+  const { fileNames } = context;
+  const program = getProgram(context);
+  let candidates: ExportCandidate[] | undefined;
+  for (let i = 0; i < fileNames.length; i++) {
+    const fileName = fileNames[i];
+    const exported = NOT_IMPORTABLE.test(fileName) ? undefined : listExports(program, fileName);
+    if (exported?.length) {
+      candidates ??= new Array<ExportCandidate>();
+      candidates.push(...exported);
+    }
+  }
+
+  return candidates;
+}
+
+/**
  * Forgets the last successful analysis of a template, e.g. when it is closed.
  *
  * @param templatePath - The path of the template.
@@ -307,6 +370,30 @@ function getProjectContext(templateDir: string): { options: CompilerOptions, fil
   const project = getProjectLanguageService(findTsConfigPath(templateDir));
   const cache = metadataCaches.getOrInsertComputed(project, () => new TemplateMetadataCache(options));
   return { options, fileNames, project, cache };
+}
+
+/**
+ * Returns the program of a TypeScript project.
+ *
+ * @param context - The project, its options and its files (see {@link getProjectContext}).
+ * @returns The program.
+ */
+function getProgram({ options, fileNames, project }: ReturnType<typeof getProjectContext>): Program {
+  return project.getLanguageService(options, fileNames).getProgram()!;
+}
+
+/**
+ * Lists the exports of a file of a program.
+ *
+ * @param program - The program.
+ * @param fileName - The path of the file.
+ * @returns The exports, `undefined` if the file is not in the program or is not a module.
+ */
+function listExports(program: Program, fileName: string): ExportCandidate[] | undefined {
+  const sourceFile = program.getSourceFile(fileName);
+  const checker = program.getTypeChecker();
+  const moduleSymbol = sourceFile && checker.getSymbolAtLocation(sourceFile);
+  return moduleSymbol && checker.getExportsOfModule(moduleSymbol).map((symbol): ExportCandidate => ({ fileName, name: symbol.name, kind: getSymbolKind(checker, symbol) }));
 }
 
 /**
@@ -344,15 +431,18 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
 }
 
 /**
- * Resolves the components and directives imported by a template, going on after the ones it cannot resolve.
+ * Resolves what a template imports, going on after the specifiers it cannot resolve: the components and the directives,
+ * and the other symbols, whose exports TypeScript checks through the type-check code.
  *
  * @param ast - The top-level nodes of the template.
  * @param templateDir - The directory of the template, the `@import` paths are relative to.
  * @param cache - The metadata cache of the project.
- * @returns The imported components and directives, and a `TemplateError` for each module that cannot be found (on its path) and for each symbol that cannot be resolved (on its name).
+ * @returns The imported components and directives, the other imported symbols, and a `TemplateError` for each module
+ *   that cannot be found (on its path) and for each specifier that cannot be resolved (on its name).
  */
-async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache): Promise<{ imports: TemplateImport[], errors: TemplateError[] }> {
+async function resolveImports(ast: readonly ASTNode[], templateDir: string, cache: TemplateMetadataCache): Promise<{ imports: TemplateImport[], symbols: SymbolImport[], errors: TemplateError[] }> {
   const imports = new Array<TemplateImport>();
+  const symbols = new Array<SymbolImport>();
   const errors = new Array<TemplateError>();
   const importNodes = ast.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
 
@@ -364,12 +454,16 @@ async function resolveImports(ast: readonly ASTNode[], templateDir: string, cach
       continue;
     }
 
-    const specifiers = node.specifiers.filter(({ imported }) => imported !== '*');
+    const { specifiers } = node;
     for (let j = 0; j < specifiers.length; j++) {
       const specifier = specifiers[j];
       try {
-        const metadata = await cache.getOrInsert(specifier.imported === 'default' ? specifier.local : specifier.imported, [templateDir, node.path]);
-        imports.push({ node, specifier, metadata });
+        const imported = await cache.getImport(specifier.imported, specifier.local, templateDir, node.path);
+        if (imported.type === 'symbol') {
+          symbols.push(Object.assign({}, specifier, imported));
+        } else {
+          imports.push({ node, specifier, metadata: imported });
+        }
       } catch (error) {
         const { message } = toError(error);
         errors.push(new TemplateError(message, specifier.importedSpan, message));
@@ -377,7 +471,7 @@ async function resolveImports(ast: readonly ASTNode[], templateDir: string, cach
     }
   }
 
-  return { imports, errors };
+  return { imports, symbols, errors };
 }
 
 /**

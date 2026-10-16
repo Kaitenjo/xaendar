@@ -1,7 +1,8 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { add, count } from './cart.store.ts'
 
 <h4>Products</h4>
 @for (product of products; track product()) {
-  <ex-button (click)="buy(product())">Add { product() }</ex-button>
+  <ex-button (click)="add(product())">Add { product() }</ex-button>
 }
 <p>{ count() } pieces in the cart</p>
