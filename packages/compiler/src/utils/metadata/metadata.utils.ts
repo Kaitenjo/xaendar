@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, CompilerOptions, Decorator, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Decorator, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isShorthandPropertyAssignment, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
 import { ClassTypeParameter, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
@@ -90,6 +90,72 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
   }
 
   return metadatas;
+}
+
+/**
+ * Finds the `@WebComponent` declarations of a source file that the plugin cannot compile, as it reads them
+ * from the source code: a component declared in a file not following the component convention, or whose
+ * `selector`, `templateUrl` or `styleUrl` is not a string literal (`selector` and `templateUrl` are required).
+ *
+ * @param sourceFile - The source file declaring the components.
+ * @param componentFile - Whether the file follows the component convention (`.xd.component.ts`).
+ * @returns One message per component or option that cannot be compiled, or `undefined` when there is none.
+ */
+export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean): string[] | undefined {
+  let errors: string[] | undefined;
+
+  const declarations = getDecoratedClassDeclarations<WebComponentDecorator>(sourceFile, 'WebComponent');
+  for (let i = 0; i < declarations.length; i++) {
+    const { klass, decorator } = declarations[i];
+    const className = klass.name.text;
+    if (!componentFile) {
+      (errors ??= []).push(`${className} must be declared in a file ending with .xd.component.ts`);
+      continue;
+    }
+
+    const options = decorator.expression.arguments[0];
+    if (!options || !isObjectLiteralExpression(options)) {
+      (errors ??= []).push(`The options of @WebComponent in ${className} must be an object literal`);
+      continue;
+    }
+
+    let selector = false;
+    let templateUrl = false;
+    for (let j = 0; j < options.properties.length; j++) {
+      const property = options.properties[j];
+      if (!(isPropertyAssignment(property) || isShorthandPropertyAssignment(property)) || !isIdentifier(property.name)) {
+        continue;
+      }
+
+      const name = property.name.text;
+      switch (name) {
+        case 'selector':
+          selector = true;
+          break;
+        case 'templateUrl':
+          templateUrl = true;
+          break;
+        case 'styleUrl':
+          break;
+        default:
+          continue;
+      }
+
+      // A shorthand property ({ selector }) reads a variable
+      if (!isPropertyAssignment(property) || !isStringLiteral(property.initializer)) {
+        (errors ??= []).push(`The ${name} option of ${className} must be a string literal`);
+      }
+    }
+
+    if (!selector) {
+      (errors ??= []).push(`The selector option of ${className} must be a string literal`);
+    }
+    if (!templateUrl) {
+      (errors ??= []).push(`The templateUrl option of ${className} must be a string literal`);
+    }
+  }
+
+  return errors;
 }
 
 /**

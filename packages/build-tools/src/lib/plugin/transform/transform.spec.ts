@@ -23,7 +23,8 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     ...actual,
     compile: vi.fn(),
     extractComponentsMetadataFromSourceFile: vi.fn(),
-    extractComponentMembers: vi.fn()
+    extractComponentMembers: vi.fn(),
+    findWebComponentErrors: vi.fn()
   };
 });
 
@@ -84,7 +85,7 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
 }));
 
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, findWebComponentErrors } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
@@ -188,6 +189,7 @@ function mockNoDiagnostics() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(isValidCustomElementName).mockReturnValue(true);
+  vi.mocked(findWebComponentErrors).mockReturnValue(undefined);
   vi.mocked(claimSelectors).mockResolvedValue(undefined);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
@@ -209,6 +211,47 @@ describe('createTransformHook()', () => {
 
     expect(result).toBe('const x = 1;');
     expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('reads the source of a TypeScript file mentioning WebComponent outside the component convention, returning it unchanged without components', async () => {
+    vi.mocked(readFile).mockResolvedValue('import { WebComponent } from \'@xaendar/core\';');
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    const result = await hook.call(createPluginContext(), 'import { WebComponent } from "@xaendar/core";', '/src/foo/util.ts', undefined);
+
+    expect(result).toBe('import { WebComponent } from "@xaendar/core";');
+    expect(readFile).toHaveBeenCalledWith('/src/foo/util.ts', 'utf8');
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: '/src/foo/util.ts' }), false);
+    expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
+    expect(state.logError).not.toHaveBeenCalled();
+  });
+
+  it('logs each component declared outside the component convention and returns null', async () => {
+    vi.mocked(readFile).mockResolvedValue('@WebComponent({}) class A {}');
+    vi.mocked(findWebComponentErrors).mockReturnValue(['A must be declared in a file ending with .xd.component.ts', 'B must be declared in a file ending with .xd.component.ts']);
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    const result = await hook.call(createPluginContext(), 'WebComponent(A)', '/src/foo/util.ts', undefined);
+
+    expect(result).toBeNull();
+    expect(state.logError).toHaveBeenCalledWith('', 'A must be declared in a file ending with .xd.component.ts - /src/foo/util.ts');
+    expect(state.logError).toHaveBeenCalledWith('', 'B must be declared in a file ending with .xd.component.ts - /src/foo/util.ts');
+  });
+
+  it('logs the options of a component that are not string literals and returns null, extracting no metadata', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(findWebComponentErrors).mockReturnValue(['The templateUrl option of FooComponent must be a string literal']);
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(result).toBeNull();
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true);
+    expect(state.logError).toHaveBeenCalledWith('', `The templateUrl option of FooComponent must be a string literal - ${COMPONENT_PATH}`);
+    expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
   });
 
   it('does not serve a TypeScript file with type errors in the dev server, raising them', async () => {
@@ -593,6 +636,7 @@ describe('createTransformHook()', () => {
 
   describe('in a build', () => {
     it.each([
+      ['an option of the decorator is not a string literal', () => vi.mocked(findWebComponentErrors).mockReturnValue(['The templateUrl option of FooComponent must be a string literal'])],
       ['the selector is not a valid custom element name', () => vi.mocked(isValidCustomElementName).mockReturnValue(false)],
       ['the selector is already used by another component', () => vi.mocked(claimSelectors).mockResolvedValue('selector conflict')],
       ['the template cannot be found', () => undefined, () => false],

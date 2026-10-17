@@ -185,8 +185,8 @@
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
-            "heading": "Le opzioni che non sono stringhe letterali vengono ignorate senza errori",
-            "p1": "Il plugin legge <code>selector</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali. Con una costante, un template literal o un valore calcolato il plugin salta la classe senza segnalare nulla: il decoratore definisce comunque l’elemento, ma collegarlo lancia un’eccezione. Lo stesso succede a un componente dichiarato in un file senza il suffisso <code>.xd.component.ts</code>."
+            "heading": "Le opzioni devono essere stringhe letterali",
+            "p1": "Il plugin legge <code>selector</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
           },
           "callout2": {
             "heading": "Un template mancante è solo un avviso",
@@ -2962,6 +2962,18 @@
       "cause": "Un templateUrl che punta a un file inesistente.",
       "fix": "Correggi il percorso, relativo al file del componente."
     },
+    "The templateUrl option of XCard must be a string literal - <path>": {
+      "cause": "Un selector, templateUrl o styleUrl dato come costante, template literal o valore calcolato, oppure un’opzione obbligatoria mancante: il plugin li legge dal codice sorgente.",
+      "fix": "Scrivi il valore come stringa letterale nel decoratore."
+    },
+    "The options of @WebComponent in XCard must be an object literal - <path>": {
+      "cause": "Le opzioni del decoratore passate come variabile, o non passate affatto.",
+      "fix": "Scrivi le opzioni come oggetto letterale nel decoratore."
+    },
+    "XCard must be declared in a file ending with .xd.component.ts - <path>": {
+      "cause": "Una classe decorata con @WebComponent in un file che non segue la convenzione dei componenti, quindi il plugin non la compila.",
+      "fix": "Sposta la classe in un file che termina con .xd.component.ts."
+    },
     "Unsupported stylesheet extension \".scss\" for <path>.": {
       "cause": "Uno styleUrl che non è un file .css.",
       "fix": "Usa CSS semplice."
@@ -2991,7 +3003,7 @@
       "fix": "Importalo con un altro nome con as."
     },
     "XCard does not seems to have a Render Function": {
-      "cause": "Il template del componente non è stato compilato, il suo templateUrl non è una stringa letterale, il suo file non termina con .xd.component.ts, o la classe è una sottoclasse senza un proprio @WebComponent.",
+      "cause": "Il componente non è stato compilato, o la classe è una sottoclasse senza un proprio @WebComponent.",
       "fix": "Cerca il messaggio del compilatore stampato prima."
     },
     "ReferenceError: Signal is not defined": {

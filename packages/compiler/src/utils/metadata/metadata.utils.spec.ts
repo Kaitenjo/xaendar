@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSourceFile, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile } from './metadata.utils';
+import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findWebComponentErrors } from './metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
@@ -363,5 +363,45 @@ describe('generics', () => {
 
     expect(metadata).not.toHaveProperty('typeParameters');
     expect(metadata?.properties.get('text')?.type).toBe(propertyType('MyEl', 'text'));
+  });
+});
+
+describe('findWebComponentErrors', () => {
+  const errorsOf = (decorator: string, componentFile = true) => findWebComponentErrors(sourceFileOf(component('', decorator)), componentFile);
+
+  it('finds no error in components with literal options, nor in files without components', () => {
+    expect(errorsOf('@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl: \'./s.css\', hostDirectives: [Tooltip] })')).toBeUndefined();
+    expect(findWebComponentErrors(sourceFileOf('class Plain {}\n@Other() class Decorated {}'), false)).toBeUndefined();
+  });
+
+  it('reports each component declared in a file that does not follow the component convention', () => {
+    const code = `${component()}\n@xaendar.WebComponent({ selector: 'c-d', templateUrl: './c' })\nclass Other {}`;
+
+    expect(findWebComponentErrors(sourceFileOf(code), false)).toEqual([
+      'MyEl must be declared in a file ending with .xd.component.ts',
+      'Other must be declared in a file ending with .xd.component.ts'
+    ]);
+  });
+
+  it.each([
+    ['no arguments', '@WebComponent()'],
+    ['a non-object argument', '@WebComponent(OPTIONS)']
+  ])('reports options passed with %s', (_name, decorator) => {
+    expect(errorsOf(decorator)).toEqual(['The options of @WebComponent in MyEl must be an object literal']);
+  });
+
+  it.each([
+    ['a constant', '@WebComponent({ selector: \'a-b\', templateUrl: TEMPLATE })', 'templateUrl'],
+    ['a template literal', '@WebComponent({ selector: `a-b`, templateUrl: \'./t\' })', 'selector'],
+    ['a shorthand property', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl })', 'styleUrl']
+  ])('reports an option given as %s', (_name, decorator, option) => {
+    expect(errorsOf(decorator)).toEqual([`The ${option} option of MyEl must be a string literal`]);
+  });
+
+  it('reports the required options that are missing, ignoring the properties it does not read', () => {
+    expect(errorsOf('@WebComponent({ \'selector\': \'a-b\', ...BASE, [key]: 1, other: 1 })')).toEqual([
+      'The selector option of MyEl must be a string literal',
+      'The templateUrl option of MyEl must be a string literal'
+    ]);
   });
 });

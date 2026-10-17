@@ -325,6 +325,21 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
+    message: 'The templateUrl option of XCard must be a string literal - <path>',
+    page: 'components/anatomy'
+  },
+  {
+    phase: 'Build',
+    message: 'The options of @WebComponent in XCard must be an object literal - <path>',
+    page: 'components/anatomy'
+  },
+  {
+    phase: 'Build',
+    message: 'XCard must be declared in a file ending with .xd.component.ts - <path>',
+    page: 'components/anatomy'
+  },
+  {
+    phase: 'Build',
     message: 'Unsupported stylesheet extension ".scss" for <path>.',
     page: 'components/styling'
   },

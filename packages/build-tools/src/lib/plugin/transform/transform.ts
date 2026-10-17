@@ -1,5 +1,5 @@
 import { isValidCustomElementName } from '@xaendar/common';
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, TypeCheckResult } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -26,7 +26,8 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
  * registration into the transpiled output.
  *
  * A component that cannot be compiled is left without its render function: its errors are logged and,
- * in a build, the build fails.
+ * in a build, the build fails. So is a component declared in a TypeScript file not following the convention,
+ * or whose `@WebComponent` options are not string literals, as they are read from the source code.
  *
  * In the dev server, every TypeScript file of the program is also type-checked as it is served: a file with
  * type errors is not served, and its errors reach the terminal and the overlay of Vite. In a build, the
@@ -44,10 +45,6 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
     }
 
-    if (!COMPONENT_TS_FILE_RE.test(componentPath)) {
-      return code;
-    }
-
     /**
      * Leaves the component without its render function, once its errors are reported, failing the build
      * when the plugin runs in one.
@@ -61,7 +58,25 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       return null;
     };
 
+    const componentFile = COMPONENT_TS_FILE_RE.test(componentPath);
+    // The decorators are read from the source code: the code received here has already been transpiled by Babel
+    if (!componentFile && !(TS_FILE_RE.test(componentPath) && code.includes('WebComponent'))) {
+      return code;
+    }
+
     const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
+    const errors = findWebComponentErrors(tsSource, componentFile);
+    if (errors?.length) {
+      for (let i = 0; i < errors.length; i++) {
+        state.logError('', `${errors[i]} - ${componentPath}`);
+      }
+      return fail();
+    }
+
+    if (!componentFile) {
+      return code;
+    }
+
     const metadatas = await extractComponentsMetadataFromSourceFile(tsSource, state.compilerOptions);
     if (!metadatas?.size) {
       /*

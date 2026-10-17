@@ -385,6 +385,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A templateUrl pointing to a missing file.
 - **Fix:** Fix the path, relative to the file of the component.
 
+### `The templateUrl option of XCard must be a string literal - <path>`
+
+- **Cause:** A selector, templateUrl or styleUrl given as a constant, a template literal or a computed value, or a required option missing: the plugin reads them from the source code.
+- **Fix:** Write the value as a string literal in the decorator.
+
+### `The options of @WebComponent in XCard must be an object literal - <path>`
+
+- **Cause:** The options of the decorator passed as a variable, or not passed at all.
+- **Fix:** Write the options as an object literal in the decorator.
+
+### `XCard must be declared in a file ending with .xd.component.ts - <path>`
+
+- **Cause:** A class decorated with @WebComponent in a file that does not follow the component convention, so the plugin does not compile it.
+- **Fix:** Move the class to a file ending with .xd.component.ts.
+
 ### `Unsupported stylesheet extension ".scss" for <path>.`
 
 - **Cause:** A styleUrl that is not a .css file.
@@ -424,7 +439,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `XCard does not seems to have a Render Function`
 
-- **Cause:** The template of the component did not compile, its templateUrl is not a string literal, its file does not end with .xd.component.ts, or the class is a subclass without its own @WebComponent.
+- **Cause:** The component did not compile, or the class is a subclass without its own @WebComponent.
 - **Fix:** Look for the compiler message printed before it.
 
 ### `ReferenceError: Signal is not defined`
