@@ -33,6 +33,15 @@ describe('parseImport', () => {
     });
   });
 
+  it('marks the node of an @import lazy, and only that one', () => {
+    const template = '@import lazy { A } from \'./a\';\n@import { B } from \'./b\';';
+    const [lazy, eager] = new Parser(template, new Lexer(template).tokenize()).parse() as ImportNode[];
+
+    expect(lazy.lazy).toBe(true);
+    expect(lazy.specifiers.map(({ local }) => local)).toEqual(['A']);
+    expect('lazy' in eager).toBe(false);
+  });
+
   it('locates the names of the specifiers and the path in the template', () => {
     const template = '@import { foo, bar as baz, default as D, * as ns } from \'./from\';';
     const [node] = new Parser(template, new Lexer(template).tokenize()).parse() as ImportNode[];

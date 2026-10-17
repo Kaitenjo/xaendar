@@ -10,5 +10,9 @@ export type ImportToken = TokenWithSpan<{
    */
   type: TokenType.IMPORT,
 
-  parts: [import: string]
+  parts: [import: string],
+  /**
+   * Whether the statement is `@import lazy`: its modules are not imported by the template module.
+   */
+  lazy?: true
 }>

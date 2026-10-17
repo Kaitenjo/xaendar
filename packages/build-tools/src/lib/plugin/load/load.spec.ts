@@ -111,6 +111,35 @@ describe('createLoadHook()', () => {
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith(resolvePosixPath('/src/foo', './missing.xd.component.ts'));
   });
 
+  it('imports, once and first, the existing modules the template imports, leaving out the declaration files', async () => {
+    const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
+    const declaration = resolvePosixPath('/src/foo', './types.d.ts');
+    const template = [
+      '@import { A } from \'./existing.xd.component.ts\'',
+      '@import { C } from \'./existing.xd.component.ts\'',
+      '@import { B } from \'./missing.xd.component.ts\'',
+      '@import { D } from \'./types.d.ts\'',
+      '<a-b></a-b>'
+    ].join('\n');
+
+    const result = await load(createState({ [TEMPLATE_PATH]: template, [existing]: '', [declaration]: '' }), createPluginContext(), TEMPLATE_MODULE_ID);
+
+    expect((result as { code: string }).code.startsWith(`import ${JSON.stringify(existing)};\nimport { _if,`)).toBe(true);
+    expect((result as { code: string }).code).not.toContain('missing');
+    expect((result as { code: string }).code).not.toContain('types.d.ts');
+  });
+
+  it('does not import the modules of an @import lazy, still watching them', async () => {
+    const lazy = resolvePosixPath('/src/foo', './lazy.xd.component.ts');
+    const template = '@import lazy { A } from \'./lazy.xd.component.ts\'\n<a-b></a-b>';
+    const ctx = createPluginContext();
+
+    const result = await load(createState({ [TEMPLATE_PATH]: template, [lazy]: '' }), ctx, TEMPLATE_MODULE_ID);
+
+    expect((result as { code: string }).code).not.toContain('lazy.xd.component');
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(lazy);
+  });
+
   it('raises an error when the template cannot be read', async () => {
     const ctx = createPluginContext();
 

@@ -38,7 +38,8 @@ export function getImportInsertion(source: string, path: string, symbol: string)
         // The lexer only emits the path of a statement that has its braces and its quoted path, which the pattern matches
         const [text, quote, semicolon] = IMPORT_STATEMENT_END.exec(source.slice(braceEnd))!;
         last = { quote, semicolon, end: braceEnd + text.length };
-        if (token.parts[0] === path) {
+        // The symbol is added to a statement that imports the module, not to a lazy one
+        if (token.parts[0] === path && !specifiers[0].lazy) {
           return addToStatement(source, specifiers, symbol);
         }
 

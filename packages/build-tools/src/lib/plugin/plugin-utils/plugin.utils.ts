@@ -33,18 +33,23 @@ const DECLARATION_FILE = /\.d\.[cm]?ts$/;
  * @param templateSource - The raw content of the `.xd.component.html` template.
  * @param templateDir - The directory containing the template file.
  * @param compilerOptions - Project compiler options, driving how the paths that are not relative are resolved.
+ * @param skipLazy - Whether to leave out the modules imported by `@import lazy`, which the template does not load.
  * @returns The list of imported absolute paths, in posix format (may be empty).
  */
-export function extractImportedComponentPaths(templateSource: string, templateDir: string, compilerOptions?: CompilerOptions): string[] {
-  const importRegex = /@import\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
+export function extractImportedComponentPaths(templateSource: string, templateDir: string, compilerOptions?: CompilerOptions, skipLazy = false): string[] {
+  const importRegex = /@import(\s+lazy)?\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
   const paths = new Array<string>();
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(templateSource)) !== null) {
+    if (skipLazy && match[1]) {
+      continue;
+    }
+
     // The module of a symbol can be imported without its extension, like any TypeScript module
-    const resolved = resolveModule(templateDir, match[1], compilerOptions);
+    const resolved = resolveModule(templateDir, match[2], compilerOptions);
     if (!resolved) {
-      paths.push(resolvePosixPath(templateDir, match[1]));
+      paths.push(resolvePosixPath(templateDir, match[2]));
     } else if (!resolved.external) {
       paths.push(resolved.fileName);
     }
@@ -119,18 +124,30 @@ export function parseTemplateModuleId(id: string): TemplateModuleRequest | undef
  * helpers it relies on and exporting its `render` entry point. Every other generated
  * function stays private to the module, so it can't be overridden or removed at runtime.
  *
+ * The modules the template imports with `@import` are imported first, for their side effects: a component or
+ * a directive defines itself when its module is evaluated, so loading the template loads what it renders, and
+ * only that. The bundler can then split the output along the templates, each chunk pulling in its own dependencies.
+ *
  * @param compiledFunctions - The raw output of the template compiler.
+ * @param dependencyPaths - The absolute paths of the modules imported by the template.
  * @returns The source code of the template module.
  */
-export function generateTemplateModule(compiledFunctions: string): string {
-  return [
+export function generateTemplateModule(compiledFunctions: string, dependencyPaths: readonly string[] = []): string {
+  const lines = new Array<string>();
+  for (let i = 0; i < dependencyPaths.length; i++) {
+    lines.push(`import ${JSON.stringify(dependencyPaths[i])};`);
+  }
+
+  lines.push(
     'import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute, _resetProperty, _template, _renderTemplate, _parameter, _let } from \'@xaendar/core\';',
     '',
     compiledFunctions,
     '',
     'export { render };',
     ''
-  ].join('\n');
+  );
+
+  return lines.join('\n');
 }
 
 /**

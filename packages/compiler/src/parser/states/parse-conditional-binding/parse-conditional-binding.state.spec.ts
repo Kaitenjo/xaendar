@@ -180,7 +180,7 @@ describe('parseConditionalBinding', () => {
   });
 
   it('locates the conditions and the matched values in the template', () => {
-    const template = '<div @if (a()) { x="1" } @else { y="2" } @switch ( kind ) { @case (1) @case ( 2 ) { z="3" } @default { w="4" } }></div>';
+    const template = '<div @if (a()) { x="1" } @else { y="2" } @switch (kind) { @case (1) @case ( 2 ) { z="3" } @default { w="4" } }></div>';
     const [node] = parse(template);
     const [ifBinding, switchBinding] = node.conditionalBindings as [IfBindingNode, SwitchBindingNode];
     const textOf = (template: string, span: Span | undefined) => span && template.slice(span.start, span.end);

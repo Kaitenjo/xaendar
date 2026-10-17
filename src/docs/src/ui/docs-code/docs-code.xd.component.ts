@@ -1,8 +1,8 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
+import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
 import type { CodeLang } from '../../core/highlight/highlight';
-import { getSnippet } from '../../core/sources/sources';
+import { describeSnippet, loadSnippet } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
 
 /**
@@ -59,6 +59,10 @@ export class DocsCodeComponent extends CustomElement {
    */
   public readonly copied = signal(false);
   /**
+   * The snippet loaded last, with the key it was loaded for.
+   */
+  public readonly loaded = signal<{ key: string; file: SourceFile } | undefined>(undefined);
+  /**
    * The file being shown.
    */
   public readonly source = computed(() => this._computeSource());
@@ -84,6 +88,18 @@ export class DocsCodeComponent extends CustomElement {
   private _resetTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
+   * Loads the snippet whenever its key changes: its content is fetched only when a page shows it.
+   */
+  public onInit(): void {
+    this.effect(() => {
+      const key = this.snippet();
+      if (key) {
+        untracked(() => this._load(key));
+      }
+    });
+  }
+
+  /**
    * Copies the code to the clipboard.
    */
   public async copy(): Promise<void> {
@@ -98,13 +114,28 @@ export class DocsCodeComponent extends CustomElement {
   }
 
   /**
+   * Loads a snippet and, unless another one was asked for in the meantime, shows it.
+   *
+   * @param key - The path of the snippet.
+   */
+  private async _load(key: string): Promise<void> {
+    const file = await loadSnippet(key);
+    if (this.snippet() === key) {
+      this.loaded.set({ key, file });
+    }
+  }
+
+  /**
    * Computes the value of `source`.
    *
    * @returns The file being shown.
    */
   private _computeSource(): SourceFile {
-    if (this.snippet()) {
-      return getSnippet(this.snippet());
+    const key = this.snippet();
+    if (key) {
+      const loaded = this.loaded();
+      // Until the content arrives the snippet shows its name and language, so the frame does not change when it does
+      return loaded?.key === key ? loaded.file : describeSnippet(key);
     }
     const lang = this.language();
     return { 

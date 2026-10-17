@@ -10,6 +10,10 @@ const importInto = (source: string, path = './b', symbol = 'B') => {
 };
 
 describe('getImportInsertion', () => {
+  it('does not add the symbol to a lazy statement of the module, which would make it lazy', () => {
+    expect(importInto('@import lazy { A } from \'./b\';\n<p></p>')).toBe('@import lazy { A } from \'./b\';\n@import { B } from \'./b\';\n<p></p>');
+  });
+
   it.each([
     ['a template without statements', '<p></p>', '@import { B } from \'./b\';\n<p></p>'],
     ['an empty template', '', '@import { B } from \'./b\';\n'],

@@ -16,6 +16,23 @@ describe('lexImport', () => {
     expect(result.tokens?.every(t => t.type === TokenType.IMPORT)).toBe(true);
   });
 
+  it('marks the specifiers of an @import lazy, whatever the spaces around the modifier', () => {
+    for (const source of [' lazy { A, B }', ' lazy{ A, B }', '   lazy   {A,B}']) {
+      const result = lexImport(new LexerCursor(source), context);
+      expect(result.tokens?.map(t => t.parts)).toEqual([['A'], ['B']]);
+      expect(result.tokens?.every(t => t.type === TokenType.IMPORT && t.lazy === true)).toBe(true);
+    }
+  });
+
+  it('does not mark the specifiers of an @import that is not lazy', () => {
+    const result = lexImport(new LexerCursor(' { A }'), context);
+    expect(result.tokens?.some(t => 'lazy' in t)).toBe(false);
+  });
+
+  it('does not take a word starting with lazy for the modifier', () => {
+    expect(() => lexImport(new LexerCursor(' lazyX { A }'), context)).toThrow('Expected { after @import');
+  });
+
   it('throws when @import is not followed by {', () => {
     const cursor = new LexerCursor(' X');
     expect(() => lexImport(cursor, context)).toThrow('Expected { after @import');

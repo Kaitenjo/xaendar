@@ -9,6 +9,11 @@ import { extractImportedComponentPaths, generateStyleModule, generateTemplateMod
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
 
+/**
+ * Matches the TypeScript declaration files, which have no code to import.
+ */
+const DECLARATION_FILE = /\.d\.[cm]?tsx?$/;
+
 type LoadHook = NonNullable<HookHandler<Plugin['load']>>;
 
 /**
@@ -92,6 +97,18 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       }
     }
 
+    /*
+      The modules the template imports are imported by its module too, so the bundler keeps them in the chunk graph
+      of the template. The ones of `@import lazy` are not: something else loads them on demand.
+    */
+    const dependencyPaths = new Set<string>();
+    const eagerPaths = extractImportedComponentPaths(templateSource, dirname(templatePath), state.compilerOptions, true);
+    for (let i = 0; i < eagerPaths.length; i++) {
+      if (state.host.fileExists(eagerPaths[i]) && !DECLARATION_FILE.test(eagerPaths[i])) {
+        dependencyPaths.add(eagerPaths[i]);
+      }
+    }
+
     let compiledFunctions: string;
     try {
       compiledFunctions = await compile(templateSource, {
@@ -117,7 +134,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       TODO: replace it with a real sourcemap from the generated code back to the template.
     */
     return {
-      code: generateTemplateModule(compiledFunctions),
+      code: generateTemplateModule(compiledFunctions, Array.from(dependencyPaths)),
       map: { mappings: '' },
       moduleType: 'js'
     };

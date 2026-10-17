@@ -642,8 +642,8 @@
         "usingAComponentIn": {
           "title": "Usare un componente in un template",
           "p1": "Un template usa un componente in due passaggi distinti.",
-          "li1": "<strong>Durante la build</strong>, il template importa la classe con <code>@import</code>. Il compilatore legge la classe per conoscerne selettore, input e output, e controlla i binding rispetto a questi. Niente di questo import arriva al browser.",
-          "li2": "<strong>A runtime</strong>, il modulo che dichiara la classe deve essere stato valutato, così che il decoratore abbia definito l’elemento. Il modo abituale è un entry point che importa tutti i componenti prima di renderizzare qualsiasi cosa; questo sito lo fa con un import glob:",
+          "li1": "<strong>Durante la build</strong>, il template importa la classe con <code>@import</code>. Il compilatore legge la classe per conoscerne selettore, input e output, e controlla i binding rispetto a questi.",
+          "li2": "<strong>A runtime</strong>, il modulo che dichiara la classe deve essere stato valutato, così che il decoratore abbia definito l’elemento. Ci pensa il template: il suo modulo importa i moduli degli <code>@import</code>, così un componente è definito prima che venga renderizzato il template che lo usa, e il bundler può dividere il sito lungo i template. Solo l’entry point importa il componente radice:",
           "p2": "Un tag con il trattino che il template non importa, e che non è dichiarato come custom element di un’altra libreria (vedi sotto), fa fallire la build:"
         },
         "customElementsOfOther": {
@@ -654,7 +654,7 @@
         },
         "loadingAComponentOn": {
           "title": "Caricare un componente su richiesta",
-          "p1": "Un componente importato con un <code>import()</code> dinamico viene definito solo quando arriva il suo modulo. Gli elementi con il suo tag già presenti nella pagina vengono allora <em>aggiornati</em> (upgrade): il browser esegue il costruttore su di essi e li collega, ma i binding applicati nel frattempo non hanno raggiunto nessun input, perché nessun input esisteva ancora: sono stati scritti come semplici attributi, che i componenti non leggono.",
+          "p1": "Un template carica i moduli che importa con <code>@import</code>. Quando un componente deve arrivare dopo, <code>@import lazy</code> dà al compilatore la classe per il controllo dei tipi, senza caricare il modulo: lo carica qualcos’altro su richiesta, con un <code>import()</code> dinamico, e il componente viene definito solo quando arriva il suo modulo. Gli elementi con il suo tag già presenti nella pagina vengono allora <em>aggiornati</em> (upgrade): il browser esegue il costruttore su di essi e li collega, ma i binding applicati nel frattempo non hanno raggiunto nessun input, perché nessun input esisteva ancora: sono stati scritti come semplici attributi, che i componenti non leggono.",
           "example1": "Binding applicati prima e dopo la definizione",
           "p2": "Fai clic prima su <em>count + 1</em>, poi carica il pannello. Il primo pannello mostra i valori di default: la sua <code>label</code> statica non arriverà mai, e il suo <code>count</code> arriva solo con il cambiamento successivo, perché un binding reattivo scrive l’input quando il suo valore cambia. Il secondo pannello viene renderizzato da un <code>@if</code> solo dopo il caricamento del modulo, quindi riceve tutti i binding. La regola è questa: renderizza un componente caricato su richiesta solo quando <code>customElements.get()</code> lo conosce, o quando la promise di <code>customElements.whenDefined()</code> è risolta."
         },
@@ -662,7 +662,7 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "Un elemento mai definito resta vuoto, in silenzio",
-            "body": "Un componente importato in un template ma mai valutato a runtime compila, e viene renderizzato come un elemento vuoto e non definito: nessuno shadow root, nessun contenuto, nessun errore. La pseudo-classe <code>:defined</code> permette di dargli uno stile mentre aspetta, come fa l’esempio del caricamento su richiesta."
+            "body": "Un componente importato <code>lazy</code> in un template e mai caricato compila, e viene renderizzato come un elemento vuoto e non definito: nessuno shadow root, nessun contenuto, nessun errore. La pseudo-classe <code>:defined</code> permette di dargli uno stile mentre aspetta, come fa l’esempio del caricamento su richiesta."
           },
           "callout2": {
             "heading": "Un tag importato e anche dichiarato",
@@ -892,7 +892,7 @@
         },
         "declaringAndRegistering": {
           "title": "Dichiarazione e registrazione",
-          "p1": "<code>@Directive</code> riceve un selettore e registra la classe con quel selettore appena il modulo viene valutato. Come per i componenti, una direttiva va resa nota due volte: il template la importa con <code>@import</code>, così il compilatore può controllarne input e output, e il modulo va caricato a runtime prima che venga renderizzato un template che la usa. Un glob in <code>main.ts</code> si occupa della seconda parte per tutte le direttive dell’applicazione.",
+          "p1": "<code>@Directive</code> riceve un selettore e registra la classe con quel selettore appena il modulo viene valutato. Come per i componenti, una direttiva va resa nota due volte: il template la importa con <code>@import</code>, così il compilatore può controllarne input e output, e il modulo viene caricato a runtime dal template, prima che venga renderizzato.",
           "callout1": {
             "heading": "Usa un prefisso nei selettori",
             "body": "I selettori delle direttive vivono in un unico registro, condiviso dall’intera applicazione e dalle librerie che usa. A differenza dei nomi dei custom element, non richiedono un trattino: un prefisso breve, come <code>ex</code> in queste pagine, evita le collisioni."
@@ -1150,7 +1150,7 @@
         "li1": "Installa i pacchetti di runtime e gli strumenti di build.",
         "li2": "Registra la trasformazione dei decorator e il plugin di Xaendar nella configurazione di Vite, in quest’ordine.",
         "li3": "Configura TypeScript. Xaendar usa i decorator standard e la parola chiave <code>accessor</code>: quindi <strong>non</strong> abilitare <code>experimentalDecorators</code>. Il plugin verifica i tipi dei template con il <code>tsconfig.json</code> che trova nella cartella da cui viene avviato Vite.",
-        "li4": "Carica <code>signals.ts</code> prima dell’entry point, come nell’<code>index.html</code> qui sopra."
+        "li4": "Carica <code>signals.ts</code> prima dell’entry point, come nell’<code>index.html</code> qui sopra. Se la build divide l’applicazione in chunk, con import dinamici, fai caricare l’applicazione a <code>main.ts</code> con <code>await import()</code> invece che con un import statico: <code>@xaendar/core</code> viene allora valutato dopo l’installazione del polyfill."
       },
       "yourFirstComponent": {
         "title": "Il tuo primo componente",
@@ -2194,8 +2194,8 @@
           "p3": "Gli esempi di questa pagina e di <a href=\"#/it/signals/shared-state\">Stato condiviso</a> importano funzioni e signal per mostrare cosa supporta il compilatore, non perché ogni componente vada scritto così."
         },
         "importingIsNotRegistering": {
-          "title": "Importare non è registrare",
-          "p1": "Il browser conosce un componente solo dopo che il file che ne dichiara la classe è stato eseguito, il che definisce il custom element. Ogni componente va quindi importato anche in TypeScript da qualche parte, di solito tutti insieme in <code>main.ts</code>. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>, che mostra anche l’errore per un componente usato senza <code>@import</code>."
+          "title": "Importare carica il modulo",
+          "p1": "Il browser conosce un componente solo dopo che il file che ne dichiara la classe è stato eseguito, il che definisce il custom element. Il modulo del template importa i moduli dei suoi <code>@import</code>, così ogni template carica ciò che usa e nient’altro; <code>@import lazy { Nome } from '...'</code> mantiene il controllo dei tipi senza caricare il modulo. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>, che mostra anche l’errore per un componente usato senza <code>@import</code>."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2638,7 +2638,7 @@
         "xdComponent": {
           "title": "xd generate component",
           "p1": "Il comando crea una cartella con il nome del componente, con la classe, il template, il foglio di stile e una spec. Il nome viene usato come selettore, quindi deve essere un nome valido per un custom element; la classe prende lo stesso nome in PascalCase.",
-          "p2": "Ricorda di importare il nuovo componente: in <code>main.ts</code>, o con un glob, così viene definito, e nei template che lo usano, con <code>@import</code>."
+          "p2": "Ricorda di importare il nuovo componente nei template che lo usano, con <code>@import</code>: questo lo definisce anche."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -3000,7 +3000,7 @@
     },
     "Error: No directive registered for selector \"exTint\"": {
       "cause": "Il template importa la direttiva, ma il suo modulo non è mai stato caricato a runtime.",
-      "fix": "Importa il modulo, per esempio con il glob di main.ts."
+      "fix": "Importa il modulo nel template con @import (non @import lazy), oppure caricalo prima che il template venga renderizzato."
     },
     "Error: Directive TintDirective registered for selector \"exTint\" is not a StructuralDirective": {
       "cause": "Una direttiva custom applicata con *, o una strutturale con @@.",

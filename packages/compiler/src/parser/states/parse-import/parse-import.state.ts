@@ -20,10 +20,12 @@ import { ImportSpecifier } from '../../types/nodes/import-specifier.type';
  */
 export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, _token: ImportPathToken): MaybeASTNodeWithSpan<ImportNode> {
   const specifiers = new Array<ImportSpecifier>();
+  let lazy = false;
 
   while (cursor.peek().type === TokenType.IMPORT) {
     cursor.advance();
-    const { parts: [rawSpecifier], span } = cursor.getCurrentToken<ImportToken>().value;
+    const { parts: [rawSpecifier], span, lazy: lazySpecifier } = cursor.getCurrentToken<ImportToken>().value;
+    lazy = lazySpecifier === true;
     const specifier = parseSpecifier(rawSpecifier, cursor.findSpan(rawSpecifier.trim(), span.start).start);
     specifiers.push(specifier);
   }
@@ -32,13 +34,18 @@ export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
   cursor.advance();
   const { parts: [path], span } = cursor.getCurrentToken<ImportPathToken>().value;
 
-  return {
+  const node: MaybeASTNodeWithSpan<ImportNode> = {
     type: ASTNodeType.Import,
     specifiers,
     path,
     // The token starts with the `from` keyword, which the path may contain too
     pathSpan: cursor.findSpan(path, cursor.findSpan('from', span.start).end)
+  };
+  if (lazy) {
+    node.lazy = true;
   }
+
+  return node;
 }
 
 /**

@@ -642,8 +642,8 @@
         "usingAComponentIn": {
           "title": "Using a component in a template",
           "p1": "A template uses a component in two separate steps.",
-          "li1": "<strong>At build time</strong>, the template imports the class with <code>@import</code>. The compiler reads the class to learn its selector, its inputs and its outputs, and type-checks the bindings against them. Nothing of this import reaches the browser.",
-          "li2": "<strong>At run time</strong>, the module declaring the class must have been evaluated, so that the decorator has defined the element. The usual way is an entry point that imports every component before rendering anything; this site does it with a glob import:",
+          "li1": "<strong>At build time</strong>, the template imports the class with <code>@import</code>. The compiler reads the class to learn its selector, its inputs and its outputs, and type-checks the bindings against them.",
+          "li2": "<strong>At run time</strong>, the module declaring the class must have been evaluated, so that the decorator has defined the element. The template does it: its module imports the modules it imports with <code>@import</code>, so a component is defined before the template using it is rendered, and the bundler can split the site along the templates. Only the entry point imports the root component:",
           "p2": "A tag with a hyphen that the template neither imports nor declares as a custom element of another library (see below) fails the build:"
         },
         "customElementsOfOther": {
@@ -654,7 +654,7 @@
         },
         "loadingAComponentOn": {
           "title": "Loading a component on demand",
-          "p1": "A component imported with a dynamic <code>import()</code> is defined only when its module arrives. The elements with its tag that are already in the page are then <em>upgraded</em>: the browser runs the constructor on them and connects them, but the bindings applied to them in the meantime did not reach any input, because there was no input yet: they were written as plain attributes, which components do not read.",
+          "p1": "A template loads the modules it imports with <code>@import</code>. When a component has to arrive later, <code>@import lazy</code> gives the compiler the class to type-check against, without loading the module: something else loads it on demand, with a dynamic <code>import()</code>, and the component is defined only when its module arrives. The elements with its tag that are already in the page are then <em>upgraded</em>: the browser runs the constructor on them and connects them, but the bindings applied to them in the meantime did not reach any input, because there was no input yet: they were written as plain attributes, which components do not read.",
           "example1": "Bindings applied before and after the definition",
           "p2": "Click <em>count + 1</em> first, then load the panel. The first panel shows the default values: its static <code>label</code> will never arrive, and its <code>count</code> only arrives with the next change, since a reactive binding writes the input when its value changes. The second panel is rendered by an <code>@if</code> only after the module has been loaded, so it gets every binding. That is the rule: render a lazy component only once <code>customElements.get()</code> knows it, or once the promise of <code>customElements.whenDefined()</code> is resolved."
         },
@@ -662,7 +662,7 @@
           "title": "Edge cases",
           "callout1": {
             "heading": "An element that is never defined stays empty, silently",
-            "body": "A component imported in a template but never evaluated at run time compiles, and renders as an empty, undefined element: no shadow root, no content, no error. The <code>:defined</code> pseudo-class can style it while it waits, as the lazy example does."
+            "body": "A component imported <code>lazy</code> in a template and never loaded compiles, and renders as an empty, undefined element: no shadow root, no content, no error. The <code>:defined</code> pseudo-class can style it while it waits, as the lazy example does."
           },
           "callout2": {
             "heading": "A tag both imported and declared",
@@ -892,7 +892,7 @@
         },
         "declaringAndRegistering": {
           "title": "Declaring and registering",
-          "p1": "<code>@Directive</code> takes a selector and registers the class under it as soon as the module is evaluated. As for components, a directive has to be known twice: the template imports it with <code>@import</code>, so that the compiler can check its inputs and outputs, and the module has to be loaded at runtime before a template using it is rendered. A glob in <code>main.ts</code> takes care of the second part for every directive of the application.",
+          "p1": "<code>@Directive</code> takes a selector and registers the class under it as soon as the module is evaluated. As for components, a directive has to be known twice: the template imports it with <code>@import</code>, so that the compiler can check its inputs and outputs, and the module is loaded at runtime by the template, before it is rendered.",
           "callout1": {
             "heading": "Prefix your selectors",
             "body": "Selectors of directives live in a single registry, shared by the whole application and by the libraries it uses. Unlike the names of custom elements, they need no dash: a short prefix, such as <code>ex</code> in these pages, avoids clashes."
@@ -1150,7 +1150,7 @@
         "li1": "Install the runtime packages and the build tooling.",
         "li2": "Register the decorators transform and the Xaendar plugin in the Vite configuration, in this order.",
         "li3": "Configure TypeScript. Xaendar uses standard decorators and the <code>accessor</code> keyword, so do <strong>not</strong> enable <code>experimentalDecorators</code>. The plugin type-checks the templates with the <code>tsconfig.json</code> found in the directory Vite is started from.",
-        "li4": "Load <code>signals.ts</code> before your entry point, as in the <code>index.html</code> above."
+        "li4": "Load <code>signals.ts</code> before your entry point, as in the <code>index.html</code> above. If the build splits the application in chunks, with dynamic imports, have <code>main.ts</code> load it with <code>await import()</code> instead of a static import: <code>@xaendar/core</code> is then evaluated after the polyfill is installed."
       },
       "yourFirstComponent": {
         "title": "Your first component",
@@ -2194,8 +2194,8 @@
           "p3": "The examples of this page and of <a href=\"#/en/signals/shared-state\">Sharing state</a> import functions and signals to show what the compiler supports, not because every component should be written that way."
         },
         "importingIsNotRegistering": {
-          "title": "Importing is not registering",
-          "p1": "The browser knows a component only once the file declaring its class has run, which defines the custom element. Every component must therefore also be imported in TypeScript somewhere, usually all at once in <code>main.ts</code>. See <a href=\"#/en/components/registration\">Selectors and registration</a>, which also shows the error for a component used without <code>@import</code>."
+          "title": "Importing loads the module",
+          "p1": "The browser knows a component only once the file declaring its class has run, which defines the custom element. The template module imports the modules of its <code>@import</code> statements, so each template loads what it uses and nothing else; <code>@import lazy { Name } from '...'</code> keeps the type-check without loading the module. See <a href=\"#/en/components/registration\">Selectors and registration</a>, which also shows the error for a component used without <code>@import</code>."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -2638,7 +2638,7 @@
         "xdComponent": {
           "title": "xd generate component",
           "p1": "The command creates a folder named after the component, with the class, the template, the stylesheet and a spec. The name is used as the selector, so it must be a valid custom element name; the class is named after it in PascalCase.",
-          "p2": "Remember to import the new component: in <code>main.ts</code>, or through a glob, so that it is defined, and in the templates using it, with <code>@import</code>."
+          "p2": "Remember to import the new component in the templates using it, with <code>@import</code>: that also defines it."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -3000,7 +3000,7 @@
     },
     "Error: No directive registered for selector \"exTint\"": {
       "cause": "The template imports the directive, but its module was never loaded at runtime.",
-      "fix": "Import the module, for instance with the glob of main.ts."
+      "fix": "Import the module in the template with @import (not @import lazy), or load it before the template is rendered."
     },
     "Error: Directive TintDirective registered for selector \"exTint\" is not a StructuralDirective": {
       "cause": "A custom directive applied with *, or a structural one with @@.",

@@ -27,4 +27,9 @@ export type ImportNode = ASTNodeWithSpan<{
    * Span of the module path, without the quotes.
    */
   pathSpan: Span;
+  /**
+   * Whether the statement is `@import lazy`: the symbols are type-checked, but the template module does not
+   * import the module, which something else loads on demand.
+   */
+  lazy?: true;
 }>;

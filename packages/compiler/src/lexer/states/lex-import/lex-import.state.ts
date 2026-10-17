@@ -2,8 +2,14 @@ import { COMMA, LEFT_BRACE, RIGHT_BRACE, SPACE } from '../../../costants/chars.c
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { ImportToken } from '../../types/tokens/import-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+
+/**
+ * The `lazy` modifier of an `@import`, followed by the brace or by spaces.
+ */
+const LAZY_KEYWORD = /^lazy(?=[\s{])/;
 
 export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -21,6 +27,19 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
     @import   { ...
   */
   cursor.skipSpaces();
+
+  /*
+    The modifier is written between @import and the '{'; the symbols are checked, not imported by the template
+    module, so the bundler can load them on demand
+           |
+           ˅
+    @import lazy { ...
+  */
+  const lazy = cursor.peekMatch(LAZY_KEYWORD, 5);
+  if (lazy) {
+    cursor.advance(4);
+    cursor.skipSpaces();
+  }
 
   cursor.advance();
   if (cursor.currentChar.code !== LEFT_BRACE) {
@@ -42,13 +61,13 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
         break;
 
       case COMMA:
-        addImport(retVal, cursor, importValue, importStart);
+        addImport(retVal, cursor, importValue, importStart, lazy);
         importValue = '';
         importStart = cursor.currentChar.index + 1;
         break;
 
       case RIGHT_BRACE:
-        addImport(retVal, cursor, importValue, importStart);
+        addImport(retVal, cursor, importValue, importStart, lazy);
         read = false;
         break;
 
@@ -61,15 +80,20 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
   return retVal
 }
 
-function addImport(retVal: LexerTransitionFunctionReturnType, cursor: LexerCursor, value: string, start: number): void {
+function addImport(retVal: LexerTransitionFunctionReturnType, cursor: LexerCursor, value: string, start: number, lazy: boolean): void {
   const end = cursor.currentChar.index + 1;
   cursor.advance();
-  retVal.tokens!.push({
+  const token: ImportToken = {
     type: TokenType.IMPORT,
     parts: [value],
     span: {
       start,
       end
     }
-  });
+  };
+  if (lazy) {
+    token.lazy = true;
+  }
+
+  retVal.tokens!.push(token);
 }

@@ -81,6 +81,15 @@ describe('extractImportedComponentPaths()', () => {
     expect(extractImportedComponentPaths('@import { formatDate } from \'./utils\';', '/src/features/user')).toEqual([resolved]);
   });
 
+  it('leaves out the modules of an @import lazy only when asked to', () => {
+    const template = `@import lazy { Panel } from './panel.xd.component';\n@import { Button } from './button.xd.component';`;
+    const panel = resolvePosixPath('/src/features/user', './panel.xd.component');
+    const button = resolvePosixPath('/src/features/user', './button.xd.component');
+
+    expect(extractImportedComponentPaths(template, '/src/features/user')).toEqual([panel, button]);
+    expect(extractImportedComponentPaths(template, '/src/features/user', undefined, true)).toEqual([button]);
+  });
+
   it('returns posix paths, matching the Vite ids used as registry keys', () => {
     const template = `@import { Button } from './button.xd.component';`;
 
@@ -165,6 +174,12 @@ describe('generateTemplateModule()', () => {
 
     expect(code.startsWith('import { _if, _switch')).toBe(true);
     expect(code).toContain('} from \'@xaendar/core\';\n\nfunction render() {}\n\nexport { render };\n');
+  });
+
+  it('imports the dependencies of the template for their side effects, before the runtime helpers', () => {
+    const code = generateTemplateModule('function render() {}', ['/src/a.xd.component.ts', 'C:/my src/b.xd.component.ts']);
+
+    expect(code.startsWith('import "/src/a.xd.component.ts";\nimport "C:/my src/b.xd.component.ts";\nimport { _if')).toBe(true);
   });
 });
 

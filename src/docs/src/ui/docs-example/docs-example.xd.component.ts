@@ -1,7 +1,7 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
+import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
-import { getExampleFiles } from '../../core/sources/sources';
+import { loadExampleFiles } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
 
 /**
@@ -54,13 +54,26 @@ export class DocsExampleComponent extends CustomElement {
    */
   public readonly selected = signal('');
   /**
-   * The source files of the example.
+   * The source files of the example, empty until they are loaded.
    */
-  public readonly files = computed(() => this._computeFiles());
+  public readonly files = signal<SourceFile[]>([]);
   /**
    * The file being shown.
    */
   public readonly current = computed(() => this._computeCurrent());
+
+  /**
+   * Loads the source files the first time they are shown, and again if the example changes: they are fetched
+   * only when a page shows them.
+   */
+  public onInit(): void {
+    this.effect(() => {
+      const name = this.name();
+      if (this.open()) {
+        untracked(() => this._load(name));
+      }
+    });
+  }
 
   /**
    * Shows or hides the source files.
@@ -88,12 +101,19 @@ export class DocsExampleComponent extends CustomElement {
   }
 
   /**
-   * Computes the value of `files`.
+   * Loads the source files of an example and, unless another example was asked for in the meantime, shows them.
    *
-   * @returns The source files of the example.
+   * @param name - The path of the example folder.
    */
-  private _computeFiles(): SourceFile[] {
-    return getExampleFiles(this.name());
+  private async _load(name: string): Promise<void> {
+    const files = await loadExampleFiles(name);
+    if (!files.length) {
+      console.error(`No files found in src/examples/${name}`);
+    }
+
+    if (this.name() === name) {
+      this.files.set(files);
+    }
   }
 
   /**
@@ -103,6 +123,6 @@ export class DocsExampleComponent extends CustomElement {
    */
   private _computeCurrent(): SourceFile {
     const files = this.files();
-    return files.find(file => file.name === this.selected()) ?? files[0] ?? { name: '', lang: 'text', code: `No files found in src/examples/${this.name()}` };
+    return files.find(file => file.name === this.selected()) ?? files[0] ?? { name: '', lang: 'text', code: '' };
   }
 }

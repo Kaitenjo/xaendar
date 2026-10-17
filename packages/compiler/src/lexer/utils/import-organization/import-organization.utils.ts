@@ -24,6 +24,10 @@ type ImportStatement = {
    */
   readonly specifiers: string[];
   /**
+   * Whether the statement is `@import lazy`.
+   */
+  readonly lazy: boolean;
+  /**
    * The quote of the path.
    */
   readonly quote: string;
@@ -160,7 +164,7 @@ function readStatements(source: string): ImportStatement[] {
         const start = source.lastIndexOf('@import', tokens[0].span.start);
         const end = braceEnd + text.length;
         const specifiers = tokens.map(({ parts: [specifier] }) => specifier.trim()).filter(Boolean);
-        statements.push({ start, end, path: token.parts[0], specifiers, quote, semicolon, multiline: source.slice(start, braceEnd).includes('\n'), comments: '' });
+        statements.push({ start, end, path: token.parts[0], specifiers, lazy: tokens[0].lazy === true, quote, semicolon, multiline: source.slice(start, braceEnd).includes('\n'), comments: '' });
         tokens = [];
         break;
       }
@@ -201,7 +205,9 @@ function mergeStatements(statements: ImportStatement[]): ImportStatement[] {
   const merged = new Map<string, ImportStatement>();
   for (let i = 0; i < statements.length; i++) {
     const statement = statements[i];
-    const existing = merged.get(statement.path);
+    // A lazy statement is never merged with one that is not: the modules would be imported differently
+    const key = `${statement.lazy ? 'lazy:' : ''}${statement.path}`;
+    const existing = merged.get(key);
     if (existing) {
       for (let j = 0; j < statement.specifiers.length; j++) {
         if (!existing.specifiers.includes(statement.specifiers[j])) {
@@ -212,7 +218,7 @@ function mergeStatements(statements: ImportStatement[]): ImportStatement[] {
       // The comments of a statement merged into another one follow the one it is merged into
       existing.comments = `${existing.comments}${statement.comments}`;
     } else {
-      merged.set(statement.path, { ...statement, specifiers: [...statement.specifiers] });
+      merged.set(key, { ...statement, specifiers: [...statement.specifiers] });
     }
   }
 
@@ -261,7 +267,7 @@ function compareText(first: string, second: string): number {
  * @param newline - The line break of the template.
  * @returns The text of the statement.
  */
-function writeStatement({ path, specifiers, quote, semicolon, multiline, comments }: ImportStatement, newline: string): string {
+function writeStatement({ path, specifiers, lazy, quote, semicolon, multiline, comments }: ImportStatement, newline: string): string {
   const names = multiline ? `{${newline}  ${specifiers.join(`,${newline}  `)}${newline}}` : `{ ${specifiers.join(', ')} }`;
-  return `@import ${names} from ${quote}${path}${quote}${semicolon}${comments}`;
+  return `@import ${lazy ? 'lazy ' : ''}${names} from ${quote}${path}${quote}${semicolon}${comments}`;
 }

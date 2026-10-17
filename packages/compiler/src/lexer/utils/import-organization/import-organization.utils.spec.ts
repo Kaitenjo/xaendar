@@ -51,6 +51,13 @@ describe('organizeImports', () => {
     expect(organize(source, { sort: true })).toBe('@import { A, B, C } from \'./a\';');
   });
 
+  it('keeps a statement lazy, and does not merge it with one that is not', () => {
+    const source = '@import lazy { B } from \'./a\';\n@import { A } from \'./a\';\n@import lazy { C } from \'./a\';';
+
+    expect(organize(source, { sort: true })).toBe('@import lazy { B, C } from \'./a\';\n@import { A } from \'./a\';');
+    expect(organizeImports(source)).toBeUndefined();
+  });
+
   it('sorts the statements by path, the bare module names before the relative paths', () => {
     const source = '@import { A } from \'./b\';\n@import { B } from \'../c\';\n@import { C } from \'@xaendar/lib\';\n@import { D } from \'./B2\';\n@import { E } from \'./a\';';
 
