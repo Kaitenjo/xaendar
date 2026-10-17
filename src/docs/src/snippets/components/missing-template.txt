@@ -1,3 +1,2 @@
-warning: Could not find template at /src/rating/rating.html
-  Plugin: xaendar
-  File: /src/rating/rating.xd.component.ts
+Xaendar: Could not find template at /src/rating/rating.html
+RolldownError: Failed to compile component - /src/rating/rating.xd.component.ts

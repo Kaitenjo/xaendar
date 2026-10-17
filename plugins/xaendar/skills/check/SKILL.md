@@ -19,7 +19,7 @@ Arguments: `$ARGUMENTS` (the project folder, the one containing `vite.config.ts`
    - Template errors name the template or component and carry a `[Lexer]`, `[Parser]` or `[TypeChecker]` message with `[Ln x, Col y]`.
    - `[TypeChecker] Type check failed` lists the type errors of the TypeScript as `tsc` prints them: `file(line,col): error TSxxxx: …`. TS2416 / "defines instance member function … as instance member accessor" comes from a member whose name clashes with `HTMLElement` (`title`, `remove`, `hidden`, `lang`, …). Rename the member, and keep the attribute name with `alias`.
 
-   Also collect the warnings `Could not find template at …` and `Unsupported stylesheet extension …`.
+   Also collect the warning `Unsupported stylesheet extension …`.
 
 2. **Explain and fix**: for each message, look up its text in `${CLAUDE_PLUGIN_ROOT}/skills/xaendar/references/errors.md` for the cause and fix. If the code looks correct, check `${CLAUDE_PLUGIN_ROOT}/skills/xaendar/references/known-issues.md`, because some messages come from framework bugs that have workarounds. Fix the errors in files this session changed. For errors elsewhere, report them and ask before touching them.
 

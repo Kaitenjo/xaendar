@@ -131,7 +131,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       */
       registerTemplatePath(templatePath, componentPath);
       if (!state.host.fileExists(templatePath)) {
-        this.warn(`Could not find template at ${templatePath}`);
+        state.logError('', `Could not find template at ${templatePath}`);
         return fail();
       }
 

@@ -189,8 +189,8 @@
             "p1": "Il plugin legge <code>selector</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
           },
           "callout2": {
-            "heading": "Un template mancante è solo un avviso",
-            "p1": "Un <code>templateUrl</code> che punta a un file inesistente produce un avviso, non un errore di build, e la stessa eccezione a runtime."
+            "heading": "Un template mancante fa fallire la build",
+            "p1": "Un <code>templateUrl</code> che punta a un file inesistente fa fallire la build. Nel dev server l’errore viene stampato nel terminale e il componente viene servito senza il suo template, quindi collegarlo lancia un’eccezione, finché il file non viene creato: a quel punto il componente viene compilato di nuovo."
           },
           "callout3": {
             "heading": "Creato non vuol dire renderizzato",

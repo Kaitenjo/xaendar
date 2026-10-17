@@ -356,7 +356,7 @@ describe('createTransformHook()', () => {
     expect(registerMetadata).toHaveBeenCalledWith('FooComponent', metadata);
   });
 
-  it('warns and returns null when the template file cannot be found', async () => {
+  it('logs an error and returns null when the template file cannot be found', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
@@ -367,7 +367,8 @@ describe('createTransformHook()', () => {
     const result = await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
     expect(result).toBeNull();
-    expect(ctx.warn).toHaveBeenCalledWith(expect.stringContaining('Could not find template at'));
+    expect(state.logError).toHaveBeenCalledWith('', `Could not find template at ${resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html')}`);
+    expect(ctx.warn).not.toHaveBeenCalled();
   });
 
   it('registers a missing template without watching it, so that creating it compiles the component again', async () => {
