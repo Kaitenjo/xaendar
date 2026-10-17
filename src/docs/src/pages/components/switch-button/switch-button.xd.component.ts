@@ -32,21 +32,20 @@ export class SwitchButtonComponent<T = string> extends CustomElement {
     }
   }
 
-  public onButtonClick(item: Item<T>, index: number): void {
-    this._selectItem(item, index);
+  public onButtonClick(item: Item<T>, button: HTMLElement): void {
+    this._selectItem(item, button);
   }
 
   public updateSelectedOnItemsChange(): void {
     const items = this.items();
     if (items.length) {
-      this._selectItem(items[0]);
+      this._selectItem(items[0], this.buttons()[0]);
     }
   }
 
-  private _selectItem(item: Item<T>, index = 0): void {
+  private _selectItem(item: Item<T>, button: HTMLElement): void {
     this.selected.set(item);
     this.valueChange.emit(item);
-    const button = this.buttons()[index];
     this.selectedCircle()!.style.left = `${button.offsetLeft}px`;
     this.selectedCircle()!.style.width = `${button.offsetWidth}px`;
   }

@@ -121,6 +121,12 @@ describe('checkVariableOrder', () => {
       expect(errorsOf('<template #row(item: Item)><p>{ item() } { other } { inner.value }</p><input #inner /><template #other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
     });
 
+    it('checks the default values of the parameters like the content of the template, against its own template variables and each @render', () => {
+      expect(errorsOf('<template #row(label = inner.value)><input #inner /></template>')).toEqual([[readBefore('inner'), 'inner']]);
+      expect(errorsOf('@render row()<input #field /><template #row(label = field.value) />')).toEqual([[readByRender('field', 'row'), 'row']]);
+      expect(errorsOf('<input #field /><template #row(item: Item, label = item().name + field.value) />@render row(1)')).toBeUndefined();
+    });
+
     it('checks the template variables declared outside of a template, which its content reads, against each @render of the template', () => {
       const template = '<template #row()><p>{ field.value }</p></template>@render row()<input #field />@render row()';
       expect(errorsOf(template)).toEqual([[readByRender('field', 'row'), 'row']]);

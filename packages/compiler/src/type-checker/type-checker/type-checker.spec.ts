@@ -38,19 +38,23 @@ describe('TypeChecker', () => {
     expect(text).toBe([
       'import type * as __module0 from \'@xaendar/core/signals\';',
       'type __Template<Params extends unknown[]> = { readonly __params: Params };',
-      'type __Parameters<Values extends unknown[]> = { [Key in keyof Values]: __module0.Computed<Values[Key]> };',
-      'declare function __render<Params extends unknown[]>(template: __Template<Params>): (...args: Params) => void;',
+      'type __Parameter<Value> = __module0.Computed<Value>;',
+      'type __Values<Params extends unknown[]> = { [Key in keyof Params]: Exclude<Params[Key], undefined> extends __Parameter<infer Value> ? Value : never };',
+      'type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;',
+      'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params>, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<__Values<Required<Params>>, Count> : __Values<Params>) => void;',
+      'declare function __default<Value>(value: Value): __Parameter<Value>;',
+      'declare function __optional<Value>(): __Parameter<Value | undefined>;',
       'function typeCheck() {',
-      `  type __Params${start} = [label: string, count: number];`,
+      `  type __Params${start} = Parameters<typeof __template${start}>;`,
       `  let row!: __Template<__Params${start}>;`,
-      '  __render(row)(root.title, 1);',
-      `  ((...[label, count]: __Parameters<__Params${start}>) => {`,
+      '  __render(row, 2)(root.title, 1);',
+      `  const __template${start} = (label: __Parameter<string>, count: __Parameter<number>): void => {`,
       '    label();',
-      '  });',
+      '  };',
       '}'
     ].join('\n'));
-    // The types of the parameters, the name of the template, the @render and the content are mapped onto the template
-    expect([...mappingTable.keys()]).toEqual([5, 6, 7, 8, 9]);
+    // The name of the template, the @render, the parameters and the content are mapped onto the template
+    expect([...mappingTable.keys()]).toEqual([10, 11, 12, 13]);
   });
 
   it('writes no template helper for a template declaring no template', async () => {

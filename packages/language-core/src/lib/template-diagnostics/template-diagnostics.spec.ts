@@ -54,13 +54,38 @@ describe('getTemplateDiagnostics', () => {
       '<template #wrong(value: Nope) />'
     ].join('\n');
 
-    // The templates are declared at the start of their scope, before the @render
+    // The templates are declared at the start of their scope, before the @render, and their parameters are checked with their content
     expect(await diagnose(source)).toEqual([
-      ['Nope', 'Cannot find name \'Nope\'.', DiagnosticCategory.Error],
       ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
       ['@render row(items[0])', 'Expected 2 arguments, but got 1.', DiagnosticCategory.Error],
       ['2', 'Expected 2 arguments, but got 3.', DiagnosticCategory.Error],
-      ['nam', 'Property \'nam\' does not exist on type \'Row\'.', DiagnosticCategory.Error]
+      ['nam', 'Property \'nam\' does not exist on type \'Row\'.', DiagnosticCategory.Error],
+      ['Nope', 'Cannot find name \'Nope\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('lets a @render leave out the arguments of the optional parameters and of the ones with a default value, typed by it or as declared', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '@render row(items[0])',
+      '@render row(items[0], \'x\', true, 2)',
+      '@render row(items[0], undefined)',
+      '@render row(items[0], \'x\', 1)',
+      '@render row()',
+      '<template #row(item: Row, label = \'#\' + item().id, dense: boolean = title === \'\', count?: number)>',
+      '  { label().toUpperCase() } { dense() } { count().toFixed() } { label().nope }',
+      '</template>',
+      '<template #wrong(first: number = \'a\', second = third(), third: number = 1) />'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['undefined', 'Argument of type \'undefined\' is not assignable to parameter of type \'string\'.', DiagnosticCategory.Error],
+      ['1', 'Argument of type \'number\' is not assignable to parameter of type \'boolean\'.', DiagnosticCategory.Error],
+      ['@render row()', 'Expected 1-4 arguments, but got 0.', DiagnosticCategory.Error],
+      ['count', 'Object is possibly \'undefined\'.', DiagnosticCategory.Error],
+      ['nope', 'Property \'nope\' does not exist on type \'string\'.', DiagnosticCategory.Error],
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['third', 'Parameter \'second\' cannot reference identifier \'third\' declared after it.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 

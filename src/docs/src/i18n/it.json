@@ -2443,6 +2443,12 @@
           "example1": "Un template di riga, tipizzato con un tipo importato, renderizzato da un @for",
           "p2": "Il template viene dopo il <code>@for</code> che lo renderizza: un template è visibile in tutto il suo scope, anche prima della sua dichiarazione. Quando le righe si spostano, le loro istanze si spostano con loro e ricevono sul posto la nuova posizione."
         },
+        "optionalParameters": {
+          "title": "Parametri opzionali e valori di default",
+          "p1": "Un parametro può essere opzionale, <code>note?: string</code>, o avere un valore di default, con il suo tipo o tipizzato dal valore: <code>dense: boolean = false</code>, <code>label = item().name</code>. Un <code>@render</code> può allora omettere il suo argomento, e possono esserlo solo gli ultimi parametri.",
+          "example1": "Badge con un tono di default e un conteggio opzionale",
+          "p2": "Il valore di default si usa solo quando l’argomento viene omesso: un argomento passato come <code>undefined</code> resta <code>undefined</code>, e TypeScript lo accetta solo se lo accetta il tipo del parametro. Come in JavaScript, il valore di default legge ciò che legge il contenuto e i parametri che lo precedono, come signal, ed è anch’esso un signal: si aggiorna quando cambia ciò che legge. Un parametro opzionale omesso vale <code>undefined</code>."
+        },
         "scope": {
           "title": "Cosa legge un template",
           "p1": "Il contenuto di un template legge i nomi del punto in cui è dichiarato, come una closure: i membri del componente, gli import, le variabili di template e i template del suo scope, l’item del <code>@for</code> attorno alla dichiarazione. Non legge i nomi del punto in cui viene renderizzato: passali come argomenti.",
@@ -2462,7 +2468,7 @@
           },
           "callout3": {
             "heading": "Argomenti e parametri",
-            "body": "Ogni parametro ha un tipo e riceve un argomento: non ci sono parametri opzionali, valori di default, parametri rest o destructuring, e un argomento non può essere espanso con lo spread."
+            "body": "Non ci sono parametri rest o destructuring, e un argomento non può essere espanso con lo spread. Un parametro che segue uno opzionale, o uno con un valore di default, deve esserlo anche lui."
           },
           "callout4": {
             "heading": "Dove si renderizza un template",
@@ -2475,7 +2481,8 @@
           "th2": "Descrizione",
           "td1": "Dichiara un template con parametri tipizzati, visibile in tutto il suo scope.",
           "td2": "Renderizza un’istanza del template dove è scritto, controllando gli argomenti rispetto ai parametri.",
-          "td3": "Legge un parametro nel contenuto: un signal, aggiornato quando cambia il suo argomento."
+          "td3": "Legge un parametro nel contenuto: un signal, aggiornato quando cambia il suo argomento.",
+          "td4": "Un parametro opzionale, e parametri con un valore di default, tipizzati come dichiarato o dal valore: un <code>@render</code> può ometterne gli argomenti."
         }
       },
       "textInterpolation": {
@@ -3039,9 +3046,13 @@
       "cause": "I parametri di un template con una virgola mancante o doppia, un punto e virgola, o qualcosa che non è un parametro.",
       "fix": "Separa i parametri con una sola virgola: nome: Tipo, nome: Tipo."
     },
-    "[Parser] The parameter 'item' of template \"row\" needs a type, e.g. item: string": {
-      "cause": "Un parametro senza tipo. Lo stesso messaggio finisce con cannot destructure its value, cannot be a rest parameter, cannot be optional or have a default value o cannot have modifiers or decorators.",
-      "fix": "Dai a ogni parametro un nome e un tipo, nient’altro: ogni @render passa tutti gli argomenti."
+    "[Parser] The parameter 'item' of template \"row\" needs a type or a default value, e.g. item: string or item = ''": {
+      "cause": "Un parametro senza tipo né valore di default. Lo stesso messaggio finisce con cannot destructure its value, cannot be a rest parameter, cannot be both optional and with a default value, cannot have modifiers or decorators o, per un parametro opzionale, needs a type.",
+      "fix": "Dai a ogni parametro un tipo, o un valore di default che gli dia il tipo: name: Type, name = value, name: Type = value oppure name?: Type."
+    },
+    "[Parser] The parameter 'index: number' of template \"row\" must be optional or have a default value, as 'dense = false' before it: a @render leaves out only the last arguments": {
+      "cause": "Un parametro obbligatorio dopo uno opzionale o con un valore di default: un @render può omettere solo gli ultimi argomenti.",
+      "fix": "Sposta prima i parametri obbligatori, oppure dai un valore di default anche a questo."
     },
     "[Parser] Template \"row\" declares the parameter \"item\" more than once": {
       "cause": "Due parametri con lo stesso nome.",

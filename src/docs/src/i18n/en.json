@@ -2443,6 +2443,12 @@
           "example1": "A row template, typed with an imported type, rendered by a @for",
           "p2": "The template comes after the <code>@for</code> rendering it: a template is visible in the whole of its scope, before its declaration too. When the rows move, their instances move with them, and receive their new position in place."
         },
+        "optionalParameters": {
+          "title": "Optional parameters and default values",
+          "p1": "A parameter can be optional, <code>note?: string</code>, or have a default value, with its type or typed by the value: <code>dense: boolean = false</code>, <code>label = item().name</code>. A <code>@render</code> can then leave out its argument, and only the last parameters can be so.",
+          "example1": "Badges with a default tone and an optional count",
+          "p2": "The default value is used only when the argument is left out: an argument passed as <code>undefined</code> stays <code>undefined</code>, and TypeScript accepts it only if the type of the parameter does. Like in JavaScript, the default value reads what the content reads and the parameters before it, as signals, and it is a signal too: it updates when what it reads changes. An optional parameter left out holds <code>undefined</code>."
+        },
         "scope": {
           "title": "What a template reads",
           "p1": "The content of a template reads the names of the place it is declared in, like a closure: the members of the component, the imports, the template variables and the templates of its scope, the item of the <code>@for</code> around the declaration. It doesn't read the names of the place it is rendered in: pass them as arguments.",
@@ -2462,7 +2468,7 @@
           },
           "callout3": {
             "heading": "Arguments and parameters",
-            "body": "Every parameter has a type and receives an argument: there are no optional parameters, default values, rest parameters or destructuring, and an argument cannot be spread."
+            "body": "There are no rest parameters or destructuring, and an argument cannot be spread. A parameter after an optional one, or after one with a default value, must be so too."
           },
           "callout4": {
             "heading": "Where a template is rendered",
@@ -2475,7 +2481,8 @@
           "th2": "Description",
           "td1": "Declares a template with typed parameters, visible in the whole of its scope.",
           "td2": "Renders an instance of the template where it is written, checking the arguments against the parameters.",
-          "td3": "Reads a parameter in the content: a signal, updated when its argument changes."
+          "td3": "Reads a parameter in the content: a signal, updated when its argument changes.",
+          "td4": "An optional parameter, and parameters with a default value, typed as declared or by the value: a <code>@render</code> may leave out their arguments."
         }
       },
       "textInterpolation": {
@@ -3039,9 +3046,13 @@
       "cause": "The parameters of a template with a missing or doubled comma, a semicolon, or anything but parameters.",
       "fix": "Separate the parameters with single commas: name: Type, name: Type."
     },
-    "[Parser] The parameter 'item' of template \"row\" needs a type, e.g. item: string": {
-      "cause": "A parameter without type. The same message ends with cannot destructure its value, cannot be a rest parameter, cannot be optional or have a default value, or cannot have modifiers or decorators.",
-      "fix": "Give each parameter a name and a type, nothing else: every @render passes every argument."
+    "[Parser] The parameter 'item' of template \"row\" needs a type or a default value, e.g. item: string or item = ''": {
+      "cause": "A parameter with neither a type nor a default value. The same message ends with cannot destructure its value, cannot be a rest parameter, cannot be both optional and with a default value, cannot have modifiers or decorators, or, for an optional parameter, needs a type.",
+      "fix": "Give each parameter a type, or a default value that gives it its type: name: Type, name = value, name: Type = value or name?: Type."
+    },
+    "[Parser] The parameter 'index: number' of template \"row\" must be optional or have a default value, as 'dense = false' before it: a @render leaves out only the last arguments": {
+      "cause": "A required parameter after an optional one or one with a default value: a @render can only leave out the last arguments.",
+      "fix": "Move the required parameters first, or give this one a default value too."
     },
     "[Parser] Template \"row\" declares the parameter \"item\" more than once": {
       "cause": "Two parameters with the same name.",

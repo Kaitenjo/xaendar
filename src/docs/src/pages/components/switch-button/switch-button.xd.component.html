@@ -1,5 +1,5 @@
 @for (item of items(); track item().value) {
-  <button class="lang" type="button" (click)="onButtonClick(item(), $index())">
+  <button #button class="lang" type="button" (click)="onButtonClick(item(), button)">
     <span class="{item().value === selected()?.value ? 'label label--active' : 'label'}">
       { item().label }
     </span>

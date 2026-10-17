@@ -37,6 +37,21 @@ export function _template(context: _Context, render: RenderTemplate): _Template 
 }
 
 /**
+ * Returns the signal of a parameter of an instance of a template: the one of its argument, or, when the `@render` leaves
+ * the argument out, the one of its default value, `undefined` for an optional parameter. An argument passed as
+ * `undefined` is not left out: the parameter holds `undefined`.
+ *
+ * @param params - The signals of the arguments the `@render` passes, in the order of the parameters.
+ * @param index - The position of the parameter.
+ * @param initializer - Computes the default value of the parameter, reading the parameters before it in the context of
+ *   the instance; omitted for an optional parameter.
+ * @returns The signal of the parameter.
+ */
+export function _parameter(params: Computed<unknown>[], index: number, initializer?: NoArgsFunction<unknown>): Computed<unknown> {
+  return index < params.length ? params[index] : computed(initializer ?? (() => undefined));
+}
+
+/**
  * Renders an instance of a template, e.g. for `@render row(item())`.
  *
  * Each argument becomes the signal of its parameter: the instance is rendered once, and only the nodes reading a

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getTemplateSpan } from '../expression-validator/expression-validator';
 import { parseTemplateParameters } from './template-parameters.utils';
 
 /**
@@ -44,15 +45,48 @@ describe('parseTemplateParameters', () => {
   it.each([
     ['destructures its value', '{ id }: Item', 'cannot destructure its value'],
     ['is a rest parameter', '...items: Item[]', 'cannot be a rest parameter'],
-    ['is optional', 'item?: Item', 'cannot be optional or have a default value'],
-    ['has a default value', 'count: number = 1', 'cannot be optional or have a default value'],
+    ['is both optional and with a default value', 'count?: number = 1', 'cannot be both optional and with a default value: the default value already makes it optional'],
     ['has a modifier', 'public item: Item', 'cannot have modifiers or decorators'],
-    ['has no type', 'item', 'needs a type, e.g. item: string'],
-    ['has an empty type', 'item:', 'needs a type, e.g. item: string']
+    ['has neither a type nor a default value', 'item', 'needs a type or a default value, e.g. item: string or item = \'\''],
+    ['has an empty type', 'item:', 'needs a type or a default value, e.g. item: string or item = \'\''],
+    ['has an empty type and a default value', 'item: = 1', 'needs a type or a default value, e.g. item: string or item = \'\''],
+    ['is optional without a type', 'item?', 'needs a type, e.g. item?: string']
   ])('throws for a parameter that %s, pointing to it', (_description, text, reason) => {
     const parameters = `index: number, ${text}`;
     expect(() => parseTemplateParameters(parameters, OFFSET, 'row')).toThrow(`The parameter '${text}' of template "row" ${reason}`);
     expect(() => parseTemplateParameters(parameters, OFFSET, 'row')).toThrow(expect.objectContaining({ cause: at(text, parameters) }));
+  });
+
+  it('parses an optional parameter', () => {
+    const text = 'item: Item, count?: number';
+    expect(parseTemplateParameters(text, OFFSET, 'row')[1]).toEqual({ name: 'count', nameSpan: at('count', text), type: 'number', typeSpan: at('number', text), optional: true });
+  });
+
+  it('parses a default value, with its type or typed by it, as an expression mapped onto the template', () => {
+    const text = 'item: Item, label: string = item().name, dense = !label()';
+    const [, label, dense] = parseTemplateParameters(text, OFFSET, 'row');
+
+    expect(label).toMatchObject({ name: 'label', nameSpan: at('label', text), type: 'string', typeSpan: at('string', text) });
+    expect(label.initializer!.getText()).toBe('item().name');
+    expect(getTemplateSpan(label.initializer!)).toEqual(at('item().name', text));
+    expect(dense).toMatchObject({ name: 'dense', nameSpan: at('dense', text) });
+    expect(dense.type).toBeUndefined();
+    expect(dense.typeSpan).toBeUndefined();
+    expect(dense.optional).toBeUndefined();
+    expect(getTemplateSpan(dense.initializer!)).toEqual(at('!label()', text));
+  });
+
+  it.each([
+    ['an optional one', 'item?: Item, index: number', 'item?: Item'],
+    ['one with a default value', 'dense = false, count?: number, index: number', 'dense = false']
+  ])('throws for a required parameter after %s, pointing to it', (_description, text, omittable) => {
+    expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow(`The parameter 'index: number' of template "row" must be optional or have a default value, as '${omittable}' before it: a @render leaves out only the last arguments`);
+    expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow(expect.objectContaining({ cause: at('index: number', text) }));
+  });
+
+  it('throws for a default value that is not a valid expression, pointing to it', () => {
+    const text = 'item: Item, label = new Label()';
+    expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow(expect.objectContaining({ cause: at('new Label()', text) }));
   });
 
   it.each([

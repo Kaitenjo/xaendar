@@ -7,9 +7,9 @@ import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import type { Line } from '../../types/generated-line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
-import { line, type LinePart, mapped } from '../line-builder/line-builder.utils';
+import { line, mapped, plain } from '../line-builder/line-builder.utils';
 import { getElementType } from '../namespace-types/namespace-types.utils';
-import { getParametersType, TEMPLATE } from '../template-types/template-types.utils';
+import { getContentFunction, getParametersType, TEMPLATE } from '../template-types/template-types.utils';
 
 /**
  * The class of a generic component or directive instantiated with the types of its type parameters, that the types of
@@ -69,27 +69,22 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
 }
 
 /**
- * Declares a template: the labeled tuple of the types of its parameters, each one mapped onto the template, and the
- * variable holding the template, typed with it.
+ * Declares a template: the labeled tuple of the parameters of the function its content is type-checked in (see
+ * `typeCheckTemplate`), where their types are mapped onto the template and the ones of the parameters typed by their
+ * default value are inferred, and the variable holding the template, typed with it.
  *
  * @example
  * // <template #row(item: Item, index: number)>
- * type __Params12 = [item: Item, index: number];
+ * type __Params12 = Parameters<typeof __template12>;
  * let row!: __Template<__Params12>;
  *
  * @param template - The template.
  * @returns The lines declaring the template.
  */
-function declareTemplate({ variable: { name, nameSpan }, parameters, span }: TemplateNode): Line[] {
-  const types = new Array<LinePart>();
-  for (let i = 0; i < parameters.length; i++) {
-    const { name: parameter, type, typeSpan } = parameters[i];
-    types.push(`${i ? ', ' : ''}${parameter}: `, mapped(type, typeSpan));
-  }
-
+function declareTemplate({ variable: { name, nameSpan }, span }: TemplateNode): Line[] {
   const parametersType = getParametersType({ span });
   return [
-    line(`type ${parametersType} = [`, ...types, '];'),
+    plain(`type ${parametersType} = Parameters<typeof ${getContentFunction({ span })}>;`),
     line('let ', mapped(name, nameSpan), `!: ${TEMPLATE}<${parametersType}>;`)
   ];
 }

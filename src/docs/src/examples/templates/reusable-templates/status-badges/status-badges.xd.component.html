@@ -1,0 +1,15 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<template #badge(text: string, tone = 'neutral', count?: number)>
+  <span class="{`badge ${tone()}`}">
+    { text() }
+    @if (count() !== undefined) {
+      <b>{ count() }</b>
+    }
+  </span>
+</template>
+
+@render badge('Draft')
+@render badge('Review', 'warning', pending())
+@render badge('Done', 'success')
+<ex-button (click)="review()">review()</ex-button>

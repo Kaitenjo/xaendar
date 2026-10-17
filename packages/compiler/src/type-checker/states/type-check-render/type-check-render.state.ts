@@ -11,10 +11,12 @@ import { RENDER } from '../../utils/template-types/template-types.utils';
 /**
  * Type-checks a `@render` like a function call: the template must be visible in the scope and create its content in
  * the namespace of the `@render`, then the number and the types of the arguments are checked against its parameters.
+ * The number of the arguments is passed too, so that each argument passed is checked against the type of its parameter
+ * as declared, even when the parameter is optional: an argument passed as `undefined` is not left out.
  *
  * @example
  * // @render row(item(), $index())
- * __render(row)(item(), $index());
+ * __render(row, 2)(item(), $index());
  *
  * @param node - The `RenderNode` to type-check.
  * @param _processNode - Unused callback emitting the lines of a node.
@@ -34,5 +36,5 @@ export function typeCheckRender(node: RenderNode, _processNode: ProcessNode, con
   }
 
   // A missing argument is reported on the call of the template, mapped onto the whole @render
-  return [line(mapped(RENDER, node.span), '(', mapped(callee, calleeSpan), ')(', ...args, ');')];
+  return [line(mapped(RENDER, node.span), '(', mapped(callee, calleeSpan), `, ${node.arguments.length})(`, ...args, ');')];
 }

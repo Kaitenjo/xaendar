@@ -214,6 +214,25 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, ')>')).toContain('punctuation.definition.parameters.end.xaendar');
   });
 
+  it('colors the optional parameters of a template, and the default values as expressions', () => {
+    const template = '<template #row(item: Item, label = format(item(), 2), dense: boolean = false, count?: number, run: Handler = noop)></template>';
+
+    expect(scopesOf(template, 'label')).toContain('variable.parameter.xaendar');
+    expect(scopesOf(template, '= format')).toContain('keyword.operator.assignment.xaendar');
+    expect(scopesOf(template, 'format')).toContain('meta.parameter.default.xaendar');
+    expect(scopesOf(template, ', 2)')).toContain('meta.parameter.default.xaendar');
+    expect(scopesOf(template, ', dense')).toContain('punctuation.separator.parameter.xaendar');
+    expect(scopesOf(template, 'dense')).toContain('variable.parameter.xaendar');
+    expect(scopesOf(template, 'boolean')).toContain('support.type.primitive.ts');
+    expect(scopesOf(template, 'false')).toContain('meta.parameter.default.xaendar');
+    expect(scopesOf(template, 'count')).toContain('variable.parameter.xaendar');
+    expect(scopesOf(template, '?:')).toContain('keyword.operator.optional.xaendar');
+    expect(scopesOf(template, 'run')).toContain('variable.parameter.xaendar');
+    expect(scopesOf(template, 'Handler')).toContain('entity.name.type.ts');
+    expect(scopesOf(template, 'noop')).toContain('meta.parameter.default.xaendar');
+    expect(scopesOf(template, ')>')).toContain('punctuation.definition.parameters.end.xaendar');
+  });
+
   it('colors the control flow, with its conditions as expressions', () => {
     const template = [
       '@if (a() && (b)) { x } @else if (c) { y } @else { z }',

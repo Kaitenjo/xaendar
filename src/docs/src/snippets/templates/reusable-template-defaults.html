@@ -1,0 +1,7 @@
+<template #row(item: Item, dense: boolean = false, label = item().name, note?: string)>
+  <!-- dense has a type and a default value, label is typed by its default value, note is optional -->
+</template>
+
+@render row(item())                     <!-- dense is false, label is the name of the item, note is undefined -->
+@render row(item(), true, 'Pinned')     <!-- only the last arguments are left out -->
+@render row(item(), undefined)          <!-- an error: undefined is not a boolean, and is not an argument left out -->

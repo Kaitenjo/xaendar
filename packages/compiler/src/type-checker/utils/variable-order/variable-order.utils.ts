@@ -165,8 +165,17 @@ function declareNames(nodes: readonly ASTNode[], names: ScopeNames, level: Level
 function checkTemplate(node: TemplateNode, check: OrderCheck): void {
   const { level } = check;
   check.level = node;
-  const names: ScopeNames = new Map(node.parameters.map(({ name }) => [name, { position: null, level: node }]));
+  const { parameters } = node;
+  const names: ScopeNames = new Map(parameters.map(({ name }) => [name, { position: null, level: node }]));
   check.scopes.push(declareNames(node.children, names, node));
+  // The default values are evaluated in the instance, like the bindings of its content
+  for (let i = 0; i < parameters.length; i++) {
+    const { initializer } = parameters[i];
+    if (initializer) {
+      checkReads(initializer, node.span, check);
+    }
+  }
+
   checkNodes(node.children, check);
   check.scopes.pop();
   check.level = level;

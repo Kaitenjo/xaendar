@@ -93,7 +93,7 @@ describe('typeCheckScope', () => {
     expect(context.getUnresolvableIdentifierKind('item')).toBe('signal');
   });
 
-  it('declares the templates of the scope, however deeply nested, with the types of their parameters mapped onto the template', () => {
+  it('declares the templates of the scope, however deeply nested, with the parameters of the functions their content is checked in', () => {
     const template = '<div><template #row(item: Item, index: number) /></div><svg><template #empty() /></svg>';
     const context = new TypeCheckContext();
     const skipTemplates: ProcessNode = (node, nodeContext) => (node.type === ASTNodeType.Template ? [] : processNode(node, nodeContext));
@@ -102,16 +102,13 @@ describe('typeCheckScope', () => {
     const empty = template.lastIndexOf('<template');
 
     expect(text(declarations)).toEqual([
-      `type __Params${row} = [item: Item, index: number];`,
+      `type __Params${row} = Parameters<typeof __template${row}>;`,
       `let row!: __Template<__Params${row}>;`,
-      `type __Params${empty} = [];`,
+      `type __Params${empty} = Parameters<typeof __template${empty}>;`,
       `let empty!: __Template<__Params${empty}>;`
     ]);
     const at = (name: string) => ({ start: template.indexOf(name), end: template.indexOf(name) + name.length });
-    expect(declarations[0].mappings).toEqual([
-      { columnStart: `type __Params${row} = [item: `.length, columnEnd: `type __Params${row} = [item: Item`.length, original: at('Item') },
-      { columnStart: `type __Params${row} = [item: Item, index: `.length, columnEnd: `type __Params${row} = [item: Item, index: number`.length, original: at('number') }
-    ]);
+    expect(declarations[0].mappings).toBeUndefined();
     expect(declarations[1].mappings).toEqual([{ columnStart: 4, columnEnd: 7, original: at('row') }]);
     expect(context.getTemplateNamespace('row')).toBe('html');
     expect(context.getTemplateNamespace('empty')).toBe('svg');

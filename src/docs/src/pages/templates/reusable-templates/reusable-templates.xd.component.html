@@ -5,6 +5,7 @@
 @import { PriceSummaryComponent } from '../../../examples/templates/reusable-templates/price-summary/price-summary.xd.component.ts'
 @import { TeamRowsComponent } from '../../../examples/templates/reusable-templates/team-rows/team-rows.xd.component.ts'
 @import { FileTreeComponent } from '../../../examples/templates/reusable-templates/file-tree/file-tree.xd.component.ts'
+@import { StatusBadgesComponent } from '../../../examples/templates/reusable-templates/status-badges/status-badges.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.templates.reusableTemplates.eyebrow") class="eyebrow" />
@@ -27,6 +28,15 @@
   <ex-team-rows />
 </docs-example>
 <p @@i18n(key="pages.templates.reusableTemplates.parameters.p2") />
+
+<h2 @@i18n(key="pages.templates.reusableTemplates.optionalParameters.title") />
+<p @@i18n(key="pages.templates.reusableTemplates.optionalParameters.p1") />
+<docs-code snippet="templates/reusable-template-defaults.html" />
+<docs-example name="templates/reusable-templates/status-badges"
+  heading="{translations().pages.templates.reusableTemplates.optionalParameters.example1}">
+  <ex-status-badges />
+</docs-example>
+<p @@i18n(key="pages.templates.reusableTemplates.optionalParameters.p2") />
 
 <h2 @@i18n(key="pages.templates.reusableTemplates.scope.title") />
 <p @@i18n(key="pages.templates.reusableTemplates.scope.p1") />
@@ -66,6 +76,14 @@
           <code>&lt;template #name(param: Type)&gt;</code>
         </td>
         <td @@i18n(key="pages.templates.reusableTemplates.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>param?: Type</code>,
+          <code>param: Type = value</code>,
+          <code>param = value</code>
+        </td>
+        <td @@i18n(key="pages.templates.reusableTemplates.apiSummary.td4") />
       </tr>
       <tr>
         <td>

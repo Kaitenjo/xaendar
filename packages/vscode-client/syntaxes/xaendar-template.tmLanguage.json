@@ -134,8 +134,23 @@
           },
           "name": "meta.parameters.xaendar",
           "patterns": [
-            { "match": "[A-Za-z_$][\\w$]*(?=\\s*:)", "name": "variable.parameter.xaendar" },
+            {
+              "match": "(?:(?<=[(,])|^)\\s*([A-Za-z_$][\\w$]*)(?=\\s*\\??\\s*[:=])",
+              "captures": {
+                "1": { "name": "variable.parameter.xaendar" }
+              }
+            },
+            { "match": "\\?(?=\\s*:)", "name": "keyword.operator.optional.xaendar" },
             { "match": ":", "name": "punctuation.separator.type.xaendar" },
+            {
+              "begin": "=(?!>)",
+              "beginCaptures": {
+                "0": { "name": "keyword.operator.assignment.xaendar" }
+              },
+              "end": "(?=[,)])",
+              "name": "meta.parameter.default.xaendar",
+              "patterns": [{ "include": "#expression" }]
+            },
             { "match": ",", "name": "punctuation.separator.parameter.xaendar" },
             { "include": "source.ts#type" }
           ]

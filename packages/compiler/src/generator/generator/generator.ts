@@ -19,7 +19,7 @@ import { skipGeneration } from '../states/skip-generation/skip-generation.state.
 import { GeneratorStates } from '../types/generator-states.type.js';
 import type { GeneratorFunctionToProcess } from '../types/generator-function-to-process/generator-function-to-process.type.js';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type.js';
-import { getElementFactory, ROOT_NODE } from '../utils/generator/generator.utils.js';
+import { getElementFactory, resolveExpression, ROOT_NODE } from '../utils/generator/generator.utils.js';
 
 /**
  * The Generator class is responsible for generating code from an abstract syntax tree (AST) representation of the input source code. 
@@ -231,7 +231,8 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
 /**
  * Describes the function rendering an instance of a template: it creates the scope of the instance, whose parent is the
  * runtime context of the scope declaring the template, so that its content reads the names visible where the template
- * is declared, and not where it is rendered. The parameters are signals, read like the item of a `@for`.
+ * is declared, and not where it is rendered. The parameters are signals, read like the item of a `@for`: the one of
+ * a parameter whose argument is left out holds its default value, or `undefined`.
  *
  * @param template - The template.
  * @param key - The name of the function.
@@ -247,9 +248,20 @@ function toTemplateFunction(template: TemplateNode, key: string, namespace: Elem
   const precode = [`context.createElement = ${getElementFactory(namespace)};`];
   const { parameters } = template;
   for (let i = 0; i < parameters.length; i++) {
-    const { name } = parameters[i];
-    context.addIdentifier(name, 'signal');
-    precode.push(`context.addIdentifier('${name}', params[${i}]);`);
+    context.addIdentifier(parameters[i].name, 'signal');
+  }
+
+  // An argument the @render may leave out takes the default value of its parameter, which reads the parameters before it
+  for (let i = 0; i < parameters.length; i++) {
+    const { name, optional, initializer } = parameters[i];
+    let param = `params[${i}]`;
+    if (initializer) {
+      param = `_parameter(params, ${i}, () => ${resolveExpression(initializer, context).expression})`;
+    } else if (optional) {
+      param = `_parameter(params, ${i})`;
+    }
+
+    precode.push(`context.addIdentifier('${name}', ${param});`);
   }
 
   return {

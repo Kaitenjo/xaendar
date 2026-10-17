@@ -261,7 +261,7 @@ describe('parseElement', () => {
     });
 
     it('throws for invalid parameters', () => {
-      expect(() => parse('<template #row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type, e.g. item: string');
+      expect(() => parse('<template #row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type or a default value, e.g. item: string or item = \'\'');
     });
   });
 

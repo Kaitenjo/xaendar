@@ -185,7 +185,12 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] The parameter \'item\' of template "row" needs a type, e.g. item: string',
+    message: '[Parser] The parameter \'item\' of template "row" needs a type or a default value, e.g. item: string or item = \'\'',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The parameter \'index: number\' of template "row" must be optional or have a default value, as \'dense = false\' before it: a @render leaves out only the last arguments',
     page: 'templates/reusable-templates'
   },
   {

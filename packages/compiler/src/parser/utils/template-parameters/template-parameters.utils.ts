@@ -1,6 +1,7 @@
 import { createScanner, createSourceFile, isFunctionDeclaration, isIdentifier, LanguageVariant, ScriptTarget, SyntaxKind, type NodeArray, type ParameterDeclaration, type SourceFile } from 'typescript';
 import type { Span } from '../../../types/span.type';
 import type { TemplateParameterNode } from '../../types/nodes/template-parameter-node.type';
+import { validateExpression } from '../expression-validator/expression-validator';
 import { assertDeclaredName } from '../identifier/identifier.utils';
 
 /**
@@ -11,6 +12,8 @@ const FUNCTION_PREFIX = 'function __template(';
 /**
  * Parses the parameters of a template, e.g. `item: Item, index: number` in `<template #row(item: Item, index: number)>`,
  * as the ones of a function: each one is a name followed by its type, which may be any type, imported ones included.
+ * A parameter may be optional (`count?: number`), or have a default value, with its type (`dense: boolean = false`) or
+ * typed by the value (`dense = false`): its argument may then be left out, so only the last parameters may be so.
  * The types are not validated here: the type-check reports their errors.
  *
  * @example
@@ -21,7 +24,9 @@ const FUNCTION_PREFIX = 'function __template(';
  * @param template - The name of the template, used in the error messages.
  * @returns The parameters, with their spans in the template.
  * @throws If the text is not a list of parameters, or a parameter destructures its value, is a rest parameter, is
- *   optional, has a default value or a modifier, has no type, or its name is not valid or is declared twice.
+ *   both optional and with a default value, has a modifier, has neither a type nor a default value (an optional one
+ *   needs a type), is required after an optional one or one with a default value, its default value is not a valid
+ *   expression, or its name is not valid or is declared twice.
  */
 export function parseTemplateParameters(text: string, offset: number, template: string): TemplateParameterNode[] {
   const sourceFile = createSourceFile('__template.ts', `${FUNCTION_PREFIX}${text}) {}`, ScriptTarget.ESNext, true);
@@ -34,6 +39,8 @@ export function parseTemplateParameters(text: string, offset: number, template: 
 
   const parameters = new Array<TemplateParameterNode>();
   const names = new Set<string>();
+  // The parameter after which the arguments may be left out, the first optional one or with a default value
+  let omittable: ParameterDeclaration | undefined;
   for (let i = 0; i < declaration.parameters.length; i++) {
     const parameter = declaration.parameters[i];
     const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
@@ -47,16 +54,24 @@ export function parseTemplateParameters(text: string, offset: number, template: 
       throw invalid('cannot be a rest parameter: a template takes a fixed number of arguments');
     }
 
-    if (questionToken || initializer) {
-      throw invalid('cannot be optional or have a default value: a @render passes every argument');
+    if (questionToken && initializer) {
+      throw invalid('cannot be both optional and with a default value: the default value already makes it optional');
     }
 
     if (modifiers?.length) {
       throw invalid('cannot have modifiers or decorators');
     }
 
-    if (!type?.getWidth(sourceFile)) {
-      throw invalid(`needs a type, e.g. ${name.text}: string`);
+    // A written type is empty when only its `:` is
+    const typed = type?.getWidth(sourceFile) ? type : undefined;
+    if (!typed && (type || !initializer)) {
+      throw invalid(questionToken ? `needs a type, e.g. ${name.text}?: string` : `needs a type or a default value, e.g. ${name.text}: string or ${name.text} = ''`);
+    }
+
+    if (questionToken || initializer) {
+      omittable ??= parameter;
+    } else if (omittable) {
+      throw invalid(`must be optional or have a default value, as '${omittable.getText(sourceFile)}' before it: a @render leaves out only the last arguments`);
     }
 
     const nameSpan = toSpan(name.getStart(sourceFile), name.getEnd());
@@ -66,7 +81,22 @@ export function parseTemplateParameters(text: string, offset: number, template: 
     }
 
     names.add(name.text);
-    parameters.push({ name: name.text, nameSpan, type: type.getText(sourceFile), typeSpan: toSpan(type.getStart(sourceFile), type.getEnd()) });
+    const node: TemplateParameterNode = { name: name.text, nameSpan };
+    if (typed) {
+      node.type = typed.getText(sourceFile);
+      node.typeSpan = toSpan(typed.getStart(sourceFile), typed.getEnd());
+    }
+
+    if (questionToken) {
+      node.optional = true;
+    }
+
+    if (initializer) {
+      const { start } = toSpan(initializer.getStart(sourceFile), initializer.getEnd());
+      node.initializer = validateExpression(initializer.getText(sourceFile), start).node;
+    }
+
+    parameters.push(node);
   }
 
   return parameters;

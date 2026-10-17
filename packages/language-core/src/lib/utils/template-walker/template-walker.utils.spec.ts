@@ -116,11 +116,11 @@ describe('walkTemplate', () => {
     ]);
   });
 
-  it('visits the templates, visible in the whole of their scope, their content as a scope declaring their parameters, and the @render with their arguments', () => {
+  it('visits the templates, visible in the whole of their scope, the default values and the content as a scope declaring their parameters, and the @render with their arguments', () => {
     const templatesTemplate = [
       '@render row(field)',
       '<label><input #field /></label>',
-      '<template #row(item: Item)>{ item() } <i #inRow></i> @render row(inRow)</template>'
+      '<template #row(item: Item, label = item().name)>{ item() } <i #inRow></i> @render row(inRow)</template>'
     ].join('\n');
     const visits = new Array<string>();
     walkTemplate(parseTemplate(templatesTemplate), [], {
@@ -135,10 +135,11 @@ describe('walkTemplate', () => {
       'expression field [field,row]',
       'variable field',
       'template row',
-      'expression item() [field,row,item,inRow]',
+      'expression item().name [field,row,item,label]',
+      'expression item() [field,row,item,label,inRow]',
       'variable inRow',
       'render row',
-      'expression inRow [field,row,item,inRow]'
+      'expression inRow [field,row,item,label,inRow]'
     ]);
   });
 });

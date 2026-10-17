@@ -95,6 +95,17 @@ describe('Generator', () => {
       expect(code).toContain('_renderText(template_row_22__p0, context, () => context.get(\'label\')(), null);');
     });
 
+    it('gives the parameters whose argument may be left out their default value, reading the parameters and the members', async () => {
+      const code = await generate('<template #row(item: Item, label = item().name + suffix(), count?: number, later: number = 1)>{ label() }</template>', ['suffix']);
+
+      expect(code).toContain([
+        '  context.addIdentifier(\'item\', params[0]);',
+        '  context.addIdentifier(\'label\', _parameter(params, 1, () => context.get(\'item\')().name + this.suffix()));',
+        '  context.addIdentifier(\'count\', _parameter(params, 2));',
+        '  context.addIdentifier(\'later\', _parameter(params, 3, () => 1));'
+      ].join('\n'));
+    });
+
     it('declares the template variables and the templates of the content of a template in its scope', async () => {
       const code = await generate('<template #row()><input #field /><template #inner() /></template>');
 

@@ -156,10 +156,15 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The parameters of a template with a missing or doubled comma, a semicolon, or anything but parameters.
 - **Fix:** Separate the parameters with single commas: name: Type, name: Type.
 
-### `[Parser] The parameter 'item' of template "row" needs a type, e.g. item: string`
+### `[Parser] The parameter 'item' of template "row" needs a type or a default value, e.g. item: string or item = ''`
 
-- **Cause:** A parameter without type; the same message ends with cannot destructure its value, cannot be a rest parameter, cannot be optional or have a default value, or cannot have modifiers or decorators.
-- **Fix:** Give each parameter a name and a type, nothing else: every @render passes every argument.
+- **Cause:** A parameter with neither a type nor a default value. The same message ends with cannot destructure its value, cannot be a rest parameter, cannot be both optional and with a default value, cannot have modifiers or decorators, or, for an optional parameter, needs a type.
+- **Fix:** Give each parameter a type, or a default value that gives it its type: name: Type, name = value, name: Type = value or name?: Type.
+
+### `[Parser] The parameter 'index: number' of template "row" must be optional or have a default value, as 'dense = false' before it: a @render leaves out only the last arguments`
+
+- **Cause:** A required parameter after an optional one or one with a default value: a @render can only leave out the last arguments.
+- **Fix:** Move the required parameters first, or give this one a default value too.
 
 ### `[Parser] Template "row" declares the parameter "item" more than once`
 

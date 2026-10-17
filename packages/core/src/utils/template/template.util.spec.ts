@@ -7,8 +7,8 @@ await vi.hoisted(async () => {
 });
 
 const { _Context, mountNode } = await import('../context/context.util');
-const { _renderTemplate, _template } = await import('./template.util');
-const { effect, signal } = await import('../../signals');
+const { _parameter, _renderTemplate, _template } = await import('./template.util');
+const { computed, effect, signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
@@ -38,6 +38,28 @@ describe('_template', () => {
     const context = createRoot();
     const render = vi.fn();
     expect(_template(context, render)).toEqual({ context, render });
+  });
+});
+
+describe('_parameter', () => {
+  it('is the signal of the argument when the @render passes it, also as undefined', () => {
+    const params = [computed(() => 'a'), computed(() => undefined)];
+
+    expect(_parameter(params, 0, () => 'default')).toBe(params[0]);
+    expect(_parameter(params, 1, () => 'default')).toBe(params[1]);
+  });
+
+  it('is the signal of the default value when the @render leaves the argument out, read again when what it reads changes', () => {
+    const label = signal('a');
+    const param = _parameter([], 0, () => `${label()}!`);
+
+    expect(param()).toBe('a!');
+    label.set('b');
+    expect(param()).toBe('b!');
+  });
+
+  it('holds undefined for an optional parameter left out', () => {
+    expect(_parameter([computed(() => 1)], 1)()).toBeUndefined();
   });
 });
 

@@ -18,22 +18,22 @@ const withTemplate = (namespace: 'html' | 'svg' = 'html') => {
 };
 
 describe('typeCheckRender', () => {
-  it('checks the arguments like the ones of a call of the template, mapping the call onto the @render', () => {
+  it('checks the arguments like the ones of a call of the template, passing their number, mapping the call onto the @render', () => {
     const template = '@render row(item(), title)';
     const context = withTemplate();
     context.addUnresolvableIdentifier('item', 'signal');
     const [line] = typeCheckRender(parse(template), () => [], context);
 
-    expect(line.text).toBe('__render(row)(item(), root.title);');
+    expect(line.text).toBe('__render(row, 2)(item(), root.title);');
     expect(line.mappings).toEqual(expect.arrayContaining([
       { columnStart: 0, columnEnd: 8, original: { start: 0, end: template.length } },
       { columnStart: 9, columnEnd: 12, original: { start: 8, end: 11 } },
-      { columnStart: 14, columnEnd: 20, original: { start: template.indexOf('item()'), end: template.indexOf('item()') + 6 } }
+      { columnStart: 17, columnEnd: 23, original: { start: template.indexOf('item()'), end: template.indexOf('item()') + 6 } }
     ]));
   });
 
   it('checks a template without arguments', () => {
-    expect(typeCheckRender(parse('@render row()'), () => [], withTemplate())[0].text).toBe('__render(row)();');
+    expect(typeCheckRender(parse('@render row()'), () => [], withTemplate())[0].text).toBe('__render(row, 0)();');
   });
 
   it('throws for a name not referring to a template', () => {

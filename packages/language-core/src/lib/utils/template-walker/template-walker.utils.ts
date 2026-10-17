@@ -147,11 +147,20 @@ class TemplateWalker {
         }
         break;
 
-      case ASTNodeType.Template:
+      case ASTNodeType.Template: {
         this._visitor.template?.(node);
-        // The content of a template is a scope of its own, declaring the parameters of the template
-        this.walkScope(node.children, new Set([...variables, ...node.parameters.map(({ name }) => name)]));
+        // The content of a template is a scope of its own, declaring the parameters of the template, which their default values read too
+        const contentVariables = new Set([...variables, ...node.parameters.map(({ name }) => name)]);
+        for (let i = 0; i < node.parameters.length; i++) {
+          const { initializer } = node.parameters[i];
+          if (initializer) {
+            this._visitor.expression?.(initializer, contentVariables);
+          }
+        }
+
+        this.walkScope(node.children, contentVariables);
         break;
+      }
 
       case ASTNodeType.Render:
         this._visitor.render?.(node);
