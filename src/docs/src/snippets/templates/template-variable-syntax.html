@@ -1,0 +1,9 @@
+<input #field type="text" />                       <!-- names the <input>: field is an HTMLInputElement -->
+<button (click)="field.focus()">Focus</button>     <!-- calls a method of the element -->
+<button (click)="save(field.value)">Save</button>  <!-- passes one of its properties to a method -->
+<button (click)="clear(field)">Clear</button>      <!-- or the element itself -->
+<p>{ field.placeholder }</p>                       <!-- reads it, after its element -->
+
+<ex-counter #counter />                            <!-- a component: the instance of its class -->
+<button (click)="counter.reset()">Reset</button>
+<p>{ counter.count() }</p>

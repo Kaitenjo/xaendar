@@ -162,7 +162,7 @@ describe('XaendarLanguageServer', () => {
         codeActionProvider: { codeActionKinds: ['quickfix', 'source.organizeImports'] },
         documentFormattingProvider: true,
         semanticTokensProvider: {
-          legend: { tokenTypes: ['property', 'event', 'decorator', 'variable'], tokenModifiers: ['readonly'] },
+          legend: { tokenTypes: ['property', 'event', 'decorator', 'variable', 'function'], tokenModifiers: ['readonly'] },
           full: true
         }
       });

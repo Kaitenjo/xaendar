@@ -87,24 +87,20 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   });
 
   /*
-    Skip resolution is needed for a edge case.
-    The track expression define in its context
-    - Item alias
-    - Index alias
-
-    But those values are defined in the iteration context of every item, not in the forContext itself
-    causing an error in the generated expression if we try to resolve it accessing context identifiers.
-
-    This is the only case where we need to access identifiers in an outer context than the one where
-    they live.
-
-    Under the hood the function is invoked inside the for iteration, passing the correct values and
-    making it works at run time.
-    @for (...; track ....) {        <------- Defined here
-                                    <------- Context where executed at runtime
-    }
+    The track expression is a function written where the @for is, outside of the context of its rows: the item and
+    the implicit variables are its parameters, read as written, while the members of the component, the imports and
+    the variables of the enclosing scopes are resolved like in any other expression of the scope of the @for
   */
-  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${itemName}, ${indexName}) => ${resolveExpression(node.trackExpression, forContext, { skipResolution: true }).expression}, ${forKey}.bind(this));`);
+  const trackContext = new CompilerContext(compilerContext);
+  if (node.itemAlias) {
+    trackContext.addUnresolvableIdentifier(node.itemAlias, 'signal');
+  }
+  for (let i = 0; i < identifiers.length; i++) {
+    trackContext.addUnresolvableIdentifier(identifiers[i], 'signal');
+  }
+
+  const trackParameters = [itemName, ...identifiers].join(', ');
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${trackParameters}) => ${resolveExpression(node.trackExpression, trackContext).expression}, ${forKey}.bind(this));`);
 
   return retVal
 }

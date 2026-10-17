@@ -1,4 +1,4 @@
-import { LEFT_BRACE } from '../../../costants/chars.constants.js';
+import { LEFT_BRACE } from '../../../costants/chars.constant.js';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model.js';
 import { LexerState } from '../../types/lexer-state.enum.js';
 import { TokenType } from '../../types/token-type.enum.js';

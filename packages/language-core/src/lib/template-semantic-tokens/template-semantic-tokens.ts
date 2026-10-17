@@ -6,7 +6,7 @@ import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 /**
  * The types of the semantic tokens of a template, in the order of the legend.
  */
-export const TEMPLATE_SEMANTIC_TOKEN_TYPES = ['property', 'event', 'decorator', 'variable'] as const;
+export const TEMPLATE_SEMANTIC_TOKEN_TYPES = ['property', 'event', 'decorator', 'variable', 'function'] as const;
 
 /**
  * The modifiers of the semantic tokens of a template, in the order of the legend.
@@ -46,7 +46,9 @@ export type TemplateSemanticToken = {
  * - an attribute bound to an input of a component or directive: `property`;
  * - an event bound to an output of a component or directive: `event`;
  * - the selector of a directive or structural directive: `decorator`;
- * - the variables of a `@for` block and `$event`, where declared and where read: `variable`, `readonly`.
+ * - the template variables (`#name`), the variables of a `@for` block, the parameters of a template and `$event`, where
+ *   declared and where read, the head of a handler called on a variable included: `variable`, `readonly`;
+ * - the name of a template, where declared (`<template #name(…)>`) and where rendered (`@render name(…)`): `function`.
  *
  * The tag names, of components too, and the native attributes and events are left to the grammar.
  *
@@ -67,11 +69,18 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add(node.nameSpan, 'property');
       }
     },
-    event: (node, owner) => {
+    event: (node, owner, variables) => {
       if (owner?.events.has(node.name)) {
         add(node.nameSpan, 'event');
       }
+
+      // A handler called on a variable of the template, e.g. `dialog.showModal()`
+      const head = node.handler.split(/\?\.|[.[]/)[0];
+      if (variables.has(head)) {
+        add({ start: node.handlerSpan.start, end: node.handlerSpan.start + head.length }, 'variable', ['readonly']);
+      }
     },
+    variable: node => add(node.nameSpan, 'variable', ['readonly']),
     directive: node => add(node.selectorSpan, 'decorator'),
     forBlock: node => {
       add(node.itemAliasSpan, 'variable', ['readonly']);
@@ -79,6 +88,13 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add(span, 'variable', ['readonly']);
       }
     },
+    template: ({ variable, parameters }) => {
+      add(variable.nameSpan, 'function');
+      for (let i = 0; i < parameters.length; i++) {
+        add(parameters[i].nameSpan, 'variable', ['readonly']);
+      }
+    },
+    render: node => add(node.calleeSpan, 'function'),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => add(span, 'variable', ['readonly']))
   });
 

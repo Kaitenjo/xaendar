@@ -14,6 +14,7 @@ describe('parseTypeArguments', () => {
     ['tuples and object types', '[string, number], { a: string, b: number }', ['[string, number]', '{ a: string, b: number }']],
     ['function types, their arrow included', '(a: string, b: number) => void, string', ['(a: string, b: number) => void', 'string']],
     ['literal types holding commas and brackets', '\'a, b\', "<", `c, ${string}`', ['\'a, b\'', '"<"', '`c, ${string}`']],
+    ['literal types holding escaped quotes', String.raw`'a\', b', "c\", d"`, [String.raw`'a\', b'`, String.raw`"c\", d"`]],
     ['spaces and line breaks around the types', '\n  A ,\n  B\n', ['A', 'B']],
     ['a trailing comma', 'A, B,', ['A', 'B']]
   ])('keeps the commas inside a group out of the split: %s', (_description, text, expected) => {

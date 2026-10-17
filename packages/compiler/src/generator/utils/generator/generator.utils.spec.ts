@@ -3,7 +3,7 @@ import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/generated-line.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import { getBlockIdentifier, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
+import { getBlockIdentifier, getElementFactory, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 
 const resolve = (source: string, context = new CompilerContext(), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
 
@@ -74,10 +74,6 @@ describe('resolveExpression', () => {
     expect(resolve('items', new CompilerContext(), { resolver: '' })).toEqual({ expression: 'items' });
   });
 
-  it('emits the bare identifier when resolution is skipped', () => {
-    expect(resolve('items', new CompilerContext(), { skipResolution: true })).toEqual({ expression: 'items' });
-  });
-
   it('resolves a local identifier named like a global to the local value, keeping window and globalThis for the global', () => {
     const context = new CompilerContext();
     context.addSignalClassField('Math');
@@ -118,6 +114,19 @@ describe('resolveExpression', () => {
     expect(resolve('item', context)).toEqual({ expression: 'context.get(\'item\')', reactive });
   });
 
+  it('resolves a variable of the template named like a signal member to the variable, which shadows the member', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('count');
+    const forContext = new CompilerContext(context);
+    forContext.addIdentifier('count', 'signal');
+    const eventContext = new CompilerContext(context);
+    eventContext.addUnresolvableIdentifier('count');
+
+    expect(resolve('count()', forContext)).toEqual({ expression: 'context.get(\'count\')()', reactive: true });
+    expect(resolve('count', eventContext)).toEqual({ expression: 'count', reactive: false });
+    expect(resolve('count()', context)).toEqual({ expression: 'this.count()', reactive: true });
+  });
+
   it('does not resolve globals or member names', () => {
     expect(resolve('Math.max(1, 2)')).toEqual({ expression: 'Math.max(1, 2)' });
     expect(resolve('user.name')).toEqual({ expression: 'this.user.name', reactive: undefined });
@@ -132,7 +141,6 @@ describe('resolveExpression', () => {
     context.addSignalClassField('count');
     context.addUnresolvableIdentifier('$event');
     expect(resolve('[{ b, count, $event, Math }]', context)).toEqual({ expression: '[{ b: this.b, count: this.count, $event, Math }]', reactive: true });
-    expect(resolve('[{ b }]', new CompilerContext(), { skipResolution: true }).expression).toBe('[{ b }]');
   });
 
   it.each([
@@ -181,6 +189,16 @@ describe('identifier helpers', () => {
   it('builds block identifiers', () => {
     expect(getBlockIdentifier('if', ROOT_NODE, '0')).toBe('if0');
     expect(getBlockIdentifier('elseIf', 'div0', '0_1')).toBe('div0__elseIf0_1');
+  });
+});
+
+describe('getElementFactory', () => {
+  it.each([
+    ['html', '_createElement'],
+    ['svg', '_createSVGElement'],
+    ['mathml', '_createMATHMLElement']
+  ] as const)('returns the runtime factory of the %s namespace', (namespace, factory) => {
+    expect(getElementFactory(namespace)).toBe(factory);
   });
 });
 

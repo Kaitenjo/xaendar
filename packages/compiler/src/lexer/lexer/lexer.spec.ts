@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LexerState } from '../types/lexer-state.enum';
 import { TokenType } from '../types/token-type.enum';
 import { TemplateError } from '../../models/template-error/template-error.model';
 import { Lexer } from './lexer';
@@ -13,6 +14,44 @@ describe('Lexer', () => {
       TokenType.TAG_CLOSE_NAME
     ]);
     expect(tokens.every(t => t.span)).toBe(true);
+  });
+
+  it('tokenizes a template variable, and the declaration of a template with its parameters', () => {
+    const tokens = new Lexer('<input #name type="text" />\n<template #row(item: Item)></template>').tokenize();
+    expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
+      [TokenType.TAG_OPEN_NAME, ['input']],
+      [TokenType.TEMPLATE_VARIABLE, ['name']],
+      [TokenType.ATTRIBUTE, ['type']],
+      [TokenType.ATTRIBUTE_VALUE, ['text']],
+      [TokenType.TAG_SELF_CLOSE, []],
+      [TokenType.TAG_OPEN_NAME, ['template']],
+      [TokenType.TEMPLATE_VARIABLE, ['row', 'item: Item']],
+      [TokenType.TAG_OPEN_END, []],
+      [TokenType.TAG_CLOSE_NAME, ['template']]
+    ]);
+  });
+
+  it('tokenizes the render of a template, the keyword spanning from the @ and the call from the name to the closing parenthesis', () => {
+    const template = '<ul>@render row(item(), \')\')</ul>';
+    const tokens = new Lexer(template).tokenize();
+    expect(tokens.map(({ type, parts, span }) => [type, parts, template.slice(span.start, span.end)])).toEqual([
+      [TokenType.TAG_OPEN_NAME, ['ul'], '<ul'],
+      [TokenType.TAG_OPEN_END, [], '>'],
+      [TokenType.RENDER, undefined, '@render '],
+      [TokenType.RENDER_CALL, ['row', 'item(), \')\''], 'row(item(), \')\')'],
+      [TokenType.TAG_CLOSE_NAME, ['ul'], '</ul>']
+    ]);
+  });
+
+  it('tokenizes a condition holding a parenthesis in a string, then its block', () => {
+    const tokens = new Lexer('@if (mark() === \')\') {x}').tokenize();
+    expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
+      [TokenType.IF, undefined],
+      [TokenType.CONDITION, ['mark() === \')\'']],
+      [TokenType.BLOCK_OPEN, undefined],
+      [TokenType.TEXT, ['x']],
+      [TokenType.BLOCK_CLOSE, undefined]
+    ]);
   });
 
   it('tokenizes an attribute and an event binding', () => {
@@ -418,12 +457,27 @@ describe('Lexer', () => {
   });
 });
 
-describe('Lexer.tokens', () => {
-  it('exposes the tokens emitted before the tokenization failed', () => {
-    const lexer = new Lexer('<p>text</p>\n<button (click)="onClick foo()"></button>');
+describe('Lexer.tokenizeTolerant', () => {
+  it('returns the tokens and the state the lexer ended in, without an error, when the input can be tokenized', () => {
+    const result = new Lexer('<p>text</p>').tokenizeTolerant();
 
-    expect(() => lexer.tokenize()).toThrow(TemplateError);
-    expect(lexer.tokens.map(({ type }) => type)).toEqual(expect.arrayContaining([TokenType.TAG_OPEN_NAME, TokenType.TEXT]));
-    expect(lexer.tokens.length).toBeGreaterThan(0);
+    expect(result.tokens.map(({ type }) => type)).toEqual([TokenType.TAG_OPEN_NAME, TokenType.TAG_OPEN_END, TokenType.TEXT, TokenType.TAG_CLOSE_NAME]);
+    expect(result.state).toBe(LexerState.TEXT);
+    expect(result).not.toHaveProperty('error');
+  });
+
+  it('returns the tokens emitted before the error, the state failing and the error, instead of throwing it', () => {
+    const result = new Lexer('<p>text</p>\n<button (click)="onClick foo()"></button>').tokenizeTolerant();
+
+    expect(result.tokens.map(({ type }) => type)).toEqual([TokenType.TAG_OPEN_NAME, TokenType.TAG_OPEN_END, TokenType.TEXT, TokenType.TAG_CLOSE_NAME, TokenType.TAG_OPEN_NAME, TokenType.EVENT]);
+    expect(result.state).toBe(LexerState.EVENT_HANDLER);
+    expect(result.error).toBeInstanceOf(TemplateError);
+    expect(result.error?.detail).toBe('No spaces are allowed in event handler name');
+  });
+
+  it('stops at the last token to lex', () => {
+    const result = new Lexer('<p>text</p><b>more</b>').tokenizeTolerant(token => token.type === TokenType.TAG_CLOSE_NAME);
+
+    expect(result.tokens.map(({ type }) => type)).toEqual([TokenType.TAG_OPEN_NAME, TokenType.TAG_OPEN_END, TokenType.TEXT, TokenType.TAG_CLOSE_NAME]);
   });
 });

@@ -1,5 +1,5 @@
-import type { LayoutAtom, LayoutBlock, LayoutBranch, LayoutElement, LayoutItem } from '../../types/template-layout/template-layout.type';
 import type { TemplateFormatOptions } from '../../types/template-format-options/template-format-options.type';
+import type { LayoutAtom, LayoutBlock, LayoutBranch, LayoutElement, LayoutItem } from '../../types/template-layout/template-layout.type';
 import { findClosing } from '../balanced-text/balanced-text.utils';
 import { formatImportHeader } from '../import-organization/import-organization.utils';
 import { parseTemplateLayout } from '../template-layout/template-layout.utils';
@@ -176,13 +176,13 @@ function isBlankText(atom: LayoutAtom): atom is Extract<LayoutAtom, { kind: 'tex
 }
 
 /**
- * Tells whether an atom is a node that starts on a line of its own: an element or a block.
+ * Tells whether an atom is a node that starts on a line of its own: an element, a block or the render of a template.
  *
  * @param atom - The atom, if any.
- * @returns `true` for an element and a block.
+ * @returns `true` for an element, a block and a `@render`.
  */
 function isStructure(atom: LayoutAtom | undefined): boolean {
-  return atom?.kind === 'element' || atom?.kind === 'block';
+  return atom?.kind === 'element' || atom?.kind === 'block' || atom?.kind === 'render';
 }
 
 /**
@@ -253,6 +253,9 @@ function isMultiline(item: LayoutItem): boolean {
  */
 function printItem(item: LayoutItem, level: number, options: TemplateFormatOptions): string {
   switch (item.kind) {
+    case 'variable':
+      return item.parameters === undefined ? `#${item.name}` : `#${item.name}(${item.parameters.trim()})`;
+
     case 'attribute':
       return item.value === undefined ? item.name : `${item.name}=${quote(formatPropertyValue(item.value))}`;
 
@@ -476,7 +479,7 @@ function canBreakAtEdge(atom: LayoutAtom | undefined, edge: 'start' | 'end'): bo
  * @returns The rows and how they are laid out.
  */
 function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: number, options: TemplateFormatOptions, forceStack: boolean): ContentLayout {
-  const stack = forceStack || atoms.some(atom => atom.kind === 'element' || atom.kind === 'block');
+  const stack = forceStack || atoms.some(isStructure);
   const leadingBreak = breaksAtEdge(atoms[0], stack, 'start');
   const trailingBreak = breaksAtEdge(atoms[atoms.length - 1], stack, 'end');
   const builder = new RowBuilder();
@@ -499,7 +502,7 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
 
     switch (atom.kind) {
       case 'text':
-        printText(atom.value, { builder, isFirst: i === 0, isLast: i === last, breakable: stack && isDropped(atoms[i - 1], atoms[i + 1]) });
+        printText(atom.value, { builder, isFirst: i === 0, isLast: i === last, breakable: stack && isDropped(atoms[i - 1], atoms[i + 1]), atBrokenEdge: (i === 0 && leadingBreak) || (i === last && trailingBreak) });
         break;
 
       case 'interpolation':
@@ -512,6 +515,10 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
 
       case 'element':
         builder.append(printElement(atom, level, column(), options));
+        break;
+
+      case 'render':
+        builder.append(`@render ${atom.callee}(${atom.args.trim()})`);
         break;
 
       default:
@@ -527,10 +534,11 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
  *
  * @param value - The text as written.
  * @param context - Where the text is written, and whether it is at an end of its content or between two nodes where a line
- *   break can replace its whitespace (when it is blank).
+ *   break can replace its whitespace (when it is blank), or at an end of its content where a line break is written, which
+ *   replaces its whitespace (when it is blank), e.g. the spaces between the `{` of a block and a comment.
  */
-function printText(value: string, context: { builder: RowBuilder, isFirst: boolean, isLast: boolean, breakable: boolean }): void {
-  const { builder, isFirst, isLast, breakable } = context;
+function printText(value: string, context: { builder: RowBuilder, isFirst: boolean, isLast: boolean, breakable: boolean, atBrokenEdge: boolean }): void {
+  const { builder, isFirst, isLast, breakable, atBrokenEdge } = context;
   if (isBlank(value)) {
     const lineBreaks = countLineBreaks(value);
     if (lineBreaks) {
@@ -542,7 +550,7 @@ function printText(value: string, context: { builder: RowBuilder, isFirst: boole
       if (!isFirst && !isLast) {
         builder.breakRow(false);
       }
-    } else {
+    } else if (!atBrokenEdge) {
       builder.append(value);
     }
 

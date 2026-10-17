@@ -1,7 +1,7 @@
 import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
-import { CR, EOF, LF, SPACE, TAB } from '../../../costants/chars.constants';
-import { COMMENT_END, COMMENT_START } from '../../../costants/comment.costants';
+import { CR, EOF, LF, SPACE, TAB } from '../../../costants/chars.constant';
+import { COMMENT_END, COMMENT_START } from '../../../costants/comment.costant';
 import { Cursor } from '../../../models/cursor/cursor';
 import { CurrentChar } from '../current-char.type';
 

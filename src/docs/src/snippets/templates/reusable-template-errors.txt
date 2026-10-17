@@ -1,0 +1,8 @@
+<template #row(item)></template>                  The parameter 'item' of template "row" needs a type, e.g. item: string
+<template #row></template>                        A template lists its parameters in parentheses after its name, even when it has none: <template #row()>
+<template #row() class="a"></template>            A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it
+@render title()                                   "title" is not a template visible here: declare it with <template #title(…)> in this scope or in an enclosing one
+@render count('a')                                Argument of type 'string' is not assignable to parameter of type 'number'.
+@render count()                                   Expected 1 arguments, but got 0.
+<svg>@render row()</svg>                          Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in
+@render row(...pair())                            @render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])

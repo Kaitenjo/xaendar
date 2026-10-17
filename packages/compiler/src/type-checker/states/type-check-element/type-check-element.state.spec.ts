@@ -101,6 +101,13 @@ describe('typeCheckElement', () => {
       expect(text(run('<div (click)="f(event)"></div>'))).toEqual(['root.f(event);']);
     });
 
+    it('calls a handler on a variable of the template as written, as the generated code does, and any other one on the component', () => {
+      const context = new TypeCheckContext();
+      context.addUnresolvableIdentifier('item', 'signal');
+
+      expect(text(typeCheckElement(parse('<div (click)="item.set(1)" (input)="items.clear()"></div>'), processNode, context))).toEqual(['item.set(1);', 'root.items.clear();']);
+    });
+
     it('type-checks conditional bindings as nested if blocks', () => {
       const lines = run('<div @if (cond()) { title="{heading}" (click)="f($event)" @if (inner) { id="{b}" } }></div>');
 
@@ -765,6 +772,32 @@ describe('typeCheckElement structural directives', () => {
     expect(text(run('<div *myDirective></div>', directiveMetadata({})))).toEqual([]);
   });
 
+  describe('content', () => {
+    const processChild: ProcessNode = (child, context) => typeCheckElement(child as ElementNode, processChild, context);
+    const runTree = (template: string) => {
+      const context = new TypeCheckContext();
+      context.addImport(directiveMetadata({}));
+      return text(typeCheckElement(parse(template), processChild, context));
+    };
+
+    it('type-checks the content in a block of its own, declaring the template variables of the content first', () => {
+      expect(runTree('<div *myDirective><input #field (input)="save(field.value)" /></div>')).toEqual([
+        '{',
+        '  let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
+        '  root.save(field.value);',
+        '}'
+      ]);
+    });
+
+    it('writes no block for a content declaring no template variable', () => {
+      expect(runTree('<div @if (cond()) { *myDirective }><span title="{a}"></span></div>')).toEqual([
+        'if (root.cond()) {',
+        '}',
+        'root.a;'
+      ]);
+    });
+  });
+
   it('throws when the structural directive is not imported', () => {
     expect(() => run('<div *myDirective></div>')).toThrow('*myDirective selector is not associated to any Directive imported in the template');
   });
@@ -1058,6 +1091,52 @@ describe('typeCheckElement generic components', () => {
 
     expect(lines.slice(0, 2)).toEqual(['{', `  type __Instance = ${owner}<string>;`]);
     expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
+  });
+
+  describe('named by a template variable', () => {
+    it('declares the instantiation in the scope of the variable, under names ending with the position of the element, and records it', () => {
+      const context = new TypeCheckContext();
+      context.addImport(genericComponent());
+
+      expect(text(typeCheckElement(parse('<my-el #list items="{names}"></my-el>'), processNode, context))).toEqual([
+        '// @ts-ignore',
+        `function __probe0<P0, P1>(value0: ${owner}<P0, P1>['items']): [P0, P1] { return null!; }`,
+        '// @ts-ignore',
+        'const __probed0 = __probe0(() => (root.names));',
+        'type __Probed0 = typeof __probed0;',
+        `type __Instance0 = ${owner}<unknown extends __Probed0[0] ? any : __Probed0[0], unknown extends __Probed0[1] ? any : __Probed0[1]>;`,
+        '{',
+        '  (root.names) satisfies ReturnType<__Instance0[\'items\']>;',
+        '}'
+      ]);
+      expect(context.hasInstantiation(0)).toBe(true);
+    });
+
+    it('declares the instantiation with the type arguments of the element, or with nothing to infer, in the scope of the variable', () => {
+      expect(text(run('<my-el(string) #list items="{names}"></my-el>', genericComponent([['T'], ['U', true]])))[0]).toBe(`type __Instance0 = ${owner}<string>;`);
+      expect(text(run('<my-el #list (picked)="onPick($event)"></my-el>', genericComponent([['T', true], ['U', true]])))).toEqual([
+        `type __Instance0 = ${owner};`,
+        '{',
+        '  let $event!: CustomEvent<__Instance0[\'picked\']>;',
+        '  root.onPick($event);',
+        '}'
+      ]);
+    });
+
+    it('records no instantiation for an element failing type-checking, nor for a component that is not generic', () => {
+      const context = new TypeCheckContext();
+      const required = genericComponent();
+      required.properties.set('label', new ComponentPropertyMetadata('label', 'string', { required: true }));
+      context.addImport(required);
+
+      expect(() => typeCheckElement(parse('<my-el #list items="{names}"></my-el>'), processNode, context)).toThrow('my-el is missing the following required properties');
+      expect(context.hasInstantiation(0)).toBe(false);
+
+      const plainContext = new TypeCheckContext();
+      plainContext.addImport(metadata({}));
+      typeCheckElement(parse('<my-el #card></my-el>'), processNode, plainContext);
+      expect(plainContext.hasInstantiation(0)).toBe(false);
+    });
   });
 
   it('throws for type arguments on a component that is not generic', () => {

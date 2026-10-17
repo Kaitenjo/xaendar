@@ -1,6 +1,5 @@
 import { slice } from '@xaendar/common';
 import { NoArgsFunction } from '@xaendar/types';
-import { createSourceFile, isExpressionStatement, isIdentifier, ScriptTarget } from 'typescript';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { ForToken } from '../../../lexer/types/tokens/for-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
@@ -10,7 +9,10 @@ import { ASTNodeType } from '../../types/node.enum';
 import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables';
 import type { Span } from '../../../types/span.type';
 import { ForNode } from '../../types/nodes/for-node.type';
-import { validateExpression } from '../../utils/expression-validator/expression-validator';
+import { isIdentifier } from 'typescript';
+import { getTemplateSpan, validateExpression } from '../../utils/expression-validator/expression-validator';
+import { getForVariables } from '../../utils/for-variables/for-variables.utils';
+import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**
@@ -64,7 +66,7 @@ type ForSection = {
  *
  * The iterable is either an array or a number `n`, iterated as `0, 1, ..., n - 1`.
  * The `item of` part is optional: without it the loop declares no item alias and
- * only the implicit variables are available (e.g. `@for (10; track $index)`).
+ * only the implicit variables are available (e.g. `@for (10; track $index())`).
  * The `track` part is optional too: it defaults to the item alias or, when there
  * is none, to `$index` (or its alias).
  *
@@ -111,9 +113,9 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
   }
 
   // ---- Section 3 (optional): "track item.id" ----
-  // Without it the loop tracks by item, or by index when there is no item alias.
+  // Without it the loop tracks by the value of the item, or of the index when there is no item alias.
   const trackSection = sections[1] && trimSection(sections[1]);
-  let trackSource = itemAlias ?? implicitAliases.get('$index') ?? '$index';
+  let trackSource = `${itemAlias ?? implicitAliases.get('$index') ?? '$index'}()`;
   // The default track expression is not written in the template, so it has no offset
   let trackOffset: number | undefined;
 
@@ -128,6 +130,12 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
   }
 
   const trackValidation = validateExpression(trackSource, trackOffset);
+  // The variables of the loop are signals: a key is the value of one of them, not the signal
+  const trackNode = trackValidation.node;
+  if (isIdentifier(trackNode) && getForVariables({ itemAlias, implicitAliases }).includes(trackNode.text)) {
+    throw new Error(`The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track ${trackNode.text}()`, { cause: getTemplateSpan(trackNode) });
+  }
+
 
   return {
     itemAlias,
@@ -273,25 +281,4 @@ function splitForSections(source: string, offset: number): ForSection[] {
   }
 
   return sections;
-}
-
-/**
- * Checks whether `name` is a valid JavaScript identifier by delegating to
- * the TypeScript parser.
- *
- * A string is considered valid when the TS parser produces a single
- * `ExpressionStatement` whose expression is an `Identifier` with the
- * same text.
- *
- * @param name - The string to validate.
- * @returns `true` if `name` is a valid JS identifier, `false` otherwise.
- */
-function isValidIdentifier(name: string): boolean {
-  if (!name.length) {
-    return false;
-  }
-
-  const sourceFile = createSourceFile('__id.ts', name, ScriptTarget.ESNext, false);
-  const statement = sourceFile.statements[0];
-  return !!statement && isExpressionStatement(statement) && isIdentifier(statement.expression) && statement.expression.text === name;
 }

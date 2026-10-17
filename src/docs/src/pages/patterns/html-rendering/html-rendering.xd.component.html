@@ -10,36 +10,26 @@
 <p @@i18n(key="pages.patterns.htmlRendering.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.title") />
-<docs-example
-  name="patterns/html-rendering/markdown-preview"
-  heading="{ translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.example1 }"
->
+<docs-example name="patterns/html-rendering/markdown-preview"
+  heading="{translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.example1}">
   <ex-markdown-preview />
 </docs-example>
 <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.p1") />
 <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.p2") />
 <docs-code snippet="patterns/interpolated-html.html" />
 
-<docs-callout
-  kind="warning"
-  heading="{ translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.heading }"
->
+<docs-callout kind="warning"
+  heading="{translations().pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.heading}">
   <p @@i18n(key="pages.patterns.htmlRendering.aDirectiveForInnerhtml.callout1.p1") />
   <docs-code snippet="patterns/sanitize.ts" />
 </docs-callout>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.htmlRendering.edgeCases.title") />
-  <docs-callout
-    @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout1.body")
-    kind="edge"
-    heading="{ translations().pages.patterns.htmlRendering.edgeCases.callout1.heading }"
-  />
-  <docs-callout
-    @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout2.body")
-    kind="edge"
-    heading="{ translations().pages.patterns.htmlRendering.edgeCases.callout2.heading }"
-  />
+  <docs-callout @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.patterns.htmlRendering.edgeCases.callout1.heading}" />
+  <docs-callout @@i18n(key="pages.patterns.htmlRendering.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.patterns.htmlRendering.edgeCases.callout2.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.patterns.htmlRendering.apiSummary.title") />
@@ -54,13 +44,13 @@
     <tbody>
       <tr>
         <td>
-          <code>{'{ html() }'}</code>
+          <code>{ '{ html() }' }</code>
         </td>
         <td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{'@@exInnerHtml(html="{ html() }")'}</code>
+          <code>{ '@@exInnerHtml(html="{ html() }")' }</code>
         </td>
         <td @@i18n(key="pages.patterns.htmlRendering.apiSummary.td2") />
       </tr>

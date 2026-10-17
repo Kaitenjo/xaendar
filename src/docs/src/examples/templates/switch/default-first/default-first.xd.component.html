@@ -3,7 +3,7 @@
 <ex-button (click)="toggle()">size: { size() }</ex-button>
 <div class="columns">
   <section>
-    <h5>{'@default'} last</h5>
+    <h5>{ '@default' } last</h5>
     @switch (size()) {
       @case ('small') {
         <p>S</p>
@@ -14,7 +14,7 @@
     }
   </section>
   <section>
-    <h5>{'@default'} first</h5>
+    <h5>{ '@default' } first</h5>
     @switch (size()) {
       @default {
         <p>another size</p>

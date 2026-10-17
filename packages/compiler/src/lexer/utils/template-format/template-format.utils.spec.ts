@@ -255,6 +255,31 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('writes the template variable of an element, and the parameters of a <template> without the spaces around them', () => {
+      expect(format('<input   #field   type="text"/>')).toBe(lines('<input #field type="text" />'));
+      expect(format('<template #row(  item: Item, index: number )>\n<li>{ item() }</li>\n</template>')).toBe(lines(
+        '<template #row(item: Item, index: number)>',
+        '  <li>{ item() }</li>',
+        '</template>'
+      ));
+    });
+
+    it('writes a @render on a line of its own, without the spaces around its arguments', () => {
+      expect(format('<ul><li>a</li>@render   row(  item(),  1 )</ul>@render empty()<p>b</p>')).toBe(lines(
+        '<ul>',
+        '  <li>a</li>',
+        '  @render row(item(),  1)',
+        '</ul>',
+        '@render empty()',
+        '<p>b</p>'
+      ));
+      expect(format('@if (a) { @render row(x) }')).toBe(lines(
+        '@if (a) {',
+        '  @render row(x)',
+        '}'
+      ));
+    });
+
     it('writes the type arguments of an element right after its tag name, also when the tag is wrapped', () => {
       expect(format('<ex-list(  string,  number ) items="{rows}"/>')).toBe(lines('<ex-list(string,  number) items="{rows}" />'));
       expect(format('<ex-list(Row) items="{rows()}" label="A long enough label" (picked)="open($event)"></ex-list>')).toBe(lines(
@@ -373,6 +398,19 @@ describe('formatTemplate', () => {
         '</div>'
       ));
     });
+
+    it('moves a comment written on the line of the { of a block to the first line of its content, dropping the spaces before it', () => {
+      const source = '@if (a) {      <!-- first -->\n  <p></p>     <!-- last -->     }';
+      const expected = lines(
+        '@if (a) {',
+        '  <!-- first -->',
+        '  <p></p>     <!-- last -->',
+        '}'
+      );
+
+      expect(format(source)).toBe(expected);
+      expect(format(expected)).toBe(expected);
+    });
   });
 
   describe('the template as a whole', () => {
@@ -390,6 +428,11 @@ describe('formatTemplate', () => {
         '<p></p>'
       ));
       expect(format('@import { A } from \'./a\';\n<p></p>')).toBe(lines('@import { A } from \'./a\';', '<p></p>'));
+    });
+
+    it('keeps the comments of the @import statements', () => {
+      const source = '@import {A} from \'./a\';   <!-- a -->\n@import {B} from \'./b\';  <!-- b -->\n<p></p>';
+      expect(format(source)).toBe(lines('@import { A } from \'./a\';   <!-- a -->', '@import { B } from \'./b\';  <!-- b -->', '<p></p>'));
     });
 
     it('writes only the header of a template that has nothing else, and nothing for an empty template', () => {

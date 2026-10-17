@@ -734,7 +734,8 @@ describe('packages and aliases of the project', () => {
   beforeAll(async () => {
     // TypeScript resolves the packages on the real file system: node:fs is mocked for the relative paths only
     const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
-    root = toPosixPath(fs.mkdtempSync(join(tmpdir(), 'xd-plugin-utils-')));
+    // The real path, which TypeScript resolves the files of the packages to: the temporary directory can be reached through a short name or a symlink
+    root = toPosixPath(fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'xd-plugin-utils-'))));
     const write = (path: string, content: string) => {
       fs.mkdirSync(dirname(join(root, path)), { recursive: true });
       fs.writeFileSync(join(root, path), content);

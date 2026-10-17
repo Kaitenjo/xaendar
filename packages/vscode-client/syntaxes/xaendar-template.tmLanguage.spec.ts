@@ -195,6 +195,25 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'Item)/')).toContain('entity.name.type.ts');
   });
 
+  it('colors the template variables, and the declaration of a template with its parameters, leaving the # of the values alone', () => {
+    const template = '<input #field type="text" /><p data-color="#fde68a" href="#top">Issue #42</p><template #row(item: Item, index: number)></template>';
+
+    expect(scopesOf(template, '#field')).toContain('punctuation.definition.template-variable.xaendar');
+    expect(scopesOf(template, 'field')).toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, 'type')).toContain('entity.other.attribute-name.html');
+    expect(scopesOf(template, 'fde68a')).not.toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, 'top')).not.toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, '42')).not.toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, 'row')).toContain('entity.name.function.xaendar');
+    expect(scopesOf(template, '(item')).toContain('punctuation.definition.parameters.begin.xaendar');
+    expect(scopesOf(template, 'item:')).toContain('variable.parameter.xaendar');
+    expect(scopesOf(template, ': Item')).toContain('punctuation.separator.type.xaendar');
+    expect(scopesOf(template, 'Item,')).toContain('entity.name.type.ts');
+    expect(scopesOf(template, ', index')).toContain('punctuation.separator.parameter.xaendar');
+    expect(scopesOf(template, 'number')).toContain('support.type.primitive.ts');
+    expect(scopesOf(template, ')>')).toContain('punctuation.definition.parameters.end.xaendar');
+  });
+
   it('colors the control flow, with its conditions as expressions', () => {
     const template = [
       '@if (a() && (b)) { x } @else if (c) { y } @else { z }',
@@ -212,6 +231,20 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, '{ x')).toContain('punctuation.section.block.begin.xaendar');
     expect(scopesOf(template, '} @else if')).toContain('punctuation.section.block.end.xaendar');
     expect(scopesOf(template, '\'a\'')).toContain('string.quoted.single.ts');
+  });
+
+  it('colors the render of a template, with its arguments as expressions', () => {
+    const template = '<ul>@render row(items()[0], (count), \'a)\')</ul> after';
+
+    expect(scopesOf(template, '@render')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, 'row')).toContain('entity.name.function.xaendar');
+    expect(scopesOf(template, '(items')).toContain('punctuation.definition.arguments.begin.xaendar');
+    expect(scopesOf(template, 'items')).toContain('meta.embedded.expression.xaendar');
+    // Parentheses nested in the arguments, and in their strings, don't end them
+    expect(scopesOf(template, 'count')).toContain('meta.embedded.expression.xaendar');
+    expect(scopesOf(template, '\'a)\'')).toContain('string.quoted.single.ts');
+    expect(scopesOf(template, ')</ul>')).toContain('punctuation.definition.arguments.end.xaendar');
+    expect(scopesOf(template, 'after')).not.toContain('meta.embedded.expression.xaendar');
   });
 
   it('colors the conditional bindings declared in a tag', () => {

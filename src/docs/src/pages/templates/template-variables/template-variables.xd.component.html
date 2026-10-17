@@ -1,0 +1,91 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SearchFieldComponent } from '../../../examples/templates/template-variables/search-field/search-field.xd.component.ts'
+@import { NativeDialogComponent } from '../../../examples/templates/template-variables/native-dialog/native-dialog.xd.component.ts'
+@import { RowNotesComponent } from '../../../examples/templates/template-variables/row-notes/row-notes.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span @@i18n(key="pages.templates.templateVariables.eyebrow") class="eyebrow" />
+<h1 @@i18n(key="pages.templates.templateVariables.title") />
+<p @@i18n(key="pages.templates.templateVariables.lead") class="lead" />
+
+<h2 @@i18n(key="pages.templates.templateVariables.naming.title") />
+<docs-code snippet="templates/template-variable-syntax.html" />
+<docs-example name="templates/template-variables/search-field"
+  heading="{translations().pages.templates.templateVariables.naming.example1}">
+  <ex-search-field />
+</docs-example>
+<p @@i18n(key="pages.templates.templateVariables.naming.p1") />
+<p @@i18n(key="pages.templates.templateVariables.naming.p2") />
+
+<h2 @@i18n(key="pages.templates.templateVariables.types.title") />
+<p @@i18n(key="pages.templates.templateVariables.types.p1") />
+<docs-example name="templates/template-variables/native-dialog"
+  heading="{translations().pages.templates.templateVariables.types.example1}">
+  <ex-native-dialog />
+</docs-example>
+<p @@i18n(key="pages.templates.templateVariables.types.p2") />
+
+<h2 @@i18n(key="pages.templates.templateVariables.scope.title") />
+<p @@i18n(key="pages.templates.templateVariables.scope.p1") />
+<docs-code snippet="templates/template-variable-scopes.html" />
+<p @@i18n(key="pages.templates.templateVariables.scope.p2") />
+<docs-example name="templates/template-variables/row-notes"
+  heading="{translations().pages.templates.templateVariables.scope.example1}">
+  <ex-row-notes />
+</docs-example>
+<p @@i18n(key="pages.templates.templateVariables.scope.p3") />
+<p @@i18n(key="pages.templates.templateVariables.scope.p4") />
+<docs-code snippet="templates/template-variable-errors.txt" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.templateVariables.edgeCases.title") />
+  <docs-callout @@i18n(key="pages.templates.templateVariables.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.templates.templateVariables.edgeCases.callout1.heading}" />
+  <docs-callout @@i18n(key="pages.templates.templateVariables.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.templates.templateVariables.edgeCases.callout2.heading}" />
+  <docs-callout @@i18n(key="pages.templates.templateVariables.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.templates.templateVariables.edgeCases.callout3.heading}" />
+  <docs-callout @@i18n(key="pages.templates.templateVariables.edgeCases.callout4.body") kind="edge"
+    heading="{translations().pages.templates.templateVariables.edgeCases.callout4.heading}" />
+</section>
+
+<h2 @@i18n(key="pages.templates.templateVariables.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.templateVariables.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.templateVariables.apiSummary.th2") />
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>&lt;input #name /&gt;</code>
+        </td>
+        <td @@i18n(key="pages.templates.templateVariables.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>(event)="name.method()"</code>
+        </td>
+        <td @@i18n(key="pages.templates.templateVariables.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>(event)="method(name, name.value)"</code>
+        </td>
+        <td @@i18n(key="pages.templates.templateVariables.apiSummary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '{ name.property }' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.templateVariables.apiSummary.td4") />
+      </tr>
+    </tbody>
+  </table>
+</div>

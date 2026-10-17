@@ -2,7 +2,7 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <ex-button (click)="rename()">Change the label</ex-button>
-<ul @@exInspect(label="{ label() }" (report)="log($event)") id="fruits">
+<ul @@exInspect(label="{label()}" (report)="log($event)") id="fruits">
   <li>Apple</li>
   <li>Pear</li>
   <li>Plum</li>

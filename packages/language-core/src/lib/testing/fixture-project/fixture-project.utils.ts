@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { analyzeTemplate, type TemplateAnalysisResult } from '../../template-analysis/template-analysis';
@@ -58,7 +58,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     ''
   ].join('\n'),
   'node_modules/@acme/format/index.js': 'export const formatPrice = value => `${value}`;\nexport const CURRENCY = \'EUR\';\n',
-  'stubs/signals.ts': 'export type Signal<T> = () => T;\n',
+  'stubs/signals.ts': 'export type Signal<T> = () => T;\nexport type Computed<T> = () => T;\n',
   'stubs/core.ts': [
     'export type InputSignal<T> = () => T;',
     'export type Output<T = void> = { emit(value: T): void };',
@@ -140,7 +140,8 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
  * @returns The project.
  */
 export function createFixtureProject(): FixtureProject {
-  const root = toPosixPath(mkdtempSync(join(tmpdir(), 'xaendar-language-core-')));
+  // The real path, which TypeScript resolves the files of the packages to: the temporary directory can be reached through a short name or a symlink
+  const root = toPosixPath(realpathSync.native(mkdtempSync(join(tmpdir(), 'xaendar-language-core-'))));
   const path = (relativePath: string) => `${root}/${relativePath}`;
   const write = (relativePath: string, text: string) => {
     mkdirSync(dirname(path(relativePath)), { recursive: true });

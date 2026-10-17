@@ -46,6 +46,14 @@ Declares an output. emit(detail?, options?) dispatches a CustomEvent named after
 
 The first element of the shadow root matching a selector or a component class, kept up to date as a signal.
 
+### Query.required (decorator)
+
+```ts
+@Query.required('.selector' | ComponentClass) accessor name!: QuerySignal<E>
+```
+
+Like Query, for an element that is always there: no null in the type, and reading it throws when no element matches.
+
 ### Query.all (decorator)
 
 ```ts
@@ -61,6 +69,14 @@ Every element of the shadow root matching a selector or a component class.
 ```
 
 The first element projected into the slots of the component that matches a selector or a component class.
+
+### Query.content.required (decorator)
+
+```ts
+@Query.content.required('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>
+```
+
+Like Query.content, for projected content that is always there: no null in the type, and reading it throws when no element matches.
 
 ### Query.content.all (decorator)
 

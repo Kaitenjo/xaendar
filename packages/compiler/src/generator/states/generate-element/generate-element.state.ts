@@ -10,6 +10,8 @@ import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
+import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
@@ -63,12 +65,14 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     appendArgument(retVal.code, members[i]);
   }
 
+  // The template variable naming the element, declared by its scope, follows the children
+  const variable = node.variable ? `, '${node.variable.name}'` : '';
   hasChildren
     ? retVal.code.push(
-      indent(`(${nodeName}, parentContext) => ${nodeName}Children.call(this, ${nodeName}, parentContext)`),
+      indent(`(${nodeName}, parentContext) => ${nodeName}Children.call(this, ${nodeName}, parentContext)${variable}`),
       ');'
     )
-    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} null);`;
+    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} null${variable});`;
 
   switch (tagName) {
     case 'svg':
@@ -77,11 +81,16 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   }
 
   if (hasChildren) {
+    const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, compilerContext.namespace));
     retVal.functionsToProcess!.set(`${nodeName}Children`, {
       fn: {
         node,
         parentNode: nodeName,
-        context: compilerContext,
+        /*
+          The content of an element a structural directive is applied to is a scope of its own, created and destroyed with
+          it, and the children of an element opening a namespace are created in it
+        */
+        context: isStructuralElement(node) || childrenNamespace !== compilerContext.namespace ? new CompilerContext(compilerContext, childrenNamespace) : compilerContext,
         precode: overrideChildrenCreateElement(tagName)
       },
       args: [nodeName, 'parentContext', 'anchor']

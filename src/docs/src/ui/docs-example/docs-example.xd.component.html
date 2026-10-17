@@ -1,7 +1,7 @@
 @import { translations } from '../../core/i18n/i18n.ts'
 @import { DocsCodeComponent } from '../docs-code/docs-code.xd.component.ts'
 
-<figure class="{ kind() === 'edge' ? 'example example--edge' : 'example' }">
+<figure class="{kind() === 'edge' ? 'example example--edge' : 'example'}">
   <figcaption class="head">
     @if (kind() === 'edge') {
       <span class="badge">{ translations().example.edge }</span>
@@ -20,19 +20,15 @@
   </div>
   @if (open()) {
     <div class="source">
-      <div class="tabs" role="tablist" aria-label="{ translations().example.files }">
+      <div class="tabs" role="tablist" aria-label="{translations().example.files}">
         @for (file of files(); track file().name) {
-          <button
-            class="{ file().name === current().name ? 'tab tab--active' : 'tab' }"
-            type="button"
-            role="tab"
-            (click)="select(file().name)"
-          >
+          <button class="{file().name === current().name ? 'tab tab--active' : 'tab'}" type="button" role="tab"
+            (click)="select(file().name)">
             { file().name }
           </button>
         }
       </div>
-      <docs-code code="{ current().code }" lang="{ current().lang }" bare="{ true }" />
+      <docs-code code="{current().code}" lang="{current().lang}" bare="{true}" />
     </div>
   }
 </figure>

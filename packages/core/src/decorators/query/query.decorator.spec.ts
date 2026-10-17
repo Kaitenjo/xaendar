@@ -8,7 +8,7 @@ import type { QuerySignal } from '../../signals/types/query-signal.type';
 import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { WebComponent } from '../web-component/web-component.decorator';
-import { Query, query, queryAll, querySlot, querySlotAll } from './query.decorator';
+import { Query, query, queryAll, queryRequired, querySlot, querySlotAll, querySlotRequired } from './query.decorator';
 
 loadSignals();
 
@@ -170,6 +170,78 @@ describe('query', () => {
   });
 });
 
+describe('queryRequired', () => {
+  it('throws when read before the element is connected', () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+    expect(() => signal.get()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+  });
+
+  it('holds the first element having the attribute', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+
+    element.shadowRoot!.append(document.createElement('span'), first, item());
+    await flush();
+
+    expect(signal()).toBe(first);
+    expect(signal.get()).toBe(first);
+  });
+
+  it('throws again when the element is removed', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    target.remove();
+    await flush();
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+  });
+
+  it('notifies when the element appears', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const spy = vi.fn();
+    const dispose = effect(() => {
+      try {
+        spy(signal());
+      } catch {
+        spy(null);
+      }
+    });
+    spy.mockClear();
+
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    expect(spy).toHaveBeenCalledExactlyOnceWith(target);
+    dispose();
+  });
+
+  it('names the selector of the component in the error when the target is a class', () => {
+    const element = create();
+    const { klass, selector } = defineComponent();
+
+    expect(() => queryRequired(element, klass)()).toThrow(`No element matches the required query '${selector}' of <${element.localName}>`);
+  });
+
+  it('throws when the class is not a registered web component', () => {
+    class Plain extends CustomElement { }
+
+    expect(() => queryRequired(create(), Plain)).toThrow('Plain does not seems to be decorated with @WebComponent');
+  });
+});
+
 describe('queryAll', () => {
   it('is empty before any change of the Shadow DOM', () => {
     expect(queryAll(create(), '[item]')()).toEqual([]);
@@ -322,6 +394,34 @@ describe('Query decorator', () => {
     expect(signal()).toBe(target);
   });
 
+  describe('required', () => {
+    it('creates a signal holding the first element having the attribute, throwing when there is none', async () => {
+      const element = create();
+      const signal = init(Query.required('[item]'), element);
+      document.body.appendChild(element);
+      expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+
+      const target = item();
+      element.shadowRoot!.append(target, item());
+      await flush();
+
+      expect(signal()).toBe(target);
+    });
+
+    it('creates a signal holding the first instance of the component', async () => {
+      const element = create();
+      const { klass, selector } = defineComponent();
+      const signal = init(Query.required(klass), element);
+      document.body.appendChild(element);
+
+      const target = document.createElement(selector);
+      element.shadowRoot!.append(target);
+      await flush();
+
+      expect(signal()).toBe(target);
+    });
+  });
+
   describe('all', () => {
     it('creates a signal holding all the elements having the attribute', async () => {
       const element = create();
@@ -405,6 +505,47 @@ describe('querySlot', () => {
   });
 });
 
+describe('querySlotRequired', () => {
+  it('holds the first projected element matching the target', () => {
+    const { klass, selector } = defineComponent();
+    const first = document.createElement(selector);
+    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
+    const signal = querySlotRequired(element, klass);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(first);
+    expect(signal.get()).toBe(first);
+  });
+
+  it('throws when read before the element is connected', () => {
+    const element = withSlots(item());
+    const signal = querySlotRequired(element, '[item]');
+
+    expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+  });
+
+  it('throws when no projected element matches the target', () => {
+    const element = withSlots(document.createElement('span'));
+    const signal = querySlotRequired(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+  });
+
+  it('applies the given options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = querySlotRequired(element, '[item]', { slots: 'a' });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+});
+
 describe('querySlotAll', () => {
   it('holds all the projected elements matching the target', () => {
     const [first, second] = [item(), item()];
@@ -463,6 +604,27 @@ describe('Query.content decorator', () => {
     document.body.appendChild(element);
 
     expect(signal()).toBe(inA);
+  });
+
+  describe('required', () => {
+    it('creates a signal holding the first projected element matching the target', () => {
+      const target = item();
+      const element = withSlots(target, item());
+      const signal = init(Query.content.required('[item]'), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toBe(target);
+    });
+
+    it('forwards the options, throwing when no element matches', () => {
+      const element = withSlots(item());
+      const signal = init(Query.content.required('[item]', { slots: 'a' }), element);
+
+      document.body.appendChild(element);
+
+      expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+    });
   });
 
   describe('all', () => {

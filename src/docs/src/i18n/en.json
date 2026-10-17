@@ -115,6 +115,8 @@
       "templates/for": "Lists with @for",
       "templates/switch": "Branching with @switch",
       "templates/conditional-bindings": "Conditional bindings",
+      "templates/template-variables": "Template variables",
+      "templates/reusable-templates": "Reusable templates",
       "templates/expressions": "Expression syntax",
       "templates/imports": "Imports",
       "templates/svg-mathml": "SVG and MathML",
@@ -272,7 +274,8 @@
           "title": "Querying the projected content",
           "p1": "<code>@Query.content</code> and <code>@Query.content.all</code> take the same targets as view queries, a CSS selector or the class of a component, and look into the elements assigned to the slots of the component, together with their descendants.",
           "example1": "A tab group built from its panels",
-          "p2": "The group renders one tab for each panel it finds, with the label the panel received from the parent, and tells each panel whether it is active through a signal of the panel: the query is typed by the class, so the group can reach the public members of the instances. Add a panel: the parent renders it inside the group, the query finds it, and a new tab appears."
+          "p2": "The group renders one tab for each panel it finds, with the label the panel received from the parent, and tells each panel whether it is active through a signal of the panel: the query is typed by the class, so the group can reach the public members of the instances. Add a panel: the parent renders it inside the group, the query finds it, and a new tab appears.",
+          "p3": "<code>@Query.content.required</code> drops <code>null</code> from the type, and reading it throws when no projected element matches. The projected content arrives after <code>afterRender</code> (see the edge cases below), so there it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives."
         },
         "whichSlotsWhichElements": {
           "title": "Which slots, which elements",
@@ -303,7 +306,8 @@
           "td1": "The first projected element matching <code>target</code>, or <code>null</code>.",
           "td2": "All the projected elements matching <code>target</code>.",
           "td3": "Only the given slots; <code>''</code> is the default slot.",
-          "td4": "All the children of the element, assigned to a slot or not."
+          "td4": "All the children of the element, assigned to a slot or not.",
+          "td5": "Like <code>@Query.content</code>, without <code>null</code>: reading it throws when no element matches."
         }
       },
       "domApis": {
@@ -595,6 +599,11 @@
           "example1": "The query before and after the render, and after a change",
           "p2": "The template is updated in a microtask after the signal changes, and the query a microtask after that. Read queries in <code>afterRender</code>, in event handlers, or reactively in a computed signal or an effect: an effect created in <code>onInit</code> runs again when the query is filled."
         },
+        "requiredQueries": {
+          "title": "Required queries",
+          "p1": "<code>@Query.required</code> is <code>@Query</code> for an element that is always there: its type has no <code>null</code>, and reading the signal throws when no element matches the target. The error names the selector and the component.",
+          "p2": "The rules of the previous section still hold: the result is there only after the render, so reading the query in <code>onInit</code>, in an effect created before the render or in the template throws. Read it in <code>afterRender</code>, in event handlers, or in a computed signal read from them. An element inside an <code>@if</code> is not always there: keep <code>@Query</code> for it."
+        },
         "edgeCases": {
           "title": "Edge cases",
           "example1": "A query on a class that changes",
@@ -610,6 +619,7 @@
           "th2": "Description",
           "td1": "The first element of the template matching <code>target</code>, or <code>null</code>.",
           "td2": "All the matching elements, in document order. Notifies only when the list changes.",
+          "td3": "Like <code>@Query</code>, without <code>null</code>: reading it throws when no element matches.",
           "td4": "A CSS selector, or the class of a component.",
           "td5": "A read-only signal: <code>query()</code> or <code>query.get()</code>."
         }
@@ -1499,7 +1509,8 @@
           "td15": "Modules exporting signals and functions",
           "td16": "Pipes",
           "td17": "Methods and computed signals",
-          "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties"
+          "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
+          "td19": "<code>&lt;template #name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Reusable templates</a>"
         },
         "whatWorksDifferently": {
           "title": "What works differently",
@@ -1508,7 +1519,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding, event modifiers such as <code>(keydown.enter)</code>, <code>@defer</code>, <code>@let</code>, <code>@empty</code>, <code>ng-template</code> and server-side rendering. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding, event modifiers such as <code>(keydown.enter)</code>, <code>@defer</code>, <code>@let</code>, <code>@empty</code>, templates passed to other components and server-side rendering. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },
@@ -1987,14 +1998,14 @@
       "events": {
         "eyebrow": "Templates",
         "title": "Event listeners",
-        "lead": "An attribute whose name is in parentheses listens to the event of that name and calls a method of the component, or of one of its members, such as <code>cart.clear()</code>. The handler is always one call to a method, with simple arguments: the logic lives in the class, where it can be read, typed and tested.",
+        "lead": "An attribute whose name is in parentheses listens to the event of that name and calls a method of the component, of one of its members, such as <code>cart.clear()</code>, or of a <a href=\"#/en/templates/template-variables\">template variable</a>, such as <code>dialog.showModal()</code>. The handler is always one call to a method, with simple arguments: the logic lives in the class, where it can be read, typed and tested.",
         "callingAMethod": {
           "title": "Calling a method",
           "example1": "Every kind of argument",
           "p1": "The arguments can be:",
           "li1": "literals: strings, numbers, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, the event itself, in any position;",
-          "li3": "members of the component and variables of an <code>@for</code>, with their properties, as in <code>color().id</code>;",
+          "li3": "members of the component, variables of an <code>@for</code> and template variables, with their properties, as in <code>color().id</code> or <code>field.value</code>;",
           "li4": "a signal without the call, which passes the signal itself: <code>bump</code> changes whichever counter it receives.",
           "p2": "The template is type-checked: <code>$event</code> has the type of the event, a <code>MouseEvent</code> for <code>click</code> or a <code>KeyboardEvent</code> for <code>keydown</code>, and each argument must fit the parameter of the method."
         },
@@ -2020,7 +2031,7 @@
           "title": "API summary",
           "th1": "Syntax",
           "th2": "Description",
-          "td1": "Calls a method of the component, or of one of its members, for each event.",
+          "td1": "Calls a method of the component, of one of its members or of a template variable, for each event.",
           "td2": "Passes the event, typed by its name.",
           "td3": "Literals, members, variables of a loop and their properties.",
           "td4": "A listener active only while the condition holds. See <a href=\"#/en/templates/conditional-bindings\">Conditional bindings</a>."
@@ -2107,7 +2118,7 @@
           "p3": "A key repeated in the list gets a row per occurrence, matched in order, so the rows follow the array at every change: press the button a few times. Rows with the same key are told apart only by their order, so unique keys remain the safe choice when rows hold state.",
           "callout1": {
             "heading": "What can be iterated, and what cannot",
-            "p1": "Arrays and numbers only: a <code>Set</code>, a <code>Map</code> or a string must be converted to an array first, for example with <code>[...set]</code> in a computed signal. There is no <code>$count</code>: use the length of the array. The expression of <code>track</code> can only read the item and the context, not the members of the component. A negative number renders nothing."
+            "p1": "Arrays and numbers only: a <code>Set</code>, a <code>Map</code> or a string must be converted to an array first, for example with <code>[...set]</code> in a computed signal. There is no <code>$count</code>: use the length of the array. The expression of <code>track</code> reads the item, the implicit variables, the members of the component and the imports, but no template variable. A negative number renders nothing."
           }
         },
         "apiSummary": {
@@ -2363,6 +2374,110 @@
           "td4": "Rendered when no case matches, wherever it is written."
         }
       },
+      "templateVariables": {
+        "eyebrow": "Templates",
+        "title": "Template variables",
+        "lead": "<code>#name</code> on an element names it in the template: the expressions read it as a variable, typed with the type of the element, an <code>HTMLInputElement</code> for an <code>&lt;input&gt;</code> or the class of a component. Event handlers call its methods, or pass it to the methods of the component.",
+        "naming": {
+          "title": "Naming an element",
+          "example1": "A field focused, cleared and read through its variable",
+          "p1": "The buttons come before the field and still use it: a handler runs once the template is rendered, when every element of its scope exists. <code>field.focus()</code> calls a method of the element, <code>clear(field)</code> passes the element to a method of the component, <code>search(field.value)</code> one of its properties.",
+          "p2": "Reading a property through a variable is not reactive: <code>{ field.value }</code> shows the value the field had when the text was rendered. Follow the changes with an event, as the field does with <code>(input)</code>, and keep them in a signal."
+        },
+        "types": {
+          "title": "The type of a variable",
+          "p1": "A variable has the type of its element: the one the DOM declares for its tag, such as <code>HTMLDialogElement</code> for a <code>&lt;dialog&gt;</code> or <code>SVGCircleElement</code> for a <code>&lt;circle&gt;</code> inside an <code>&lt;svg&gt;</code>, or the class of a component, instantiated with its type arguments when it is generic. TypeScript checks every member read or called through it.",
+          "example1": "A native dialog opened and closed by its methods",
+          "p2": "The variable of a component is its instance, since the component is the element: its methods and its signals can be called too, as <code>counter.reset()</code> and <code>{ counter.count() }</code> do in the first snippet."
+        },
+        "scope": {
+          "title": "Scope and order",
+          "p1": "A variable is visible in the whole of its scope, inside other elements and before its own element too. A scope is the template, a branch of <code>@if</code>, a case of <code>@switch</code>, a row of <code>@for</code>, or the content of an element a structural directive is applied to: a variable declared there is not visible outside, and a nested scope can declare a variable named like an outer one, which it hides.",
+          "p2": "An element is created when the render reaches it, though. An event handler can use a variable declared after it, while any other expression, an interpolation, a binding or a condition, only reads the ones declared before: the compiler rejects the others.",
+          "example1": "A variable for every row",
+          "p3": "Each row of the <code>@for</code> has its own <code>note</code>. Reversing the list moves the rows together with their fields, and with what you typed in them.",
+          "p4": "The compiler reports the variables used where they cannot be:"
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "Elements that may not exist",
+            "body": "An element a structural directive is applied to, directly or by a conditional binding, cannot declare a variable, since the directive may not render it. Declare it on an element inside it, whose content is a scope of its own, or use an <code>@if</code>."
+          },
+          "callout2": {
+            "heading": "Events during the render",
+            "body": "A handler running while the template is still being rendered, for an event a child component emits from its <code>onInit</code>, may read a variable whose element is not created yet: it throws a <code>ReferenceError</code> naming the variable, instead of reading another one named like it."
+          },
+          "callout3": {
+            "heading": "The track expression of @for",
+            "body": "The track expression of a <code>@for</code> reads only the item and the implicit variables of the loop: it cannot read a template variable."
+          },
+          "callout4": {
+            "heading": "Where a variable is declared",
+            "body": "A variable is declared directly on the element, without a value, at most one per element: not inside a conditional binding, nor inside the parentheses of a directive. <code>root</code>, <code>$event</code> and the names starting with <code>__</code> or <code>$$</code> are reserved."
+          }
+        },
+        "apiSummary": {
+          "title": "API summary",
+          "th1": "Syntax",
+          "th2": "Description",
+          "td1": "Names the element, typed with the DOM interface of its tag, or with the class of its component.",
+          "td2": "Calls a method of the element, or of the component.",
+          "td3": "Passes the element, or one of its properties, to a method of the component.",
+          "td4": "Reads the element after its declaration: a property of the DOM is not a signal, so the text does not follow its changes."
+        }
+      },
+      "reusableTemplates": {
+        "eyebrow": "Templates",
+        "title": "Reusable templates",
+        "lead": "<code>&lt;template #name(…)&gt;</code> declares a piece of template once, with typed parameters, like a function. <code>@render name(…)</code> renders it wherever content can go, and TypeScript checks the arguments as it checks the ones of a call.",
+        "declaring": {
+          "title": "Declaring and rendering",
+          "p1": "A <code>&lt;template&gt;</code> is a declaration: it renders nothing where it is written. Its name follows the <code>#</code>, then its parameters, each with its type, between parentheses that are written also when there are none. Each <code>@render</code> renders a new instance of its content, with elements of its own.",
+          "example1": "A line rendered three times",
+          "p2": "In the content, a parameter is a signal, read like the item of a <code>@for</code>: <code>label()</code>. When an argument changes, the instance is not rendered again: only the nodes reading the parameter are updated, as the amounts do when you press the button."
+        },
+        "parameters": {
+          "title": "Parameters and their types",
+          "p1": "A parameter takes any TypeScript type, also one the template imports with <code>@import</code>. The arguments of a <code>@render</code> are checked against the parameters, their number and the type of each one, and an argument is any expression of the template.",
+          "example1": "A row template, typed with an imported type, rendered by a @for",
+          "p2": "The template comes after the <code>@for</code> rendering it: a template is visible in the whole of its scope, before its declaration too. When the rows move, their instances move with them, and receive their new position in place."
+        },
+        "scope": {
+          "title": "What a template reads",
+          "p1": "The content of a template reads the names of the place it is declared in, like a closure: the members of the component, the imports, the template variables and the templates of its scope, the item of the <code>@for</code> around the declaration. It doesn't read the names of the place it is rendered in: pass them as arguments.",
+          "p2": "A template can render itself. The recursion ends where the data do, with an <code>@if</code> or a <code>@for</code> on the children, and every level is a new instance.",
+          "example1": "A tree rendered by a recursive template",
+          "p3": "The compiler reports the templates declared or rendered where they cannot be:"
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "SVG and MathML",
+            "body": "The content of a template is created in the namespace of its declaration: a template declared among HTML elements renders HTML elements, one declared inside an <code>&lt;svg&gt;</code> renders SVG elements. Rendering it in another namespace is an error."
+          },
+          "callout2": {
+            "heading": "Template variables read by a template",
+            "body": "The content of a template is rendered where a <code>@render</code> is: a template variable of an enclosing scope that the content reads, outside of an event handler, must be declared before every <code>@render</code> of the template."
+          },
+          "callout3": {
+            "heading": "Arguments and parameters",
+            "body": "Every parameter has a type and receives an argument: there are no optional parameters, default values, rest parameters or destructuring, and an argument cannot be spread."
+          },
+          "callout4": {
+            "heading": "Where a template is rendered",
+            "body": "A template is rendered by the template declaring it, in its scope: it cannot be passed to another component, nor read by the class."
+          }
+        },
+        "apiSummary": {
+          "title": "API summary",
+          "th1": "Syntax",
+          "th2": "Description",
+          "td1": "Declares a template with typed parameters, visible in the whole of its scope.",
+          "td2": "Renders an instance of the template where it is written, checking the arguments against the parameters.",
+          "td3": "Reads a parameter in the content: a signal, updated when its argument changes."
+        }
+      },
       "textInterpolation": {
         "eyebrow": "Templates",
         "title": "Text interpolation",
@@ -2593,8 +2708,10 @@
     "Property.required": "Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time.",
     "Event": "Declares an output. emit(detail?, options?) dispatches a CustomEvent named after the accessor on the host element.",
     "Query": "The first element of the shadow root matching a selector or a component class, kept up to date as a signal.",
+    "Query.required": "Like Query, for an element that is always there: no null in the type, and reading it throws when no element matches.",
     "Query.all": "Every element of the shadow root matching a selector or a component class.",
     "Query.content": "The first element projected into the slots of the component that matches a selector or a component class.",
+    "Query.content.required": "Like Query.content, for projected content that is always there: no null in the type, and reading it throws when no element matches.",
     "Query.content.all": "Every projected element matching a selector or a component class, in the order of the slots.",
     "Directive": "Registers a class extending CustomDirective or StructuralDirective under a selector, used as @@selector or *selector.",
     "CustomElement": "Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. hostDirectives holds the instances of the host directives, keyed by their class.",
@@ -2758,10 +2875,6 @@
       "cause": "@for over something that is neither an array nor a number: a Set, a Map, a string.",
       "fix": "Convert it to an array, for instance in a computed signal."
     },
-    "'this' implicitly has type 'any' because it does not have a type annotation.": {
-      "cause": "A track expression reading a member of the component.",
-      "fix": "Track by a field of the item, or by the item itself."
-    },
     "Property '$count' does not exist on type 'XList'.": {
       "cause": "$count is not one of the variables of @for.",
       "fix": "Read the length of the list."
@@ -2881,6 +2994,110 @@
     "✖  Invalid style option: sass": {
       "cause": "xd new accepts css, scss, less and styl.",
       "fix": "Use css: it is the only extension the plugin compiles."
+    },
+    "[Lexer] A template variable takes no value: write #name, which names the element it is declared on": {
+      "cause": "A value given to a template variable, as in #field=\"name\".",
+      "fix": "Write #field alone: it names the element it is declared on."
+    },
+    "[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings": {
+      "cause": "A #name inside the block of a conditional binding, or inside the parentheses of a directive (… outside of its directives).",
+      "fix": "Declare the variable directly on the tag."
+    },
+    "[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name": {
+      "cause": "Parentheses after the name of a template variable on an element other than a <template>.",
+      "fix": "Write #name alone, or declare a <template> to get parameters."
+    },
+    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())": {
+      "cause": "A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.",
+      "fix": "Write @render name(arguments), with () when the template has no parameters."
+    },
+    "[Parser] <input> declares more than one template variable (#first, #second): an element has a single name": {
+      "cause": "Two template variables on the same element.",
+      "fix": "Keep one name per element."
+    },
+    "[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own": {
+      "cause": "A template variable on an element a structural directive is applied to, directly or by a conditional binding.",
+      "fix": "Declare it on an element inside, or render the element with an @if and declare the variable inside the block."
+    },
+    "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.": {
+      "cause": "A template variable named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.",
+      "fix": "Use an identifier the generated code does not reserve."
+    },
+    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())": {
+      "cause": "A <template> without #name(…): a <template> is always the declaration of a template.",
+      "fix": "Name it and declare its parameters, then render it with @render."
+    },
+    "[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>": {
+      "cause": "A <template #row> without parentheses.",
+      "fix": "Write <template #row()>."
+    },
+    "[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it": {
+      "cause": "An attribute, an event, a conditional binding, a directive or type arguments on a <template>.",
+      "fix": "Move them to the elements inside the template."
+    },
+    "[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>": {
+      "cause": "The parameters of a template with a missing or doubled comma, a semicolon, or anything but parameters.",
+      "fix": "Separate the parameters with single commas: name: Type, name: Type."
+    },
+    "[Parser] The parameter 'item' of template \"row\" needs a type, e.g. item: string": {
+      "cause": "A parameter without type. The same message ends with cannot destructure its value, cannot be a rest parameter, cannot be optional or have a default value, or cannot have modifiers or decorators.",
+      "fix": "Give each parameter a name and a type, nothing else: every @render passes every argument."
+    },
+    "[Parser] Template \"row\" declares the parameter \"item\" more than once": {
+      "cause": "Two parameters with the same name.",
+      "fix": "Rename one of them."
+    },
+    "[Parser] '2row' cannot name a template: it must be an identifier": {
+      "cause": "A @render whose name is not an identifier.",
+      "fix": "Render the template by its name."
+    },
+    "[Parser] @render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])": {
+      "cause": "A spread argument (...values) in a @render.",
+      "fix": "Pass one argument per parameter."
+    },
+    "[TypeChecker] \"field\" is read before the element it names is created: only an event handler can read a template variable declared after it": {
+      "cause": "An interpolation, a binding, a condition, the iterable of a @for or an argument of a @render reading a template variable whose element comes after it in its scope.",
+      "fix": "Move the element before the expression, or read the variable from an event handler, which runs once the template is rendered."
+    },
+    "[TypeChecker] The track expression of a @for cannot read the template variable \"field\": it only reads the item of the @for and its implicit variables": {
+      "cause": "A template variable read by the track expression of a @for.",
+      "fix": "Track the item, a property of it, or $index."
+    },
+    "Cannot redeclare block-scoped variable 'field'.": {
+      "cause": "Two template variables or templates with the same name in the same scope, or one named like a variable of the enclosing @for.",
+      "fix": "Rename one of them: a nested scope (a block, the row of a @for) can reuse the name."
+    },
+    "[TypeChecker] \"row\" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one": {
+      "cause": "A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, a template variable, or a template declared in another branch or row. The build reports it as [Generator] too.",
+      "fix": "Declare the template where the @render can see it, or pass the data as arguments to a template declared further out."
+    },
+    "[TypeChecker] Template \"row\" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in": {
+      "cause": "A @render inside an <svg> (or a <math>) of a template declared among HTML elements, or the other way round: the content is created in the namespace of the declaration. The build reports it as [Generator] too.",
+      "fix": "Declare the template in the namespace of its @render."
+    },
+    "[TypeChecker] \"field\" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler": {
+      "cause": "The content of a template reads a template variable of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the variable.",
+      "fix": "Move the @render after the element, or pass the value as an argument."
+    },
+    "Expected 2 arguments, but got 1.": {
+      "cause": "A @render passing fewer or more arguments than the template declares parameters: reported on the @render, or on the extra arguments.",
+      "fix": "Pass one argument per parameter."
+    },
+    "ReferenceError: Template variable \"field\" is read before the element it names is rendered": {
+      "cause": "An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a template variable whose element is not created yet.",
+      "fix": "Emit the event after the render (afterRender), or read the variable later."
+    },
+    "[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()": {
+      "cause": "A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.",
+      "fix": "Call the signal: track item(), or track a property of it, as in track item().id."
+    },
+    "Error: No element matches the required query 'input' of <x-search>": {
+      "cause": "A @Query.required was read while no element of the shadow root matched it: before the render (in onInit, in an effect created there, in the template), or while the element was not in the template.",
+      "fix": "Read it from afterRender on, in event handlers or in a computed signal read from them. If the element is not always there, use @Query."
+    },
+    "Error: No element matches the required content query '[header]' of <x-card>": {
+      "cause": "A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.",
+      "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
     }
   },
   "issues": {

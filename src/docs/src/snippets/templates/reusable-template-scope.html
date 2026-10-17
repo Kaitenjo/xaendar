@@ -1,0 +1,14 @@
+@for (task of tasks(); track task().id) {
+  <template #badge(label: string)>                <!-- declared in the row: it reads task -->
+    <b>{ label() }: { task().name }</b>
+  </template>
+  @render badge('Due')
+}
+
+@for (task of tasks(); track task().id) {
+  @render summary(task())                         <!-- rendered before its declaration -->
+}
+
+<template #summary(item: Task)>                   <!-- declared outside: the row is an argument -->
+  <i>{ item().name }</i>
+</template>

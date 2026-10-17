@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
-import { addCharacter, lexFlowControlCondition } from './lex-flow-control-condition.utils';
+import { lexFlowControlCondition } from './lex-flow-control-condition.utils';
 
 const context: LexerTransitionFunctionContext = { history: [], tokens: [] };
 
@@ -21,16 +21,13 @@ describe('lexFlowControlCondition', () => {
     expect(lexFlowControlCondition(cursor, context)).toBe('(x)');
   });
 
+  it('ignores the parentheses inside strings, escaped quotes included', () => {
+    const cursor = new LexerCursor(String.raw`(a === ')' || b === '\')' || c === "(") {`);
+    expect(lexFlowControlCondition(cursor, context)).toBe(String.raw`a === ')' || b === '\')' || c === "("`);
+  });
+
   it('throws when the next non-space character is not an opening parenthesis', () => {
     const cursor = new LexerCursor('abc');
     expect(() => lexFlowControlCondition(cursor, context)).toThrow("Expected '(' but got 'a'");
-  });
-});
-
-describe('addCharacter', () => {
-  it('advances the cursor and appends the newly consumed character', () => {
-    const cursor = new LexerCursor('ab');
-    expect(addCharacter(cursor, 'x')).toBe('xa');
-    expect(addCharacter(cursor, 'xa')).toBe('xab');
   });
 });

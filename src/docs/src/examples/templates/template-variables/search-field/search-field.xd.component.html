@@ -1,0 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="row">
+  <ex-button (click)="field.focus()">field.focus()</ex-button>
+  <ex-button (click)="clear(field)">clear(field)</ex-button>
+</div>
+<input #field type="search" placeholder="Search" aria-label="Search" (input)="search(field.value)" />
+<p class="log">{ text() ? `search(${JSON.stringify(text())})` : 'Type something' }</p>

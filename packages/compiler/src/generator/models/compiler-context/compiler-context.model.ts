@@ -1,5 +1,6 @@
 import { matchesCustomElementPattern } from '@xaendar/common';
 import type { CompilerCache } from '../../../types/compiler-cache.type';
+import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
 
 /**
  * Whether a declared identifier holds a plain value or a signal.
@@ -73,14 +74,31 @@ export class CompilerContext {
    * Names the template imports from modules, mapped to how an expression reads them
    */
   private readonly _importedIdentifiers = new Map<string, ImportedIdentifier>();
+  /**
+   * Templates declared directly in this scope, mapped to the namespace their content is created in
+   */
+  private readonly _templates = new Map<string, ElementNamespace>();
+
+  /**
+   * The namespace the elements declared in this scope are created in, looking in this scope first and then in the
+   * ancestor scopes.
+   *
+   * @returns The namespace of the closest scope declaring one, `html` if none does.
+   */
+  public get namespace(): ElementNamespace {
+    return this._namespace ?? this.parent?.namespace ?? 'html';
+  }
 
   /**
    * Creates a new scope context.
    *
    * @param parent - Optional parent context representing the enclosing scope.
+   * @param _namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
+   *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
   constructor(
     parent?: CompilerContext,
+    private readonly _namespace?: ElementNamespace
   ) {
     if (parent) {
       this.parent = parent;
@@ -102,6 +120,17 @@ export class CompilerContext {
     }
 
     this._identifiers.set(name, kind);
+  }
+
+  /**
+   * Registers a template declared in this scope, whose content is created in the namespace of its declaration. Its name
+   * is registered as an identifier of the scope on its own (see {@link addIdentifier}, {@link addUnresolvableIdentifier}).
+   *
+   * @param name - The name of the template.
+   * @param namespace - The namespace the content of the template is created in.
+   */
+  public addTemplate(name: string, namespace: ElementNamespace): void {
+    this._templates.set(name, namespace);
   }
 
   /**
@@ -188,6 +217,17 @@ export class CompilerContext {
   }
 
   /**
+   * Returns `true` if an identifier, resolvable or not, is declared directly in this scope: the ones of its ancestor
+   * scopes, which a declaration of this scope would shadow, don't count.
+   *
+   * @param name - The identifier name to look up.
+   * @returns `true` if this scope declares the identifier, `false` otherwise.
+   */
+  public declaresIdentifier(name: string): boolean {
+    return this._identifiers.has(name) || this._unresolvableIdentifiers.has(name);
+  }
+
+  /**
    * Returns `true` if an identifier with the given name is declared in this
    * scope or any of its ancestor scopes.
    *
@@ -251,6 +291,17 @@ export class CompilerContext {
    */
   public getImportedIdentifier(name: string): ImportedIdentifier | undefined {
     return this._importedIdentifiers.get(name) ?? this.parent?.getImportedIdentifier(name);
+  }
+
+  /**
+   * Returns the namespace the content of the template a name refers to is created in: the closest scope declaring the
+   * name decides, so a variable of an inner scope named like a template hides it.
+   *
+   * @param name - The name to look up.
+   * @returns The namespace of the template, `undefined` if the name doesn't refer to a template.
+   */
+  public getTemplateNamespace(name: string): ElementNamespace | undefined {
+    return this.declaresIdentifier(name) ? this._templates.get(name) : this.parent?.getTemplateNamespace(name);
   }
 
   /**

@@ -8,22 +8,25 @@ import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/c
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
+import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { IfBindingNode } from '../../../parser/types/nodes/if-binding-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
 import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
 import { ComponentEventMetadata, ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { ElementEventMap } from '../../types/element-event-map.type';
 import type { Span } from '../../../types/span.type';
 import { Line, LineMapping } from '../../types/generated-line.type';
 import type { NativeEventType } from '../../types/native-event-type.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, type LinePart, mapped, mappedSegments, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
+import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
+import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/scope/scope.utils';
 
 /**
  * Type-checks an element node: emits the type-check lines for its
@@ -33,9 +36,13 @@ import { mappedExpression } from '../../utils/mapped-expression/mapped-expressio
  * metadata of the component imported for their selector; native elements, and the custom elements of other
  * libraries matching the `customElements` patterns, only get their expressions and event handlers checked.
  *
- * The native events of the element are typed through the event map of its namespace (see {@link getElementEventMap}),
- * which its children inherit: the children of an `<svg>` or a `<math>` element are type-checked in a scope declaring it.
+ * The native events of the element are typed through the event map of its namespace (see `getElementNamespace`),
+ * which its children inherit: the children of an `<svg>`, a `<math>` or a `<foreignObject>` element are type-checked in
+ * a scope declaring their namespace.
  * A custom element of another library may dispatch events the map doesn't declare: their `$event` is `any`.
+ *
+ * The content of an element a structural directive is applied to is a scope of its own: a block of the type-check code
+ * when it declares template variables.
  *
  * @param node - The `ElementNode` to type-check.
  * @param processNode - Callback used to type-check each child node.
@@ -47,7 +54,8 @@ import { mappedExpression } from '../../utils/mapped-expression/mapped-expressio
 export function typeCheckElement(node: ElementNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
   const { tagName } = node;
-  const eventMap = getElementEventMap(tagName, context);
+  const namespace = getElementNamespace(tagName, context.namespace);
+  const eventMap = getEventMap(namespace);
   let nativeEventType: NativeEventType = name => getNativeEventType(eventMap, name);
 
   if (isCustomElementTag(tagName)) {
@@ -69,51 +77,24 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
 
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEventType, context));
 
-  const childrenEventMap = getChildrenEventMap(node.tagName, eventMap);
-  const childrenContext = childrenEventMap === context.eventMap ? context : new TypeCheckContext(context, childrenEventMap);
+  // The element is type-checked: the template variable naming its generic component is typed with the instantiation
+  if (node.variable && context.getImportBySelector(tagName)?.typeParameters) {
+    context.addInstantiation(node.span.start);
+  }
+
+  const childrenNamespace = getChildrenNamespace(tagName, namespace);
+  const childrenContext = childrenNamespace === context.namespace ? context : new TypeCheckContext(context, childrenNamespace);
   const children = node.children;
-  for (let i = 0; i < children.length; i++) {
-    lines.push(...processNode(children[i], childrenContext))
+  if (isStructuralElement(node)) {
+    const { declarations, lines: content } = typeCheckScope(children, new TypeCheckContext(childrenContext), processNode);
+    lines.push(...(declarations.length ? [plain('{'), ...indentLines(declarations.concat(content)), plain('}')] : content));
+  } else {
+    for (let i = 0; i < children.length; i++) {
+      lines.push(...processNode(children[i], childrenContext))
+    }
   }
 
   return lines;
-}
-
-/**
- * Returns the event map of an element, which depends on the namespace it is created in, exactly like the generated
- * render code does: an `<svg>` and a `<math>` element open the SVG and the MathML namespace, any other
- * element is created in the namespace of the scope it is declared in.
- *
- * @param tagName - Tag name of the element.
- * @param context - Current type-check scope.
- * @returns The event map typing the native events of the element.
- */
-function getElementEventMap(tagName: string, context: TypeCheckContext): ElementEventMap {
-  switch (tagName) {
-    case 'svg':
-      return 'SVGElementEventMap';
-    case 'math':
-      return 'MathMLElementEventMap';
-    default:
-      return context.eventMap;
-  }
-}
-
-/**
- * Returns the event map of the children of an element, exactly like the generated render code creates them:
- * in the namespace of the element, except for the children of a `<foreignObject>`, which are HTML elements.
- *
- * @param tagName - Tag name of the element.
- * @param eventMap - Event map of the element.
- * @returns The event map typing the native events of the children of the element.
- */
-function getChildrenEventMap(tagName: string, eventMap: ElementEventMap): ElementEventMap {
-  switch (tagName) {
-    case 'foreignObject':
-      return 'HTMLElementEventMap';
-    default:
-      return eventMap;
-  }
 }
 
 /**
@@ -138,7 +119,9 @@ function getChildrenEventMap(tagName: string, eventMap: ElementEventMap): Elemen
  */
 function typeCheckComponentBindings(node: ElementNode, declaredMetadata: ComponentMetadata, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
-  const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context);
+  // The instantiation of a component named by a template variable is declared in the scope of the variable, which is typed with it
+  const suffix = node.variable ? getInstantiationSuffix(node) : undefined;
+  const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
@@ -173,12 +156,15 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
   lines.push(...conditionalBindingLines);
 
-  // The instantiation of a generic component is declared around the checks, as the types of the bindings name it
-  if (declarations) {
-    return [plain('{'), ...indentLines([...declarations, ...lines]), plain('}')];
+  if (!declarations) {
+    return lines;
   }
 
-  return lines;
+  /*
+    The instantiation of a generic component is declared around the checks, as the types of the bindings name it,
+    or in the scope of the template variable naming the element, under names of its own
+  */
+  return suffix === undefined ? [plain('{'), ...indentLines([...declarations, ...lines]), plain('}')] : [...declarations, ...lines];
 }
 
 /**
@@ -315,12 +301,6 @@ const PROBED_VALUE = '__probed';
 const PROBED = '__Probed';
 
 /**
- * The class of a generic component or directive instantiated with the types of its type parameters, that the types of
- * its properties and events are written in terms of.
- */
-const INSTANCE = '__Instance';
-
-/**
  * Instantiates the type parameters of a generic component or directive, so that the types of its properties and events,
  * written in terms of its type parameters, resolve to the types of the template.
  *
@@ -338,15 +318,21 @@ const INSTANCE = '__Instance';
  * (or the selector of the directive, or the tag name of the element, when there are none), so that a type that doesn't
  * satisfy a constraint is reported there.
  *
+ * The declarations of a generic component named by a template variable are written in the scope of the variable, which
+ * is typed with the instantiation: their names end with a suffix telling them apart from the ones of the other elements
+ * of the scope, and the instantiation is declared even when nothing is inferred.
+ *
  * @param metadata - Metadata of the component or of the directive.
  * @param typeArguments - The type arguments the template passes, if any.
  * @param attributes - The attributes bound to the properties, whose values the type parameters are inferred from.
  * @param ownerSpan - Span of the selector of the directive, or of the tag name of the element.
  * @param context - Current type-check scope.
+ * @param suffix - The suffix of the names of the declarations of a component named by a template variable (see
+ *   `getInstantiationSuffix`), `undefined` when they are written around the checks of the bindings.
  * @returns The metadata to check the bindings against, and the lines to write before the checks, `undefined` when the
- *   type parameters are neither declared nor inferred.
+ *   type parameters are neither declared nor inferred, and the instantiation needs no name.
  */
-function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata>(metadata: Metadata, typeArguments: DirectiveNode['typeArguments'], attributes: AttributeNode[], ownerSpan: Span, context: TypeCheckContext): { metadata: Metadata, declarations?: Line[] } {
+function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata>(metadata: Metadata, typeArguments: DirectiveNode['typeArguments'], attributes: AttributeNode[], ownerSpan: Span, context: TypeCheckContext, suffix?: string): { metadata: Metadata, declarations?: Line[] } {
   const { typeParameters } = metadata;
   if (!typeParameters) {
     return { metadata };
@@ -357,6 +343,8 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
   const base = getAccessorOwnerType(klass, sourceFile, false);
   const generic = getAccessorOwnerType(klass, sourceFile, true);
   const instantiate = (names: string[]): string => (names.length ? `${base}<${names.join(', ')}>` : base);
+  const instanceName = `${INSTANCE}${suffix ?? ''}`;
+  const probedName = `${PROBED}${suffix ?? ''}`;
 
   if (typeArguments) {
     // Each type argument is written as is, mapped onto its own span, inside the instantiation mapped onto all of them
@@ -369,12 +357,12 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
       instance = `${instance}${text}`;
     }
 
-    const declaration = line(`type ${INSTANCE} = `, mappedSegments(`${instance}>`, getTypeArgumentsSpan(typeArguments), segments), ';');
-    return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations: [declaration] };
+    const declaration = line(`type ${instanceName} = `, mappedSegments(`${instance}>`, getTypeArgumentsSpan(typeArguments), segments), ';');
+    return { metadata: withOwnerType(metadata, generic, instanceName), declarations: [declaration] };
   }
 
-  const probe = inferTypeParameters(metadata, base, attributes, context);
-  const argumentsOf = (index: number): string => (probe ? `unknown extends ${PROBED}[${index}] ? any : ${PROBED}[${index}]` : 'any');
+  const probe = inferTypeParameters(metadata, base, attributes, context, suffix);
+  const argumentsOf = (index: number): string => (probe ? `unknown extends ${probedName}[${index}] ? any : ${probedName}[${index}]` : 'any');
 
   // The parameters with a default type come last: the ones nothing gives a type to take it when the class is instantiated without them
   const firstDefault = typeParameters.findIndex(({ hasDefault }) => hasDefault);
@@ -385,17 +373,20 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
 
   let instance = instantiate(given);
   if (!probe) {
-    return { metadata: withOwnerType(metadata, generic, instance) };
+    // A template variable is typed with the instantiation, even when nothing is inferred
+    return suffix === undefined
+      ? { metadata: withOwnerType(metadata, generic, instance) }
+      : { metadata: withOwnerType(metadata, generic, instanceName), declarations: [plain(`type ${instanceName} = ${instance};`)] };
   }
 
   if (firstDefault !== -1) {
     const defaults = typeParameters.slice(firstDefault).map((_, offset) => firstDefault + offset);
     const inferred = instantiate([...given, ...defaults.map(argumentsOf)]);
-    const none = `[${defaults.map(() => 'unknown').join(', ')}] extends [${defaults.map(index => `${PROBED}[${index}]`).join(', ')}]`;
+    const none = `[${defaults.map(() => 'unknown').join(', ')}] extends [${defaults.map(index => `${probedName}[${index}]`).join(', ')}]`;
     instance = `${none} ? ${instance} : ${inferred}`;
   }
 
-  return { metadata: withOwnerType(metadata, generic, INSTANCE), declarations: [...probe, line(`type ${INSTANCE} = `, mapped(instance, ownerSpan), ';')] };
+  return { metadata: withOwnerType(metadata, generic, instanceName), declarations: [...probe, line(`type ${instanceName} = `, mapped(instance, ownerSpan), ';')] };
 }
 
 /**
@@ -408,9 +399,10 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
  * @param base - The type of the class, without type arguments.
  * @param attributes - The attributes bound to the properties.
  * @param context - Current type-check scope.
+ * @param suffix - The suffix of the names of the declarations, if any (see {@link instantiateTypeParameters}).
  * @returns The lines declaring `Probed`, the tuple of the inferred types, `undefined` if no property bound can infer one.
  */
-function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: string, attributes: AttributeNode[], context: TypeCheckContext): Line[] | undefined {
+function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: string, attributes: AttributeNode[], context: TypeCheckContext, suffix = ''): Line[] | undefined {
   const names = metadata.typeParameters!.map((_, index) => `P${index}`);
   const owner = `${base}<${names.join(', ')}>`;
   const parameters = new Array<string>();
@@ -440,10 +432,10 @@ function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: strin
 
   return [
     plain('// @ts-ignore'),
-    plain(`function ${PROBE}<${names.join(', ')}>(${parameters.join(', ')}): [${names.join(', ')}] { return null!; }`),
+    plain(`function ${PROBE}${suffix}<${names.join(', ')}>(${parameters.join(', ')}): [${names.join(', ')}] { return null!; }`),
     plain('// @ts-ignore'),
-    line(`const ${PROBED_VALUE} = ${PROBE}(`, ...values, ');'),
-    plain(`type ${PROBED} = typeof ${PROBED_VALUE};`)
+    line(`const ${PROBED_VALUE}${suffix} = ${PROBE}${suffix}(`, ...values, ');'),
+    plain(`type ${PROBED}${suffix} = typeof ${PROBED_VALUE}${suffix};`)
   ];
 }
 
@@ -705,9 +697,12 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
     The whole call is mapped onto the span of the event binding (the whole `(click)="handler($event)"`),
     the handler onto its name and each argument finely, like any other expression.
   */
-  // A handler the template imports (`track()`, `analytics.track()`) is called as written, a method on the component
+  /*
+    A handler on a variable of the template (`item.set()`, `dialog.showModal()`) or one the template imports (`track()`,
+    `analytics.track()`) is called as written, as the generated code does, any other one as a method on the component
+  */
   const head = handler.split(/\?\.|[.[]/)[0];
-  const receiver = context.getImportedIdentifier(head) && !context.hasUnresolvableIdentifier(head) ? '' : 'root.';
+  const receiver = context.hasUnresolvableIdentifier(head) || context.getImportedIdentifier(head) ? '' : 'root.';
   const callee = `${receiver}${handler}(`;
   const segments: LineMapping[] = [{ columnStart: receiver.length, columnEnd: receiver.length + handler.length, original: handlerSpan }];
   let call = callee;

@@ -68,6 +68,14 @@ describe('getExpressionContext', () => {
   });
 
   it.each([
+    ['nothing written', '@render row(|', 'render@12-12: @render row(P)'],
+    ['a partial identifier, the rest of the arguments dropped', '@render row(a, ti|tle, b)\n<p></p>', 'render@15-17: @render row(a, ti)\n<p></p>'],
+    ['a call left open', '@render row(fn(|', 'render@15-15: @render row(fn(P))']
+  ])('closes the arguments of a @render: %s', (_name, template, expected) => {
+    expect(contextOf(template)).toBe(expected);
+  });
+
+  it.each([
     ['plain text', 'hello|'],
     ['the name of an attribute', '<b ti|'],
     ['a static attribute value', '<b title="a|"></b>'],
@@ -83,7 +91,9 @@ describe('getExpressionContext', () => {
     ['the item of a @for', '@for (|'],
     ['the partial item of a @for', '@for (ite|'],
     ['the item of a @for before its of', '@for (item |'],
-    ['a string in a condition', '@if (\'a|']
+    ['a string in a condition', '@if (\'a|'],
+    ['the name of the template of a @render', '@render ro|'],
+    ['a string in the arguments of a @render', '@render row(\'a|']
   ])('finds no expression in %s', (_name, template) => {
     expect(contextOf(template)).toBeUndefined();
   });

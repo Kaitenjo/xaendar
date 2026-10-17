@@ -3,5 +3,5 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <ex-button (click)="toggle()">Switch user (now { user() })</ex-button>
-<p *exEarlyRead(user="{ user() }")>Read before the await: shown only to the admin.</p>
-<p *exLateRead(user="{ user() }")>Read after the await: still shown.</p>
+<p *exEarlyRead(user="{user()}")>Read before the await: shown only to the admin.</p>
+<p *exLateRead(user="{user()}")>Read after the await: still shown.</p>

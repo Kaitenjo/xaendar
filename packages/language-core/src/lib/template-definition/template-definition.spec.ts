@@ -139,7 +139,7 @@ describe('getTemplateDefinition', () => {
   }, TIMEOUT);
 
   it('finds nothing for a symbol TypeScript doesn\'t define, or for an implicit variable without alias', async () => {
-    const { analysis: loop } = await project.analyze('@for (items; track $index) { { $index() } { 2 } }');
+    const { analysis: loop } = await project.analyze('@for (items; track $index()) { { $index() } { 2 } }');
 
     expect(getTemplateDefinition(loop!, loop!.source.indexOf('$index()') + 2)).toEqual([]);
     expect(getTemplateDefinition(loop!, loop!.source.indexOf('2'))).toEqual([]);
@@ -165,5 +165,16 @@ describe('getTemplateDefinition of imported symbols', () => {
     expect(definitionsAt('State')).toEqual([['src/utils.ts', 'Status']]);
     expect(definitionsAt('State', 1)).toEqual([['src/utils.ts', 'Status']]);
     expect(definitionsAt('shout', 1)[0][0]).toBe('src/utils.ts');
+  }, TIMEOUT);
+});
+
+describe('getTemplateDefinition of templates', () => {
+  it('leads the name a @render calls to the declaration of the template, and the reads of a parameter to its declaration', async () => {
+    const source = '@render row(title)\n<template #row(label: string)>{ label() }</template>';
+    const templates = (await project.analyze(source)).analysis!;
+    const definitionsAt = (offset: number) => getTemplateDefinition(templates, offset).map(({ fileName, span }) => [fileName.replace(`${project.root}/`, ''), source.slice(span.start, span.end), span.start]);
+
+    expect(definitionsAt(source.indexOf('row') + 1)).toEqual([['src/app.html', 'row', source.indexOf('#row') + 1]]);
+    expect(definitionsAt(source.indexOf('label()') + 1)).toEqual([['src/app.html', 'label', source.indexOf('label:')]]);
   }, TIMEOUT);
 });

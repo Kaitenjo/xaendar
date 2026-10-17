@@ -1,4 +1,4 @@
-import { CR, EQUAL_THEN, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constants';
+import { CR, EQUAL_THEN, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPAREN, SLASH, SPACE, TAB } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';

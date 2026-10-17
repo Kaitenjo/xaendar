@@ -17,7 +17,7 @@ describe('isConditionalBindingKeyword', () => {
   it.each([
     ['a word starting with a keyword', '@iffy="x"'],
     ['a directive', '@@myDirective(display="block")'],
-    ['a keyword declared outside of a tag only', '@for (item of items; track item) { }'],
+    ['a keyword declared outside of a tag only', '@for (item of items; track item()) { }'],
     ['a keyword not followed by a space', '@if(cond()) { }']
   ])('does not recognise %s', (_description, input) => {
     expect(isConditionalBindingKeyword(new LexerCursor(input))).toBe(false);

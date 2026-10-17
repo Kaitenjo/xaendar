@@ -93,5 +93,14 @@ export enum LexerState {
    * Consuming a structural directive starting with `*`. Its bindings, declared between `*selector(` and `)`,
    * are consumed by the DIRECTIVE_BODY state.
    */
-  STRUCTURAL_DIRECTIVE = 'structural-directive'
+  STRUCTURAL_DIRECTIVE = 'structural-directive',
+  /**
+   * Consuming a template variable starting with `#`, with the parameters it declares on a `<template>`.
+   */
+  TEMPLATE_VARIABLE = 'template-variable',
+  /**
+   * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item())` in
+   * `@render row(item())`.
+   */
+  RENDER = 'render'
 }

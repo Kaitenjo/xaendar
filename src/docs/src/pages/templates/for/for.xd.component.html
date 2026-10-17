@@ -17,10 +17,8 @@
 
 <h2 @@i18n(key="pages.templates.for.itemsKeysAndContext.title") />
 <docs-code snippet="templates/for-syntax.html" />
-<docs-example
-  name="templates/for/for-context"
-  heading="{ translations().pages.templates.for.itemsKeysAndContext.example1 }"
->
+<docs-example name="templates/for/for-context"
+  heading="{translations().pages.templates.for.itemsKeysAndContext.example1}">
   <ex-for-context />
 </docs-example>
 <p @@i18n(key="pages.templates.for.itemsKeysAndContext.p1") />
@@ -28,52 +26,41 @@
 
 <h2 @@i18n(key="pages.templates.for.repeatingANumberOf.title") />
 <p @@i18n(key="pages.templates.for.repeatingANumberOf.p1") />
-<docs-example
-  name="templates/for/for-numbers"
-  heading="{ translations().pages.templates.for.repeatingANumberOf.example1 }"
->
+<docs-example name="templates/for/for-numbers"
+  heading="{translations().pages.templates.for.repeatingANumberOf.example1}">
   <ex-for-numbers />
 </docs-example>
 
 <h2 @@i18n(key="pages.templates.for.nestedLoops.title") />
-<docs-example name="templates/for/for-nested" heading="{ translations().pages.templates.for.nestedLoops.example1 }">
+<docs-example name="templates/for/for-nested" heading="{translations().pages.templates.for.nestedLoops.example1}">
   <ex-for-nested />
 </docs-example>
 <p @@i18n(key="pages.templates.for.nestedLoops.p1") />
 
 <h2 @@i18n(key="pages.templates.for.emptyLists.title") />
 <p @@i18n(key="pages.templates.for.emptyLists.p1") />
-<docs-example name="templates/for/for-empty" heading="{ translations().pages.templates.for.emptyLists.example1 }">
+<docs-example name="templates/for/for-empty" heading="{translations().pages.templates.for.emptyLists.example1}">
   <ex-for-empty />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.for.edgeCases.title") />
-  <docs-example
-    name="templates/for/keyed-state"
-    heading="{ translations().pages.templates.for.edgeCases.example1 }"
-    kind="edge"
-  >
+  <docs-example name="templates/for/keyed-state" heading="{translations().pages.templates.for.edgeCases.example1}"
+    kind="edge">
     <ex-keyed-state />
   </docs-example>
   <p @@i18n(key="pages.templates.for.edgeCases.p1") />
-  <docs-example
-    name="templates/for/replaced-object"
-    heading="{ translations().pages.templates.for.edgeCases.example2 }"
-    kind="edge"
-  >
+  <docs-example name="templates/for/replaced-object" heading="{translations().pages.templates.for.edgeCases.example2}"
+    kind="edge">
     <ex-replaced-object />
   </docs-example>
   <p @@i18n(key="pages.templates.for.edgeCases.p2") />
-  <docs-example
-    name="templates/for/duplicate-keys"
-    heading="{ translations().pages.templates.for.edgeCases.example3 }"
-    kind="edge"
-  >
+  <docs-example name="templates/for/duplicate-keys" heading="{translations().pages.templates.for.edgeCases.example3}"
+    kind="edge">
     <ex-duplicate-keys />
   </docs-example>
   <p @@i18n(key="pages.templates.for.edgeCases.p3") />
-  <docs-callout kind="edge" heading="{ translations().pages.templates.for.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.templates.for.edgeCases.callout1.heading}">
     <p @@i18n(key="pages.templates.for.edgeCases.callout1.p1") />
     <docs-code snippet="templates/for-errors.txt" />
   </docs-callout>
@@ -91,20 +78,20 @@
     <tbody>
       <tr>
         <td>
-          <code>{'@for (item of items(); track item().id) { … }'}</code>
+          <code>{ '@for (item of items(); track item().id) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.for.apiSummary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{'@for (item of items()) { … }'}</code>
+          <code>{ '@for (item of items()) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.for.apiSummary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{'@for (5) { … }'}</code>,
-          <code>{'@for (step of count()) { … }'}</code>
+          <code>{ '@for (5) { … }' }</code>,
+          <code>{ '@for (step of count()) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.for.apiSummary.td3") />
       </tr>
@@ -120,7 +107,7 @@
       </tr>
       <tr>
         <td>
-          <code>{'…; track item.id; index = $index'}</code>
+          <code>{ '…; track item.id; index = $index' }</code>
         </td>
         <td @@i18n(key="pages.templates.for.apiSummary.td5") />
       </tr>

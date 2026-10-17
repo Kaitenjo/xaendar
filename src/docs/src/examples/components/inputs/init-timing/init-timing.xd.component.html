@@ -14,7 +14,7 @@
   <ex-button (click)="clear()">Clear the log</ex-button>
 </div>
 @if (mounted()) {
-  <ex-greeting-card name="{ name() }" />
+  <ex-greeting-card name="{name()}" />
 }
 <ol>
   @for (line of log(); track line().id) {

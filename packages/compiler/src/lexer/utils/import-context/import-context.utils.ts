@@ -29,12 +29,12 @@ const SYMBOL_END = /[^\w$]|$/;
  * @returns The symbol being written, `undefined` if the offset is not on a symbol of an `@import` statement.
  */
 export function getImportContext(source: string, offset: number): ImportContext | undefined {
-  const { lexer } = lexImportHeader(source);
+  const { tokens } = lexImportHeader(source);
 
   // The tokens of the specifiers come right before the one of the path
   let specifiers = new Array<ImportToken>();
-  for (let i = 0; i < lexer.tokens.length; i++) {
-    const token = lexer.tokens[i];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     switch (token.type) {
       case TokenType.IMPORT:
         specifiers.push(token);

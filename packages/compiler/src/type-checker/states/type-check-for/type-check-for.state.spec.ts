@@ -29,6 +29,16 @@ describe('typeCheckFor', () => {
     expect(lines[0].mappings![0]).toBeDefined();
   });
 
+  it('declares the template variables of the body after the variables of the loop, before the track expression', () => {
+    const lines = typeCheckFor(parse('@for (item of items; track item().id) { <li><input #field /></li> }'), processNode, new TypeCheckContext());
+
+    expect(lines.map(l => l.text).slice(6, 9)).toEqual([
+      '  let $odd!: Signal<boolean>;',
+      '  let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
+      '  item().id;'
+    ]);
+  });
+
   it.each([
     ['10', '10'],
     ['numbers', 'root.numbers'],
@@ -45,6 +55,11 @@ describe('typeCheckFor', () => {
     context.addUnresolvableIdentifier('item');
     const lines = typeCheckFor(parse('@for (child of item.children; track child()) { <li></li> }'), processNode, context);
     expect(lines[0].text).toBe(`for (const $$item of ${FOR_ITERABLE}(item.children)) {`);
+  });
+
+  it('reads the members of the component in the track expression from root', () => {
+    const lines = typeCheckFor(parse('@for (item of items; track keyOf(item())) { <li></li> }'), processNode, new TypeCheckContext());
+    expect(lines[7].text).toBe('  root.keyOf(item());');
   });
 
   it('uses the aliases declared for implicit variables', () => {

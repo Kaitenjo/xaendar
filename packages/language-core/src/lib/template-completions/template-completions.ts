@@ -49,7 +49,8 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'switch': '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}',
   'case': '@case ($1) {\n\t$0\n}',
   'default': '@default {\n\t$0\n}',
-  'import': '@import { $2 } from \'$1\';'
+  'import': '@import { $2 } from \'$1\';',
+  'render': '@render $1($0)'
 };
 
 /**
@@ -126,7 +127,7 @@ export async function getTemplateExpressionCompletions(templatePath: string, sou
   }
 
   const { kind, span } = context;
-  const analysis = triggerCharacter !== '(' || kind === 'argument' || kind === 'condition' ? await analyzeCompletionTemplate(templatePath, context.source, components) : undefined;
+  const analysis = triggerCharacter !== '(' || kind === 'argument' || kind === 'condition' || kind === 'render' ? await analyzeCompletionTemplate(templatePath, context.source, components) : undefined;
   // The identifier is not in the type-check body of an element failing type-checking, e.g. missing a required property
   const identifier = analysis && findShimPosition(analysis, span.start);
   if (!identifier) {

@@ -3,7 +3,7 @@
   locked: { locked() }
 </label>
 <p>
-  <button disabled="{ locked() }">disabled="{'{ locked() }'}"</button>
+  <button disabled="{locked()}">disabled="{ '{ locked() }' }"</button>
 </p>
 <p>
   <button
@@ -11,6 +11,6 @@
       disabled
     }
   >
-    {'@if (locked()) { disabled }'}
+    { '@if (locked()) { disabled }' }
   </button>
 </p>

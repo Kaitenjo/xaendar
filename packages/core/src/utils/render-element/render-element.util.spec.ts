@@ -326,6 +326,24 @@ describe('_renderElement', () => {
     expect(_renderElement(document.createElement('div'), createRoot(), null, 'div', [], [], [], [], [], [], null)).toBeUndefined();
   });
 
+  it('initializes the template variable naming the element, declared by its scope, before binding it and rendering its children', () => {
+    const parent = document.createElement('div');
+    const scope = createRoot();
+    scope.declare('panel');
+    const seen = new Array<unknown>();
+    const children = vi.fn<Children>((_element, parentContext) => {
+      seen.push(parentContext.get('panel'));
+      return new _Context(parentContext);
+    });
+
+    _renderElement(parent, scope.addChild(), null, 'section', [{ name: 'title', value: () => seen.push(scope.get('panel')), setter: _setExpressionProperty }] as never, [], [], [], [], [], children, 'panel');
+    const element = parent.firstElementChild;
+
+    expect(element?.tagName).toBe('SECTION');
+    expect(scope.get('panel')).toBe(element);
+    expect(seen).toEqual([element, element]);
+  });
+
   it('renders the children in the element, destroying them together with the context', () => {
     const unlisten = vi.fn();
     const children = vi.fn<Children>((element, parentContext) => {

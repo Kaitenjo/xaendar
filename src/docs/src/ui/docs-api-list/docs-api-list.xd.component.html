@@ -1,19 +1,15 @@
 @import { translations } from '../../core/i18n/i18n.ts'
 
 <div class="toolbar">
-  <input
-    type="search"
-    placeholder="{ translations().reference.filter }"
-    aria-label="{ translations().reference.filter }"
-    (input)="search($event)"
-  />
-  <select aria-label="{ translations().reference.module }" (change)="pickModule($event)">
+  <input type="search" placeholder="{translations().reference.filter}" aria-label="{translations().reference.filter}"
+    (input)="search($event)" />
+  <select aria-label="{translations().reference.module}" (change)="pickModule($event)">
     <option value="">{ translations().reference.all }</option>
     @for (name of modules) {
-      <option value="{ name() }">{ name() }</option>
+      <option value="{name()}">{ name() }</option>
     }
   </select>
-  <span class="count">{`${entries().length} ${translations().reference.results}`}</span>
+  <span class="count">{ `${entries().length} ${translations().reference.results}` }</span>
 </div>
 @if (entries().length) {
   <ul class="entries">
@@ -30,7 +26,7 @@
         <pre>{ entry().signature }</pre>
         <p>{ entry().text }</p>
         <p>
-          <a href="{ entry().href }">{ translations().reference.readMore } →</a>
+          <a href="{entry().href}">{ translations().reference.readMore } →</a>
         </p>
       </li>
     }

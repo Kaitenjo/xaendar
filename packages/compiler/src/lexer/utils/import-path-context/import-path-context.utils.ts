@@ -32,8 +32,8 @@ export function getImportPathContext(source: string, offset: number): ImportPath
     return undefined;
   }
 
-  const { lexer, failed } = lexImportHeader(before);
-  if (failed || lexer.state !== LexerState.IMPORT_PATH) {
+  const { state, error } = lexImportHeader(before);
+  if (error || state !== LexerState.IMPORT_PATH) {
     return undefined;
   }
 

@@ -10,10 +10,8 @@
 <p @@i18n(key="pages.patterns.theming.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.theming.tokensAndParts.title") />
-<docs-example
-  name="patterns/theming/theme-preview"
-  heading="{ translations().pages.patterns.theming.tokensAndParts.example1 }"
->
+<docs-example name="patterns/theming/theme-preview"
+  heading="{translations().pages.patterns.theming.tokensAndParts.example1}">
   <ex-theme-preview />
 </docs-example>
 <p @@i18n(key="pages.patterns.theming.tokensAndParts.p1") />
@@ -27,15 +25,12 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.theming.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ translations().pages.patterns.theming.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.patterns.theming.edgeCases.callout1.heading}">
     <p @@i18n(key="pages.patterns.theming.edgeCases.callout1.p1") />
     <docs-code snippet="patterns/root-in-component.css" />
   </docs-callout>
-  <docs-callout
-    @@i18n(key="pages.patterns.theming.edgeCases.callout2.body")
-    kind="edge"
-    heading="{ translations().pages.patterns.theming.edgeCases.callout2.heading }"
-  />
+  <docs-callout @@i18n(key="pages.patterns.theming.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.patterns.theming.edgeCases.callout2.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.patterns.theming.apiSummary.title") />
@@ -58,7 +53,7 @@
       </tr>
       <tr>
         <td>
-          <code>{'data-theme="{ theme() }"'}</code>
+          <code>{ 'data-theme="{ theme() }"' }</code>
         </td>
         <td @@i18n(key="pages.patterns.theming.apiSummary.td5") />
       </tr>

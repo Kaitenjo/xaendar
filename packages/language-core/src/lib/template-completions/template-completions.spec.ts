@@ -130,6 +130,12 @@ describe('getTemplateExpressionCompletions', () => {
     expect(await completionsOf('@for (item of ite|')).toContain('items:property:1@14-17');
   }, TIMEOUT);
 
+  it('proposes the variables of the template and the members of the component in the arguments of a @render, also after the ( opening them', async () => {
+    const declaration = '\n<template #row(label: string, count: number) />';
+    expect((await sortedCompletionsOf(`@render row(|${declaration}`, '(')).slice(0, 3)).toEqual(['row:let:0000', 'items:property:1', 'title:property:1']);
+    expect(await completionsOf(`@render row(title, ite|)${declaration}`)).toContain('items:property:1@19-22');
+  }, TIMEOUT);
+
   it('proposes the values the template imports with the fields of the component, its types left out', async () => {
     const template = '@import { formatDate, Status as State, Row, * as utils } from \'./utils\';\n<b>{|</b>';
     const at = template.indexOf('|');
@@ -201,8 +207,9 @@ describe('getTemplateKeywordCompletions', () => {
       { name: '@if', kind: 'keyword', sortText: '0', replacementSpan, snippet: '@if ($1) {\n\t$0\n}', retrigger: true },
       { name: '@for', kind: 'keyword', sortText: '1', replacementSpan, snippet: '@for (item of $1) {\n\t$0\n}', retrigger: true },
       { name: '@switch', kind: 'keyword', sortText: '2', replacementSpan, snippet: '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}', retrigger: true },
-      { name: '@else', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
-      { name: '@else if', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+      { name: '@render', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@render $1($0)', retrigger: false },
+      { name: '@else', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
+      { name: '@else if', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
     ]);
   });
 

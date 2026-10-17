@@ -1,4 +1,4 @@
-import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem } from '../../types/template-layout/template-layout.type';
+import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutRender, LayoutVariable } from '../../types/template-layout/template-layout.type';
 import { findClosing } from '../balanced-text/balanced-text.utils';
 
 /**
@@ -186,11 +186,32 @@ function readAtom(reader: Reader): LayoutAtom {
     }
 
     case '@':
-      return readBlock(reader, readContentBody);
+      return source.startsWith('@render', position) ? readRender(reader) : readBlock(reader, readContentBody);
 
     default:
       return source.startsWith('<!--', position) ? readComment(reader) : readElement(reader);
   }
+}
+
+/**
+ * Reads the render of a template.
+ *
+ * @param reader - The reader, on the `@` of `@render`.
+ * @returns The render.
+ * @throws If the name of the template is not followed by its arguments between parentheses, or they are not closed.
+ */
+function readRender(reader: Reader): LayoutRender {
+  reader.position += '@render'.length;
+  skipWhitespace(reader);
+  const callee = readName(reader, NAME);
+  const { source, position } = reader;
+  const end = source[position] === '(' ? findClosing(source, position) : undefined;
+  if (end === undefined) {
+    return fail('@render needs the arguments of the template between parentheses');
+  }
+
+  reader.position = end + 1;
+  return { kind: 'render', callee, args: source.slice(position + 1, end) };
 }
 
 /**
@@ -310,7 +331,7 @@ function readItems(reader: Reader, end: 'tag' | 'paren' | 'brace'): LayoutItem[]
 }
 
 /**
- * Reads an item: a directive, a conditional binding, an event or an attribute.
+ * Reads an item: a template variable, a directive, a conditional binding, an event or an attribute.
  *
  * @param reader - The reader, at the start of the item.
  * @returns The item.
@@ -318,6 +339,10 @@ function readItems(reader: Reader, end: 'tag' | 'paren' | 'brace'): LayoutItem[]
  */
 function readItem(reader: Reader): LayoutItem {
   const { source, position } = reader;
+  if (source[position] === '#') {
+    return readVariable(reader);
+  }
+
   if (source.startsWith('@@', position) || source[position] === '*') {
     return readDirective(reader);
   }
@@ -395,6 +420,31 @@ function readEvent(reader: Reader): LayoutEvent {
   const name = reader.source.slice(reader.position + 1, end);
   reader.position = end + 2;
   return { kind: 'event', name, value: readValue(reader) };
+}
+
+/**
+ * Reads a template variable, with the parameters of the template it declares if it has them.
+ *
+ * @param reader - The reader, on the `#`.
+ * @returns The variable.
+ * @throws If its parameters are not closed.
+ */
+function readVariable(reader: Reader): LayoutVariable {
+  const { source } = reader;
+  reader.position++;
+  const variable: { -readonly [Key in keyof LayoutVariable]: LayoutVariable[Key] } = { kind: 'variable', name: readName(reader, NAME) };
+
+  if (source[reader.position] === '(') {
+    const end = findClosing(source, reader.position);
+    if (end === undefined) {
+      return fail('The parameters of a template are not closed');
+    }
+
+    variable.parameters = source.slice(reader.position + 1, end);
+    reader.position = end + 1;
+  }
+
+  return variable;
 }
 
 /**

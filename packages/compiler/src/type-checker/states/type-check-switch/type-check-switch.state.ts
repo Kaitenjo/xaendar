@@ -4,6 +4,7 @@ import { Line } from '../../types/generated-line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
+import { typeCheckScope } from '../../utils/scope/scope.utils';
 
 /**
  * Type-checks a `@switch` block using a real TypeScript `switch` statement.
@@ -19,6 +20,8 @@ import { mappedExpression } from '../../utils/mapped-expression/mapped-expressio
  * Multiple case labels that shared one body in the AST (fallthrough) are
  * emitted as stacked `case` labels sharing that same body, matching real
  * JS/TS fallthrough syntax directly.
+ *
+ * Each body is a scope of its own, starting with the declarations of the template variables it declares.
  */
 export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
@@ -35,11 +38,12 @@ export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, cont
       lines.push(plain('  default:'));
     }
 
+    // Each case is a scope of its own: a block, when it declares template variables, so that the other cases can declare them too
+    const { declarations, lines: content } = typeCheckScope(caseNode.children, new TypeCheckContext(context), processNode);
+    const body = [...declarations, ...content, plain('break;')];
     lines.push(...indentLines(
-      indentLines([
-        ...caseNode.children.flatMap(child => processNode(child, context)),
-        plain('break;'),
-      ])));
+      indentLines(declarations.length ? [plain('{'), ...indentLines(body), plain('}')] : body)
+    ));
   }
 
   lines.push(plain('}'));

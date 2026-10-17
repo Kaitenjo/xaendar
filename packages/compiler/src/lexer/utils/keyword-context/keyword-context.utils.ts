@@ -15,8 +15,8 @@ const KEYWORD_START = /@[a-z]*$/;
  * typing), as long as it can be lexed up to there. The `@@` of a directive starts no keyword.
  *
  * @example
- * getKeywordContext('<p>a</p>\n@', 10);                // { keywords: ['if', 'for', 'switch'], span: { start: 9, end: 10 } }
- * getKeywordContext('@if (a) {\n}\n@el', 15);          // { keywords: ['if', 'for', 'switch', 'else', 'else if'], span: { start: 12, end: 15 } }
+ * getKeywordContext('<p>a</p>\n@', 10);                // { keywords: ['if', 'for', 'switch', 'render'], span: { start: 9, end: 10 } }
+ * getKeywordContext('@if (a) {\n}\n@el', 15);          // { keywords: ['if', 'for', 'switch', 'render', 'else', 'else if'], span: { start: 12, end: 15 } }
  * getKeywordContext('@switch (a) {\n  @', 16);         // { keywords: ['case', 'default'], span: { start: 15, end: 16 } }
  *
  * @param source - The source of the template.
@@ -35,20 +35,17 @@ export function getKeywordContext(source: string, offset: number): KeywordContex
     return undefined;
   }
 
-  const lexer = new Lexer(before.slice(0, start));
-  try {
-    lexer.tokenize();
-  } catch {
+  const { tokens, state, error } = new Lexer(before.slice(0, start)).tokenizeTolerant();
+  if (error) {
     return undefined;
   }
 
   const span = { start, end: offset };
-  const { state, tokens } = lexer;
   let keywords: KeywordContext['keywords'][number][];
   switch (state) {
     // The content of the template
     case LexerState.TEXT:
-      keywords = ['if', 'for', 'switch'];
+      keywords = ['if', 'for', 'switch', 'render'];
       break;
 
     // The bindings of a tag, of a conditional binding or of a directive
@@ -64,14 +61,11 @@ export function getKeywordContext(source: string, offset: number): KeywordContex
 
   const openBlock = findOpenBlock(tokens, tokens.length);
   if (openBlock !== -1 && getBlockKeyword(tokens, openBlock) === TokenType.SWITCH) {
-    // The `@default` of the `@switch` may be declared after the offset too: the template is read without the keyword being written
-    const template = new Lexer(`${before.slice(0, start)}${source.slice(offset)}`);
-    try {
-      template.tokenize();
-    } catch {
-      // The tokens before the error are read
-    }
-
+    /*
+      The `@default` of the `@switch` may be declared after the offset too: the template is read without the keyword
+      being written, as far as it can be lexed
+    */
+    const template = new Lexer(`${before.slice(0, start)}${source.slice(offset)}`).tokenizeTolerant();
     return { keywords: declaresDefault(template.tokens, openBlock) ? ['case'] : ['case', 'default'], span };
   }
 

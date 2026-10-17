@@ -20,7 +20,7 @@
     <tbody>
       <tr>
         <td>
-          <code>{'{ count() }'}</code>
+          <code>{ '{ count() }' }</code>
         </td>
         <td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td1") />
       </tr>
@@ -30,7 +30,7 @@
       </tr>
       <tr>
         <td>
-          <code>{'title="{ label() }"'}</code>
+          <code>{ 'title="{ label() }"' }</code>
         </td>
         <td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td4") />
       </tr>
@@ -42,13 +42,13 @@
       </tr>
       <tr>
         <td>
-          <code>{'@if (cond) { … } @else { … }'}</code>
+          <code>{ '@if (cond) { … } @else { … }' }</code>
         </td>
         <td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td6") />
       </tr>
       <tr>
         <td>
-          <code>{'@for (item of items(); track item.id) { … }'}</code>
+          <code>{ '@for (item of items(); track item.id) { … }' }</code>
         </td>
         <td @@i18n(key="pages.essentials.templates.theSyntaxAtA.td7") />
       </tr>
@@ -60,10 +60,8 @@
   </table>
 </div>
 
-<docs-example
-  name="essentials/templates/shopping-list"
-  heading="{ translations().pages.essentials.templates.theSyntaxAtA.example1 }"
->
+<docs-example name="essentials/templates/shopping-list"
+  heading="{translations().pages.essentials.templates.theSyntaxAtA.example1}">
   <ex-shopping-list />
 </docs-example>
 

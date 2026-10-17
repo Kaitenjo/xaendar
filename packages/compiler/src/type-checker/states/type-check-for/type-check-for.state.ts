@@ -6,6 +6,7 @@ import { ProcessNode } from '../../types/type-checker-process-node.type';
 import type { Span } from '../../../types/span.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
+import { typeCheckScope } from '../../utils/scope/scope.utils';
 
 /**
  * Generic arrow function the iterable of every `@for` is passed to: it accepts only a
@@ -72,13 +73,16 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
     declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'Signal<boolean>'),
     declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'Signal<boolean>'),
     declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'Signal<boolean>'),
-    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>'),
-    line(mappedExpression(node.trackExpression, forContext, node.span, ';', {}))
+    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>')
   );
 
-  for (let i = 0; i < node.children.length; i++) {
-    body.push(...processNode(node.children[i], forContext));
-  }
+  // The body is a scope of its own: the template variables it declares follow the ones of the loop
+  const { declarations, lines: content } = typeCheckScope(node.children, forContext, processNode);
+  body.push(
+    ...declarations,
+    line(mappedExpression(node.trackExpression, forContext, node.span, ';')),
+    ...content
+  );
 
   lines.push(...indentLines(body));
   lines.push(plain('}'));

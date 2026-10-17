@@ -1,6 +1,6 @@
-import { type ComponentOrDirectiveMetadata, type ForNode, parseTemplate } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, parseTemplate } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
-import { getForVariables, walkTemplate } from './template-walker.utils';
+import { walkTemplate } from './template-walker.utils';
 
 const component = { type: 'component', selector: 'my-child', className: 'Child' } as ComponentOrDirectiveMetadata;
 const directive = { type: 'directive', selector: 'tooltip', className: 'Tooltip' } as ComponentOrDirectiveMetadata;
@@ -13,7 +13,7 @@ const template = [
   '</my-child>',
   '@if (j) { {k} } @else if (l) { {m} } @else { {n} }',
   '@if (o) { {p} }',
-  '@for (item of items; track item.id; i = $index) { {item} @for (q; track $index) { {r} } }',
+  '@for (item of items; track item.id; i = $index) { {item} @for (q; track $index()) { {r} } }',
   '@switch (s) { @case (1) { {t} } @default { {u} } }'
 ].join('\n');
 
@@ -67,7 +67,7 @@ describe('walkTemplate', () => {
       'expression item [item,i,$first,$last,$even,$odd]',
       'for undefined',
       'expression q [item,i,$first,$last,$even,$odd]',
-      'expression $index [item,i,$first,$last,$even,$odd,$index]',
+      'expression $index() [item,i,$first,$last,$even,$odd,$index]',
       'expression r [item,i,$first,$last,$even,$odd,$index]',
       'expression s []',
       'expression t []',
@@ -78,14 +78,67 @@ describe('walkTemplate', () => {
   it('visits nothing without callbacks', () => {
     expect(() => walkTemplate(parseTemplate(template), [], {})).not.toThrow();
   });
-});
 
-describe('getForVariables', () => {
-  it('returns the item alias and the implicit variables, by their alias if any', () => {
-    const [withAlias] = parseTemplate('@for (item of items; track item; f = $first) {}') as ForNode[];
-    const [withoutAlias] = parseTemplate('@for (3) {}') as ForNode[];
+  it('visits the template variables, visible in the whole of their scope, a block or the content of an element a structural directive is applied to opening one', () => {
+    const variablesTemplate = [
+      '<button (click)="pick(field)">{ field }</button><label><input #field /></label>',
+      '@if (a) { { inBranch } <i #inBranch></i> }',
+      '@for (item of items; track item()) { { inRow } <i #inRow></i> }',
+      '@switch (b) { @case (1) { { inCase } <i #inCase></i> } }',
+      '<div *visible>{ inContent } <i #inContent></i></div>',
+      '{ c }'
+    ].join('\n');
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate(variablesTemplate), [], {
+      variable: node => visits.push(`variable ${node.name}`),
+      event: (node, _owner, variables) => visits.push(`event ${node.name} [${[...variables].join(',')}]`),
+      expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
+    });
 
-    expect(getForVariables(withAlias)).toEqual(['item', '$index', 'f', '$last', '$even', '$odd']);
-    expect(getForVariables(withoutAlias)).toEqual(['$index', '$first', '$last', '$even', '$odd']);
+    expect(visits).toEqual([
+      'event click [field]',
+      'expression field [field,$event]',
+      'expression field [field]',
+      'variable field',
+      'expression a [field]',
+      'expression inBranch [field,inBranch]',
+      'variable inBranch',
+      'expression items [field]',
+      'expression item() [field,item,$index,$first,$last,$even,$odd]',
+      'expression inRow [field,item,$index,$first,$last,$even,$odd,inRow]',
+      'variable inRow',
+      'expression b [field]',
+      'expression inCase [field,inCase]',
+      'variable inCase',
+      'expression inContent [field,inContent]',
+      'variable inContent',
+      'expression c [field]'
+    ]);
+  });
+
+  it('visits the templates, visible in the whole of their scope, their content as a scope declaring their parameters, and the @render with their arguments', () => {
+    const templatesTemplate = [
+      '@render row(field)',
+      '<label><input #field /></label>',
+      '<template #row(item: Item)>{ item() } <i #inRow></i> @render row(inRow)</template>'
+    ].join('\n');
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate(templatesTemplate), [], {
+      variable: node => visits.push(`variable ${node.name}`),
+      template: node => visits.push(`template ${node.variable.name}`),
+      render: node => visits.push(`render ${node.callee}`),
+      expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
+    });
+
+    expect(visits).toEqual([
+      'render row',
+      'expression field [field,row]',
+      'variable field',
+      'template row',
+      'expression item() [field,row,item,inRow]',
+      'variable inRow',
+      'render row',
+      'expression inRow [field,row,item,inRow]'
+    ]);
   });
 });

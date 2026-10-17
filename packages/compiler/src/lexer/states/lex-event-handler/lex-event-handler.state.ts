@@ -1,4 +1,4 @@
-import { CR, LF, LPAREN, SPACE, TAB } from '../../../costants/chars.constants';
+import { CR, LF, LPAREN, SPACE, TAB } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';

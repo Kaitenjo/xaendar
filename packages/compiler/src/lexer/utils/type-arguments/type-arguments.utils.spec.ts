@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LESS_THAN, LPAREN } from '../../../costants/chars.constants';
+import { LESS_THAN, LPAREN } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { lexTypeArguments } from './type-arguments.utils';
 

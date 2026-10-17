@@ -216,7 +216,7 @@ describe('compile imported symbols', () => {
   });
 
   it('reads a variable of the template rather than a symbol named like it, and a symbol rather than a global named like it', async () => {
-    const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item) { {item} } { Map.size }';
+    const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item()) { {item} } { Map.size }';
     const { javascript } = await compile(source, { baseDir: '/base', signals: [], cache: createSymbolCache() });
 
     expect(javascript).toContain('context.get(\'item\')');

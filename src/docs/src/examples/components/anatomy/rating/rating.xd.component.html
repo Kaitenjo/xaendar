@@ -1,11 +1,7 @@
 <div class="stars" (mouseleave)="clearPreview()">
   @for (star of stars) {
-    <button
-      class="{ star() > shown() ? 'star' : 'star star--on' }"
-      aria-label="{`${star()} stars`}"
-      (click)="rate(star())"
-      (mouseenter)="preview(star())"
-    >
+    <button class="{star() > shown() ? 'star' : 'star star--on'}" aria-label="{`${star()} stars`}"
+      (click)="rate(star())" (mouseenter)="preview(star())">
       ★
     </button>
   }

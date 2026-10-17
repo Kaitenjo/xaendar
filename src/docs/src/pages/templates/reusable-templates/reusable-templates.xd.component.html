@@ -1,0 +1,84 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { PriceSummaryComponent } from '../../../examples/templates/reusable-templates/price-summary/price-summary.xd.component.ts'
+@import { TeamRowsComponent } from '../../../examples/templates/reusable-templates/team-rows/team-rows.xd.component.ts'
+@import { FileTreeComponent } from '../../../examples/templates/reusable-templates/file-tree/file-tree.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span @@i18n(key="pages.templates.reusableTemplates.eyebrow") class="eyebrow" />
+<h1 @@i18n(key="pages.templates.reusableTemplates.title") />
+<p @@i18n(key="pages.templates.reusableTemplates.lead") class="lead" />
+
+<h2 @@i18n(key="pages.templates.reusableTemplates.declaring.title") />
+<docs-code snippet="templates/reusable-template-syntax.html" />
+<p @@i18n(key="pages.templates.reusableTemplates.declaring.p1") />
+<docs-example name="templates/reusable-templates/price-summary"
+  heading="{translations().pages.templates.reusableTemplates.declaring.example1}">
+  <ex-price-summary />
+</docs-example>
+<p @@i18n(key="pages.templates.reusableTemplates.declaring.p2") />
+
+<h2 @@i18n(key="pages.templates.reusableTemplates.parameters.title") />
+<p @@i18n(key="pages.templates.reusableTemplates.parameters.p1") />
+<docs-example name="templates/reusable-templates/team-rows"
+  heading="{translations().pages.templates.reusableTemplates.parameters.example1}">
+  <ex-team-rows />
+</docs-example>
+<p @@i18n(key="pages.templates.reusableTemplates.parameters.p2") />
+
+<h2 @@i18n(key="pages.templates.reusableTemplates.scope.title") />
+<p @@i18n(key="pages.templates.reusableTemplates.scope.p1") />
+<docs-code snippet="templates/reusable-template-scope.html" />
+<p @@i18n(key="pages.templates.reusableTemplates.scope.p2") />
+<docs-example name="templates/reusable-templates/file-tree"
+  heading="{translations().pages.templates.reusableTemplates.scope.example1}">
+  <ex-file-tree />
+</docs-example>
+<p @@i18n(key="pages.templates.reusableTemplates.scope.p3") />
+<docs-code snippet="templates/reusable-template-errors.txt" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.reusableTemplates.edgeCases.title") />
+  <docs-callout @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.templates.reusableTemplates.edgeCases.callout1.heading}" />
+  <docs-callout @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.templates.reusableTemplates.edgeCases.callout2.heading}" />
+  <docs-callout @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.templates.reusableTemplates.edgeCases.callout3.heading}" />
+  <docs-callout @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout4.body") kind="edge"
+    heading="{translations().pages.templates.reusableTemplates.edgeCases.callout4.heading}" />
+</section>
+
+<h2 @@i18n(key="pages.templates.reusableTemplates.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.reusableTemplates.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.reusableTemplates.apiSummary.th2") />
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>&lt;template #name(param: Type)&gt;</code>
+        </td>
+        <td @@i18n(key="pages.templates.reusableTemplates.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@render name(argument)' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.reusableTemplates.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '{ param() }' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.reusableTemplates.apiSummary.td3") />
+      </tr>
+    </tbody>
+  </table>
+</div>

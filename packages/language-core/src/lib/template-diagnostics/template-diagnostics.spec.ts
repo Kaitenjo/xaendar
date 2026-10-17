@@ -31,6 +31,61 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('types a template variable with the type of the element it names, reporting its reads before the element and its duplicates', async () => {
+    expect(await diagnose('<p>{ field.value }</p>\n<input #field />\n{ field.valu }')).toEqual([
+      ['field', '"field" is read before the element it names is created: only an event handler can read a template variable declared after it', DiagnosticCategory.Error],
+      ['valu', 'Property \'valu\' does not exist on type \'HTMLInputElement\'. Did you mean \'value\'?', DiagnosticCategory.Error]
+    ]);
+
+    expect(await diagnose('<input #field />\n<select #field />')).toEqual([
+      ['field', 'Cannot redeclare block-scoped variable \'field\'.', DiagnosticCategory.Error],
+      ['field', 'Cannot redeclare block-scoped variable \'field\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('checks the arguments of a @render against the parameters of the template, typed with imported types too, which its content reads as signals', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '@render row(items[0], 1)',
+      '@render row(items[0], \'a\')',
+      '@render row(items[0])',
+      '@render row(items[0], 1, 2)',
+      '<template #row(item: Row, index: number)>{ item().id } { item().nam } { index().toFixed() }</template>',
+      '<template #wrong(value: Nope) />'
+    ].join('\n');
+
+    // The templates are declared at the start of their scope, before the @render
+    expect(await diagnose(source)).toEqual([
+      ['Nope', 'Cannot find name \'Nope\'.', DiagnosticCategory.Error],
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['@render row(items[0])', 'Expected 2 arguments, but got 1.', DiagnosticCategory.Error],
+      ['2', 'Expected 2 arguments, but got 3.', DiagnosticCategory.Error],
+      ['nam', 'Property \'nam\' does not exist on type \'Row\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the render of a name that is not a template, and the reads of a template before the elements they need', async () => {
+    expect(await diagnose('<input #field />\n@render field()')).toEqual([
+      ['field', '"field" is not a template visible here: declare it with <template #field(…)> in this scope or in an enclosing one', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@render row()\n<input #field />\n<template #row()>{ field.value }</template>')).toEqual([
+      ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reads the members and the imports of the template in the track expression of a @for', async () => {
+    expect(await diagnose('@import { formatDate } from \'./utils\';\n@for (item of items; track title + formatDate(item().id)) { {item().name} }')).toEqual([]);
+    expect(await diagnose('@for (item of items; track nope(item())) { }')).toEqual([
+      ['nope', 'Property \'nope\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types a template variable naming a component with its class', async () => {
+    expect(await diagnose('@import { Child } from \'./child\';\n<my-child #child label="a"></my-child>\n{ child.label() } { child.nope }')).toEqual([
+      ['nope', 'Property \'nope\' does not exist on type \'Child\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('reports the type errors of a binding that cannot be located more precisely on the whole binding', async () => {
     const source = '@import { Child } from \'./child\';\n<my-child label="a" size="big" (picked)="select()"></my-child>';
 
@@ -361,6 +416,15 @@ describe('getTemplateDiagnostics generic components', () => {
   it('does not report the errors of the call inferring the type parameters, only those of the bindings', async () => {
     expect(await diagnose(`${imports}<my-grid rows="{ missing }"></my-grid>`)).toEqual([
       ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types a template variable naming a generic component with the instantiation of the component', async () => {
+    expect(await diagnose(`${imports}<my-grid #grid rows="{ items }"></my-grid>\n{ grid.rows()[0].name } { grid.rows()[0].missing }`)).toEqual([
+      ['missing', 'Property \'missing\' does not exist on type \'{ id: number; name: string; }\'.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose(`${imports}<my-grid({ id: number }) #grid></my-grid>\n{ grid.rows()[0].name }`)).toEqual([
+      ['name', 'Property \'name\' does not exist on type \'{ id: number; }\'.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 });

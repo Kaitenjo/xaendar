@@ -149,4 +149,58 @@ describe('CompilerContext', () => {
       expect(child.isForeignElement('x-card')).toBe(false);
     });
   });
+
+  describe('namespace', () => {
+    it('defaults to the HTML namespace', () => {
+      expect(new CompilerContext().namespace).toBe('html');
+      expect(new CompilerContext(new CompilerContext()).namespace).toBe('html');
+    });
+
+    it('inherits the namespace of its closest ancestor scope declaring one', () => {
+      const svg = new CompilerContext(new CompilerContext(), 'svg');
+
+      expect(new CompilerContext(new CompilerContext(svg)).namespace).toBe('svg');
+      expect(new CompilerContext(svg, 'html').namespace).toBe('html');
+    });
+  });
+
+  describe('declaresIdentifier', () => {
+    it('tells whether this scope declares an identifier, resolvable or not, ignoring the ancestor scopes', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('item');
+      const child = new CompilerContext(parent);
+      child.addIdentifier('row');
+      child.addUnresolvableIdentifier('field');
+
+      expect(child.declaresIdentifier('row')).toBe(true);
+      expect(child.declaresIdentifier('field')).toBe(true);
+      expect(child.declaresIdentifier('item')).toBe(false);
+      expect(parent.declaresIdentifier('item')).toBe(true);
+    });
+  });
+
+  describe('templates', () => {
+    it('returns the namespace of the template a name refers to, looking up the ancestor scopes', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('row');
+      parent.addTemplate('row', 'svg');
+      const child = new CompilerContext(new CompilerContext(parent));
+
+      expect(child.getTemplateNamespace('row')).toBe('svg');
+      expect(parent.getTemplateNamespace('row')).toBe('svg');
+    });
+
+    it('tells that a name refers to no template when a closer scope declares it as anything else, or nobody declares it', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('row');
+      parent.addTemplate('row', 'html');
+      const child = new CompilerContext(parent);
+      child.addUnresolvableIdentifier('row');
+      parent.addIdentifier('field');
+
+      expect(child.getTemplateNamespace('row')).toBeUndefined();
+      expect(child.getTemplateNamespace('field')).toBeUndefined();
+      expect(child.getTemplateNamespace('missing')).toBeUndefined();
+    });
+  });
 });

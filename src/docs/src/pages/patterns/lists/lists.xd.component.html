@@ -10,7 +10,7 @@
 <p @@i18n(key="pages.patterns.lists.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.lists.anInventory.title") />
-<docs-example name="patterns/lists/inventory" heading="{ translations().pages.patterns.lists.anInventory.example1 }">
+<docs-example name="patterns/lists/inventory" heading="{translations().pages.patterns.lists.anInventory.example1}">
   <ex-inventory />
 </docs-example>
 <p @@i18n(key="pages.patterns.lists.anInventory.p1") />
@@ -20,11 +20,8 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.lists.edgeCases.title") />
-  <docs-callout
-    @@i18n(key="pages.patterns.lists.edgeCases.callout2.body")
-    kind="edge"
-    heading="{ translations().pages.patterns.lists.edgeCases.callout2.heading }"
-  />
+  <docs-callout @@i18n(key="pages.patterns.lists.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.patterns.lists.edgeCases.callout2.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.patterns.lists.apiSummary.title") />
@@ -40,13 +37,13 @@
       <tr>
         <td @@i18n(key="pages.patterns.lists.apiSummary.td1") />
         <td>
-          <code>{'items.update(list => [...list, item])'}</code>
+          <code>{ 'items.update(list => [...list, item])' }</code>
         </td>
       </tr>
       <tr>
         <td @@i18n(key="pages.patterns.lists.apiSummary.td2") />
         <td>
-          <code>{'items.update(list => list.filter(other => other !== item))'}</code>
+          <code>{ 'items.update(list => list.filter(other => other !== item))' }</code>
         </td>
       </tr>
       <tr>
@@ -60,7 +57,7 @@
       <tr>
         <td @@i18n(key="pages.patterns.lists.apiSummary.td7") />
         <td>
-          <code>{'@for (item of visible(); track item.id)'}</code>
+          <code>{ '@for (item of visible(); track item.id)' }</code>
         </td>
       </tr>
     </tbody>

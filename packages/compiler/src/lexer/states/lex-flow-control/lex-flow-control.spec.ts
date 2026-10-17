@@ -69,6 +69,15 @@ describe('lexFlowControl', () => {
     });
   });
 
+  it('recognises @render', () => {
+    const cursor = new LexerCursor('@render row(item())');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.RENDER,
+      tokens: [{ type: TokenType.RENDER }]
+    });
+    expect(cursor.peek()).toBe('r'.charCodeAt(0));
+  });
+
   it('recognises @import', () => {
     const cursor = new LexerCursor('@import { X } from "./x"');
     expect(lexFlowControl(cursor, context)).toEqual({

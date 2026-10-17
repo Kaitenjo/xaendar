@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -58,7 +58,8 @@ describe('resolveModule()', () => {
   };
 
   beforeAll(() => {
-    root = mkdtempSync(join(tmpdir(), 'xd-module-path-'));
+    // The real path, which TypeScript resolves the files of the packages to: the temporary directory can be reached through a short name or a symlink
+    root = realpathSync.native(mkdtempSync(join(tmpdir(), 'xd-module-path-')));
     write('tsconfig.json', JSON.stringify({
       compilerOptions: { module: 'ESNext', moduleResolution: 'bundler', paths: { '@lib/*': ['./src/lib/*'] } },
       include: ['src/**/*.ts']

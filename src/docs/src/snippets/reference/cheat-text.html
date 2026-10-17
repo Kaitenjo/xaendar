@@ -1,6 +1,6 @@
 <!-- Interpolation: any expression, always reactive, always a text node -->
 <p>Hello { name() }, you have { count() + 1 } messages</p>
-<p>{`${count()} items`}</p>                 <!-- template literal -->
+<p>{ `${count()} items` }</p>               <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
 <!-- Characters with a meaning: write a character reference, as in HTML, or an interpolation -->

@@ -59,6 +59,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A listener inside the parentheses of a structural directive.
 - **Fix:** Write the listener on the tag, outside the directive.
 
+### `[Lexer] A template variable takes no value: write #name, which names the element it is declared on`
+
+- **Cause:** A value given to a template variable, as in #field="name".
+- **Fix:** Write #field alone: it names the element it is declared on.
+
+### `[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings`
+
+- **Cause:** A #name inside the block of a conditional binding, or inside the parentheses of a directive (… outside of its directives).
+- **Fix:** Declare the variable directly on the tag.
+
+### `[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name`
+
+- **Cause:** Parentheses after the name of a template variable on an element other than a <template>.
+- **Fix:** Write #name alone.
+
+### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())`
+
+- **Cause:** A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.
+- **Fix:** Write @render name(arguments), with () when the template has no parameters.
+
 ## Parser
 
 ### `[Parser] Expected closing tag input while file is over`
@@ -100,6 +120,66 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** An alias of @for written with let.
 - **Fix:** Write the alias as i = $index.
+
+### `[Parser] <input> declares more than one template variable (#first, #second): an element has a single name`
+
+- **Cause:** Two template variables on the same element.
+- **Fix:** Keep one name per element.
+
+### `[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own`
+
+- **Cause:** A template variable on an element a structural directive is applied to, directly or by a conditional binding.
+- **Fix:** Declare it on an element inside, or render the element with an @if and declare the variable inside the block.
+
+### `[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.`
+
+- **Cause:** A template variable named by something other than an identifier; `'root' is reserved in templates` for root, $event and the names starting with __ or $$.
+- **Fix:** Use an identifier the generated code does not reserve.
+
+### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())`
+
+- **Cause:** A <template> without #name(…): a <template> is always the declaration of a template.
+- **Fix:** Name it and declare its parameters, then render it with @render.
+
+### `[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>`
+
+- **Cause:** A <template #row> without parentheses.
+- **Fix:** Write <template #row()>.
+
+### `[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it`
+
+- **Cause:** An attribute, an event, a conditional binding, a directive or type arguments on a <template>.
+- **Fix:** Move them to the elements inside the template.
+
+### `[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>`
+
+- **Cause:** The parameters of a template with a missing or doubled comma, a semicolon, or anything but parameters.
+- **Fix:** Separate the parameters with single commas: name: Type, name: Type.
+
+### `[Parser] The parameter 'item' of template "row" needs a type, e.g. item: string`
+
+- **Cause:** A parameter without type; the same message ends with cannot destructure its value, cannot be a rest parameter, cannot be optional or have a default value, or cannot have modifiers or decorators.
+- **Fix:** Give each parameter a name and a type, nothing else: every @render passes every argument.
+
+### `[Parser] Template "row" declares the parameter "item" more than once`
+
+- **Cause:** Two parameters with the same name.
+- **Fix:** Rename one of them.
+
+### `[Parser] '2row' cannot name a template: it must be an identifier`
+
+- **Cause:** A @render whose name is not an identifier.
+- **Fix:** Render the template by its name.
+
+### `[Parser] @render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])`
+
+- **Cause:** A spread argument (...values) in a @render.
+- **Fix:** Pass one argument per parameter.
+
+### `[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()`
+
+- **Cause:** A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.
+- **Fix:** Call the signal: track item(), or track a property of it, as in track item().id.
 
 ## TypeChecker
 
@@ -198,11 +278,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** @for over something that is neither an array nor a number: a Set, a Map, a string.
 - **Fix:** Convert it to an array, for instance in a computed signal.
 
-### `'this' implicitly has type 'any' because it does not have a type annotation.`
-
-- **Cause:** A track expression reading a member of the component.
-- **Fix:** Track by a field of the item, or by the item itself.
-
 ### `Property '$count' does not exist on type 'XList'.`
 
 - **Cause:** $count is not one of the variables of @for.
@@ -217,6 +292,41 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.
 - **Fix:** Use ?. or ??, or a precise type.
+
+### `[TypeChecker] "field" is read before the element it names is created: only an event handler can read a template variable declared after it`
+
+- **Cause:** An interpolation, a binding, a condition or the iterable of a @for reading a template variable whose element comes after it in its scope.
+- **Fix:** Move the element before the expression, or read the variable from an event handler, which runs once the template is rendered.
+
+### `[TypeChecker] The track expression of a @for cannot read the template variable "field": it only reads the item of the @for and its implicit variables`
+
+- **Cause:** A template variable read by the track expression of a @for.
+- **Fix:** Track the item, a property of it, or $index.
+
+### `Cannot redeclare block-scoped variable 'field'.`
+
+- **Cause:** Two template variables with the same name in the same scope, or a template variable named like a variable of the enclosing @for.
+- **Fix:** Rename one of them: a nested scope (a block, the row of a @for) can reuse the name.
+
+### `[TypeChecker] "row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one`
+
+- **Cause:** A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, a template variable, or a template declared in another branch or row. The build reports it as [Generator] too.
+- **Fix:** Declare the template where the @render can see it, or pass the data as arguments to a template declared further out.
+
+### `[TypeChecker] Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in`
+
+- **Cause:** A @render inside an <svg> (or a <math>) of a template declared among HTML elements, or the other way round: the content is created in the namespace of the declaration. The build reports it as [Generator] too.
+- **Fix:** Declare the template inside the same namespace as its @render.
+
+### `[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler`
+
+- **Cause:** The content of a template reads a template variable of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the variable.
+- **Fix:** Move the @render after the element, or pass the value as an argument.
+
+### `Expected 2 arguments, but got 1.`
+
+- **Cause:** A @render passing fewer or more arguments than the template declares parameters (reported on the @render, or on the extra arguments).
+- **Fix:** Pass one argument per parameter.
 
 ## Build
 
@@ -302,6 +412,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Two directive classes registered with the same selector.
 - **Fix:** Rename one of them.
 
+### `Error: No element matches the required query 'input' of <x-search>`
+
+- **Cause:** A @Query.required was read while no element of the shadow root matched it: before the render (in onInit, in an effect created there, in the template), or while the element was not in the template.
+- **Fix:** Read it from afterRender on, in event handlers or in a computed signal read from them. If the element is not always there, use @Query.
+
+### `Error: No element matches the required content query '[header]' of <x-card>`
+
+- **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.
+- **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
+
 ### `TypeError: Cannot read properties of undefined (reading 'addUnlistener')`
 
 - **Cause:** this.effect called in the constructor of a directive, before its context exists.
@@ -321,6 +441,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A browser warning: a component stylesheet is a constructed stylesheet, which drops @import rules.
 - **Fix:** Put every rule in the CSS file of the component.
+
+### `ReferenceError: Template variable "field" is read before the element it names is rendered`
+
+- **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a template variable whose element is not created yet.
+- **Fix:** Emit the event after the render (afterRender), or read the variable later.
 
 ## Signals
 

@@ -28,7 +28,7 @@ describe('mappedExpression', () => {
   it('resolves the expression with the given options', () => {
     const { node } = validateExpression('item', 0);
 
-    expect(line(mappedExpression(node, new TypeCheckContext(), span, '', { skipResolution: true })).text).toBe('item');
+    expect(line(mappedExpression(node, new TypeCheckContext(), span, '', { resolver: '' })).text).toBe('item');
   });
 
   it('maps only the whole fragment when the offset of the expression is not known', () => {

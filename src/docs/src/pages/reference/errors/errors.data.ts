@@ -84,6 +84,26 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'directives/structural'
   },
   {
+    phase: 'Lexer',
+    message: '[Lexer] A template variable takes no value: write #name, which names the element it is declared on',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Lexer',
+    message: '[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Lexer',
+    message: '[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Lexer',
+    message: '[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())',
+    page: 'templates/reusable-templates'
+  },
+  {
     phase: 'Parser',
     message: '[Parser] Expected closing tag input while file is over',
     page: 'templates/overview'
@@ -122,6 +142,66 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'Parser',
     message: "[Parser] 'let i' is not a valid alias identifier.",
     page: 'templates/for'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()',
+    page: 'templates/for'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] <input> declares more than one template variable (#first, #second): an element has a single name',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Parser',
+    message: "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.",
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The parameter \'item\' of template "row" needs a type, e.g. item: string',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Template "row" declares the parameter "item" more than once',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: "[Parser] '2row' cannot name a template: it must be an identifier",
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])',
+    page: 'templates/reusable-templates'
   },
   {
     phase: 'TypeChecker',
@@ -195,11 +275,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: "'this' implicitly has type 'any' because it does not have a type annotation.",
-    page: 'templates/for'
-  },
-  {
-    phase: 'TypeChecker',
     message: "Property '$count' does not exist on type 'XList'.",
     page: 'templates/for'
   },
@@ -269,6 +344,41 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/imports'
   },
   {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] "field" is read before the element it names is created: only an event handler can read a template variable declared after it',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] The track expression of a @for cannot read the template variable "field": it only reads the item of the @for and its implicit variables',
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'TypeChecker',
+    message: "Cannot redeclare block-scoped variable 'field'.",
+    page: 'templates/template-variables'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] "row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'TypeChecker',
+    message: 'Expected 2 arguments, but got 1.',
+    page: 'templates/reusable-templates'
+  },
+  {
     phase: 'Runtime',
     message: 'XCard does not seems to have a Render Function',
     page: 'components/registration'
@@ -295,6 +405,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: "Error: No element matches the required query 'input' of <x-search>",
+    page: 'components/queries'
+  },
+  {
+    phase: 'Runtime',
+    message: "Error: No element matches the required content query '[header]' of <x-card>",
+    page: 'components/content-queries'
+  },
+  {
+    phase: 'Runtime',
     message: "TypeError: Cannot read properties of undefined (reading 'addUnlistener')",
     page: 'directives/custom'
   },
@@ -312,6 +432,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'Runtime',
     message: '@import rules are not allowed here.',
     page: 'components/styling'
+  },
+  {
+    phase: 'Runtime',
+    message: 'ReferenceError: Template variable "field" is read before the element it names is rendered',
+    page: 'templates/template-variables'
   },
   {
     phase: 'Signals',

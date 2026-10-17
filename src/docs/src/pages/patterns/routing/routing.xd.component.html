@@ -10,10 +10,7 @@
 <p @@i18n(key="pages.patterns.routing.lead") class="lead" />
 
 <h2 @@i18n(key="pages.patterns.routing.aRouterInA.title") />
-<docs-example
-  name="patterns/routing/mini-router"
-  heading="{ translations().pages.patterns.routing.aRouterInA.example1 }"
->
+<docs-example name="patterns/routing/mini-router" heading="{translations().pages.patterns.routing.aRouterInA.example1}">
   <ex-mini-router />
 </docs-example>
 <p @@i18n(key="pages.patterns.routing.aRouterInA.p1") />
@@ -27,16 +24,10 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.routing.edgeCases.title") />
-  <docs-callout
-    @@i18n(key="pages.patterns.routing.edgeCases.callout1.body")
-    kind="edge"
-    heading="{ translations().pages.patterns.routing.edgeCases.callout1.heading }"
-  />
-  <docs-callout
-    @@i18n(key="pages.patterns.routing.edgeCases.callout2.body")
-    kind="tip"
-    heading="{ translations().pages.patterns.routing.edgeCases.callout2.heading }"
-  />
+  <docs-callout @@i18n(key="pages.patterns.routing.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.patterns.routing.edgeCases.callout1.heading}" />
+  <docs-callout @@i18n(key="pages.patterns.routing.edgeCases.callout2.body") kind="tip"
+    heading="{translations().pages.patterns.routing.edgeCases.callout2.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.patterns.routing.apiSummary.title") />
@@ -60,7 +51,7 @@
       <tr>
         <td @@i18n(key="pages.patterns.routing.apiSummary.td5") />
         <td>
-          <code>{'@switch (route().name)'}</code>
+          <code>{ '@switch (route().name)' }</code>
         </td>
       </tr>
       <tr>

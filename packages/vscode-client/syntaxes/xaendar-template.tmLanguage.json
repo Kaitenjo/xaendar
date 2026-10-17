@@ -9,8 +9,10 @@
     { "include": "#custom-tag-close" },
     { "include": "#event" },
     { "include": "#directive" },
+    { "include": "#template-variable" },
     { "include": "#control-flow" },
     { "include": "#control-flow-bare" },
+    { "include": "#render" },
     { "include": "#interpolation" },
     { "include": "#block-close" }
   ],
@@ -117,6 +119,36 @@
         }
       ]
     },
+    "template-variable": {
+      "patterns": [
+        {
+          "begin": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(\\()",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.template-variable.xaendar" },
+            "2": { "name": "entity.name.function.xaendar" },
+            "3": { "name": "punctuation.definition.parameters.begin.xaendar" }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.parameters.end.xaendar" }
+          },
+          "name": "meta.parameters.xaendar",
+          "patterns": [
+            { "match": "[A-Za-z_$][\\w$]*(?=\\s*:)", "name": "variable.parameter.xaendar" },
+            { "match": ":", "name": "punctuation.separator.type.xaendar" },
+            { "match": ",", "name": "punctuation.separator.parameter.xaendar" },
+            { "include": "source.ts#type" }
+          ]
+        },
+        {
+          "match": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(?=[\\s/>])",
+          "captures": {
+            "1": { "name": "punctuation.definition.template-variable.xaendar" },
+            "2": { "name": "variable.other.constant.xaendar" }
+          }
+        }
+      ]
+    },
     "directive-attribute": {
       "patterns": [
         { "match": "[^\\s\"'<>/=(){}@*]+", "name": "entity.other.attribute-name.html" },
@@ -152,6 +184,22 @@
       "patterns": [
         { "match": "\\b(?:of|track)\\b", "name": "keyword.control.xaendar" },
         { "match": ";", "name": "punctuation.separator.xaendar" },
+        { "include": "#expression" }
+      ]
+    },
+    "render": {
+      "begin": "(@render)\\s+([A-Za-z_$][\\w$]*)(\\()",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "entity.name.function.xaendar" },
+        "3": { "name": "punctuation.definition.arguments.begin.xaendar" }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.arguments.end.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
         { "include": "#expression" }
       ]
     },

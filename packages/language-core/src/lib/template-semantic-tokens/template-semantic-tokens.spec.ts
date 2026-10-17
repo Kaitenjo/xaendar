@@ -15,7 +15,7 @@ afterAll(() => {
 
 describe('getTemplateSemanticTokens', () => {
   it('declares the legend of the tokens', () => {
-    expect(TEMPLATE_SEMANTIC_TOKEN_TYPES).toEqual(['property', 'event', 'decorator', 'variable']);
+    expect(TEMPLATE_SEMANTIC_TOKEN_TYPES).toEqual(['property', 'event', 'decorator', 'variable', 'function']);
     expect(TEMPLATE_SEMANTIC_TOKEN_MODIFIERS).toEqual(['readonly']);
   });
 
@@ -47,6 +47,35 @@ describe('getTemplateSemanticTokens', () => {
       ['item', 'variable', 'readonly'],
       ['label', 'property'],
       ['$index', 'variable', 'readonly']
+    ]);
+  }, TIMEOUT);
+
+  it('colors the template variables where declared and where read, the head of a handler called on one included', async () => {
+    const source = [
+      '<button (click)="dialog.showModal()" (focus)="select(field)">{ field.value }</button>',
+      '<input #field />',
+      '<dialog #dialog></dialog>'
+    ].join('\n');
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([
+      ['dialog', 'variable', 'readonly'],
+      ['field', 'variable', 'readonly'],
+      ['field', 'variable', 'readonly'],
+      ['field', 'variable', 'readonly'],
+      ['dialog', 'variable', 'readonly']
+    ]);
+  }, TIMEOUT);
+
+  it('colors the name of a template where declared and where rendered, and its parameters where declared and where read', async () => {
+    const source = '@render row(title)\n<template #row(label: string)>{ label() }</template>';
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([
+      ['row', 'function'],
+      ['row', 'function'],
+      ['label', 'variable', 'readonly'],
+      ['label', 'variable', 'readonly']
     ]);
   }, TIMEOUT);
 });

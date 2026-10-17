@@ -46,7 +46,12 @@ export function parseTypeArguments(text: string, offset: number): TypeArgumentNo
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     if (quote !== undefined) {
-      quote = char === quote ? undefined : quote;
+      // An escaped character never closes the string
+      if (char === '\\') {
+        i++;
+      } else if (char === quote) {
+        quote = undefined;
+      }
     } else if (char === '\'' || char === '"' || char === '`') {
       quote = char;
     } else if (OPENERS.includes(char)) {

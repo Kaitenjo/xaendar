@@ -1,3 +1,4 @@
+import { CLOSERS } from '../../../costants/closers.costant';
 import { Lexer } from '../../lexer/lexer';
 import type { ExpressionContext } from '../../types/expression-context/expression-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
@@ -13,11 +14,6 @@ const PARTIAL_IDENTIFIER = /[\w$]*$/;
  * that the members of the component are proposed there.
  */
 const PLACEHOLDER = '__xaendarCompletion__';
-
-/**
- * The character closing each construct an expression can open.
- */
-const CLOSERS: Readonly<Record<string, string>> = { '(': ')', '[': ']', '{': '}', '`': '`' };
 
 /**
  * The character opening each construct closed by a parenthesis, a bracket or a brace.
@@ -49,17 +45,20 @@ type ScanState = {
  * getExpressionContext('<b (click)="">x</b>', 12);         // { kind: 'handler', span: { start: 12, end: 12 }, source: '<b (click)="__xaendarCompletion__()">x</b>' }
  * getExpressionContext('<b (click)="pick()">x</b>', 17);   // { kind: 'argument', span: { start: 17, end: 17 }, source: '<b (click)="pick(__xaendarCompletion__, $event)">x</b>' }
  * getExpressionContext('@if (ok', 7);                      // { kind: 'condition', span: { start: 5, end: 7 }, source: '@if (ok) {}' }
+ * getExpressionContext('@render row(it', 14);              // { kind: 'render', span: { start: 12, end: 14 }, source: '@render row(it)' }
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
  * @returns The expression being written, `undefined` if the offset is not in an interpolation, in the handler of an
- *   event or in the condition of `@if`, `@else if`, `@for` or `@switch`.
+ *   event, in the condition of `@if`, `@else if`, `@for` or `@switch`, or in the arguments of a `@render`.
  */
 export function getExpressionContext(source: string, offset: number): ExpressionContext | undefined {
   const before = source.slice(0, offset);
   const lexer = new Lexer(before);
+  let tokens: ReturnType<Lexer['tokenize']>;
+  
   try {
-    lexer.tokenize();
+    tokens = lexer.tokenize();
   } catch {
     return undefined;
   }
@@ -68,7 +67,6 @@ export function getExpressionContext(source: string, offset: number): Expression
   const span = { start: offset - partial.length, end: offset };
   // The template up to the offset, followed by the placeholder when no identifier is written
   const head = `${before}${partial ? '' : PLACEHOLDER}`;
-  const { tokens } = lexer;
   // The `{` opening an interpolation, or the `(` opening a condition, follows the last token emitted
   const lastToken = tokens.findLast(token => token.type !== TokenType.EOF);
 
@@ -96,16 +94,21 @@ export function getExpressionContext(source: string, offset: number): Expression
         return undefined;
       }
 
-      const state: ScanState = { nesting: [], quote: undefined };
-      scanExpression(before, open + 1, offset, state, ')');
-      if (!isClosable(state)) {
+      const closed = closeParenthesized(source, open, offset);
+      if (!closed) {
         return undefined;
       }
 
-      // The condition goes on after the offset up to the `)` closing it, if any, followed by its block, empty when not written yet
-      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, ')');
-      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
-      return { kind: 'condition', span, source: `${head}${closersOf(state)})${/^\s*\{/.test(after) ? '' : ' {}'}${after}` };
+      // The condition is followed by its block, empty when not written yet
+      const { closers, after } = closed;
+      return { kind: 'condition', span, source: `${head}${closers})${/^\s*\{/.test(after) ? '' : ' {}'}${after}` };
+    }
+
+    case LexerState.RENDER: {
+      // The keyword `@render` is the last token, the arguments start after the `(` following the name of the template
+      const open = before.indexOf('(', lastToken!.span.end);
+      const closed = open === -1 ? undefined : closeParenthesized(source, open, offset);
+      return closed && { kind: 'render', span, source: `${head}${closed.closers})${closed.after}` };
     }
 
     case LexerState.EVENT_HANDLER:
@@ -198,6 +201,27 @@ function scanExpression(text: string, start: number, end: number, state: ScanSta
   }
 
   return -1;
+}
+
+/**
+ * Closes an expression written between parentheses at an offset: the constructs open at the offset are closed, then
+ * the parentheses, and the expression written after the offset is dropped up to the `)` closing them, if any.
+ *
+ * @param source - The source of the template.
+ * @param open - The offset of the `(` opening the parentheses.
+ * @param offset - The offset the expression is closed at.
+ * @returns The characters closing the constructs open at the offset, and the template after the `)` closing the
+ *   parentheses (after the offset when none does), `undefined` if the expression cannot be closed at the offset.
+ */
+function closeParenthesized(source: string, open: number, offset: number): { closers: string, after: string } | undefined {
+  const state: ScanState = { nesting: [], quote: undefined };
+  scanExpression(source, open + 1, offset, state, ')');
+  if (!isClosable(state)) {
+    return undefined;
+  }
+
+  const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, ')');
+  return { closers: closersOf(state), after: end === -1 ? source.slice(offset) : source.slice(end + 1) };
 }
 
 /**

@@ -12,14 +12,15 @@ Applies to every Xaendar template (`*.xd.component.html`), including the templat
 
 After the tag name, write the items of the opening tag in this order:
 
-1. conditional structural directives: `@if (…) { *name(…) }`
-2. structural directives: `*name(…)`
-3. conditional directives: `@if (…) { @@name(…) }`
-4. directives: `@@name(…)`
-5. conditional attributes (and component inputs): `@if (…) { name="…" }`
-6. attributes (and component inputs): `name="…"`
-7. conditional events: `@if (…) { (name)="…" }`
-8. events: `(name)="…"`
+1. template variable: `#name`
+2. conditional structural directives: `@if (…) { *name(…) }`
+3. structural directives: `*name(…)`
+4. conditional directives: `@if (…) { @@name(…) }`
+5. directives: `@@name(…)`
+6. conditional attributes (and component inputs): `@if (…) { name="…" }`
+7. attributes (and component inputs): `name="…"`
+8. conditional events: `@if (…) { (name)="…" }`
+9. events: `(name)="…"`
 
 "Conditional" means any block inside the tag: `@if` / `@else if` / `@else` and `@switch`.
 

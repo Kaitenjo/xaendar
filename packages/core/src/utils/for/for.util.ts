@@ -3,6 +3,12 @@ import { effect, signal, untracked } from '../../signals';
 import { IterationVariablesHandle } from '../../types/iteration-variables.type';
 import { _Context, createAnchor } from '../context/context.util';
 
+/**
+ * Computes the key of an item, receiving the item, its index and the implicit variables derived from them as functions
+ * reading them, like the signals of the body read them.
+ */
+type TrackExpression = Function<[item: NoArgsFunction<unknown>, index: NoArgsFunction<number>, first: NoArgsFunction<boolean>, last: NoArgsFunction<boolean>, even: NoArgsFunction<boolean>, odd: NoArgsFunction<boolean>], string | number>;
+
 type ForEntry = {
   context: _Context;
   update?: (newIndex: number, items: unknown[]) => void;
@@ -21,14 +27,14 @@ type ForEntry = {
  *
  * @param condition - Ritorna gli item da iterare: un array, oppure un numero
  *   `n` iterato come `0, 1, ..., n - 1`.
- * @param trackExpression - Ritorna la key di un item, ricevendo l'item e il suo indice come funzioni
- *   che li leggono, come i signal del body.
+ * @param trackExpression - Ritorna la key di un item, ricevendo l'item, il suo indice e $first/$last/$even/$odd
+ *   come funzioni che li leggono, come i signal del body.
  * @param forFn - Callback invocata per creare un nuovo item. Deve ritornare
  *   sia il Context che possiede i nodi, sia (opzionalmente) una funzione
  *   `update` per aggiornare le variabili implicite in-place quando l'item
  *   viene riusato a un indice diverso.
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: Function<[item: NoArgsFunction<unknown>, index: NoArgsFunction<number>], string | number>, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null], { context: _Context, update?: Function<[newIndex: number, items: unknown[]], void> }>) {
   const anchor = createAnchor('for', parentNode, parentContext, referenceNode);
   // The entries of each key, in the order of the items: a key repeated in the items has an entry per occurrence
   let entries = new Map<string | number, ForEntry[]>();
@@ -36,8 +42,8 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
   const unlistener = effect(() => {
     const iterable = condition();
     const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
-    // The track expression reads the item and the index as the body does, by calling them
-    const newKeys = items.map((item, i) => trackExpression(() => item, () => i));
+    // The track expression reads the item, the index and the implicit variables as the body does, by calling them
+    const newKeys = items.map((item, i) => trackExpression(() => item, () => i, () => i === 0, () => i === items.length - 1, () => i % 2 === 0, () => i % 2 !== 0));
     const occurrences = countOccurrences(newKeys);
 
     untracked(() => {

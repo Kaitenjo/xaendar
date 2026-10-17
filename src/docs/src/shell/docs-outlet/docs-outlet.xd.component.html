@@ -48,8 +48,10 @@
 @import { TemplatesIfPage } from '../../pages/templates/if/if.xd.component.ts'
 @import { TemplatesImportsPage } from '../../pages/templates/imports/imports.xd.component.ts'
 @import { TemplatesOverviewPage } from '../../pages/templates/overview/overview.xd.component.ts'
+@import { TemplatesReusableTemplatesPage } from '../../pages/templates/reusable-templates/reusable-templates.xd.component.ts'
 @import { TemplatesSvgMathmlPage } from '../../pages/templates/svg-mathml/svg-mathml.xd.component.ts'
 @import { TemplatesSwitchPage } from '../../pages/templates/switch/switch.xd.component.ts'
+@import { TemplatesTemplateVariablesPage } from '../../pages/templates/template-variables/template-variables.xd.component.ts'
 @import { TemplatesTextInterpolationPage } from '../../pages/templates/text-interpolation/text-interpolation.xd.component.ts'
 @import { ToolsBuildPage } from '../../pages/tools/build/build.xd.component.ts'
 @import { ToolsCliPage } from '../../pages/tools/cli/cli.xd.component.ts'
@@ -201,11 +203,17 @@
   @case ('templates/overview') {
     <page-templates-overview />
   }
+  @case ('templates/reusable-templates') {
+    <page-templates-reusable-templates />
+  }
   @case ('templates/svg-mathml') {
     <page-templates-svg-mathml />
   }
   @case ('templates/switch') {
     <page-templates-switch />
+  }
+  @case ('templates/template-variables') {
+    <page-templates-template-variables />
   }
   @case ('templates/text-interpolation') {
     <page-templates-text-interpolation />

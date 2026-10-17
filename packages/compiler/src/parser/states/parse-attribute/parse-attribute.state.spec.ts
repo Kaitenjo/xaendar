@@ -29,7 +29,8 @@ describe('parseAttribute', () => {
     ['the end of a block of a conditional binding', { type: TokenType.BLOCK_CLOSE, span: { start: 9, end: 10 } } as Token],
     ['a directive', { type: TokenType.DIRECTIVE, parts: ['myDirective'], span: { start: 9, end: 22 } } as Token],
     ['a structural directive', { type: TokenType.STRUCTURAL_DIRECTIVE, parts: ['hasRole'], span: { start: 9, end: 17 } } as Token],
-    ['the end of a directive', { type: TokenType.DIRECTIVE_CLOSE, span: { start: 9, end: 10 } } as Token]
+    ['the end of a directive', { type: TokenType.DIRECTIVE_CLOSE, span: { start: 9, end: 10 } } as Token],
+    ['a template variable', { type: TokenType.TEMPLATE_VARIABLE, parts: ['field'], span: { start: 10, end: 15 } } as Token]
   ])('treats an attribute followed by %s as a boolean attribute', (_name, next) => {
     expect(run(next)).toEqual({
       type: ASTNodeType.Attribute,

@@ -10,33 +10,23 @@
         @for (item of section().items; track item()) {
           <li>
             @if (item().page) {
-              <a
-                class="{ item().page?.path === path() ? 'link link--active' : 'link' }"
-                href="{`#/${currentLang()}/${item().page?.path}`}"
-              >
+              <a class="{item().page?.path === path() ? 'link link--active' : 'link'}"
+                href="{`#/${currentLang()}/${item().page?.path}`}">
                 { itemTitle(item(), translations()) }
               </a>
             } @else if (isExpanded(item())) {
               <button class="group group--open" type="button" aria-expanded="true" (click)="toggle(item())">
                 <span>{ itemTitle(item(), translations()) }</span>
                 <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  <path
-                    d="M8 10l4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                  <path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
               </button>
               <ul class="list list--nested">
                 @for (page of item().pages ?? []; track page().path) {
                   <li>
-                    <a
-                      class="{ page().path === path() ? 'link link--nested link--active' : 'link link--nested' }"
-                      href="{`#/${currentLang()}/${page().path}`}"
-                    >
+                    <a class="{page().path === path() ? 'link link--nested link--active' : 'link link--nested'}"
+                      href="{`#/${currentLang()}/${page().path}`}">
                       { pageTitle(page(), translations()) }
                     </a>
                   </li>
@@ -46,14 +36,8 @@
               <button class="group" type="button" aria-expanded="false" (click)="toggle(item())">
                 <span>{ itemTitle(item(), translations()) }</span>
                 <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  <path
-                    d="M8 10l4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                  <path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
               </button>
             }

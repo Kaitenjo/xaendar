@@ -60,6 +60,37 @@ describe('_Context', () => {
     });
   });
 
+  describe('declared variables', () => {
+    it('throws when a variable declared without a value is read before it is initialized, instead of reading an outer one named like it', () => {
+      const root = createRoot();
+      root.addIdentifier('field', 'outer');
+      const scope = root.addChild();
+      scope.declare('field');
+
+      expect(() => scope.addChild().get('field')).toThrow(new ReferenceError('Template variable "field" is read before the element it names is rendered'));
+    });
+
+    it('initializes the variable in the scope declaring it, from that scope or from a nested one', () => {
+      const scope = createRoot();
+      scope.declare('form');
+      scope.declare('field');
+      const children = scope.addChild();
+
+      scope.set('form', 'the form');
+      children.addChild().set('field', 'the field');
+
+      expect(children.get('form')).toBe('the form');
+      expect(scope.get('field')).toBe('the field');
+      expect(children.getChildren()[0].get('field')).toBe('the field');
+    });
+
+    it('throws when a variable is declared twice in the same scope', () => {
+      const scope = createRoot();
+      scope.declare('field');
+      expect(() => scope.declare('field')).toThrow('Identifier "field" is already declared in this scope.');
+    });
+  });
+
   describe('children', () => {
     it('creates a child context when none is provided', () => {
       const root = createRoot();

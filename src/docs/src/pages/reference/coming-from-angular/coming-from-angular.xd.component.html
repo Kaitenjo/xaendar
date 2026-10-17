@@ -22,14 +22,14 @@
     <tbody>
       <tr>
         <td>
-          <code>{'@Component'}</code>
+          <code>{ '@Component' }</code>
         </td>
         <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td1") />
       </tr>
       <tr>
         <td>
           <code>input()</code>,
-          <code>{'@Input'}</code>
+          <code>{ '@Input' }</code>
         </td>
         <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td2") />
       </tr>
@@ -38,13 +38,13 @@
           <code>input.required()</code>
         </td>
         <td>
-          <code>{'@Property.required()'}</code>
+          <code>{ '@Property.required()' }</code>
         </td>
       </tr>
       <tr>
         <td>
           <code>output()</code>,
-          <code>{'@Output'}</code>
+          <code>{ '@Output' }</code>
         </td>
         <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td3") />
       </tr>
@@ -60,26 +60,30 @@
       <tr>
         <td>
           <code>viewChild</code>,
+          <code>viewChild.required</code>,
           <code>viewChildren</code>
         </td>
         <td>
-          <code>{'@Query'}</code>,
-          <code>{'@Query.all'}</code>
+          <code>{ '@Query' }</code>,
+          <code>{ '@Query.required' }</code>,
+          <code>{ '@Query.all' }</code>
         </td>
       </tr>
       <tr>
         <td>
           <code>contentChild</code>,
+          <code>contentChild.required</code>,
           <code>contentChildren</code>
         </td>
         <td>
-          <code>{'@Query.content'}</code>,
-          <code>{'@Query.content.all'}</code>
+          <code>{ '@Query.content' }</code>,
+          <code>{ '@Query.content.required' }</code>,
+          <code>{ '@Query.content.all' }</code>
         </td>
       </tr>
       <tr>
         <td>
-          <code>{'<ng-content select>'}</code>
+          <code>{ '<ng-content select>' }</code>
         </td>
         <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td5") />
       </tr>
@@ -101,10 +105,10 @@
       </tr>
       <tr>
         <td>
-          <code>{'{{ expr }}'}</code>
+          <code>{ '{{ expr }}' }</code>
         </td>
         <td>
-          <code>{'{ expr }'}</code>
+          <code>{ '{ expr }' }</code>
         </td>
       </tr>
       <tr>
@@ -112,7 +116,7 @@
           <code>[attr]="expr"</code>
         </td>
         <td>
-          <code>{'attr="{ expr }"'}</code>
+          <code>{ 'attr="{ expr }"' }</code>
         </td>
       </tr>
       <tr>
@@ -142,6 +146,13 @@
         </td>
         <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td18") />
       </tr>
+      <tr>
+        <td>
+          <code>&lt;ng-template&gt;</code>,
+          <code>ngTemplateOutlet</code>
+        </td>
+        <td @@i18n(key="pages.reference.comingFromAngular.correspondences.td19") />
+      </tr>
     </tbody>
   </table>
 </div>
@@ -153,8 +164,5 @@
   <li @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.li4") />
 </ul>
 
-<docs-callout
-  @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.callout1.body")
-  kind="unsupported"
-  heading="{ translations().pages.reference.comingFromAngular.whatWorksDifferently.callout1.heading }"
-/>
+<docs-callout @@i18n(key="pages.reference.comingFromAngular.whatWorksDifferently.callout1.body") kind="unsupported"
+  heading="{translations().pages.reference.comingFromAngular.whatWorksDifferently.callout1.heading}" />

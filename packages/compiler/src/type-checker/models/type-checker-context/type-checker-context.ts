@@ -3,8 +3,10 @@ import { ComponentMetadata } from '../../../types/component-metadata/component-m
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifier.type';
+import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
 import type { SymbolImport } from '../../../types/imported-symbol/imported-symbol.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
+import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 
 /**
  * Type checker context that manages imported component and directive metadata
@@ -25,19 +27,44 @@ export class TypeCheckContext extends CompilerContext {
    * The symbols the template imports from modules, which are neither components nor directives.
    */
   private readonly _symbols = new Array<SymbolImport>();
+  /**
+   * The positions of the elements whose generic component is instantiated in the scope of the template variable naming
+   * them, which is typed with the instantiation: kept by the outermost scope, for the whole template.
+   */
+  private readonly _instantiations = new Set<number>();
+  /**
+   * Whether the template declares templates, whose type-check code reads the declarations of the template helpers:
+   * kept by the outermost scope, for the whole template.
+   */
+  private _declaresTemplates = false;
+
+  /**
+   * Tells whether the template declares templates, in any of its scopes (see {@link addTemplate}).
+   *
+   * @returns `true` if a template is declared, `false` otherwise.
+   */
+  public get declaresTemplates(): boolean {
+    return this.parent ? this.parent.declaresTemplates : this._declaresTemplates;
+  }
+
+  /**
+   * Returns the event map of the elements declared in this scope: the one of their namespace (see `namespace`).
+   *
+   * @returns The event map, `HTMLElementEventMap` for the HTML namespace.
+   */
+  public get eventMap(): ElementEventMap {
+    return getEventMap(this.namespace);
+  }
 
   /**
    * Creates a new type checker scope.
    *
    * @param parent - Optional enclosing scope; its imports are visible from this scope.
-   * @param _eventMap - Event map of the elements declared in this scope, when it differs from the one of the
-   *   enclosing scope, i.e. for the children of an `<svg>` or a `<math>` element.
+   * @param namespace - The namespace the elements declared in this scope are created in, when it differs from the one
+   *   of the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
-  constructor(
-    parent?: TypeCheckContext, 
-    private readonly _eventMap?: ElementEventMap
-  ) {
-    super(parent);
+  constructor(parent?: TypeCheckContext, namespace?: ElementNamespace) {
+    super(parent, namespace);
   }
   
   /**
@@ -47,6 +74,43 @@ export class TypeCheckContext extends CompilerContext {
    */
   public addImport(...value: ComponentOrDirectiveMetadata[]): void {
     this._imports.push(...value);
+  }
+
+  /**
+   * Registers a template declared in this scope (see {@link CompilerContext.addTemplate}), recording in the outermost
+   * scope that the template declares templates.
+   *
+   * @param name - The name of the template.
+   * @param namespace - The namespace the content of the template is created in.
+   */
+  public override addTemplate(name: string, namespace: ElementNamespace): void {
+    super.addTemplate(name, namespace);
+    this._recordTemplates();
+  }
+
+  /**
+   * Records that the type-check code instantiates the generic component of an element in the scope of the template
+   * variable naming it, i.e. that the element was type-checked.
+   *
+   * @param position - The position of the element in the template.
+   */
+  public addInstantiation(position: number): void {
+    if (this.parent) {
+      this.parent.addInstantiation(position);
+    } else {
+      this._instantiations.add(position);
+    }
+  }
+
+  /**
+   * Tells whether the type-check code instantiates the generic component of an element in the scope of the template
+   * variable naming it (see {@link addInstantiation}).
+   *
+   * @param position - The position of the element in the template.
+   * @returns `true` if the instantiation is written, `false` otherwise.
+   */
+  public hasInstantiation(position: number): boolean {
+    return this.parent ? this.parent.hasInstantiation(position) : this._instantiations.has(position);
   }
 
   /**
@@ -73,17 +137,6 @@ export class TypeCheckContext extends CompilerContext {
     return this._symbols.find(({ importedSpan }) => importedSpan.start === specifier.importedSpan.start) ?? this.parent?.getSymbolImport(specifier);
   }
 
-
-  /**
-   * Returns the event map of the elements declared in this scope, looking in this
-   * scope first and then in the ancestor scopes.
-   *
-   * @returns The event map of the closest scope declaring one, `HTMLElementEventMap` if none does.
-   */
-  public get eventMap(): ElementEventMap {
-    return this._eventMap ?? this.parent?.eventMap ?? 'HTMLElementEventMap';
-  }
-
   /**
    * Finds the component registered for the given selector, looking in this
    * scope first and then in the ancestor scopes.
@@ -106,5 +159,16 @@ export class TypeCheckContext extends CompilerContext {
   public getDirectiveBySelector(selector: string): DirectiveMetadata | undefined {
     return this._imports.find((importValue): importValue is DirectiveMetadata => importValue.type === 'directive' && importValue.selector === selector)
       ?? this.parent?.getDirectiveBySelector(selector);
+  }
+
+  /**
+   * Records in the outermost scope that the template declares templates (see {@link declaresTemplates}).
+   */
+  private _recordTemplates(): void {
+    if (this.parent) {
+      this.parent._recordTemplates();
+    } else {
+      this._declaresTemplates = true;
+    }
   }
 }

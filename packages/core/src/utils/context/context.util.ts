@@ -10,6 +10,14 @@ import { trackNode } from '../track-node/track-node.util';
  */
 export class _Context {
   /**
+   * Function used to create new DOM elements within this context.
+   */
+  public createElement: Function<[string], Element>;
+  /**
+   * The value of a variable declared before it is initialized (see {@link declare}).
+   */
+  private static readonly _uninitialized = Symbol('uninitialized');
+  /**
    * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches).
    */
   private _children = new Array<_Context>;
@@ -32,10 +40,6 @@ export class _Context {
    * detach event listeners, and dispose signal effect subscriptions.
    */
   private _unlistenFns = new Array<NoArgsVoidFunction>;
-  /**
-   * Function used to create new DOM elements within this context.
-   */
-  public createElement: Function<[string], Element>;
 
   /**
    * Creates a new scope context.
@@ -62,6 +66,34 @@ export class _Context {
   }
 
   /**
+   * Declares a variable of this scope without initializing it: a template variable, whose element is rendered after the
+   * scope is created. Until it is initialized (see {@link set}), reading it throws, as reading a `let` before its
+   * declaration does, instead of reading a variable of an ancestor scope named like it.
+   *
+   * @param name - The name of the variable.
+   * @throws When an identifier with the same name is already declared in this scope.
+   */
+  public declare(name: string): void {
+    this.addIdentifier(name, _Context._uninitialized);
+  }
+
+  /**
+   * Initializes a variable declared in this scope or in one of its ancestor scopes (see {@link declare}), as an
+   * assignment does: e.g. the template variable of an element rendered in the context of the children of another
+   * element, which doesn't declare it.
+   *
+   * @param name - The name of the variable.
+   * @param value - The value of the variable.
+   */
+  public set(name: string, value: unknown): void {
+    if (this._variables.has(name)) {
+      this._variables.set(name, value);
+    } else {
+      this._parent.set(name, value);
+    }
+  }
+
+  /**
    * Unregisters an identifier from this scope. Does nothing if the identifier is not declared here.
    *
    * @param name - The identifier name to remove.
@@ -77,9 +109,19 @@ export class _Context {
    * @param name - The identifier name to look up.
    * @returns The value bound to the identifier in the closest scope declaring it,
    *   or `undefined` if it is not declared in the scope chain.
+   * @throws A `ReferenceError` when the closest scope declaring the identifier has not initialized it yet (see {@link declare}).
    */
   public get(name: string): unknown {
-    return this._variables.has(name) ? this._variables.get(name) : this._parent?.get(name);
+    if (!this._variables.has(name)) {
+      return this._parent?.get(name);
+    }
+
+    const value = this._variables.get(name);
+    if (value === _Context._uninitialized) {
+      throw new ReferenceError(`Template variable "${name}" is read before the element it names is rendered`);
+    }
+
+    return value;
   }
 
   /**

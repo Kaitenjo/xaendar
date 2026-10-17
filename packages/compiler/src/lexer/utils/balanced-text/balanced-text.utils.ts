@@ -1,7 +1,4 @@
-/**
- * The character closing each one that opens a group.
- */
-const CLOSERS: Readonly<Record<string, string>> = { '{': '}', '(': ')', '[': ']', '<': '>' };
+import { CLOSERS } from '../../../costants/closers.costant';
 
 /**
  * Finds the character closing the group opened at an index of a text, `{`, `(`, `[` or `<`: the groups nested in it

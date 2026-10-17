@@ -1,0 +1,11 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="dialog.showModal()">dialog.showModal()</ex-button>
+<dialog #dialog (close)="closed(dialog.returnValue)">
+  <p>An HTMLDialogElement, opened and closed through its template variable.</p>
+  <div class="row">
+    <ex-button (click)="dialog.close('confirmed')">dialog.close('confirmed')</ex-button>
+    <ex-button (click)="dialog.close('cancelled')">dialog.close('cancelled')</ex-button>
+  </div>
+</dialog>
+<p class="log">{ result() }</p>

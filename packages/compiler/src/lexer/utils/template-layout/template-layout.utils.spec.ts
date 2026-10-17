@@ -62,6 +62,21 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
+  it('reads the template variable of an element, and the one of a <template> with its parameters', () => {
+    expect(parseTemplateLayout('<input #field type="text" /><template #row(item: Item, render: (value: \')\') => void)></template>')).toEqual([
+      { kind: 'element', name: 'input', selfClosing: true, items: [{ kind: 'variable', name: 'field' }, { kind: 'attribute', name: 'type', value: 'text' }] },
+      { kind: 'element', name: 'template', selfClosing: false, items: [{ kind: 'variable', name: 'row', parameters: 'item: Item, render: (value: \')\') => void' }], children: [] }
+    ]);
+  });
+
+  it('reads the render of a template, with its arguments as written', () => {
+    expect(parseTemplateLayout('<p></p>@render  row( item(), \')\' )text')).toEqual([
+      { kind: 'element', name: 'p', selfClosing: false, items: [], children: [] },
+      { kind: 'render', callee: 'row', args: ' item(), \')\' ' },
+      { kind: 'text', value: 'text' }
+    ]);
+  });
+
   it('reads the type arguments of an element, between the parentheses following its tag name', () => {
     expect(parseTemplateLayout('<ex-list(Map<string, number>, (value: string) => void) items="a"></ex-list>')).toEqual([
       {
@@ -148,6 +163,11 @@ describe('parseTemplateLayout', () => {
     ['an attribute value that is not quoted', '<p a=b></p>'],
     ['an attribute value whose quote is not closed', '<p a="b></p>'],
     ['an event that is not followed by its handler', '<p (click)></p>'],
+    ['a template variable without a name', '<p # title="a"></p>'],
+    ['the parameters of a template that are not closed', '<template #row(item: Item></template>'],
+    ['a @render without a name', '@render (a)'],
+    ['a @render without arguments', '@render row <p></p>'],
+    ['a @render whose arguments are not closed', '@render row(a'],
     ['an event whose parenthesis is not closed', '<p (click="x"></p>'],
     ['a directive whose type arguments are not closed', '<p @@a<b(c="d")'],
     ['an element whose type arguments are not closed', '<ex-a(b c="d"></ex-a>'],

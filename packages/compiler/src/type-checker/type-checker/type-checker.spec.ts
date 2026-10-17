@@ -18,6 +18,64 @@ describe('TypeChecker', () => {
     expect([...mappingTable.keys()]).toEqual([1]);
   });
 
+  it('declares the template variables of the template at the start of the function, reading them as written in the whole template', async () => {
+    const template = '<button (click)="pick(name)">Go</button><label><input #name /></label>';
+    const { text } = await new TypeChecker(template, parse(template)).generate([]);
+
+    expect(text).toBe([
+      'function typeCheck() {',
+      '  let name!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
+      '  root.pick(name);',
+      '}'
+    ].join('\n'));
+  });
+
+  it('declares the templates at the start of their scope, checks their content in an arrow function and their @render as a call, with the helpers they need before the function', async () => {
+    const template = '@render row(title, 1)\n<template #row(label: string, count: number)><p>{ label() }</p></template>';
+    const start = template.indexOf('<template');
+    const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([]);
+
+    expect(text).toBe([
+      'import type * as __module0 from \'@xaendar/core/signals\';',
+      'type __Template<Params extends unknown[]> = { readonly __params: Params };',
+      'type __Parameters<Values extends unknown[]> = { [Key in keyof Values]: __module0.Computed<Values[Key]> };',
+      'declare function __render<Params extends unknown[]>(template: __Template<Params>): (...args: Params) => void;',
+      'function typeCheck() {',
+      `  type __Params${start} = [label: string, count: number];`,
+      `  let row!: __Template<__Params${start}>;`,
+      '  __render(row)(root.title, 1);',
+      `  ((...[label, count]: __Parameters<__Params${start}>) => {`,
+      '    label();',
+      '  });',
+      '}'
+    ].join('\n'));
+    // The types of the parameters, the name of the template, the @render and the content are mapped onto the template
+    expect([...mappingTable.keys()]).toEqual([5, 6, 7, 8, 9]);
+  });
+
+  it('writes no template helper for a template declaring no template', async () => {
+    const template = '<p>{ name }</p>';
+    expect((await new TypeChecker(template, parse(template)).generate([])).text).not.toContain('__Template');
+  });
+
+  it('fails on a template variable read before its element is created', async () => {
+    const template = '<p>{ field.value }</p><input #field />';
+
+    await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow('[TypeChecker]');
+    await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow('"field" is read before the element it names is created');
+  });
+
+  it('collects every template variable read before its element, still writing the shim, while the errors are being collected', async () => {
+    const template = '<p title="{ field.title }">{ field.value }</p><input #field />';
+    const { errors, text } = await new TypeChecker(template, parse(template)).generateTolerant([]);
+
+    expect(errors.map(error => (error as TemplateError).detail)).toEqual([
+      '"field" is read before the element it names is created: only an event handler can read a template variable declared after it',
+      '"field" is read before the element it names is created: only an event handler can read a template variable declared after it'
+    ]);
+    expect(text).toContain('field.value;');
+  });
+
   it('resolves custom elements against the provided metadata', async () => {
     const template = '<my-el></my-el>';
     const component = { type: 'component', selector: 'my-el', properties: new Map(), events: new Map() } as unknown as ComponentMetadata;

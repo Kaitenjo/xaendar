@@ -5,17 +5,17 @@
 <dl>
   <dt>{ '@import { level }' }</dt>
   <dd>
-    <progress max="10" value="{ level() }" />
+    <progress max="10" value="{level()}" />
     text: { level() }
   </dd>
   <dt>fromHelper = readLevel()</dt>
   <dd>
-    <progress max="10" value="{ fromHelper() }" />
+    <progress max="10" value="{fromHelper()}" />
     text: { fromHelper() }
   </dd>
   <dt>{ 'wrapped = computed(() => readLevel()())' }</dt>
   <dd>
-    <progress max="10" value="{ wrapped() }" />
+    <progress max="10" value="{wrapped()}" />
     text: { wrapped() }
   </dd>
 </dl>

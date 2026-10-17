@@ -75,6 +75,13 @@ export const API: readonly ApiEntry[] = [
     page: 'components/queries'
   },
   {
+    name: 'Query.required',
+    module: '@xaendar/core',
+    kind: 'decorator',
+    signature: "@Query.required('.selector' | ComponentClass) accessor name!: QuerySignal<E>",
+    page: 'components/queries'
+  },
+  {
     name: 'Query.all',
     module: '@xaendar/core',
     kind: 'decorator',
@@ -86,6 +93,13 @@ export const API: readonly ApiEntry[] = [
     module: '@xaendar/core',
     kind: 'decorator',
     signature: "@Query.content('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E | null>",
+    page: 'components/content-queries'
+  },
+  {
+    name: 'Query.content.required',
+    module: '@xaendar/core',
+    kind: 'decorator',
+    signature: "@Query.content.required('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>",
     page: 'components/content-queries'
   },
   {

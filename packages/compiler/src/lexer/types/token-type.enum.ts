@@ -108,6 +108,19 @@ export enum TokenType {
    */
   STRUCTURAL_DIRECTIVE,
   /**
+   * A template variable, e.g. `#name` in `<input #name />`, or the declaration of a template, e.g. `#row(item: Item)`
+   * in `<template #row(item: Item)>`.
+   */
+  TEMPLATE_VARIABLE,
+  /**
+   * Opening keyword of a `@render`, e.g. `@render` in `@render row(item())`.
+   */
+  RENDER,
+  /**
+   * The call of a template after `@render`, e.g. `row(item())` in `@render row(item())`.
+   */
+  RENDER_CALL,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

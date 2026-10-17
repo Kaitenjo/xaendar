@@ -35,6 +35,24 @@ export type LayoutEvent = {
 };
 
 /**
+ * A template variable naming an element, `#name`, or a `<template>` declaring itself with its parameters, `#name(parameters)`.
+ */
+export type LayoutVariable = {
+  /**
+   * Discriminant identifying the item as a template variable.
+   */
+  readonly kind: 'variable';
+  /**
+   * The name of the variable.
+   */
+  readonly name: string;
+  /**
+   * The parameters as written between the parentheses, `undefined` if the variable declares none.
+   */
+  readonly parameters?: string;
+};
+
+/**
  * A directive or a structural directive applied to an element, `@@name<Type>(bindings)` or `*name(bindings)`.
  */
 export type LayoutDirective = {
@@ -108,7 +126,7 @@ export type LayoutConditionalBinding = LayoutBlock<LayoutItem[]>;
 /**
  * What an opening tag or the parentheses of a directive hold.
  */
-export type LayoutItem = LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
+export type LayoutItem = LayoutVariable | LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
 
 /**
  * An element, with the content between its tags as written.
@@ -179,4 +197,23 @@ export type LayoutAtom =
     readonly value: string;
   }
   | LayoutElement
-  | LayoutBlock<LayoutAtom[]>;
+  | LayoutBlock<LayoutAtom[]>
+  | LayoutRender;
+
+/**
+ * The render of a template, e.g. `@render row(item())`.
+ */
+export type LayoutRender = {
+  /**
+   * Discriminant identifying the atom as the render of a template.
+   */
+  readonly kind: 'render';
+  /**
+   * The name of the template.
+   */
+  readonly callee: string;
+  /**
+   * The arguments as written between the parentheses.
+   */
+  readonly args: string;
+};

@@ -1,10 +1,5 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForImplicitVariables, type ForNode, type IfNode, type ImportNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { Expression } from 'typescript';
-
-/**
- * The implicit variables declared by every `@for` block.
- */
-const FOR_IMPLICIT_VARIABLES: readonly ForImplicitVariables[] = ['$index', '$first', '$last', '$even', '$odd'];
 
 /**
  * Callbacks invoked by {@link walkTemplate} for the parts of a template. Every callback is optional.
@@ -19,15 +14,20 @@ export type TemplateVisitor = {
    */
   readonly element?: (node: ElementNode, component: ComponentMetadata | undefined) => void;
   /**
+   * Invoked for every template variable an element declares (`#name`).
+   */
+  readonly variable?: (node: TemplateVariableNode) => void;
+  /**
    * Invoked for every attribute of an element or of a directive, conditional bindings included, with the metadata
    * of the component or directive it is bound to, `undefined` for the attributes of any other element.
    */
   readonly attribute?: (node: AttributeNode, owner: ComponentOrDirectiveMetadata | undefined) => void;
   /**
    * Invoked for every event bound on an element or on a directive, conditional bindings included, with the metadata
-   * of the component or directive it is bound to, `undefined` for the events of any other element.
+   * of the component or directive it is bound to, `undefined` for the events of any other element, and the names of
+   * the variables declared by the template in its scope, which its handler can be called on.
    */
-  readonly event?: (node: EventNode, owner: ComponentOrDirectiveMetadata | undefined) => void;
+  readonly event?: (node: EventNode, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>) => void;
   /**
    * Invoked for every directive and structural directive, with its metadata, if imported.
    */
@@ -37,8 +37,17 @@ export type TemplateVisitor = {
    */
   readonly forBlock?: (node: ForNode) => void;
   /**
-   * Invoked for every expression, with the names of the variables declared by the template in its scope:
-   * the variables of the enclosing `@for` blocks, and `$event` for the parameters of an event.
+   * Invoked for every template declared (`<template #name(…)>`).
+   */
+  readonly template?: (node: TemplateNode) => void;
+  /**
+   * Invoked for every `@render`.
+   */
+  readonly render?: (node: RenderNode) => void;
+  /**
+   * Invoked for every expression, with the names of the variables declared by the template in its scope: the template
+   * variables and the templates of the enclosing scopes, the variables of the enclosing `@for` blocks, the parameters of
+   * the enclosing template, and `$event` for the parameters of an event.
    */
   readonly expression?: (expression: Expression, variables: ReadonlySet<string>) => void;
 };
@@ -51,27 +60,7 @@ export type TemplateVisitor = {
  * @param visitor - The callbacks to invoke.
  */
 export function walkTemplate(ast: readonly ASTNode[], metadatas: readonly ComponentOrDirectiveMetadata[], visitor: TemplateVisitor): void {
-  new TemplateWalker(metadatas, visitor).walkNodes(ast, new Set());
-}
-
-/**
- * Returns the names of the variables a `@for` block declares: the item alias and the implicit variables, by their alias if any.
- *
- * @param node - The `@for` block.
- * @returns The names of the variables.
- */
-export function getForVariables(node: ForNode): string[] {
-  const variables = new Array<string>();
-  if (node.itemAlias) {
-    variables.push(node.itemAlias);
-  }
-
-  for (let i = 0; i < FOR_IMPLICIT_VARIABLES.length; i++) {
-    const implicit = FOR_IMPLICIT_VARIABLES[i];
-    variables.push(node.implicitAliases.get(implicit) ?? implicit);
-  }
-
-  return variables;
+  new TemplateWalker(metadatas, visitor).walkScope(ast, new Set());
 }
 
 /**
@@ -87,12 +76,35 @@ class TemplateWalker {
   constructor(private readonly _metadatas: readonly ComponentOrDirectiveMetadata[], private readonly _visitor: TemplateVisitor) { }
 
   /**
-   * Walks a list of nodes.
+   * Walks the nodes of a scope, whose template variables and templates are visible in the whole of it (see
+   * `visitScopeDeclarations`).
+   *
+   * @param nodes - The nodes of the scope.
+   * @param variables - The variables declared by the scopes enclosing it.
+   */
+  public walkScope(nodes: readonly ASTNode[], variables: ReadonlySet<string>): void {
+    let scopeVariables: Set<string> | undefined;
+    const declare = (name: string): void => {
+      scopeVariables ??= new Set(variables);
+      scopeVariables.add(name);
+    };
+
+    // The namespaces of the elements don't matter here
+    visitScopeDeclarations(nodes, 'html', {
+      variable: (_element, { name }) => declare(name),
+      template: ({ variable: { name } }) => declare(name)
+    });
+
+    this._walkNodes(nodes, scopeVariables ?? variables);
+  }
+
+  /**
+   * Walks a list of nodes of a scope.
    *
    * @param nodes - The nodes.
    * @param variables - The variables declared in the scope of the nodes.
    */
-  public walkNodes(nodes: readonly ASTNode[], variables: ReadonlySet<string>): void {
+  private _walkNodes(nodes: readonly ASTNode[], variables: ReadonlySet<string>): void {
     for (let i = 0; i < nodes.length; i++) {
       this._walkNode(nodes[i], variables);
     }
@@ -131,7 +143,20 @@ class TemplateWalker {
       case ASTNodeType.Switch:
         this._visitor.expression?.(node.expression, variables);
         for (let i = 0; i < node.children.length; i++) {
-          this.walkNodes(node.children[i].children, variables);
+          this.walkScope(node.children[i].children, variables);
+        }
+        break;
+
+      case ASTNodeType.Template:
+        this._visitor.template?.(node);
+        // The content of a template is a scope of its own, declaring the parameters of the template
+        this.walkScope(node.children, new Set([...variables, ...node.parameters.map(({ name }) => name)]));
+        break;
+
+      case ASTNodeType.Render:
+        this._visitor.render?.(node);
+        for (let i = 0; i < node.arguments.length; i++) {
+          this._visitor.expression?.(node.arguments[i], variables);
         }
         break;
 
@@ -142,7 +167,8 @@ class TemplateWalker {
   }
 
   /**
-   * Walks an element: its bindings, its directives and its children.
+   * Walks an element: its template variable, its bindings, its directives and its children, which are a scope of their
+   * own when a structural directive is applied to the element.
    *
    * @param node - The element.
    * @param variables - The variables declared in the scope of the element.
@@ -150,8 +176,16 @@ class TemplateWalker {
   private _walkElement(node: ElementNode, variables: ReadonlySet<string>): void {
     const component = this._metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === node.tagName);
     this._visitor.element?.(node, component);
+    if (node.variable) {
+      this._visitor.variable?.(node.variable);
+    }
+
     this._walkBindings(node, component, variables);
-    this.walkNodes(node.children, variables);
+    if (isStructuralElement(node)) {
+      this.walkScope(node.children, variables);
+    } else {
+      this._walkNodes(node.children, variables);
+    }
   }
 
   /**
@@ -173,7 +207,7 @@ class TemplateWalker {
     const eventVariables = new Set([...variables, '$event']);
     for (let i = 0; i < bindings.events.length; i++) {
       const event = bindings.events[i];
-      this._visitor.event?.(event, owner);
+      this._visitor.event?.(event, owner, variables);
       for (let j = 0; j < event.parameters.length; j++) {
         this._visitor.expression?.(event.parameters[j], eventVariables);
       }
@@ -245,7 +279,7 @@ class TemplateWalker {
       this._visitor.expression?.(node.conditionNode, variables);
     }
 
-    this.walkNodes(node.children, variables);
+    this.walkScope(node.children, variables);
     if (node.type !== ASTNodeType.Else && node.alternate) {
       this._walkIf(node.alternate, variables);
     }
@@ -264,6 +298,6 @@ class TemplateWalker {
 
     const loopVariables = new Set([...variables, ...getForVariables(node)]);
     this._visitor.expression?.(node.trackExpression, loopVariables);
-    this.walkNodes(node.children, loopVariables);
+    this.walkScope(node.children, loopVariables);
   }
 }

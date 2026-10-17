@@ -1,0 +1,17 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { Member } from './member.type.ts'
+
+<ul class="rows">
+  @for (member of members(); track member().id) {
+    @render row(member(), $index())
+  }
+</ul>
+<ex-button (click)="promote()">promote()</ex-button>
+
+<template #row(person: Member, position: number)>
+  <li>
+    <span class="position">{ position() + 1 }</span>
+    <span class="name">{ person().name }</span>
+    <span>{ person().role }</span>
+  </li>
+</template>

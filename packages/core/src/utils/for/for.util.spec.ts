@@ -107,6 +107,23 @@ describe('_for', () => {
     expect(forFn).toHaveBeenCalledTimes(4);
   });
 
+  it('passes the item, the index and the implicit variables to the track expression, as functions reading them', () => {
+    const keys = new Array<unknown[]>();
+    const track = (...variables: Array<() => unknown>) => {
+      const values = variables.map(variable => variable());
+      keys.push(values);
+      return values.join();
+    };
+
+    _for(document.createElement('ul'), createRoot(), null, () => ['a', 'b', 'c'], track, () => ({ context: new _Context(createRoot()) }));
+
+    expect(keys).toEqual([
+      ['a', 0, true, false, true, false],
+      ['b', 1, false, false, false, true],
+      ['c', 2, false, true, true, false]
+    ]);
+  });
+
   it('renders nothing for an empty list', () => {
     expect(setup([]).texts()).toEqual([]);
   });

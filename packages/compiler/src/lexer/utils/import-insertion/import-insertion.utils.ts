@@ -21,13 +21,13 @@ import { IMPORT_STATEMENT_END, lexImportHeader } from '../import-header/import-h
  * @returns The span and the text to insert.
  */
 export function getImportInsertion(source: string, path: string, symbol: string): ImportInsertion {
-  const { lexer } = lexImportHeader(source);
+  const { tokens } = lexImportHeader(source);
 
   // The tokens of the specifiers of a statement come right before the one of its path
   let specifiers = new Array<ImportToken>();
   let last: { quote: string, semicolon: string, end: number } | undefined;
-  for (let i = 0; i < lexer.tokens.length; i++) {
-    const token = lexer.tokens[i];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     switch (token.type) {
       case TokenType.IMPORT:
         specifiers.push(token);

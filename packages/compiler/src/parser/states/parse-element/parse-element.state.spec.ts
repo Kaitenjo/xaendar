@@ -3,6 +3,7 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
 import { ElementNode } from '../../types/nodes/element-node.type';
+import type { TemplateNode } from '../../types/nodes/template-node.type';
 import { Parser } from '../../parser/parser';
 import { ASTNodeType } from '../../types/node.enum';
 
@@ -164,6 +165,103 @@ describe('parseElement', () => {
 
     it('allows a structural directive to share its selector with a directive applied to the same element', () => {
       expect(() => parse('<div @@shared *shared></div>')).not.toThrow();
+    });
+  });
+
+  describe('template variables', () => {
+    it('parses the template variable naming the element, with the span of its name and of the whole of it', () => {
+      const template = '<input disabled #field type="text" />';
+      const [node] = parse(template) as ElementNode[];
+      expect(node.variable).toEqual({
+        name: 'field',
+        nameSpan: { start: template.indexOf('field'), end: template.indexOf('field') + 5 },
+        span: { start: template.indexOf('#'), end: template.indexOf('field') + 5 }
+      });
+      expect(node.attributes.map(({ name }) => name)).toEqual(['disabled', 'type']);
+    });
+
+    it('leaves the variable out of an element declaring none', () => {
+      const [node] = parse('<input />') as ElementNode[];
+      expect(node).not.toHaveProperty('variable');
+    });
+
+    it('throws when an element declares more than one template variable, pointing to the second one', () => {
+      const template = '<input #first #second />';
+      expect(() => parse(template)).toThrow('<input> declares more than one template variable (#first, #second): an element has a single name');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: template.indexOf('#second'), end: template.indexOf(' />') } }));
+    });
+
+    it.each([
+      ['directly', '<div #panel *hasRole(role="admin")></div>'],
+      ['by a conditional binding', '<div #panel @if (cond()) { title="a" } @else { *hasRole }></div>'],
+      ['by a nested conditional binding', '<div #panel @if (cond()) { @switch (mode()) { @case (1) { *hasRole } } }></div>']
+    ])('throws for a template variable on an element a structural directive is applied to %s', (_description, template) => {
+      expect(() => parse(template)).toThrow('<div> cannot declare #panel: its structural directives may not render it');
+    });
+
+    it('allows a template variable on an element whose conditional bindings apply no structural directive', () => {
+      expect(() => parse('<div #panel @if (cond()) { title="a" @if (other()) { @@tint } }></div>')).not.toThrow();
+    });
+
+    it.each([
+      ['not an identifier', '<input #2fields />', '\'2fields\' is not a valid name for a template variable'],
+      ['reserved', '<input #root />', '\'root\' is reserved in templates']
+    ])('throws for a name %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
+  describe('templates', () => {
+    it('parses a <template> into the declaration of a template, with its name, its parameters and its content', () => {
+      const template = '<template #row(item: Item, index: number)><li>{ item() }</li></template>';
+      const [node] = parse(template) as TemplateNode[];
+      const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
+      expect(node).toMatchObject({
+        type: ASTNodeType.Template,
+        nameSpan: { start: 1, end: 9 },
+        closeNameSpan: { start: template.lastIndexOf('template'), end: template.lastIndexOf('template') + 8 },
+        variable: { name: 'row', nameSpan: at('row'), span: at('#row') },
+        parameters: [
+          { name: 'item', nameSpan: at('item'), type: 'Item', typeSpan: at('Item') },
+          { name: 'index', nameSpan: at('index'), type: 'number', typeSpan: at('number') }
+        ],
+        span: { start: 0, end: template.length }
+      });
+      expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element]);
+    });
+
+    it('parses a self-closing template without parameters', () => {
+      const [node] = parse('<template #empty() />') as TemplateNode[];
+      expect(node).toMatchObject({ type: ASTNodeType.Template, parameters: [], children: [] });
+      expect(node).not.toHaveProperty('closeNameSpan');
+    });
+
+    it('throws for a <template> without name, pointing to its tag name', () => {
+      const template = '<template></template>';
+      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 1, end: 9 } }));
+    });
+
+    it('throws for a template without parameters, pointing to its name', () => {
+      const template = '<template #row></template>';
+      expect(() => parse(template)).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template #row()>');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 10, end: 14 } }));
+    });
+
+    it.each([
+      ['type arguments', '<template(string) #row()></template>', 'string'],
+      ['an attribute', '<template #row() class="a"></template>', 'class="a"'],
+      ['an event', '<template #row() (click)="go()"></template>', '(click)="go()"'],
+      ['a conditional binding', '<template #row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
+      ['a directive', '<template #row() @@tint></template>', 'tint'],
+      ['a structural directive', '<template #row() *hasRole></template>', 'hasRole']
+    ])('throws for a template declaring %s, pointing to it', (_description, template, binding) => {
+      expect(() => parse(template)).toThrow('A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(binding) }) }));
+    });
+
+    it('throws for invalid parameters', () => {
+      expect(() => parse('<template #row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type, e.g. item: string');
     });
   });
 

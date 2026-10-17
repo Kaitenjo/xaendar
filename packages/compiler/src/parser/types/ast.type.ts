@@ -8,7 +8,9 @@ import { ForNode } from './nodes/for-node.type';
 import { IfNode } from './nodes/if-node.type';
 import { ImportNode } from './nodes/import-node.type';
 import { InterpolationNode } from './nodes/interpolation-node.type';
+import type { RenderNode } from './nodes/render-node.type';
 import { SwitchNode } from './nodes/switch-node.type';
+import type { TemplateNode } from './nodes/template-node.type';
 import { TextNode } from './nodes/text-node.type';
 
 /**
@@ -24,7 +26,9 @@ export type ASTNode =
   | ForNode
   | SwitchNode
   | CaseNode
-  | ImportNode;
+  | ImportNode
+  | TemplateNode
+  | RenderNode;
 
 export type ASTNodeWithOptionalSpan =
 | MaybeASTNodeWithSpan<ElementNode>
@@ -36,7 +40,9 @@ export type ASTNodeWithOptionalSpan =
 | MaybeASTNodeWithSpan<ForNode>
 | MaybeASTNodeWithSpan<SwitchNode>
 | MaybeASTNodeWithSpan<CaseNode>
-| MaybeASTNodeWithSpan<ImportNode>;
+| MaybeASTNodeWithSpan<ImportNode>
+| MaybeASTNodeWithSpan<TemplateNode>
+| MaybeASTNodeWithSpan<RenderNode>;
 
 export type ASTNodeWithSpan<T extends { type: ASTNodeType }> = T & {
   span: Span

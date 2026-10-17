@@ -3,6 +3,7 @@ import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExp
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/generated-line.type';
+import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
 import type { Span } from '../../../types/span.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
@@ -201,9 +202,9 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
 }
 
 /**
- * Resolves an identifier of an expression: to a signal member, an identifier left as written,
- * a variable of the template scope, a name the template imports, or a member reached through the resolver.
- * The variables of the template shadow the imported names.
+ * Resolves an identifier of an expression: to an identifier left as written, a variable of the template scope,
+ * a signal member, a name the template imports, or a member reached through the resolver.
+ * The variables of the template shadow the members and the imported names, as the type-check code reads them.
  *
  * @param text - The name of the identifier.
  * @param compilerContext - Current render scope context.
@@ -211,14 +212,6 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
  * @returns The resolved access expression, and whether it reads a signal.
  */
 function resolveIdentifier(text: string, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
-  if (options.skipResolution) {
-    return { expression: text }
-  }
-
-  if (compilerContext.hasSignalField(text)) {
-    return { expression: `this.${text}`, reactive: true };
-  }
-
   if (compilerContext.hasUnresolvableIdentifier(text)) {
     return { expression: text, reactive: compilerContext.getUnresolvableIdentifierKind(text) === 'signal' };
   }
@@ -226,6 +219,10 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
   if (compilerContext.hasIdentifier(text)) {
     const kind = compilerContext.getIdentifierKind(text);
     return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
+  }
+
+  if (compilerContext.hasSignalField(text)) {
+    return { expression: `this.${text}`, reactive: true };
   }
 
   const imported = compilerContext.getImportedIdentifier(text);
@@ -330,6 +327,23 @@ export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 's
 }
 
 /**
+ * Returns the runtime factory creating the elements of a namespace, assigned to `createElement` of a runtime context.
+ *
+ * @param namespace - The namespace.
+ * @returns The name of the factory: `_createElement`, `_createSVGElement` or `_createMATHMLElement`.
+ */
+export function getElementFactory(namespace: ElementNamespace): string {
+  switch (namespace) {
+    case 'svg':
+      return '_createSVGElement';
+    case 'mathml':
+      return '_createMATHMLElement';
+    default:
+      return '_createElement';
+  }
+}
+
+/**
  * Turns a text of the template (a text node, a static attribute value) into a
  * single-quoted string literal for the generated code, escaping the characters that would end
  * the literal or change its value: backslashes, single quotes and line terminators.
@@ -354,7 +368,6 @@ function getIdentifier(prefix: string, parentNode: string, index: string): strin
 
 function mapDefaultOptions(options?: ResolveExpressionOptions): Required<ResolveExpressionOptions> {
   return {
-    resolver: options?.resolver ?? 'this',
-    skipResolution: options?.skipResolution ?? false
+    resolver: options?.resolver ?? 'this'
   };
 }

@@ -12,10 +12,8 @@
 
 <h2 @@i18n(key="pages.templates.events.callingAMethod.title") />
 <docs-code snippet="templates/event-forms.html" />
-<docs-example
-  name="templates/events/event-arguments"
-  heading="{ translations().pages.templates.events.callingAMethod.example1 }"
->
+<docs-example name="templates/events/event-arguments"
+  heading="{translations().pages.templates.events.callingAMethod.example1}">
   <ex-event-arguments />
 </docs-example>
 <p @@i18n(key="pages.templates.events.callingAMethod.p1") />
@@ -34,24 +32,15 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.events.edgeCases.title") />
-  <docs-example
-    name="templates/events/key-filter"
-    heading="{ translations().pages.templates.events.edgeCases.example1 }"
-    kind="edge"
-  >
+  <docs-example name="templates/events/key-filter" heading="{translations().pages.templates.events.edgeCases.example1}"
+    kind="edge">
     <ex-key-filter />
   </docs-example>
   <p @@i18n(key="pages.templates.events.edgeCases.p1") />
-  <docs-callout
-    @@i18n(key="pages.templates.events.edgeCases.callout2.body")
-    kind="edge"
-    heading="{ translations().pages.templates.events.edgeCases.callout2.heading }"
-  />
-  <docs-callout
-    @@i18n(key="pages.templates.events.edgeCases.callout3.body")
-    kind="edge"
-    heading="{ translations().pages.templates.events.edgeCases.callout3.heading }"
-  />
+  <docs-callout @@i18n(key="pages.templates.events.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.templates.events.edgeCases.callout2.heading}" />
+  <docs-callout @@i18n(key="pages.templates.events.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.templates.events.edgeCases.callout3.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.templates.events.apiSummary.title") />
@@ -84,7 +73,7 @@
       </tr>
       <tr>
         <td>
-          <code>{'@if (condition) { (event)="method()" }'}</code>
+          <code>{ '@if (condition) { (event)="method()" }' }</code>
         </td>
         <td @@i18n(key="pages.templates.events.apiSummary.td4") />
       </tr>

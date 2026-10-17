@@ -11,7 +11,7 @@
     <!-- Tracked by identity: toggling replaces the todo, so its row is rendered again -->
     @for (todo of todos(); track todo().id) {
       <li>
-        <label class="{ todo().done ? 'done' : '' }">
+        <label class="{todo().done ? 'done' : ''}">
           <input
             @if (todo().done) {
               checked

@@ -13,30 +13,24 @@
 
 <h2 @@i18n(key="pages.templates.switch.cases.title") />
 <docs-code snippet="templates/switch-syntax.html" />
-<docs-example name="templates/switch/order-status" heading="{ translations().pages.templates.switch.cases.example1 }">
+<docs-example name="templates/switch/order-status" heading="{translations().pages.templates.switch.cases.example1}">
   <ex-order-status />
 </docs-example>
 <p @@i18n(key="pages.templates.switch.cases.p1") />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.switch.edgeCases.title") />
-  <docs-example
-    name="templates/switch/default-first"
-    heading="{ translations().pages.templates.switch.edgeCases.example1 }"
-    kind="edge"
-  >
+  <docs-example name="templates/switch/default-first"
+    heading="{translations().pages.templates.switch.edgeCases.example1}" kind="edge">
     <ex-default-first />
   </docs-example>
   <p @@i18n(key="pages.templates.switch.edgeCases.p1") />
-  <docs-example
-    name="templates/switch/switch-evaluations"
-    heading="{ translations().pages.templates.switch.edgeCases.example2 }"
-    kind="edge"
-  >
+  <docs-example name="templates/switch/switch-evaluations"
+    heading="{translations().pages.templates.switch.edgeCases.example2}" kind="edge">
     <ex-switch-evaluations />
   </docs-example>
   <p @@i18n(key="pages.templates.switch.edgeCases.p2") />
-  <docs-callout kind="edge" heading="{ translations().pages.templates.switch.edgeCases.callout1.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.templates.switch.edgeCases.callout1.heading}">
     <p @@i18n(key="pages.templates.switch.edgeCases.callout1.p1") />
     <docs-code snippet="templates/switch-case-member.txt" />
   </docs-callout>
@@ -54,25 +48,25 @@
     <tbody>
       <tr>
         <td>
-          <code>{'@switch (value) { … }'}</code>
+          <code>{ '@switch (value) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.switch.apiSummary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{"@case ('a') { … }"}</code>
+          <code>{ "@case ('a') { … }" }</code>
         </td>
         <td @@i18n(key="pages.templates.switch.apiSummary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{"@case ('a') @case ('b') { … }"}</code>
+          <code>{ "@case ('a') @case ('b') { … }" }</code>
         </td>
         <td @@i18n(key="pages.templates.switch.apiSummary.td3") />
       </tr>
       <tr>
         <td>
-          <code>{'@default { … }'}</code>
+          <code>{ '@default { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.switch.apiSummary.td4") />
       </tr>

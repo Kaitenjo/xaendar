@@ -8,10 +8,4 @@ import { CustomElement, WebComponent } from '@xaendar/core';
   styleUrl: '../../page.css',
   templateUrl: './binding.xd.component.html'
 })
-export class TemplatesBindingPage extends CustomElement {
-  a(x: CustomEvent<string>) {
-
-  }
-
-  b = 3
-}
+export class TemplatesBindingPage extends CustomElement {}

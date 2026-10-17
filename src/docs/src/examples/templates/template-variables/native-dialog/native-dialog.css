@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+dialog {
+  border: 1px solid var(--xd-border);
+  border-radius: 0.5rem;
+  background: var(--xd-surface);
+  color: inherit;
+}
+
+.log {
+  margin: 0.5rem 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

@@ -8,7 +8,9 @@ import { typeCheckElement } from '../states/type-check-element/type-check-elemen
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
 import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';
 import { typeCheckImport } from '../states/type-check-import/type-check-import.state.js';
+import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
+import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
 import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
 import type { Line, LineMapping } from '../types/generated-line.type.js';
 import type { TypeCheckResult } from '../types/type-checker-result.type.js';
@@ -16,6 +18,9 @@ import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-res
 import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
 import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils.js';
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
+import { typeCheckScope } from '../utils/scope/scope.utils.js';
+import { getTemplateHelpers } from '../utils/template-types/template-types.utils.js';
+import { checkVariableOrder } from '../utils/variable-order/variable-order.utils.js';
 
 /**
  * Generates a single, flat TypeScript function body ("shim") from a
@@ -26,9 +31,11 @@ import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js'
  *
  * - No variable is declared per HTML element. Element identifiers exist in
  *   the JS output purely so runtime code can create/reference the actual
- *   DOM node; a type-check expression never references "the element
- *   itself" (the DSL has no template-ref syntax), so an `HTMLElement`
- *   local would add zero type-checking value.
+ *   DOM node; an expression only references the elements a template
+ *   variable names (`#name`), which are declared at the start of the block
+ *   of their scope, typed with the type of the element. A template
+ *   (`<template #name(…)>`) is declared there too, its content is an arrow
+ *   function taking its parameters, and a `@render` calls it.
  * - No control-flow block gets its own function. In the JS output, each
  *   `@if`/`@for`/`@switch` becomes a separate function because it needs
  *   its own runtime closure over the `Context` chain. The type checker has
@@ -54,7 +61,9 @@ export class TypeChecker {
     [ASTNodeType.If]: typeCheckIf,
     [ASTNodeType.For]: typeCheckFor,
     [ASTNodeType.Switch]: typeCheckSwitch,
-    [ASTNodeType.Import]: typeCheckImport
+    [ASTNodeType.Import]: typeCheckImport,
+    [ASTNodeType.Template]: typeCheckTemplate,
+    [ASTNodeType.Render]: typeCheckRender
   };
   /**
    * The errors of the nodes that failed type-checking during a `generateTolerant()` call; `undefined` while a node
@@ -136,12 +145,28 @@ export class TypeChecker {
       this._context.addShadowingMember(shadowingMembers[i]);
     }
     this._context.addCustomElementPatterns(...customElements);
+
+    // The template variables read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
+    const orderErrors = checkVariableOrder(this._ast);
+    if (orderErrors?.length) {
+      if (!this._errors) {
+        throw orderErrors[0];
+      }
+
+      for (let i = 0; i < orderErrors.length; i++) {
+        this._errors.push(formatErrorWithPrefix('TypeChecker', this._input, orderErrors[i]));
+      }
+    }
+
     // The declarations importing the symbols of the template are written at the top level, before the function
     const imports = this._ast.filter(node => node.type === ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
-    const body = this._ast.filter(node => node.type !== ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
+    // The template is the outermost scope: the template variables it declares come first in the function
+    const { declarations, lines: body } = typeCheckScope(this._ast.filter(node => node.type !== ASTNodeType.Import), this._context, this._processNode);
 
+    // The types and the function the type-check code of the templates is written with are declared once, before the function
+    const prelude = this._context.declaresTemplates ? imports.concat(getTemplateHelpers()) : imports;
     // The modules the types of the bindings reference are imported once, before the function
-    const lines = hoistImportTypes(imports.concat(plain('function typeCheck() {'), indentLines(body), plain('}')));
+    const lines = hoistImportTypes(prelude.concat(plain('function typeCheck() {'), indentLines(declarations.concat(body)), plain('}')));
 
     return {
       text: lines.map(line => line.text).join('\n'),

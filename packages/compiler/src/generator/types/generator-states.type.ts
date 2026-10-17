@@ -4,7 +4,9 @@ import { ForNode } from '../../parser/types/nodes/for-node.type'
 import { IfNode } from '../../parser/types/nodes/if-node.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type'
 import { InterpolationNode } from '../../parser/types/nodes/interpolation-node.type'
+import type { RenderNode } from '../../parser/types/nodes/render-node.type'
 import { SwitchNode } from '../../parser/types/nodes/switch-node.type'
+import type { TemplateNode } from '../../parser/types/nodes/template-node.type'
 import { TextNode } from '../../parser/types/nodes/text-node.type'
 import { GeneratorTransitionFunction } from './generator-transition-function.type'
 
@@ -16,6 +18,8 @@ type OmittedKeys = Exclude<ASTNodeType,
  | ASTNodeType.For
  | ASTNodeType.Switch
  | ASTNodeType.Import
+ | ASTNodeType.Template
+ | ASTNodeType.Render
 >
 
 /**
@@ -34,7 +38,9 @@ export type GeneratorStates = {
   [ASTNodeType.If]: GeneratorTransitionFunction<IfNode>,
   [ASTNodeType.For]: GeneratorTransitionFunction<ForNode>,
   [ASTNodeType.Switch]: GeneratorTransitionFunction<SwitchNode>
-  [ASTNodeType.Import]: GeneratorTransitionFunction<ImportNode>
+  [ASTNodeType.Import]: GeneratorTransitionFunction<ImportNode>,
+  [ASTNodeType.Template]: GeneratorTransitionFunction<TemplateNode>,
+  [ASTNodeType.Render]: GeneratorTransitionFunction<RenderNode>
 } & 
 { 
   [K in OmittedKeys]?: undefined 

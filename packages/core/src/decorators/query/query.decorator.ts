@@ -36,6 +36,33 @@ export function Query<ElementType extends HTMLElement = HTMLElement, Target exte
 }
 
 /**
+ * Decorator that binds an accessor of a web component to the first element
+ * of its Shadow DOM that matches the given CSS selector, or that is an instance of the given web component,
+ * when there must be one.
+ *
+ * Transforms the decorated accessor into a read-only {@link QuerySignal}
+ * holding the matching element. The signal is updated each time the Shadow DOM changes,
+ * and reading it throws when no element matches, also before the element is connected for the first time.
+ *
+ * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
+ *   web component decorated with `@WebComponent`, whose selector is matched.
+ * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+ *
+ * @example
+ * ```ts
+ * \@Query.required('[preview]')
+ * accessor preview: QuerySignal<HTMLElement>;
+ * ```
+ */
+Query.required = function required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>>> {
+  return () => ({
+    init() {
+      return queryRequired(this, target);
+    }
+  });
+};
+
+/**
  * Decorator that binds an accessor of a web component to all the elements
  * of its Shadow DOM that match the given CSS selector, or that are instances of the given web component.
  *
@@ -98,6 +125,34 @@ Query.content = Object.assign(function slot<ElementType extends HTMLElement = HT
   });
 }, {
   /**
+   * Decorator that binds an accessor of a web component to the first element projected into its slots,
+   * or one of their descendants, that matches the given CSS selector or is an instance of the given web component,
+   * when there must be one. With the `lightDom` option the query is extended to the whole light DOM, including the elements
+   * not assigned to any slot.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal}
+   * holding the matching element. The signal is updated each time the projected content (or the light DOM) changes,
+   * and reading it throws when no element matches, also before the element is connected for the first time.
+   *
+   * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
+   *   web component decorated with `@WebComponent`, whose selector is matched.
+   * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+   * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+   *
+   * @example
+   * ```ts
+   * \@Query.content.required('[header]')
+   * accessor header: QuerySignal<HTMLElement>;
+   * ```
+   */
+  required: function required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QuerySlotOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>>> {
+    return () => ({
+      init() {
+        return querySlotRequired(this, target, options);
+      }
+    });
+  },
+  /**
    * Decorator that binds an accessor of a web component to all the elements projected into its slots,
    * and their descendants, that match the given CSS selector or are instances of the given web component.
    * With the `lightDom` option the query is extended to the whole light DOM, including the elements not assigned to any slot.
@@ -145,6 +200,20 @@ export function query<Target extends QueryTarget, ElementType extends HTMLElemen
 }
 
 /**
+ * Creates a signal holding the first element of the Shadow DOM of `element` matching the target,
+ * whose reading throws when there is none.
+ *
+ * @template Target - The {@link QueryTarget} of the query.
+ * @param element - The component whose Shadow DOM is queried.
+ * @param target - A CSS selector, or the class of a web component.
+ * @returns A {@link QuerySignal} of the matching element.
+ * @throws When the target is a class not decorated with `@WebComponent`.
+ */
+export function queryRequired<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target): QuerySignal<QueryElement<Target, ElementType>> {
+  return requireMatch(query<Target, ElementType>(element, target), `No element matches the required query '${toSelector(target)}' of <${element.localName}>`);
+}
+
+/**
  * Creates a signal holding all the elements of the Shadow DOM of `element`
  * matching the target, in document order.
  * The signal notifies only when the set of matching elements changes.
@@ -176,6 +245,21 @@ export function querySlot<Target extends QueryTarget, ElementType extends HTMLEl
 }
 
 /**
+ * Creates a signal holding the first element projected into the slots of `element`, or one of their descendants,
+ * matching the target, whose reading throws when there is none.
+ *
+ * @template Target - The {@link QueryTarget} of the query.
+ * @param element - The component whose projected content is queried.
+ * @param target - A CSS selector, or the class of a web component.
+ * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @returns A {@link QuerySignal} of the matching element.
+ * @throws When the target is a class not decorated with `@WebComponent`.
+ */
+export function querySlotRequired<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options?: QuerySlotOptions): QuerySignal<QueryElement<Target, ElementType>> {
+  return requireMatch(querySlot<Target, ElementType>(element, target, options), `No element matches the required content query '${toSelector(target)}' of <${element.localName}>`);
+}
+
+/**
  * Creates a signal holding all the elements projected into the slots of `element`, and their descendants,
  * matching the target, in order: slots in tree order, then assigned elements in assignment order.
  * With the `lightDom` option they are in document order.
@@ -190,6 +274,27 @@ export function querySlot<Target extends QueryTarget, ElementType extends HTMLEl
  */
 export function querySlotAll<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options: QuerySlotOptions = {}): QuerySignal<QueryElement<Target, ElementType>[]> {
   return createSlotQuerySignal<QueryElement<Target, ElementType>, QueryElement<Target, ElementType>[]>(element, toSelector(target), options, elements => elements, [], sameElements);
+}
+
+/**
+ * Wraps the signal of a query looking for one element so that reading it throws when there is none.
+ *
+ * @template Value - The type of the matching element.
+ * @param signal - The signal of the query, holding `null` when no element matches.
+ * @param message - The message of the error thrown when no element matches.
+ * @returns A {@link QuerySignal} of the matching element.
+ */
+function requireMatch<Value>(signal: QuerySignal<Value | null>, message: string): QuerySignal<Value> {
+  const get = () => {
+    const value = signal.get();
+    if (value === null) {
+      throw new Error(message);
+    }
+
+    return value;
+  };
+
+  return Object.assign(function () { return get(); }, { get });
 }
 
 /**

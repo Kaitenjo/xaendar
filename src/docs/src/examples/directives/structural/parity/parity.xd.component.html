@@ -8,8 +8,8 @@
   <ex-button (click)="change(2)">+2</ex-button>
   <strong>value = { value() }</strong>
 </div>
-<p *exIsEven(value="{ value() }") class="even">
+<p *exIsEven(value="{value()}") class="even">
   Even.
   <input type="text" placeholder="Type, then press +2" />
 </p>
-<p *exIsEven(value="{ value() }") *exPositive(value="{ value() }") class="both">Even and positive.</p>
+<p *exIsEven(value="{value()}") *exPositive(value="{value()}") class="both">Even and positive.</p>

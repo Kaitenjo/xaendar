@@ -1,0 +1,13 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<template #line(label: string, amount: number)>
+  <div class="line">
+    <span>{ label() }</span>
+    <span class="amount">{ format(amount()) }</span>
+  </div>
+</template>
+
+@render line('Subtotal', subtotal())
+@render line('Shipping', shipping())
+@render line('Total', subtotal() + shipping())
+<ex-button (click)="add()">add()</ex-button>

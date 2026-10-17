@@ -10,14 +10,14 @@
 <ul>
   @for (todo of visible(); track todo().id) {
     <li>
-      <ex-todo-item todo="{ todo() }" (doneChange)="onDoneChange($event)" (removed)="onRemove($event)" />
+      <ex-todo-item todo="{todo()}" (doneChange)="onDoneChange($event)" (removed)="onRemove($event)" />
     </li>
   }
 </ul>
 <div class="filters">
-  <ex-button class="{ filter() === 'all' ? 'active' : '' }" (click)="show('all')">All</ex-button>
-  <ex-button class="{ filter() === 'active' ? 'active' : '' }" (click)="show('active')">Active</ex-button>
-  <ex-button class="{ filter() === 'done' ? 'active' : '' }" (click)="show('done')">Done</ex-button>
+  <ex-button class="{filter() === 'all' ? 'active' : ''}" (click)="show('all')">All</ex-button>
+  <ex-button class="{filter() === 'active' ? 'active' : ''}" (click)="show('active')">Active</ex-button>
+  <ex-button class="{filter() === 'done' ? 'active' : ''}" (click)="show('done')">Done</ex-button>
 </div>
 @switch (filter()) {
   @case ('all') {

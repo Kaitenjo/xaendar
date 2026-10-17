@@ -35,7 +35,17 @@ type ImportStatement = {
    * Whether the specifiers are written on several lines.
    */
   readonly multiline: boolean;
+  /**
+   * The comments written after the statement, as written with the whitespace before them: the ones up to the next
+   * statement, or the ones on the line of the last statement. Empty when there are none.
+   */
+  comments: string;
 };
+
+/**
+ * The comments written on a line after the last `@import` statement, with the spaces before them.
+ */
+const SAME_LINE_COMMENTS = /^(?:[ \t]*<!--[\s\S]*?-->)+/;
 
 /**
  * What {@link organizeImports} does besides writing the statements in a regular form.
@@ -70,6 +80,7 @@ export function toImportKey(path: string, specifier: string): string {
  * Computes how to organize the `@import` statements of a template: the unused specifiers are removed, together with the
  * statements left without any, and the statements are merged and sorted. Every statement is written again in a regular
  * form (`@import { A, B } from './a';`, on several lines if it was), with the quote and the `;` of the one it comes from.
+ * The comments written after a statement follow it, as written: they move with it, and go with it when it is removed.
  *
  * The header of the template is lexed as far as it can be, so that it works while the rest of the template does not compile.
  *
@@ -84,7 +95,7 @@ export function organizeImports(source: string, { unused, sort = false }: Import
   }
 
   const first = statements[0];
-  const last = statements[statements.length - 1];
+  const headerEnd = getHeaderEnd(statements);
   const newline = source.includes('\r\n') ? '\r\n' : '\n';
 
   let organized = statements
@@ -96,19 +107,20 @@ export function organizeImports(source: string, { unused, sort = false }: Import
   }
 
   const text = organized.map(statement => writeStatement(statement, newline)).join(newline);
-  const original = source.slice(first.start, last.end);
+  const original = source.slice(first.start, headerEnd);
   if (text === original) {
     return undefined;
   }
 
   // Nothing is left of the header: the spaces following it go too, so that the template doesn't start with them
-  const end = text ? last.end : last.end + /^\s*/.exec(source.slice(last.end))![0].length;
+  const end = text ? headerEnd : headerEnd + /^\s*/.exec(source.slice(headerEnd))![0].length;
   return { span: { start: first.start, end }, newText: text };
 }
 
 /**
  * Writes the `@import` statements of the header of a template again in a regular form (`@import { A, B } from './a';`, on
- * several lines if it was), with the quote and the `;` of each, without changing their order nor what they import.
+ * several lines if it was), with the quote and the `;` of each, without changing their order nor what they import. The
+ * comments written between them, and on the line of the last one, are kept as written.
  *
  * @param source - The source of the template, with `\n` line breaks.
  * @returns The offsets the header starts and ends at, and the text writing it, `undefined` if the template has no statements.
@@ -119,7 +131,7 @@ export function formatImportHeader(source: string): { start: number, end: number
     return undefined;
   }
 
-  return { start: statements[0].start, end: statements[statements.length - 1].end, text: statements.map(statement => writeStatement(statement, '\n')).join('\n') };
+  return { start: statements[0].start, end: getHeaderEnd(statements), text: statements.map(statement => writeStatement(statement, '\n')).join('\n') };
 }
 
 /**
@@ -129,13 +141,13 @@ export function formatImportHeader(source: string): { start: number, end: number
  * @returns The statements, in the order they are written in, those that cannot be lexed excluded.
  */
 function readStatements(source: string): ImportStatement[] {
-  const { lexer } = lexImportHeader(source);
+  const header = lexImportHeader(source);
   const statements = new Array<ImportStatement>();
 
   // The tokens of the specifiers of a statement come right before the one of its path
   let tokens = new Array<ImportToken>();
-  for (let i = 0; i < lexer.tokens.length; i++) {
-    const token = lexer.tokens[i];
+  for (let i = 0; i < header.tokens.length; i++) {
+    const token = header.tokens[i];
     switch (token.type) {
       case TokenType.IMPORT:
         tokens.push(token);
@@ -148,7 +160,7 @@ function readStatements(source: string): ImportStatement[] {
         const start = source.lastIndexOf('@import', tokens[0].span.start);
         const end = braceEnd + text.length;
         const specifiers = tokens.map(({ parts: [specifier] }) => specifier.trim()).filter(Boolean);
-        statements.push({ start, end, path: token.parts[0], specifiers, quote, semicolon, multiline: source.slice(start, braceEnd).includes('\n') });
+        statements.push({ start, end, path: token.parts[0], specifiers, quote, semicolon, multiline: source.slice(start, braceEnd).includes('\n'), comments: '' });
         tokens = [];
         break;
       }
@@ -158,7 +170,25 @@ function readStatements(source: string): ImportStatement[] {
     }
   }
 
+  // Only whitespace and comments separate the statements: the comments follow the statement they are written after
+  for (let i = 0; i < statements.length; i++) {
+    const next = statements[i + 1];
+    const after = next ? source.slice(statements[i].end, next.start) : SAME_LINE_COMMENTS.exec(source.slice(statements[i].end))?.[0] ?? '';
+    statements[i].comments = /\S/.test(after) ? after.trimEnd() : '';
+  }
+
   return statements;
+}
+
+/**
+ * Returns the offset the header of a template ends at: after its last statement, and the comments on its line.
+ *
+ * @param statements - The statements of the header, at least one.
+ * @returns The offset.
+ */
+function getHeaderEnd(statements: readonly ImportStatement[]): number {
+  const last = statements[statements.length - 1];
+  return last.end + last.comments.length;
 }
 
 /**
@@ -178,6 +208,9 @@ function mergeStatements(statements: ImportStatement[]): ImportStatement[] {
           existing.specifiers.push(statement.specifiers[j]);
         }
       }
+
+      // The comments of a statement merged into another one follow the one it is merged into
+      existing.comments = `${existing.comments}${statement.comments}`;
     } else {
       merged.set(statement.path, { ...statement, specifiers: [...statement.specifiers] });
     }
@@ -222,13 +255,13 @@ function compareText(first: string, second: string): number {
 }
 
 /**
- * Writes an `@import` statement.
+ * Writes an `@import` statement, followed by the comments written after it.
  *
  * @param statement - The statement.
  * @param newline - The line break of the template.
  * @returns The text of the statement.
  */
-function writeStatement({ path, specifiers, quote, semicolon, multiline }: ImportStatement, newline: string): string {
+function writeStatement({ path, specifiers, quote, semicolon, multiline, comments }: ImportStatement, newline: string): string {
   const names = multiline ? `{${newline}  ${specifiers.join(`,${newline}  `)}${newline}}` : `{ ${specifiers.join(', ')} }`;
-  return `@import ${names} from ${quote}${path}${quote}${semicolon}`;
+  return `@import ${names} from ${quote}${path}${quote}${semicolon}${comments}`;
 }

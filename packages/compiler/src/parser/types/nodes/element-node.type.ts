@@ -6,6 +6,7 @@ import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
 import { EventNode } from './event-node.type';
 import { StructuralDirectiveNode } from './structural-directive-node.type';
+import type { TemplateVariableNode } from './template-variable-node.type';
 
 /**
  * AST node representing an HTML element with a tag name, attributes, events, and children.
@@ -31,6 +32,10 @@ export type ElementNode = ASTNodeWithSpan<{
    * Span of the tag name in the closing tag, e.g. `docs-search` in `</docs-search>`, `undefined` for a self-closing tag.
    */
   closeNameSpan?: Span;
+  /**
+   * The template variable naming the element, e.g. `#name` in `<input #name />`, if it declares one.
+   */
+  variable?: TemplateVariableNode;
   /**
    * Attribute nodes bound to this element.
    */

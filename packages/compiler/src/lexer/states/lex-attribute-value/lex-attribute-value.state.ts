@@ -1,4 +1,4 @@
-import { DOUBLE_QUOTE } from '../../../costants/chars.constants';
+import { DOUBLE_QUOTE } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';

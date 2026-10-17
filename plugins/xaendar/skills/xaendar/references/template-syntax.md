@@ -45,10 +45,44 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
 - Static values are type-checked as `string`: a numeric input needs `count="{ 3 }"`, not `count="3"`.
 - Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with a function of `@xaendar/core/signals`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.
-- Listeners call exactly one method of the component or of one of its members (`cart.clear()`, `count.set(0)`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
+- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of a template variable (`dialog.showModal()`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), template variables and their properties (`field.value`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
 - On a component tag, an event it does not declare with `@Event` is a native event of its element (`(click)`), typed through `HTMLElementEventMap`; only composed native events leave its shadow root. A name that is neither is a build error.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
+
+## Template variables
+
+```html
+<button (click)="field.focus()">Focus</button>  <!-- a handler can use a variable declared after it -->
+<label>Name <input #field /></label>            <!-- field: HTMLInputElement, visible in the whole scope -->
+<p>{ field.placeholder }</p>                   <!-- other expressions only after the element -->
+<ex-counter #counter />                         <!-- a component: the instance of its class -->
+<button (click)="counter.reset()">Reset</button>
+```
+
+- `#name` names the element, as the first item of its tag. Its type is the DOM interface of the tag (the SVG or MathML one inside `<svg>`/`<math>`), or the class of an imported component, instantiated when it is generic. It is not a signal: reading a DOM property through it is not reactive.
+- It is visible in the whole of its scope, inside other elements too: the template, an `@if`/`@switch` branch, a `@for` row (one per row), or the content of an element a structural directive is applied to. Only event handlers can read it before its element; any other expression reading it before is a build error.
+- One per element, without a value, never inside a conditional binding or a directive, never on an element with a structural directive. Not readable by the `track` of a `@for`. `root`, `$event`, `__*` and `$$*` are reserved.
+
+## Templates
+
+```html
+@import { Row } from './row.ts'
+
+@render row(rows()[0], 0)                        <!-- before the declaration too -->
+@for (item of rows(); track item().id) {
+  @render row(item(), $index())                  <!-- arguments checked like a call -->
+}
+
+<template #row(row: Row, index: number)>         <!-- renders nothing where declared -->
+  <li>{ index() + 1 }. { row().name }</li>       <!-- parameters are signals -->
+</template>
+```
+
+- `<template #name(params)>` declares a template: only `#name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too); no `?`, defaults, rest or destructuring.
+- `@render name(args)` renders a new instance wherever content goes. A changed argument updates only the nodes reading its parameter. No spread arguments.
+- Visible in the whole of its scope, like a template variable. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
+- Content created in the namespace of the declaration: a `@render` in another namespace is an error. A template variable the content reads must come before every `@render`. Only the declaring template renders it.
 
 ## Control flow
 
@@ -186,4 +220,5 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 | `(keydown.enter)` | A filter in the method |
 | `@empty`, `@let`, `@defer` | `@if` around the `@for`; computed signals; dynamic imports |
 | Pipes | Methods (in text) and computed signals |
-| `ng-template`, `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |
+| `ng-template` + `ngTemplateOutlet` | `<template #name(…)>` + `@render name(…)`, in the same template |
+| `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |

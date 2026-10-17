@@ -58,6 +58,10 @@ describe('lexConditionalBindingBody', () => {
     expect(() => lexConditionalBindingBody(new LexerCursor('*hasRole }'), directiveConditionalBindingContext)).toThrow('Directives cannot be declared inside another directive');
   });
 
+  it('throws for a template variable declared inside the conditional binding', () => {
+    expect(() => lexConditionalBindingBody(new LexerCursor('#name }'), context)).toThrow('declare #name among the bindings of the tag, outside of its conditional bindings');
+  });
+
   it('skips whitespace between bindings', () => {
     const cursor = new LexerCursor('   placeholder="{value}" }');
     expect(lexConditionalBindingBody(cursor, context)).toEqual({ state: LexerState.ATTRIBUTE });

@@ -75,6 +75,8 @@ type StructuralCollector = {
  * @param structuralDirectives - List of structural directive descriptors deciding whether the element is rendered.
  * @param structuralConditionalBindings - List of conditional binding descriptors applying structural directives to the element.
  * @param children - Renders the children of the element, each time the element is created, or `null` when it has none.
+ * @param variable - The template variable naming the element (`#name`), declared by the context of its scope: it is
+ *   initialized with the element as soon as the element is created, so that its own bindings and children read it.
  * @throws When no directive of the expected kind is registered for the selector of a directive.
  */
 export function _renderElement(
@@ -88,9 +90,10 @@ export function _renderElement(
   directives: RenderElementDirective[],
   structuralDirectives: RenderElementStructuralDirective[],
   structuralConditionalBindings: RenderElementStructuralDirectiveConditionalBinding[],
-  children: RenderChildren | null
+  children: RenderChildren | null,
+  variable?: string
 ): void {
-  const render = (context: _Context, anchor: Comment | null) => renderElement(parentNode, context, anchor, tagName, attributes, events, conditionalBindings, directives, children);
+  const render = (context: _Context, anchor: Comment | null) => renderElement(parentNode, context, anchor, tagName, attributes, events, conditionalBindings, directives, children, variable);
 
   structuralDirectives.length || structuralConditionalBindings.length
    ? renderStructuralElement(parentNode, context, anchor, structuralDirectives, structuralConditionalBindings, render)
@@ -109,10 +112,15 @@ export function _renderElement(
  * @param conditionalBindings - List of conditional binding descriptors to apply to the element.
  * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
  * @param children - Renders the children of the element, or `null` when it has none.
+ * @param variable - The template variable naming the element, if it declares one.
  * @throws When no custom directive is registered for the selector of a directive.
  */
-function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], children: RenderChildren | null): void {
+function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], children: RenderChildren | null, variable: string | undefined): void {
   const element = context.createElement(tagName);
+  if (variable) {
+    context.set(variable, element);
+  }
+
   // The directives of the branches selected before the element is mounted, applied once it is
   const pendingDirectives = new Array<NoArgsVoidFunction>();
   let mounted = false;

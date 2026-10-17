@@ -31,6 +31,28 @@ describe('typeCheckSwitch', () => {
     expect(lines[0].mappings![0]).toBeDefined();
   });
 
+  it('writes the body of a case declaring template variables in a block of its own, starting with their declarations', () => {
+    const template = '@switch (x) { @case (1) { <input #field /> } @default { <select #field /> } }';
+    const lines = typeCheckSwitch(parse(template), processNode, new TypeCheckContext());
+
+    expect(lines.map(l => l.text)).toEqual([
+      'switch (root.x) {',
+      '  case 1:',
+      '    {',
+      '      let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
+      '      child;',
+      '      break;',
+      '    }',
+      '  default:',
+      '    {',
+      '      let field!: (HTMLElementTagNameMap extends { \'select\': infer Type } ? Type : HTMLElement);',
+      '      child;',
+      '      break;',
+      '    }',
+      '}'
+    ]);
+  });
+
   it('maps each case value onto the template', () => {
     const template = '@switch (mode()) { @case (\'a\') @case (Mode.B) { x } @default { y } }';
     const lines = typeCheckSwitch(new Parser(template, new Lexer(template).tokenize()).parse()[0] as SwitchNode, () => [], new TypeCheckContext());

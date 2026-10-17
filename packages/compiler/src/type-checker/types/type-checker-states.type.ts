@@ -4,7 +4,9 @@ import { ForNode } from '../../parser/types/nodes/for-node.type'
 import { IfNode } from '../../parser/types/nodes/if-node.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type'
 import { InterpolationNode } from '../../parser/types/nodes/interpolation-node.type'
+import type { RenderNode } from '../../parser/types/nodes/render-node.type'
 import { SwitchNode } from '../../parser/types/nodes/switch-node.type'
+import type { TemplateNode } from '../../parser/types/nodes/template-node.type'
 import { TextNode } from '../../parser/types/nodes/text-node.type'
 import { TypeCheckerTransitionFunction } from '../../type-checker/types/type-checker-transition-function.type'
 
@@ -16,6 +18,8 @@ type OmittedKeys = Exclude<ASTNodeType,
  | ASTNodeType.For
  | ASTNodeType.Switch
  | ASTNodeType.Import
+ | ASTNodeType.Template
+ | ASTNodeType.Render
 >
 
 /**
@@ -34,7 +38,9 @@ export type TypeCheckerStates = {
   [ASTNodeType.If]: TypeCheckerTransitionFunction<IfNode>,
   [ASTNodeType.For]: TypeCheckerTransitionFunction<ForNode>,
   [ASTNodeType.Switch]: TypeCheckerTransitionFunction<SwitchNode>
-  [ASTNodeType.Import]: TypeCheckerTransitionFunction<ImportNode>
+  [ASTNodeType.Import]: TypeCheckerTransitionFunction<ImportNode>,
+  [ASTNodeType.Template]: TypeCheckerTransitionFunction<TemplateNode>,
+  [ASTNodeType.Render]: TypeCheckerTransitionFunction<RenderNode>
 } & 
 { 
   [K in OmittedKeys]?: undefined 

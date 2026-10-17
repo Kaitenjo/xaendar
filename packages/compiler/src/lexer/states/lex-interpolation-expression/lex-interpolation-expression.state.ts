@@ -1,4 +1,4 @@
-import { BACKSLASH, DOLLAR, DOUBLE_QUOTE, GRAVE_ACCENT, LEFT_BRACE, RIGHT_BRACE, SINGLE_QUOTE } from '../../../costants/chars.constants';
+import { BACKSLASH, DOLLAR, DOUBLE_QUOTE, GRAVE_ACCENT, LEFT_BRACE, RIGHT_BRACE, SINGLE_QUOTE } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';

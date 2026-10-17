@@ -22,13 +22,13 @@
 <div class="columns">
   <section>
     <h5>Rendered before the definition</h5>
-    <ex-lazy-panel count="{ count() }" label="early" />
+    <ex-lazy-panel count="{count()}" label="early" />
     <p class="attributes">Attributes: { attributesProp() }</p>
   </section>
   <section>
     <h5>Rendered after the definition</h5>
     @if (loaded()) {
-      <ex-lazy-panel count="{ count() }" label="late" />
+      <ex-lazy-panel count="{count()}" label="late" />
     } @else {
       <p class="placeholder">Waits for the definition</p>
     }

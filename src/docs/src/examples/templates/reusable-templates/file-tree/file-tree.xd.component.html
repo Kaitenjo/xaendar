@@ -1,0 +1,22 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { Entry } from './entry.type.ts'
+
+<template #branch(entry: Entry)>
+  <li>
+    <span class="{entry().children.length ? 'folder' : 'file'}">{ entry().name }</span>
+    @if (entry().children.length) {
+      <ul>
+        @for (child of entry().children; track child().name) {
+          @render branch(child())
+        }
+      </ul>
+    }
+  </li>
+</template>
+
+<ul class="tree">
+  @for (top of entries(); track top().name) {
+    @render branch(top())
+  }
+</ul>
+<ex-button (click)="addFile()">addFile()</ex-button>

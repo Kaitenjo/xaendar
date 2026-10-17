@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { organizeImports, toImportKey } from './import-organization.utils';
+import { formatImportHeader, organizeImports, toImportKey } from './import-organization.utils';
 
 /**
  * Applies the change computed for a template, to read the result as the user would.
@@ -81,5 +81,42 @@ describe('organizeImports', () => {
 
   it('organizes only the header of the template', () => {
     expect(organize('@import { B, A } from \'./a\';\n<p>@import { D, C } from \'./c\';</p>', { sort: true })).toBe('@import { A, B } from \'./a\';\n<p>@import { D, C } from \'./c\';</p>');
+  });
+});
+
+describe('organizeImports with comments', () => {
+  const source = [
+    '@import { B } from \'./b\';   <!-- b -->',
+    '<!-- before a -->',
+    '@import { A } from \'./a\';',
+    '@import { C } from \'./b\'; <!-- c -->',
+    '<p></p>'
+  ].join('\n');
+
+  it('keeps the comments written after a statement, as written, moving them with it', () => {
+    expect(organize(source, { sort: true })).toBe([
+      '@import { A } from \'./a\';',
+      '@import { B, C } from \'./b\';   <!-- b -->',
+      '<!-- before a --> <!-- c -->',
+      '<p></p>'
+    ].join('\n'));
+  });
+
+  it('removes the comments written after a statement removed', () => {
+    expect(organize(source, { unused: new Set([toImportKey('./b', 'B')]) })).toBe([
+      '@import { A } from \'./a\';',
+      '@import { C } from \'./b\'; <!-- c -->',
+      '<p></p>'
+    ].join('\n'));
+  });
+});
+
+describe('formatImportHeader', () => {
+  it('keeps the comments between the statements and on the line of the last one, as written', () => {
+    const source = '@import {A} from \'./a\'   <!-- a -->\n\n<!-- own line -->\n@import {B} from \'./b\' <!-- b --> <!-- again -->\n<!-- not in the header -->\n<p></p>';
+    const header = formatImportHeader(source)!;
+
+    expect(header.text).toBe('@import { A } from \'./a\'   <!-- a -->\n\n<!-- own line -->\n@import { B } from \'./b\' <!-- b --> <!-- again -->');
+    expect(source.slice(header.end)).toBe('\n<!-- not in the header -->\n<p></p>');
   });
 });

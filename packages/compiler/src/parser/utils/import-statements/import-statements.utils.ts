@@ -18,12 +18,12 @@ import type { ImportSpecifier } from '../../types/nodes/import-specifier.type';
  * @returns The path and the specifiers of each statement, in the order they are written in.
  */
 export function parseImportStatements(source: string): Array<Pick<ImportNode, 'path' | 'specifiers'>> {
-  const { lexer } = lexImportHeader(source);
+  const { tokens } = lexImportHeader(source);
   const statements = new Array<Pick<ImportNode, 'path' | 'specifiers'>>();
   // The tokens of the specifiers of a statement come right before the one of its path
   let specifiers = new Array<ImportSpecifier>();
-  for (let i = 0; i < lexer.tokens.length; i++) {
-    const token = lexer.tokens[i];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     switch (token.type) {
       case TokenType.IMPORT:
         specifiers.push(...toSpecifiers(source, token));

@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from '../../../costants/chars.constants.js';
+import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from '../../../costants/chars.constant.js';
 import { isNotBlank } from '../../utils/chars/chars.utils.js';
 import { endOfFile, LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model.js';
 import { LexerState } from '../../types/lexer-state.enum.js';

@@ -16,7 +16,7 @@ describe('lexTagBody', () => {
   it.each([
     ['the former @event syntax', '@click="onClick()"'],
     ['a keyword not followed by a space', '@if(cond()) { }'],
-    ['a keyword not allowed among the bindings', '@for (item of items; track item) { }'],
+    ['a keyword not allowed among the bindings', '@for (item of items; track item()) { }'],
     ['nothing', '@ click="onClick()"']
   ])('throws when @ starts neither a conditional binding nor a directive: %s', (_description, input) => {
     expect(() => lexTagBody(new LexerCursor(input), context)).toThrow('events are bound with (eventName)="handler()"');
@@ -48,6 +48,12 @@ describe('lexTagBody', () => {
     const cursor = new LexerCursor('*hasRole(role="admin")');
     expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.STRUCTURAL_DIRECTIVE });
     expect(cursor.peek()).toBe('h'.charCodeAt(0));
+  });
+
+  it('transitions to TEMPLATE_VARIABLE and consumes "#" for a template variable', () => {
+    const cursor = new LexerCursor('#name type="text"');
+    expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.TEMPLATE_VARIABLE });
+    expect(cursor.peek()).toBe('n'.charCodeAt(0));
   });
 
   it('skips whitespace and keeps scanning', () => {

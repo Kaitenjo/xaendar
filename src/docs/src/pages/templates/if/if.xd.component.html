@@ -12,29 +12,26 @@
 
 <h2 @@i18n(key="pages.templates.if.branches.title") />
 <docs-code snippet="templates/if-syntax.html" />
-<docs-example name="templates/if/if-else-chain" heading="{ translations().pages.templates.if.branches.example1 }">
+<docs-example name="templates/if/if-else-chain" heading="{translations().pages.templates.if.branches.example1}">
   <ex-if-else-chain />
 </docs-example>
 <p @@i18n(key="pages.templates.if.branches.p1") />
 
 <h2 @@i18n(key="pages.templates.if.whenABranchIs.title") />
 <p @@i18n(key="pages.templates.if.whenABranchIs.p1") />
-<docs-example name="templates/if/branch-state" heading="{ translations().pages.templates.if.whenABranchIs.example1 }">
+<docs-example name="templates/if/branch-state" heading="{translations().pages.templates.if.whenABranchIs.example1}">
   <ex-branch-state />
 </docs-example>
 <p @@i18n(key="pages.templates.if.whenABranchIs.p2") />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.if.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ translations().pages.templates.if.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.templates.if.edgeCases.callout2.heading}">
     <p @@i18n(key="pages.templates.if.edgeCases.callout2.p1") />
     <docs-code snippet="templates/if-errors.txt" />
   </docs-callout>
-  <docs-callout
-    @@i18n(key="pages.templates.if.edgeCases.callout3.body")
-    kind="edge"
-    heading="{ translations().pages.templates.if.edgeCases.callout3.heading }"
-  />
+  <docs-callout @@i18n(key="pages.templates.if.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.templates.if.edgeCases.callout3.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.templates.if.apiSummary.title") />
@@ -49,19 +46,19 @@
     <tbody>
       <tr>
         <td>
-          <code>{'@if (condition) { … }'}</code>
+          <code>{ '@if (condition) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.if.apiSummary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{'@else if (condition) { … }'}</code>
+          <code>{ '@else if (condition) { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.if.apiSummary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{'@else { … }'}</code>
+          <code>{ '@else { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.if.apiSummary.td3") />
       </tr>

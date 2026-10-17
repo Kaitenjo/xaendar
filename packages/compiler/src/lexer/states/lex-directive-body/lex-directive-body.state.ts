@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RPAREN, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, HASHTAG, LF, LPAREN, RPAREN, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -18,8 +18,8 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor pointing to the current position in the directive body.
  * @param context - The lexer context, whose history tells where the directive was declared.
  * @returns An object containing the next lexer state and the tokens produced.
- * @throws If a directive is declared inside the directive, a `@` does not start a conditional binding, a structural
- *   directive declares an event or a conditional binding, or the tag ends before `)`.
+ * @throws If a directive or a template variable is declared inside the directive, a `@` does not start a conditional
+ *   binding, a structural directive declares an event or a conditional binding, or the tag ends before `)`.
  */
 export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   // The last state of the history is the one opening this body
@@ -50,6 +50,9 @@ export function lexDirectiveBody(cursor: LexerCursor, context: LexerTransitionFu
 
       case STAR:
         throw 'Directives cannot be declared inside another directive';
+
+      case HASHTAG:
+        throw 'A template variable names the element: declare #name among the bindings of the tag, outside of its directives';
 
       // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
       case SPACE:

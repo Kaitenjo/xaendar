@@ -1,4 +1,4 @@
-import { COMMA, DOUBLE_QUOTE, LEFT_BRACE, LEFT_BRACKET, LPAREN, RIGHT_BRACE, RIGHT_BRACKET, RPAREN, SINGLE_QUOTE } from '../../../costants/chars.constants';
+import { COMMA, DOUBLE_QUOTE, LEFT_BRACE, LEFT_BRACKET, LPAREN, RIGHT_BRACE, RIGHT_BRACKET, RPAREN, SINGLE_QUOTE } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';

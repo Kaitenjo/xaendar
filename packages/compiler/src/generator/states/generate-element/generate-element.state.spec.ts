@@ -109,6 +109,48 @@ describe('generateElement', () => {
     });
   });
 
+  it('passes the template variable naming the element after its children, rendering them in the scope of the element', async () => {
+    const context = new CompilerContext();
+    const { code, functionsToProcess } = await run('<div #panel><span></span></div>', context);
+    expect(code).toEqual([
+      '_renderElement(root, context, null, \'div\', [], [], [], [], [], [],',
+      '  (div0, parentContext) => div0Children.call(this, div0, parentContext), \'panel\'',
+      ');'
+    ]);
+    expect(functionsToProcess?.get('div0Children')?.fn.context).toBe(context);
+    expectValidJavascript(code);
+  });
+
+  it('passes the template variable naming an element without children after the null children', async () => {
+    const { code } = await run('<input #field />');
+    expect(code).toEqual(['_renderElement(root, context, null, \'input\', [], [], [], [], [], [], null, \'field\');']);
+  });
+
+  it('renders the children of an element a structural directive is applied to in a scope of their own', async () => {
+    const context = new CompilerContext();
+    const { functionsToProcess } = await run('<div *visible><span></span></div>', context);
+    const childrenContext = functionsToProcess?.get('div0Children')?.fn.context;
+    expect(childrenContext).not.toBe(context);
+    expect(childrenContext).toBeInstanceOf(CompilerContext);
+  });
+
+  it.each([
+    ['an <svg>', '<svg><g /></svg>', 'svg0Children', new CompilerContext(), 'svg'],
+    ['a <math>', '<math><mi /></math>', 'math0Children', new CompilerContext(), 'mathml'],
+    ['a <foreignObject>', '<foreignObject><div /></foreignObject>', 'foreignObject0Children', new CompilerContext(undefined, 'svg'), 'html']
+  ])('renders the children of %s in a context of their namespace', async (_description, template, key, context, namespace) => {
+    const { functionsToProcess } = await run(template, context);
+    const childrenContext = functionsToProcess?.get(key)?.fn.context;
+    expect(childrenContext).not.toBe(context);
+    expect(childrenContext?.namespace).toBe(namespace);
+  });
+
+  it('renders the children of an element keeping the namespace of its scope in the same context', async () => {
+    const context = new CompilerContext(undefined, 'svg');
+    const { functionsToProcess } = await run('<g><circle /></g>', context);
+    expect(functionsToProcess?.get('g0Children')?.fn.context).toBe(context);
+  });
+
   it.each([
     ['svg', 'context.createElement = _createSVGElement;'],
     ['math', 'context.createElement = _createMATHMLElement;']

@@ -2,10 +2,10 @@
 @import { VisibleWhenDirective } from './visible-when.directive.ts'
 
 <!-- Custom directive: acts on the element -->
-<p @@exTint(color="{ color() }" (painted)="log($event)")>…</p>
+<p @@exTint(color="{color()}" (painted)="log($event)")>…</p>
 
 <!-- Structural directive: decides whether the element exists; AND between several -->
-<p *exVisibleWhen(condition="{ shown() }")>…</p>
+<p *exVisibleWhen(condition="{shown()}")>…</p>
 
 <!-- Applied conditionally -->
 <p

@@ -69,5 +69,13 @@ export enum ASTNodeType {
   /**
    * A structural directive deciding whether an HTML element is rendered.
    */
-  StructuralDirective
+  StructuralDirective,
+  /**
+   * The declaration of a template with parameters, `<template #name(…)>`.
+   */
+  Template,
+  /**
+   * The render of a template, `@render name(…)`.
+   */
+  Render
 }

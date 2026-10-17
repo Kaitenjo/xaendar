@@ -1,4 +1,4 @@
-import { COMMA, LEFT_BRACE, RIGHT_BRACE, SPACE } from '../../../costants/chars.constants';
+import { COMMA, LEFT_BRACE, RIGHT_BRACE, SPACE } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';

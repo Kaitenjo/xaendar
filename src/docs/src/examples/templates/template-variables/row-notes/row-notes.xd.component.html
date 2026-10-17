@@ -1,0 +1,13 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ul class="rows">
+  @for (task of tasks(); track task().id) {
+    <li>
+      <span class="name">{ task().name }</span>
+      <input #note type="text" placeholder="Note" aria-label="{`Note for ${task().name}`}" />
+      <ex-button (click)="save(task().id, note.value)">save(task().id, note.value)</ex-button>
+      <span class="saved">{ task().note }</span>
+    </li>
+  }
+</ul>
+<ex-button (click)="reverse()">reverse()</ex-button>

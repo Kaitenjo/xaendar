@@ -1,6 +1,6 @@
 import { slice, Stack } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
-import { CR, LF, SPACE } from '../../costants/chars.constants';
+import { CR, LF, SPACE } from '../../costants/chars.constant';
 import { TemplateError } from '../../models/template-error/template-error.model';
 import { Span } from '../../types/span.type';
 import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-value.state';
@@ -23,9 +23,12 @@ import { lexTagBody } from '../states/lex-tag-body/lex-tag-body.state';
 import { lexTagClose } from '../states/lex-tag-close/lex-tag-close.state';
 import { lexTagOpenEnd } from '../states/lex-tag-open-end/lex-tag-open-end.state';
 import { lexTagOpenName } from '../states/lex-tag-open-name/lex-tag-open-name.state';
+import { lexRender } from '../states/lex-render/lex-render.state';
+import { lexTemplateVariable } from '../states/lex-template-variable/lex-template-variable.state';
 import { lexText } from '../states/lex-text/lex-text.state';
 import { endOfFile, LexerCursor } from '../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../types/lexer-state.enum';
+import type { LexerTolerantResult } from '../types/lexer-tolerant-result/lexer-tolerant-result.type';
 import { Token, TokenWithOptionalSpan } from '../types/token.type';
 import { LexerTransitionFunction } from '../types/transition-function/transition-function.type';
 
@@ -78,7 +81,9 @@ export class Lexer {
     [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody,
     [LexerState.DIRECTIVE]: lexDirective,
     [LexerState.DIRECTIVE_BODY]: lexDirectiveBody,
-    [LexerState.STRUCTURAL_DIRECTIVE]: lexStructuralDirective
+    [LexerState.STRUCTURAL_DIRECTIVE]: lexStructuralDirective,
+    [LexerState.TEMPLATE_VARIABLE]: lexTemplateVariable,
+    [LexerState.RENDER]: lexRender
   }
 
   /**
@@ -101,16 +106,6 @@ export class Lexer {
   }
 
   /**
-   * The tokens emitted so far: once the tokenization failed, the ones before the error, so that the part of a template
-   * that cannot be tokenized as a whole (e.g. while the user is typing) can still be read.
-   *
-   * @returns The tokens emitted.
-   */
-  public get tokens(): readonly Token[] {
-    return this._tokens;
-  }
-
-  /**
    * Creates a new Lexer instance for the given template content.
    *
    * @param _input - The full template text to tokenise.
@@ -125,8 +120,43 @@ export class Lexer {
    *
    * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
    * @returns Array of all tokens produced from the input.
+   * @throws A `TemplateError` pointing to the part of the input that cannot be tokenized.
    */
   public tokenize(isLast?: (token: Token) => boolean): Token[] {
+    const error = this._tokenize(isLast);
+    if (error) {
+      throw error;
+    }
+
+    return this._tokens;
+  }
+
+  /**
+   * Runs the lexer like {@link tokenize}, but an error doesn't throw: it stops the tokenization, and is returned together
+   * with the tokens emitted before it and the state the lexer ended in, so that the part of a template that cannot be
+   * tokenized as a whole (e.g. while the user is typing) can still be read.
+   *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
+   * @returns The tokens emitted, the state the lexer ended in and the error that stopped it, if any.
+   */
+  public tokenizeTolerant(isLast?: (token: Token) => boolean): LexerTolerantResult {
+    const error = this._tokenize(isLast);
+    const result: LexerTolerantResult = { tokens: this._tokens, state: this._state };
+    if (error) {
+      result.error = error;
+    }
+
+    return result;
+  }
+
+  /**
+   * Drives the state machine until EOF is reached, until a token is emitted that ends the part of the input to lex, or
+   * until a state fails.
+   *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
+   * @returns The error of the state that failed, pointing to the part of the input it was reading, `undefined` if none failed.
+   */
+  private _tokenize(isLast?: (token: Token) => boolean): TemplateError | undefined {
     let eof = false;
     const cursor = this._cursor;
     let stateStartIndex = -1;
@@ -142,7 +172,7 @@ export class Lexer {
 
         if (tokens?.length) {
           const stateEndIndex = cursor.currentChar.index + 1;
-          this._tokens.push(...this.withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
+          this._tokens.push(...this._withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
         }
 
         if (pushState) {
@@ -217,7 +247,7 @@ export class Lexer {
           const underlinedError = `\x1b[4m${slice(this._input, stateStartIndex, stateEndIndex)}\x1b[0m`;
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
           const message = isError ? err.message : `${err}`;
-          throw new TemplateError(
+          return new TemplateError(
             `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
             { start: stateStartIndex, end: stateEndIndex },
             message
@@ -226,7 +256,7 @@ export class Lexer {
       }
     }
 
-    return this._tokens;
+    return undefined;
   }
 
   /**
@@ -234,8 +264,12 @@ export class Lexer {
    *
    * States can provide a more accurate `token.span` (e.g. Event Parameter and Import States)
    * otherwise the lexer falls back to the full state-consumption range.
+   *
+   * @param tokens - The tokens emitted by a state.
+   * @param fallbackSpan - The range of the input the state consumed, for the tokens without a span of their own.
+   * @returns The tokens, each one with its span.
    */
-  private withTokenSpans(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): Token[] {
+  private _withTokenSpans(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): Token[] {
     return tokens.map<Token>(token => ({
       ...token,
       span: token.span ?? fallbackSpan

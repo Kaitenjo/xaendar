@@ -3,15 +3,15 @@
 
 <label>
   Attribute
-  <input type="text" value="{ text() }" (input)="type($event)" />
+  <input type="text" value="{text()}" (input)="type($event)" />
 </label>
 <label>
   Directive
-  <input @@exBindValue(value="{ text() }") type="text" (input)="type($event)" />
+  <input @@exBindValue(value="{text()}") type="text" (input)="type($event)" />
 </label>
 <label>
   Size
-  <select @@exBindValue(value="{ size() }") (change)="choose($event)">
+  <select @@exBindValue(value="{size()}") (change)="choose($event)">
     <option value="s">Small</option>
     <option value="m">Medium</option>
     <option value="l">Large</option>

@@ -176,6 +176,8 @@ export const NAV: readonly NavSection[] = [
         page('templates/for', 'for track $index $first $last $even $odd loop'),
         page('templates/switch', 'switch case default'),
         page('templates/conditional-bindings', 'conditional binding attribute if switch tag'),
+        page('templates/template-variables', 'template variable reference ref # element focus dialog'),
+        page('templates/reusable-templates', 'template render reusable fragment parameters recursion tree ng-template outlet'),
         page('templates/expressions', 'expression allowed forbidden globals'),
         page('templates/imports', 'import'),
         page('templates/svg-mathml', 'svg mathml namespace chart')

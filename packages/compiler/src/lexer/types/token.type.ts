@@ -20,12 +20,15 @@ import { IfToken } from './tokens/if-token.type';
 import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
 import { InterpolationExpressionToken } from './tokens/interpolation-expression-token.type';
+import { RenderCallToken } from './tokens/render-call-token.type';
+import { RenderToken } from './tokens/render-token.type';
 import { StructuralDirectiveToken } from './tokens/structural-directive-token.type';
 import { SwitchToken } from './tokens/switch-token.type';
 import { TagCloseNameToken } from './tokens/tag-close-name-token.type';
 import { TagCloseToken } from './tokens/tag-close-token.type';
 import { TagOpenNameToken } from './tokens/tag-open-name-token.type';
 import { TagSelfCloseToken } from './tokens/tag-self-close-token.type';
+import { TemplateVariableToken } from './tokens/template-variable-token.type';
 import { TextToken } from './tokens/text-token.type';
 
 /**
@@ -58,6 +61,9 @@ export type Token =
   | DirectiveToken
   | DirectiveCloseToken
   | StructuralDirectiveToken
+  | TemplateVariableToken
+  | RenderToken
+  | RenderCallToken
   | EOFToken;
 
 export type TokenWithOptionalSpan = 
@@ -86,7 +92,10 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<ImportPathToken>
   | MaybeTokenWithSpan<DirectiveToken>
   | MaybeTokenWithSpan<DirectiveCloseToken>
-  | MaybeTokenWithSpan<StructuralDirectiveToken>;
+  | MaybeTokenWithSpan<StructuralDirectiveToken>
+  | MaybeTokenWithSpan<TemplateVariableToken>
+  | MaybeTokenWithSpan<RenderToken>
+  | MaybeTokenWithSpan<RenderCallToken>;
 
 export type TokenWithSpan<T extends { type: TokenType }> = T & {
   span: Span

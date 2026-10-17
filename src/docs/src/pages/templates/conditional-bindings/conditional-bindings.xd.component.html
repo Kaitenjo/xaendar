@@ -12,10 +12,8 @@
 
 <h2 @@i18n(key="pages.templates.conditionalBindings.attributesAndListeners.title") />
 <docs-code snippet="templates/conditional-binding-syntax.html" />
-<docs-example
-  name="templates/conditional-bindings/task-button"
-  heading="{ translations().pages.templates.conditionalBindings.attributesAndListeners.example1 }"
->
+<docs-example name="templates/conditional-bindings/task-button"
+  heading="{translations().pages.templates.conditionalBindings.attributesAndListeners.example1}">
   <ex-task-button />
 </docs-example>
 <p @@i18n(key="pages.templates.conditionalBindings.attributesAndListeners.p1") />
@@ -23,20 +21,18 @@
 
 <h2 @@i18n(key="pages.templates.conditionalBindings.inputsOfComponents.title") />
 <p @@i18n(key="pages.templates.conditionalBindings.inputsOfComponents.p1") />
-<docs-example
-  name="components/inputs/conditional-reset"
-  heading="{ translations().pages.templates.conditionalBindings.inputsOfComponents.example1 }"
->
+<docs-example name="components/inputs/conditional-reset"
+  heading="{translations().pages.templates.conditionalBindings.inputsOfComponents.example1}">
   <ex-conditional-reset />
 </docs-example>
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.conditionalBindings.edgeCases.title") />
-  <docs-callout kind="edge" heading="{ translations().pages.templates.conditionalBindings.edgeCases.callout2.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.templates.conditionalBindings.edgeCases.callout2.heading}">
     <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout2.p1") />
     <docs-code snippet="components/required-branch-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{ translations().pages.templates.conditionalBindings.edgeCases.callout3.heading }">
+  <docs-callout kind="edge" heading="{translations().pages.templates.conditionalBindings.edgeCases.callout3.heading}">
     <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout3.p1") />
     <docs-code snippet="templates/bound-twice-error.txt" />
   </docs-callout>
@@ -54,19 +50,19 @@
     <tbody>
       <tr>
         <td>
-          <code>{'@if (condition) { name="value" }'}</code>
+          <code>{ '@if (condition) { name="value" }' }</code>
         </td>
         <td @@i18n(key="pages.templates.conditionalBindings.apiSummary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{'@else { … }'}</code>
+          <code>{ '@else { … }' }</code>
         </td>
         <td @@i18n(key="pages.templates.conditionalBindings.apiSummary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{"@switch (value) { @case ('a') { … } }"}</code>
+          <code>{ "@switch (value) { @case ('a') { … } }" }</code>
         </td>
         <td @@i18n(key="pages.templates.conditionalBindings.apiSummary.td3") />
       </tr>

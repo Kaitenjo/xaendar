@@ -1,4 +1,5 @@
 import { Lexer } from '../../lexer/lexer';
+import type { LexerTolerantResult } from '../../types/lexer-tolerant-result/lexer-tolerant-result.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { Token } from '../../types/token.type';
 
@@ -49,18 +50,12 @@ function isAfterImportHeader(token: Token): boolean {
  * to lex the whole of it. The last token is the first one following the header, if the template has more than it.
  *
  * @example
- * lexImportHeader('@import { A } from \'./a\';\n<p>text</p>').lexer.tokens;  // the tokens of the statement, then the one of the tag
+ * lexImportHeader('@import { A } from \'./a\';\n<p>text</p>').tokens;  // the tokens of the statement, then the one of the tag
  *
  * @param source - The source of the template.
- * @returns The lexer, to read the tokens of the header and the state it stopped in, and whether a statement of the header
- *   could not be lexed: the tokens before it are still in the lexer.
+ * @returns The tokens of the header, the state the lexer stopped in, and the error of the statement of the header that
+ *   could not be lexed, if any: the tokens are then the ones before it.
  */
-export function lexImportHeader(source: string): { lexer: Lexer, failed: boolean } {
-  const lexer = new Lexer(source);
-  try {
-    lexer.tokenize(isAfterImportHeader);
-    return { lexer, failed: false };
-  } catch {
-    return { lexer, failed: true };
-  }
+export function lexImportHeader(source: string): LexerTolerantResult {
+  return new Lexer(source).tokenizeTolerant(isAfterImportHeader);
 }

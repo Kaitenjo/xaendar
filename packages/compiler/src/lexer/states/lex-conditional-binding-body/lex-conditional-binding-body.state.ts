@@ -1,4 +1,4 @@
-import { AT_SIGN, CR, GREATER_THEN, LF, LPAREN, RIGHT_BRACE, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constants';
+import { AT_SIGN, CR, GREATER_THEN, HASHTAG, LF, LPAREN, RIGHT_BRACE, SLASH, SPACE, STAR, TAB } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
@@ -18,7 +18,8 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor pointing to the current position in the block.
  * @param context - The lexer context, whose history tells where the conditional binding was declared.
  * @returns An object containing the next lexer state and the tokens produced.
- * @throws If a directive or a structural directive is declared in a conditional binding belonging to a directive, or the tag ends before `}`.
+ * @throws If a directive or a structural directive is declared in a conditional binding belonging to a directive, a
+ *   template variable is declared in it, or the tag ends before `}`.
  */
 export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -66,6 +67,9 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
         };
         read = false;
         break;
+
+      case HASHTAG:
+        throw 'A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings';
 
       // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
       case SPACE:

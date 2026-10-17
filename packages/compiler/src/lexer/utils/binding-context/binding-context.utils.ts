@@ -26,8 +26,10 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
 export function getBindingContext(source: string, offset: number): BindingContext | undefined {
   const before = source.slice(0, offset);
   const start = offset - PARTIAL_NAME.exec(before)![0].length;
-  // A name starts after a space, a `(` or a `{`: checked first, as it is cheaper than lexing. The attribute state is
-  // also left open by its `=` or by the quote opening its value, the event state by its `)`
+  /*
+    A name starts after a space, a `(` or a `{`: checked first, as it is cheaper than lexing. The attribute state is
+    also left open by its `=` or by the quote opening its value, the event state by its `)`
+  */
   if (!/[\s({]/.test(before[start - 1])) {
     return undefined;
   }

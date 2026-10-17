@@ -2,7 +2,7 @@
 
 <div class="controls">
   @for (option of statuses; track option()) {
-    <ex-button class="{ option() === status() ? 'option option--active' : 'option' }" (click)="choose(option())">
+    <ex-button class="{option() === status() ? 'option option--active' : 'option'}" (click)="choose(option())">
       { option() }
     </ex-button>
   }

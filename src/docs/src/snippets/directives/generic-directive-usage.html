@@ -1,10 +1,10 @@
 @import { EachDirective } from './each.directive.ts'
 
 <!-- Item is the type of the rows, Key the type of the event -->
-<ul @@exEach<Row, number>(items="{ rows() }" (picked)="open($event)")>…</ul>
+<ul @@exEach<Row, number>(items="{rows()}" (picked)="open($event)")>…</ul>
 
 <!-- Without type arguments, they are inferred from the bound values: Item is the type of the rows... -->
-<ul @@exEach(items="{ rows() }")>…</ul>
+<ul @@exEach(items="{rows()}")>…</ul>
 
 <!-- ...with some of them, nothing is inferred: the ones left out take their default type, Key is string here -->
-<ul @@exEach<Row>(items="{ rows() }")>…</ul>
+<ul @@exEach<Row>(items="{rows()}")>…</ul>
