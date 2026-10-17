@@ -4,6 +4,12 @@ import { Function, NoArgsVoidFunction } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
 
 /**
+ * What declares a variable before it is initialized (see `_Context.declare`): a template variable, initialized once the
+ * element it names is rendered, or a `@let`, initialized once the render reaches it.
+ */
+export type _DeclarationKind = 'element' | 'let';
+
+/**
  * Tracks identifier scope during run time template function execution
  * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
  * and can be chained to a parent context for outer-scope resolution.
@@ -14,9 +20,12 @@ export class _Context {
    */
   public createElement: Function<[string], Element>;
   /**
-   * The value of a variable declared before it is initialized (see {@link declare}).
+   * The value of a variable declared before it is initialized (see {@link declare}), by what declares it.
    */
-  private static readonly _uninitialized = Symbol('uninitialized');
+  private static readonly _uninitialized: Readonly<Record<_DeclarationKind, symbol>> = {
+    element: Symbol('uninitialized element'),
+    let: Symbol('uninitialized @let')
+  };
   /**
    * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches).
    */
@@ -67,14 +76,15 @@ export class _Context {
 
   /**
    * Declares a variable of this scope without initializing it: a template variable, whose element is rendered after the
-   * scope is created. Until it is initialized (see {@link set}), reading it throws, as reading a `let` before its
-   * declaration does, instead of reading a variable of an ancestor scope named like it.
+   * scope is created, or a `@let`. Until it is initialized (see {@link set}), reading it throws, as reading a `let`
+   * before its declaration does, instead of reading a variable of an ancestor scope named like it.
    *
    * @param name - The name of the variable.
+   * @param kind - What declares the variable. Defaults to a template variable.
    * @throws When an identifier with the same name is already declared in this scope.
    */
-  public declare(name: string): void {
-    this.addIdentifier(name, _Context._uninitialized);
+  public declare(name: string, kind: _DeclarationKind = 'element'): void {
+    this.addIdentifier(name, _Context._uninitialized[kind]);
   }
 
   /**
@@ -117,11 +127,16 @@ export class _Context {
     }
 
     const value = this._variables.get(name);
-    if (value === _Context._uninitialized) {
-      throw new ReferenceError(`Template variable "${name}" is read before the element it names is rendered`);
-    }
+    switch (value) {
+      case _Context._uninitialized.element:
+        throw new ReferenceError(`Template variable "${name}" is read before the element it names is rendered`);
 
-    return value;
+      case _Context._uninitialized.let:
+        throw new ReferenceError(`@let "${name}" is read before its declaration is rendered`);
+
+      default:
+        return value;
+    }
   }
 
   /**

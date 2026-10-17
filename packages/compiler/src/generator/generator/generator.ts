@@ -1,6 +1,7 @@
 import { indent } from '@xaendar/common';
 import { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
+import type { LetNode } from '../../parser/types/nodes/let-node.type.js';
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type.js';
 import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils.js';
 import { CompilerCache } from '../../types/compiler-cache.type.js';
@@ -12,6 +13,7 @@ import { CompilerContext } from '../models/compiler-context/compiler-context.mod
 import { generateElement } from '../states/generate-element/generate-element.state.js';
 import { generateFor } from '../states/generate-for/generate-for.state.js';
 import { generateIf } from '../states/generate-if/generate-if.state.js';
+import { generateLet } from '../states/generate-let/generate-let.state.js';
 import { generateRender } from '../states/generate-render/generate-render.state.js';
 import { generateSwitch } from '../states/generate-switch/generate-switch.state.js';
 import { generateTextAndInterpolation } from '../states/generate-text-and-interpolation/generate-text-and-interpolation.state.js';
@@ -43,7 +45,8 @@ export class Generator {
     [ASTNodeType.Import]: skipGeneration,
     // A template is registered at the start of its scope, its content is rendered by each @render calling it
     [ASTNodeType.Template]: skipGeneration,
-    [ASTNodeType.Render]: generateRender
+    [ASTNodeType.Render]: generateRender,
+    [ASTNodeType.Let]: generateLet
   }
 
   /**
@@ -135,7 +138,7 @@ export class Generator {
 
         /*
           A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
-          declaring its template variables and its templates
+          declaring its template variables, its templates and its @let
         */
         const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context) : undefined;
         if (declarations) {
@@ -191,12 +194,15 @@ export class Generator {
 }
 
 /**
- * Declares the template variables and the templates of a scope: registers them in its compiler context, so that every
- * expression and every `@render` of the scope reads them, the ones written before their declaration too, and writes the
- * code declaring them in its runtime context:
+ * Declares the template variables, the templates and the `@let` of a scope: registers them in its compiler context, so
+ * that every expression and every `@render` of the scope reads them, the ones written before their declaration too, and
+ * writes the code declaring them in its runtime context:
  * - a template variable is declared uninitialized, and the element it names initializes it once rendered;
  * - a template is initialized with the function rendering its content (see {@link toTemplateFunction}), together with
- *   the runtime context of the scope, which its content reads names from.
+ *   the runtime context of the scope, which its content reads names from;
+ * - a `@let` is declared uninitialized, and initialized once the render reaches it (see `generateLet`): it is a signal
+ *   when its value reads one. The `@let` are registered after the other names, in the order they are written, so that
+ *   the value of one tells whether it reads the signal of another one written before it.
  *
  * @param nodes - The nodes of the scope.
  * @param compilerContext - The compiler context of the scope.
@@ -211,7 +217,9 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
     return declarations;
   };
 
+  const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, compilerContext.namespace, {
+    let: node => lets.push(node),
     variable: (_element, { name }) => {
       compilerContext.addIdentifier(name, 'value');
       add(`context.declare('${name}');`);
@@ -224,6 +232,12 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
       add(`context.addIdentifier('${name}', _template(context, ${key}.bind(this)));`).functionsToProcess.set(key, toTemplateFunction(template, key, namespace, compilerContext));
     }
   });
+
+  for (let i = 0; i < lets.length; i++) {
+    const { name, value } = lets[i];
+    compilerContext.addIdentifier(name, resolveExpression(value, compilerContext).reactive ? 'signal' : 'value');
+    add(`context.declare('${name}', 'let');`);
+  }
 
   return declarations;
 }

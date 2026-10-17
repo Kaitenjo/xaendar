@@ -135,6 +135,35 @@ describe('Generator', () => {
     });
   });
 
+  describe('@let', () => {
+    it('declares the @let of a scope after its other names, as a signal when its value reads one, and initializes it where it is written', async () => {
+      const template = '<button (click)="pick(label)">Go</button><div>@let total = price() * 2;</div>@let double = total() * 2;@let label = field.value;<input #field /><p>{ double() }</p>';
+      const code = await generate(template, ['price']);
+
+      expect(code).toContain([
+        '  context.declare(\'field\');',
+        '  context.declare(\'total\', \'let\');',
+        '  context.declare(\'double\', \'let\');',
+        '  context.declare(\'label\', \'let\');'
+      ].join('\n'));
+      expect(code).toContain('handler: () => this.pick(context.get(\'label\'))');
+      expect(code).toContain('  context.set(\'total\', _let(() => this.price() * 2));');
+      expect(code).toContain('  context.set(\'double\', _let(() => context.get(\'total\')() * 2));\n  context.set(\'label\', context.get(\'field\').value);');
+      expect(code).toContain('() => context.get(\'double\')()');
+    });
+
+    it('declares the @let of a block, of the content of a template and of a @for body in their own scope', async () => {
+      const code = await generate('@for (item of items; track item()) { @let name = item().name; }<template #row()>@let id = 1;</template>');
+
+      expect(code).toMatch(/= vars;\n {2}context\.declare\('name', 'let'\);\n {2}context\.set\('name', _let\(\(\) => context\.get\('item'\)\(\)\.name\)\);/);
+      expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
+    });
+
+    it('throws for a @let declared twice in a scope', async () => {
+      await expect(generate('@let total = 1;<p>@let total = 2;</p>')).rejects.toThrow('[Generator] Identifier "total" is already declared in this scope.');
+    });
+  });
+
   it('reads the class members named like a global from the component', async () => {
     const template = '{name}';
     const code = await new Generator(template, parse(template)).generate([], ['name']);

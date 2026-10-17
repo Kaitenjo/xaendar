@@ -76,6 +76,15 @@ describe('getExpressionContext', () => {
   });
 
   it.each([
+    ['nothing written', '@let total =|', 'let@12-12: @let total =P;'],
+    ['a partial identifier, the rest of the value dropped', '@let total = pr|ice() * f(\';\', [1; 2]);\n<p></p>', 'let@13-15: @let total = pr;\n<p></p>'],
+    ['the constructs left open closed', '@let total = f([a, |', 'let@19-19: @let total = f([a, P]);'],
+    ['a semicolon inside a construct before the offset', '@let total = { a: 1; b: |', 'let@24-24: @let total = { a: 1; b: P};']
+  ])('closes the value of a @let: %s', (_name, template, expected) => {
+    expect(contextOf(template)).toBe(expected);
+  });
+
+  it.each([
     ['plain text', 'hello|'],
     ['the name of an attribute', '<b ti|'],
     ['a static attribute value', '<b title="a|"></b>'],
@@ -93,7 +102,9 @@ describe('getExpressionContext', () => {
     ['the item of a @for before its of', '@for (item |'],
     ['a string in a condition', '@if (\'a|'],
     ['the name of the template of a @render', '@render ro|'],
-    ['a string in the arguments of a @render', '@render row(\'a|']
+    ['a string in the arguments of a @render', '@render row(\'a|'],
+    ['the name of a @let', '@let total|'],
+    ['a string in the value of a @let', '@let total = \'a|']
   ])('finds no expression in %s', (_name, template) => {
     expect(contextOf(template)).toBeUndefined();
   });

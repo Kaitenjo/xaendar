@@ -77,6 +77,14 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
+  it('reads a @let, with its value as written', () => {
+    expect(parseTemplateLayout('<p></p>@let   total =  f(\';\', { a; }) ;text')).toEqual([
+      { kind: 'element', name: 'p', selfClosing: false, items: [], children: [] },
+      { kind: 'let', name: 'total', value: '  f(\';\', { a; }) ' },
+      { kind: 'text', value: 'text' }
+    ]);
+  });
+
   it('reads the type arguments of an element, between the parentheses following its tag name', () => {
     expect(parseTemplateLayout('<ex-list(Map<string, number>, (value: string) => void) items="a"></ex-list>')).toEqual([
       {
@@ -168,6 +176,8 @@ describe('parseTemplateLayout', () => {
     ['a @render without a name', '@render (a)'],
     ['a @render without arguments', '@render row <p></p>'],
     ['a @render whose arguments are not closed', '@render row(a'],
+    ['a @let without =', '@let total 1;'],
+    ['a @let without ;', '@let total = 1'],
     ['an event whose parenthesis is not closed', '<p (click="x"></p>'],
     ['a directive whose type arguments are not closed', '<p @@a<b(c="d")'],
     ['an element whose type arguments are not closed', '<ex-a(b c="d"></ex-a>'],

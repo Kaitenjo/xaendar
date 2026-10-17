@@ -157,6 +157,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         typecheckBody = await compile(templateSource, {
           baseDir: dirname(templatePath),
           shadowingMembers: componentMembers.shadowingMembers,
+          reactiveMembers: componentMembers.reactiveMembers,
           customElements: state.customElements,
           cache: {
             getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),

@@ -24,19 +24,19 @@ import type { SymbolImport } from '../types/imported-symbol/imported-symbol.type
  * @param options - The compilation options, selecting which outputs are produced.
  * @returns The compiled Javascript render functions, the type-check result, or both.
  */
-export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'customElements' | 'cache'>): Promise<TypeCheckResult>
+export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'reactiveMembers' | 'customElements' | 'cache'>): Promise<TypeCheckResult>
 export async function compile(input: string, options: Omit<CompileOptions, 'baseDir'>): Promise<string>
 export async function compile(input: string, options: CompileOptions): Promise<{ javascript: string; typescript: TypeCheckResult }>
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
   const nodes = parseTemplate(input);
 
-  const { baseDir, templateDir, signals, shadowingMembers = [], customElements = [], cache } = options;
+  const { baseDir, templateDir, signals, shadowingMembers = [], reactiveMembers = signals, customElements = [], cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (baseDir && signals) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
       generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
-      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols)
+      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers)
     ]);
     
     return {
@@ -45,7 +45,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     }
   } else if (baseDir) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
-    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols);
+    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers);
   } else {
     const symbols = templateDir ? (await resolveTemplateImports(importNodes, templateDir, cache)).symbols : undefined;
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
@@ -87,11 +87,12 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
+ * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
  * @returns A promise that resolves to the type-checking result.
  * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
  */
-export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckResult> {
-  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements, symbols);
+export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = []): Promise<TypeCheckResult> {
+  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers);
 }
 
 /**
@@ -104,10 +105,11 @@ export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadat
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
+ * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
  * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
  */
-export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckTolerantResult> {
-  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols);
+export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = []): Promise<TypeCheckTolerantResult> {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers);
 }
 
 /**

@@ -13,6 +13,7 @@
     { "include": "#control-flow" },
     { "include": "#control-flow-bare" },
     { "include": "#render" },
+    { "include": "#let" },
     { "include": "#interpolation" },
     { "include": "#block-close" }
   ],
@@ -212,6 +213,22 @@
       "end": "\\)",
       "endCaptures": {
         "0": { "name": "punctuation.definition.arguments.end.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "let": {
+      "begin": "(@let)\\s+([A-Za-z_$][\\w$]*)\\s*(=)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "variable.other.constant.xaendar" },
+        "3": { "name": "keyword.operator.assignment.xaendar" }
+      },
+      "end": ";",
+      "endCaptures": {
+        "0": { "name": "punctuation.terminator.statement.xaendar" }
       },
       "contentName": "meta.embedded.expression.xaendar",
       "patterns": [

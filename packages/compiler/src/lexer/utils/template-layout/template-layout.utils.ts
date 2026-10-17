@@ -1,5 +1,5 @@
-import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutRender, LayoutVariable } from '../../types/template-layout/template-layout.type';
-import { findClosing } from '../balanced-text/balanced-text.utils';
+import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutLet, LayoutRender, LayoutVariable } from '../../types/template-layout/template-layout.type';
+import { findClosing, findOutside } from '../balanced-text/balanced-text.utils';
 
 /**
  * The elements whose content is kept as written: its spaces and line breaks are part of what is rendered.
@@ -166,7 +166,8 @@ function closesContent(reader: Reader, stop: 'document' | 'tag' | 'block'): bool
 }
 
 /**
- * Reads what starts at the position of the reader: a comment, an element, an interpolation or a block.
+ * Reads what starts at the position of the reader: a comment, an element, an interpolation, a block, the render of a
+ * template or a `@let`.
  *
  * @param reader - The reader, on a `<`, a `{` or an `@`.
  * @returns The atom.
@@ -186,7 +187,11 @@ function readAtom(reader: Reader): LayoutAtom {
     }
 
     case '@':
-      return source.startsWith('@render', position) ? readRender(reader) : readBlock(reader, readContentBody);
+      if (source.startsWith('@render', position)) {
+        return readRender(reader);
+      }
+
+      return source.startsWith('@let', position) ? readLet(reader) : readBlock(reader, readContentBody);
 
     default:
       return source.startsWith('<!--', position) ? readComment(reader) : readElement(reader);
@@ -212,6 +217,28 @@ function readRender(reader: Reader): LayoutRender {
 
   reader.position = end + 1;
   return { kind: 'render', callee, args: source.slice(position + 1, end) };
+}
+
+/**
+ * Reads a `@let`.
+ *
+ * @param reader - The reader, on the `@` of `@let`.
+ * @returns The `@let`.
+ * @throws If the name is not followed by `=`, or the value is not ended by a `;`.
+ */
+function readLet(reader: Reader): LayoutLet {
+  reader.position += '@let'.length;
+  skipWhitespace(reader);
+  const name = readName(reader, NAME);
+  skipWhitespace(reader);
+  const { source, position } = reader;
+  const end = source[position] === '=' ? findOutside(source, position + 1, ';') : undefined;
+  if (end === undefined) {
+    return fail('@let needs its value between = and ;');
+  }
+
+  reader.position = end + 1;
+  return { kind: 'let', name, value: source.slice(position + 1, end) };
 }
 
 /**

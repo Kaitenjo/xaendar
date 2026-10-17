@@ -62,13 +62,13 @@ describe('TypeCheckContext', () => {
   it('records in the outermost scope that the template declares templates, registering their namespace', () => {
     const root = new TypeCheckContext();
     const nested = new TypeCheckContext(new TypeCheckContext(root));
-    expect(root.declaresTemplates).toBe(false);
+    expect(root.usesTemplateHelpers).toBe(false);
 
     nested.addUnresolvableIdentifier('row');
     nested.addTemplate('row', 'svg');
 
-    expect(root.declaresTemplates).toBe(true);
-    expect(nested.declaresTemplates).toBe(true);
+    expect(root.usesTemplateHelpers).toBe(true);
+    expect(nested.usesTemplateHelpers).toBe(true);
     expect(nested.getTemplateNamespace('row')).toBe('svg');
   });
 

@@ -1,0 +1,12 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ul class="rows">
+  @for (member of members(); track member().id) {
+    @let stats = member().stats;
+    <li>
+      <span class="name">{ member().name }</span>
+      <span>{ stats().open } open · { stats().done } done</span>
+      <ex-button (click)="complete(member().id)">complete(member().id)</ex-button>
+    </li>
+  }
+</ul>

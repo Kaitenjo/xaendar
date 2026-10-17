@@ -5,6 +5,11 @@ import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 
+/**
+ * What follows the path of a statement when it ends with a `;`: spaces or tabs, then the `;`.
+ */
+const STATEMENT_END = /^[ \t]*;/;
+
 export function lexImportPath(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let path = '';
@@ -55,6 +60,12 @@ export function lexImportPath(cursor: LexerCursor, _context: LexerTransitionFunc
     switch (cursor.peek()) {
       case delimiter:
         cursor.advance();
+        // The `;` closing the statement, as in JavaScript, is part of it with the spaces before it: it is not a text of the template
+        if (cursor.peekMatch(STATEMENT_END, Infinity)) {
+          cursor.skipSpaces();
+          cursor.advance();
+        }
+
         read = false;
         retVal = {
           state: LexerState.TEXT,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findClosing } from './balanced-text.utils';
+import { findClosing, findOutside } from './balanced-text.utils';
 
 describe('findClosing', () => {
   it.each([
@@ -29,5 +29,23 @@ describe('findClosing', () => {
     ['a placeholder that is not closed', '{ `${ a` }']
   ])('finds nothing for %s', (_name, text) => {
     expect(findClosing(text, 0)).toBeUndefined();
+  });
+});
+
+describe('findOutside', () => {
+  it.each([
+    ['right at the start', '; a', 0, 0],
+    ['after the strings and the groups holding it', 'f(\';\', ";", `;`) + [a; b] + { c; }; d', 0, 34],
+    ['from the start index on', 'a; b; c', 2, 4]
+  ])('finds the character %s', (_name, text, start, expected) => {
+    expect(findOutside(text, start, ';')).toBe(expected);
+  });
+
+  it.each([
+    ['a text without the character', 'a + b'],
+    ['a group that is not closed', 'f(a; b'],
+    ['a string that is not closed', '\'a; b']
+  ])('finds nothing in %s', (_name, text) => {
+    expect(findOutside(text, 0, ';')).toBeUndefined();
   });
 });

@@ -6,7 +6,7 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
 
 /**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
- * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@render` and `@import`.
+ * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@render`, `@let` and `@import`.
  * Advances the cursor past the keyword and transitions to the appropriate next state.
  *
  * @param cursor - The lexer cursor positioned on the `@` character.
@@ -86,6 +86,14 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
       state: LexerState.RENDER,
       tokens: [{
         type: TokenType.RENDER
+      }]
+    };
+  } else if (cursor.peekMatch('let ')) {
+    cursor.advance(4);
+    retVal = {
+      state: LexerState.LET,
+      tokens: [{
+        type: TokenType.LET
       }]
     };
   } else if (cursor.peekMatch('import ')) {

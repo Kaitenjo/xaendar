@@ -104,6 +104,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/reusable-templates'
   },
   {
+    phase: 'Lexer',
+    message: '[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;',
+    page: 'templates/let'
+  },
+  {
     phase: 'Parser',
     message: '[Parser] Expected closing tag input while file is over',
     page: 'templates/overview'
@@ -162,6 +167,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'Parser',
     message: "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.",
     page: 'templates/template-variables'
+  },
+  {
+    phase: 'Parser',
+    message: "[Parser] '2total' is not a valid name for a @let: it must be an identifier.",
+    page: 'templates/let'
   },
   {
     phase: 'Parser',
@@ -380,6 +390,26 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
+    message: '[TypeChecker] "total" is read before its @let: only an event handler can read a @let declared after it',
+    page: 'templates/let'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] "total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler',
+    page: 'templates/let'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables',
+    page: 'templates/let'
+  },
+  {
+    phase: 'TypeChecker',
+    message: "Property 'toFixed' does not exist on type 'Computed<number>'.",
+    page: 'templates/let'
+  },
+  {
+    phase: 'TypeChecker',
     message: 'Expected 2 arguments, but got 1.',
     page: 'templates/reusable-templates'
   },
@@ -442,6 +472,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'Runtime',
     message: 'ReferenceError: Template variable "field" is read before the element it names is rendered',
     page: 'templates/template-variables'
+  },
+  {
+    phase: 'Runtime',
+    message: 'ReferenceError: @let "total" is read before its declaration is rendered',
+    page: 'templates/let'
   },
   {
     phase: 'Signals',

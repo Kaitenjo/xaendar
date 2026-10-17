@@ -70,6 +70,15 @@ describe('_Context', () => {
       expect(() => scope.addChild().get('field')).toThrow(new ReferenceError('Template variable "field" is read before the element it names is rendered'));
     });
 
+    it('throws when a @let is read before it is initialized', () => {
+      const scope = createRoot();
+      scope.declare('total', 'let');
+
+      expect(() => scope.get('total')).toThrow(new ReferenceError('@let "total" is read before its declaration is rendered'));
+      scope.set('total', 3);
+      expect(scope.get('total')).toBe(3);
+    });
+
     it('initializes the variable in the scope declaring it, from that scope or from a nested one', () => {
       const scope = createRoot();
       scope.declare('form');

@@ -208,8 +208,9 @@ describe('getTemplateKeywordCompletions', () => {
       { name: '@for', kind: 'keyword', sortText: '1', replacementSpan, snippet: '@for (item of $1) {\n\t$0\n}', retrigger: true },
       { name: '@switch', kind: 'keyword', sortText: '2', replacementSpan, snippet: '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}', retrigger: true },
       { name: '@render', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@render $1($0)', retrigger: false },
-      { name: '@else', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
-      { name: '@else if', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+      { name: '@let', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
+      { name: '@else', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
+      { name: '@else if', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
     ]);
   });
 

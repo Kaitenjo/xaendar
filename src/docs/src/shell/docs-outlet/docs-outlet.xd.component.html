@@ -47,6 +47,7 @@
 @import { TemplatesForPage } from '../../pages/templates/for/for.xd.component.ts'
 @import { TemplatesIfPage } from '../../pages/templates/if/if.xd.component.ts'
 @import { TemplatesImportsPage } from '../../pages/templates/imports/imports.xd.component.ts'
+@import { TemplatesLetPage } from '../../pages/templates/let/let.xd.component.ts'
 @import { TemplatesOverviewPage } from '../../pages/templates/overview/overview.xd.component.ts'
 @import { TemplatesReusableTemplatesPage } from '../../pages/templates/reusable-templates/reusable-templates.xd.component.ts'
 @import { TemplatesSvgMathmlPage } from '../../pages/templates/svg-mathml/svg-mathml.xd.component.ts'
@@ -199,6 +200,9 @@
   }
   @case ('templates/imports') {
     <page-templates-imports />
+  }
+  @case ('templates/let') {
+    <page-templates-let />
   }
   @case ('templates/overview') {
     <page-templates-overview />

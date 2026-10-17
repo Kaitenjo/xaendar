@@ -19,6 +19,7 @@ import { lexImportPath } from '../states/lex-import-path/lex-import-path.state';
 import { lexImport } from '../states/lex-import/lex-import.state';
 import { lexInterpolationExpression } from '../states/lex-interpolation-expression/lex-interpolation-expression.state';
 import { lexInterpolation } from '../states/lex-interpolation/lex-interpolation.state';
+import { lexLet } from '../states/lex-let/lex-let.state';
 import { lexTagBody } from '../states/lex-tag-body/lex-tag-body.state';
 import { lexTagClose } from '../states/lex-tag-close/lex-tag-close.state';
 import { lexTagOpenEnd } from '../states/lex-tag-open-end/lex-tag-open-end.state';
@@ -83,7 +84,8 @@ export class Lexer {
     [LexerState.DIRECTIVE_BODY]: lexDirectiveBody,
     [LexerState.STRUCTURAL_DIRECTIVE]: lexStructuralDirective,
     [LexerState.TEMPLATE_VARIABLE]: lexTemplateVariable,
-    [LexerState.RENDER]: lexRender
+    [LexerState.RENDER]: lexRender,
+    [LexerState.LET]: lexLet
   }
 
   /**

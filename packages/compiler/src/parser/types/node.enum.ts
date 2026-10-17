@@ -77,5 +77,9 @@ export enum ASTNodeType {
   /**
    * The render of a template, `@render name(…)`.
    */
-  Render
+  Render,
+  /**
+   * The declaration of a name for the value of an expression, `@let name = value;`.
+   */
+  Let
 }

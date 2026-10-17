@@ -50,6 +50,7 @@ export type * from './parser/types/nodes/if-node.type';
 export type * from './parser/types/nodes/import-node.type';
 export type * from './parser/types/nodes/import-specifier.type';
 export type * from './parser/types/nodes/interpolation-node.type';
+export type * from './parser/types/nodes/let-node.type';
 export type * from './parser/types/nodes/structural-directive-node.type';
 export type * from './parser/types/nodes/render-node.type';
 export type * from './parser/types/nodes/template-node.type';

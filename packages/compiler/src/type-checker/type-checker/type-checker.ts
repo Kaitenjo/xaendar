@@ -8,6 +8,7 @@ import { typeCheckElement } from '../states/type-check-element/type-check-elemen
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
 import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';
 import { typeCheckImport } from '../states/type-check-import/type-check-import.state.js';
+import { typeCheckLet } from '../states/type-check-let/type-check-let.state.js';
 import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
@@ -35,7 +36,8 @@ import { checkVariableOrder } from '../utils/variable-order/variable-order.utils
  *   variable names (`#name`), which are declared at the start of the block
  *   of their scope, typed with the type of the element. A template
  *   (`<template #name(…)>`) is declared there too, its content is an arrow
- *   function taking its parameters, and a `@render` calls it.
+ *   function taking its parameters, and a `@render` calls it. A `@let` is
+ *   declared there too, typed with the constant its value is checked in.
  * - No control-flow block gets its own function. In the JS output, each
  *   `@if`/`@for`/`@switch` becomes a separate function because it needs
  *   its own runtime closure over the `Context` chain. The type checker has
@@ -63,7 +65,8 @@ export class TypeChecker {
     [ASTNodeType.Switch]: typeCheckSwitch,
     [ASTNodeType.Import]: typeCheckImport,
     [ASTNodeType.Template]: typeCheckTemplate,
-    [ASTNodeType.Render]: typeCheckRender
+    [ASTNodeType.Render]: typeCheckRender,
+    [ASTNodeType.Let]: typeCheckLet
   };
   /**
    * The errors of the nodes that failed type-checking during a `generateTolerant()` call; `undefined` while a node
@@ -93,12 +96,13 @@ export class TypeChecker {
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
+   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = []): Promise<TypeCheckResult> {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements, symbols);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers);
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
@@ -113,14 +117,15 @@ export class TypeChecker {
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
+   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<TypeCheckTolerantResult> {
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = []): Promise<TypeCheckTolerantResult> {
     const errors = new Array<Error>();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers), errors };
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     } finally {
@@ -135,16 +140,21 @@ export class TypeChecker {
    * @param shadowingMembers - Class members named like a global identifier.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries.
    * @param symbols - The symbols the template imports from modules.
+   * @param reactiveMembers - Class members that can read a signal.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[]): TypeCheckResult {
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[]): TypeCheckResult {
     this._context.addImport(...metadatas);
     this._context.addSymbolImport(...symbols);
     for (let i = 0; i < shadowingMembers.length; i++) {
       this._context.addShadowingMember(shadowingMembers[i]);
     }
     this._context.addCustomElementPatterns(...customElements);
+    // The signals the members read decide only whether a @let is a signal: the expressions read every member through root
+    for (let i = 0; i < reactiveMembers.length; i++) {
+      this._context.addSignalClassField(reactiveMembers[i]);
+    }
 
     // The template variables read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
     const orderErrors = checkVariableOrder(this._ast);
@@ -163,8 +173,8 @@ export class TypeChecker {
     // The template is the outermost scope: the template variables it declares come first in the function
     const { declarations, lines: body } = typeCheckScope(this._ast.filter(node => node.type !== ASTNodeType.Import), this._context, this._processNode);
 
-    // The types and the function the type-check code of the templates is written with are declared once, before the function
-    const prelude = this._context.declaresTemplates ? imports.concat(getTemplateHelpers()) : imports;
+    // The types and the functions the type-check code of the templates and of the @let is written with are declared once, before the function
+    const prelude = this._context.usesTemplateHelpers ? imports.concat(getTemplateHelpers()) : imports;
     // The modules the types of the bindings reference are imported once, before the function
     const lines = hoistImportTypes(prelude.concat(plain('function typeCheck() {'), indentLines(declarations.concat(body)), plain('}')));
 

@@ -20,6 +20,8 @@ import { IfToken } from './tokens/if-token.type';
 import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
 import { InterpolationExpressionToken } from './tokens/interpolation-expression-token.type';
+import { LetDeclarationToken } from './tokens/let-declaration-token.type';
+import { LetToken } from './tokens/let-token.type';
 import { RenderCallToken } from './tokens/render-call-token.type';
 import { RenderToken } from './tokens/render-token.type';
 import { StructuralDirectiveToken } from './tokens/structural-directive-token.type';
@@ -64,6 +66,8 @@ export type Token =
   | TemplateVariableToken
   | RenderToken
   | RenderCallToken
+  | LetToken
+  | LetDeclarationToken
   | EOFToken;
 
 export type TokenWithOptionalSpan = 
@@ -95,7 +99,9 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<StructuralDirectiveToken>
   | MaybeTokenWithSpan<TemplateVariableToken>
   | MaybeTokenWithSpan<RenderToken>
-  | MaybeTokenWithSpan<RenderCallToken>;
+  | MaybeTokenWithSpan<RenderCallToken>
+  | MaybeTokenWithSpan<LetToken>
+  | MaybeTokenWithSpan<LetDeclarationToken>;
 
 export type TokenWithSpan<T extends { type: TokenType }> = T & {
   span: Span

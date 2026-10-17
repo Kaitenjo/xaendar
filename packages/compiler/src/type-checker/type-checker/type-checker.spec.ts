@@ -4,7 +4,9 @@ import { Parser } from '../../parser/parser/parser';
 import { ASTNode } from '../../parser/types/ast.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import type { TemplateError } from '../../models/template-error/template-error.model';
+import type { ImportNode } from '../../parser/types/nodes/import-node.type';
 import { ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
+import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type';
 import { TypeChecker } from './type-checker';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
@@ -44,6 +46,7 @@ describe('TypeChecker', () => {
       'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params>, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<__Values<Required<Params>>, Count> : __Values<Params>) => void;',
       'declare function __default<Value>(value: Value): __Parameter<Value>;',
       'declare function __optional<Value>(): __Parameter<Value | undefined>;',
+      'declare function __let<Value>(value: Value): __module0.Computed<Value>;',
       'function typeCheck() {',
       `  type __Params${start} = Parameters<typeof __template${start}>;`,
       `  let row!: __Template<__Params${start}>;`,
@@ -54,12 +57,60 @@ describe('TypeChecker', () => {
       '}'
     ].join('\n'));
     // The name of the template, the @render, the parameters and the content are mapped onto the template
-    expect([...mappingTable.keys()]).toEqual([10, 11, 12, 13]);
+    expect([...mappingTable.keys()]).toEqual([11, 12, 13, 14]);
   });
 
   it('writes no template helper for a template declaring no template', async () => {
     const template = '<p>{ name }</p>';
     expect((await new TypeChecker(template, parse(template)).generate([])).text).not.toContain('__Template');
+  });
+
+  it('declares the @let at the start of their scope, typed with the constant their value is checked in, as signals when they read a reactive member, a reactive import or another signal @let', async () => {
+    const template = [
+      '@import { count, format } from \'./store\'',
+      '<button (click)="pick(label)">Go</button>',
+      '@let total = price() * 2;',
+      '@let doubled = total() * 2;',
+      '@let counted = count() + 1;',
+      '@let label = format(unit);'
+    ].join('\n');
+    const ast = parse(template);
+    const [count, format] = (ast[0] as ImportNode).specifiers;
+    const symbols: SymbolImport[] = [
+      { ...count, type: 'symbol', modulePath: '/store.ts', reactive: true },
+      { ...format, type: 'symbol', modulePath: '/store.ts', reactive: false }
+    ];
+    const at = (text: string) => template.indexOf(text);
+    const { text } = await new TypeChecker(template, ast).generate([], [], [], symbols, ['price']);
+
+    expect(text).toContain('declare function __let<Value>(value: Value): __module0.Computed<Value>;');
+    expect(text).toContain([
+      'function typeCheck() {',
+      `  let total!: typeof __let${at('@let total')};`,
+      `  let doubled!: typeof __let${at('@let doubled')};`,
+      `  let counted!: typeof __let${at('@let counted')};`,
+      `  let label!: typeof __let${at('@let label')};`,
+      '  root.pick(label);',
+      `  const __let${at('@let total')} = __let(root.price() * 2);`,
+      `  const __let${at('@let doubled')} = __let(total() * 2);`,
+      `  const __let${at('@let counted')} = __let(count() + 1);`,
+      `  const __let${at('@let label')} = format(root.unit);`,
+      '}'
+    ].join('\n'));
+  });
+
+  it('writes no template helper for @let reading no signal', async () => {
+    const template = '@let label = title;';
+    expect((await new TypeChecker(template, parse(template)).generate([])).text).toBe(`function typeCheck() {\n  let label!: typeof __let0;\n  const __let0 = root.title;\n}`);
+  });
+
+  it.each([
+    ['read before it', '<p>{ total }</p>@let total = 1;', '"total" is read before its @let: only an event handler can read a @let declared after it'],
+    ['read by its own value', '@let total = total + 1;', '"total" is read before its @let'],
+    ['read by a template rendered before it', '@render row()<template #row()>{ total }</template>@let total = 1;', '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler'],
+    ['read by the track expression of a @for', '@for (item of items; track total) { @let total = 1; }', 'The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables']
+  ])('fails on a @let %s', async (_description, template, message) => {
+    await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow(message);
   });
 
   it('fails on a template variable read before its element is created', async () => {

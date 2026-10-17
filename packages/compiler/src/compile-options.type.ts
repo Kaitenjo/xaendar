@@ -60,6 +60,12 @@ export type CompileOptions = {
    */
   shadowingMembers?: readonly string[];
   /**
+   * Names of the component class members (inherited ones included) that can read a signal, as listed by
+   * `extractComponentMembers`: the type-check tells by them whether a `@let` reading them is a signal, as the generated
+   * code does by `signals`. Defaults to `signals`, or to none.
+   */
+  reactiveMembers?: readonly string[];
+  /**
    * Patterns of the tag names of the custom elements of other libraries (e.g. `sl-*`), where `*` stands
    * for any sequence of characters. The template uses them like native elements: their attributes and
    * listeners are not checked against a component, and an event missing from `HTMLElementEventMap`

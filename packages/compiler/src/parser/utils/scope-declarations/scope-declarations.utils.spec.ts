@@ -70,6 +70,18 @@ describe('visitScopeDeclarations', () => {
     expect(templates).toEqual([['row', 'html'], ['dot', 'svg']]);
     expect(variables).toEqual([]);
   });
+
+  it('visits the @let of the scope, however deeply nested, together with the other declarations in the order they are written', () => {
+    const names = new Array<string>();
+    const template = '@let first = 1;<div><input #name />@let second = 2;</div><template #row() />@if (open()) { @let inBranch = 3; }';
+    visitScopeDeclarations(parse(template), 'html', {
+      variable: (_element, { name }) => names.push(name),
+      template: ({ variable: { name } }) => names.push(name),
+      let: ({ name }) => names.push(name)
+    });
+
+    expect(names).toEqual(['first', 'name', 'second', 'row']);
+  });
 });
 
 describe('isStructuralElement', () => {

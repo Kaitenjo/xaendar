@@ -46,11 +46,13 @@ type ScanState = {
  * getExpressionContext('<b (click)="pick()">x</b>', 17);   // { kind: 'argument', span: { start: 17, end: 17 }, source: '<b (click)="pick(__xaendarCompletion__, $event)">x</b>' }
  * getExpressionContext('@if (ok', 7);                      // { kind: 'condition', span: { start: 5, end: 7 }, source: '@if (ok) {}' }
  * getExpressionContext('@render row(it', 14);              // { kind: 'render', span: { start: 12, end: 14 }, source: '@render row(it)' }
+ * getExpressionContext('@let a = it', 11);                 // { kind: 'let', span: { start: 9, end: 11 }, source: '@let a = it;' }
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
  * @returns The expression being written, `undefined` if the offset is not in an interpolation, in the handler of an
- *   event, in the condition of `@if`, `@else if`, `@for` or `@switch`, or in the arguments of a `@render`.
+ *   event, in the condition of `@if`, `@else if`, `@for` or `@switch`, in the arguments of a `@render`, or in the value
+ *   of a `@let`.
  */
 export function getExpressionContext(source: string, offset: number): ExpressionContext | undefined {
   const before = source.slice(0, offset);
@@ -111,6 +113,25 @@ export function getExpressionContext(source: string, offset: number): Expression
       return closed && { kind: 'render', span, source: `${head}${closed.closers})${closed.after}` };
     }
 
+    case LexerState.LET: {
+      // The keyword `@let` is the last token, the value starts after the `=` following the name
+      const equal = before.indexOf('=', lastToken!.span.end);
+      if (equal === -1) {
+        return undefined;
+      }
+
+      const state: ScanState = { nesting: [], quote: undefined };
+      scanExpression(before, equal + 1, offset, state, ';');
+      if (!isClosable(state)) {
+        return undefined;
+      }
+
+      // The value goes on after the offset up to the `;` ending it, if any: the template after the `;` is kept
+      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, ';');
+      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
+      return { kind: 'let', span, source: `${head}${closersOf(state)};${after}` };
+    }
+
     case LexerState.EVENT_HANDLER:
     case LexerState.EVENT_PARAMETER: {
       // The handler is written between the double quotes after the event, up to the one closing it
@@ -146,10 +167,10 @@ export function getExpressionContext(source: string, offset: number): Expression
  * @param end - The offset the scan ends at, excluded.
  * @param state - The state at `start`, updated to the one at the end of the scan.
  * @param closer - The character closing the construct the expression is in: the `}` of an interpolation, the `)` of a
- *   condition or of the call of an event.
+ *   condition or of the call of an event, the `;` ending the value of a `@let`.
  * @returns The offset of the character closing the construct the expression is in, which stops the scan, `-1` if none is met.
  */
-function scanExpression(text: string, start: number, end: number, state: ScanState, closer: '}' | ')'): number {
+function scanExpression(text: string, start: number, end: number, state: ScanState, closer: '}' | ')' | ';'): number {
   const { nesting } = state;
   for (let i = start; i < end; i++) {
     const char = text[i];
@@ -196,6 +217,12 @@ function scanExpression(text: string, start: number, end: number, state: ScanSta
           }
           break;
         }
+
+        case ';':
+          if (closer === ';' && !nesting.length) {
+            return i;
+          }
+          break;
       }
     }
   }

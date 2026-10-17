@@ -121,6 +121,14 @@ export enum TokenType {
    */
   RENDER_CALL,
   /**
+   * Opening keyword of a `@let`, e.g. `@let` in `@let total = price() * quantity();`.
+   */
+  LET,
+  /**
+   * The declaration after `@let`, e.g. `total = price() * quantity();` in `@let total = price() * quantity();`.
+   */
+  LET_DECLARATION,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

@@ -102,5 +102,10 @@ export enum LexerState {
    * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item())` in
    * `@render row(item())`.
    */
-  RENDER = 'render'
+  RENDER = 'render',
+  /**
+   * Consuming the declaration after `@let`: its name and its value up to the `;` ending it, e.g.
+   * `total = price() * quantity();` in `@let total = price() * quantity();`.
+   */
+  LET = 'let'
 }

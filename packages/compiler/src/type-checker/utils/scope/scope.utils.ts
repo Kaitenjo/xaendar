@@ -1,5 +1,8 @@
 import type { ASTNode } from '../../../parser/types/ast.type';
+import type { IdentifierKind } from '../../../generator/models/compiler-context/compiler-context.model';
+import { resolveExpression, ROOT_NODE } from '../../../generator/utils/generator/generator.utils';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
+import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
@@ -9,7 +12,7 @@ import type { Line } from '../../types/generated-line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped, plain } from '../line-builder/line-builder.utils';
 import { getElementType } from '../namespace-types/namespace-types.utils';
-import { getContentFunction, getParametersType, TEMPLATE } from '../template-types/template-types.utils';
+import { getContentFunction, getLetValue, getParametersType, TEMPLATE } from '../template-types/template-types.utils';
 
 /**
  * The class of a generic component or directive instantiated with the types of its type parameters, that the types of
@@ -30,11 +33,15 @@ export function getInstantiationSuffix(element: Pick<ElementNode, 'span'>): stri
 }
 
 /**
- * Type-checks the nodes of a scope in its context, together with the declarations of the template variables and of the
- * templates it declares, which the expressions and the `@render`s of the whole scope read as written, the ones written
- * before their declaration too. The names are registered in the context before the nodes are checked, and declared once
- * they are, when it is known whether the generic components the variables name were instantiated. A name declared twice
- * in the scope is registered once: TypeScript reports both its declarations.
+ * Type-checks the nodes of a scope in its context, together with the declarations of the template variables, of the
+ * templates and of the `@let` it declares, which the expressions and the `@render`s of the whole scope read as written,
+ * the ones written before their declaration too. The names are registered in the context before the nodes are checked,
+ * and declared once they are, when it is known whether the generic components the variables name were instantiated. A
+ * name declared twice in the scope is registered once: TypeScript reports both its declarations.
+ *
+ * The `@let` are registered after the other names, in the order they are written, as signals when their value reads one,
+ * as the render code does: the value of one tells whether it reads the signal of another one written before it. A
+ * `@let` is typed with the constant its value is checked in, where it is written (see `typeCheckLet`).
  *
  * @param nodes - The nodes of the scope.
  * @param context - The context of the scope.
@@ -42,19 +49,26 @@ export function getInstantiationSuffix(element: Pick<ElementNode, 'span'>): stri
  * @returns The declarations of the names, to write at the start of the block of the scope, and the lines of the nodes.
  */
 export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckContext, processNode: ProcessNode): { declarations: Line[], lines: Line[] } {
-  const register = (name: string): void => {
+  const register = (name: string, kind: IdentifierKind = 'value'): void => {
     if (!context.declaresIdentifier(name)) {
-      context.addUnresolvableIdentifier(name, 'value');
+      context.addUnresolvableIdentifier(name, kind);
     }
   };
 
+  const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, context.namespace, {
     variable: (_element, { name }) => register(name),
     template: ({ variable: { name } }, namespace) => {
       register(name);
       context.addTemplate(name, namespace);
-    }
+    },
+    let: node => lets.push(node)
   });
+
+  for (let i = 0; i < lets.length; i++) {
+    const { name, value } = lets[i];
+    register(name, resolveExpression(value, context, { resolver: ROOT_NODE }).reactive ? 'signal' : 'value');
+  }
 
   const lines = nodes.flatMap(node => processNode(node, context));
   const declarations = new Array<Line>();
@@ -62,7 +76,8 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
     variable: (element, { name, nameSpan }, namespace) => {
       declarations.push(line('let ', mapped(name, nameSpan), `!: ${getVariableType(element, namespace, context)};`));
     },
-    template: template => declarations.push(...declareTemplate(template))
+    template: template => declarations.push(...declareTemplate(template)),
+    let: node => declarations.push(line('let ', mapped(node.name, node.nameSpan), `!: typeof ${getLetValue(node)};`))
   });
 
   return { declarations, lines };

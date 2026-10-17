@@ -6,6 +6,7 @@ import { ASTNodeType } from '../../types/node.enum';
 import type { ConditionalBindingBranchNode } from '../../types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../types/nodes/conditional-binding-node.type';
 import type { ElementNode } from '../../types/nodes/element-node.type';
+import type { LetNode } from '../../types/nodes/let-node.type';
 import type { TemplateNode } from '../../types/nodes/template-node.type';
 import type { TemplateVariableNode } from '../../types/nodes/template-variable-node.type';
 
@@ -21,12 +22,16 @@ export type ScopeDeclarationVisitor = {
    * Invoked for every template the scope declares, with the namespace its content is created in.
    */
   readonly template?: VoidFunction<[template: TemplateNode, namespace: ElementNamespace]>;
+  /**
+   * Invoked for every `@let` of the scope.
+   */
+  readonly let?: VoidFunction<[node: LetNode]>;
 };
 
 /**
- * Visits the names a scope of a template declares, which are visible in the whole of it, before their declaration too:
- * the template variables of its elements and its templates, however deeply nested, since an element doesn't open a
- * scope. A control-flow block, the content of an element a structural directive is applied to and the content of a
+ * Visits the names a scope of a template declares, in the order they are written, which are visible in the whole of it,
+ * before their declaration too: the template variables of its elements, its templates and its `@let`s, however deeply
+ * nested, since an element doesn't open a scope. A control-flow block, the content of an element a structural directive is applied to and the content of a
  * template are scopes of their own, whose declarations are not visited.
  *
  * @example
@@ -55,6 +60,10 @@ export function visitScopeDeclarations(nodes: readonly ASTNode[], namespace: Ele
 
       case ASTNodeType.Template:
         visitor.template?.(node, namespace);
+        break;
+
+      case ASTNodeType.Let:
+        visitor.let?.(node);
         break;
     }
   }

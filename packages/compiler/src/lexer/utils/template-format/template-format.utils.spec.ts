@@ -280,6 +280,14 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('writes a @let on a line of its own, with a space around its =', () => {
+      expect(format('<p>a</p>@let   total=price()  *  2  ;<p>{ total() }</p>')).toBe(lines(
+        '<p>a</p>',
+        '@let total = price()  *  2;',
+        '<p>{ total() }</p>'
+      ));
+    });
+
     it('writes the type arguments of an element right after its tag name, also when the tag is wrapped', () => {
       expect(format('<ex-list(  string,  number ) items="{rows}"/>')).toBe(lines('<ex-list(string,  number) items="{rows}" />'));
       expect(format('<ex-list(Row) items="{rows()}" label="A long enough label" (picked)="open($event)"></ex-list>')).toBe(lines(

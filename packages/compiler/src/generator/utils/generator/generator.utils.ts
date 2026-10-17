@@ -203,7 +203,7 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
 
 /**
  * Resolves an identifier of an expression: to an identifier left as written, a variable of the template scope,
- * a signal member, a name the template imports, or a member reached through the resolver.
+ * a signal member or another member, both reached through the resolver, or a name the template imports.
  * The variables of the template shadow the members and the imported names, as the type-check code reads them.
  *
  * @param text - The name of the identifier.
@@ -221,8 +221,9 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
     return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
   }
 
+  const member = options.resolver ? `${options.resolver}.${text}` : text;
   if (compilerContext.hasSignalField(text)) {
-    return { expression: `this.${text}`, reactive: true };
+    return { expression: member, reactive: true };
   }
 
   const imported = compilerContext.getImportedIdentifier(text);
@@ -231,11 +232,7 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
     return { expression: imported.expression, reactive: imported.kind === 'signal' };
   }
 
-  if (options.resolver) {
-    return { expression: `${options.resolver}.${text}` };
-  }
-
-  return { expression: text };
+  return { expression: member };
 }
 
 /**

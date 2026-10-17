@@ -78,6 +78,15 @@ describe('lexFlowControl', () => {
     expect(cursor.peek()).toBe('r'.charCodeAt(0));
   });
 
+  it('recognises @let', () => {
+    const cursor = new LexerCursor('@let total = 1;');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.LET,
+      tokens: [{ type: TokenType.LET }]
+    });
+    expect(cursor.peek()).toBe('t'.charCodeAt(0));
+  });
+
   it('recognises @import', () => {
     const cursor = new LexerCursor('@import { X } from "./x"');
     expect(lexFlowControl(cursor, context)).toEqual({

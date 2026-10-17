@@ -3,14 +3,14 @@ import type { Span } from '../../../types/span.type';
 /**
  * Where an expression is being written: in an interpolation (`{ expression }`, in the text or as the value of an
  * attribute), on the name of the method an event calls (`(name)="method()"`), in its arguments, in the condition
- * of `@if`, `@else if`, `@for` or `@switch`, or in the arguments of a `@render`.
+ * of `@if`, `@else if`, `@for` or `@switch`, in the arguments of a `@render`, or in the value of a `@let`.
  */
 export type ExpressionContext = {
   /**
    * Whether the offset is in an interpolation, on the name of the method an event calls, in its arguments, in a
-   * condition or in the arguments of a `@render`.
+   * condition, in the arguments of a `@render` or in the value of a `@let`.
    */
-  readonly kind: 'interpolation' | 'handler' | 'argument' | 'condition' | 'render';
+  readonly kind: 'interpolation' | 'handler' | 'argument' | 'condition' | 'render' | 'let';
   /**
    * The span of the part of the identifier written so far, empty when nothing is written yet.
    */

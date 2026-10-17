@@ -1,0 +1,5 @@
+@let address = user().address;                 <!-- reads a signal: a signal, read as address() -->
+@let country = defaults.country;               <!-- reads no signal: a value, computed once -->
+
+<p>{ address().street }</p>
+<p>{ address().zip } { address().city }, { country }</p>

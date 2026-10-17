@@ -116,6 +116,7 @@
       "templates/switch": "Diramazioni con @switch",
       "templates/conditional-bindings": "Binding condizionali",
       "templates/template-variables": "Variabili di template",
+      "templates/let": "@let",
       "templates/reusable-templates": "Template riutilizzabili",
       "templates/expressions": "Sintassi delle espressioni",
       "templates/imports": "Import",
@@ -1510,7 +1511,8 @@
           "td16": "Pipe",
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
-          "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template riutilizzabili</a>"
+          "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template riutilizzabili</a>",
+          "td20": "<code>@let</code>, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
@@ -1519,7 +1521,7 @@
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
             "heading": "Non disponibile",
-            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi come <code>(keydown.enter)</code>, <code>@defer</code>, <code>@let</code>, <code>@empty</code>, i template passati ad altri componenti e il rendering lato server. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
+            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi come <code>(keydown.enter)</code>, <code>@defer</code>, <code>@empty</code>, i template passati ad altri componenti e il rendering lato server. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
           }
         }
       },
@@ -1575,7 +1577,7 @@
           "th2": "Al suo posto",
           "td1": "<code>prop=\"{ … }\"</code> e un listener; una direttiva che scrive la proprietà",
           "td2": "Un filtro nel metodo: <code>(keydown.enter)</code> ascolta un evento con quel nome",
-          "td3": "<code>@if</code> intorno al <code>@for</code>; computed; import dinamici",
+          "td3": "<code>@if</code> intorno al <code>@for</code>; import dinamici",
           "td4": "Pipe",
           "td5": "Metodi e computed"
         }
@@ -2427,6 +2429,56 @@
           "td4": "Legge l’elemento dopo la sua dichiarazione: una proprietà del DOM non è un signal, quindi il testo non ne segue le modifiche."
         }
       },
+      "let": {
+        "eyebrow": "Template",
+        "title": "@let",
+        "lead": "<code>@let nome = valore;</code> dà un nome a una parte di un signal che il template legge più volte, come un campo dell’oggetto che contiene: <code>@let address = user().address;</code>, poi <code>address().city</code>, invece di un getter nella classe che serve solo ad accorciare l’accesso. I calcoli restano nella classe, in un <code>computed</code> o in un metodo.",
+        "declaring": {
+          "title": "Dichiarare una @let",
+          "p1": "Una <code>@let</code> va ovunque possa stare del contenuto: il nome, <code>=</code>, un’espressione e un <code>;</code>, obbligatorio. Il valore può andare a capo, e un <code>;</code> dentro una stringa o tra parentesi tonde, quadre o graffe non lo chiude. Una <code>@let</code> non renderizza niente e non si può riassegnare: il suo valore segue l’espressione con cui è dichiarata.",
+          "example1": "Un indirizzo letto tramite una @let",
+          "p2": "<code>address</code> legge <code>user</code>, quindi è un signal: <code>move()</code> cambia l’utente e aggiorna le righe che lo leggono. <code>country</code> legge un membro costante, quindi è un valore, calcolato una volta."
+        },
+        "signals": {
+          "title": "Signal o valore",
+          "p1": "Il compilatore li distingue da ciò che legge il valore, come fa per i binding: un membro signal, un metodo o un getter del componente che ne legge uno, un signal importato con <code>@import</code>, una variabile di <code>@for</code>, un parametro di un template, o un’altra <code>@let</code> signal. In questi casi anche la <code>@let</code> è un signal, letto con <code>nome()</code>: calcola il suo valore quando viene letto, e di nuovo quando cambia ciò che legge, così si aggiornano solo i nodi che la leggono. Altrimenti è un valore, calcolato una volta quando nasce il suo scope, e letto come <code>nome</code>.",
+          "p2": "Il suo tipo è quello che TypeScript deduce per il valore, un <code>Computed</code> di quel tipo per un signal. TypeScript segnala un signal letto senza tonde, come <code>total.toFixed(2)</code>, e un valore chiamato come una funzione. Un valore scritto come letterale mantiene il tipo letterale: <code>@let mode = 'grid';</code> ha tipo <code>'grid'</code>."
+        },
+        "scope": {
+          "title": "Scope e ordine",
+          "p1": "Una <code>@let</code> ha lo scope di una <a href=\"#/it/templates/template-variables\">variabile di template</a>: tutto il template, un ramo di <code>@if</code>, un caso di <code>@switch</code>, una riga di <code>@for</code>, il contenuto di un template o di un elemento a cui è applicata una direttiva strutturale, anche dentro altri elementi. Uno scope annidato può dichiarare una <code>@let</code> con lo stesso nome di una esterna, che nasconde.",
+          "example1": "Una @let per ogni riga",
+          "p2": "Ogni riga ha il suo <code>stats</code>, un signal perché legge l’item della riga: completare un’attività aggiorna solo la riga di quella persona.",
+          "p3": "Una <code>@let</code> viene inizializzata quando il render la raggiunge: un handler può leggerla ovunque nel suo scope, mentre ogni altra espressione, compreso il suo stesso valore, la legge solo dopo il suo <code>;</code>. Il contenuto di un template la legge solo se ogni <code>@render</code> del template viene dopo. Il compilatore segnala gli altri casi:"
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Signal che il compilatore non segue",
+            "body": "Una funzione di un altro modulo, o un membro di un altro oggetto, che legge un signal non rende signal una <code>@let</code>: il compilatore segue solo i membri del componente, gli import e le variabili del template. Una <code>@let</code> così viene calcolata una volta: leggi il signal direttamente, o tramite un membro del componente."
+          },
+          "callout2": {
+            "heading": "Eventi durante il render",
+            "body": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo <code>onInit</code>, può leggere una <code>@let</code> che il render non ha ancora raggiunto: lancia un <code>ReferenceError</code> che la nomina, invece di leggerne un’altra con lo stesso nome."
+          },
+          "callout3": {
+            "heading": "La track expression di @for",
+            "body": "La track expression di un <code>@for</code> legge solo l’item e le variabili implicite del ciclo: non può leggere una <code>@let</code>, nemmeno una dichiarata fuori dal ciclo."
+          },
+          "callout4": {
+            "heading": "Dove si dichiara una @let",
+            "body": "Una <code>@let</code> si dichiara nel contenuto, mai tra i binding di un tag, con un nome tutto suo nel suo scope: TypeScript segnala una variabile di template, un template o un’altra <code>@let</code> con lo stesso nome. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
+          }
+        },
+        "apiSummary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Descrizione",
+          "td1": "Dà un nome al valore dell’espressione nel suo scope: le espressioni lo leggono dopo il suo <code>;</code>, gli handler ovunque.",
+          "td2": "Legge una <code>@let</code> il cui valore legge un signal: è un signal, aggiornato quando cambia ciò che legge.",
+          "td3": "Legge una <code>@let</code> il cui valore non legge signal: un valore, calcolato una volta."
+        }
+      },
       "reusableTemplates": {
         "eyebrow": "Template",
         "title": "Template riutilizzabili",
@@ -3018,6 +3070,10 @@
       "cause": "Un @render senza il nome del template, senza parentesi, o con uno spazio o un punto tra il nome e le parentesi.",
       "fix": "Scrivi @render nome(argomenti), con () quando il template non ha parametri."
     },
+    "[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;": {
+      "cause": "Una @let senza nome o senza =, o il cui blocco si chiude prima del suo ;. Lo stesso messaggio arriva come [Parser] quando il template finisce prima del ;, o manca il valore.",
+      "fix": "Scrivi @let nome = valore; con un ; alla fine del valore."
+    },
     "[Parser] <input> declares more than one template variable (#first, #second): an element has a single name": {
       "cause": "Due variabili di template sullo stesso elemento.",
       "fix": "Tieni un solo nome per elemento."
@@ -3028,6 +3084,10 @@
     },
     "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.": {
       "cause": "Una variabile di template con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
+      "fix": "Usa un identificatore che il codice generato non riserva."
+    },
+    "[Parser] '2total' is not a valid name for a @let: it must be an identifier.": {
+      "cause": "Una @let con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
       "fix": "Usa un identificatore che il codice generato non riserva."
     },
     "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())": {
@@ -3090,6 +3150,22 @@
       "cause": "Il contenuto di un template legge una variabile di template di uno scope esterno, fuori da un handler, e un @render del template viene prima dell’elemento della variabile.",
       "fix": "Sposta il @render dopo l’elemento, oppure passa il valore come argomento."
     },
+    "[TypeChecker] \"total\" is read before its @let: only an event handler can read a @let declared after it": {
+      "cause": "Un’interpolazione, un binding, una condizione, l’iterabile di un @for, un argomento di un @render o il valore di una @let, compreso il suo, che legge una @let che viene dopo nel suo scope.",
+      "fix": "Sposta la @let prima dell’espressione, oppure leggila da un handler, che viene eseguito quando il template è renderizzato."
+    },
+    "[TypeChecker] \"total\" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler": {
+      "cause": "Il contenuto di un template legge una @let di uno scope esterno, fuori da un handler, e un @render del template viene prima della @let.",
+      "fix": "Sposta il @render dopo la @let, oppure passa il valore come argomento."
+    },
+    "[TypeChecker] The track expression of a @for cannot read the @let \"total\": it only reads the item of the @for and its implicit variables": {
+      "cause": "Una @let letta dalla track expression di un @for.",
+      "fix": "Usa come track l’item, una sua proprietà, oppure $index."
+    },
+    "Property 'toFixed' does not exist on type 'Computed<number>'.": {
+      "cause": "Una @let il cui valore legge un signal è un signal, qui letto senza tonde.",
+      "fix": "Chiamala: total().toFixed(2)."
+    },
     "Expected 2 arguments, but got 1.": {
       "cause": "Un @render che passa meno o più argomenti dei parametri del template: viene segnalato sul @render, o sugli argomenti in più.",
       "fix": "Passa un argomento per ogni parametro."
@@ -3097,6 +3173,10 @@
     "ReferenceError: Template variable \"field\" is read before the element it names is rendered": {
       "cause": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo onInit, che legge una variabile di template il cui elemento non è ancora creato.",
       "fix": "Emetti l’evento dopo il render (afterRender), oppure leggi la variabile più tardi."
+    },
+    "ReferenceError: @let \"total\" is read before its declaration is rendered": {
+      "cause": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo onInit, che legge una @let che il render non ha ancora raggiunto.",
+      "fix": "Emetti l’evento dopo il render (afterRender), oppure leggi la @let più tardi."
     },
     "[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()": {
       "cause": "Un’espressione di track che è l’item o una variabile implicita senza parentesi: la chiave sarebbe il signal, una funzione nuova ogni volta, e nessuna riga verrebbe riusata.",

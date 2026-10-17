@@ -10,6 +10,7 @@ import { parseForControlFlow } from '../states/parse-for/parse-for.state.js';
 import { parseIfControlFlow } from '../states/parse-if/parse-if.state.js';
 import { parseImport } from '../states/parse-import/parse-import.state.js';
 import { parseInterpolation } from '../states/parse-interpolation/parse-interpolation.state.js';
+import { parseLet } from '../states/parse-let/parse-let.state.js';
 import { parseRender } from '../states/parse-render/parse-render.state.js';
 import { parseSwitchControlFlow } from '../states/parse-switch/parse-switch.state.js';
 import { parseText } from '../states/parse-text/parse-text.state.js';
@@ -46,7 +47,8 @@ export class Parser {
     [TokenType.FOR]: parseForControlFlow,
     [TokenType.SWITCH]: parseSwitchControlFlow,
     [TokenType.IMPORT]: parseImport,
-    [TokenType.RENDER]: parseRender
+    [TokenType.RENDER]: parseRender,
+    [TokenType.LET]: parseLet
   }
   /**
    * In rare situations, parse node could be called recursively.

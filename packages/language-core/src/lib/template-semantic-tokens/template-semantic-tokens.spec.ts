@@ -80,4 +80,16 @@ describe('getTemplateSemanticTokens', () => {
       ['label', 'variable', 'readonly']
     ]);
   }, TIMEOUT);
+
+  it('colors the @let where declared and where read', async () => {
+    const source = '@let label = title;\n@let shout = label + \'!\';\n<p>{ shout }</p>';
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([
+      ['label', 'variable', 'readonly'],
+      ['shout', 'variable', 'readonly'],
+      ['label', 'variable', 'readonly'],
+      ['shout', 'variable', 'readonly']
+    ]);
+  }, TIMEOUT);
 });

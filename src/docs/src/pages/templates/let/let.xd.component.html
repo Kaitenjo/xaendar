@@ -1,0 +1,76 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ShippingAddressComponent } from '../../../examples/templates/let/shipping-address/shipping-address.xd.component.ts'
+@import { WorkloadComponent } from '../../../examples/templates/let/workload/workload.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span @@i18n(key="pages.templates.let.eyebrow") class="eyebrow" />
+<h1 @@i18n(key="pages.templates.let.title") />
+<p @@i18n(key="pages.templates.let.lead") class="lead" />
+
+<h2 @@i18n(key="pages.templates.let.declaring.title") />
+<docs-code snippet="templates/let-syntax.html" />
+<p @@i18n(key="pages.templates.let.declaring.p1") />
+<docs-example name="templates/let/shipping-address" heading="{translations().pages.templates.let.declaring.example1}">
+  <ex-shipping-address />
+</docs-example>
+<p @@i18n(key="pages.templates.let.declaring.p2") />
+
+<h2 @@i18n(key="pages.templates.let.signals.title") />
+<p @@i18n(key="pages.templates.let.signals.p1") />
+<p @@i18n(key="pages.templates.let.signals.p2") />
+
+<h2 @@i18n(key="pages.templates.let.scope.title") />
+<p @@i18n(key="pages.templates.let.scope.p1") />
+<docs-example name="templates/let/workload" heading="{translations().pages.templates.let.scope.example1}">
+  <ex-workload />
+</docs-example>
+<p @@i18n(key="pages.templates.let.scope.p2") />
+<p @@i18n(key="pages.templates.let.scope.p3") />
+<docs-code snippet="templates/let-errors.txt" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.templates.let.edgeCases.title") />
+  <docs-callout @@i18n(key="pages.templates.let.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.templates.let.edgeCases.callout1.heading}" />
+  <docs-callout @@i18n(key="pages.templates.let.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.templates.let.edgeCases.callout2.heading}" />
+  <docs-callout @@i18n(key="pages.templates.let.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.templates.let.edgeCases.callout3.heading}" />
+  <docs-callout @@i18n(key="pages.templates.let.edgeCases.callout4.body") kind="edge"
+    heading="{translations().pages.templates.let.edgeCases.callout4.heading}" />
+</section>
+
+<h2 @@i18n(key="pages.templates.let.apiSummary.title") />
+<div class="table-wrap">
+  <table class="api-summary">
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.templates.let.apiSummary.th1") />
+        <th @@i18n(key="pages.templates.let.apiSummary.th2") />
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '@let name = value;' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.let.apiSummary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '{ name() }' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.let.apiSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '{ name }' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.let.apiSummary.td3") />
+      </tr>
+    </tbody>
+  </table>
+</div>

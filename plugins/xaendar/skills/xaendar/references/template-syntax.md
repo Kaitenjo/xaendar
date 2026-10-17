@@ -84,6 +84,18 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Visible in the whole of its scope, like a template variable. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
 - Content created in the namespace of the declaration: a `@render` in another namespace is an error. A template variable the content reads must come before every `@render`. Only the declaring template renders it.
 
+## @let
+
+```html
+@let address = user().address;                   <!-- reads a signal: a signal, read as address() -->
+@let country = defaults.country;                 <!-- reads none: a value, computed once -->
+<p>{ address().street }, { address().city }, { country }</p>
+```
+
+- `@let name = value;` goes wherever content goes, with the `;` required; the value may span lines. Use it to name a part of a signal read several times (`@let address = user().address;`), not for computations, which stay in the class.
+- A signal when the value reads one (a signal or reactive member, an imported signal, a `@for` variable, a template parameter, a signal `@let`), decided at compile time; otherwise a value computed once. Typed by its value, never assigned.
+- Scope like a template variable: visible in the whole scope, but only event handlers read it before its `;`, and a template reading it must be rendered after it. Not readable by the `track` of a `@for`. Same reserved names.
+
 ## Control flow
 
 ```html
@@ -218,7 +230,7 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 | `{{ expr }}` | `{ expr }` |
 | `[prop]="…"`, `[(ngModel)]` | `prop="{ … }"` and a listener; a directive writing the property |
 | `(keydown.enter)` | A filter in the method |
-| `@empty`, `@let`, `@defer` | `@if` around the `@for`; computed signals; dynamic imports |
+| `@empty`, `@defer` | `@if` around the `@for`; dynamic imports |
 | Pipes | Methods (in text) and computed signals |
 | `ng-template` + `ngTemplateOutlet` | `<template #name(…)>` + `@render name(…)`, in the same template |
 | `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |

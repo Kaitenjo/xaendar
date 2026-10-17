@@ -15,8 +15,8 @@ const KEYWORD_START = /@[a-z]*$/;
  * typing), as long as it can be lexed up to there. The `@@` of a directive starts no keyword.
  *
  * @example
- * getKeywordContext('<p>a</p>\n@', 10);                // { keywords: ['if', 'for', 'switch', 'render'], span: { start: 9, end: 10 } }
- * getKeywordContext('@if (a) {\n}\n@el', 15);          // { keywords: ['if', 'for', 'switch', 'render', 'else', 'else if'], span: { start: 12, end: 15 } }
+ * getKeywordContext('<p>a</p>\n@', 10);                // { keywords: ['if', 'for', 'switch', 'render', 'let'], span: { start: 9, end: 10 } }
+ * getKeywordContext('@if (a) {\n}\n@el', 15);          // { keywords: ['if', 'for', 'switch', 'render', 'let', 'else', 'else if'], span: { start: 12, end: 15 } }
  * getKeywordContext('@switch (a) {\n  @', 16);         // { keywords: ['case', 'default'], span: { start: 15, end: 16 } }
  *
  * @param source - The source of the template.
@@ -45,7 +45,7 @@ export function getKeywordContext(source: string, offset: number): KeywordContex
   switch (state) {
     // The content of the template
     case LexerState.TEXT:
-      keywords = ['if', 'for', 'switch', 'render'];
+      keywords = ['if', 'for', 'switch', 'render', 'let'];
       break;
 
     // The bindings of a tag, of a conditional binding or of a directive

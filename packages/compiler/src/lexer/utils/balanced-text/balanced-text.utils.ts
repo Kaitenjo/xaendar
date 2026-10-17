@@ -41,6 +41,42 @@ export function findClosing(text: string, openIndex: number): number | undefined
 }
 
 /**
+ * Finds a character from an index of a text on, outside of the groups (`{…}`, `(…)`, `[…]`) and of the strings starting
+ * there, e.g. the `;` ending the value of a `@let`.
+ *
+ * @example
+ * findOutside('a(\';\'); b', 0, ';');   // 6
+ *
+ * @param text - The text.
+ * @param start - The index the search starts at.
+ * @param char - The character.
+ * @returns The index of the character, `undefined` if it is not found, or a group or a string is not closed before it.
+ */
+export function findOutside(text: string, start: number, char: string): number | undefined {
+  for (let i = start; i < text.length; i++) {
+    const current = text[i];
+    if (current === char) {
+      return i;
+    }
+
+    let end: number | undefined = i;
+    if (current === '\'' || current === '"' || current === '`') {
+      end = findStringEnd(text, i);
+    } else if (current === '{' || current === '(' || current === '[') {
+      end = findClosing(text, i);
+    }
+
+    if (end === undefined) {
+      return undefined;
+    }
+
+    i = end;
+  }
+
+  return undefined;
+}
+
+/**
  * Finds the end of a string.
  *
  * @param text - The text.

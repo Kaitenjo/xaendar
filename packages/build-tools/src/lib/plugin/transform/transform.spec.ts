@@ -404,9 +404,9 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], customElements: [], cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], cache: expect.any(Object) });
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], customElements: [], cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count'], ['name']);
   });
 

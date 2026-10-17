@@ -44,6 +44,19 @@ describe('analyzeTemplate', () => {
     expect(analysis!.dependencies.has(normalizeFileName(project.path('src/child-base.ts')))).toBe(true);
   }, TIMEOUT);
 
+  it('types the @let reading a signal member of the component or a reactive import as signals', async () => {
+    project.write('src/counter.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport class Counter { count!: Signal<number>; }\n');
+    project.write('src/store.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport declare const total: Signal<number>;\n');
+    const source = '@import { total } from \'./store\';\n@let doubled = count() * 2;\n@let sum = total() + 1;\n@let plain = 1;';
+    const { analysis } = await analyzeTemplate(project.path('src/counter.html'), source, new Map([[project.path('src/counter.ts'), ['Counter']]]));
+    const at = (text: string) => source.indexOf(text);
+
+    expect(analysis!.symbols).toEqual([expect.objectContaining({ local: 'total', reactive: true })]);
+    expect(analysis!.typeCheck.text).toContain(`const __let${at('@let doubled')} = __let(root.count() * 2);`);
+    expect(analysis!.typeCheck.text).toContain(`const __let${at('@let sum')} = __let(total() + 1);`);
+    expect(analysis!.typeCheck.text).toContain(`const __let${at('@let plain')} = 1;`);
+  }, TIMEOUT);
+
   it('analyzes a template whose component file cannot be read, ignoring the namespace imports', async () => {
     const { analysis, error } = await analyzeTemplate(project.path('src/missing.html'), '@import { * as all } from \'./child\';\n<b></b>', new Map([[project.path('src/missing.ts'), ['Missing']]]));
 

@@ -33,18 +33,19 @@ export class TypeCheckContext extends CompilerContext {
    */
   private readonly _instantiations = new Set<number>();
   /**
-   * Whether the template declares templates, whose type-check code reads the declarations of the template helpers:
-   * kept by the outermost scope, for the whole template.
+   * Whether the type-check code reads the declarations of the template helpers, as the one of a template or of a `@let`
+   * reading a signal does: kept by the outermost scope, for the whole template.
    */
-  private _declaresTemplates = false;
+  private _usesTemplateHelpers = false;
 
   /**
-   * Tells whether the template declares templates, in any of its scopes (see {@link addTemplate}).
+   * Tells whether the type-check code of any of the scopes of the template reads the declarations of the template
+   * helpers (see {@link recordTemplateHelpers}).
    *
-   * @returns `true` if a template is declared, `false` otherwise.
+   * @returns `true` if the helpers are read, `false` otherwise.
    */
-  public get declaresTemplates(): boolean {
-    return this.parent ? this.parent.declaresTemplates : this._declaresTemplates;
+  public get usesTemplateHelpers(): boolean {
+    return this.parent ? this.parent.usesTemplateHelpers : this._usesTemplateHelpers;
   }
 
   /**
@@ -78,14 +79,25 @@ export class TypeCheckContext extends CompilerContext {
 
   /**
    * Registers a template declared in this scope (see {@link CompilerContext.addTemplate}), recording in the outermost
-   * scope that the template declares templates.
+   * scope that the type-check code reads the template helpers.
    *
    * @param name - The name of the template.
    * @param namespace - The namespace the content of the template is created in.
    */
   public override addTemplate(name: string, namespace: ElementNamespace): void {
     super.addTemplate(name, namespace);
-    this._recordTemplates();
+    this.recordTemplateHelpers();
+  }
+
+  /**
+   * Records in the outermost scope that the type-check code reads the template helpers (see {@link usesTemplateHelpers}).
+   */
+  public recordTemplateHelpers(): void {
+    if (this.parent) {
+      this.parent.recordTemplateHelpers();
+    } else {
+      this._usesTemplateHelpers = true;
+    }
   }
 
   /**
@@ -115,7 +127,7 @@ export class TypeCheckContext extends CompilerContext {
 
   /**
    * Adds the symbols the template imports from modules: the expressions read them as written, since the type-check
-   * code imports them under the same name.
+   * code imports them under the same name, and an expression reading a reactive one reads a signal.
    *
    * @param symbols - The imported symbols.
    */
@@ -123,7 +135,7 @@ export class TypeCheckContext extends CompilerContext {
     for (let i = 0; i < symbols.length; i++) {
       const symbol = symbols[i];
       this._symbols.push(symbol);
-      this.addImportedIdentifier(symbol.local, symbol.local);
+      this.addImportedIdentifier(symbol.local, symbol.local, symbol.reactive ? 'signal' : 'value');
     }
   }
 
@@ -159,16 +171,5 @@ export class TypeCheckContext extends CompilerContext {
   public getDirectiveBySelector(selector: string): DirectiveMetadata | undefined {
     return this._imports.find((importValue): importValue is DirectiveMetadata => importValue.type === 'directive' && importValue.selector === selector)
       ?? this.parent?.getDirectiveBySelector(selector);
-  }
-
-  /**
-   * Records in the outermost scope that the template declares templates (see {@link declaresTemplates}).
-   */
-  private _recordTemplates(): void {
-    if (this.parent) {
-      this.parent._recordTemplates();
-    } else {
-      this._declaresTemplates = true;
-    }
   }
 }

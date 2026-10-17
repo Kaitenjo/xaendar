@@ -142,4 +142,21 @@ describe('walkTemplate', () => {
       'expression inRow [field,row,item,label,inRow]'
     ]);
   });
+
+  it('visits the @let, visible in the whole of their scope, and their value', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('<p>{ total }</p><div>@let total = a + 1;</div>@if (b) { @let inBranch = total; }'), [], {
+      let: node => visits.push(`let ${node.name}`),
+      expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
+    });
+
+    expect(visits).toEqual([
+      'expression total [total]',
+      'let total',
+      'expression a + 1 [total]',
+      'expression b [total]',
+      'let inBranch',
+      'expression total [total,inBranch]'
+    ]);
+  });
 });

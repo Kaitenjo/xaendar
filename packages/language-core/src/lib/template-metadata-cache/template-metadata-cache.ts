@@ -1,4 +1,4 @@
-import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol } from '@xaendar/compiler';
+import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
@@ -78,7 +78,8 @@ export class TemplateMetadataCache implements CompilerCache {
 
   /**
    * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
-   * names, or any other export of the module. The editor only type-checks the template: a symbol is never reactive.
+   * names, or any other export of the module, reactive when reading it can read a signal (a namespace always is), as
+   * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
    * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
    *
    * @param imported - The name of the export (`'default'` for the default one, `'*'` for a namespace import).
@@ -100,7 +101,7 @@ export class TemplateMetadataCache implements CompilerCache {
       return metadata;
     }
 
-    const symbol: ImportedSymbol = { type: 'symbol', modulePath: resolved.fileName, reactive: false };
+    const symbol: ImportedSymbol = { type: 'symbol', modulePath: resolved.fileName, reactive: imported === '*' || isReactiveExport(resolved.fileName, imported, this._compilerOptions) };
     if (resolved.external) {
       symbol.importPath = path;
     }

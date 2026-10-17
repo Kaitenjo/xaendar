@@ -70,13 +70,13 @@ describe('TemplateMetadataCache', () => {
     await expect(cache.getOrInsert('Child', project.path('src/missing.ts'))).rejects.toThrow(`Class "Child" was not found in the import from ${project.path('src/missing.ts')}`);
   });
 
-  it('resolves an import to the component or directive it names, and any other export or a namespace to a symbol of its module', async () => {
+  it('resolves an import to the component or directive it names, and any other export or a namespace to a symbol of its module, reactive for a namespace', async () => {
     const cache = new TemplateMetadataCache();
     const src = project.path('src');
 
     expect(await cache.getImport('Child', 'Child', src, './child')).toMatchObject({ type: 'component', className: 'Child' });
     expect(await cache.getImport('formatDate', 'format', src, './utils')).toEqual({ type: 'symbol', modulePath: project.path('src/utils.ts'), reactive: false });
-    expect(await cache.getImport('*', 'child', src, './child')).toEqual({ type: 'symbol', modulePath: project.path('src/child.ts'), reactive: false });
+    expect(await cache.getImport('*', 'child', src, './child')).toEqual({ type: 'symbol', modulePath: project.path('src/child.ts'), reactive: true });
     await expect(cache.getImport('Child', 'Child', src, './missing')).rejects.toThrow('Cannot find module "./missing"');
   });
 

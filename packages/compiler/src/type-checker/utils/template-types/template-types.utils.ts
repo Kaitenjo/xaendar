@@ -1,3 +1,4 @@
+import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import type { Line } from '../../types/generated-line.type';
 import { plain } from '../line-builder/line-builder.utils';
@@ -32,11 +33,17 @@ export const DEFAULT = '__default';
 export const OPTIONAL = '__optional';
 
 /**
- * Returns the declarations of the types and of the functions the type-check code of templates is written with, at the
- * top level of the type-check code.
+ * The function the value of a `@let` reading a signal is passed to, typing the `@let` with the signal of its value: a
+ * `Computed`, as the errors of TypeScript name it.
+ */
+export const LET = '__let';
+
+/**
+ * Returns the declarations of the types and of the functions the type-check code of templates and of the `@let` reading
+ * a signal is written with, at the top level of the type-check code.
  *
- * @returns The lines declaring {@link TEMPLATE}, {@link PARAMETER}, {@link RENDER}, {@link DEFAULT} and {@link OPTIONAL},
- *   with the types turning the parameters of a template into the arguments of a `@render`.
+ * @returns The lines declaring {@link TEMPLATE}, {@link PARAMETER}, {@link RENDER}, {@link DEFAULT}, {@link OPTIONAL}
+ *   and {@link LET}, with the types turning the parameters of a template into the arguments of a `@render`.
  */
 export function getTemplateHelpers(): Line[] {
   return [
@@ -46,8 +53,20 @@ export function getTemplateHelpers(): Line[] {
     plain('type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;'),
     plain(`declare function ${RENDER}<Params extends unknown[], Count extends number>(template: ${TEMPLATE}<Params>, count: Count): (...args: Count extends Params['length'] ? __Arguments<__Values<Required<Params>>, Count> : __Values<Params>) => void;`),
     plain(`declare function ${DEFAULT}<Value>(value: Value): ${PARAMETER}<Value>;`),
-    plain(`declare function ${OPTIONAL}<Value>(): ${PARAMETER}<Value | undefined>;`)
+    plain(`declare function ${OPTIONAL}<Value>(): ${PARAMETER}<Value | undefined>;`),
+    plain(`declare function ${LET}<Value>(value: Value): import('@xaendar/core/signals').Computed<Value>;`)
   ];
+}
+
+/**
+ * Returns the name of the constant the value of a `@let` is type-checked in, where the `@let` is written: the `@let`
+ * itself is declared at the start of its scope, typed with the type of the constant.
+ *
+ * @param node - The `@let`.
+ * @returns The name of the constant, told apart from the ones of the other `@let` by the position of the `@let`.
+ */
+export function getLetValue(node: Pick<LetNode, 'span'>): string {
+  return `__let${node.span.start}`;
 }
 
 /**

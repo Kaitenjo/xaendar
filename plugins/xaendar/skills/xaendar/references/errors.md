@@ -79,6 +79,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.
 - **Fix:** Write @render name(arguments), with () when the template has no parameters.
 
+
+### `[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;`
+
+- **Cause:** A @let without its name or its =, or whose block closes before its ;. The same message is reported as [Parser] when the template ends before the ;, or the value is missing.
+- **Fix:** Write @let name = value; with a ; ending the value.
 ## Parser
 
 ### `[Parser] Expected closing tag input while file is over`
@@ -136,6 +141,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A template variable named by something other than an identifier; `'root' is reserved in templates` for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
 
+
+### `[Parser] '2total' is not a valid name for a @let: it must be an identifier.`
+
+- **Cause:** A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
+- **Fix:** Use an identifier the generated code does not reserve.
 ### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())`
 
 - **Cause:** A <template> without #name(…): a <template> is always the declaration of a template.
@@ -328,6 +338,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The content of a template reads a template variable of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the variable.
 - **Fix:** Move the @render after the element, or pass the value as an argument.
 
+
+### `[TypeChecker] "total" is read before its @let: only an event handler can read a @let declared after it`
+
+- **Cause:** An interpolation, a binding, a condition, the iterable of a @for, an argument of a @render or the value of a @let, its own included, reading a @let that comes after it in its scope.
+- **Fix:** Move the @let before the expression, or read it from an event handler, which runs once the template is rendered.
+
+### `[TypeChecker] "total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler`
+
+- **Cause:** The content of a template reads a @let of an enclosing scope, outside of an event handler, and a @render of the template comes before the @let.
+- **Fix:** Move the @render after the @let, or pass the value as an argument.
+
+### `[TypeChecker] The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables`
+
+- **Cause:** A @let read by the track expression of a @for.
+- **Fix:** Track the item, a property of it, or $index.
+
+### `Property 'toFixed' does not exist on type 'Computed<number>'.`
+
+- **Cause:** A @let whose value reads a signal is a signal, read here without parentheses.
+- **Fix:** Call it: total().toFixed(2).
 ### `Expected 2 arguments, but got 1.`
 
 - **Cause:** A @render passing fewer or more arguments than the template declares parameters (reported on the @render, or on the extra arguments).
@@ -452,6 +482,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a template variable whose element is not created yet.
 - **Fix:** Emit the event after the render (afterRender), or read the variable later.
 
+
+### `ReferenceError: @let "total" is read before its declaration is rendered`
+
+- **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a @let the render has not reached yet.
+- **Fix:** Emit the event after the render (afterRender), or read the @let later.
 ## Signals
 
 ### `Circular dependency detected while computing a Computed signal`

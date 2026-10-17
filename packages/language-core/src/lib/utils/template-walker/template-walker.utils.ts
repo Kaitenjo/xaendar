@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type LetNode, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { Expression } from 'typescript';
 
 /**
@@ -45,8 +45,12 @@ export type TemplateVisitor = {
    */
   readonly render?: (node: RenderNode) => void;
   /**
+   * Invoked for every `@let`.
+   */
+  readonly let?: (node: LetNode) => void;
+  /**
    * Invoked for every expression, with the names of the variables declared by the template in its scope: the template
-   * variables and the templates of the enclosing scopes, the variables of the enclosing `@for` blocks, the parameters of
+   * variables, the templates and the `@let` of the enclosing scopes, the variables of the enclosing `@for` blocks, the parameters of
    * the enclosing template, and `$event` for the parameters of an event.
    */
   readonly expression?: (expression: Expression, variables: ReadonlySet<string>) => void;
@@ -76,7 +80,7 @@ class TemplateWalker {
   constructor(private readonly _metadatas: readonly ComponentOrDirectiveMetadata[], private readonly _visitor: TemplateVisitor) { }
 
   /**
-   * Walks the nodes of a scope, whose template variables and templates are visible in the whole of it (see
+   * Walks the nodes of a scope, whose template variables, templates and `@let` are visible in the whole of it (see
    * `visitScopeDeclarations`).
    *
    * @param nodes - The nodes of the scope.
@@ -92,7 +96,8 @@ class TemplateWalker {
     // The namespaces of the elements don't matter here
     visitScopeDeclarations(nodes, 'html', {
       variable: (_element, { name }) => declare(name),
-      template: ({ variable: { name } }) => declare(name)
+      template: ({ variable: { name } }) => declare(name),
+      let: ({ name }) => declare(name)
     });
 
     this._walkNodes(nodes, scopeVariables ?? variables);
@@ -167,6 +172,11 @@ class TemplateWalker {
         for (let i = 0; i < node.arguments.length; i++) {
           this._visitor.expression?.(node.arguments[i], variables);
         }
+        break;
+
+      case ASTNodeType.Let:
+        this._visitor.let?.(node);
+        this._visitor.expression?.(node.value, variables);
         break;
 
       default:

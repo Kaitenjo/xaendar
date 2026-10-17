@@ -266,6 +266,19 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'after')).not.toContain('meta.embedded.expression.xaendar');
   });
 
+  it('colors a @let, with its value as an expression up to its semicolon', () => {
+    const template = '<p>@let total = f(\';\', { a: 1; }) + count;</p> after';
+
+    expect(scopesOf(template, '@let')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, 'total')).toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, '= f')).toContain('keyword.operator.assignment.xaendar');
+    // The semicolons in the strings and in the groups of the value don't end it
+    expect(scopesOf(template, '\';\'')).toContain('string.quoted.single.ts');
+    expect(scopesOf(template, 'count')).toContain('meta.embedded.expression.xaendar');
+    expect(scopesOf(template, ';</p>')).toContain('punctuation.terminator.statement.xaendar');
+    expect(scopesOf(template, 'after')).not.toContain('meta.embedded.expression.xaendar');
+  });
+
   it('colors the conditional bindings declared in a tag', () => {
     const template = '<div @if (open) { class="a" } @else { class="b" }></div>';
 

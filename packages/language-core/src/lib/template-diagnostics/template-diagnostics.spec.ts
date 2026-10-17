@@ -43,6 +43,24 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('types a @let with its value, or with the signal of its value when it reads one, reporting its reads before it', async () => {
+    project.write('src/store.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport declare const total: Signal<number>;\n');
+    const source = [
+      '@import { total } from \'./store\';',
+      '<p>{ early }</p>',
+      '@let early = 1;',
+      '@let sum = total() + 1;',
+      '@let label = title;',
+      '{ sum().toFixed() } { label.length } { sum.toFixed() } { label() }'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['early', '"early" is read before its @let: only an event handler can read a @let declared after it', DiagnosticCategory.Error],
+      ['toFixed', 'Property \'toFixed\' does not exist on type \'Computed<number>\'.', DiagnosticCategory.Error],
+      ['label', 'This expression is not callable.\n  Type \'String\' has no call signatures.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('checks the arguments of a @render against the parameters of the template, typed with imported types too, which its content reads as signals', async () => {
     const source = [
       '@import { Row } from \'./utils\';',

@@ -50,7 +50,8 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'case': '@case ($1) {\n\t$0\n}',
   'default': '@default {\n\t$0\n}',
   'import': '@import { $2 } from \'$1\';',
-  'render': '@render $1($0)'
+  'render': '@render $1($0)',
+  'let': '@let $1 = $0;'
 };
 
 /**

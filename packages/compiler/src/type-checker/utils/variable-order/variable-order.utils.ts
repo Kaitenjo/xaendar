@@ -9,6 +9,7 @@ import type { ElseIfNode } from '../../../parser/types/nodes/else-if-node.type';
 import type { ElseNode } from '../../../parser/types/nodes/else-node.type';
 import type { ForNode } from '../../../parser/types/nodes/for-node.type';
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
+import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
@@ -28,8 +29,9 @@ type Level = TemplateNode | null;
 type Declaration = {
   /**
    * When the name can be read: the position of the element a template variable names, which is created when the
-   * render reaches it, or `null` for a name the scope declares as soon as it is created (the item of a `@for` and its
-   * implicit variables, the parameters of a template, a template).
+   * render reaches it, the end of a `@let`, initialized when the render reaches it, or `null` for a name the scope
+   * declares as soon as it is created (the item of a `@for` and its implicit variables, the parameters of a template, a
+   * template).
    */
   readonly position: number | null;
   /**
@@ -40,6 +42,10 @@ type Declaration = {
    * The template the name declares, if it declares one.
    */
   readonly template?: TemplateNode;
+  /**
+   * The `@let` declaring the name, if a `@let` declares it.
+   */
+  readonly let?: LetNode;
 };
 
 /**
@@ -78,8 +84,9 @@ type OrderCheck = {
    */
   level: Level;
   /**
-   * For each template, the template variables declared outside of it that its content, or a template it renders, reads
-   * as soon as it is rendered, mapped to their names: whether they exist depends on where the template is rendered.
+   * For each template, the template variables and the `@let` declared outside of it that its content, or a template it
+   * renders, reads as soon as it is rendered, mapped to their names: whether they exist depends on where the template is
+   * rendered.
    */
   readonly freeReads: Map<Level, Map<Declaration, string>>;
   /**
@@ -93,15 +100,16 @@ type OrderCheck = {
 };
 
 /**
- * Checks that the template variables are read when their element exists. A template variable is visible in the whole
- * of its scope, before its element too, but its element is created when the render reaches it: an expression evaluated
- * as soon as its part of the template is rendered (an interpolation, the value of a binding, the condition of a block,
- * the iterable of a `@for`, an argument of a `@render`) cannot read a template variable whose element comes after it in
- * its scope. An event handler can, since it runs once the template is rendered. The track expression of a `@for` reads
- * none, since it only reads the item and the implicit variables of the `@for`.
+ * Checks that the template variables are read when their element exists, and the `@let` once they are initialized. A
+ * template variable is visible in the whole of its scope, before its element too, but its element is created when the
+ * render reaches it: an expression evaluated as soon as its part of the template is rendered (an interpolation, the
+ * value of a binding, the condition of a block, the iterable of a `@for`, an argument of a `@render`, the value of a
+ * `@let`) cannot read a template variable whose element comes after it in its scope. The same holds for a `@let`, whose
+ * value cannot read the `@let` itself either. An event handler can, since it runs once the template is rendered. The
+ * track expression of a `@for` reads none, since it only reads the item and the implicit variables of the `@for`.
  *
- * The content of a template is rendered where a `@render` calls it: a template variable declared outside of the
- * template, which its content reads, must be created before each `@render` of the template.
+ * The content of a template is rendered where a `@render` calls it: a template variable or a `@let` declared outside of
+ * the template, which its content reads, must be created before each `@render` of the template.
  *
  * @example
  * checkVariableOrder(parseTemplate('<p>{ field.value }</p><input #field />'));             // [Error: "field" is read before …]
@@ -131,8 +139,8 @@ function checkScope(nodes: readonly ASTNode[], check: OrderCheck): void {
 }
 
 /**
- * Adds the template variables and the templates a scope declares to its names, the first one of a name declared twice
- * only.
+ * Adds the template variables, the templates and the `@let` a scope declares to its names, the first one of a name
+ * declared twice only.
  *
  * @param nodes - The nodes of the scope.
  * @param names - The names of the scope.
@@ -149,7 +157,8 @@ function declareNames(nodes: readonly ASTNode[], names: ScopeNames, level: Level
   // The namespaces of the elements don't decide when they are created
   visitScopeDeclarations(nodes, 'html', {
     variable: (element, { name }) => declare(name, { position: element.span.start, level }),
-    template: template => declare(template.variable.name, { position: null, level, template })
+    template: template => declare(template.variable.name, { position: null, level, template }),
+    let: node => declare(node.name, { position: node.span.end, level, let: node })
   });
 
   return names;
@@ -227,9 +236,12 @@ function checkRenders(check: OrderCheck): void {
     const { template, node, level } = renders[i];
     const reads = freeReads.get(template);
     if (reads?.size) {
-      for (const [{ position, level: declarationLevel }, name] of reads) {
+      for (const [{ position, level: declarationLevel, let: letNode }, name] of reads) {
         if (declarationLevel === level && node.span.start < position!) {
-          report(check, `"${name}" is read by the template rendered by @render ${node.callee} before the element it names is created: render the template after the element, or read the variable from an event handler`, node.calleeSpan);
+          const message = letNode
+            ? `"${name}" is read by the template rendered by @render ${node.callee} before its @let: render the template after the @let, or read it from an event handler`
+            : `"${name}" is read by the template rendered by @render ${node.callee} before the element it names is created: render the template after the element, or read the variable from an event handler`;
+          report(check, message, node.calleeSpan);
         }
       }
     }
@@ -296,6 +308,10 @@ function checkNodes(nodes: readonly ASTNode[], check: OrderCheck): void {
 
       case ASTNodeType.Render:
         checkRender(node, check);
+        break;
+
+      case ASTNodeType.Let:
+        checkReads(node.value, node.span, check);
         break;
 
       default:
@@ -425,8 +441,10 @@ function checkFor(node: ForNode, check: OrderCheck): void {
   const reads = collectReads(node.trackExpression);
   for (let i = 0; i < reads.length; i++) {
     const read = reads[i];
-    if (typeof resolve(read.text, check)?.position === 'number') {
-      report(check, `The track expression of a @for cannot read the template variable "${read.text}": it only reads the item of the @for and its implicit variables`, getTemplateSpan(read) ?? node.span);
+    const declaration = resolve(read.text, check);
+    if (typeof declaration?.position === 'number') {
+      const name = declaration.let ? `the @let "${read.text}"` : `the template variable "${read.text}"`;
+      report(check, `The track expression of a @for cannot read ${name}: it only reads the item of the @for and its implicit variables`, getTemplateSpan(read) ?? node.span);
     }
   }
 
@@ -436,8 +454,9 @@ function checkFor(node: ForNode, check: OrderCheck): void {
 
 /**
  * Checks the reads of an expression evaluated as soon as its part of the template is rendered: a template variable
- * declared in the part of the template being checked must be declared by an element coming before, while one declared
- * outside of the content of the template being checked is a free read of the template (see {@link OrderCheck.freeReads}).
+ * declared in the part of the template being checked must be declared by an element coming before, and a `@let` must
+ * end before, while one declared outside of the content of the template being checked is a free read of the template
+ * (see {@link OrderCheck.freeReads}).
  *
  * @param expression - The expression.
  * @param span - The span of the part declaring the expression, for the reads of an expression without positions.
@@ -456,7 +475,10 @@ function checkReads(expression: Expression, span: Span, check: OrderCheck): void
     if (declaration.level !== check.level) {
       addFreeRead(check, check.level, declaration, read.text);
     } else if (readSpan.start < declaration.position) {
-      report(check, `"${read.text}" is read before the element it names is created: only an event handler can read a template variable declared after it`, readSpan);
+      const message = declaration.let
+        ? `"${read.text}" is read before its @let: only an event handler can read a @let declared after it`
+        : `"${read.text}" is read before the element it names is created: only an event handler can read a template variable declared after it`;
+      report(check, message, readSpan);
     }
   }
 }

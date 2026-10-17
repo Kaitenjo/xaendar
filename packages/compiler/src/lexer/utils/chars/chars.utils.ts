@@ -1,3 +1,5 @@
+import { A, DOLLAR, NINE, UNDERSCORE, Z, ZERO, a, z } from '../../../costants/chars.constant';
+
 /**
  * Checks whether a string contains at least one non-whitespace character.
  *
@@ -20,4 +22,15 @@ export function isNotBlank(str: string): boolean {
     This has been proven slower than using a regex
   */
   return /\S/.test(str)
+}
+
+/**
+ * Tells whether a character can be part of a name the template declares, e.g. the one of a template in `@render row()`
+ * or the one of a `@let`.
+ *
+ * @param code - The code of the character.
+ * @returns `true` for a letter, a digit, `_` or `$`.
+ */
+export function isIdentifierChar(code: number): boolean {
+  return (code >= a && code <= z) || (code >= A && code <= Z) || (code >= ZERO && code <= NINE) || code === UNDERSCORE || code === DOLLAR;
 }

@@ -200,10 +200,10 @@ async function analyze(templatePath: string, source: string, components: Readonl
 
   try {
     ast = parseTemplate(source);
-    const { shadowingMembers, dependencies } = extractMembers(componentFiles, project, options);
+    const { shadowingMembers, reactiveMembers, dependencies } = extractMembers(componentFiles, project, options);
     const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, [], symbols);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, [], symbols, reactiveMembers);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     
     const analysis: TemplateAnalysis = {
@@ -403,10 +403,12 @@ function listExports(program: Program, fileName: string): ExportCandidate[] | un
  * @param components - The files of the components, mapped to the names of their classes.
  * @param project - The language service of the project.
  * @param compilerOptions - The options of the project.
- * @returns The members named like a global identifier, and the files read to resolve them, components included.
+ * @returns The members named like a global identifier, the members that can read a signal, and the files read to resolve
+ *   them, components included.
  */
-function extractMembers(components: ReadonlyMap<string, readonly string[]>, project: ProjectLanguageService, compilerOptions: CompilerOptions): { shadowingMembers: string[], dependencies: string[] } {
+function extractMembers(components: ReadonlyMap<string, readonly string[]>, project: ProjectLanguageService, compilerOptions: CompilerOptions): { shadowingMembers: string[], reactiveMembers: string[], dependencies: string[] } {
   const shadowingMembers = new Set<string>();
+  const reactiveMembers = new Set<string>();
   const dependencies = new Set<string>();
 
   for (const [fileName, classNames] of components) {
@@ -421,13 +423,17 @@ function extractMembers(components: ReadonlyMap<string, readonly string[]>, proj
         shadowingMembers.add(members.shadowingMembers[j]);
       }
 
+      for (let j = 0; j < members.reactiveMembers.length; j++) {
+        reactiveMembers.add(members.reactiveMembers[j]);
+      }
+
       for (let j = 0; j < members.dependencies.length; j++) {
         dependencies.add(normalizeFileName(members.dependencies[j]));
       }
     }
   }
 
-  return { shadowingMembers: [...shadowingMembers], dependencies: [...dependencies] };
+  return { shadowingMembers: [...shadowingMembers], reactiveMembers: [...reactiveMembers], dependencies: [...dependencies] };
 }
 
 /**

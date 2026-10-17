@@ -162,6 +162,31 @@ describe('checkVariableOrder', () => {
     });
   });
 
+  describe('@let', () => {
+    const readBeforeLet = (name: string) => `"${name}" is read before its @let: only an event handler can read a @let declared after it`;
+
+    it('accepts the reads of a @let after it, nested elements included, and the reads of the event handlers', () => {
+      expect(errorsOf('<button (click)="pick(total)">Go</button><div>@let total = 1;</div><p title="{ total }">{ total }</p>@let double = total * 2;')).toBeUndefined();
+    });
+
+    it('reports a read evaluated before the end of the @let, its own value included, and checks its value as such a read', () => {
+      expect(errorsOf('<p>{ total }</p>@let total = total + field.value;<input #field />')).toEqual([
+        [readBeforeLet('total'), 'total'],
+        [readBeforeLet('total'), 'total'],
+        [readBefore('field'), 'field']
+      ]);
+    });
+
+    it('reports a @let read by a template rendered before it, and by the track expression of a @for', () => {
+      expect(errorsOf('@render row()<template #row()>{ total }</template>@let total = 1;')).toEqual([[
+        '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler', 'row'
+      ]]);
+      expect(errorsOf('@let total = 1;@for (item of items(); track total + item()) { }')).toEqual([[
+        'The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables', 'total'
+      ]]);
+    });
+  });
+
   it('points to the part declaring an expression whose positions in the template are unknown', () => {
     const template = '<p>{ x }</p><input #field />@for (item of items(); track item()) { }';
     const ast = parse(template);

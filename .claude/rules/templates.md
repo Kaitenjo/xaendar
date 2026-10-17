@@ -71,6 +71,19 @@ Between elements and inside a tag alike:
 }
 ```
 
+## @let
+
+Use a `@let` to name a part of a signal the template reads several times, instead of a getter that only shortens the access. Computations stay in the class (`computed`, getters, methods).
+
+```html
+<!-- ✓ -->
+@let address = user().address;
+<p>{ address().street }, { address().city }</p>
+
+<!-- ✗ logic belongs in the class -->
+@let total = price() * quantity();
+```
+
 ## Spaces
 
 The language server formats the templates (Format Document, `xaendar.format.printWidth` for the width of the lines) and applies these rules:

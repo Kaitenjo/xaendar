@@ -116,6 +116,7 @@
       "templates/switch": "Branching with @switch",
       "templates/conditional-bindings": "Conditional bindings",
       "templates/template-variables": "Template variables",
+      "templates/let": "@let",
       "templates/reusable-templates": "Reusable templates",
       "templates/expressions": "Expression syntax",
       "templates/imports": "Imports",
@@ -1510,7 +1511,8 @@
           "td16": "Pipes",
           "td17": "Methods and computed signals",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
-          "td19": "<code>&lt;template #name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Reusable templates</a>"
+          "td19": "<code>&lt;template #name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Reusable templates</a>",
+          "td20": "<code>@let</code>, a signal read with <code>name()</code> when its value reads one: see <a href=\"#/en/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
           "title": "What works differently",
@@ -1519,7 +1521,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding, event modifiers such as <code>(keydown.enter)</code>, <code>@defer</code>, <code>@let</code>, <code>@empty</code>, templates passed to other components and server-side rendering. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding, event modifiers such as <code>(keydown.enter)</code>, <code>@defer</code>, <code>@empty</code>, templates passed to other components and server-side rendering. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },
@@ -1575,7 +1577,7 @@
           "th2": "Instead",
           "td1": "<code>prop=\"{ … }\"</code> and a listener; a directive writing the property",
           "td2": "A filter in the method: <code>(keydown.enter)</code> listens to an event with that name",
-          "td3": "<code>@if</code> around the <code>@for</code>; computed signals; dynamic imports",
+          "td3": "<code>@if</code> around the <code>@for</code>; dynamic imports",
           "td4": "Pipes",
           "td5": "Methods and computed signals"
         }
@@ -2427,6 +2429,56 @@
           "td4": "Reads the element after its declaration: a property of the DOM is not a signal, so the text does not follow its changes."
         }
       },
+      "let": {
+        "eyebrow": "Templates",
+        "title": "@let",
+        "lead": "<code>@let name = value;</code> names a part of a signal that the template reads several times, such as a field of the object it holds: <code>@let address = user().address;</code>, then <code>address().city</code>, instead of a getter in the class that only shortens the access. Computations stay in the class, in a <code>computed</code> or a method.",
+        "declaring": {
+          "title": "Declaring a @let",
+          "p1": "A <code>@let</code> goes wherever content goes: its name, <code>=</code>, an expression and a <code>;</code>, which is required. The value can span several lines, and a <code>;</code> inside a string or between parentheses, brackets or braces does not end it. A <code>@let</code> renders nothing and cannot be assigned: its value follows the expression it is declared with.",
+          "example1": "An address read through a @let",
+          "p2": "<code>address</code> reads <code>user</code>, so it is a signal: <code>move()</code> changes the user and updates the lines reading it. <code>country</code> reads a constant member, so it is a value, computed once."
+        },
+        "signals": {
+          "title": "Signal or value",
+          "p1": "The compiler tells them apart by what the value reads, as it does for the bindings: a signal member, a method or a getter of the component reading one, a signal imported with <code>@import</code>, a variable of <code>@for</code>, a parameter of a template, or another <code>@let</code> that is a signal. Then the <code>@let</code> is a signal too, read with <code>name()</code>: it computes its value when it is read, and again when what it reads changes, so only the nodes reading it are updated. Otherwise it is a value, computed once when its scope is created, and read as <code>name</code>.",
+          "p2": "Its type is the one TypeScript infers for its value, a <code>Computed</code> of it for a signal. TypeScript reports a signal read without parentheses, as <code>total.toFixed(2)</code>, and a value called as a function. A value written as a literal keeps its literal type: <code>@let mode = 'grid';</code> is typed <code>'grid'</code>."
+        },
+        "scope": {
+          "title": "Scope and order",
+          "p1": "A <code>@let</code> has the scope of a <a href=\"#/en/templates/template-variables\">template variable</a>: the whole of the template, of a branch of <code>@if</code>, of a case of <code>@switch</code>, of a row of <code>@for</code>, of the content of a template or of an element a structural directive is applied to, inside other elements too. A nested scope can declare a <code>@let</code> named like an outer one, which it hides.",
+          "example1": "A @let for every row",
+          "p2": "Each row has its own <code>stats</code>, a signal since it reads the item of the row: completing a task updates only the row of that member.",
+          "p3": "A <code>@let</code> is initialized when the render reaches it: an event handler can read it anywhere in its scope, while any other expression, its own value included, only reads it after its <code>;</code>. The content of a template reads it only if every <code>@render</code> of the template comes after it. The compiler reports the others:"
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "Signals the compiler cannot follow",
+            "body": "A function of another module, or a member of another object, reading a signal does not make a <code>@let</code> a signal: the compiler follows the members of the component, the imports and the variables of the template only. Such a <code>@let</code> is computed once: read the signal directly, or through a member of the component."
+          },
+          "callout2": {
+            "heading": "Events during the render",
+            "body": "A handler running while the template is still being rendered, for an event a child component emits from its <code>onInit</code>, may read a <code>@let</code> the render has not reached yet: it throws a <code>ReferenceError</code> naming it, instead of reading another one named like it."
+          },
+          "callout3": {
+            "heading": "The track expression of @for",
+            "body": "The track expression of a <code>@for</code> reads only the item and the implicit variables of the loop: it cannot read a <code>@let</code>, not even one declared outside of the loop."
+          },
+          "callout4": {
+            "heading": "Where a @let is declared",
+            "body": "A <code>@let</code> is declared among the content, never among the bindings of a tag, with a name of its own in its scope: TypeScript reports a template variable, a template or another <code>@let</code> named like it there. <code>root</code>, <code>$event</code> and the names starting with <code>__</code> or <code>$$</code> are reserved."
+          }
+        },
+        "apiSummary": {
+          "title": "API summary",
+          "th1": "Syntax",
+          "th2": "Description",
+          "td1": "Names the value of the expression in its scope: the expressions read it after its <code>;</code>, the event handlers anywhere.",
+          "td2": "Reads a <code>@let</code> whose value reads a signal: it is a signal, updated when what it reads changes.",
+          "td3": "Reads a <code>@let</code> whose value reads no signal: a value, computed once."
+        }
+      },
       "reusableTemplates": {
         "eyebrow": "Templates",
         "title": "Reusable templates",
@@ -3018,6 +3070,10 @@
       "cause": "A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.",
       "fix": "Write @render name(arguments), with () when the template has no parameters."
     },
+    "[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;": {
+      "cause": "A @let without its name or its =, or whose block closes before its ;. The same message is reported as [Parser] when the template ends before the ;, or the value is missing.",
+      "fix": "Write @let name = value; with a ; ending the value."
+    },
     "[Parser] <input> declares more than one template variable (#first, #second): an element has a single name": {
       "cause": "Two template variables on the same element.",
       "fix": "Keep one name per element."
@@ -3028,6 +3084,10 @@
     },
     "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.": {
       "cause": "A template variable named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.",
+      "fix": "Use an identifier the generated code does not reserve."
+    },
+    "[Parser] '2total' is not a valid name for a @let: it must be an identifier.": {
+      "cause": "A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.",
       "fix": "Use an identifier the generated code does not reserve."
     },
     "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())": {
@@ -3090,6 +3150,22 @@
       "cause": "The content of a template reads a template variable of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the variable.",
       "fix": "Move the @render after the element, or pass the value as an argument."
     },
+    "[TypeChecker] \"total\" is read before its @let: only an event handler can read a @let declared after it": {
+      "cause": "An interpolation, a binding, a condition, the iterable of a @for, an argument of a @render or the value of a @let, its own included, reading a @let that comes after it in its scope.",
+      "fix": "Move the @let before the expression, or read it from an event handler, which runs once the template is rendered."
+    },
+    "[TypeChecker] \"total\" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler": {
+      "cause": "The content of a template reads a @let of an enclosing scope, outside of an event handler, and a @render of the template comes before the @let.",
+      "fix": "Move the @render after the @let, or pass the value as an argument."
+    },
+    "[TypeChecker] The track expression of a @for cannot read the @let \"total\": it only reads the item of the @for and its implicit variables": {
+      "cause": "A @let read by the track expression of a @for.",
+      "fix": "Track the item, a property of it, or $index."
+    },
+    "Property 'toFixed' does not exist on type 'Computed<number>'.": {
+      "cause": "A @let whose value reads a signal is a signal, read here without parentheses.",
+      "fix": "Call it: total().toFixed(2)."
+    },
     "Expected 2 arguments, but got 1.": {
       "cause": "A @render passing fewer or more arguments than the template declares parameters: reported on the @render, or on the extra arguments.",
       "fix": "Pass one argument per parameter."
@@ -3097,6 +3173,10 @@
     "ReferenceError: Template variable \"field\" is read before the element it names is rendered": {
       "cause": "An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a template variable whose element is not created yet.",
       "fix": "Emit the event after the render (afterRender), or read the variable later."
+    },
+    "ReferenceError: @let \"total\" is read before its declaration is rendered": {
+      "cause": "An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a @let the render has not reached yet.",
+      "fix": "Emit the event after the render (afterRender), or read the @let later."
     },
     "[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()": {
       "cause": "A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.",

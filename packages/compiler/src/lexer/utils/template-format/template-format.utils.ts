@@ -176,13 +176,14 @@ function isBlankText(atom: LayoutAtom): atom is Extract<LayoutAtom, { kind: 'tex
 }
 
 /**
- * Tells whether an atom is a node that starts on a line of its own: an element, a block or the render of a template.
+ * Tells whether an atom is a node that starts on a line of its own: an element, a block, the render of a template or a
+ * `@let`.
  *
  * @param atom - The atom, if any.
- * @returns `true` for an element, a block and a `@render`.
+ * @returns `true` for an element, a block, a `@render` and a `@let`.
  */
 function isStructure(atom: LayoutAtom | undefined): boolean {
-  return atom?.kind === 'element' || atom?.kind === 'block' || atom?.kind === 'render';
+  return atom?.kind === 'element' || atom?.kind === 'block' || atom?.kind === 'render' || atom?.kind === 'let';
 }
 
 /**
@@ -519,6 +520,10 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
 
       case 'render':
         builder.append(`@render ${atom.callee}(${atom.args.trim()})`);
+        break;
+
+      case 'let':
+        builder.append(`@let ${atom.name} = ${atom.value.trim()};`);
         break;
 
       default:

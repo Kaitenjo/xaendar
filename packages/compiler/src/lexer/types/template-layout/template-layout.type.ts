@@ -198,7 +198,26 @@ export type LayoutAtom =
   }
   | LayoutElement
   | LayoutBlock<LayoutAtom[]>
-  | LayoutRender;
+  | LayoutRender
+  | LayoutLet;
+
+/**
+ * A `@let`, e.g. `@let total = price() * quantity();`.
+ */
+export type LayoutLet = {
+  /**
+   * Discriminant identifying the atom as a `@let`.
+   */
+  readonly kind: 'let';
+  /**
+   * The name the `@let` declares.
+   */
+  readonly name: string;
+  /**
+   * The value as written between the `=` and the `;`.
+   */
+  readonly value: string;
+};
 
 /**
  * The render of a template, e.g. `@render row(item())`.

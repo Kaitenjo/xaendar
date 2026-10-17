@@ -3,6 +3,7 @@ import { ForToken } from '../../lexer/types/tokens/for-token.type'
 import { IfToken } from '../../lexer/types/tokens/if-token.type'
 import { ImportPathToken } from '../../lexer/types/tokens/import-path-token.type'
 import { InterpolationExpressionToken } from '../../lexer/types/tokens/interpolation-expression-token.type'
+import type { LetToken } from '../../lexer/types/tokens/let-token.type'
 import type { RenderToken } from '../../lexer/types/tokens/render-token.type'
 import { SwitchToken } from '../../lexer/types/tokens/switch-token.type'
 import { TagOpenNameToken } from '../../lexer/types/tokens/tag-open-name-token.type'
@@ -18,6 +19,7 @@ type OmittedKeys = Exclude<TokenType,
  | TokenType.SWITCH
  | TokenType.IMPORT 
  | TokenType.RENDER
+ | TokenType.LET
 >
 
 /**
@@ -38,7 +40,8 @@ export type ParserStates = {
   [TokenType.FOR]: ParserTransitionFunction<ForToken>,
   [TokenType.SWITCH]: ParserTransitionFunction<SwitchToken>
   [TokenType.IMPORT]: ParserTransitionFunction<ImportPathToken>,
-  [TokenType.RENDER]: ParserTransitionFunction<RenderToken>
+  [TokenType.RENDER]: ParserTransitionFunction<RenderToken>,
+  [TokenType.LET]: ParserTransitionFunction<LetToken>
 } & 
 { 
   [K in OmittedKeys]?: undefined 
