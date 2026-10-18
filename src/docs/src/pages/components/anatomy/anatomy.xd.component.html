@@ -3,6 +3,7 @@
 @import { RatingComponent } from '../../../examples/components/anatomy/rating/rating.xd.component.ts'
 @import { ShadowInspectorComponent } from '../../../examples/components/anatomy/shadow-inspector/shadow-inspector.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 
@@ -80,23 +81,25 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.anatomy.edgeCases.title") />
-  <docs-callout kind="edge" heading="{translations().pages.components.anatomy.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.components.anatomy.edgeCases.callout1.p1") />
-    <docs-code snippet="components/non-literal-options.ts" />
-    <docs-code snippet="components/non-literal-options-error.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout1.heading}">
+      <p @@i18n(key="pages.components.anatomy.edgeCases.callout1.p1") />
+      <docs-code snippet="components/non-literal-options.ts" />
+      <docs-code snippet="components/non-literal-options-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.components.anatomy.edgeCases.callout2.p1") />
+      <docs-code snippet="components/missing-template-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.components.anatomy.edgeCases.callout3.body")
+      heading="{translations().pages.components.anatomy.edgeCases.callout3.heading}" />
+    <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout4.heading}">
+      <p @@i18n(key="pages.components.anatomy.edgeCases.callout4.p1") />
+      <docs-code snippet="components/private-member-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.components.anatomy.edgeCases.callout5.body")
+      heading="{translations().pages.components.anatomy.edgeCases.callout5.heading}" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.components.anatomy.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.components.anatomy.edgeCases.callout2.p1") />
-    <docs-code snippet="components/missing-template.txt" />
-  </docs-callout>
-  <docs-callout @@i18n(key="pages.components.anatomy.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.components.anatomy.edgeCases.callout3.heading}" />
-  <docs-callout kind="edge" heading="{translations().pages.components.anatomy.edgeCases.callout4.heading}">
-    <p @@i18n(key="pages.components.anatomy.edgeCases.callout4.p1") />
-    <docs-code snippet="components/private-member-error.txt" />
-  </docs-callout>
-  <docs-callout @@i18n(key="pages.components.anatomy.edgeCases.callout5.body") kind="edge"
-    heading="{translations().pages.components.anatomy.edgeCases.callout5.heading}" />
   <docs-callout kind="unsupported" heading="{translations().pages.components.anatomy.edgeCases.callout6.heading}">
     <p @@i18n(key="pages.components.anatomy.edgeCases.callout6.p1") />
     <docs-code snippet="components/attach-shadow.ts" />

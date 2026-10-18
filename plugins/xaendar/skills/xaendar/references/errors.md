@@ -106,6 +106,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The same attribute written both outside and inside a conditional binding.
 - **Fix:** Bind it only inside the condition, in every branch that needs it.
 
+### `[Parser] Class "on" is bound more than once on <p>`
+
+- **Cause:** The same [class.name] written twice on an element, or both outside and inside a conditional binding.
+- **Fix:** Toggle it once, combining the conditions in its expression, or in every branch of one condition.
+
+### `[Parser] [class.on] toggles the class by the value of an expression: [class.on]="{expression}"`
+
+- **Cause:** A class binding with a static value, or without a value.
+- **Fix:** Bind it to an expression in braces: [class.on]="{ active() }".
+
+### `[Parser] "[style.color]" is not a binding: a class is toggled with [class.name]="{expression}"`
+
+- **Cause:** An attribute name in brackets other than [class.name]: brackets only toggle classes.
+- **Fix:** Bind the attribute without brackets, e.g. style="{ … }", or toggle a class with [class.name].
+
+### `[Parser] [class.on] cannot be bound inside a directive: bind it on the element`
+
+- **Cause:** A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.
+- **Fix:** Move it among the bindings of the element.
+
 ### `[Parser] Directive "exTint" is applied more than once on <p>`
 
 - **Cause:** The same directive applied twice to one element.

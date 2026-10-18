@@ -45,7 +45,7 @@ describe('buildStructure()', () => {
     const srcEntry = entries.find((entry) => entry.name === 'src');
     const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
 
-    expect(children?.map((entry) => entry.name)).toEqual(['index.html', 'signals.ts', 'main.ts', 'my-app-root', 'styles.css']);
+    expect(children?.map((entry) => entry.name)).toEqual(['index.html', 'main.ts', 'bootstrap.ts', 'my-app-root', 'styles.css']);
 
     const componentEntry = children?.find((entry) => entry.name === 'my-app-root');
     expect(componentEntry?.type).toBe('generateComponent');

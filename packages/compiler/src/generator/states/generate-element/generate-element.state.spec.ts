@@ -167,7 +167,64 @@ describe('generateElement', () => {
     expect(functionsToProcess?.get('foreignObject0Children')?.fn.precode).toBe('context.createElement = _createElement;');
   });
 
+  it('generates the classes toggled on the element after its attributes, with a setter toggling them', async () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('active');
+    const { code } = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{size > 1}"></div>', context);
+
+    expect(code).toEqual([
+      '_renderElement(root, context, null, \'div\',',
+      '  [',
+      '    {',
+      '      name: \'title\',',
+      '      value: \'x\',',
+      '      setter: _setProperty',
+      '    },',
+      '    {',
+      '      name: \'is-on\',',
+      '      value: () => this.active(),',
+      '      setter: _setReactiveClass',
+      '    },',
+      '    {',
+      '      name: \'big\',',
+      '      value: () => this.size > 1,',
+      '      setter: _setExpressionClass',
+      '    },',
+      '  ], [], [], [], [], [], null);'
+    ]);
+    expectValidJavascript(code);
+  });
+
   describe('conditional bindings', () => {
+    it('generates the classes toggled by a branch, removed when it is no longer selected, even when the branch toggles nothing else', async () => {
+      const { code } = await run('<div @if (cond()) { [class.on]="{1}" }></div>');
+
+      expect(code).toEqual([
+        '_renderElement(root, context, null, \'div\', [], [],',
+        '  [',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: () => this.cond(),',
+        '          attributes: [',
+        '            {',
+        '              name: \'on\',',
+        '              value: () => 1,',
+        '              setter: _setExpressionClass,',
+        '              unbind: _removeClass',
+        '            },',
+        '          ],',
+        '          events: [],',
+        '          conditionalBindings: [],',
+        '          directives: [],',
+        '        },',
+        '      ]',
+        '    },',
+        '  ], [], [], [], null);'
+      ]);
+      expectValidJavascript(code);
+    });
+
     it('skips the conditional bindings whose branches declare no binding', async () => {
       const { code } = await run('<div @if (cond()) { } @else { } @switch (mode()) { @case (1) { } } @switch (mode()) { }></div>');
       expect(code).toEqual(['_renderElement(root, context, null, \'div\', [], [], [], [], [], [], null);']);

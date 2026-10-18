@@ -10,6 +10,7 @@ import type { AttributeNode } from '../../types/nodes/attribute-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
+import { assertNoClassBindings } from '../parse-class-binding/parse-class-binding.state';
 
 /**
  * Parses a STRUCTURAL_DIRECTIVE token and the attributes declared in its body, up to the DIRECTIVE_CLOSE token,
@@ -19,7 +20,8 @@ import { parseAttribute } from '../parse-attribute/parse-attribute.state';
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The STRUCTURAL_DIRECTIVE token containing the directive selector.
  * @returns The parsed `StructuralDirectiveNode`.
- * @throws If a token other than an attribute or the directive closure is found in the directive body, or a type argument is empty.
+ * @throws If a token other than an attribute or the directive closure is found in the directive body, a class is bound
+ *   in it, or a type argument is empty.
  */
 export function parseStructuralDirective(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: StructuralDirectiveToken): StructuralDirectiveNode {
   const startOffset = token.span.start;
@@ -44,6 +46,8 @@ export function parseStructuralDirective(cursor: ParserCursor, parseNode: NoArgs
         throw new Error('Unexpected token in structural directive');
     }
   }
+
+  assertNoClassBindings(attributes);
 
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node: StructuralDirectiveNode = {

@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TooltipDemoComponent } from '../../../examples/directives/custom/tooltip/tooltip-demo.xd.component.ts'
 @import { DropdownMenuComponent } from '../../../examples/directives/custom/click-outside/dropdown-menu.xd.component.ts'
 @import { ResizableBoxComponent } from '../../../examples/directives/custom/resize/resizable-box.xd.component.ts'
@@ -63,13 +64,15 @@
   </docs-example>
   <p @@i18n(key="pages.directives.custom.edgeCases.p1") />
   <p @@i18n(key="pages.directives.custom.edgeCases.p2") />
-  <docs-callout kind="edge" heading="{translations().pages.directives.custom.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.directives.custom.edgeCases.callout1.p1") />
-    <docs-code snippet="directives/constructor-access.ts" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.directives.custom.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.directives.custom.edgeCases.callout2.p1") />
-    <docs-code snippet="directives/custom-errors.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout1.heading}">
+      <p @@i18n(key="pages.directives.custom.edgeCases.callout1.p1") />
+      <docs-code snippet="directives/constructor-access.ts" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.directives.custom.edgeCases.callout2.p1") />
+      <docs-code snippet="directives/custom-errors.txt" />
+    </docs-callout-item>
   </docs-callout>
 </section>
 

@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { EffectBatchingComponent } from '../../../examples/signals/effects/batching/batching.xd.component.ts'
 @import { EffectOptionsComponent } from '../../../examples/signals/effects/options/options.xd.component.ts'
 @import { EffectDisposeComponent } from '../../../examples/signals/effects/dispose/dispose.xd.component.ts'
@@ -57,13 +58,15 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.effects.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.signals.effects.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.signals.effects.edgeCases.callout1.heading}" />
-  <docs-callout @@i18n(key="pages.signals.effects.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.signals.effects.edgeCases.callout2.heading}" />
-  <docs-callout kind="edge" heading="{translations().pages.signals.effects.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.signals.effects.edgeCases.callout3.p1") />
-    <docs-code snippet="signals/infinite-loop.ts" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.signals.effects.edgeCases.callout1.body")
+      heading="{translations().pages.signals.effects.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.signals.effects.edgeCases.callout2.body")
+      heading="{translations().pages.signals.effects.edgeCases.callout2.heading}" />
+    <docs-callout-item heading="{translations().pages.signals.effects.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.signals.effects.edgeCases.callout3.p1") />
+      <docs-code snippet="signals/infinite-loop.ts" />
+    </docs-callout-item>
   </docs-callout>
   <docs-callout @@i18n(key="pages.signals.effects.edgeCases.callout5.body") kind="issue"
     heading="{translations().pages.signals.effects.edgeCases.callout5.heading}" />

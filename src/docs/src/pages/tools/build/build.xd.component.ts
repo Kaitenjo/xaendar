@@ -8,4 +8,6 @@ import { CustomElement, WebComponent } from '@xaendar/core';
   styleUrl: '../../page.css',
   templateUrl: './build.xd.component.html'
 })
-export class ToolsBuildPage extends CustomElement {}
+export class ToolsBuildPage extends CustomElement {
+
+}

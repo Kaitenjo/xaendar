@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { IfElseChainComponent } from '../../../examples/templates/if/if-else-chain/if-else-chain.xd.component.ts'
 @import { BranchStateComponent } from '../../../examples/templates/if/branch-state/branch-state.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
@@ -26,12 +27,14 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.if.edgeCases.title") />
-  <docs-callout kind="edge" heading="{translations().pages.templates.if.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.templates.if.edgeCases.callout2.p1") />
-    <docs-code snippet="templates/if-errors.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.templates.if.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.templates.if.edgeCases.callout2.p1") />
+      <docs-code snippet="templates/if-errors.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.templates.if.edgeCases.callout3.body")
+      heading="{translations().pages.templates.if.edgeCases.callout3.heading}" />
   </docs-callout>
-  <docs-callout @@i18n(key="pages.templates.if.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.templates.if.edgeCases.callout3.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.templates.if.apiSummary.title") />

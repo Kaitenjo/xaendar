@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { SignalCounterComponent } from '../../../examples/signals/overview/counter/counter.xd.component.ts'
 @import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
 @import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
@@ -45,14 +46,16 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.overview.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.signals.overview.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.signals.overview.edgeCases.callout1.heading}" />
-  <docs-callout @@i18n(key="pages.signals.overview.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.signals.overview.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.signals.overview.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.signals.overview.edgeCases.callout3.heading}" />
-  <docs-callout @@i18n(key="pages.signals.overview.edgeCases.callout4.body") kind="edge"
-    heading="{translations().pages.signals.overview.edgeCases.callout4.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout1.body")
+      heading="{translations().pages.signals.overview.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout2.body")
+      heading="{translations().pages.signals.overview.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout3.body")
+      heading="{translations().pages.signals.overview.edgeCases.callout3.heading}" />
+    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout4.body")
+      heading="{translations().pages.signals.overview.edgeCases.callout4.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.signals.overview.apiSummary.title") />

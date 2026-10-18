@@ -18,7 +18,6 @@ export function indexHtml(name: string): string {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${name}</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script type="module" src="./signals.ts"></script>
     <script type="module" src="./main.ts"></script>
   </head>
   <body>

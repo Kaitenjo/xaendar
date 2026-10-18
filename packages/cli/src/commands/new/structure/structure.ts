@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
+import { bootstrapTs } from '../templates/bootstrap-ts/bootstrap-ts';
 import { indexHtml } from '../templates/index-html/index-html';
 import { mainTs } from '../templates/main-ts/main-ts';
 import { packageJson } from '../templates/package-json/package-json';
-import { signalTs } from '../templates/signal-ts/signal-ts';
 import { tsconfigJson } from '../templates/tsconfig-json/tsconfig-json';
 import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
 import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
@@ -166,13 +166,13 @@ export function buildStructure(context: ProjectContext): Entry[] {
         },
         {
           type: 'file',
-          name: 'signals.ts',
-          content: signalTs(),
+          name: 'main.ts',
+          content: mainTs(),
         },
         {
           type: 'file',
-          name: 'main.ts',
-          content: mainTs(componentName),
+          name: 'bootstrap.ts',
+          content: bootstrapTs(componentName),
         },
         {
           type: 'generateComponent',

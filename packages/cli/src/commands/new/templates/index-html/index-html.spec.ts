@@ -14,11 +14,11 @@ describe('indexHtml()', () => {
     expect(result).toContain('<title>my-app-root</title>');
   });
 
-  it('links styles.css and loads signals.ts and main.ts as modules', () => {
+  it('links styles.css and loads main.ts as the only module', () => {
     const result = indexHtml('my-app-root');
 
     expect(result).toContain('<link rel="stylesheet" href="./styles.css" />');
-    expect(result).toContain('<script type="module" src="./signals.ts"></script>');
     expect(result).toContain('<script type="module" src="./main.ts"></script>');
+    expect(result).not.toContain('signals.ts');
   });
 });

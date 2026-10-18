@@ -4,6 +4,7 @@ import { isIdentifier } from 'typescript';
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
 import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
@@ -30,7 +31,7 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
 
 /**
  * Type-checks an element node: emits the type-check lines for its
- * attributes, events, conditional bindings, directives and structural directives, then recurses into its children.
+ * attributes, class bindings, events, conditional bindings, directives and structural directives, then recurses into its children.
  *
  * Custom elements (tag names containing a dash) are checked against the
  * metadata of the component imported for their selector; native elements, and the custom elements of other
@@ -135,6 +136,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
 
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+      ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ];
@@ -153,6 +155,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
     throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
   }
 
+  lines.push(...typeCheckClassBindings(node.classBindings, context));
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
   lines.push(...conditionalBindingLines);
 
@@ -628,9 +631,11 @@ function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEvent
 
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
+    ...typeCheckClassBindings(node.classBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEventType, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
       ...typeCheckNativeAttributes(branch.attributes, context),
+      ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ])
@@ -654,6 +659,25 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], context: TypeChe
       lines.push(line(mappedExpression(value.expression, context, value.span, ';')));
     }
   };
+
+  return lines;
+}
+
+/**
+ * Type-checks the classes toggled on an element, native or not, by emitting each expression as a statement:
+ * a value of any type toggles the class, by whether it is truthy.
+ *
+ * @param classBindings - The class binding nodes to type-check.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one per class binding.
+ */
+function typeCheckClassBindings(classBindings: ClassBindingNode[], context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < classBindings.length; i++) {
+    const { value } = classBindings[i];
+    lines.push(line(mappedExpression(value.expression, context, value.span, ';')));
+  }
 
   return lines;
 }

@@ -264,7 +264,7 @@ The target of a query, the element type it resolves to, and the options of the c
 loadSignals({ devMode?: boolean }?): void
 ```
 
-Installs the global Signal polyfill. It must run before @xaendar/core is loaded, from a module of its own.
+Installs the global Signal polyfill. It must run before @xaendar/core is loaded: call it in the entry point, then load the application with a dynamic import.
 
 ### SignalOptions (type)
 

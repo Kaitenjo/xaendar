@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TaskButtonComponent } from '../../../examples/templates/conditional-bindings/task-button/task-button.xd.component.ts'
 @import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
@@ -28,13 +29,15 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.conditionalBindings.edgeCases.title") />
-  <docs-callout kind="edge" heading="{translations().pages.templates.conditionalBindings.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout2.p1") />
-    <docs-code snippet="components/required-branch-error.txt" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.templates.conditionalBindings.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout3.p1") />
-    <docs-code snippet="templates/bound-twice-error.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.templates.conditionalBindings.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout2.p1") />
+      <docs-code snippet="components/required-branch-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.templates.conditionalBindings.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout3.p1") />
+      <docs-code snippet="templates/bound-twice-error.txt" />
+    </docs-callout-item>
   </docs-callout>
 </section>
 

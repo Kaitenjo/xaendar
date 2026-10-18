@@ -2,6 +2,7 @@
 <a title="{tooltip()}">…</a>                              <!-- an expression -->
 <a href="{`/results?page=${page()}`}">…</a>              <!-- a template literal -->
 <p class="{linkClass()}" style="{barStyle()}">…</p>      <!-- class and style are attributes too -->
+<li [class.done]="{task().done}">…</li>                   <!-- a class, present while the value is truthy -->
 <button
   @if (locked()) {
     disabled                                              <!-- a boolean attribute: present or absent -->

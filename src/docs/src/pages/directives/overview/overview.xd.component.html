@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { DirectiveBasicsComponent } from '../../../examples/directives/overview/directive-basics/directive-basics.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
@@ -88,21 +89,23 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.directives.overview.edgeCases.title") />
-  <docs-callout kind="edge" heading="{translations().pages.directives.overview.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.directives.overview.edgeCases.callout1.p1") />
-    <docs-code snippet="directives/not-imported-error.txt" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.directives.overview.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.directives.overview.edgeCases.callout2.p1") />
-    <docs-code snippet="directives/missing-registration-error.txt" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.directives.overview.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.directives.overview.edgeCases.callout3.p1") />
-    <docs-code snippet="directives/duplicate-selector-error.txt" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.directives.overview.edgeCases.callout4.heading}">
-    <p @@i18n(key="pages.directives.overview.edgeCases.callout4.p1") />
-    <docs-code snippet="directives/wrong-kind-error.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.directives.overview.edgeCases.callout1.heading}">
+      <p @@i18n(key="pages.directives.overview.edgeCases.callout1.p1") />
+      <docs-code snippet="directives/not-imported-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.overview.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.directives.overview.edgeCases.callout2.p1") />
+      <docs-code snippet="directives/missing-registration-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.overview.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.directives.overview.edgeCases.callout3.p1") />
+      <docs-code snippet="directives/duplicate-selector-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.overview.edgeCases.callout4.heading}">
+      <p @@i18n(key="pages.directives.overview.edgeCases.callout4.p1") />
+      <docs-code snippet="directives/wrong-kind-error.txt" />
+    </docs-callout-item>
   </docs-callout>
 </section>
 

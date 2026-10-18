@@ -34,6 +34,7 @@
   --xd-edge: #c2410c;
   --xd-unsupported: #6b7280;
   --xd-issue: #be123c;
+  --xd-console-error: #cd3131;
 
   --xd-code-bg: #f6f7fb;
   --xd-code-border: #e2e4ee;
@@ -82,6 +83,7 @@
   --xd-edge: #fb923c;
   --xd-unsupported: #9ca3af;
   --xd-issue: #fb7185;
+  --xd-console-error: #f14c4c;
 
   --xd-code-bg: #11131b;
   --xd-code-border: #262a38;
@@ -115,7 +117,7 @@ html {
   background: var(--xd-bg);
   color: var(--xd-text);
   font-family: var(--xd-font);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-size-adjust: 100%;

@@ -13,7 +13,9 @@ import { EventNode } from '../../types/nodes/event-node.type';
 import { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { TemplateNode } from '../../types/nodes/template-node.type';
 import type { TemplateVariableNode } from '../../types/nodes/template-variable-node.type';
+import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
+import { isBracketBinding, parseClassBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
@@ -24,7 +26,7 @@ import { parseTemplateParameters } from '../../utils/template-parameters/templat
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
- * Parses a TAG_OPEN_NAME token and the subsequent template variable, attributes, events, conditional bindings, directives,
+ * Parses a TAG_OPEN_NAME token and the subsequent template variable, attributes, class bindings, events, conditional bindings, directives,
  * structural directives and children into an `ElementNode`. Handles both regular and self-closing tags.
  * A `<template>` is not an element but the declaration of a template, e.g. `<template #row(item: Item)>`, parsed into a
  * `TemplateNode`.
@@ -33,7 +35,7 @@ import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.ut
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The TAG_OPEN_NAME token containing the tag name, and the text of the type arguments if the element declares them.
  * @returns The parsed `ElementNode`, or `TemplateNode` for a `<template>`.
- * @throws If an attribute or a directive is bound more than once, the element declares more than one template variable
+ * @throws If an attribute, a class or a directive is bound more than once, the element declares more than one template variable
  *   or one it may not render, a `<template>` declares anything but its name and its parameters, or the element is not
  *   closed correctly.
  */
@@ -43,6 +45,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const nameSpan = cursor.findSpan(tagName, token.span.start);
 
   const attributes = new Array<AttributeNode>();
+  const classBindings = new Array<ClassBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -67,7 +70,11 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       }
 
       case TokenType.ATTRIBUTE:
-        attributes.push(parseAttribute(cursor, parseNode, token));
+        if (isBracketBinding(token)) {
+          classBindings.push(parseClassBinding(cursor, parseNode, token));
+        } else {
+          attributes.push(parseAttribute(cursor, parseNode, token));
+        }
         break;
 
       case TokenType.EVENT:
@@ -93,6 +100,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   }
 
   assertUniqueAttributes(attributes, conditionalBindings, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, branch => branch.structuralDirectives);
 
@@ -100,7 +108,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const typeArguments = token.parts[1] === undefined ? undefined : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>;
   if (tagName === 'template') {
-    const binding = typeArguments?.[0] ?? attributes[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? attributes[0] ?? classBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error('A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
     }
@@ -112,6 +120,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       tagName,
       nameSpan,
       attributes,
+      classBindings,
       events,
       children: [],
       conditionalBindings,
@@ -190,6 +199,30 @@ function assertUniqueAttributes(attributes: AttributeNode[], conditionalBindings
   }
 
   assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, describeDuplicate, boundInBranch));
+}
+
+/**
+ * Ensures every class is toggled at most once at a time on an element, across the element itself and all of its
+ * (nested) conditional bindings, as {@link assertUniqueAttributes} does for the attributes: the branches of a
+ * conditional binding can toggle the same class, since only one of them is applied at a time.
+ *
+ * @param classBindings - Class binding nodes to check.
+ * @param conditionalBindings - Conditional bindings whose class bindings are checked recursively.
+ * @param tagName - Tag name of the element, used in the error message.
+ * @param bound - Names of the classes already toggled on the element.
+ * @throws If a class is toggled more than once.
+ */
+function assertUniqueClassBindings(classBindings: ClassBindingNode[], conditionalBindings: ConditionalBindingNode[], tagName: string, bound = new Set<string>()): void {
+  for (let i = 0; i < classBindings.length; i++) {
+    const { className, span } = classBindings[i];
+    if (bound.has(className)) {
+      throw new Error(`Class "${className}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+
+    bound.add(className);
+  }
+
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueClassBindings(branch.classBindings, branch.conditionalBindings, tagName, boundInBranch));
 }
 
 /**

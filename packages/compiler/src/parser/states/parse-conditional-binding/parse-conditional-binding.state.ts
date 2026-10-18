@@ -19,7 +19,9 @@ import type { IfBindingNode } from '../../types/nodes/if-binding-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
+import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
+import { isBracketBinding, parseClassBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
@@ -176,7 +178,7 @@ function parseCases(cursor: ParserCursor): { conditions: string[] | null, condit
 
 /**
  * Parses the block of a branch, from its BLOCK_OPEN token up to its BLOCK_CLOSE one, collecting the attributes,
- * events, nested conditional bindings, directives and structural directives declared in it into a `ConditionalBindingBranchNode`.
+ * class bindings, events, nested conditional bindings, directives and structural directives declared in it into a `ConditionalBindingBranchNode`.
  *
  * @param cursor - Parser cursor positioned at the BLOCK_OPEN token of the branch.
  * @param parseNode - Parser function for recursive child parsing.
@@ -190,6 +192,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
   consumeBlockOpen(cursor);
 
   const attributes = new Array<AttributeNode>();
+  const classBindings = new Array<ClassBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -200,7 +203,11 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     const token = cursor.peek();
     switch (token.type) {
       case TokenType.ATTRIBUTE:
-        attributes.push(parseAttribute(cursor, parseNode, token));
+        if (isBracketBinding(token)) {
+          classBindings.push(parseClassBinding(cursor, parseNode, token));
+        } else {
+          attributes.push(parseAttribute(cursor, parseNode, token));
+        }
         break;
 
       case TokenType.EVENT:
@@ -235,6 +242,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     condition,
     conditionSpans,
     attributes,
+    classBindings,
     events,
     conditionalBindings,
     directives,

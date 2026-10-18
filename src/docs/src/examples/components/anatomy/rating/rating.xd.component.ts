@@ -17,7 +17,7 @@ export class RatingComponent extends CustomElement {
   /**
    * The chosen rating.
    */
-  public readonly value = signal(3);
+  public readonly value = signal(5);
   /**
    * The star under the pointer, 0 when there is none.
    */

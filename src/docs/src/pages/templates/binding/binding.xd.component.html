@@ -2,10 +2,12 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { AttributeBindingComponent } from '../../../examples/templates/binding/attribute-binding/attribute-binding.xd.component.ts'
 @import { MethodInAttributeComponent } from '../../../examples/templates/binding/method-in-attribute/method-in-attribute.xd.component.ts'
 @import { BooleanAttributesComponent } from '../../../examples/templates/binding/boolean-attributes/boolean-attributes.xd.component.ts'
 @import { ValueAttributeComponent } from '../../../examples/templates/binding/value-attribute/value-attribute.xd.component.ts'
+@import { ClassBindingComponent } from '../../../examples/templates/binding/class-binding/class-binding.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.templates.binding.eyebrow") class="eyebrow" />
@@ -28,6 +30,14 @@
 </docs-example>
 <p @@i18n(key="pages.templates.binding.whichExpressionsAreReactive.p2") />
 
+<h2 @@i18n(key="pages.templates.binding.togglingAClass.title") />
+<p @@i18n(key="pages.templates.binding.togglingAClass.p1") />
+<docs-example name="templates/binding/class-binding"
+  heading="{translations().pages.templates.binding.togglingAClass.example1}">
+  <ex-class-binding />
+</docs-example>
+<p @@i18n(key="pages.templates.binding.togglingAClass.p2") />
+
 <h2 @@i18n(key="pages.templates.binding.bindingTheInputsOf.title") />
 <p @@i18n(key="pages.templates.binding.bindingTheInputsOf.p1") />
 
@@ -43,18 +53,26 @@
     <ex-value-attribute />
   </docs-example>
   <p @@i18n(key="pages.templates.binding.edgeCases.p2") />
-  <docs-callout kind="edge" heading="{translations().pages.templates.binding.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.templates.binding.edgeCases.callout1.p1") />
-    <docs-code snippet="templates/mixed-attribute.html" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.templates.binding.edgeCases.callout1.heading}">
+      <p @@i18n(key="pages.templates.binding.edgeCases.callout1.p1") />
+      <docs-code snippet="templates/mixed-attribute.html" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.templates.binding.edgeCases.callout2.body")
+      heading="{translations().pages.templates.binding.edgeCases.callout2.heading}" />
+    <docs-callout-item heading="{translations().pages.templates.binding.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.templates.binding.edgeCases.callout3.p1") />
+      <docs-code snippet="templates/bound-twice-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.templates.binding.edgeCases.callout4.body")
+      heading="{translations().pages.templates.binding.edgeCases.callout4.heading}" />
+    <docs-callout-item heading="{translations().pages.templates.binding.edgeCases.callout5.heading}">
+      <p @@i18n(key="pages.templates.binding.edgeCases.callout5.p1") />
+      <docs-code snippet="templates/class-binding-error.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.templates.binding.edgeCases.callout6.body")
+      heading="{translations().pages.templates.binding.edgeCases.callout6.heading}" />
   </docs-callout>
-  <docs-callout @@i18n(key="pages.templates.binding.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.templates.binding.edgeCases.callout2.heading}" />
-  <docs-callout kind="edge" heading="{translations().pages.templates.binding.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.templates.binding.edgeCases.callout3.p1") />
-    <docs-code snippet="templates/bound-twice-error.txt" />
-  </docs-callout>
-  <docs-callout @@i18n(key="pages.templates.binding.edgeCases.callout4.body") kind="edge"
-    heading="{translations().pages.templates.binding.edgeCases.callout4.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.templates.binding.apiSummary.title") />
@@ -94,6 +112,12 @@
       <tr>
         <td @@i18n(key="pages.templates.binding.apiSummary.td5") />
         <td @@i18n(key="pages.templates.binding.apiSummary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '[class.name]="{ expression }"' }</code>
+        </td>
+        <td @@i18n(key="pages.templates.binding.apiSummary.td7") />
       </tr>
     </tbody>
   </table>

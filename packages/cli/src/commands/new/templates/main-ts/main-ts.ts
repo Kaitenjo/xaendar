@@ -1,15 +1,14 @@
-import { toPascalCase } from '@xaendar/common';
-
 /**
  * Generates the content of the project entry point `src/main.ts`.
  *
- * @param componentName - The root component name derived from the project
- *   name (e.g. `app` → `'./app/app.xd.component'`).
+ * It installs the Signal polyfill, then loads `bootstrap.ts` on demand: the modules of `@xaendar/core`
+ * need the polyfill as soon as they are evaluated, so they must not be imported statically.
+ *
  * @returns The formatted TypeScript source string.
  */
-export function mainTs(componentName: string): string {
-  const componentClassName = `${toPascalCase(componentName)}Component`;
-  return `import { ${componentClassName} } from './${componentName}/${componentName}.xd.component';
+export function mainTs(): string {
+  return `import { loadSignals } from '@xaendar/signals';
 
-console.log(${componentClassName});`;
+loadSignals();
+await import('./bootstrap');`;
 }

@@ -16,16 +16,16 @@ my-app/
 ├── tsconfig.json       also used to type-check the templates
 ├── vite.config.ts      plain Vite config: xd start/build/test add Babel (decorators) + xaendarPlugin()
 └── src/
-    ├── index.html      loads signals.ts, then main.ts
-    ├── signals.ts      loadSignals() from @xaendar/signals — must run before @xaendar/core loads
-    ├── main.ts         imports every component/directive module so they get defined
+    ├── index.html      loads main.ts
+    ├── main.ts         loadSignals() from @xaendar/signals, then await import('./bootstrap') — a static import would load @xaendar/core first
+    ├── bootstrap.ts    imports every component/directive module so they get defined
     └── my-app-root/
         ├── my-app-root.xd.component.ts
         ├── my-app-root.xd.component.html
         └── my-app-root.xd.component.css
 ```
 
-A component or directive is defined when its module is evaluated. A class that is never imported at runtime is never defined. Load them all from `main.ts`, for example `import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts'], { eager: true });`, or import each one there.
+A component or directive is defined when its module is evaluated. A class that is never imported at runtime is never defined. Load them all from `bootstrap.ts`, for example `import.meta.glob(['./**/*.xd.component.ts', './**/*.directive.ts'], { eager: true });`, or import each one there.
 
 ## A component
 
@@ -91,7 +91,7 @@ export class CounterComponent extends CustomElement {
 
 **Template**: see [references/template-syntax.md](references/template-syntax.md). The essentials:
 - Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `&commat;`, `&lt;`, `&lbrace;`, `&rbrace;` (character references are decoded as in HTML) or `{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`. Use double quotes around every attribute value. Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
-- An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`.
+- An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`. Toggle a single class with `[class.name]="{ expr }"`.
 - A listener is one method call with simple arguments: no inline logic, no `(keydown.enter)` modifiers.
 - Add or remove boolean attributes (`disabled`, `checked`) with a conditional binding inside the tag, not with `="{ false }"`.
 - Import every component and directive used, at the top of the template, with `@import { X } from './relative/path.xd.component.ts'` (packages and `tsconfig.json` aliases work too, except the components of compiled packages). Import the functions, constants, enums, signals and types of other modules the same way: the expressions read them by name.

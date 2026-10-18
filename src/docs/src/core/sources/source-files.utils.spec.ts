@@ -11,6 +11,9 @@ describe('langOf', () => {
     ['tsconfig.json', 'json'],
     ['setup.sh', 'bash'],
     ['notes.txt', 'text'],
+    ['unknown-event-error.txt', 'error'],
+    ['for-errors.txt', 'error'],
+    ['errors.ts', 'ts'],
     ['Makefile', 'text']
   ])('infers the language of %s', (fileName, lang) => {
     expect(langOf(fileName)).toBe(lang);

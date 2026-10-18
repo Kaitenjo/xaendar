@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { PropertyBasicsComponent } from '../../../examples/components/inputs/property-basics/property-basics.xd.component.ts'
 @import { AttributesVsPropertiesComponent } from '../../../examples/components/inputs/attributes-vs-properties/attributes-vs-properties.xd.component.ts'
 @import { TransformEqualsComponent } from '../../../examples/components/inputs/transform-equals/transform-equals.xd.component.ts'
@@ -64,18 +65,20 @@
     <ex-conditional-reset />
   </docs-example>
   <p @@i18n(key="pages.components.inputs.edgeCases.p1") />
-  <docs-callout @@i18n(key="pages.components.inputs.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.components.inputs.edgeCases.callout1.heading}" />
-  <docs-callout kind="edge" heading="{translations().pages.components.inputs.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.components.inputs.edgeCases.callout2.p1") />
-    <docs-code snippet="components/read-only-input.ts" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.inputs.edgeCases.callout1.body")
+      heading="{translations().pages.components.inputs.edgeCases.callout1.heading}" />
+    <docs-callout-item heading="{translations().pages.components.inputs.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.components.inputs.edgeCases.callout2.p1") />
+      <docs-code snippet="components/read-only-input.ts" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.components.inputs.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.components.inputs.edgeCases.callout3.p1") />
+      <docs-code snippet="components/transform-type.ts" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.components.inputs.edgeCases.callout5.body")
+      heading="{translations().pages.components.inputs.edgeCases.callout5.heading}" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.components.inputs.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.components.inputs.edgeCases.callout3.p1") />
-    <docs-code snippet="components/transform-type.ts" />
-  </docs-callout>
-  <docs-callout @@i18n(key="pages.components.inputs.edgeCases.callout5.body") kind="edge"
-    heading="{translations().pages.components.inputs.edgeCases.callout5.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.components.inputs.apiSummary.title") />

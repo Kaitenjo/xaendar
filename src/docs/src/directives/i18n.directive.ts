@@ -1,4 +1,4 @@
-import { CustomDirective, Directive, Event, Output, Property } from '@xaendar/core';
+import { CustomDirective, Directive, Property } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
 import { translations } from '../core/i18n/i18n';
 import { translate } from '../core/i18n/i18n.utils';
@@ -16,22 +16,19 @@ import { translate } from '../core/i18n/i18n.utils';
 @Directive({
   selector: 'i18n'
 })
-export class I18nDirective<T extends string | number = string> extends CustomDirective<HTMLElement> {
+export class I18nDirective extends CustomDirective<HTMLElement> {
   /**
    * The key of the text, its dot-separated path in the messages.
    */
   @Property.required()
-  public accessor key!: InputSignal<T>;
-
-  @Event()
-  public accessor change!: Output<T>
+  public accessor key!: InputSignal<string>;
   
   /**
    * Starts rendering the text: the properties already hold their bound values here.
    */
   public onInit(): void {
     this.effect(() => {
-      this.element.innerHTML = translate(translations(), this.key() as string);
+      this.element.innerHTML = translate(translations(), this.key());
     });
   }
 }

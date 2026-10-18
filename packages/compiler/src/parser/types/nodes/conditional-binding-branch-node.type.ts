@@ -2,6 +2,7 @@ import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast.type';
 import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
+import type { ClassBindingNode } from './class-binding-node.type';
 import type { ConditionalBindingNode } from './conditional-binding-node.type';
 import type { DirectiveNode } from './directive-node.type';
 import type { EventNode } from './event-node.type';
@@ -30,6 +31,11 @@ export type ConditionalBindingBranchNode<Condition = unknown> = ASTNodeWithSpan<
    * Attribute nodes bound while the branch is selected.
    */
   attributes: AttributeNode[];
+  /**
+   * Classes toggled on the element while the branch is selected.
+   * Always empty for a conditional binding declared inside a directive.
+   */
+  classBindings: ClassBindingNode[];
   /**
    * Event binding nodes attached while the branch is selected.
    */

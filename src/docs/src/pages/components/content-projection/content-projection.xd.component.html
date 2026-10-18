@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { CardSlotsComponent } from '../../../examples/components/content-projection/card-slots/card-slots.xd.component.ts'
 @import { DynamicSlotComponent } from '../../../examples/components/content-projection/dynamic-slot/dynamic-slot.xd.component.ts'
 @import { ForwardingComponent } from '../../../examples/components/content-projection/forwarding/forwarding.xd.component.ts'
@@ -43,10 +44,12 @@
     <ex-slot-timing />
   </docs-example>
   <p @@i18n(key="pages.components.contentProjection.edgeCases.p1") />
-  <docs-callout @@i18n(key="pages.components.contentProjection.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.components.contentProjection.edgeCases.callout1.heading}" />
-  <docs-callout @@i18n(key="pages.components.contentProjection.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.components.contentProjection.edgeCases.callout2.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.contentProjection.edgeCases.callout1.body")
+      heading="{translations().pages.components.contentProjection.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.contentProjection.edgeCases.callout2.body")
+      heading="{translations().pages.components.contentProjection.edgeCases.callout2.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.components.contentProjection.apiSummary.title") />

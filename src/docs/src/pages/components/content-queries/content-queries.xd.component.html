@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TabsComponent } from '../../../examples/components/content-queries/tabs/tabs.xd.component.ts'
 @import { ContentInspectorComponent } from '../../../examples/components/content-queries/content-inspector/content-inspector.xd.component.ts'
 @import { ForwardedContentComponent } from '../../../examples/components/content-queries/forwarded-content/forwarded-content.xd.component.ts'
@@ -40,10 +41,12 @@
     <ex-forwarded-content />
   </docs-example>
   <p @@i18n(key="pages.components.contentQueries.edgeCases.p1") />
-  <docs-callout @@i18n(key="pages.components.contentQueries.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.components.contentQueries.edgeCases.callout1.heading}" />
-  <docs-callout @@i18n(key="pages.components.contentQueries.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.components.contentQueries.edgeCases.callout2.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.contentQueries.edgeCases.callout1.body")
+      heading="{translations().pages.components.contentQueries.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.contentQueries.edgeCases.callout2.body")
+      heading="{translations().pages.components.contentQueries.edgeCases.callout2.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.components.contentQueries.apiSummary.title") />

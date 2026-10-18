@@ -130,6 +130,26 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
+    message: '[Parser] Class "on" is bound more than once on <p>',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [class.on] toggles the class by the value of an expression: [class.on]="{expression}"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] "[style.color]" is not a binding: a class is toggled with [class.name]="{expression}"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [class.on] cannot be bound inside a directive: bind it on the element',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
     message: '[Parser] Directive "exTint" is applied more than once on <p>',
     page: 'directives/custom'
   },

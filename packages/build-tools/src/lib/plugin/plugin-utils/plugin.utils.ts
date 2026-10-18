@@ -139,7 +139,7 @@ export function generateTemplateModule(compiledFunctions: string, dependencyPath
   }
 
   lines.push(
-    'import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute, _resetProperty, _template, _renderTemplate, _parameter, _let } from \'@xaendar/core\';',
+    'import { _if, _switch, _for, _Context, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _createElement, _createSVGElement, _createMATHMLElement, _setProperty, _setExpressionProperty, _setReactiveProperty, _removeAttribute, _resetProperty, _setExpressionClass, _setReactiveClass, _removeClass, _template, _renderTemplate, _parameter, _let } from \'@xaendar/core\';',
     '',
     compiledFunctions,
     '',

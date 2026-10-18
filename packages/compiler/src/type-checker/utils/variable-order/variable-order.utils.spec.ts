@@ -99,6 +99,12 @@ describe('checkVariableOrder', () => {
       expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field', 'field', 'field', 'field', 'field']);
     });
 
+    it('checks the class bindings, of the element and of its conditional bindings', () => {
+      const template = '<p [class.on]="{ field.checked }" @if (other) { [class.big]="{ field.value }" }></p><input #field />';
+
+      expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field']);
+    });
+
     it('checks the bindings of the directives and of the structural directives, and of the ones applied by a conditional binding', () => {
       const template = '<p @if (other) { @@tint(color="{ field.value }") *visible(when="{ field.checked }") } @@mark(text="{ field.title }") *shown(when="{ field.hidden }")></p><input #field />';
 

@@ -2,6 +2,7 @@ import type { Span } from '../../../types/span.type';
 import { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
+import type { ClassBindingNode } from './class-binding-node.type';
 import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
 import { EventNode } from './event-node.type';
@@ -40,6 +41,10 @@ export type ElementNode = ASTNodeWithSpan<{
    * Attribute nodes bound to this element.
    */
   attributes: AttributeNode[];
+  /**
+   * Classes toggled on this element, `[class.name]="{expression}"`.
+   */
+  classBindings: ClassBindingNode[];
   /**
    * Event binding nodes attached to this element.
    */

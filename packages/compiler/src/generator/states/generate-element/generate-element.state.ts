@@ -3,6 +3,7 @@ import type { AsyncFunction, Function } from '@xaendar/types';
 import { factory, identifierToKeywordKind, isIdentifier, SyntaxKind } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
 import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
@@ -37,6 +38,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   // A custom element of another library has no metadata: it is generated like a native element
   const isCustomElement = isValidCustomElementName(tagName, false) && !compilerContext.isForeignElement(tagName);
   const attributes = await mapAttributes(node.attributes, compilerContext, tagName);
+  appendClassBindings(attributes, node.classBindings, compilerContext, false);
   const events = mapEvents(node.events, compilerContext);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, compilerContext, tagName, isCustomElement);
   const directives = await mapDirectives(node.directives, compilerContext);
@@ -203,6 +205,40 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
 }
 
 /**
+ * Appends to the descriptors of the attributes of an element the ones of the classes it toggles: `_renderElement`
+ * applies them like the attributes, with a setter toggling the class instead of setting an attribute.
+ *
+ * A class toggled inside a conditional binding is also removed when its branch is no longer the selected one.
+ *
+ * @param mappedAttributes - The generated descriptors of the attributes, the class bindings are appended to.
+ * @param classBindings - The class binding nodes of the element, or of a branch of one of its conditional bindings.
+ * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param conditional - Whether the class bindings are declared inside a conditional binding.
+ */
+function appendClassBindings(mappedAttributes: string[], classBindings: ClassBindingNode[], compilerContext: CompilerContext, conditional: boolean): void {
+  for (let i = 0; i < classBindings.length; i++) {
+    const { className, value } = classBindings[i];
+    const { expression, reactive } = resolveExpression(value.expression, compilerContext);
+    const setter = `setter: ${reactive ? '_setReactiveClass' : '_setExpressionClass'}`;
+
+    mappedAttributes.push(
+      '{',
+      ...indent([
+        `name: ${toStringLiteral(className)},`,
+        `value: () => ${expression},`,
+        conditional ? `${setter},` : setter
+      ])
+    );
+
+    if (conditional) {
+      mappedAttributes.push(indent('unbind: _removeClass'));
+    }
+
+    mappedAttributes.push('},');
+  }
+}
+
+/**
  * Generates the descriptors of the event listeners of a DOM element.
  *
  * The handler of each descriptor is an arrow function making the whole call of the template, with the
@@ -348,8 +384,8 @@ async function mapConditionalBindingDescriptors(
  * @param branch - The branch to check.
  * @returns `true` if the branch has nothing to apply, `false` otherwise.
  */
-function isEmptyBranch({ attributes, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
-  return !attributes.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
+function isEmptyBranch({ attributes, classBindings, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
+  return !attributes.length && !classBindings.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
 }
 
 /**
@@ -399,8 +435,9 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * @returns Array of generated code lines describing the branch.
  */
 async function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean, isDirective: boolean): Promise<string[]> {
-  const { attributes, events, conditionalBindings, directives } = branch;
+  const { attributes, classBindings, events, conditionalBindings, directives } = branch;
   const mappedAttributes = await mapAttributes(attributes, compilerContext, owner, isCustomElement, isDirective);
+  appendClassBindings(mappedAttributes, classBindings, compilerContext, true);
   const mappedEvents = mapEvents(events, compilerContext);
   const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, compilerContext, owner, isCustomElement, isDirective);
 

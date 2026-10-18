@@ -19,12 +19,16 @@ export type SourceFile = {
 };
 
 /**
- * Infers the language of a file from its extension.
+ * Infers the language of a file from its extension. A `.txt` file named after an error (`…-error.txt`,
+ * `…-errors.txt`) shows the output of a failure: its language is `error`.
  *
  * @param fileName - The name of the file.
  * @returns The language of the file, `text` when the extension is unknown.
  */
 export function langOf(fileName: string): CodeLang {
+  if (/errors?\.txt$/i.test(fileName)) {
+    return 'error';
+  }
   const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
   switch (extension) {
     case 'ts':

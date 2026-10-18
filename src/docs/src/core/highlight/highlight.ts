@@ -1,7 +1,8 @@
 /**
- * Languages the highlighter understands. `html` is the Xaendar template language.
+ * Languages the highlighter understands. `html` is the Xaendar template language, `error` is plain text
+ * showing the output of a failure, drawn in the red of the console.
  */
-export type CodeLang = 'ts' | 'html' | 'css' | 'json' | 'bash' | 'text';
+export type CodeLang = 'ts' | 'html' | 'css' | 'json' | 'bash' | 'text' | 'error';
 
 /**
  * Classes of the highlighted tokens, rendered as `<span class="tok-<class>">`.

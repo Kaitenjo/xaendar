@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { DefineRulesComponent } from '../../../examples/components/registration/define-rules/define-rules.xd.component.ts'
 @import { ForeignElementComponent } from '../../../examples/components/registration/foreign-element/foreign-element.xd.component.ts'
 @import { LazyLoadingComponent } from '../../../examples/components/registration/lazy-loading/lazy-loading.xd.component.ts'
@@ -33,7 +34,7 @@
   </li>
   <li>
     <span @@i18n(key="pages.components.registration.usingAComponentIn.li2") />
-    <docs-code snippet="components/main-entry.ts" />
+    <docs-code snippet="components/bootstrap.ts" />
   </li>
 </ol>
 <p @@i18n(key="pages.components.registration.usingAComponentIn.p2") />
@@ -58,12 +59,14 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.registration.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.components.registration.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.components.registration.edgeCases.callout1.heading}" />
-  <docs-callout @@i18n(key="pages.components.registration.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.components.registration.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.components.registration.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.components.registration.edgeCases.callout3.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout1.body")
+      heading="{translations().pages.components.registration.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout2.body")
+      heading="{translations().pages.components.registration.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout3.body")
+      heading="{translations().pages.components.registration.edgeCases.callout3.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.components.registration.apiSummary.title") />

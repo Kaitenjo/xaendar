@@ -15,6 +15,7 @@ import type { DirectiveNode } from '../../types/nodes/directive-node.type';
 import type { EventNode } from '../../types/nodes/event-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
+import { assertNoClassBindings } from '../parse-class-binding/parse-class-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 
@@ -27,7 +28,7 @@ import { parseEvent } from '../parse-event/parse-event.state';
  * @param token - The DIRECTIVE token containing the directive selector.
  * @returns The parsed `DirectiveNode`.
  * @throws If a token other than an attribute, an event, a conditional binding or the directive closure is found in the directive body,
- *   or a type argument is empty.
+ *   a class is bound in it, or a type argument is empty.
  */
 export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: DirectiveToken): DirectiveNode {
   const startOffset = token.span.start;
@@ -63,6 +64,8 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
         throw new Error('Unexpected token in directive');
     }
   }
+
+  assertNoClassBindings(attributes, conditionalBindings);
 
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node: DirectiveNode = {

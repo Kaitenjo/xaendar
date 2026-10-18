@@ -122,6 +122,20 @@ describe('parseElement', () => {
     expect(() => parse(template)).not.toThrow();
   });
 
+  it.each([
+    ['on the element', '<div [class.on]="{a}" [class.on]="{b}"></div>'],
+    ['on the element and in a conditional binding', '<div [class.on]="{a}" @if (cond()) { [class.on]="{b}" }></div>'],
+    ['in two conditional bindings', '<div @if (cond()) { [class.on]="{a}" } @switch (mode()) { @default { [class.on]="{b}" } }></div>'],
+    ['in a nested conditional binding', '<div @if (cond()) { [class.on]="{a}" @if (other()) { [class.on]="{b}" } }></div>']
+  ])('throws when a class is bound more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Class "on" is bound more than once on <div>');
+  });
+
+  it('allows a class to be bound in every branch of a conditional binding, and next to an attribute named like it', () => {
+    expect(() => parse('<div class="on" on="x" [class.on]="{a}" [class.off]="{b}"></div>')).not.toThrow();
+    expect(() => parse('<div @if (a()) { [class.on]="{x}" } @else { [class.on]="{y}" }></div>')).not.toThrow();
+  });
+
   it('allows a directive to be applied, and its properties to be bound, in every branch of a conditional binding', () => {
     expect(() => parse('<div @if (a()) { @@myDirective(display="block") } @else { @@myDirective(display="none") }></div>')).not.toThrow();
     expect(() => parse('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { display="none" } })></div>')).not.toThrow();
@@ -251,6 +265,7 @@ describe('parseElement', () => {
     it.each([
       ['type arguments', '<template(string) #row()></template>', 'string'],
       ['an attribute', '<template #row() class="a"></template>', 'class="a"'],
+      ['a class binding', '<template #row() [class.on]="{a}"></template>', '[class.on]'],
       ['an event', '<template #row() (click)="go()"></template>', '(click)="go()"'],
       ['a conditional binding', '<template #row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
       ['a directive', '<template #row() @@tint></template>', 'tint'],

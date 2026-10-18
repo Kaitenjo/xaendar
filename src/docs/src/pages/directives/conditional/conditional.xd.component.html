@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TracedDemoComponent } from '../../../examples/directives/conditional/traced/traced-demo.xd.component.ts'
 @import { ConditionalStructuralComponent } from '../../../examples/directives/conditional/conditional-structural/conditional-structural.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
@@ -28,13 +29,15 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.directives.conditional.edgeCases.title") />
-  <docs-callout kind="edge" heading="{translations().pages.directives.conditional.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.directives.conditional.edgeCases.callout1.p1") />
-    <docs-code snippet="directives/structural-errors.txt" />
-  </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.directives.conditional.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.directives.conditional.edgeCases.callout2.p1") />
-    <docs-code snippet="directives/nested-directives-error.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.directives.conditional.edgeCases.callout1.heading}">
+      <p @@i18n(key="pages.directives.conditional.edgeCases.callout1.p1") />
+      <docs-code snippet="directives/structural-errors.txt" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.conditional.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.directives.conditional.edgeCases.callout2.p1") />
+      <docs-code snippet="directives/nested-directives-error.txt" />
+    </docs-callout-item>
   </docs-callout>
 </section>
 

@@ -340,20 +340,27 @@ function checkElement(node: ElementNode, check: OrderCheck): void {
 }
 
 /**
- * Checks the attributes and the conditional bindings declared on an element, in a directive or in a branch of a
- * conditional binding, with the directives the branch applies.
+ * Checks the attributes, the class bindings and the conditional bindings declared on an element, in a directive or in
+ * a branch of a conditional binding, with the directives the branch applies.
  *
  * @param bindings - The bindings.
  * @param check - The state of the check.
  */
-function checkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'directives' | 'structuralDirectives'>>, check: OrderCheck): void {
+function checkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'directives' | 'structuralDirectives'>>, check: OrderCheck): void {
   checkAttributes(bindings.attributes, check);
+
+  const { classBindings, directives, structuralDirectives } = bindings;
+  if (classBindings?.length) {
+    for (let i = 0; i < classBindings.length; i++) {
+      const { value, span } = classBindings[i];
+      checkReads(value.expression, span, check);
+    }
+  }
 
   for (let i = 0; i < bindings.conditionalBindings.length; i++) {
     checkConditionalBinding(bindings.conditionalBindings[i], check);
   }
 
-  const { directives, structuralDirectives } = bindings;
   if (directives?.length) {
     for (let i = 0; i < directives.length; i++) {
       checkBindings(directives[i], check);

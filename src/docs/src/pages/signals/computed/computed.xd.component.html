@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { ComputedLazyComponent } from '../../../examples/signals/computed/lazy/lazy.xd.component.ts'
 @import { ComputedDynamicComponent } from '../../../examples/signals/computed/dynamic-dependencies/dynamic-dependencies.xd.component.ts'
 @import { ComputedDiamondComponent } from '../../../examples/signals/computed/diamond/diamond.xd.component.ts'
@@ -50,10 +51,12 @@
     heading="{translations().pages.signals.computed.edgeCases.example1}">
     <ex-computed-circular />
   </docs-example>
-  <docs-callout @@i18n(key="pages.signals.computed.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.signals.computed.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.signals.computed.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.signals.computed.edgeCases.callout3.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.signals.computed.edgeCases.callout2.body")
+      heading="{translations().pages.signals.computed.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.signals.computed.edgeCases.callout3.body")
+      heading="{translations().pages.signals.computed.edgeCases.callout3.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.signals.computed.apiSummary.title") />

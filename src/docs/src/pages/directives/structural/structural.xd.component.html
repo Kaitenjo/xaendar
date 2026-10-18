@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { ParityComponent } from '../../../examples/directives/structural/parity/parity.xd.component.ts'
 @import { CitySearchComponent } from '../../../examples/directives/structural/min-length/city-search.xd.component.ts'
 @import { MediaLayoutComponent } from '../../../examples/directives/structural/media/media-layout.xd.component.ts'
@@ -52,11 +53,13 @@
     <ex-late-read />
   </docs-example>
   <p @@i18n(key="pages.directives.structural.edgeCases.p1") />
-  <docs-callout @@i18n(key="pages.directives.structural.edgeCases.callout1.body") kind="edge"
-    heading="{translations().pages.directives.structural.edgeCases.callout1.heading}" />
-  <docs-callout kind="edge" heading="{translations().pages.directives.structural.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.directives.structural.edgeCases.callout2.p1") />
-    <docs-code snippet="directives/structural-errors.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.directives.structural.edgeCases.callout1.body")
+      heading="{translations().pages.directives.structural.edgeCases.callout1.heading}" />
+    <docs-callout-item heading="{translations().pages.directives.structural.edgeCases.callout2.heading}">
+      <p @@i18n(key="pages.directives.structural.edgeCases.callout2.p1") />
+      <docs-code snippet="directives/structural-errors.txt" />
+    </docs-callout-item>
   </docs-callout>
 </section>
 

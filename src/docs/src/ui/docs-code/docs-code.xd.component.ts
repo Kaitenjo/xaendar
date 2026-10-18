@@ -71,7 +71,7 @@ export class DocsCodeComponent extends CustomElement {
    */
   public readonly text = computed(() => this._computeText());
   /**
-   * The file name shown above the code. Plain text snippets (diagrams, terminal output) show none by default.
+   * The file name shown above the code. Plain text and error snippets (diagrams, terminal output) show none by default.
    */
   public readonly caption = computed(() => this._computeCaption());
   /**
@@ -81,7 +81,7 @@ export class DocsCodeComponent extends CustomElement {
   /**
    * Every language the highlighter understands.
    */
-  private readonly _codeLangs: readonly CodeLang[] = ['ts', 'html', 'css', 'json', 'bash', 'text'];
+  private readonly _codeLangs: readonly CodeLang[] = ['ts', 'html', 'css', 'json', 'bash', 'text', 'error'];
   /**
    * Resets the copy button label.
    */
@@ -160,7 +160,8 @@ export class DocsCodeComponent extends CustomElement {
    * @returns The file name shown above the code.
    */
   private _computeCaption(): string {
-    return this.bare() ? '' : this.filename() || (this.snippet() && this.source().lang !== 'text' ? this.source().name : '');
+    const lang = this.source().lang;
+    return this.bare() ? '' : this.filename() || (this.snippet() && lang !== 'text' && lang !== 'error' ? this.source().name : '');
   }
 
   /**
@@ -170,6 +171,9 @@ export class DocsCodeComponent extends CustomElement {
    */
   private _computeClasses(): string {
     const classes = ['box'];
+    if (this.source().lang === 'error') {
+      classes.push('box--error');
+    }
     if (this.bare()) {
       classes.push('box--bare');
     }

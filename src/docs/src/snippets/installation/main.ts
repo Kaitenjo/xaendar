@@ -1,5 +1,6 @@
-import { MyAppRootComponent } from './my-app-root/my-app-root.xd.component';
+import { loadSignals } from '@xaendar/signals';
 
-// Importing the class evaluates its @WebComponent decorator, which defines the custom element.
-// Logging it keeps the import from being removed as unused.
-console.log(MyAppRootComponent);
+// Installs the global `Signal` (TC39 proposal polyfill) used by @xaendar/core
+loadSignals();
+// Loaded dynamically: a static import would be evaluated before loadSignals() runs
+await import('./bootstrap');

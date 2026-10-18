@@ -1,4 +1,5 @@
 :host {
+  background-color: var(--xd-bg);
   display: inline-flex;
   align-items: center;
   justify-content: center;

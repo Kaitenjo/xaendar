@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { CanvasChartComponent } from '../../../examples/components/dom-apis/canvas-chart/canvas-chart.xd.component.ts'
 @import { AutoFocusComponent } from '../../../examples/components/dom-apis/auto-focus/auto-focus.xd.component.ts'
 @import { ResizeObserverComponent } from '../../../examples/components/dom-apis/resize-observer/resize-observer.xd.component.ts'
@@ -47,10 +48,12 @@
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.domApis.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.components.domApis.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.components.domApis.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.components.domApis.edgeCases.callout4.body") kind="edge"
-    heading="{translations().pages.components.domApis.edgeCases.callout4.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.domApis.edgeCases.callout2.body")
+      heading="{translations().pages.components.domApis.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.domApis.edgeCases.callout4.body")
+      heading="{translations().pages.components.domApis.edgeCases.callout4.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.components.domApis.apiSummary.title") />

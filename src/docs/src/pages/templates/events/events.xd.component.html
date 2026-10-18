@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { EventArgumentsComponent } from '../../../examples/templates/events/event-arguments/event-arguments.xd.component.ts'
 @import { KeyFilterComponent } from '../../../examples/templates/events/key-filter/key-filter.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
@@ -37,10 +38,12 @@
     <ex-key-filter />
   </docs-example>
   <p @@i18n(key="pages.templates.events.edgeCases.p1") />
-  <docs-callout @@i18n(key="pages.templates.events.edgeCases.callout2.body") kind="edge"
-    heading="{translations().pages.templates.events.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.templates.events.edgeCases.callout3.body") kind="edge"
-    heading="{translations().pages.templates.events.edgeCases.callout3.heading}" />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.templates.events.edgeCases.callout2.body")
+      heading="{translations().pages.templates.events.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.templates.events.edgeCases.callout3.body")
+      heading="{translations().pages.templates.events.edgeCases.callout3.heading}" />
+  </docs-callout>
 </section>
 
 <h2 @@i18n(key="pages.templates.events.apiSummary.title") />

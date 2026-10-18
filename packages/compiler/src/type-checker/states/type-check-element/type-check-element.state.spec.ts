@@ -62,6 +62,19 @@ describe('typeCheckElement', () => {
       expect([lines[1], lines[4]].every(l => !l.mappings)).toBe(true);
     });
 
+    it('type-checks the expressions toggling classes, of any type, on the element and in its conditional bindings', () => {
+      const template = '<div [class.on]="{active()}" @if (cond()) { [class.big]="{items.length}" }></div>';
+      const lines = run(template);
+
+      expect(text(lines)).toEqual([
+        'root.active();',
+        'if (root.cond()) {',
+        '  root.items.length;',
+        '}'
+      ]);
+      expect(lines[0].mappings![0]).toBeDefined();
+    });
+
     it('declares $event in a separate block for each event, so that every handler gets its own', () => {
       expect(text(run('<div (click)="f($event)" (input)="g($event)"></div>'))).toEqual([
         '{',
@@ -240,6 +253,17 @@ describe('typeCheckElement', () => {
         '{',
         '  let x!: string;',
         '  x satisfies string;',
+        '}'
+      ]);
+    });
+
+    it('type-checks the expressions toggling classes on the element of a component, without matching them to its properties', () => {
+      const lines = run('<my-el [class.title]="{active()}" @if (cond()) { [class.label]="{1}" }></my-el>', metadata(properties));
+
+      expect(text(lines)).toEqual([
+        'root.active();',
+        'if (root.cond()) {',
+        '  1;',
         '}'
       ]);
     });

@@ -32,6 +32,9 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 <!-- Native elements: attributes, set with setAttribute -->
 <a href="/home" title="{ tooltip() }" class="{`link ${active() ? 'on' : ''}`}">Home</a>
 
+<!-- A class, on native elements and components: present while the value is truthy -->
+<li class="task" [class.done]="{ task().done }">…</li>
+
 <!-- Components: inputs, set as InputSignals -->
 <x-card heading="Static string" count="{ 3 }" user="{ user() }" />
 
@@ -42,6 +45,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 ```
 
 - An attribute value is either fully static or one expression. `class="btn { kind() }"` is the literal string `btn { kind() }`; write `class="{`btn ${kind()}`}"`.
+- `[class.name]="{ expr }"` toggles one class by the truthiness of a value of any type; it works inside conditional bindings (the class is removed with its branch) and survives a bound `class`, winning over it. Its value is always an expression in braces. Brackets only toggle classes (`[style.x]`, `[attr]` are errors), a class is toggled once per element, and never inside the parentheses of a directive.
 - On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
 - Static values are type-checked as `string`: a numeric input needs `count="{ 3 }"`, not `count="3"`.
 - Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with a function of `@xaendar/core/signals`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.

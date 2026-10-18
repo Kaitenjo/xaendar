@@ -2,6 +2,7 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { EncapsulationComponent } from '../../../examples/components/styling/encapsulation/encapsulation.xd.component.ts'
 @import { HostSelectorsComponent } from '../../../examples/components/styling/host-selectors/host-selectors.xd.component.ts'
 @import { CustomPropertiesComponent } from '../../../examples/components/styling/custom-properties/custom-properties.xd.component.ts'
@@ -63,13 +64,15 @@
     <p @@i18n(key="pages.components.styling.edgeCases.callout2.p1") />
     <docs-code snippet="components/scss-error.txt" />
   </docs-callout>
-  <docs-callout kind="edge" heading="{translations().pages.components.styling.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.components.styling.edgeCases.callout3.p1") />
-    <docs-code snippet="components/css-limits.css" />
-    <docs-code snippet="components/css-import-warning.txt" />
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.components.styling.edgeCases.callout3.heading}">
+      <p @@i18n(key="pages.components.styling.edgeCases.callout3.p1") />
+      <docs-code snippet="components/css-limits.css" />
+      <docs-code snippet="components/css-import-warning.txt" />
+    </docs-callout-item>
+    <docs-callout-item @@i18n(key="pages.components.styling.edgeCases.callout4.body")
+      heading="{translations().pages.components.styling.edgeCases.callout4.heading}" />
   </docs-callout>
-  <docs-callout @@i18n(key="pages.components.styling.edgeCases.callout4.body") kind="edge"
-    heading="{translations().pages.components.styling.edgeCases.callout4.heading}" />
 </section>
 
 <h2 @@i18n(key="pages.components.styling.apiSummary.title") />

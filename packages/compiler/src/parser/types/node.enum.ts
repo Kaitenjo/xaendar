@@ -81,5 +81,9 @@ export enum ASTNodeType {
   /**
    * The declaration of a name for the value of an expression, `@let name = value;`.
    */
-  Let
+  Let,
+  /**
+   * A class toggled on an HTML element by the value of an expression, `[class.name]="{expression}"`.
+   */
+  ClassBinding
 }

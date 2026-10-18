@@ -31,7 +31,6 @@
     "note": "Note",
     "tip": "Tip",
     "warning": "Warning",
-    "edge": "Edge case",
     "unsupported": "Not supported",
     "issue": "Known issue"
   },
@@ -643,7 +642,7 @@
           "title": "Using a component in a template",
           "p1": "A template uses a component in two separate steps.",
           "li1": "<strong>At build time</strong>, the template imports the class with <code>@import</code>. The compiler reads the class to learn its selector, its inputs and its outputs, and type-checks the bindings against them.",
-          "li2": "<strong>At run time</strong>, the module declaring the class must have been evaluated, so that the decorator has defined the element. The template does it: its module imports the modules it imports with <code>@import</code>, so a component is defined before the template using it is rendered, and the bundler can split the site along the templates. Only the entry point imports the root component:",
+          "li2": "<strong>At run time</strong>, the module declaring the class must have been evaluated, so that the decorator has defined the element. The template does it: its module imports the modules it imports with <code>@import</code>, so a component is defined before the template using it is rendered, and the bundler can split the site along the templates. Only <code>bootstrap.ts</code>, loaded by the entry point once the signals are installed, imports the root component:",
           "p2": "A tag with a hyphen that the template neither imports nor declares as a custom element of another library (see below) fails the build:"
         },
         "customElementsOfOther": {
@@ -988,19 +987,20 @@
       "components": {
         "eyebrow": "Essentials",
         "title": "Components",
-        "lead": "Components are the building blocks of a Xaendar application. Each one is a standard custom element: a TypeScript class for the logic, a template for the markup and a stylesheet scoped to its shadow root.",
+        "lead": "Components are the building blocks of a Xaendar application. Each one is a standard custom element",
         "definingAComponent": {
           "title": "Defining a component",
           "p1": "A component needs three things:",
-          "li1": "a class extending <code>CustomElement</code>, declared in a file ending with <code>.xd.component.ts</code>;",
-          "li2": "the <code>@WebComponent</code> decorator, with the tag name (<code>selector</code>) and the path of the template (<code>templateUrl</code>);",
-          "li3": "optionally a stylesheet (<code>styleUrl</code>), applied only inside the component.",
+          "li1": "A class extending <code>CustomElement</code>, declared in a file ending with <code>.xd.component.ts</code>;",
+          "li2": "A template ending with <code>.xd.component.html</code>.",
+          "li3": "The <code>@WebComponent</code> decorator;",
+          "li4": "Optionally a stylesheet, applied only inside the component through shadow DOM.",
           "p2": "The example below contains two components. <code>ex-user-badge</code> receives data through <strong>inputs</strong> and talks back through an <strong>output</strong>; <code>ex-user-profile</code> uses it twice. Open the files tabs to read both.",
           "example1": "A parent and a child component"
         },
         "inputs": {
           "title": "Inputs",
-          "p1": "An input is an <code>accessor</code> decorated with <code>@Property</code>. Its value is a signal: read it by calling it, <code>name()</code>, in the class or in the template. The decorator argument is the default value; <code>@Property.required()</code> marks an input the parent must always bind.",
+          "p1": "An input is an <code>accessor</code> decorated with <code>@Property</code>. Its value is a signal: read it by calling it, <code>mySignal()</code>, in the class or in the template. The decorator argument is the default value; <code>@Property.required()</code> marks an input the parent must always bind.",
           "p2": "The parent binds an input like an attribute. <code>name=\"Ada Lovelace\"</code> passes a static string, while <code>online=\"{ adaOnline() }\"</code> passes the value of an expression, and keeps it up to date."
         },
         "outputs": {
@@ -1140,17 +1140,18 @@
         "p1": "<code>xd new</code> creates the folder, writes the files below and runs <code>npm install</code>. <code>npm start</code> runs <code>xd start</code>, which serves the application on port 4200 and rebuilds it as you edit; <code>npm run build</code> runs <code>xd build</code>, which writes the production bundle in <code>dist</code>.",
         "p2": "Three files deserve a closer look.",
         "subtitle1": "index.html",
-        "p3": "The page loads two module scripts, in this order. <code>signals.ts</code> installs the global <code>Signal</code> object that <code>@xaendar/core</code> needs as soon as it is evaluated; <code>main.ts</code> imports the components.",
-        "subtitle2": "signals.ts",
-        "subtitle3": "main.ts",
-        "p4": "A component exists in the browser only after its class has been evaluated: <code>@WebComponent</code> then registers it with <code>customElements.define()</code>. Every component and directive your pages use must be imported, directly or indirectly, by the entry point."
+        "p3": "The page loads a single module script: <code>main.ts</code>, the entry point.",
+        "subtitle2": "main.ts",
+        "p4": "The entry point installs the global <code>Signal</code> object that <code>@xaendar/core</code> needs as soon as it is evaluated, then loads <code>bootstrap.ts</code> with <code>await import()</code>. A static import would not work: the imports of a module are evaluated before its body, so <code>@xaendar/core</code> would be evaluated before <code>loadSignals()</code> runs.",
+        "subtitle3": "bootstrap.ts",
+        "p5": "A component exists in the browser only after its class has been evaluated: <code>@WebComponent</code> then registers it with <code>customElements.define()</code>. Every component and directive your pages use must be imported, directly or indirectly, by <code>bootstrap.ts</code>."
       },
       "addXaendarToA": {
         "title": "Add Xaendar to a project by hand",
         "li1": "Install the runtime packages and the build tooling.",
         "li2": "Register the decorators transform and the Xaendar plugin in the Vite configuration, in this order.",
         "li3": "Configure TypeScript. Xaendar uses standard decorators and the <code>accessor</code> keyword, so do <strong>not</strong> enable <code>experimentalDecorators</code>. The plugin type-checks the templates with the <code>tsconfig.json</code> found in the directory Vite is started from.",
-        "li4": "Load <code>signals.ts</code> before your entry point, as in the <code>index.html</code> above. If the build splits the application in chunks, with dynamic imports, have <code>main.ts</code> load it with <code>await import()</code> instead of a static import: <code>@xaendar/core</code> is then evaluated after the polyfill is installed."
+        "li4": "Call <code>loadSignals()</code> in your entry point, then load the rest of the application with <code>await import()</code>, as the <code>main.ts</code> above does: <code>@xaendar/core</code> is then evaluated after the polyfill is installed."
       },
       "yourFirstComponent": {
         "title": "Your first component",
@@ -1162,7 +1163,7 @@
         "callout1": {
           "heading": "The polyfill is not loaded",
           "p1": "<code>@xaendar/core</code> reads <code>Signal.subtle</code> while its modules are evaluated. If <code>loadSignals()</code> has not run yet, the application stops before rendering anything:",
-          "p2": "Keep <code>signals.ts</code> as a separate module script placed before <code>main.ts</code>, or make it the very first import of <code>main.ts</code>: modules are evaluated in import order."
+          "p2": "Import the modules that use <code>@xaendar/core</code> with <code>await import()</code>, after the call to <code>loadSignals()</code>: the static imports of a module are evaluated before its body, even when they are written after the call."
         },
         "callout2": {
           "heading": "A component that is never imported renders nothing",
@@ -1921,6 +1922,12 @@
           "example1": "Two methods and a computed signal",
           "p2": "<code>percentOf()</code> reads the level in its own body, so its meter follows it. <code>percentFromHelper()</code> reads it through <code>readPercent()</code>, a function outside the class: the compiler does not follow calls it cannot trace back to a signal, so the second meter keeps the value of the first render, while the same method in the text below is reactive, because text interpolations always are. When an attribute needs such a value, declare its reactivity with a computed signal, as <code>percent</code> does. The rule for members that hold a signal created elsewhere is in <a href=\"#/en/signals/shared-state\">Shared state</a>."
         },
+        "togglingAClass": {
+          "title": "Toggling a class",
+          "p1": "<code>[class.name]=\"{ expression }\"</code> gives the element the class <code>name</code> while the value of the expression is truthy, and takes it away otherwise. The value can be of any type. It works on native elements, on the tags of components, where the class goes on the element itself, and inside <a href=\"#/en/templates/conditional-bindings\">conditional bindings</a>, where the class is taken away when its branch is no longer selected. Any class name without spaces follows the dot, <code>[class.is-active]</code> included.",
+          "example1": "A bound class attribute and two class bindings",
+          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: whenever <code>class</code> is written again, the classes of the bindings are applied on top of it, and a binding whose value is falsy takes its class away even when <code>class</code> lists it. Whether the binding follows its value is decided at build time, as for attributes."
+        },
         "bindingTheInputsOf": {
           "title": "Binding the inputs of components",
           "p1": "On the tag of a component the same syntax sets an input, with values of any type, checked against the type of the input. A static value is always a string. See <a href=\"#/en/components/inputs\">Inputs</a>."
@@ -1946,6 +1953,14 @@
           "callout4": {
             "heading": "A boolean attribute without a value",
             "body": "A static <code>disabled</code> written without a value is set to <code>\"true\"</code>: the element is disabled, as expected, but the attribute does not read <code>\"\"</code> as in HTML."
+          },
+          "callout5": {
+            "heading": "A class binding needs an expression",
+            "p1": "The value of <code>[class.name]</code> is always an expression in braces: a static value, or no value, does not compile. Brackets only bind classes: <code>[style.color]</code> or <code>[title]</code> are errors too."
+          },
+          "callout6": {
+            "heading": "Classes are toggled on the element, not in directives",
+            "body": "<code>[class.name]</code> cannot be written in the parentheses of a directive, which only bind its properties: write it on the element. A class can be toggled at most once on an element, as an attribute can be bound once, except in different branches of the same condition."
           }
         },
         "apiSummary": {
@@ -1957,7 +1972,8 @@
           "td3": "The same, with text around the value.",
           "td4": "An attribute present only while the condition holds.",
           "td5": "<code>input=\"{ expression }\"</code> on a component",
-          "td6": "Sets the input, with the value as it is."
+          "td6": "Sets the input, with the value as it is.",
+          "td7": "The class <code>name</code>, present while the value is truthy."
         }
       },
       "conditionalBindings": {
@@ -2633,7 +2649,7 @@
         },
         "xdTest": {
           "title": "xd test",
-          "p1": "<code>xd test</code> (or <code>xd t</code>) runs Vitest with the same plugins, in the DOM environment of happy-dom, and runs <code>signals.ts</code> before the specs, as <code>index.html</code> does. The spec generated with each component adds its tag to the document and checks that it renders its template. Vitest watches the files, and runs them once in CI."
+          "p1": "<code>xd test</code> (or <code>xd t</code>) runs Vitest with the same plugins, in the DOM environment of happy-dom, and installs the global <code>Signal</code> before the specs, as <code>main.ts</code> does. The spec generated with each component adds its tag to the document and checks that it renders its template. Vitest watches the files, and runs them once in CI."
         },
         "xdComponent": {
           "title": "xd generate component",
@@ -2795,7 +2811,7 @@
     "EffectOptions": "Hooks of an effect. onCleanup runs once, when the effect is disposed.",
     "InputSignalOptions": "The options of @Property, together with alias.",
     "QueryTarget, QueryElement, QuerySlotOptions": "The target of a query, the element type it resolves to, and the options of the content queries.",
-    "loadSignals": "Installs the global Signal polyfill. It must run before @xaendar/core is loaded, from a module of its own.",
+    "loadSignals": "Installs the global Signal polyfill. It must run before @xaendar/core is loaded: call it in the entry point, then load the application with a dynamic import.",
     "SignalOptions": "The options of signal() and of Signal.State. computed() only uses equals.",
     "SignalEqual, ExtractSignalType": "The type of an equality function, and the type of the value of a signal.",
     "Signal.State, Signal.Computed": "The classes of the TC39 proposal, installed globally by loadSignals. signal() and computed() wrap them.",
@@ -2861,6 +2877,22 @@
     "[Parser] Attribute \"title\" is bound more than once on <p>": {
       "cause": "The same attribute written both outside and inside a conditional binding.",
       "fix": "Bind it only inside the condition, in every branch that needs it."
+    },
+    "[Parser] Class \"on\" is bound more than once on <p>": {
+      "cause": "The same [class.name] written twice on an element, or both outside and inside a conditional binding.",
+      "fix": "Toggle it once, combining the conditions in its expression, or in every branch of one condition."
+    },
+    "[Parser] [class.on] toggles the class by the value of an expression: [class.on]=\"{expression}\"": {
+      "cause": "A class binding with a static value, or without a value.",
+      "fix": "Bind it to an expression in braces: [class.on]=\"{ active() }\"."
+    },
+    "[Parser] \"[style.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\"": {
+      "cause": "An attribute name in brackets other than [class.name]: brackets only toggle classes.",
+      "fix": "Bind the attribute without brackets, e.g. style=\"{ … }\", or toggle a class with [class.name]."
+    },
+    "[Parser] [class.on] cannot be bound inside a directive: bind it on the element": {
+      "cause": "A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.",
+      "fix": "Move it among the bindings of the element."
     },
     "[Parser] Directive \"exTint\" is applied more than once on <p>": {
       "cause": "The same directive applied twice to one element.",

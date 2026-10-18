@@ -1,8 +1,8 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
-import { translations } from '../../core/i18n/i18n';
+import { computed } from '@xaendar/core/signals';
 import type { Messages } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
 
 /**
  * Kinds of callout.
@@ -41,6 +41,9 @@ export class DocsCalloutComponent extends CustomElement {
    * @returns The label of the kind.
    */
   private _computeLabel(): string {
-    return translations().callout[this.kind() as CalloutKind] ?? this.kind();
+    const kind = this.kind();
+    const callout = translations().callout;
+    const isValidKind = (kind: string): kind is keyof typeof callout => kind in callout
+    return isValidKind(kind) ? callout[kind] : '';
   }
 }

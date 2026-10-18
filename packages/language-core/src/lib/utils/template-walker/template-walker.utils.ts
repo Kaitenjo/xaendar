@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type LetNode, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type LetNode, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { Expression } from 'typescript';
 
 /**
@@ -22,6 +22,10 @@ export type TemplateVisitor = {
    * of the component or directive it is bound to, `undefined` for the attributes of any other element.
    */
   readonly attribute?: (node: AttributeNode, owner: ComponentOrDirectiveMetadata | undefined) => void;
+  /**
+   * Invoked for every class toggled on an element (`[class.name]`), conditional bindings included.
+   */
+  readonly classBinding?: (node: ClassBindingNode) => void;
   /**
    * Invoked for every event bound on an element or on a directive, conditional bindings included, with the metadata
    * of the component or directive it is bound to, `undefined` for the events of any other element, and the names of
@@ -214,12 +218,21 @@ class TemplateWalker {
    * @param owner - The component or directive the attributes and events are bound to, if any.
    * @param variables - The variables declared in the scope of the bindings.
    */
-  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
+  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
     for (let i = 0; i < bindings.attributes.length; i++) {
       const attribute = bindings.attributes[i];
       this._visitor.attribute?.(attribute, owner);
       if (typeof attribute.value === 'object') {
         this._visitor.expression?.(attribute.value.expression, variables);
+      }
+    }
+
+    const { classBindings, directives, structuralDirectives } = bindings;
+    if (classBindings?.length) {
+      for (let i = 0; i < classBindings.length; i++) {
+        const classBinding = classBindings[i];
+        this._visitor.classBinding?.(classBinding);
+        this._visitor.expression?.(classBinding.value.expression, variables);
       }
     }
 
@@ -236,7 +249,6 @@ class TemplateWalker {
       this._walkConditionalBinding(bindings.conditionalBindings[i], owner, variables);
     }
 
-    const { directives, structuralDirectives } = bindings;
     if (directives?.length) {
       for (let i = 0; i < directives.length; i++) {
         this._walkDirective(directives[i], variables);

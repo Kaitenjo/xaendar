@@ -75,6 +75,16 @@ describe('walkTemplate', () => {
     ]);
   });
 
+  it('visits the classes toggled on the elements and in their conditional bindings, with their expressions', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('<p [class.on]="{a}" @if (b) { [class.big]="{c}" } @@tip(text="t")></p>'), [], {
+      classBinding: node => visits.push(`class ${node.className}`),
+      expression: expression => visits.push(`expression ${expression.getText()}`)
+    });
+
+    expect(visits).toEqual(['class on', 'expression a', 'expression b', 'class big', 'expression c']);
+  });
+
   it('visits nothing without callbacks', () => {
     expect(() => walkTemplate(parseTemplate(template), [], {})).not.toThrow();
   });

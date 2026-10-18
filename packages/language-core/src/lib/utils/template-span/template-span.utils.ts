@@ -57,6 +57,9 @@ export function getErrorSpan(error: Error, ast: readonly ASTNode[] | undefined):
       attribute: node => {
         named.push({ span: node.span, name: node.nameSpan });
       },
+      classBinding: node => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
       event: node => {
         named.push({ span: node.span, name: node.nameSpan });
       }

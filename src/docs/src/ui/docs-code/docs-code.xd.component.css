@@ -22,6 +22,10 @@
   border-radius: 0;
 }
 
+.box--error .pre {
+  color: var(--xd-console-error);
+}
+
 .box--bad {
   border-color: color-mix(in srgb, var(--xd-issue) 50%, var(--xd-code-border));
 }
@@ -66,7 +70,7 @@
 .copy {
   position: absolute;
   top: 0.45rem;
-  right: 1rem;
+  right: 1.5rem;
   z-index: 1;
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--xd-border);
@@ -124,7 +128,7 @@
   margin: 0;
   padding: 0.35rem 1.15rem 0.85rem;
   overflow: auto;
-  color: var(--xd-issue);
+  color: var(--xd-console-error);
   font: 0.8rem/1.6 var(--xd-font-mono);
   white-space: pre-wrap;
 }

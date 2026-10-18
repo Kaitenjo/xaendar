@@ -36,6 +36,7 @@ export * from './types';
 export * from './utils/extract-component-members/extract-component-members.utils';
 export * from './utils/metadata/metadata.utils';
 export type * from './parser/types/nodes/attribute-node.type';
+export type * from './parser/types/nodes/class-binding-node.type';
 export type * from './parser/types/nodes/case-node.type';
 export type * from './parser/types/nodes/conditional-binding-branch-node.type';
 export type * from './parser/types/nodes/conditional-binding-node.type';

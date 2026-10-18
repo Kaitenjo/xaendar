@@ -16,6 +16,7 @@ import type { RenderElementAttribute } from '../../types/render-element-attribut
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
+import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
 import { _Context, createAnchor } from '../context/context.util';
 import { _getDirective } from '../directive-registry/directive-registry.util';
 import { trackNode } from '../track-node/track-node.util';
@@ -523,7 +524,7 @@ export function _setReactiveProperty(context: _Context, target: Element | Bindin
 }
 
 /**
- * Removes an attribute from an HTML element.
+ * Removes an attribute from an HTML element. Removing `class` keeps the classes toggled by class bindings.
  *
  * @param _context - The current template execution scope.
  * @param element - The element to remove the attribute from.
@@ -531,6 +532,7 @@ export function _setReactiveProperty(context: _Context, target: Element | Bindin
  */
 export function _removeAttribute(_context: _Context, element: Element, name: string): void {
   element.removeAttribute(name);
+  restoreToggledClasses(element, name);
 }
 
 /**
@@ -544,19 +546,25 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
  * @throws When the target is a directive not declaring the property.
  */
 export function _resetProperty(_context: _Context, target: Element | BindingHost, name: string): void {
-  withProperty(target, name, property => property.reset(INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => element.removeAttribute(attribute));
+  withProperty(target, name, property => property.reset(INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => {
+    element.removeAttribute(attribute);
+    restoreToggledClasses(element, attribute);
+  });
 }
 
 /**
  * Updates a property on an HTML element or on a directive: when the property is an InputSignal its value is set,
- * otherwise the value is set as an attribute of the element.
+ * otherwise the value is set as an attribute of the element. Writing `class` keeps the classes toggled by class bindings.
  * @param target - The HTML element or the directive whose property is being updated.
  * @param name - The name, or the alias, of the property to update.
  * @param newValue - The new value to set for the property.
  * @throws When the target is a directive not declaring the property.
  */
 function updateProperty(target: Element | BindingHost, name: string, newValue: unknown): void {
-  withProperty(target, name, property => property.set(newValue, INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => element.setAttribute(attribute, String(newValue)));
+  withProperty(target, name, property => property.set(newValue, INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => {
+    element.setAttribute(attribute, String(newValue));
+    restoreToggledClasses(element, attribute);
+  });
 }
 
 /**

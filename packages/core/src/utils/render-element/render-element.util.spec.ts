@@ -21,6 +21,7 @@ const {
   _setReactiveProperty
 } = await import('./render-element.util');
 const { signal } = await import('../../signals');
+const { _setExpressionClass } = await import('../class-binding/class-binding.util');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
@@ -187,6 +188,26 @@ describe('property setters', () => {
     element.setAttribute('title', 'x');
     _removeAttribute(createRoot(), element, 'title');
     expect(element.hasAttribute('title')).toBe(false);
+  });
+
+  it('keeps the classes toggled by class bindings when the class attribute is written, removed or reset', async () => {
+    const element = document.createElement('div');
+    const classes = signal('a');
+    _setExpressionClass(createRoot(), element, 'on', () => true);
+    _setReactiveProperty(createRoot(), element, 'class', () => classes());
+    await flush();
+    expect(element.className).toBe('a on');
+
+    classes.set('b');
+    await flush();
+    expect(element.className).toBe('b on');
+
+    _removeAttribute(createRoot(), element, 'class');
+    expect(element.className).toBe('on');
+
+    _setProperty(createRoot(), element, 'class', 'c');
+    _resetProperty(createRoot(), element, 'class');
+    expect(element.className).toBe('on');
   });
 
   describe('input signal properties', () => {
