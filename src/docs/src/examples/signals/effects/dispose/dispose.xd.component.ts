@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { effect, signal } from '@xaendar/core/signals';
 
 /**
- * Disposing an effect twice: the standalone disposer throws, the one of this.effect() does not.
+ * Disposing an effect twice: the disposer throws the second time, for a standalone effect and for this.effect() alike.
  */
 @WebComponent({
   selector: 'ex-effect-dispose',
@@ -43,7 +43,11 @@ export class EffectDisposeComponent extends CustomElement {
   public disposeBoundTwice(): void {
     const stop = this.effect(() => this.count());
     stop();
-    stop();
-    this.boundOutcome.set('No error: the disposer of this.effect() does nothing the second time');
+    try {
+      stop();
+      this.boundOutcome.set('No error');
+    } catch (error) {
+      this.boundOutcome.set(`The second call threw: ${(error as Error).message}`);
+    }
   }
 }

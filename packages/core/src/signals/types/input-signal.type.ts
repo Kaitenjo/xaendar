@@ -7,7 +7,6 @@
  * into the actual stored value.
  *
  * @template ActualValue - The internal type stored by the signal. Defaults to `unknown`.
- * @template IncomingValue - The raw type received from outside. Defaults to `ActualValue`.
  */
 export type InputSignal<ActualValue = unknown> = Omit<Signal.State<ActualValue>, 'set'> & {
   /**

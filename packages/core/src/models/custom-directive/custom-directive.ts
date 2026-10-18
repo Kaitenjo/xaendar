@@ -16,14 +16,16 @@ import { _Context } from '../../utils/context/context.util';
  */
 export abstract class CustomDirective<T extends Element = Element> {
   /**
-   * Notation to accesso through index signature
+   * Allows accessing the members of subclasses through an index signature.
    */
   [key: string]: unknown
   /**
    * The active template execution context for this directive instance,
    * holding all identifier bindings and registered cleanup functions.
+   * Until the connection it is a staging context, holding the effects created in the constructor or in a field
+   * initializer: they are moved to the context of the element when the directive is connected.
    */
-  private _context!: _Context;
+  private _context = new _Context({} as unknown as _Context);
 
   /**
    * Reference to the HTML Element the directive is applied
@@ -74,7 +76,12 @@ export abstract class CustomDirective<T extends Element = Element> {
    *   via {@link effect} are registered on it, so they are disposed when it is cleared.
    */
   public [DIRECTIVE_CONNECT](context: _Context): void {
+    // The effects created before the connection wait in the staging context: they move to the one of the element
+    const unlistenFns = this._context.getUnlistenFns();
     this._context = context;
+    if (unlistenFns.length) {
+      context.addUnlistener(...unlistenFns);
+    }
     this.onInit?.();
   }
 
@@ -102,27 +109,21 @@ export abstract class CustomDirective<T extends Element = Element> {
   /**
    * Creates a signal effect bound to the lifecycle of this directive:
    * it is disposed automatically when the directive is disconnected.
+   * It can be called at any time: in the constructor, in a field initializer, or in `onInit`.
    *
    * @param fn - The side-effectful function to run. Any Signal read inside it
    *   is tracked as a dependency.
    * @param options - Optional settings forwarded to the underlying effect.
-   * @returns A function that disposes the effect ahead of the disconnection
+   * @returns A function that disposes the effect ahead of the disconnection. It throws when the effect is
+   *   already disposed: when it is called a second time, or after the disconnection.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const stop = effect(fn, options);
-    let active = true;
-    // Stops the effect at most once, whether it is disposed via the returned function or by the clearing of the context
-    const dispose = () => {
-      if (active) {
-        active = false;
-        stop();
-      }
-    };
-    this._context.addUnlistener(dispose);
+    this._context.addUnlistener(stop);
 
     return () => {
-      this._context.removeUnlistener(dispose);
-      dispose();
+      this._context.removeUnlistener(stop);
+      stop();
     };
   }
 

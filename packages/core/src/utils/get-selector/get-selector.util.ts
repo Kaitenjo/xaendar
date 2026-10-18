@@ -14,7 +14,7 @@ export function getSelector(constructor: Constructor<HTMLElement>): string {
   const metadata = getWebComponentMetadata(constructor)
   const selector = metadata?.[INTERNAL_SELECTOR];
   if (!selector) {
-    throw new Error(`${constructor.name} does not seems to be decorated with @WebComponent`);
+    throw new Error(`${constructor.name} does not seem to be decorated with @WebComponent`);
   }
 
   return selector;

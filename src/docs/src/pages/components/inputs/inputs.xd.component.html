@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -81,58 +82,74 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.inputs.apiSummary.title") />
+<h2 @@i18n(key="pages.components.inputs.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.inputs.apiSummary.th1") />
-        <th @@i18n(key="pages.components.inputs.apiSummary.th2") />
+        <th @@i18n(key="pages.components.inputs.summary.th1") />
+        <th @@i18n(key="pages.components.inputs.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>{ '@Property(default?, options?)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>{ '@Property(default?, options?)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td1") />
+        <td @@i18n(key="pages.components.inputs.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Property.required(options?)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>{ '@Property.required(options?)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td2") />
+        <td @@i18n(key="pages.components.inputs.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>alias</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>alias</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td3") />
+        <td @@i18n(key="pages.components.inputs.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>transform(value)</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>transform(value)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td4") />
+        <td @@i18n(key="pages.components.inputs.summary.td4") />
       </tr>
       <tr>
         <td>
-          <code>equals(a, b)</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>equals(a, b)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td5") />
+        <td @@i18n(key="pages.components.inputs.summary.td5") />
       </tr>
       <tr>
         <td>
-          <code>watched</code>,
-          <code>unwatched</code>
+          <a href="{`#/${currentLang()}/reference/api/signals/SignalOptions`}">
+            <code>watched</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/signals/SignalOptions`}">
+            <code>unwatched</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td6") />
+        <td @@i18n(key="pages.components.inputs.summary.td6") />
       </tr>
       <tr>
         <td>
-          <code>{ 'InputSignal<T>' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/InputSignal`}">
+            <code>{ 'InputSignal<T>' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.inputs.apiSummary.td7") />
+        <td @@i18n(key="pages.components.inputs.summary.td7") />
       </tr>
     </tbody>
   </table>

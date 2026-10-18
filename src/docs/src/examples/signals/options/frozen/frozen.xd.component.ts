@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * While `watched`, `unwatched` or `equals` run, signals are frozen: reading or writing one throws.
+ * While `watched` or `unwatched` run, signals are frozen: reading or writing one throws.
  */
 @WebComponent({
   selector: 'ex-signal-frozen',

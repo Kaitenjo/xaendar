@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -59,30 +60,34 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.signals.computed.apiSummary.title") />
+<h2 @@i18n(key="pages.signals.computed.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.signals.computed.apiSummary.th1") />
-        <th @@i18n(key="pages.signals.computed.apiSummary.th2") />
+        <th @@i18n(key="pages.signals.computed.summary.th1") />
+        <th @@i18n(key="pages.signals.computed.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.signals.computed.apiSummary.td1") />
-        <td @@i18n(key="pages.signals.computed.apiSummary.td2") />
+        <td @@i18n(key="pages.signals.computed.summary.td1") />
+        <td @@i18n(key="pages.signals.computed.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>c()</code>,
-          <code>c.get()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/Computed`}">
+            <code>c()</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/signals/Computed`}">
+            <code>c.get()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.signals.computed.apiSummary.td3") />
+        <td @@i18n(key="pages.signals.computed.summary.td3") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.computed.apiSummary.td4") />
-        <td @@i18n(key="pages.signals.computed.apiSummary.td5") />
+        <td @@i18n(key="pages.signals.computed.summary.td4") />
+        <td @@i18n(key="pages.signals.computed.summary.td5") />
       </tr>
     </tbody>
   </table>

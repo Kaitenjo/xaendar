@@ -1,18 +1,18 @@
 import { NOT_ALLOWED_TAGS } from '../../costants/not-alllowed-tags.constants';
 
 /**
- * Asserts that a given tag name is valid for use as a custom element name.
+ * Checks whether a given tag name is valid for use as a custom element name.
  * A valid custom element name must:
- * - contain a hyphen
- * - no spaces.
- * - start with a lowercase letter.
- * - not contain uppercase letters.
- * - not contain the following chars: '@', '#', '$', '%', '&', '*', '!', '?', '/', '\\', '|', "'", '"', '<', '>', '='
- * - not be a native HTML tag name.
- * - not be a reserved tag name.
+ * - start with a lowercase letter;
+ * - contain a hyphen;
+ * - contain only lowercase ASCII letters, digits, `.`, `_` and `-`;
+ * - not be a reserved tag name (see {@link isReservedTagName}).
+ *
+ * Native HTML tag names contain no hyphen, so the rules above already exclude them.
  *
  * @param tagName - The tag name to validate.
- * @throws Will throw an error if the tag name is invalid.
+ * @param logErrors - Whether the reason a name is invalid is logged with `console.error`. Defaults to `true`.
+ * @returns `true` if the tag name is a valid custom element name, `false` otherwise.
  */
 export function isValidCustomElementName(tagName: string, logErrors = true): boolean {
   if (!/^[a-z][a-z0-9._\-]*-[a-z0-9._\-]*$/.test(tagName)) {

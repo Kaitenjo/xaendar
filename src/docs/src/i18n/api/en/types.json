@@ -1,0 +1,214 @@
+{
+  "Beautify": {
+    "summary": "Shows an intersection, or another composed object type, as a single object type in the editor.",
+    "description": "<p>Maps every property of <code>T</code> to itself: the type does not change, the way the editor shows it does. The hover of <code>Entity &amp; { name: string }</code> shows the intersection; the hover of <code>Beautify&lt;Entity &amp; { name: string }&gt;</code> shows <code>{ id: number; name: string; }</code>, every property in one list.</p><p>Optional and <code>readonly</code> properties keep their modifiers, and only the first level is flattened. A union is flattened member by member, which makes the result of <a href=\"#/en/reference/api/types/RequireOne\"><code>RequireOne</code></a> readable.</p>",
+    "usage": {
+      "reading": {
+        "title": "Reading a composed type",
+        "body": "<p>The hover of each type is in its comment.</p>"
+      }
+    }
+  },
+  "AbstractConstructor": {
+    "summary": "The type of a class, abstract or not, whose instances are of type <code>T</code>.",
+    "description": "<p>Any class whose instances are assignable to <code>T</code> fits, abstract classes included, whatever the parameters of its constructor. Since the class may be abstract, a value of this type cannot be called with <code>new</code>: it is a class to check with <code>instanceof</code>, to read static members from, or to extend in a mixin. To create instances, use <a href=\"#/en/reference/api/types/Constructor\"><code>Constructor</code></a>, which accepts only concrete classes.</p>",
+    "members": {
+      "T": "<p>The type of the instances. Without it, any class fits.</p>",
+      "Statics": "<p>The static members the class must have, as an object type: <code>AbstractConstructor&lt;Shape, { unit: string }&gt;</code> accepts only the classes with a static <code>unit</code> string. Without it, no static member is required.</p>"
+    },
+    "usage": {
+      "abstractClasses": {
+        "title": "Accepting abstract classes",
+        "body": "<p>A filter by class only needs <code>instanceof</code>, which works with abstract classes too: <code>AbstractConstructor</code> lets it accept them.</p>"
+      }
+    }
+  },
+  "Constructor": {
+    "summary": "The type of a concrete class whose instances are of type <code>T</code>: a value that can be called with <code>new</code>.",
+    "description": "<p>Any non-abstract class whose instances are assignable to <code>T</code> fits. The parameters of its constructor are not checked: the type is <code>new (...args: any[]) =&gt; T</code>, so <code>new type()</code> compiles even for a class whose constructor needs arguments. For abstract classes, use <a href=\"#/en/reference/api/types/AbstractConstructor\"><code>AbstractConstructor</code></a>.</p><p><code>@xaendar/core</code> uses it wherever a class is a value: the host directives of <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>, the target of <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>.</p>",
+    "members": {
+      "T": "<p>The type of the instances. Without it, any concrete class fits.</p>",
+      "Statics": "<p>The static members the class must have, as an object type: <code>Constructor&lt;Plugin, { id: string }&gt;</code> accepts only the classes with a static <code>id</code> string. Without it, no static member is required.</p>"
+    },
+    "usage": {
+      "creatingInstances": {
+        "title": "Creating instances of a class",
+        "body": "<p>The function receives classes and creates their instances. <code>Statics</code> requires each class to declare a static <code>id</code>.</p>"
+      }
+    }
+  },
+  "ContainsChar": {
+    "summary": "Resolves to <code>true</code> when a string literal type contains a given character, to <code>false</code> otherwise.",
+    "description": "<p>Compares the characters of <code>String</code> with <code>Contains</code> one at a time, at compile time. <code>Contains</code> is a single character, or a union of characters to look for any of them: a longer string is never equal to one character, so <code>ContainsChar&lt;'1.5', '1.'&gt;</code> is <code>false</code>.</p><p>Only literals are inspected: for <code>string</code> the result is <code>false</code>, and for a union of literals it is <code>boolean</code> when only some of them contain the character. <a href=\"#/en/reference/api/types/PositiveInteger\"><code>PositiveInteger</code></a> is built on it.</p>",
+    "usage": {
+      "rejectingLiterals": {
+        "title": "Rejecting literals",
+        "body": "<p>In a conditional type, it turns a literal containing the character into <code>never</code>: a parameter of that type rejects the literal at compile time.</p>"
+      }
+    }
+  },
+  "ClassAccessorDecoratorValue": {
+    "summary": "The getter and the setter of the accessor a decorator is applied to: the first argument of an <code>AccessorDecorator</code>.",
+    "description": "<p>A decorator applied to an <code>accessor</code> field receives the original <code>get</code> and <code>set</code> of the field, which read and write its storage. <code>ClassAccessorDecoratorValue</code> describes them, with <code>Field</code> as the type of the value. It is the shape of <code>ClassAccessorDecoratorTarget</code> of TypeScript, with <code>this</code> typed as <code>unknown</code>.</p><p>Neither function is bound: call them with the instance as <code>this</code>, as in <code>value.get.call(this)</code>, inside the replacement accessor returned by an <a href=\"#/en/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
+    "usage": {
+      "originalSetter": {
+        "title": "Calling the original setter",
+        "body": "<p>The replacement <code>set</code> clamps the value, then stores it through the original setter, called on the instance.</p>"
+      }
+    }
+  },
+  "AccessorDecorator": {
+    "summary": "The type of a standard decorator of an <code>accessor</code> field, the kind <code>@Query</code> of <code>@xaendar/core</code> returns.",
+    "description": "<p>A standard (TC39) decorator applied to an <code>accessor</code> field. It receives the original getter and setter of the field, as a <a href=\"#/en/reference/api/types/ClassAccessorDecoratorValue\"><code>ClassAccessorDecoratorValue</code></a>, and the context TypeScript passes to accessor decorators. It returns the replacements, each optional: <code>get</code> and <code>set</code> take the place of the originals, <code>init</code> receives the initial value of the field and returns the value it starts with. Returning nothing keeps the field as it is.</p><p><a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> returns one, and the types of <a href=\"#/en/reference/api/core/Property\"><code>@Property</code></a> and <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a> are derived from it.</p>",
+    "members": {
+      "Class": "<p>The class declaring the accessor: the type of <code>this</code> in the returned <code>get</code>, <code>set</code> and <code>init</code>.</p>",
+      "Value": "<p>The type of the accessor: what <code>get</code> returns and what <code>set</code> and <code>init</code> receive. The decorator applies only to accessors of this type.</p>"
+    },
+    "usage": {
+      "writing": {
+        "title": "Writing an accessor decorator",
+        "body": "<p>A factory returning an <code>AccessorDecorator</code>: the replacement <code>init</code> and <code>set</code> keep the value between two bounds.</p>"
+      }
+    }
+  },
+  "ClassDecorator": {
+    "summary": "The type of a standard class decorator that receives the class and returns nothing, the kind <code>@WebComponent</code> of <code>@xaendar/core</code> returns.",
+    "description": "<p>A standard (TC39) decorator applied to a class. It receives the class, as a <a href=\"#/en/reference/api/types/Constructor\"><code>Constructor</code></a> of <code>T</code>, and the context TypeScript passes to class decorators. Its return type is <code>void</code>: it registers the class, stores metadata or adds initializers with <code>context.addInitializer</code>, rather than replacing it.</p><p>It applies only to concrete classes whose instances are assignable to <code>T</code>. <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a> and <a href=\"#/en/reference/api/core/Directive\"><code>@Directive</code></a> return one.</p>",
+    "members": {
+      "T": "<p>The type of the instances: the decorator applies only to the classes whose instances are assignable to it.</p>",
+      "Statics": "<p>The static members the class must have, as an object type. The default accepts any class.</p>"
+    },
+    "usage": {
+      "registering": {
+        "title": "Registering a class",
+        "body": "<p>A factory whose decorator stores the class of a page under its path. A class whose instances are not <code>HTMLElement</code>s is rejected.</p>"
+      }
+    }
+  },
+  "FieldDecorator": {
+    "summary": "The type of a standard decorator of a class field, which returns the initializer of the field.",
+    "description": "<p>A standard (TC39) decorator applied to a field that is not an <code>accessor</code>. The field has no value yet when the decorator runs, so it receives <code>undefined</code> and the context TypeScript passes to field decorators. It returns an initializer: a function receiving the value the field is declared with and returning the value it is initialized with. The standard also allows a field decorator to return nothing; this type does not.</p><p>The initializer runs once per instance, when the field is initialized: later assignments are not intercepted. To act on every write, decorate an <code>accessor</code> with an <a href=\"#/en/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
+    "members": {
+      "Class": "<p>The class declaring the field.</p>",
+      "Field": "<p>The declared type of the field: what the initializer receives.</p>",
+      "ReturnType": "<p>The type the initializer returns, <code>Field</code> by default. TypeScript requires it to be assignable to the type of the field: a narrower type is accepted, a different one makes the decorator inapplicable.</p>"
+    },
+    "usage": {
+      "transforming": {
+        "title": "Transforming the initial value",
+        "body": "<p>The decorator trims the string the field is initialized with. A later assignment keeps its spaces.</p>"
+      }
+    }
+  },
+  "MethodDecorator": {
+    "summary": "The type of a standard method decorator, which can replace the method with another of the same type.",
+    "description": "<p>A standard (TC39) decorator applied to a method. It receives the method and the context TypeScript passes to method decorators, and returns a replacement of the same type, or nothing to keep the method.</p><p><code>Method</code> extends <a href=\"#/en/reference/api/types/Function\"><code>Function</code></a> of this package, not the global one: its default, <code>(...args: any[]) =&gt; void</code>, accepts any method.</p>",
+    "members": {
+      "T": "<p>The class declaring the method.</p>",
+      "Method": "<p>The type of the method, which the replacement must have too. A wide type, such as <code>(...args: any[]) =&gt; unknown</code>, makes the decorator apply to any method.</p>"
+    },
+    "usage": {
+      "wrapping": {
+        "title": "Wrapping a method",
+        "body": "<p>The replacement logs the call, then calls the original with the same <code>this</code> and the same arguments.</p>"
+      }
+    }
+  },
+  "Dictionary": {
+    "summary": "An object whose keys are all optional, with values of one type.",
+    "description": "<p>A <code>Record&lt;Key, Value&gt;</code> with every key optional: an object may have any of the keys, or none, and reading one gives <code>Value | undefined</code>. With a union of literals as <code>Key</code>, the other keys are errors; with <code>string</code>, any key is allowed. <code>Value</code> defaults to <code>string</code>.</p>",
+    "usage": {
+      "optionalKeys": {
+        "title": "Optional keys",
+        "body": "<p>Any key may be missing, so any read may give <code>undefined</code>, and the type says so.</p>"
+      }
+    }
+  },
+  "AsyncFunction": {
+    "summary": "A function type returning a promise, built from the tuple of its arguments and the type the promise resolves to.",
+    "description": "<p><code>AsyncFunction&lt;[id: number], User&gt;</code> is <code>(id: number) =&gt; Promise&lt;User&gt;</code>. Without type arguments it is <code>(...args: any[]) =&gt; Promise&lt;void&gt;</code>. Any function returning such a promise fits, <code>async</code> or not.</p><p>It is <a href=\"#/en/reference/api/types/Function\"><code>Function</code></a> with the return type wrapped in a <code>Promise</code> and, like it, a conditional type on <code>Arguments</code>.</p>",
+    "usage": {
+      "typing": {
+        "title": "Typing an async function",
+        "body": "<p>The type gives the arrow function assigned to it the type of its argument and of its result.</p>"
+      }
+    }
+  },
+  "Function": {
+    "summary": "A function type built from the tuple of its arguments and its return type.",
+    "description": "<p><code>Function&lt;[id: number, name: string], boolean&gt;</code> is <code>(id: number, name: string) =&gt; boolean</code>. The arguments are a tuple, labels included, so they can come from another type, as <code>Parameters&lt;F&gt;</code>. Without type arguments it is <code>(...args: any[]) =&gt; void</code>, which any function fits.</p><p>Its name is the one of the global <code>Function</code>, which the import shadows in the module. The other function types of the package fix part of it: <a href=\"#/en/reference/api/types/VoidFunction\"><code>VoidFunction</code></a>, <a href=\"#/en/reference/api/types/AsyncFunction\"><code>AsyncFunction</code></a>, <a href=\"#/en/reference/api/types/NoArgsFunction\"><code>NoArgsFunction</code></a>.</p><p>It is a conditional type on <code>Arguments</code>, resolved only once <code>Arguments</code> is known: inside a generic function, where <code>Arguments</code> is a type parameter, an arrow function is not assignable to <code>Function&lt;Arguments, Result&gt;</code>.</p>",
+    "usage": {
+      "building": {
+        "title": "Building function types",
+        "body": "<p>A comparator built from the tuple of its arguments, and a variant of <code>fetch</code> built from its parameters.</p>"
+      }
+    }
+  },
+  "NoArgsAsyncFunction": {
+    "summary": "A function type taking no arguments and returning a promise of <code>ReturnType</code>.",
+    "description": "<p><code>NoArgsAsyncFunction&lt;User&gt;</code> is <code>() =&gt; Promise&lt;User&gt;</code>, such as a loader with nothing to receive. Without a type argument it is <code>() =&gt; Promise&lt;void&gt;</code>, the same as <a href=\"#/en/reference/api/types/NoArgsAsyncVoidFunction\"><code>NoArgsAsyncVoidFunction</code></a>. A function with required parameters does not fit it.</p>"
+  },
+  "NoArgsFunction": {
+    "summary": "A function type taking no arguments and returning <code>ReturnType</code>.",
+    "description": "<p><code>NoArgsFunction&lt;number&gt;</code> is <code>() =&gt; number</code>: a getter passed as a callback, a factory, a value computed only when it is read. Without a type argument it is <code>() =&gt; void</code>, the same as <a href=\"#/en/reference/api/types/NoArgsVoidFunction\"><code>NoArgsVoidFunction</code></a>. A function with required parameters does not fit it.</p>"
+  },
+  "NoArgsAsyncVoidFunction": {
+    "summary": "A function type taking no arguments and returning a promise that resolves to nothing.",
+    "description": "<p><code>() =&gt; Promise&lt;void&gt;</code>: an asynchronous task run for its effects, such as saving or reloading something. It is <a href=\"#/en/reference/api/types/NoArgsAsyncFunction\"><code>NoArgsAsyncFunction</code></a> without a type argument.</p>"
+  },
+  "NoArgsVoidFunction": {
+    "summary": "A function type taking no arguments and returning nothing.",
+    "description": "<p><code>() =&gt; void</code>: a callback run for its effects, such as a cleanup function. Since the return type is <code>void</code>, a function returning a value fits too, and its value is ignored. It is <a href=\"#/en/reference/api/types/NoArgsFunction\"><code>NoArgsFunction</code></a> without a type argument.</p>"
+  },
+  "VoidAsyncFunction": {
+    "summary": "A function type taking the arguments of a tuple and returning a promise that resolves to nothing.",
+    "description": "<p><code>VoidAsyncFunction&lt;[user: User]&gt;</code> is <code>(user: User) =&gt; Promise&lt;void&gt;</code>: an asynchronous callback run for its effects. Without a type argument it takes any arguments. It is <a href=\"#/en/reference/api/types/AsyncFunction\"><code>AsyncFunction</code></a> with its return type left to the default.</p>"
+  },
+  "VoidFunction": {
+    "summary": "A function type taking the arguments of a tuple and returning nothing.",
+    "description": "<p><code>VoidFunction&lt;[event: MouseEvent]&gt;</code> is <code>(event: MouseEvent) =&gt; void</code>: a listener, or a callback run for its effects. Without a type argument it takes any arguments. Since the return type is <code>void</code>, a function returning a value fits too.</p><p>The DOM library of TypeScript declares a global <code>VoidFunction</code> too, taking no arguments: the import shadows it in the module.</p>"
+  },
+  "Mutable": {
+    "summary": "Removes <code>readonly</code> from every property of an object type.",
+    "description": "<p>The opposite of <code>Readonly&lt;T&gt;</code>: the same properties, with the same types and the same optional modifiers, all writable. Only the first level changes: the properties of a nested object stay <code>readonly</code>. A readonly array or tuple type becomes a mutable one.</p>",
+    "usage": {
+      "building": {
+        "title": "Building a read-only value",
+        "body": "<p>The function builds the totals in a mutable object and returns them with their read-only type: the code receiving them cannot change them.</p>"
+      }
+    }
+  },
+  "PositiveInteger": {
+    "summary": "Resolves to a number literal type when it is an integer of zero or more, to <code>never</code> otherwise.",
+    "description": "<p>Reads the number as a string and rejects it when it contains a <code>-</code> or a <code>.</code>, with <a href=\"#/en/reference/api/types/ContainsChar\"><code>ContainsChar</code></a>: negative numbers and decimals become <code>never</code>. Zero is accepted: <code>PositiveInteger&lt;0&gt;</code> is <code>0</code>.</p><p>As the type of a parameter, it rejects at compile time the literals that are not valid counts. Only literals are checked: for <code>number</code> the result is <code>number</code>. <a href=\"#/en/reference/api/types/TupleOfLength\"><code>TupleOfLength</code></a> checks its length with it, and the cursors of the compiler the number of characters their <code>peek</code> reads.</p>",
+    "usage": {
+      "checkingACount": {
+        "title": "Checking a count",
+        "body": "<p>The type parameter captures the literal passed, and the parameter becomes <code>never</code> when the literal is not an integer of zero or more.</p>"
+      }
+    }
+  },
+  "RequireOne": {
+    "summary": "Makes at least one of some keys of an object type required.",
+    "description": "<p>The result is a union with one member per key of <code>Keys</code>: in each, that key is required and the other keys of <code>Keys</code> are optional. The keys outside <code>Keys</code> keep their modifiers. An object fits when at least one of the keys is set, to a value other than <code>undefined</code>.</p><p>It suits an object of options that are optional one by one, when an empty object makes no sense: a search by id, by email or by both. Its hover lists the <code>Pick</code>s it is made of: wrapped in <a href=\"#/en/reference/api/types/Beautify\"><code>Beautify</code></a>, it shows the union of object types.</p>",
+    "members": {
+      "Keys": "<p>The keys of which at least one is required, every key of <code>T</code> by default. A key that <code>T</code> already requires satisfies the condition alone, so when <code>T</code> has one, list the optional keys here: <code>RequireOne&lt;Search, 'id' | 'email'&gt;</code>.</p>"
+    },
+    "usage": {
+      "requiringOne": {
+        "title": "Requiring one option",
+        "body": "<p>A query by id, by email or by both: an empty object does not compile.</p>"
+      }
+    }
+  },
+  "TupleOfLength": {
+    "summary": "A tuple of <code>Length</code> elements, all of type <code>TupleType</code>.",
+    "description": "<p><code>TupleOfLength&lt;3, string&gt;</code> is <code>[string, string, string]</code>; <code>TupleType</code> defaults to <code>number</code>. The tuple is built one element at a time in <code>Acc</code>, a parameter to leave out, so the length is limited by the recursion of TypeScript: up to 999 elements.</p><p><code>Length</code> goes through <a href=\"#/en/reference/api/types/PositiveInteger\"><code>PositiveInteger</code></a>: a negative or a decimal literal gives <code>never</code>, and <code>0</code> gives the empty tuple. With <code>number</code>, which is not a literal, the result is the empty tuple too.</p>",
+    "usage": {
+      "fixedLength": {
+        "title": "Fixed-length results",
+        "body": "<p>A function returning exactly three numbers, destructured by position, and a type nesting two tuples.</p>"
+      }
+    }
+  }
+}

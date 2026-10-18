@@ -41,8 +41,14 @@ function createPropertyDecorator<
 
     const metadata = context.metadata as { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
     const attributeName = actualOptions?.alias ?? propertyKey;
-    metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] ??= {};
-    metadata[INTERNAL_ALIAS_TO_ATTRIBUTE][attributeName] = propertyKey;
+    /*
+      The metadata of a subclass inherits from the one of its parent class: the map of the parent is copied into the
+      metadata of the class, so the inputs of the parent stay visible and the ones of the class do not reach the parent.
+    */
+    if (!Object.hasOwn(metadata, INTERNAL_ALIAS_TO_ATTRIBUTE)) {
+      metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] = Object.assign({}, metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]);
+    }
+    metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]![attributeName] = propertyKey;
 
     return {
       init(_?: InputSignal<ActualValue>) {

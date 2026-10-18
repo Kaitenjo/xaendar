@@ -1,0 +1,58 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsApiKindComponent } from '../../../ui/docs-api-kind/docs-api-kind.xd.component.ts'
+@import { DocsApiMemberComponent } from '../../../ui/docs-api-member/docs-api-member.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { HtmlDirective } from '../../../directives/html.directive.ts'
+
+@if (view().found) {
+  <div class="symbol-meta">
+    <docs-api-kind kind="{view().kind}" labelled="{true}" />
+    <span class="symbol-package">{ view().packageName }</span>
+  </div>
+  <h1 class="symbol-name">{ view().name }</h1>
+  <p @@html(content="{view().summary}") class="lead" />
+  @if (view().importStatement) {
+    <docs-code code="{view().importStatement}" />
+  }
+  <h2>{ translations().reference.symbol.api }</h2>
+  <docs-code code="{view().signature}" />
+  <h2>{ translations().reference.symbol.description }</h2>
+  <div @@html(content="{view().description}") />
+  @for (group of view().groups; track group().key) {
+    <h2>{ group().title }</h2>
+    @for (member of group().members; track member().name) {
+      <docs-api-member name="{member().name}" signature="{member().signature}">
+        <div @@html(content="{member().text}") />
+        @for (snippet of member().snippets ?? []; track snippet()) {
+          <docs-code snippet="{snippet()}" />
+        }
+      </docs-api-member>
+    }
+  }
+  @if (view().usage.length) {
+    <h2>{ translations().reference.symbol.usage }</h2>
+    @for (note of view().usage; track note().key) {
+      <h3>{ note().title }</h3>
+      <div @@html(content="{note().body}") />
+      @for (snippet of note().snippets ?? []; track snippet()) {
+        <docs-code snippet="{snippet()}" />
+      }
+    }
+  }
+  @if (view().guides.length) {
+    <h2>{ translations().reference.symbol.guides }</h2>
+    <ul>
+      @for (guide of view().guides; track guide().href) {
+        <li>
+          <a href="{guide().href}">{ guide().title }</a>
+        </li>
+      }
+    </ul>
+  }
+} @else {
+  <span class="eyebrow">404</span>
+  <h1>{ translations().reference.symbol.notFound }</h1>
+  <p>
+    <a href="{referenceHref()}">← { translations().nav.pages['reference/api'] }</a>
+  </p>
+}

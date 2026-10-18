@@ -172,29 +172,71 @@ describe('CustomDirective', () => {
       expect(onCleanup).toHaveBeenCalledOnce();
     });
 
-    it('does not dispose the effect twice when the disposer is called before the disconnection', () => {
+    it('is not disposed again on disconnection when its disposer was called', () => {
       const onCleanup = vi.fn();
       const directive = create(TestDirective);
       const context = connect(directive);
 
-      const dispose = directive.effect(() => undefined, { onCleanup });
-      dispose();
-      dispose();
+      directive.effect(() => undefined, { onCleanup })();
       context.clear();
 
       expect(onCleanup).toHaveBeenCalledOnce();
     });
 
-    it('does not dispose the effect twice when the disposer is called after the disconnection', () => {
-      const onCleanup = vi.fn();
+    it('returns a disposer that throws when it is called a second time', () => {
+      const directive = create(TestDirective);
+      connect(directive);
+
+      const dispose = directive.effect(() => undefined);
+      dispose();
+
+      expect(() => dispose()).toThrow();
+    });
+
+    it('returns a disposer that throws when it is called after the disconnection', () => {
+      const state = new Signal.State(0);
       const directive = create(TestDirective);
       const context = connect(directive);
 
-      const dispose = directive.effect(() => undefined, { onCleanup });
+      const dispose = directive.effect(() => state.get());
       context.clear();
 
-      expect(() => dispose()).not.toThrow();
-      expect(onCleanup).toHaveBeenCalledOnce();
+      expect(() => dispose()).toThrow();
+    });
+
+    describe('created before the connection', () => {
+      it('can be created in the constructor and in a field initializer, and is disposed on disconnection', async () => {
+        const state = new Signal.State(0);
+        const runs = new Array<string>();
+        const onCleanup = vi.fn();
+        const directive = create(class extends TestDirective {
+          public readonly stopField = this.effect(() => runs.push(`field ${state.get()}`), { onCleanup });
+
+          constructor() {
+            super();
+            this.effect(() => runs.push(`constructor ${state.get()}`), { onCleanup });
+          }
+        });
+
+        expect(runs).toEqual(['field 0', 'constructor 0']);
+        const context = connect(directive);
+        state.set(1);
+        await flush();
+        expect(runs).toEqual(['field 0', 'constructor 0', 'field 1', 'constructor 1']);
+
+        context.clear();
+        expect(onCleanup).toHaveBeenCalledTimes(2);
+      });
+
+      it('is disposed by its disposer before the connection, and not again on disconnection', () => {
+        const onCleanup = vi.fn();
+        const directive = create(TestDirective);
+
+        directive.effect(() => undefined, { onCleanup })();
+        connect(directive).clear();
+
+        expect(onCleanup).toHaveBeenCalledOnce();
+      });
     });
 
     it('only disposes the effect whose disposer is called', () => {

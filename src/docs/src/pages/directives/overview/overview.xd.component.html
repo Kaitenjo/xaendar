@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -109,39 +110,43 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.directives.overview.apiSummary.title") />
+<h2 @@i18n(key="pages.directives.overview.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.directives.overview.apiSummary.th1") />
-        <th @@i18n(key="pages.directives.overview.apiSummary.th2") />
+        <th @@i18n(key="pages.directives.overview.summary.th1") />
+        <th @@i18n(key="pages.directives.overview.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.directives.overview.apiSummary.td1") />
-        <td @@i18n(key="pages.directives.overview.apiSummary.td2") />
+        <td @@i18n(key="pages.directives.overview.summary.td1") />
+        <td @@i18n(key="pages.directives.overview.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>CustomDirective{ '<T>' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>CustomDirective{ '<T>' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.overview.apiSummary.td3") />
+        <td @@i18n(key="pages.directives.overview.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>StructuralDirective</code>
+          <a href="{`#/${currentLang()}/reference/api/core/StructuralDirective`}">
+            <code>StructuralDirective</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.overview.apiSummary.td4") />
+        <td @@i18n(key="pages.directives.overview.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.directives.overview.apiSummary.td5") />
-        <td @@i18n(key="pages.directives.overview.apiSummary.td6") />
+        <td @@i18n(key="pages.directives.overview.summary.td5") />
+        <td @@i18n(key="pages.directives.overview.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.directives.overview.apiSummary.td7") />
-        <td @@i18n(key="pages.directives.overview.apiSummary.td8") />
+        <td @@i18n(key="pages.directives.overview.summary.td7") />
+        <td @@i18n(key="pages.directives.overview.summary.td8") />
       </tr>
     </tbody>
   </table>

@@ -1,0 +1,214 @@
+{
+  "Beautify": {
+    "summary": "Mostra un’intersezione, o un altro tipo oggetto composto, come un unico tipo oggetto nell’editor.",
+    "description": "<p>Mappa ogni proprietà di <code>T</code> su se stessa: il tipo non cambia, cambia il modo in cui l’editor lo mostra. L’hover di <code>Entity &amp; { name: string }</code> mostra l’intersezione; l’hover di <code>Beautify&lt;Entity &amp; { name: string }&gt;</code> mostra <code>{ id: number; name: string; }</code>, tutte le proprietà in un’unica lista.</p><p>Le proprietà opzionali e <code>readonly</code> mantengono i loro modificatori, e viene appiattito solo il primo livello. Un’unione viene appiattita membro per membro, e questo rende leggibile il risultato di <a href=\"#/it/reference/api/types/RequireOne\"><code>RequireOne</code></a>.</p>",
+    "usage": {
+      "reading": {
+        "title": "Leggere un tipo composto",
+        "body": "<p>L’hover di ogni tipo è nel suo commento.</p>"
+      }
+    }
+  },
+  "AbstractConstructor": {
+    "summary": "Il tipo di una classe, astratta o no, le cui istanze sono di tipo <code>T</code>.",
+    "description": "<p>Va bene qualsiasi classe le cui istanze sono assegnabili a <code>T</code>, comprese le classi astratte, qualunque siano i parametri del suo costruttore. Poiché la classe può essere astratta, un valore di questo tipo non si può chiamare con <code>new</code>: è una classe da controllare con <code>instanceof</code>, da cui leggere membri statici, o da estendere in un mixin. Per creare istanze usa <a href=\"#/it/reference/api/types/Constructor\"><code>Constructor</code></a>, che accetta solo classi concrete.</p>",
+    "members": {
+      "T": "<p>Il tipo delle istanze. Senza, va bene qualsiasi classe.</p>",
+      "Statics": "<p>I membri statici che la classe deve avere, come tipo oggetto: <code>AbstractConstructor&lt;Shape, { unit: string }&gt;</code> accetta solo le classi con una stringa statica <code>unit</code>. Senza, non è richiesto nessun membro statico.</p>"
+    },
+    "usage": {
+      "abstractClasses": {
+        "title": "Accettare classi astratte",
+        "body": "<p>Un filtro per classe ha bisogno solo di <code>instanceof</code>, che funziona anche con le classi astratte: <code>AbstractConstructor</code> gli permette di accettarle.</p>"
+      }
+    }
+  },
+  "Constructor": {
+    "summary": "Il tipo di una classe concreta le cui istanze sono di tipo <code>T</code>: un valore che si può chiamare con <code>new</code>.",
+    "description": "<p>Va bene qualsiasi classe non astratta le cui istanze sono assegnabili a <code>T</code>. I parametri del suo costruttore non vengono controllati: il tipo è <code>new (...args: any[]) =&gt; T</code>, quindi <code>new type()</code> compila anche per una classe il cui costruttore richiede argomenti. Per le classi astratte usa <a href=\"#/it/reference/api/types/AbstractConstructor\"><code>AbstractConstructor</code></a>.</p><p><code>@xaendar/core</code> lo usa ovunque una classe è un valore: le host directive di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>, il target di <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>.</p>",
+    "members": {
+      "T": "<p>Il tipo delle istanze. Senza, va bene qualsiasi classe concreta.</p>",
+      "Statics": "<p>I membri statici che la classe deve avere, come tipo oggetto: <code>Constructor&lt;Plugin, { id: string }&gt;</code> accetta solo le classi con una stringa statica <code>id</code>. Senza, non è richiesto nessun membro statico.</p>"
+    },
+    "usage": {
+      "creatingInstances": {
+        "title": "Creare istanze di una classe",
+        "body": "<p>La funzione riceve delle classi e ne crea le istanze. <code>Statics</code> richiede che ogni classe dichiari un <code>id</code> statico.</p>"
+      }
+    }
+  },
+  "ContainsChar": {
+    "summary": "Si risolve in <code>true</code> quando un tipo stringa letterale contiene un dato carattere, altrimenti in <code>false</code>.",
+    "description": "<p>Confronta i caratteri di <code>String</code> con <code>Contains</code> uno alla volta, in compilazione. <code>Contains</code> è un singolo carattere, o un’unione di caratteri per cercarne uno qualsiasi: una stringa più lunga non è mai uguale a un carattere, quindi <code>ContainsChar&lt;'1.5', '1.'&gt;</code> è <code>false</code>.</p><p>Vengono esaminati solo i letterali: per <code>string</code> il risultato è <code>false</code>, e per un’unione di letterali è <code>boolean</code> quando solo alcuni contengono il carattere. <a href=\"#/it/reference/api/types/PositiveInteger\"><code>PositiveInteger</code></a> è costruito su di esso.</p>",
+    "usage": {
+      "rejectingLiterals": {
+        "title": "Rifiutare dei letterali",
+        "body": "<p>In un tipo condizionale, trasforma in <code>never</code> un letterale che contiene il carattere: un parametro di quel tipo rifiuta il letterale in compilazione.</p>"
+      }
+    }
+  },
+  "ClassAccessorDecoratorValue": {
+    "summary": "Il getter e il setter dell’accessor a cui si applica un decoratore: il primo argomento di un <code>AccessorDecorator</code>.",
+    "description": "<p>Un decoratore applicato a un campo <code>accessor</code> riceve i <code>get</code> e <code>set</code> originali del campo, che ne leggono e scrivono il valore memorizzato. <code>ClassAccessorDecoratorValue</code> li descrive, con <code>Field</code> come tipo del valore. Ha la forma di <code>ClassAccessorDecoratorTarget</code> di TypeScript, con <code>this</code> tipizzato come <code>unknown</code>.</p><p>Nessuna delle due funzioni è legata: chiamale con l’istanza come <code>this</code>, come in <code>value.get.call(this)</code>, dentro l’accessor sostitutivo restituito da un <a href=\"#/it/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
+    "usage": {
+      "originalSetter": {
+        "title": "Chiamare il setter originale",
+        "body": "<p>Il <code>set</code> sostitutivo limita il valore, poi lo memorizza con il setter originale, chiamato sull’istanza.</p>"
+      }
+    }
+  },
+  "AccessorDecorator": {
+    "summary": "Il tipo di un decoratore standard di un campo <code>accessor</code>, quello che restituisce <code>@Query</code> di <code>@xaendar/core</code>.",
+    "description": "<p>Un decoratore standard (TC39) applicato a un campo <code>accessor</code>. Riceve il getter e il setter originali del campo, come <a href=\"#/it/reference/api/types/ClassAccessorDecoratorValue\"><code>ClassAccessorDecoratorValue</code></a>, e il contesto che TypeScript passa ai decoratori di accessor. Restituisce i sostituti, ognuno opzionale: <code>get</code> e <code>set</code> prendono il posto degli originali, <code>init</code> riceve il valore iniziale del campo e restituisce quello con cui parte. Non restituire nulla lascia il campo com’è.</p><p><a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a> ne restituisce uno, e i tipi di <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a> e <a href=\"#/it/reference/api/core/Event\"><code>@Event</code></a> derivano da esso.</p>",
+    "members": {
+      "Class": "<p>La classe che dichiara l’accessor: il tipo di <code>this</code> nei <code>get</code>, <code>set</code> e <code>init</code> restituiti.</p>",
+      "Value": "<p>Il tipo dell’accessor: ciò che <code>get</code> restituisce e che <code>set</code> e <code>init</code> ricevono. Il decoratore si applica solo agli accessor di questo tipo.</p>"
+    },
+    "usage": {
+      "writing": {
+        "title": "Scrivere un decoratore di accessor",
+        "body": "<p>Una factory che restituisce un <code>AccessorDecorator</code>: gli <code>init</code> e <code>set</code> sostitutivi tengono il valore tra due limiti.</p>"
+      }
+    }
+  },
+  "ClassDecorator": {
+    "summary": "Il tipo di un decoratore di classe standard che riceve la classe e non restituisce nulla, quello che restituisce <code>@WebComponent</code> di <code>@xaendar/core</code>.",
+    "description": "<p>Un decoratore standard (TC39) applicato a una classe. Riceve la classe, come <a href=\"#/it/reference/api/types/Constructor\"><code>Constructor</code></a> di <code>T</code>, e il contesto che TypeScript passa ai decoratori di classe. Il suo tipo di ritorno è <code>void</code>: registra la classe, salva metadati o aggiunge inizializzatori con <code>context.addInitializer</code>, invece di sostituirla.</p><p>Si applica solo a classi concrete le cui istanze sono assegnabili a <code>T</code>. <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a> e <a href=\"#/it/reference/api/core/Directive\"><code>@Directive</code></a> ne restituiscono uno.</p>",
+    "members": {
+      "T": "<p>Il tipo delle istanze: il decoratore si applica solo alle classi le cui istanze sono assegnabili a esso.</p>",
+      "Statics": "<p>I membri statici che la classe deve avere, come tipo oggetto. Il default accetta qualsiasi classe.</p>"
+    },
+    "usage": {
+      "registering": {
+        "title": "Registrare una classe",
+        "body": "<p>Una factory il cui decoratore salva la classe di una pagina sotto il suo percorso. Una classe le cui istanze non sono <code>HTMLElement</code> viene rifiutata.</p>"
+      }
+    }
+  },
+  "FieldDecorator": {
+    "summary": "Il tipo di un decoratore standard di un campo di classe, che restituisce l’inizializzatore del campo.",
+    "description": "<p>Un decoratore standard (TC39) applicato a un campo che non è un <code>accessor</code>. Quando il decoratore viene eseguito il campo non ha ancora un valore, quindi riceve <code>undefined</code> e il contesto che TypeScript passa ai decoratori di campo. Restituisce un inizializzatore: una funzione che riceve il valore con cui il campo è dichiarato e restituisce quello con cui viene inizializzato. Lo standard permette anche a un decoratore di campo di non restituire nulla; questo tipo no.</p><p>L’inizializzatore viene eseguito una volta per istanza, quando il campo viene inizializzato: le assegnazioni successive non vengono intercettate. Per agire su ogni scrittura, decora un <code>accessor</code> con un <a href=\"#/it/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
+    "members": {
+      "Class": "<p>La classe che dichiara il campo.</p>",
+      "Field": "<p>Il tipo dichiarato del campo: ciò che riceve l’inizializzatore.</p>",
+      "ReturnType": "<p>Il tipo restituito dall’inizializzatore, <code>Field</code> di default. TypeScript richiede che sia assegnabile al tipo del campo: un tipo più ristretto è accettato, uno diverso rende il decoratore inapplicabile.</p>"
+    },
+    "usage": {
+      "transforming": {
+        "title": "Trasformare il valore iniziale",
+        "body": "<p>Il decoratore toglie gli spazi intorno alla stringa con cui il campo viene inizializzato. Un’assegnazione successiva mantiene i suoi spazi.</p>"
+      }
+    }
+  },
+  "MethodDecorator": {
+    "summary": "Il tipo di un decoratore di metodo standard, che può sostituire il metodo con un altro dello stesso tipo.",
+    "description": "<p>Un decoratore standard (TC39) applicato a un metodo. Riceve il metodo e il contesto che TypeScript passa ai decoratori di metodo, e restituisce un sostituto dello stesso tipo, oppure nulla per mantenere il metodo.</p><p><code>Method</code> estende <a href=\"#/it/reference/api/types/Function\"><code>Function</code></a> di questo pacchetto, non quello globale: il suo default, <code>(...args: any[]) =&gt; void</code>, accetta qualsiasi metodo.</p>",
+    "members": {
+      "T": "<p>La classe che dichiara il metodo.</p>",
+      "Method": "<p>Il tipo del metodo, che deve avere anche il sostituto. Un tipo ampio, come <code>(...args: any[]) =&gt; unknown</code>, fa applicare il decoratore a qualsiasi metodo.</p>"
+    },
+    "usage": {
+      "wrapping": {
+        "title": "Avvolgere un metodo",
+        "body": "<p>Il sostituto stampa la chiamata, poi chiama l’originale con lo stesso <code>this</code> e gli stessi argomenti.</p>"
+      }
+    }
+  },
+  "Dictionary": {
+    "summary": "Un oggetto con tutte le chiavi opzionali e valori di un solo tipo.",
+    "description": "<p>Un <code>Record&lt;Key, Value&gt;</code> con ogni chiave opzionale: un oggetto può avere una qualsiasi delle chiavi, o nessuna, e leggerne una dà <code>Value | undefined</code>. Con un’unione di letterali come <code>Key</code>, le altre chiavi sono errori; con <code>string</code>, è permessa qualsiasi chiave. <code>Value</code> è <code>string</code> di default.</p>",
+    "usage": {
+      "optionalKeys": {
+        "title": "Chiavi opzionali",
+        "body": "<p>Ogni chiave può mancare, quindi ogni lettura può dare <code>undefined</code>, e il tipo lo dice.</p>"
+      }
+    }
+  },
+  "AsyncFunction": {
+    "summary": "Un tipo funzione che restituisce una promise, costruito dalla tupla dei suoi argomenti e dal tipo in cui si risolve la promise.",
+    "description": "<p><code>AsyncFunction&lt;[id: number], User&gt;</code> è <code>(id: number) =&gt; Promise&lt;User&gt;</code>. Senza argomenti di tipo è <code>(...args: any[]) =&gt; Promise&lt;void&gt;</code>. Va bene qualsiasi funzione che restituisce una promise del genere, <code>async</code> o no.</p><p>È <a href=\"#/it/reference/api/types/Function\"><code>Function</code></a> con il tipo di ritorno racchiuso in una <code>Promise</code> e, come quello, un tipo condizionale su <code>Arguments</code>.</p>",
+    "usage": {
+      "typing": {
+        "title": "Tipizzare una funzione asincrona",
+        "body": "<p>Il tipo dà all’arrow function assegnata il tipo del suo argomento e del suo risultato.</p>"
+      }
+    }
+  },
+  "Function": {
+    "summary": "Un tipo funzione costruito dalla tupla dei suoi argomenti e dal suo tipo di ritorno.",
+    "description": "<p><code>Function&lt;[id: number, name: string], boolean&gt;</code> è <code>(id: number, name: string) =&gt; boolean</code>. Gli argomenti sono una tupla, etichette comprese, quindi possono venire da un altro tipo, come <code>Parameters&lt;F&gt;</code>. Senza argomenti di tipo è <code>(...args: any[]) =&gt; void</code>, che accetta qualsiasi funzione.</p><p>Il suo nome è quello del <code>Function</code> globale, che l’import nasconde nel modulo. Gli altri tipi funzione del pacchetto ne fissano una parte: <a href=\"#/it/reference/api/types/VoidFunction\"><code>VoidFunction</code></a>, <a href=\"#/it/reference/api/types/AsyncFunction\"><code>AsyncFunction</code></a>, <a href=\"#/it/reference/api/types/NoArgsFunction\"><code>NoArgsFunction</code></a>.</p><p>È un tipo condizionale su <code>Arguments</code>, risolto solo quando <code>Arguments</code> è noto: dentro una funzione generica, dove <code>Arguments</code> è un parametro di tipo, un’arrow function non è assegnabile a <code>Function&lt;Arguments, Result&gt;</code>.</p>",
+    "usage": {
+      "building": {
+        "title": "Costruire tipi funzione",
+        "body": "<p>Un comparatore costruito dalla tupla dei suoi argomenti, e una variante di <code>fetch</code> costruita dai suoi parametri.</p>"
+      }
+    }
+  },
+  "NoArgsAsyncFunction": {
+    "summary": "Un tipo funzione senza argomenti che restituisce una promise di <code>ReturnType</code>.",
+    "description": "<p><code>NoArgsAsyncFunction&lt;User&gt;</code> è <code>() =&gt; Promise&lt;User&gt;</code>, come un caricamento che non ha nulla da ricevere. Senza argomento di tipo è <code>() =&gt; Promise&lt;void&gt;</code>, lo stesso di <a href=\"#/it/reference/api/types/NoArgsAsyncVoidFunction\"><code>NoArgsAsyncVoidFunction</code></a>. Una funzione con parametri obbligatori non gli è assegnabile.</p>"
+  },
+  "NoArgsFunction": {
+    "summary": "Un tipo funzione senza argomenti che restituisce <code>ReturnType</code>.",
+    "description": "<p><code>NoArgsFunction&lt;number&gt;</code> è <code>() =&gt; number</code>: un getter passato come callback, una factory, un valore calcolato solo quando viene letto. Senza argomento di tipo è <code>() =&gt; void</code>, lo stesso di <a href=\"#/it/reference/api/types/NoArgsVoidFunction\"><code>NoArgsVoidFunction</code></a>. Una funzione con parametri obbligatori non gli è assegnabile.</p>"
+  },
+  "NoArgsAsyncVoidFunction": {
+    "summary": "Un tipo funzione senza argomenti che restituisce una promise che non si risolve in nulla.",
+    "description": "<p><code>() =&gt; Promise&lt;void&gt;</code>: un’operazione asincrona eseguita per i suoi effetti, come salvare o ricaricare qualcosa. È <a href=\"#/it/reference/api/types/NoArgsAsyncFunction\"><code>NoArgsAsyncFunction</code></a> senza argomento di tipo.</p>"
+  },
+  "NoArgsVoidFunction": {
+    "summary": "Un tipo funzione senza argomenti che non restituisce nulla.",
+    "description": "<p><code>() =&gt; void</code>: una callback eseguita per i suoi effetti, come una funzione di cleanup. Poiché il tipo di ritorno è <code>void</code>, va bene anche una funzione che restituisce un valore, e il valore viene ignorato. È <a href=\"#/it/reference/api/types/NoArgsFunction\"><code>NoArgsFunction</code></a> senza argomento di tipo.</p>"
+  },
+  "VoidAsyncFunction": {
+    "summary": "Un tipo funzione che prende gli argomenti di una tupla e restituisce una promise che non si risolve in nulla.",
+    "description": "<p><code>VoidAsyncFunction&lt;[user: User]&gt;</code> è <code>(user: User) =&gt; Promise&lt;void&gt;</code>: una callback asincrona eseguita per i suoi effetti. Senza argomento di tipo accetta qualsiasi argomento. È <a href=\"#/it/reference/api/types/AsyncFunction\"><code>AsyncFunction</code></a> con il tipo di ritorno lasciato al default.</p>"
+  },
+  "VoidFunction": {
+    "summary": "Un tipo funzione che prende gli argomenti di una tupla e non restituisce nulla.",
+    "description": "<p><code>VoidFunction&lt;[event: MouseEvent]&gt;</code> è <code>(event: MouseEvent) =&gt; void</code>: un listener, o una callback eseguita per i suoi effetti. Senza argomento di tipo accetta qualsiasi argomento. Poiché il tipo di ritorno è <code>void</code>, va bene anche una funzione che restituisce un valore.</p><p>Anche la libreria DOM di TypeScript dichiara un <code>VoidFunction</code> globale, senza argomenti: l’import lo nasconde nel modulo.</p>"
+  },
+  "Mutable": {
+    "summary": "Toglie <code>readonly</code> da ogni proprietà di un tipo oggetto.",
+    "description": "<p>L’opposto di <code>Readonly&lt;T&gt;</code>: le stesse proprietà, con gli stessi tipi e gli stessi modificatori opzionali, tutte scrivibili. Cambia solo il primo livello: le proprietà di un oggetto annidato restano <code>readonly</code>. Un tipo array o tupla readonly diventa modificabile.</p>",
+    "usage": {
+      "building": {
+        "title": "Costruire un valore in sola lettura",
+        "body": "<p>La funzione costruisce i totali in un oggetto modificabile e li restituisce con il loro tipo in sola lettura: il codice che li riceve non può cambiarli.</p>"
+      }
+    }
+  },
+  "PositiveInteger": {
+    "summary": "Si risolve in un tipo numero letterale quando è un intero maggiore o uguale a zero, altrimenti in <code>never</code>.",
+    "description": "<p>Legge il numero come stringa e lo rifiuta quando contiene un <code>-</code> o un <code>.</code>, con <a href=\"#/it/reference/api/types/ContainsChar\"><code>ContainsChar</code></a>: i numeri negativi e i decimali diventano <code>never</code>. Lo zero è accettato: <code>PositiveInteger&lt;0&gt;</code> è <code>0</code>.</p><p>Come tipo di un parametro, rifiuta in compilazione i letterali che non sono conteggi validi. Vengono controllati solo i letterali: per <code>number</code> il risultato è <code>number</code>. <a href=\"#/it/reference/api/types/TupleOfLength\"><code>TupleOfLength</code></a> verifica con esso la sua lunghezza, e i cursori del compilatore il numero di caratteri che legge il loro <code>peek</code>.</p>",
+    "usage": {
+      "checkingACount": {
+        "title": "Verificare un conteggio",
+        "body": "<p>Il parametro di tipo cattura il letterale passato, e il parametro diventa <code>never</code> quando il letterale non è un intero maggiore o uguale a zero.</p>"
+      }
+    }
+  },
+  "RequireOne": {
+    "summary": "Rende obbligatoria almeno una tra alcune chiavi di un tipo oggetto.",
+    "description": "<p>Il risultato è un’unione con un membro per ogni chiave di <code>Keys</code>: in ognuno quella chiave è obbligatoria e le altre chiavi di <code>Keys</code> sono opzionali. Le chiavi fuori da <code>Keys</code> mantengono i loro modificatori. Un oggetto è assegnabile quando almeno una delle chiavi è impostata, a un valore diverso da <code>undefined</code>.</p><p>È adatto a un oggetto di opzioni facoltative una per una, quando un oggetto vuoto non ha senso: una ricerca per id, per email o per entrambi. Il suo hover elenca i <code>Pick</code> di cui è fatto: racchiuso in <a href=\"#/it/reference/api/types/Beautify\"><code>Beautify</code></a>, mostra l’unione di tipi oggetto.</p>",
+    "members": {
+      "Keys": "<p>Le chiavi di cui almeno una è obbligatoria, di default tutte le chiavi di <code>T</code>. Una chiave che <code>T</code> già richiede soddisfa da sola la condizione, quindi quando <code>T</code> ne ha una, elenca qui le chiavi opzionali: <code>RequireOne&lt;Search, 'id' | 'email'&gt;</code>.</p>"
+    },
+    "usage": {
+      "requiringOne": {
+        "title": "Richiedere un’opzione",
+        "body": "<p>Una query per id, per email o per entrambi: un oggetto vuoto non compila.</p>"
+      }
+    }
+  },
+  "TupleOfLength": {
+    "summary": "Una tupla di <code>Length</code> elementi, tutti di tipo <code>TupleType</code>.",
+    "description": "<p><code>TupleOfLength&lt;3, string&gt;</code> è <code>[string, string, string]</code>; <code>TupleType</code> è <code>number</code> di default. La tupla viene costruita un elemento alla volta in <code>Acc</code>, un parametro da non passare, quindi la lunghezza è limitata dalla ricorsione di TypeScript: fino a 999 elementi.</p><p><code>Length</code> passa per <a href=\"#/it/reference/api/types/PositiveInteger\"><code>PositiveInteger</code></a>: un letterale negativo o decimale dà <code>never</code>, e <code>0</code> dà la tupla vuota. Con <code>number</code>, che non è un letterale, il risultato è anch’esso la tupla vuota.</p>",
+    "usage": {
+      "fixedLength": {
+        "title": "Risultati di lunghezza fissa",
+        "body": "<p>Una funzione che restituisce esattamente tre numeri, destrutturati per posizione, e un tipo che annida due tuple.</p>"
+      }
+    }
+  }
+}

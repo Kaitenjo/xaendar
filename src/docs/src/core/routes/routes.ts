@@ -125,6 +125,12 @@ export function itemTitle(item: NavItem, messages: Messages): string {
 export const HOME_PAGE = page('');
 
 /**
+ * The path of the API reference. The pages of its symbols are below it, as in `reference/api/core/WebComponent`:
+ * they are not listed in the navigation, and belong to the reference.
+ */
+export const API_REFERENCE_PATH: PagePath = 'reference/api';
+
+/**
  * The navigation of the documentation, modeled on the one of angular.dev.
  */
 export const NAV: readonly NavSection[] = [
@@ -175,12 +181,12 @@ export const NAV: readonly NavSection[] = [
         page('templates/if', 'if else conditional'),
         page('templates/for', 'for track $index $first $last $even $odd loop'),
         page('templates/switch', 'switch case default'),
-        page('templates/conditional-bindings', 'conditional binding attribute if switch tag'),
-        page('templates/template-variables', 'template variable reference ref # element focus dialog'),
+        page('templates/imports', 'import'),
         page('templates/let', 'let variable alias getter computed derived value'),
+        page('templates/template-variables', 'template variable reference ref # element focus dialog'),
+        page('templates/conditional-bindings', 'conditional binding attribute if switch tag'),
         page('templates/reusable-templates', 'template render reusable fragment parameters optional default recursion tree ng-template outlet'),
         page('templates/expressions', 'expression allowed forbidden globals'),
-        page('templates/imports', 'import'),
         page('templates/svg-mathml', 'svg mathml namespace chart')
       ]),
       group('directives', [
@@ -210,7 +216,7 @@ export const NAV: readonly NavSection[] = [
   {
     key: 'reference',
     items: [
-      link(page('reference/api', 'api exports')),
+      link(page(API_REFERENCE_PATH, 'api exports symbols packages')),
       link(page('reference/template-syntax', 'cheat sheet syntax')),
       link(page('reference/errors', 'error message lexer parser type checker runtime')),
       link(page('reference/known-issues', 'bug issue limitation')),
@@ -232,6 +238,26 @@ export const PAGES: readonly DocsPage[] = NAV.flatMap(section => section.items.f
  */
 export function findPage(path: string): DocsPage | undefined {
   return path === '' ? HOME_PAGE : PAGES.find(candidate => candidate.path === path);
+}
+
+/**
+ * Tells whether a path is the page of a symbol of the API reference.
+ *
+ * @param path - The path of a page.
+ * @returns `true` for the paths below {@link API_REFERENCE_PATH}.
+ */
+export function isApiSymbolPath(path: string): boolean {
+  return path.startsWith(`${API_REFERENCE_PATH}/`);
+}
+
+/**
+ * Finds the path of the navigation entry of a page: the pages of the symbols belong to the API reference.
+ *
+ * @param path - The path of the page.
+ * @returns The path of the entry, the path itself for the pages listed in the navigation.
+ */
+export function navPathOf(path: string): string {
+  return isApiSymbolPath(path) ? API_REFERENCE_PATH : path;
 }
 
 /**

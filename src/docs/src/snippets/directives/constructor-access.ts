@@ -4,18 +4,18 @@
 @Directive({ selector: 'exEarly' })
 export class EarlyDirective extends CustomDirective<HTMLElement> {
   /**
-   * ✗ Reads the element and creates an effect before they are available.
+   * ✗ Reads the element before it is set.
    */
   public constructor() {
     super();
     console.log(this.element); // undefined: the element is set after the constructor
-    this.effect(() => {});     // TypeError: Cannot read properties of undefined (reading 'addUnlistener')
+    this.effect(() => {});     // ✓ allowed: the effect is disposed with the directive
   }
 
   /**
    * ✓ Here the element, the inputs and the context are all in place.
    */
   public onInit(): void {
-    this.effect(() => {});
+    console.log(this.element);
   }
 }

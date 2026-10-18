@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal, untracked } from '@xaendar/core/signals';
-import { path } from '../../core/router/router';
+import { navPath } from '../../core/router/router';
 import { NAV } from '../../core/routes/routes';
 import type { NavItem } from '../../core/routes/routes';
 
@@ -24,7 +24,7 @@ export class DocsSidenavComponent extends CustomElement {
    */
   public onInit(): void {
     this.effect(() => {
-      const current = path();
+      const current = navPath();
       const group = NAV.flatMap(section => section.items).find(item => item.pages?.some(page => page.path === current))?.group;
       if (group) {
         untracked(() => this.expanded.update(expanded => new Set(expanded).add(group)));

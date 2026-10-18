@@ -79,7 +79,7 @@ describe('toSelector', () => {
   it('throws when the target is a class not decorated with @WebComponent', () => {
     class Plain extends CustomElement { }
 
-    expect(() => toSelector(Plain)).toThrow('Plain does not seems to be decorated with @WebComponent');
+    expect(() => toSelector(Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
 });
 

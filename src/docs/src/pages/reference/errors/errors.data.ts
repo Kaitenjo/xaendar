@@ -365,7 +365,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
-    message: 'Could not find the static initializer block for class "MyAppRootComponent" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.',
+    message: 'Could not find the static block applying the decorators of class "MyAppRootComponent" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.',
     page: 'tools/build'
   },
   {
@@ -450,7 +450,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: 'XCard does not seems to have a Render Function',
+    message: 'XCard does not seem to have a Render Function',
     page: 'components/registration'
   },
   {
@@ -482,11 +482,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'Runtime',
     message: "Error: No element matches the required content query '[header]' of <x-card>",
     page: 'components/content-queries'
-  },
-  {
-    phase: 'Runtime',
-    message: "TypeError: Cannot read properties of undefined (reading 'addUnlistener')",
-    page: 'directives/custom'
   },
   {
     phase: 'Runtime',

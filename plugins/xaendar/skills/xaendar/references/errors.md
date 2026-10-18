@@ -425,7 +425,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A styleUrl that is not a .css file.
 - **Fix:** Use plain CSS.
 
-### `Could not find the static initializer block for class "MyAppRootComponent" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`
+### `Could not find the static block applying the decorators of class "MyAppRootComponent" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`
 
 - **Cause:** The decorators were not compiled before the Xaendar plugin ran.
 - **Fix:** Put the Babel plugin before xaendarPlugin().
@@ -457,7 +457,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ## Runtime
 
-### `XCard does not seems to have a Render Function`
+### `XCard does not seem to have a Render Function`
 
 - **Cause:** The component did not compile, or the class is a subclass without its own @WebComponent.
 - **Fix:** Look for the compiler message printed before it.
@@ -491,11 +491,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
-
-### `TypeError: Cannot read properties of undefined (reading 'addUnlistener')`
-
-- **Cause:** this.effect called in the constructor of a directive, before its context exists.
-- **Fix:** Create effects in onInit.
 
 ### `NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "x-card" has already been used with this registry`
 
@@ -536,8 +531,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Cannot unwatch a signal that is not being watched`
 
-- **Cause:** The disposer of a standalone effect called twice.
-- **Fix:** Call it once.
+- **Cause:** The disposer of an effect called when the effect is already disposed: a second time, or, for this.effect(), after the component or the directive is gone.
+- **Fix:** Call it once, while the effect is alive.
 
 ## CLI
 

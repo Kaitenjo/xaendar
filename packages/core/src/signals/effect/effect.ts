@@ -39,6 +39,7 @@ import { EffectOptions } from '../types/effect-options.type';
  *
  * @param fn - The side-effectful function to run. Any Signal read inside it
  *   is tracked as a dependency.
+ * @param options - The hooks called around each run and on disposal.
  * @returns A disposer function that, when called, permanently stops the effect.
  * @throws The exception thrown by `fn` on the initial execution.
  */

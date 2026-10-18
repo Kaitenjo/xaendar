@@ -1,4 +1,5 @@
 import { computed, signal } from '@xaendar/core/signals';
+import { navPathOf } from '../routes/routes';
 import type { Lang } from './route-hash.utils';
 import { formatHash, isLang, parseHash } from './route-hash.utils';
 
@@ -55,6 +56,12 @@ export const lang = computed(() => route().lang);
  * The path of the page currently displayed.
  */
 export const path = computed(() => route().path);
+
+/**
+ * The path of the navigation entry of the page currently displayed: the pages of the symbols of the API reference
+ * highlight the reference.
+ */
+export const navPath = computed(() => navPathOf(path()));
 
 /**
  * Builds the link to a page.

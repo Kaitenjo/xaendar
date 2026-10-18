@@ -5,4 +5,4 @@ class PlainStepper extends StepperComponent {}
 customElements.define('plain-stepper', PlainStepper);
 
 document.body.append(document.createElement('plain-stepper'));
-// ✗ Error: PlainStepper does not seems to have a Render Function
+// ✗ Error: PlainStepper does not seem to have a Render Function

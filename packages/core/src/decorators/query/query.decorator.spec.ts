@@ -166,7 +166,7 @@ describe('query', () => {
   it('throws when the class is not a registered web component', () => {
     class Plain extends CustomElement { }
 
-    expect(() => query(create(), Plain)).toThrow('Plain does not seems to be decorated with @WebComponent');
+    expect(() => query(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
 });
 
@@ -238,7 +238,7 @@ describe('queryRequired', () => {
   it('throws when the class is not a registered web component', () => {
     class Plain extends CustomElement { }
 
-    expect(() => queryRequired(create(), Plain)).toThrow('Plain does not seems to be decorated with @WebComponent');
+    expect(() => queryRequired(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
 });
 
@@ -363,7 +363,7 @@ describe('queryAll', () => {
   it('throws when the class is not a registered web component', () => {
     class Plain extends CustomElement { }
 
-    expect(() => queryAll(create(), Plain)).toThrow('Plain does not seems to be decorated with @WebComponent');
+    expect(() => queryAll(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
 });
 

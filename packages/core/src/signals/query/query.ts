@@ -78,7 +78,7 @@ export function createQuerySignal<Value>(
  * @template Value - The type of the queried value.
  * @param element - The component whose projected content is queried.
  * @param selector - The CSS selector the elements must match.
- * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
  * @param map - Computes the value from the matching elements, in order.
  * @param initialValue - The value held until the element is connected for the first time.
  * @param equals - Tells whether two values are equal, to avoid notifying when the result didn't change.
@@ -140,7 +140,7 @@ function observeProjection(element: CustomElement, update: NoArgsVoidFunction): 
  * @template Item - The type of the matching elements.
  * @param shadowRoot - The Shadow DOM whose slots are inspected.
  * @param selector - The CSS selector the elements must match.
- * @param slots - The name of the only slot to inspect, the empty string for the default slot. When omitted, all the slots are inspected.
+ * @param slots - The name of the slot to inspect, or the names of the slots, the empty string for the default slot. When omitted, all the slots are inspected.
  * @returns The matching elements.
  */
 function getProjectedElements<Item extends Element>(shadowRoot: ShadowRoot, selector: string, slots?: string | string[]): Item[] {

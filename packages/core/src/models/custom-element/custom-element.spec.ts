@@ -73,7 +73,7 @@ describe('CustomElement', () => {
   it('throws when no render function is registered', () => {
     const element = create();
 
-    expect(() => element.connectedCallback()).toThrow('does not seems to have a Render Function');
+    expect(() => element.connectedCallback()).toThrow('does not seem to have a Render Function');
   });
 
   it('renders on connection', () => {
@@ -313,7 +313,7 @@ describe('CustomElement', () => {
       customElements.define(name, klass);
       const element = document.createElement(name) as unknown as TestElement;
 
-      expect(() => element.connectedCallback()).toThrow('does not seems to have a Render Function');
+      expect(() => element.connectedCallback()).toThrow('does not seem to have a Render Function');
       expect(calls).toEqual([]);
     });
   });

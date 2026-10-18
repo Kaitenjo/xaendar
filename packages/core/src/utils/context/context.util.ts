@@ -194,7 +194,7 @@ export class _Context {
    * Returns the DOM nodes directly owned by this context (not recursively
    * including nodes owned by child contexts), in mount order. Used by
    * `_for`'s keyed diffing to locate a reused item's nodes so they can be
-   * repositioned with `insertBefore` instead of being destroyed and recreated.
+   * repositioned with `moveBefore` instead of being destroyed and recreated.
    *
    * @returns The nodes directly owned by this context.
    */

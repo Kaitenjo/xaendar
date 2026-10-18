@@ -1,6 +1,5 @@
 @import { translations } from '../../core/i18n/i18n.ts'
 @import { lang as currentLang } from '../../core/router/router.ts'
-@import { pageTitle } from '../../core/routes/routes.ts'
 
 <div class="search">
   <svg class="glass" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -13,12 +12,12 @@
   <kbd class="kbd">/</kbd>
   @if (expanded() && query()) {
     <ul class="results" role="listbox">
-      @for (page of results(); track page().path; index = $index) {
+      @for (result of results(); track result().path; index = $index) {
         <li>
           <a class="{index() === active() ? 'result result--active' : 'result'}"
-            href="{`#/${currentLang()}/${page().path}`}" (mousedown)="go(page().path)">
-            <span class="result__title">{ pageTitle(page(), translations()) }</span>
-            <span class="result__path">{ page().path }</span>
+            href="{`#/${currentLang()}/${result().path}`}" (mousedown)="go(result().path)">
+            <span class="result__title">{ result().title }</span>
+            <span class="result__path">{ result().detail }</span>
           </a>
         </li>
       }

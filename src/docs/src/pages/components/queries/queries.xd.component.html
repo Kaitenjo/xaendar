@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -47,45 +48,55 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.queries.apiSummary.title") />
+<h2 @@i18n(key="pages.components.queries.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.queries.apiSummary.th1") />
-        <th @@i18n(key="pages.components.queries.apiSummary.th2") />
+        <th @@i18n(key="pages.components.queries.summary.th1") />
+        <th @@i18n(key="pages.components.queries.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>{ '@Query(target)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query(target)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td1") />
+        <td @@i18n(key="pages.components.queries.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Query.all(target)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.all(target)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td2") />
+        <td @@i18n(key="pages.components.queries.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Query.required(target)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.required(target)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td3") />
+        <td @@i18n(key="pages.components.queries.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>target</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>target</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td4") />
+        <td @@i18n(key="pages.components.queries.summary.td4") />
       </tr>
       <tr>
         <td>
-          <code>{ 'QuerySignal<T>' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySignal`}">
+            <code>{ 'QuerySignal<T>' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.queries.apiSummary.td5") />
+        <td @@i18n(key="pages.components.queries.summary.td5") />
       </tr>
     </tbody>
   </table>

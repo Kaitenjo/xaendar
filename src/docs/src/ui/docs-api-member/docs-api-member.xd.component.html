@@ -1,0 +1,11 @@
+@import { DocsCodeComponent } from '../docs-code/docs-code.xd.component.ts'
+
+<article class="member">
+  <h3 class="name">{ name() }</h3>
+  @if (signature()) {
+    <docs-code class="signature" code="{signature()}" bare="{true}" />
+  }
+  <div class="body">
+    <slot />
+  </div>
+</article>

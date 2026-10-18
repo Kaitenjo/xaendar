@@ -1,11 +1,7 @@
-@import { translations } from '../../../core/i18n/i18n.ts'
-@import { DocsApiListComponent } from '../../../ui/docs-api-list/docs-api-list.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsApiIndexComponent } from '../../../ui/docs-api-index/docs-api-index.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.reference.api.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.reference.api.title") />
 <p @@i18n(key="pages.reference.api.lead") class="lead" />
-<docs-callout @@i18n(key="pages.reference.api.callout1.body") kind="note"
-  heading="{translations().pages.reference.api.callout1.heading}" />
-<docs-api-list />
+<docs-api-index />

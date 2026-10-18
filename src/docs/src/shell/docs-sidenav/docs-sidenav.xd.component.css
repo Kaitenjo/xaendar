@@ -50,13 +50,14 @@
   background: none;
   color: var(--xd-text-soft);
   font: 500 0.9rem/1.4 var(--xd-font);
+  font-size: 1rem;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
 }
 
 .link--nested {
-  font-size: 0.86rem;
+  font-size: .85rem;
 }
 
 .link:hover,

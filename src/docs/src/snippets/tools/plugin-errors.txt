@@ -13,4 +13,4 @@ src/user-card/user-card.xd.component.ts(12,19): error TS2416: Property 'title' i
   Type 'number' is not assignable to type 'string'.
 
 # At run time, in the browser
-UserCardComponent does not seems to have a Render Function
+UserCardComponent does not seem to have a Render Function

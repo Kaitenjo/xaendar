@@ -47,7 +47,6 @@
     "fix": "Fix",
     "workaround": "Workaround",
     "readMore": "Read more",
-    "internal": "Internal",
     "kinds": {
       "decorator": "Decorator",
       "class": "Class",
@@ -60,9 +59,23 @@
       "limitation": "Limitation",
       "docs": "Documentation"
     },
-    "module": "Module",
+    "kind": "Kind",
     "phase": "Phase",
-    "area": "Area"
+    "area": "Area",
+    "symbol": {
+      "api": "API",
+      "description": "Description",
+      "usage": "Usage notes",
+      "guides": "Guides",
+      "notFound": "No symbol has this name",
+      "groups": {
+        "variants": "Variants",
+        "parameters": "Parameters",
+        "options": "Options",
+        "properties": "Properties",
+        "methods": "Methods"
+      }
+    }
   },
   "nav": {
     "home": "Home",
@@ -110,15 +123,15 @@
       "templates/text-interpolation": "Text interpolation",
       "templates/binding": "Attribute and property binding",
       "templates/events": "Event listeners",
-      "templates/if": "Conditionals with @if",
-      "templates/for": "Lists with @for",
-      "templates/switch": "Branching with @switch",
-      "templates/conditional-bindings": "Conditional bindings",
-      "templates/template-variables": "Template variables",
+      "templates/if": "@if, @else if and @else",
+      "templates/for": "@for",
+      "templates/switch": "@switch",
+      "templates/imports": "@import",
       "templates/let": "@let",
-      "templates/reusable-templates": "Reusable templates",
+      "templates/template-variables": "Template variables",
+      "templates/conditional-bindings": "Conditional bindings",
+      "templates/reusable-templates": "Templates and @render",
       "templates/expressions": "Expression syntax",
-      "templates/imports": "Imports",
       "templates/svg-mathml": "SVG and MathML",
       "directives/overview": "Overview",
       "directives/custom": "Custom directives",
@@ -208,14 +221,14 @@
             "p1": "The shadow root is always open, and it cannot be replaced: the base class has already attached it."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "Compiles the template and the stylesheet, and defines the custom element.",
           "td2": "The base class: an <code>HTMLElement</code> with an open shadow root and the lifecycle hooks.",
           "td3": "Where the template is rendered.",
-          "td4": "<code>this.effect(fn, options?)</code>",
+          "td4": "<a href=\"#/en/reference/api/core/CustomElement\"><code>this.effect(fn, options?)</code></a>",
           "td5": "An effect disposed when the element is removed. See <a href=\"#/en/signals/effects\">Effects</a>.",
           "td6": "Optional hooks. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>."
         }
@@ -255,8 +268,8 @@
             "body": "The component cannot read the projected elements through its template, nor style them beyond <code>::slotted()</code>: they are elements of the template of the parent, styled by its stylesheet. See <a href=\"#/en/components/styling\">Styling</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "The default slot: the children without a <code>slot</code> attribute.",
@@ -299,8 +312,8 @@
             "body": "A content query is updated when elements are added or removed, when their <code>slot</code> attribute changes and when the slots of the component change. A change to any other attribute, such as a class, does not update it, as for <a href=\"#/en/components/queries\">view queries</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "The first projected element matching <code>target</code>, or <code>null</code>.",
@@ -349,8 +362,8 @@
             "body": "The library creates, moves and removes the elements of the templates and the components. Moving, removing or reattaching them with the DOM APIs is not supported: change only the elements you created yourself, as the gauge above."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Task",
           "th2": "Where",
           "td1": "Reach an element of the template",
@@ -391,8 +404,8 @@
             "body": "Only the classes decorated with <code>@WebComponent</code> must be in <code>.xd.component.ts</code> files. A base class without decorator can live in any file, as <code>counter-base.ts</code> does."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Member of the base class",
           "th2": "Inherited",
           "th3": "Seen by templates",
@@ -465,8 +478,8 @@
             "body": "A component loaded later, for example with a dynamic import, receives its bindings as string attributes until it is defined, and its default values after. See <a href=\"#/en/components/registration\">Selectors and registration</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "An optional input, holding <code>default</code> until it is bound.",
@@ -514,8 +527,8 @@
             "body": "Inputs are not attributes, so the base class declares no <code>observedAttributes</code>: read inputs reactively instead. See <a href=\"#/en/components/inputs\">Inputs</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "Runs at every connection, before the render.",
@@ -570,8 +583,8 @@
             "p1": "A component is an <code>HTMLElement</code>, so an event named <code>remove</code>, <code>click</code> or <code>focus</code> would replace a method of the element. TypeScript rejects it, and so it does for an input or a signal named <code>title</code>, <code>lang</code> or <code>hidden</code>. Choose another name, or keep the name in templates with an <code>alias</code>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "Declares an event named after the accessor. <code>options</code> sets <code>bubbles</code>, <code>cancelable</code> and <code>composed</code> for every emission.",
@@ -613,8 +626,8 @@
             "p1": "A class passed to a query must be decorated with <code>@WebComponent</code>, which gives it its selector. Otherwise the query throws when the component is created."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "The first element of the template matching <code>target</code>, or <code>null</code>.",
@@ -672,8 +685,8 @@
             "body": "There is one registry per page and no way to undefine a name. Two applications on the same page, or two versions of the same library, cannot define the same selector: the prefix is the only protection."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "<code>@import { Class } from \"./path.xd.component.ts\"</code>",
@@ -736,8 +749,8 @@
             "body": "The styles of the page, including resets such as <code>box-sizing: border-box</code>, do not apply inside shadow roots. Repeat them in the component stylesheets, or share a stylesheet file between components."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Selector",
           "th2": "Written in",
           "th3": "Matches",
@@ -785,8 +798,8 @@
             "p1": "The parentheses of a directive hold its inputs and listeners, and conditions over them, but no other directive."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax inside a tag",
           "th2": "Behavior",
           "td1": "A new instance each time the branch is taken; <code>onDestroy</code> when it is left.",
@@ -837,16 +850,16 @@
           "p1": "A directive starts once the element has its attributes and is in the document, but before its children are rendered: <code>onInit</code> sees the <code>id</code> and the bound label, yet no list item, and the items appear a microtask later. Code that needs the children can wait for a microtask, or watch them with a <code>MutationObserver</code>.",
           "p2": "A directive receives its inputs <strong>before</strong> <code>onInit</code>: the label is already <code>first</code>, not the default. So does a child component, as shown in <a href=\"#/en/components/inputs\">Inputs</a>.",
           "callout1": {
-            "heading": "Nothing is ready in the constructor",
-            "p1": "The element and the context of the directive are set after the constructor. There, <code>this.element</code> is <code>undefined</code> and <code>this.effect</code> throws: the setup belongs in <code>onInit</code>."
+            "heading": "The element is not there in the constructor",
+            "p1": "The element of the directive is set after the constructor: there, <code>this.element</code> is <code>undefined</code>, and the inputs still hold their defaults. <code>this.effect</code> can be called there, as in a component: the effect runs at once and is disposed with the directive. The setup reading the element or the inputs belongs in <code>onInit</code>."
           },
           "callout2": {
             "heading": "Once per element, and only known inputs",
             "p1": "A directive can be applied once to the same element. Its inputs are checked like those of a component: unknown names and wrong types are compile errors."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Member",
           "th2": "Description",
           "td1": "The element the directive is applied to, available from <code>onInit</code>.",
@@ -916,11 +929,11 @@
             "p1": "The compiler does not check that <code>@@</code> is used for custom directives and <code>*</code> for structural ones. The mistake shows up when the element is rendered."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<code>@Directive({ selector: 'name' })</code>",
+          "td1": "<a href=\"#/en/reference/api/core/Directive\"><code>@Directive({ selector: 'name' })</code></a>",
           "td2": "Registers the class under the selector.",
           "td3": "Base class of directives acting on an element of type <code>T</code>.",
           "td4": "Base class of directives deciding whether an element is rendered.",
@@ -971,8 +984,8 @@
             "p1": "A structural directive has no element to dispatch events on, since the element may not exist, so it accepts no listeners. Its inputs cannot be bound conditionally either; the directive itself can be applied by a condition, as shown in <a href=\"#/en/directives/conditional\">Conditional directives</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "Returns <code>boolean</code> or <code>Promise&lt;boolean&gt;</code>; evaluated again when a signal read before the first <code>await</code> changes.",
@@ -1272,8 +1285,8 @@
             "body": "Code after an <code>await</code> runs outside of the effect that started it, so the signals it reads are not tracked. Read what the request depends on before the first <code>await</code>. The same rule applies to asynchronous <a href=\"#/en/directives/structural\">structural directives</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Need",
           "th2": "Tool",
           "td1": "State of the request",
@@ -1314,8 +1327,8 @@
             "p1": "<code>checked</code> is a boolean attribute: bound to <code>false</code>, it still checks the box. And, like <code>value</code>, it is only the initial state."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Need",
           "th2": "Tool",
           "td1": "Read a field",
@@ -1353,8 +1366,8 @@
             "body": "The directive replaces whatever the element contains, and the children written in the template are rendered right after <code>onInit</code>, as shown in <a href=\"#/en/directives/custom\">Custom directives</a>. Apply it to an empty element."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Result",
           "td1": "The string as text, tags included.",
@@ -1380,8 +1393,8 @@
             "body": "Two items with the same key are told apart only by their order, so the state of their rows can swap when the list changes. Derive keys from a counter or from the ids of the server, never from the position or from a field that users can edit, such as the name."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Operation",
           "th2": "Code",
           "td1": "Add",
@@ -1420,8 +1433,8 @@
             "body": "The <code>@switch</code> destroys the page it leaves. State that has to outlive a page, such as a filter or a draft, belongs in a module, like the router itself."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Piece",
           "th2": "Tool",
           "td1": "Current path",
@@ -1459,8 +1472,8 @@
             "body": "A theme cannot restyle the inside of a component with ordinary selectors. What the component does not read from a custom property, or expose as a part, stays as the component defines it."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Tool",
           "th2": "Use",
           "td1": "<code>--token</code> and <code>var(--token, fallback)</code>",
@@ -1477,10 +1490,14 @@
       "api": {
         "eyebrow": "Reference",
         "title": "API reference",
-        "lead": "Every export of <code>@xaendar/core</code>, <code>@xaendar/core/signals</code> and <code>@xaendar/signals</code>, with its signature and the page explaining it. Filter by name, by text or by module.",
-        "callout1": {
-          "heading": "Three entry points",
-          "body": "Components, directives and decorators come from <code>@xaendar/core</code>; the signal functions from <code>@xaendar/core/signals</code>; <code>loadSignals</code> and the global <code>Signal</code> from <code>@xaendar/signals</code>. The exports marked as internal are used by the compiled templates."
+        "lead": "Every symbol exported by the packages of Xaendar, grouped by package. Each one links to its page: what it does, its signature, its options and members one by one, and examples. Filter by name or by kind.",
+        "packages": {
+          "@xaendar/core": "Components, directives, their decorators and their base classes.",
+          "@xaendar/core/signals": "The signals of components and directives: signal, computed, effect and untracked, and the types of inputs and queries.",
+          "@xaendar/signals": "The global Signal of the TC39 proposal, installed by loadSignals, which the signals of @xaendar/core/signals are built on.",
+          "@xaendar/build-tools": "The Vite plugin compiling templates and stylesheets, and its options.",
+          "@xaendar/common": "Utilities shared by the packages: case conversion, object helpers, custom element names.",
+          "@xaendar/types": "Utility types shared by the packages: constructors, decorators, functions."
         }
       },
       "comingFromAngular": {
@@ -1512,7 +1529,7 @@
           "td16": "Pipes",
           "td17": "Methods and computed signals",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
-          "td19": "<code>&lt;template #name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Reusable templates</a>",
+          "td19": "<code>&lt;template #name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
           "td20": "<code>@let</code>, a signal read with <code>name()</code> when its value reads one: see <a href=\"#/en/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
@@ -1614,22 +1631,22 @@
             "body": "<code>watch()</code> on a signal already watched by the same watcher throws <code>Cannot watch a signal that is already being watched</code>; <code>unwatch()</code> on a signal it does not watch throws <code>Cannot unwatch a signal that is not being watched</code>. Both throw while signals are frozen too."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<code>loadSignals(options?)</code>",
+          "td1": "<a href=\"#/en/reference/api/signals/loadSignals\"><code>loadSignals(options?)</code></a>",
           "td2": "Installs the global <code>Signal</code> object; <code>devMode</code> enables logs and warnings.",
-          "td3": "<code>new Signal.State(value, options?)</code>",
+          "td3": "<a href=\"#/en/reference/api/signals/Signal.State\"><code>new Signal.State(value, options?)</code></a>",
           "td4": "A writable node: <code>get()</code>, <code>set()</code>.",
-          "td5": "<code>new Signal.Computed(fn, options?)</code>",
+          "td5": "<a href=\"#/en/reference/api/signals/Signal.Computed\"><code>new Signal.Computed(fn, options?)</code></a>",
           "td6": "A derived node: <code>get()</code>.",
           "td7": "<code>watch(...signals)</code>, <code>unwatch(...signals)</code>, <code>getPending()</code>.",
           "td8": "The same as <code>untracked</code>.",
           "td9": "The computed signal being evaluated, or <code>null</code>.",
-          "td10": "<code>Signal.subtle.introspectSources(node)</code>, <code>introspectSinks(node)</code>",
+          "td10": "<a href=\"#/en/reference/api/signals/Signal.subtle\"><code>Signal.subtle.introspectSources(node)</code></a>, <a href=\"#/en/reference/api/signals/Signal.subtle\"><code>introspectSinks(node)</code></a>",
           "td11": "The nodes a node depends on, and the nodes depending on it.",
-          "td12": "<code>Signal.subtle.hasSources(node)</code>, <code>hasSinks(node)</code>",
+          "td12": "<a href=\"#/en/reference/api/signals/Signal.subtle\"><code>Signal.subtle.hasSources(node)</code></a>, <a href=\"#/en/reference/api/signals/Signal.subtle\"><code>hasSinks(node)</code></a>",
           "td13": "Whether those lists are not empty."
         }
       },
@@ -1674,14 +1691,14 @@
             "body": "The function returned by <code>computed()</code> has <code>get()</code> but no <code>set()</code> or <code>update()</code>. To change the value, change its dependencies."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<code>computed(fn, options?)</code>",
+          "td1": "<a href=\"#/en/reference/api/core/signals/computed\"><code>computed(fn, options?)</code></a>",
           "td2": "Creates a read-only signal derived from the signals <code>fn</code> reads.",
           "td3": "Reads the value, evaluating <code>fn</code> if needed; rethrows a cached error.",
-          "td4": "<code>options.equals</code>",
+          "td4": "<a href=\"#/en/reference/api/core/signals/computed\"><code>options.equals</code></a>",
           "td5": "Decides whether a new result is a change, <code>Object.is</code> by default."
         }
       },
@@ -1700,7 +1717,7 @@
         },
         "effectsOfAComponent": {
           "title": "Effects of a component",
-          "p1": "Components and directives have their own <code>this.effect(fn, options?)</code>. It works like <code>effect()</code>, but the effect is disposed automatically when the component leaves the page. Create it in <code>onInit</code> or <code>afterRender</code>. A standalone <code>effect()</code> lives until its disposer is called, whatever happens to the component that created it.",
+          "p1": "Components and directives have their own <code>this.effect(fn, options?)</code>. It works like <code>effect()</code>, but the effect is disposed automatically when the component leaves the page. Create it in <code>onInit</code> or <code>afterRender</code>; it can also be created in the constructor or in a field initializer, where it runs before the inputs are bound. A standalone <code>effect()</code> lives until its disposer is called, whatever happens to the component that created it.",
           "example1": "this.effect() versus effect()",
           "p2": "Add the child, wait a few seconds and remove it: the effect created with <code>this.effect()</code> stops, the standalone one keeps logging — and keeps the clock ticking — until it is disposed."
         },
@@ -1713,7 +1730,7 @@
         },
         "disposing": {
           "title": "Disposing",
-          "p1": "Calling the disposer stops the effect and releases every subscription. The disposer of <code>this.effect()</code> can be called any number of times, even after the component is gone; the one of a standalone <code>effect()</code> throws the second time.",
+          "p1": "Calling the disposer stops the effect and releases every subscription. An effect is disposed once: calling the disposer a second time throws, whether the effect is standalone or bound with <code>this.effect()</code>. The disposer of <code>this.effect()</code> also throws after the component or the directive is gone, since the disconnection has already disposed the effect.",
           "example1": "Disposing twice"
         },
         "errors": {
@@ -1740,19 +1757,19 @@
             "body": "The JSDoc of <code>onCleanup</code> says it runs before each re-run, and the README of <code>@xaendar/signals</code> shows two synchronous writes producing two runs. Both are wrong: the behavior is the one described on this page."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<code>effect(fn, options?)</code>",
+          "td1": "<a href=\"#/en/reference/api/core/signals/effect\"><code>effect(fn, options?)</code></a>",
           "td2": "Runs <code>fn</code> now and after every change of what it read; returns a disposer.",
-          "td3": "<code>this.effect(fn, options?)</code>",
-          "td4": "Same, disposed with the component or directive. Its disposer is idempotent.",
-          "td5": "<code>options.onBeforeRun</code>",
+          "td3": "<a href=\"#/en/reference/api/core/CustomElement\"><code>this.effect(fn, options?)</code></a>",
+          "td4": "Same, disposed with the component or directive. Its disposer throws once the effect is disposed.",
+          "td5": "<a href=\"#/en/reference/api/core/signals/EffectOptions\"><code>options.onBeforeRun</code></a>",
           "td6": "Called before each run.",
-          "td7": "<code>options.onAfterRun</code>",
+          "td7": "<a href=\"#/en/reference/api/core/signals/EffectOptions\"><code>options.onAfterRun</code></a>",
           "td8": "Called after each run, even a failed one.",
-          "td9": "<code>options.onCleanup</code>",
+          "td9": "<a href=\"#/en/reference/api/core/signals/EffectOptions\"><code>options.onCleanup</code></a>",
           "td10": "Called once, on disposal."
         }
       },
@@ -1829,19 +1846,19 @@
             "body": "Reading a signal in an event handler or in a plain method just returns the value: nothing subscribes. Only reads made while a computed signal, an effect or a template binding runs are tracked."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<code>signal(value, options?)</code>",
+          "td1": "<a href=\"#/en/reference/api/core/signals/signal\"><code>signal(value, options?)</code></a>",
           "td2": "Creates a writable signal.",
           "td3": "Reads the value, tracking it in reactive contexts.",
-          "td4": "<code>sig.set(value)</code>",
+          "td4": "<a href=\"#/en/reference/api/core/signals/Signal\"><code>sig.set(value)</code></a>",
           "td5": "Replaces the value, unless it is equal to the current one.",
           "td6": "Sets <code>fn(current)</code>, reading the current value untracked.",
-          "td7": "<code>options.equals</code>",
+          "td7": "<a href=\"#/en/reference/api/core/signals/signal\"><code>options.equals</code></a>",
           "td8": "Custom equality, <code>Object.is</code> by default.",
-          "td9": "<code>options.watched</code>, <code>options.unwatched</code>",
+          "td9": "<a href=\"#/en/reference/api/signals/SignalOptions\"><code>options.watched</code></a>, <a href=\"#/en/reference/api/signals/SignalOptions\"><code>options.unwatched</code></a>",
           "td10": "See <a href=\"#/en/signals/options\">Signal options</a>."
         }
       },
@@ -1898,8 +1915,8 @@
             "body": "Reads made before or after the call are tracked as usual. And it is the reads that are untracked, not the signals: the same signal read elsewhere in the same effect is still a dependency."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "API",
           "th2": "Description",
           "td1": "Runs <code>fn</code> without tracking what it reads, and returns its result. Also available as <code>Signal.subtle.untrack</code>."
@@ -1963,8 +1980,8 @@
             "body": "<code>[class.name]</code> cannot be written in the parentheses of a directive, which only bind its properties: write it on the element. A class can be toggled at most once on an element, as an attribute can be bound once, except in different branches of the same condition."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Result",
           "td1": "A static attribute.",
@@ -2002,8 +2019,8 @@
             "p1": "The same attribute cannot be written both outside and inside a condition. Different branches of the same condition, instead, can bind it each in their own way."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax inside a tag",
           "th2": "Description",
           "td1": "Attributes, listeners, inputs and directives present while the condition holds.",
@@ -2045,8 +2062,8 @@
             "body": "On the tag of a component only the events it declares with <code>@Event</code> can be bound, not the native ones; on native elements only the native ones. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Calls a method of the component, of one of its members or of a template variable, for each event.",
@@ -2086,8 +2103,8 @@
             "body": "Every signal an expression reads is tracked in text, conditions and loops. In an attribute, only the signal members and the imported signals the expression names are: see <a href=\"#/en/templates/binding\">Binding</a>. Event handlers follow their own, more limited syntax: see <a href=\"#/en/templates/events\">Event listeners</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Allowed",
           "th2": "Not allowed",
           "td1": "Arithmetic, comparison, logical operators, <code>!</code>, ternary",
@@ -2139,8 +2156,8 @@
             "p1": "Arrays and numbers only: a <code>Set</code>, a <code>Map</code> or a string must be converted to an array first, for example with <code>[...set]</code> in a computed signal. There is no <code>$count</code>: use the length of the array. The expression of <code>track</code> reads the item, the implicit variables, the members of the component and the imports, but no template variable. A negative number renders nothing."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "A row for each item, identified by its key.",
@@ -2152,7 +2169,7 @@
       },
       "if": {
         "eyebrow": "Templates",
-        "title": "Conditionals with @if",
+        "title": "Conditionals with @if, @else if and @else",
         "lead": "<code>@if</code> renders a block only while its condition is truthy, with optional <code>@else if</code> and <code>@else</code> branches. The condition is reactive: it runs again whenever a signal it reads changes, and the block switches branch when the result says so.",
         "branches": {
           "title": "Branches",
@@ -2176,8 +2193,8 @@
             "body": "The condition follows JavaScript: <code>0</code>, <code>''</code>, <code>null</code>, <code>undefined</code> and <code>NaN</code> select the <code>@else</code> branch. For a count that can be zero, compare it explicitly, as <code>guests() &gt; 0</code> does."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Renders the block while the condition is truthy.",
@@ -2232,8 +2249,8 @@
             "body": "A signal exported by a compiled package is recognized from its type in the declarations (<code>Signal&lt;number&gt;</code>), and stays reactive. The body of its functions is not part of the declarations: an attribute binding calling one is evaluated once, even if the function reads a signal. Wrap the call in a <code>computed</code> member of the class."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "One component or directive.",
@@ -2316,8 +2333,8 @@
             "body": "<code>&lt;DIV&gt;</code> with <code>&lt;/DIV&gt;</code> compiles and renders a <code>div</code>, as in HTML; only the two tags have to match."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Rule",
           "th2": "Write",
           "td1": "Void elements",
@@ -2353,8 +2370,8 @@
             "body": "As for HTML, a binding sets an attribute with <code>setAttribute</code>: numbers become strings, which SVG accepts for geometry. Properties of SVG elements, such as animated values, have to be set in code."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Element",
           "th2": "Namespace",
           "td1": "<code>&lt;svg&gt;</code> and its descendants",
@@ -2382,8 +2399,8 @@
             "p1": "The value of a case cannot read the members of the component. Compare with literals, or move the logic into a computed signal that returns one of them."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Compares the value with the cases, in order.",
@@ -2435,8 +2452,8 @@
             "body": "A variable is declared directly on the element, without a value, at most one per element: not inside a conditional binding, nor inside the parentheses of a directive. <code>root</code>, <code>$event</code> and the names starting with <code>__</code> or <code>$$</code> are reserved."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Names the element, typed with the DOM interface of its tag, or with the class of its component.",
@@ -2486,8 +2503,8 @@
             "body": "A <code>@let</code> is declared among the content, never among the bindings of a tag, with a name of its own in its scope: TypeScript reports a template variable, a template or another <code>@let</code> named like it there. <code>root</code>, <code>$event</code> and the names starting with <code>__</code> or <code>$$</code> are reserved."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Names the value of the expression in its scope: the expressions read it after its <code>;</code>, the event handlers anywhere.",
@@ -2497,7 +2514,7 @@
       },
       "reusableTemplates": {
         "eyebrow": "Templates",
-        "title": "Reusable templates",
+        "title": "Reusable templates with @render",
         "lead": "<code>&lt;template #name(…)&gt;</code> declares a piece of template once, with typed parameters, like a function. <code>@render name(…)</code> renders it wherever content can go, and TypeScript checks the arguments as it checks the ones of a call.",
         "declaring": {
           "title": "Declaring and rendering",
@@ -2543,8 +2560,8 @@
             "body": "A template is rendered by the template declaring it, in its scope: it cannot be passed to another component, nor read by the class."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Declares a template with typed parameters, visible in the whole of its scope.",
@@ -2569,8 +2586,8 @@
           "example1": "Values of every kind",
           "p2": "The last row is the most common mistake: a signal is a function, and without the call the text shows the function itself. Nothing reports it, since showing a function is valid."
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Value",
           "th2": "Text",
           "td1": "empty",
@@ -2592,7 +2609,7 @@
         "configuration": {
           "title": "Configuration",
           "p1": "The order matters. Babel compiles the standard decorators first, and the plugin then works on its output: it looks for the static blocks Babel generates in each decorated class, and adds its own registration before them. With the plugins in the wrong order, every component fails with the message shown in <a href=\"#/en/installation\">Installation</a>.",
-          "p2": "The plugin takes no options. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates."
+          "p2": "The plugin takes one option, <code>customElements</code>: the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates."
         },
         "whatThePluginDoes": {
           "title": "What the plugin does",
@@ -2620,11 +2637,11 @@
             "body": "Only <code>.css</code> files can be used as <code>styleUrl</code>, and <code>@import</code> rules inside them are dropped by the browser, since constructed stylesheets do not support them. See <a href=\"#/en/components/styling\">Styling</a>."
           }
         },
-        "apiSummary": {
-          "title": "API summary",
+        "summary": {
+          "title": "Summary",
           "th1": "Item",
           "th2": "Value",
-          "td1": "The Vite plugin, without options; after the Babel decorators transform.",
+          "td1": "The Vite plugin, with the <code>customElements</code> option; after the Babel decorators transform.",
           "td2": "Compiled files",
           "td3": "<code>*.xd.component.ts</code>, with their <code>templateUrl</code> and <code>styleUrl</code>",
           "td4": "Virtual modules",
@@ -2776,46 +2793,6 @@
         "p1": "The guides cover each concept in depth, with their edge cases: start from <a href=\"#/en/signals/overview\">signals</a>, <a href=\"#/en/components/inputs\">inputs</a> and <a href=\"#/en/templates/for\">lists</a>."
       }
     }
-  },
-  "api": {
-    "WebComponent": "Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet. The options must be string literals.",
-    "Property": "Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template.",
-    "Property.required": "Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time.",
-    "Event": "Declares an output. emit(detail?, options?) dispatches a CustomEvent named after the accessor on the host element.",
-    "Query": "The first element of the shadow root matching a selector or a component class, kept up to date as a signal.",
-    "Query.required": "Like Query, for an element that is always there: no null in the type, and reading it throws when no element matches.",
-    "Query.all": "Every element of the shadow root matching a selector or a component class.",
-    "Query.content": "The first element projected into the slots of the component that matches a selector or a component class.",
-    "Query.content.required": "Like Query.content, for projected content that is always there: no null in the type, and reading it throws when no element matches.",
-    "Query.content.all": "Every projected element matching a selector or a component class, in the order of the slots.",
-    "Directive": "Registers a class extending CustomDirective or StructuralDirective under a selector, used as @@selector or *selector.",
-    "CustomElement": "Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. hostDirectives holds the instances of the host directives, keyed by their class.",
-    "CustomDirective": "Base class of the directives acting on the element they are applied to.",
-    "StructuralDirective": "Base class of the directives deciding whether the element they are applied to is rendered.",
-    "Output": "The class of an @Event accessor: emit(detail?, options?) dispatches the event. Without a type argument the event carries no detail, and templates cannot read $event.",
-    "EventOptions": "The options of an output, given to @Event or to a single emit. At least one key is required.",
-    "WebComponentOptions": "The options of @WebComponent.",
-    "HostDirectiveOptions": "A directive applied to the element of a component, with the inputs and the outputs of the directive the component exposes, as strings or as { name, alias } objects. HostDirectiveMember is the type of each one.",
-    "HostDirectiveMember": "A property or an event of a host directive exposed on its component: its name, or the name and the alias it is exposed with.",
-    "HostDirectives": "The host directives of a component, keyed by class: hostDirectives.get(Tooltip) is the instance, typed as the directive.",
-    "DirectiveOptions": "The options of @Directive.",
-    "_Context, _if, _for, _switch, _renderElement, _renderText, _defineRender, mountNode, createAnchor, RenderFunction, RenderDefinition, …": "The runtime of the compiled templates, and its types (BindingHost, RenderElementAttribute, …). They are exported for the generated code, not for applications.",
-    "signal": "A writable signal: read it by calling it, write it with set or update.",
-    "computed": "A signal derived from others, evaluated lazily and cached until a dependency changes.",
-    "effect": "Runs a function now, and again in a microtask after the signals it read change. Returns the function disposing it.",
-    "untracked": "Runs a function without tracking the signals it reads.",
-    "Signal": "The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive.",
-    "Computed": "The type returned by computed().",
-    "InputSignal": "The type of an input: read-only for the component, set by the bindings of the parent.",
-    "QuerySignal": "The type of a query: a read-only signal updated a microtask after the DOM changes.",
-    "EffectOptions": "Hooks of an effect. onCleanup runs once, when the effect is disposed.",
-    "InputSignalOptions": "The options of @Property, together with alias.",
-    "QueryTarget, QueryElement, QuerySlotOptions": "The target of a query, the element type it resolves to, and the options of the content queries.",
-    "loadSignals": "Installs the global Signal polyfill. It must run before @xaendar/core is loaded: call it in the entry point, then load the application with a dynamic import.",
-    "SignalOptions": "The options of signal() and of Signal.State. computed() only uses equals.",
-    "SignalEqual, ExtractSignalType": "The type of an equality function, and the type of the value of a signal.",
-    "Signal.State, Signal.Computed": "The classes of the TC39 proposal, installed globally by loadSignals. signal() and computed() wrap them.",
-    "Signal.subtle": "The low-level API of the proposal: watchers, introspection, and the symbols of the watched and unwatched callbacks."
   },
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
@@ -3010,7 +2987,7 @@
       "cause": "A styleUrl that is not a .css file.",
       "fix": "Use plain CSS."
     },
-    "Could not find the static initializer block for class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
+    "Could not find the static block applying the decorators of class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
       "cause": "The decorators were not compiled before the Xaendar plugin ran.",
       "fix": "Put the Babel plugin before xaendarPlugin()."
     },
@@ -3034,7 +3011,7 @@
       "cause": "A symbol imported as root, $event or a name starting with __, which the compiler uses for itself.",
       "fix": "Import it under another name with as."
     },
-    "XCard does not seems to have a Render Function": {
+    "XCard does not seem to have a Render Function": {
       "cause": "The component did not compile, or the class is a subclass without its own @WebComponent.",
       "fix": "Look for the compiler message printed before it."
     },
@@ -3053,10 +3030,6 @@
     "Error: Selector \"exTint\" is already used by directive TintDirective": {
       "cause": "Two directive classes registered with the same selector.",
       "fix": "Rename one of them."
-    },
-    "TypeError: Cannot read properties of undefined (reading 'addUnlistener')": {
-      "cause": "this.effect called in the constructor of a directive, before its context exists.",
-      "fix": "Create effects in onInit."
     },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Two classes defined with the same selector at runtime.",
@@ -3079,8 +3052,8 @@
       "fix": "Defer the work with queueMicrotask."
     },
     "Cannot unwatch a signal that is not being watched": {
-      "cause": "The disposer of a standalone effect called twice.",
-      "fix": "Call it once."
+      "cause": "The disposer of an effect called when the effect is already disposed: a second time, or, for this.effect(), after the component or the directive is gone.",
+      "fix": "Call it once, while the effect is alive."
     },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "A component name, or a project name followed by -root, that is not a valid custom element name.",

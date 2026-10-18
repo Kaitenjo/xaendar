@@ -1,10 +1,10 @@
 /**
  * A writable reactive value.
  *
- * Wraps {@link Signal.State} and is also callable as a function to set a new
- * value directly.
+ * Wraps {@link Signal.State} and is also callable as a function to read the
+ * current value.
  *
- * @template Value - The type of the stored value. Defaults to `any`.
+ * @template Value - The type of the stored value. Defaults to `unknown`.
  */
 export type Signal<Value = unknown> = Signal.State<Value> & {
   /**

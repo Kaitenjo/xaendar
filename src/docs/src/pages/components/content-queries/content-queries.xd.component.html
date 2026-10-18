@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -49,46 +50,58 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.contentQueries.apiSummary.title") />
+<h2 @@i18n(key="pages.components.contentQueries.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.contentQueries.apiSummary.th1") />
-        <th @@i18n(key="pages.components.contentQueries.apiSummary.th2") />
+        <th @@i18n(key="pages.components.contentQueries.summary.th1") />
+        <th @@i18n(key="pages.components.contentQueries.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>{ '@Query.content(target, options?)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.content(target, options?)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.contentQueries.apiSummary.td1") />
+        <td @@i18n(key="pages.components.contentQueries.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Query.content.all(target, options?)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.content.all(target, options?)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.contentQueries.apiSummary.td2") />
+        <td @@i18n(key="pages.components.contentQueries.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Query.content.required(target, options?)' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.content.required(target, options?)' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.contentQueries.apiSummary.td5") />
+        <td @@i18n(key="pages.components.contentQueries.summary.td5") />
       </tr>
       <tr>
         <td>
-          <code>{ "{ slots: 'name' }" }</code>,
-          <code>{ "{ slots: ['', 'name'] }" }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
+            <code>{ "{ slots: 'name' }" }</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
+            <code>{ "{ slots: ['', 'name'] }" }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.contentQueries.apiSummary.td3") />
+        <td @@i18n(key="pages.components.contentQueries.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>{ '{ lightDom: true }' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
+            <code>{ '{ lightDom: true }' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.contentQueries.apiSummary.td4") />
+        <td @@i18n(key="pages.components.contentQueries.summary.td4") />
       </tr>
     </tbody>
   </table>

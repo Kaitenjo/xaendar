@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { RatingComponent } from '../../../examples/components/anatomy/rating/rating.xd.component.ts'
 @import { ShadowInspectorComponent } from '../../../examples/components/anatomy/shadow-inspector/shadow-inspector.xd.component.ts'
@@ -106,45 +107,55 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.anatomy.apiSummary.title") />
+<h2 @@i18n(key="pages.components.anatomy.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.anatomy.apiSummary.th1") />
-        <th @@i18n(key="pages.components.anatomy.apiSummary.th2") />
+        <th @@i18n(key="pages.components.anatomy.summary.th1") />
+        <th @@i18n(key="pages.components.anatomy.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>{ '@WebComponent({ selector, templateUrl, styleUrl? })' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/WebComponent`}">
+            <code>{ '@WebComponent({ selector, templateUrl, styleUrl? })' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td1") />
+        <td @@i18n(key="pages.components.anatomy.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>CustomElement</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>CustomElement</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td2") />
+        <td @@i18n(key="pages.components.anatomy.summary.td2") />
       </tr>
       <tr>
         <td>
           <code>this.shadowRoot</code>
         </td>
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td3") />
+        <td @@i18n(key="pages.components.anatomy.summary.td3") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td4") />
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td5") />
+        <td @@i18n(key="pages.components.anatomy.summary.td4") />
+        <td @@i18n(key="pages.components.anatomy.summary.td5") />
       </tr>
       <tr>
         <td>
-          <code>onInit()</code>,
-          <code>afterRender()</code>,
-          <code>onDestroy()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>onInit()</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>afterRender()</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>onDestroy()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.apiSummary.td6") />
+        <td @@i18n(key="pages.components.anatomy.summary.td6") />
       </tr>
     </tbody>
   </table>

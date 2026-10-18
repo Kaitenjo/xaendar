@@ -84,6 +84,20 @@ describe('Stack', () => {
     });
   });
 
+  describe('symbol keys', () => {
+    it('should read them from the stack instead of treating them as indexes', () => {
+      const key = Symbol('key');
+      stack[key] = 'value';
+      expect(stack[key]).toBe('value');
+      expect(stack[Symbol.iterator]).toBeUndefined();
+    });
+
+    it('should convert the stack to a string', () => {
+      expect(String(stack)).toBe('[object Object]');
+      expect(`${stack}`).toBe('[object Object]');
+    });
+  });
+
   describe('values', () => {
     it('should return a shallow copy', () => {
       stack.push(1);

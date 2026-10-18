@@ -1,4 +1,4 @@
 /**
- * An async function type that accepts arguments but always resolves to void.
+ * An async function type that takes no arguments and resolves to void.
  */
 export type NoArgsAsyncVoidFunction = () => Promise<void>;

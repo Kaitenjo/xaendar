@@ -4,7 +4,7 @@
  * Useful as a looser alternative to `Record<K, V>` when not all keys
  * are guaranteed to be present.
  *
- * @template Key - The allowed key type. Must be a string or number.
+ * @template Key - The allowed key type. Must be a string, a number or a symbol.
  * @template Value - The type of each value. Defaults to `string`.
  *
  * @example

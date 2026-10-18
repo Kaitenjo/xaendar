@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import en from '../../i18n/en.json';
 import it_ from '../../i18n/it.json';
-import { findNeighbours, findPage, HOME_PAGE, itemTitle, NAV, PAGES, pageTitle, searchPages } from './routes';
+import { API_REFERENCE_PATH, findNeighbours, findPage, HOME_PAGE, isApiSymbolPath, itemTitle, NAV, navPathOf, PAGES, pageTitle, searchPages } from './routes';
 
 describe('routes', () => {
   it('has unique paths', () => {
@@ -69,6 +69,30 @@ describe('findPage', () => {
 
   it('returns undefined for unknown paths', () => {
     expect(findPage('nope')).toBeUndefined();
+  });
+});
+
+describe('isApiSymbolPath', () => {
+  it('recognizes the pages below the API reference', () => {
+    expect(isApiSymbolPath('reference/api/core/WebComponent')).toBe(true);
+    expect(isApiSymbolPath('reference/api/core/signals/signal')).toBe(true);
+  });
+
+  it('rejects the API reference itself and the other pages', () => {
+    expect(isApiSymbolPath(API_REFERENCE_PATH)).toBe(false);
+    expect(isApiSymbolPath('reference/api-old')).toBe(false);
+    expect(isApiSymbolPath('signals/computed')).toBe(false);
+  });
+});
+
+describe('navPathOf', () => {
+  it('assigns the pages of the symbols to the API reference', () => {
+    expect(navPathOf('reference/api/core/WebComponent')).toBe(API_REFERENCE_PATH);
+  });
+
+  it('keeps the paths of the other pages', () => {
+    expect(navPathOf('signals/computed')).toBe('signals/computed');
+    expect(navPathOf('')).toBe('');
   });
 });
 

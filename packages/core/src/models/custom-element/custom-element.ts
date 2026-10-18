@@ -82,7 +82,8 @@ export class CustomElement extends HTMLElement {
    * @param fn - The side-effectful function to run. Any Signal read inside it
    *   is tracked as a dependency.
    * @param options - Optional settings forwarded to the underlying effect.
-   * @returns A function that disposes the effect ahead of the disconnection.
+   * @returns A function that disposes the effect ahead of the disconnection. It throws when the effect is
+   *   already disposed: when it is called a second time, or after the disconnection.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const stop = effect(fn, options);
@@ -108,7 +109,7 @@ export class CustomElement extends HTMLElement {
   private connectedCallback(): void {
     const definition = _getRender(this.constructor);
     if (!definition) {
-      throw new Error(`${this.constructor.name} does not seems to have a Render Function`);
+      throw new Error(`${this.constructor.name} does not seem to have a Render Function`);
     }
 
     const { render, styleSheet } = definition;

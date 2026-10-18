@@ -28,6 +28,7 @@
 @import lazy { PatternsRoutingPage } from '../../pages/patterns/routing/routing.xd.component.ts'
 @import lazy { PatternsThemingPage } from '../../pages/patterns/theming/theming.xd.component.ts'
 @import lazy { ReferenceApiPage } from '../../pages/reference/api/api.xd.component.ts'
+@import lazy { ReferenceApiSymbolPage } from '../../pages/reference/api-symbol/api-symbol.xd.component.ts'
 @import lazy { ReferenceComingFromAngularPage } from '../../pages/reference/coming-from-angular/coming-from-angular.xd.component.ts'
 @import lazy { ReferenceErrorsPage } from '../../pages/reference/errors/errors.xd.component.ts'
 @import lazy { ReferenceKnownIssuesPage } from '../../pages/reference/known-issues/known-issues.xd.component.ts'
@@ -58,7 +59,7 @@
 @import lazy { ToolsLanguageServicePage } from '../../pages/tools/language-service/language-service.xd.component.ts'
 @import lazy { TutorialPage } from '../../pages/tutorial/tutorial.xd.component.ts'
 
-@switch (ready()) {
+@switch (page()) {
   @case ('') {
     <page-home />
   }
@@ -145,6 +146,9 @@
   }
   @case ('reference/api') {
     <page-reference-api />
+  }
+  @case ('reference/api-symbol') {
+    <page-reference-api-symbol />
   }
   @case ('reference/coming-from-angular') {
     <page-reference-coming-from-angular />

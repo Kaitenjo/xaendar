@@ -1,2 +1,2 @@
-Could not find the static initializer block for class "MyAppRootComponent" in the transpiled output.
+Could not find the static block applying the decorators of class "MyAppRootComponent" in the transpiled output.
 Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.

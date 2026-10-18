@@ -232,8 +232,26 @@ a.card:hover {
   margin-top: 3rem;
 }
 
-.api-summary td:first-child {
+.summary td:first-child {
   white-space: nowrap;
+}
+
+.symbol-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.symbol-package {
+  color: var(--xd-text-muted);
+  font: 500 0.85rem/1.4 var(--xd-font-mono);
+}
+
+.symbol-name {
+  font-family: var(--xd-font-mono);
+  overflow-wrap: anywhere;
 }
 
 .diagram {

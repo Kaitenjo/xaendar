@@ -1,309 +1,225 @@
-import type { Messages } from '../../../core/i18n/i18n';
+import type { PagePath } from '../../../core/routes/routes';
+import { API_REFERENCE_PATH } from '../../../core/routes/routes';
+import { BUILD_TOOLS_API } from './packages/build-tools.data';
+import { COMMON_API } from './packages/common.data';
+import { CORE_SIGNALS_API } from './packages/core-signals.data';
+import { CORE_API } from './packages/core.data';
+import { SIGNALS_API } from './packages/signals.data';
+import { TYPES_API } from './packages/types.data';
 
 /**
- * The kinds of exported symbols.
+ * The kinds of documented symbols. `global` is a value installed on `globalThis` rather than exported.
  */
 export type ApiKind = 'decorator' | 'class' | 'function' | 'type' | 'global';
 
 /**
- * An exported symbol, or a group of internal ones.
+ * The groups the members of a symbol are listed in, each under its own heading, in this order.
  */
-export type ApiEntry = {
+export type ApiMemberGroup = 'variants' | 'parameters' | 'options' | 'properties' | 'methods';
+
+/**
+ * A member of a symbol, described on its own: a variant (`Query.all` of `Query`), a parameter, an option of a
+ * configuration object, a property or a method.
+ */
+export type ApiMember = {
   /**
-   * The name, as imported. It is also the key of its description in the `api` texts.
+   * The name of the member: the key of its description in the texts of the symbol.
    */
-  readonly name: keyof Messages['api'];
+  readonly name: string;
   /**
-   * The module exporting it.
+   * The group it is listed in.
    */
-  readonly module: '@xaendar/core' | '@xaendar/core/signals' | '@xaendar/signals';
+  readonly group: ApiMemberGroup;
+  /**
+   * How it is declared or called, in TypeScript.
+   */
+  readonly signature: string;
+  /**
+   * The snippets shown below its description, by path relative to `src/snippets`.
+   */
+  readonly snippets?: readonly string[];
+};
+
+/**
+ * A usage note: a titled section of the page of a symbol, with its examples.
+ */
+export type ApiUsage = {
+  /**
+   * The key of its title and of its text in the texts of the symbol.
+   */
+  readonly key: string;
+  /**
+   * The snippets shown below its text, by path relative to `src/snippets`.
+   */
+  readonly snippets?: readonly string[];
+};
+
+/**
+ * A documented symbol of a package.
+ */
+export type ApiSymbol = {
+  /**
+   * The name, as imported. It is the last segment of the path of its page and the key of its texts.
+   */
+  readonly name: string;
   /**
    * The kind of symbol.
    */
   readonly kind: ApiKind;
   /**
-   * How it is used.
+   * Its declaration, in TypeScript.
    */
   readonly signature: string;
   /**
-   * The path of the page documenting it.
+   * The members described on their own.
    */
-  readonly page: string;
+  readonly members?: readonly ApiMember[];
   /**
-   * Whether it is meant for the compiled templates only.
+   * The usage notes, in order.
    */
-  readonly internal?: boolean;
+  readonly usage?: readonly ApiUsage[];
+  /**
+   * The guides explaining it.
+   */
+  readonly guides?: readonly PagePath[];
 };
 
 /**
- * Every export of the public entry points of the packages used by applications.
+ * The documented packages, and the secondary entry points documented as packages of their own.
  */
-export const API: readonly ApiEntry[] = [
-  {
-    name: 'WebComponent',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@WebComponent({ selector: 'x-y', hostDirectives?: [TipDirective], styleUrl?: './x.css', templateUrl: './x.xd.component.html' })",
-    page: 'components/anatomy'
-  },
-  {
-    name: 'Property',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: '@Property(defaultValue, { alias?, transform?, equals? }) accessor name!: InputSignal<T>',
-    page: 'components/inputs'
-  },
-  {
-    name: 'Property.required',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: '@Property.required({ alias?, transform?, equals? }) accessor name!: InputSignal<T>',
-    page: 'components/inputs'
-  },
-  {
-    name: 'Event',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: '@Event({ bubbles?, cancelable?, composed? }) accessor name!: Output<T>',
-    page: 'components/outputs'
-  },
-  {
-    name: 'Query',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query('.selector' | ComponentClass) accessor name!: QuerySignal<E | null>",
-    page: 'components/queries'
-  },
-  {
-    name: 'Query.required',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query.required('.selector' | ComponentClass) accessor name!: QuerySignal<E>",
-    page: 'components/queries'
-  },
-  {
-    name: 'Query.all',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query.all('.selector' | ComponentClass) accessor name!: QuerySignal<E[]>",
-    page: 'components/queries'
-  },
-  {
-    name: 'Query.content',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query.content('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E | null>",
-    page: 'components/content-queries'
-  },
-  {
-    name: 'Query.content.required',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query.content.required('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>",
-    page: 'components/content-queries'
-  },
-  {
-    name: 'Query.content.all',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Query.content.all('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E[]>",
-    page: 'components/content-queries'
-  },
-  {
-    name: 'Directive',
-    module: '@xaendar/core',
-    kind: 'decorator',
-    signature: "@Directive({ selector: 'exName' })",
-    page: 'directives/overview'
-  },
-  {
-    name: 'CustomElement',
-    module: '@xaendar/core',
-    kind: 'class',
-    signature: 'class X extends CustomElement { hostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }',
-    page: 'components/lifecycle'
-  },
-  {
-    name: 'CustomDirective',
-    module: '@xaendar/core',
-    kind: 'class',
-    signature: 'class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?) }',
-    page: 'directives/custom'
-  },
-  {
-    name: 'StructuralDirective',
-    module: '@xaendar/core',
-    kind: 'class',
-    signature: 'class X extends StructuralDirective { shouldRender(): boolean | Promise<boolean> }',
-    page: 'directives/structural'
-  },
-  {
-    name: 'Output',
-    module: '@xaendar/core',
-    kind: 'class',
-    signature: 'class Output<T = void> { emit(detail?: T, options?: EventOptions): void }',
-    page: 'components/outputs'
-  },
-  {
-    name: 'EventOptions',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: '{ bubbles?: boolean; cancelable?: boolean; composed?: boolean }',
-    page: 'components/outputs'
-  },
-  {
-    name: 'WebComponentOptions',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: '{ selector: string; hostDirectives?: Array<Class | HostDirectiveOptions>; styleUrl?: string; templateUrl: string }',
-    page: 'components/anatomy'
-  },
-  {
-    name: 'HostDirectiveOptions',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: '{ directive: Class; properties?: HostDirectiveMember[]; events?: HostDirectiveMember[] }',
-    page: 'directives/custom'
-  },
-  {
-    name: 'HostDirectiveMember',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: 'string | { name: string; alias: string }',
-    page: 'directives/custom'
-  },
-  {
-    name: 'HostDirectives',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: 'ReadonlyMap<Class, CustomDirective> with get<D>(directive: Class<D>): D | undefined',
-    page: 'directives/custom'
-  },
-  {
-    name: 'DirectiveOptions',
-    module: '@xaendar/core',
-    kind: 'type',
-    signature: '{ selector: string }',
-    page: 'directives/overview'
-  },
-  {
-    name: '_Context, _if, _for, _switch, _renderElement, _renderText, _defineRender, mountNode, createAnchor, RenderFunction, RenderDefinition, …',
-    module: '@xaendar/core',
-    kind: 'function',
-    signature: '—',
-    page: 'tools/build',
-    internal: true
-  },
-  {
-    name: 'signal',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: 'signal<T>(value: T, { equals? }?): Signal<T>',
-    page: 'signals/overview'
-  },
-  {
-    name: 'computed',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: 'computed<T>(fn: () => T, { equals? }?): Computed<T>',
-    page: 'signals/computed'
-  },
-  {
-    name: 'effect',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: 'effect(fn: () => void, { onBeforeRun?, onAfterRun?, onCleanup? }?): () => void',
-    page: 'signals/effects'
-  },
-  {
-    name: 'untracked',
-    module: '@xaendar/core/signals',
-    kind: 'function',
-    signature: 'untracked<T>(fn: () => T): T',
-    page: 'signals/untracked'
-  },
-  {
-    name: 'Signal',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'Signal<T> = Signal.State<T> & { (): T; update(fn: (prev: T) => T): void }',
-    page: 'signals/shared-state'
-  },
-  {
-    name: 'Computed',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'Computed<T> = Signal.Computed<T> & { (): T }',
-    page: 'signals/computed'
-  },
-  {
-    name: 'InputSignal',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'InputSignal<T> = { (): T; get(): T }',
-    page: 'components/inputs'
-  },
-  {
-    name: 'QuerySignal',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'QuerySignal<T> = { (): T; get(): T }',
-    page: 'components/queries'
-  },
-  {
-    name: 'EffectOptions',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: '{ onBeforeRun?: () => void; onAfterRun?: () => void; onCleanup?: () => void }',
-    page: 'signals/effects'
-  },
-  {
-    name: 'InputSignalOptions',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'SignalOptions<T> & { transform?: (value: In) => T }',
-    page: 'components/inputs'
-  },
-  {
-    name: 'QueryTarget, QueryElement, QuerySlotOptions',
-    module: '@xaendar/core/signals',
-    kind: 'type',
-    signature: 'QueryTarget = string | Constructor<HTMLElement>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }',
-    page: 'components/content-queries'
-  },
-  {
-    name: 'loadSignals',
-    module: '@xaendar/signals',
-    kind: 'function',
-    signature: 'loadSignals({ devMode?: boolean }?): void',
-    page: 'installation'
-  },
-  {
-    name: 'SignalOptions',
-    module: '@xaendar/signals',
-    kind: 'type',
-    signature: '{ equals?: SignalEqual<T>; [Signal.subtle.watched]?: () => void; [Signal.subtle.unwatched]?: () => void }',
-    page: 'signals/options'
-  },
-  {
-    name: 'SignalEqual, ExtractSignalType',
-    module: '@xaendar/signals',
-    kind: 'type',
-    signature: 'SignalEqual<T> = (a, b) => boolean; ExtractSignalType<Signal.State<T>> = T',
-    page: 'signals/options'
-  },
-  {
-    name: 'Signal.State, Signal.Computed',
-    module: '@xaendar/signals',
-    kind: 'global',
-    signature: 'new Signal.State(value, options?); new Signal.Computed(fn, options?)',
-    page: 'signals/advanced'
-  },
-  {
-    name: 'Signal.subtle',
-    module: '@xaendar/signals',
-    kind: 'global',
-    signature: 'Watcher, untrack, currentComputed, introspectSources, introspectSinks, hasSources, hasSinks, watched, unwatched',
-    page: 'signals/advanced'
+export type ApiPackageName = '@xaendar/core' | '@xaendar/core/signals' | '@xaendar/signals' | '@xaendar/build-tools'
+  | '@xaendar/common' | '@xaendar/types';
+
+/**
+ * A documented package.
+ */
+export type ApiPackage = {
+  /**
+   * The name, as imported.
+   */
+  readonly name: ApiPackageName;
+  /**
+   * Its symbols. The ones used only by the compiled templates are left out.
+   */
+  readonly symbols: readonly ApiSymbol[];
+};
+
+/**
+ * A symbol, with the package exporting it.
+ */
+export type ApiSymbolEntry = {
+  /**
+   * The package exporting the symbol.
+   */
+  readonly apiPackage: ApiPackage;
+  /**
+   * The symbol.
+   */
+  readonly symbol: ApiSymbol;
+};
+
+/**
+ * The texts of a symbol in one language, HTML.
+ */
+export type ApiSymbolTexts = {
+  /**
+   * What the symbol is, in one sentence: the lead of its page.
+   */
+  readonly summary: string;
+  /**
+   * The full description, in paragraphs.
+   */
+  readonly description: string;
+  /**
+   * The description of each member, by name.
+   */
+  readonly members?: Readonly<Record<string, string>>;
+  /**
+   * The title and the text of each usage note, by key.
+   */
+  readonly usage?: Readonly<Record<string, { readonly title: string; readonly body: string }>>;
+};
+
+/**
+ * The texts of the symbols of a package in one language, by name: the content of `src/i18n/api/<lang>/<package>.json`.
+ */
+export type ApiPackageTexts = Readonly<Record<string, ApiSymbolTexts>>;
+
+/**
+ * Every documented package, in the order of the API reference.
+ */
+export const API: readonly ApiPackage[] = [CORE_API, CORE_SIGNALS_API, SIGNALS_API, BUILD_TOOLS_API, COMMON_API, TYPES_API];
+
+/**
+ * Names the files of a package: its texts (`src/i18n/api/<lang>/<file>.json`) and its snippets
+ * (`src/snippets/api/<file>/`).
+ *
+ * @param name - The name of the package.
+ * @returns The name without the scope, its slashes replaced by dashes, as in `core-signals`.
+ */
+export function packageFile(name: ApiPackageName): string {
+  return name.slice(name.indexOf('/') + 1).replaceAll('/', '-');
+}
+
+/**
+ * Builds the path of the page of a symbol, below the API reference, following the import path of its package.
+ *
+ * @param packageName - The name of the package exporting the symbol.
+ * @param symbolName - The name of the symbol.
+ * @returns The path, as in `reference/api/core/signals/signal`.
+ */
+export function symbolPath(packageName: ApiPackageName, symbolName: string): string {
+  return `${API_REFERENCE_PATH}/${packageName.slice(packageName.indexOf('/') + 1)}/${symbolName}`;
+}
+
+/**
+ * Searches the symbols whose name or package contains every word of a query.
+ *
+ * @param query - The words to search, in any order.
+ * @param limit - The maximum number of results.
+ * @returns The matching symbols with their packages: the ones named exactly as the query first, then the ones whose
+ *   name starts with it, then the others, shorter names first.
+ */
+export function searchSymbols(query: string, limit = 6): ApiSymbolEntry[] {
+  const words = query.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+  if (!words.length) {
+    return [];
   }
-];
+
+  const text = words.join(' ');
+  const scored: Array<ApiSymbolEntry & { rank: number }> = [];
+  for (let i = 0; i < API.length; i++) {
+    const apiPackage = API[i];
+    for (let j = 0; j < apiPackage.symbols.length; j++) {
+      const symbol = apiPackage.symbols[j];
+      const name = symbol.name.toLowerCase();
+      const haystack = `${name} ${apiPackage.name}`;
+      if (words.every(word => haystack.includes(word))) {
+        scored.push({ apiPackage, symbol, rank: name === text ? 0 : name.startsWith(text) ? 1 : 2 });
+      }
+    }
+  }
+
+  return scored
+    .sort((left, right) => left.rank - right.rank || left.symbol.name.length - right.symbol.name.length)
+    .slice(0, limit)
+    .map(({ apiPackage, symbol }) => ({ apiPackage, symbol }));
+}
+
+/**
+ * Finds the symbol a page displays.
+ *
+ * @param path - The path of the page.
+ * @returns The symbol with its package, `undefined` if no symbol has that path.
+ */
+export function findApiSymbol(path: string): ApiSymbolEntry | undefined {
+  for (let i = 0; i < API.length; i++) {
+    const apiPackage = API[i];
+    const symbol = apiPackage.symbols.find(candidate => symbolPath(apiPackage.name, candidate.name) === path);
+    if (symbol) {
+      return { apiPackage, symbol };
+    }
+  }
+
+  return undefined;
+}

@@ -1,0 +1,283 @@
+{
+  "WebComponent": {
+    "summary": "Declares a class extending <code>CustomElement</code> as a component: the plugin compiles its template and its stylesheet, and the browser defines it under its selector.",
+    "description": "<p>The decorator is applied to a class extending <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a>, declared in a file ending with <code>.xd.component.ts</code>, and it works in two moments.</p><p><strong>At build time</strong> the Vite plugin reads the options straight from the source code: it compiles the template of <code>templateUrl</code> into the render function of the class, type-checking it against the class, and attaches the stylesheet of <code>styleUrl</code> to the shadow root of every instance.</p><p><strong>At run time</strong>, when the module declaring the class is evaluated, the decorator stores the selector in the metadata of the class, where <code>@Query(Class)</code> finds it, and calls <code>customElements.define(selector, Class)</code> once the static fields of the class are initialized. From then on every element with that tag name, already in the page or created later, is an instance of the class.</p><p>The decorator is not inherited: a subclass is a component of its own only when it is decorated too, with its own selector and its own template. See <a href=\"#/en/components/inheritance\">Inheritance</a>.</p>",
+    "members": {
+      "selector": "<p>The custom element name the class is defined with: the tag the templates use the component with. It must start with a lowercase letter, contain a hyphen, contain no uppercase letters and not be a reserved name such as <code>font-face</code>. The compiler checks it at build time, before the browser would.</p><p>A name can be defined only once: two components with the same selector fail the build. A prefix shared by the whole application (<code>app-</code>, <code>acme-</code>) keeps the names apart from the ones of other libraries.</p>",
+      "templateUrl": "<p>The path of the template, relative to the class file. The template is compiled into the render function of the class: it is type-checked against the public members of the class, and a template that does not compile fails the build.</p><p>A path to a file that does not exist fails the build. In the dev server the error is printed in the terminal and the component is served without its template, so connecting it throws, until the file is created.</p>",
+      "styleUrl": "<p>The path of the stylesheet, relative to the class file: a <code>.css</code> file, applied inside the shadow root of every instance, so its rules neither reach the page nor are reached by it. Preprocessors such as Sass are not supported, and fail the build.</p><p>The stylesheet is a constructed stylesheet: its <code>@import</code> rules are dropped, with a warning in the console, and its relative <code>url()</code>s are resolved against the page, not against the file. See <a href=\"#/en/components/styling\">Styling</a>.</p>",
+      "hostDirectives": "<p>The custom directives applied to every instance, on the component element itself. Each entry is the class of a directive, or a <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a> also exposing some of its inputs and outputs on the component: the templates using the component bind them as if they were its own.</p><p>The instances are in <code>hostDirectives</code> of the component, a map keyed by the class of the directive. They start before <code>onInit</code> of the component and stop after its <code>onDestroy</code>. A directive can be listed once, and an exposed input cannot have the name of an input of the component or of another host directive: both are errors raised when the element is created. See <a href=\"#/en/directives/custom\">Custom directives</a>.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring a component",
+        "body": "<p>A component is a class, a template and an optional stylesheet. The class extends <code>CustomElement</code>, and the decorator points to the other two files.</p>"
+      },
+      "literals": {
+        "title": "The options are read from the source code",
+        "body": "<p>The plugin reads <code>selector</code>, <code>templateUrl</code> and <code>styleUrl</code> without running the code, so they must be string literals. A constant, a template literal or a computed value fails the build, and so does a component declared in a file not ending with <code>.xd.component.ts</code>.</p>"
+      },
+      "registration": {
+        "title": "One selector, one class",
+        "body": "<p>The class is defined as soon as its module is evaluated: the template importing the component with <code>@import</code> evaluates it before rendering. The compiler checks the selectors of every component of the project, so a selector claimed twice fails the build instead of throwing in the browser.</p>"
+      }
+    }
+  },
+  "Directive": {
+    "summary": "Declares a class extending <code>CustomDirective</code> or <code>StructuralDirective</code> as a directive, and registers it under its selector.",
+    "description": "<p>The decorator is applied to a class extending <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, which acts on the element it is applied to, or <a href=\"#/en/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a>, which decides whether the element is rendered at all. The base class decides the kind, and the templates apply the directive accordingly: <code>@@selector</code> for a custom directive, <code>*selector</code> for a structural one.</p><p><strong>At build time</strong> the compiler reads the selector, the inputs and the outputs of the class from its source code, when a template imports it with <code>@import</code>, and type-checks against them the bindings of every element the template applies the directive to.</p><p><strong>At run time</strong>, when the module declaring the class is evaluated, the decorator registers the class under its selector, in a registry shared by the whole application. The template runtime finds the class there by its selector, and creates an instance of it for every element it applies the directive to. The options are described by <a href=\"#/en/reference/api/core/DirectiveOptions\"><code>DirectiveOptions</code></a>.</p>",
+    "members": {
+      "selector": "<p>The name the templates apply the directive with: <code>@@exTint</code> for a custom directive, <code>*exVisibleWhen</code> for a structural one. Unlike the selector of a component it needs no hyphen: the directives of these pages use camelCase names. The compiler reads it from the source code, so write it as a string literal.</p><p>All the directives share one registry, the ones of the libraries the application uses included, and a selector can be registered once. Two directives with the same selector fail the build, as soon as the compiler has met both; at run time the second decorator throws when its module is evaluated, even if no template uses it. A short prefix, such as <code>ex</code> in these pages, avoids clashes.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring a directive",
+        "body": "<p>A directive is a class: the base class gives it its kind, the decorator its selector. Both kinds declare inputs with <a href=\"#/en/reference/api/core/Property\"><code>@Property</code></a>; only a custom directive declares outputs with <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>, since a structural directive holds no element to dispatch them on. The templates write the inputs and the listeners between the parentheses after the selector.</p>"
+      },
+      "importing": {
+        "title": "Known to the compiler, loaded at run time",
+        "body": "<p>As a component, a directive has to be known twice. The template imports the class with <code>@import</code>, so that the compiler can check the directive: one the template does not import fails the build, even when it is registered at run time. At run time the module of the directive is loaded by the template before it is rendered, so by then the decorator has registered the class.</p>"
+      },
+      "prefix": {
+        "title": "The prefix and the registry are checked at run time",
+        "body": "<p>The compiler does not check that a custom directive is applied with <code>@@</code> and a structural one with <code>*</code>: the mistake shows up when the element is rendered, and the runtime throws on finding a class of the other kind under the selector. It throws as well when no class is registered under the selector, because the module declaring it was never evaluated.</p>"
+      }
+    }
+  },
+  "Property": {
+    "summary": "Declares an input on an accessor of a component or a directive: a signal that the templates write through their bindings, and the class only reads.",
+    "description": "<p>The decorator goes on an <code>accessor</code> typed <a href=\"#/en/reference/api/core/signals/InputSignal\"><code>InputSignal&lt;T&gt;</code></a> of a component, a custom directive or a structural directive, and replaces it with a signal of its own for every instance. The class reads it by calling it, as any signal, so the template, the computed signals and the effects reading it update when a new value is bound. An initializer written on the accessor is ignored: the <code>!</code> tells TypeScript that the decorator initializes it.</p><p>The templates bind the input by the name of the accessor, or by its <code>alias</code>. The compiler reads the inputs of the class from its source code, inherited ones included, and type-checks every binding against the type of the signal.</p><p>A binding writes the input, not an attribute, and a component does not observe its attributes: an attribute written from outside the templates, in the HTML of the page or with <code>setAttribute</code>, never reaches the input. The inputs are bound before the class starts: in <code>onInit</code> they already hold their bound values.</p>",
+    "members": {
+      "Property.required": "<p>Declares an input without a default value, which every template using the class must bind: on the element, or in every branch of a conditional binding, an <code>@else</code> or <code>@default</code> one included. A template that leaves it out fails the build, for components and directives alike. It takes the same options as <code>@Property</code>.</p><p>The input holds <code>undefined</code> until it is bound, which happens before the class starts: <code>onInit</code> already sees the bound value.</p>",
+      "value": "<p>The default value: the input holds it until a template binds a value, and goes back to it when a conditional binding stops binding it. Without it the default is <code>undefined</code>. It is stored as it is, without <code>transform</code>.</p><p>It is evaluated once, when the class is defined, so every instance starts from the same value: an array or an object used as default is shared by all of them, and must not be mutated. TypeScript infers the type of the input from it: when the type is narrower or wider than the one of the default, as for a union of literals, <code>null</code> or an empty array, pass the type of the signal to the decorator too.</p>",
+      "alias": "<p>The name of the input in the templates, in place of the name of the accessor: the way to use dashes, as in <code>show-value</code>, or to keep in the templates a name that <code>HTMLElement</code> already uses, such as <code>lang</code>. The compiler reads it from the source code, so write it as a string literal.</p><p>Two inputs of the same class, inherited ones included, cannot end up with the same name: the build fails. A host directive exposes an input of its directive by this name.</p>",
+      "transform": "<p>Converts every value a template binds, before it is stored and compared with <code>equals</code>. It does not run on the default value, nor when the input goes back to it.</p><p>The templates are checked against the type of the <code>InputSignal</code>, not against the parameter of <code>transform</code>: a static value, always a string, does not compile on an input of type <code>number</code>, even when the function would convert it. Use transforms that keep the type, such as trimming or normalizing, and bind expressions.</p>",
+      "equals": "<p>Compares the new value, already transformed, with the current one: when it returns <code>true</code> the input keeps its value and notifies nobody. The default is <code>Object.is</code>, so a new array or object with the same content counts as a change.</p>",
+      "watched": "<p>Called when the input gains its first live reader: an effect or a binding of a template, directly or through computed signals. It runs while the reactive graph is being updated, with every signal frozen: reading or writing one there throws, so schedule the work instead, with <code>queueMicrotask</code> or a timer. See <a href=\"#/en/reference/api/signals/SignalOptions\"><code>SignalOptions</code></a>.</p>",
+      "unwatched": "<p>Called when the input loses its last live reader, under the same rules as <code>watched</code>: the place to stop what <code>watched</code> started.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring inputs",
+        "body": "<p>Each input is an accessor with its own decorator: the default value first, then the options; <code>@Property.required()</code> takes only the options. The options are <a href=\"#/en/reference/api/core/signals/InputSignalOptions\"><code>InputSignalOptions</code></a>, the ones of a signal plus <code>transform</code>, and <code>alias</code>.</p>"
+      },
+      "binding": {
+        "title": "Static values and expressions",
+        "body": "<p>A template binds an input like an attribute. A static value, <code>max=\"8\"</code>, is always a string; an expression in braces, <code>max=\"{8}\"</code> or <code>max=\"{limit()}\"</code>, passes a value of any type, and writes the input again whenever a signal it reads changes. Both are checked against the type of the input: a static value does not compile on an input of type <code>number</code>.</p>"
+      },
+      "reading": {
+        "title": "Read-only, and read reactively",
+        "body": "<p>An input has no public <code>set</code>: only the bindings of the templates write it, and forcing the call with a cast throws. Read it where its changes are followed, in the template, in computed signals and in effects: a value read once in a hook is never updated. For a value the class changes too, copy the input into a local signal in an effect, and write the local one.</p>"
+      }
+    }
+  },
+  "Event": {
+    "summary": "Declares an output on an accessor of a component or a custom directive: an <code>Output</code> whose <code>emit</code> dispatches a <code>CustomEvent</code> named after the accessor.",
+    "description": "<p>The decorator goes on an <code>accessor</code> typed <a href=\"#/en/reference/api/core/Output\"><code>Output&lt;T&gt;</code></a>, and replaces it with an output of its own for every instance. Its <code>emit</code> dispatches a <code>CustomEvent</code> whose name is the name of the accessor, letter by letter, and whose <code>detail</code> is the value emitted, of type <code>T</code>; an <code>Output</code> without a type argument emits no detail.</p><p>A component dispatches the event on its own element; a custom directive on the element it is applied to, and a host directive on its component, only when the component exposes the event (see <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a>). A structural directive cannot declare outputs: it holds no element to dispatch them on, and TypeScript rejects the decorator there.</p><p>The templates listen to the event with <code>(valueChange)=\"setQuantity($event)\"</code>, on the tag of the component or between the parentheses of the directive, where <code>$event</code> is the <code>CustomEvent</code>. The compiler reads the outputs of the class from its source code, inherited ones included, and checks the handler against the type of the detail. The parent adds its listeners before inserting a child component, so the events the child emits from <code>onInit</code> and <code>afterRender</code> reach them, and so do the ones it emits from <code>onDestroy</code>, since the listeners are still there while it is removed.</p>",
+    "members": {
+      "bubbles": "<p>Whether the event climbs through the ancestors of the element, within the shadow root containing it: without <code>composed</code> it stops at the root of that tree, and the host of the parent never sees it. By default it does not: only the listeners on the element itself receive the event, which is all a binding in the template of the parent needs.</p>",
+      "cancelable": "<p>Whether a listener can call <code>preventDefault()</code> on the event. By default it cannot. <code>emit</code> returns nothing, so the class cannot know whether a listener canceled the event: to act on it, keep the accessor, so that templates can listen to the event, and dispatch it with <code>this.dispatchEvent</code>, which returns <code>false</code> when the event was canceled. Listeners run synchronously, so the result is ready on the next line.</p>",
+      "composed": "<p>Whether the event crosses the shadow roots, up to the document. By default it does not. On the way out the target is retargeted: a listener outside sees as target the outermost component containing the source, while <code>composedPath()[0]</code> is still the element that emitted it.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring and emitting",
+        "body": "<p>The type argument of <code>Output</code> is the type of the detail. The options of the decorator apply to every emission; an <a href=\"#/en/reference/api/core/EventOptions\"><code>EventOptions</code></a> passed to <code>emit</code> overrides them for that emission only, option by option: an option it leaves <code>undefined</code> keeps the one of the decorator.</p>"
+      },
+      "names": {
+        "title": "The name of the event is the name of the accessor",
+        "body": "<p>Event bindings are case-sensitive, unlike HTML attributes: <code>(valuechange)</code> does not match <code>valueChange</code>, and fails the build. A component is an <code>HTMLElement</code>, so an output named <code>remove</code>, <code>click</code> or <code>focus</code> would replace a member of the element: TypeScript rejects the class. Choose another name.</p>"
+      }
+    }
+  },
+  "Query": {
+    "summary": "Binds an accessor of a component to the first element of its template matching a CSS selector or a component class; its variants find every match, or look into the projected content.",
+    "description": "<p>The decorator goes on an <code>accessor</code> of a component typed <a href=\"#/en/reference/api/core/signals/QuerySignal\"><code>QuerySignal</code></a>, and replaces it with a read-only signal holding the first element of the shadow root that matches the target, or <code>null</code>. Its variants hold every match, drop <code>null</code> from the type, or look into the content projected into the component instead of its template. Only components declare queries: a directive has no template of its own.</p><p>A view query looks into the shadow root of its component, and only there: it finds the elements the template projects into a child component, since they are written in this template, but not the ones inside the shadow root of the child. The result is read when the component is connected, right after the render and before <code>afterRender</code>, then kept up to date by a <code>MutationObserver</code> until the component is disconnected: it is updated when elements are added or removed, a microtask after the template changes, and not when their attributes change.</p><p>The signal notifies only when the result changes: another element, or another list of elements.</p>",
+    "members": {
+      "Query.required": "<p>Like <code>@Query</code>, for an element that is always there: the type has no <code>null</code>, and reading the signal throws when no element matches, with the selector and the tag of the component in the message. The result exists only after the render, so reading it in <code>onInit</code>, in the template or in an effect created before the render throws too. Read it in <code>afterRender</code>, in event handlers, or in a computed signal read from them; keep <code>@Query</code> for an element inside an <code>@if</code>.</p>",
+      "Query.all": "<p>Holds every element of the template matching the target, in document order: an empty array when there is none, also before the render. It notifies only when the list changes, so a change of the template leaving the same elements in the same order notifies nobody.</p>",
+      "Query.content": "<p>Holds the first element projected into the component that matches the target, or <code>null</code>: an element assigned to one of its slots, or one of its descendants. Nested slots are flattened, and the fallback content of the slots, which belongs to the template of the component, is ignored. The options restrict the query to some slots, or extend it to the whole light DOM.</p><p>The projected content is created by the parent after the component has rendered: in <code>afterRender</code> the query is still empty, so read it reactively, in a computed signal or an effect. It is updated when the children of the element are added or removed, when their <code>slot</code> attribute changes, and when the slots of the template change.</p>",
+      "Query.content.required": "<p>Like <code>@Query.content</code>, without <code>null</code>: reading the signal throws when no projected element matches. The content arrives after <code>afterRender</code>, where reading it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives.</p>",
+      "Query.content.all": "<p>Holds every projected element matching the target: slots in the order of the template, then elements in the order they are assigned, each one followed by its matching descendants; with <code>lightDom</code>, in document order. An empty array when there is none; it notifies only when the list changes.</p>",
+      "target": "<p>What the query looks for: a CSS selector, such as a tag name (<code>input</code>), a class (<code>.row</code>), an attribute (<code>[item]</code>) or a combination of them, or the class of a component. A class is turned into the selector it is registered with, and types the result as an instance of the class, with its public members. A selector types it as <code>HTMLElement</code>, or as the type argument, as in <code>@Query&lt;HTMLInputElement&gt;('input')</code>, which is not checked against the selector. See <a href=\"#/en/reference/api/core/signals/QueryTarget\"><code>QueryTarget</code></a>.</p><p>A class must be decorated with <code>@WebComponent</code>, which gives it its selector: otherwise the component declaring the query throws when it is created.</p>",
+      "slots": "<p>Content queries only. Restricts the query to the elements assigned to the slot with this name, or to the slots with one of these names; the empty string is the default slot. When omitted, every slot is queried. It cannot be combined with <code>lightDom</code>. See <a href=\"#/en/reference/api/core/signals/QuerySlotOptions\"><code>QuerySlotOptions</code></a>.</p>",
+      "lightDom": "<p>Content queries only. With <code>true</code> the query looks into the whole light DOM of the element, its children and their descendants, assigned to a slot or not, in document order, and is updated when they are added or removed. By default it is <code>false</code>. It cannot be combined with <code>slots</code>: TypeScript rejects the options.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring view queries",
+        "body": "<p>The type of the accessor follows the variant: the element or <code>null</code>, the element alone, or an array. A type argument narrows the elements found by a selector, while a class types them by itself.</p>"
+      },
+      "timing": {
+        "title": "When the result is there",
+        "body": "<p>A query is empty until the render: <code>null</code>, or an empty array. Read it in <code>afterRender</code>, in event handlers, or reactively: an effect created in <code>onInit</code> runs again when the query is filled, and each time the element appears or disappears.</p>"
+      },
+      "content": {
+        "title": "Querying the projected content",
+        "body": "<p>A content query reaches the elements the parent projects into the component, typed by their class when the target is a component: the tab group below builds its tabs from its panels, through a computed signal that follows the content as it arrives. The options choose where to look.</p>"
+      },
+      "state": {
+        "title": "Find elements, keep the state in signals",
+        "body": "<p>The observers watch elements being added and removed, not their attributes: a query on <code>.selected</code> keeps its result when only the class of an element changes, until the list itself changes. A content query also follows the <code>slot</code> attribute, and nothing else. Use queries to reach elements, and signals for the state they show.</p>"
+      }
+    }
+  },
+  "CustomElement": {
+    "summary": "The base class of every component: an <code>HTMLElement</code> with an open shadow root, where the template is rendered on connection, and the lifecycle hooks around the render.",
+    "description": "<p>A component is a class extending <code>CustomElement</code>, decorated with <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>, which gives it its template and defines it as a custom element. The class is a real <code>HTMLElement</code>: attributes, events and <code>classList</code> work on it as on a native element.</p><p>The constructor attaches an open shadow root, the <code>shadowRoot</code> of the element, and creates the host directives of the component. The template is rendered into the shadow root when the element is connected to the document, and removed when it is disconnected:</p><ul><li>on connection, the stylesheet is adopted, the host directives start, <code>onInit</code> runs, the template is rendered, the view queries are filled and <code>afterRender</code> runs;</li><li>on disconnection, <code>onDestroy</code> runs, the effects created with <code>this.effect()</code> are disposed and the template is removed, then the host directives stop and the view queries stop observing.</li></ul><p>The base class uses the callbacks of custom elements for these steps, and keeps them private: a component uses the hooks instead. It declares no <code>observedAttributes</code> either, since inputs are not attributes. When <code>@for</code> moves the rows it keeps, their components are moved, not disconnected: no hook runs.</p>",
+    "members": {
+      "hostDirectives": "<p>The host directives of the component, the ones listed in <code>hostDirectives</code> of its <code>@WebComponent</code>, in a <a href=\"#/en/reference/api/core/HostDirectives\"><code>HostDirectives</code></a> map keyed by the class of the directive; empty when it declares none. The instances are created with the element, so the field initializers can already read them. They start before <code>onInit</code> of the component, which finds them ready, and stop after its <code>onDestroy</code>.</p><p>A template cannot name a class: keep the instance in a field of the component, and the template reads it from there.</p>",
+      "onInit": "<p>Called when the element is connected, before the render: the shadow root is still empty and the view queries are not filled, but the inputs already hold the values bound by the parent, and the host directives have started. The place for effects, timers and listeners on <code>window</code> or <code>document</code>; what it starts outside the component is stopped in <code>onDestroy</code>.</p>",
+      "afterRender": "<p>Called when the element is connected, right after the render: the elements of the template exist, the child components have run their own hooks, and the view queries are filled. The place for work on the elements of the template: focus, measures, canvas, observers, libraries that know nothing about signals. The content projected by the parent is not there yet: content queries are still empty.</p>",
+      "onDestroy": "<p>Called when the element is disconnected, before the effects created with <code>this.effect()</code> are disposed and the template is removed, so the elements of the template still exist. The place to undo what <code>onInit</code> and <code>afterRender</code> did outside the component. A parent runs it before its child components.</p>",
+      "effect": "<p>Creates an effect bound to the component: <code>fn</code> runs at once, then again in a microtask whenever a signal it read changes, until the element is disconnected, when the effect is disposed right after <code>onDestroy</code>. The options are the ones of <a href=\"#/en/reference/api/core/signals/effect\"><code>effect()</code></a>: <code>onBeforeRun</code>, <code>onAfterRun</code>, and <code>onCleanup</code>, which runs once, on disposal.</p><p>Create it in <code>onInit</code>, or in <code>afterRender</code> when it works on the elements of the template. It can be created earlier too, in a field initializer or in the constructor, but then it runs at once, before the parent binds the inputs. The function it returns disposes the effect earlier: call it at most once, while the component is connected, since disposing an effect already disposed, by that function or by the disconnection, throws.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring a component",
+        "body": "<p>The class extends <code>CustomElement</code> and declares only the hooks it needs. The full sequence of a connection and of a disconnection, with the child components:</p>"
+      },
+      "callbacks": {
+        "title": "The callbacks of custom elements are taken",
+        "body": "<p><code>connectedCallback</code> and <code>disconnectedCallback</code> are private in the base class: declaring them in a component does not compile, and at run time would replace the ones rendering the template. The shadow root is attached by the constructor: it is always open, and another one cannot be attached.</p>"
+      },
+      "decorated": {
+        "title": "Only a decorated class renders",
+        "body": "<p>The render function belongs to the class decorated with <code>@WebComponent</code>, and is not looked up along the prototype chain: a subclass registered by hand, without the decorator, throws when it is connected. A base class without decorator, shared by several components, is never registered, and needs no template.</p>"
+      },
+      "names": {
+        "title": "Names taken by HTMLElement",
+        "body": "<p>The class inherits every member of <code>HTMLElement</code>: a signal named <code>title</code>, an input named <code>lang</code> or an output named <code>remove</code> clashes with it, and TypeScript rejects the class. The build type-checks templates, not classes, so the error shows in the editor or with <code>tsc</code>. Choose another name, or keep the one of the templates with an <code>alias</code>.</p>"
+      }
+    }
+  },
+  "CustomDirective": {
+    "summary": "The base class of custom directives, applied with <code>@@selector</code>: behavior added to an element that exists, with inputs, outputs, hooks and effects.",
+    "description": "<p>A custom directive is a class extending <code>CustomDirective</code>, decorated with <a href=\"#/en/reference/api/core/Directive\"><code>@Directive</code></a>. It works on the element it is applied to: it listens to it, changes it, measures it, or puts something next to it. It declares inputs with <a href=\"#/en/reference/api/core/Property\"><code>@Property</code></a> and outputs with <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>, as a component does, and the templates bind them between the parentheses after its selector.</p><p>The type argument is the type of the element, an HTML, SVG or MathML element, whose API the directive gets without casts. The templates do not check it against the elements they apply the directive to.</p><p>A template creates an instance for every element it applies the directive to, binds its inputs and its listeners, and starts it once the element is in the document, before its children are rendered. The directive stops when the element leaves the template; one applied by a conditional binding also stops when its branch is left, and a new instance is created the next time the branch is taken. A directive can be applied once to the same element, also when it is a host directive of the component.</p><p>A component can apply directives to its own element, as host directives: see <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a>. Then <code>element</code> is the component, and the directive starts when the component is connected, before its <code>onInit</code>, and stops when it is disconnected, after its <code>onDestroy</code>.</p>",
+    "members": {
+      "element": "<p>The element the directive is applied to; for a host directive, the element of the component. It is set after the constructor and before <code>onInit</code>: in the constructor it is <code>undefined</code>.</p>",
+      "onInit": "<p>Called when the directive starts: its inputs hold their bound values, its listeners are in place, and the element is in the document with its attributes, but its children are not rendered yet. Code that needs them can wait for a microtask, or watch them with a <code>MutationObserver</code>. The place for effects and listeners: nothing is ready in the constructor.</p>",
+      "onDestroy": "<p>Called when the directive stops, when its element leaves the template or the branch applying it is left, before its effects are disposed. The place to undo what <code>onInit</code> did: listeners on the document, nodes added outside the element, and the changes to the element itself, which a directive applied by a condition should not leave behind.</p>",
+      "effect": "<p>Creates an effect bound to the directive: <code>fn</code> runs at once, then again in a microtask whenever a signal it read changes, and the effect is disposed when the directive stops, right after <code>onDestroy</code>. The options are the ones of <a href=\"#/en/reference/api/core/signals/effect\"><code>effect()</code></a>.</p><p>Create it in <code>onInit</code>. It can be created earlier too, in a field initializer or in the constructor, but then it runs at once, before the inputs are bound and the element is set. The function it returns disposes the effect earlier: call it at most once, while the directive is running, since disposing an effect already disposed, by that function or by the stop of the directive, throws.</p>",
+      "dispatchEvent": "<p>Dispatches an event on the element, as the outputs declared with <code>@Event</code> do. It returns <code>false</code> when the event is cancelable and a listener canceled it, <code>true</code> otherwise. A host directive dispatches only the events its component exposes, under the name they are exposed with: the others are not dispatched at all, and it returns <code>true</code>.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring a custom directive",
+        "body": "<p>The directive below copies a text when its button is clicked: it reads its input reactively, emits an output on the element, and removes in <code>onDestroy</code> what it added in <code>onInit</code>, leaving the element as it found it.</p>"
+      },
+      "conditional": {
+        "title": "Applied by a condition",
+        "body": "<p>A directive applied by an <code>@if</code> inside the tag is created each time its branch is taken, and stopped each time it is left: nothing survives between two instances. Its inputs can be bound by a condition too: then the instance stays, and only the binding changes.</p>"
+      }
+    }
+  },
+  "StructuralDirective": {
+    "summary": "The base class of structural directives, applied with <code>*selector</code>: one method deciding whether the element, with its whole subtree, is rendered.",
+    "description": "<p>A structural directive is a class extending <code>StructuralDirective</code>, decorated with <a href=\"#/en/reference/api/core/Directive\"><code>@Directive</code></a>, that implements <code>shouldRender()</code>. The element it is applied to exists while the method returns <code>true</code>: an <code>@if</code> with a name, inputs and logic of its own, reusable in any template.</p><p>It declares inputs with <a href=\"#/en/reference/api/core/Property\"><code>@Property</code></a>, and nothing else: it holds no element, since the element may not exist, so it has no outputs and accepts no listeners, and it has no hooks and no <code>this.effect()</code>. A resource it needs, such as a listener on <code>window</code>, has to live outside of it, for example in a module shared by its instances.</p><p>The instance is created where the template renders the element, and lives as long as that place: it outlives the element it creates and destroys. An element can have several structural directives, and is rendered while all of them return <code>true</code>, whatever their order.</p>",
+    "members": {
+      "shouldRender": "<p>Tells whether the element has to be rendered. It runs inside an effect: it is evaluated once the inputs are bound, then again whenever a signal it reads changes, an input or any other signal. When the outcome becomes <code>true</code> the element is rendered; when it becomes <code>false</code> the element and its subtree are destroyed, with their state; an outcome equal to the previous one leaves the element as it is.</p><p>It can return a promise: the element is rendered or destroyed when the promise settles, and stays as it is until then; before the first outcome it is not rendered. Only the latest evaluation counts: the outcome of an older one, settled late, is discarded. A rejected promise keeps the previous outcome, and its error reaches the console as an unhandled rejection. Only the signals read before the first <code>await</code> are tracked, so read every input at the top of the method.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "An asynchronous directive",
+        "body": "<p>The directive below asks a server whether the user can edit a document. It reads its input before the first <code>await</code>, so that another document evaluates it again, and turns a failure into <code>false</code>, which hides the element instead of keeping the previous outcome.</p>"
+      },
+      "limits": {
+        "title": "No listeners and no conditional inputs",
+        "body": "<p>The parentheses of a structural directive take only its inputs: a listener, or an input bound by an <code>@if</code>, fails the build. The directive itself can be applied by a condition: it then joins or leaves the directives deciding about the element.</p>"
+      }
+    }
+  },
+  "Output": {
+    "summary": "The type of an accessor declared with <code>@Event</code>: its <code>emit</code> dispatches the event, with a detail of type <code>Value</code>.",
+    "description": "<p>An output is created by <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a> for every instance of the class declaring it: the accessor is typed <code>Output&lt;Value&gt;</code>, and the class only calls its <code>emit</code>. <code>Value</code> is the type of the <code>detail</code> of the event: an <code>Output</code> without a type argument, or <code>Output&lt;void&gt;</code>, emits no detail, and its events have <code>null</code> as detail.</p><p>The compiler reads the type argument from the source code: in the template of the parent, <code>$event</code> is a <code>CustomEvent</code> with a detail of that type, and the handler is checked against it. <code>Output</code> is a class rather than a type so that the runtime can tell an output from the other members of a class, as it does to expose the outputs of a host directive.</p>",
+    "members": {
+      "emit": "<p>Dispatches the event synchronously: the listeners have run when it returns. The detail comes first, when the output has one, followed by the options of this emission, an <a href=\"#/en/reference/api/core/EventOptions\"><code>EventOptions</code></a> overriding the ones of the decorator. An output without a detail takes the options as its only argument.</p><p>A single argument is taken for the options only when it is an instance of <code>EventOptions</code>: any other value is the detail, even an object with the keys <code>bubbles</code>, <code>cancelable</code> or <code>composed</code>, which arrives whole in <code>event.detail</code> and does not change the event. <code>emit</code> returns nothing: to know whether a listener canceled the event, dispatch it with <code>dispatchEvent</code>. In a host directive, an event the component does not expose is not dispatched.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring and emitting",
+        "body": "<p>The accessor is declared with <code>@Event</code> and typed by the detail it carries; the class emits it from its methods and hooks.</p>"
+      }
+    }
+  },
+  "EventOptions": {
+    "summary": "The options of an event emitted by an output: whether it bubbles, can be canceled and crosses the shadow roots.",
+    "description": "<p>The same three options configure an output twice. As a plain object passed to <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>, they are the defaults of every emission; as an <code>EventOptions</code> passed to <code>emit</code> of an <a href=\"#/en/reference/api/core/Output\"><code>Output</code></a>, they override them for that emission only. An option left <code>undefined</code> keeps the default, and every default is <code>false</code>.</p><p>It is a class so that <code>emit</code> can tell the options from the detail: only an instance of <code>EventOptions</code> is taken for the options, never a plain object with the same keys. The constructor takes the options to set, and the getters read them back. The detail is not one of them: it is the value emitted.</p>",
+    "members": {
+      "bubbles": "<p>Whether the event climbs through the ancestors of the element, within its shadow root. See <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>.</p>",
+      "cancelable": "<p>Whether a listener can cancel the event with <code>preventDefault()</code>. See <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>.</p>",
+      "composed": "<p>Whether the event crosses the shadow roots, up to the document. See <a href=\"#/en/reference/api/core/Event\"><code>@Event</code></a>.</p>"
+    },
+    "usage": {
+      "emission": {
+        "title": "The options of one emission",
+        "body": "<p>An instance is created for an emission and passed to <code>emit</code>, after the detail when the output has one. Without a detail, it is the only argument.</p>"
+      }
+    }
+  },
+  "WebComponentOptions": {
+    "summary": "The options of <code>@WebComponent</code>: the selector, the template, the stylesheet and the host directives of a component.",
+    "description": "<p>The object passed to <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>. The Vite plugin reads <code>selector</code>, <code>templateUrl</code> and <code>styleUrl</code> from the source code, without running it, so they are written in the decorator as string literals. Each option is described in detail on the page of the decorator.</p>",
+    "members": {
+      "selector": "<p>The custom element name of the component: lowercase, with a hyphen, unique in the application.</p>",
+      "hostDirectives": "<p>The custom directives applied to every instance, on the element of the component: their classes, or <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a> also exposing some of their inputs and outputs on the component.</p>",
+      "styleUrl": "<p>Optional. The path of a <code>.css</code> file, relative to the class file, applied inside the shadow root of every instance.</p>",
+      "templateUrl": "<p>The path of the template, relative to the class file, compiled into the render function of the class.</p>"
+    }
+  },
+  "DirectiveOptions": {
+    "summary": "The options of <code>@Directive</code>: the selector the templates apply the directive with.",
+    "description": "<p>The object passed to <a href=\"#/en/reference/api/core/Directive\"><code>@Directive</code></a>. Its only option is described in detail on the page of the decorator.</p>",
+    "members": {
+      "selector": "<p>The name of the directive in the templates, after <code>@@</code> or <code>*</code>, written as a string literal. It needs no hyphen, and must be unique among the directives of the application.</p>"
+    }
+  },
+  "HostDirectiveOptions": {
+    "summary": "A host directive of a component, together with the inputs and the outputs of the directive the component exposes.",
+    "description": "<p>An entry of <code>hostDirectives</code> of <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>, in place of the bare class of the directive when the component exposes some of its members. An exposed input is bound by the templates using the component as if it were its own, and an exposed output is dispatched on the component, so they listen to it on its tag. Whatever is not listed stays private to the directive.</p><p>The compiler reads the exposed members from the source code and adds them to the inputs and the outputs of the component, with the types they have in the directive: write the list in the decorator, with the names as string literals. The entries are checked against the directive only at run time, when the element is created.</p>",
+    "members": {
+      "directive": "<p>The class of the directive, a <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: a structural directive cannot be a host directive. The component creates it for every instance, and applies it to its own element; the instances are in <a href=\"#/en/reference/api/core/CustomElement\"><code>hostDirectives</code></a> of the component. A directive can be listed once.</p>",
+      "properties": "<p>The inputs of the directive the component exposes, each one by its name in the directive, its alias when it declares one, and optionally the name it is exposed with: see <a href=\"#/en/reference/api/core/HostDirectiveMember\"><code>HostDirectiveMember</code></a>. The templates using the component bind them on its tag, checked against their types, and an input the directive declares with <code>@Property.required</code> is required on the component too. An exposed name cannot be the name of an input of the component or of another host directive.</p><p>An input not listed is bound by nobody: it keeps its default value, and the component reads it through the instance of the directive.</p>",
+      "events": "<p>The outputs of the directive the component exposes, each one by the name of its accessor, and optionally the name it is exposed with. An exposed output is dispatched on the element of the component under that name, and the templates listen to it on its tag. An output not listed is not dispatched at all, not even on the element of the component.</p>"
+    },
+    "usage": {
+      "exposing": {
+        "title": "Exposing an input and an output",
+        "body": "<p>The field below applies a tooltip to its own element, exposes the <code>text</code> input of the tooltip as <code>hint</code> and its <code>shown</code> output as it is, and keeps the instance in a field, for its own code and for its template.</p>"
+      },
+      "errors": {
+        "title": "Checked when the element is created",
+        "body": "<p>The build does not report an entry that does not match the directive: every instance of the component throws when it is created, as it does for a directive listed twice or for an input exposed with a name already taken.</p>"
+      }
+    }
+  },
+  "HostDirectiveMember": {
+    "summary": "An input or an output of a host directive exposed on its component: by its name, or by its name and the one it is exposed with.",
+    "description": "<p>An entry of <code>properties</code> or <code>events</code> of <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a>. A string exposes the member with its own name; an object exposes it with another name, to avoid a name the component already uses, or to give it one that fits the component. The compiler reads the names from the source code, so write them as string literals.</p>",
+    "members": {
+      "name": "<p>The name of the member in the directive: the name of the accessor of an output, or of an input, unless the input declares an <code>alias</code>, which is then its name.</p>",
+      "alias": "<p>The name of the member on the component: the templates using the component bind the input, or listen to the output, by this name.</p>"
+    },
+    "usage": {
+      "forms": {
+        "title": "The two forms",
+        "body": "<p>A list can mix the two forms: <code>position</code> keeps its name, <code>text</code> becomes <code>hint</code>, and the <code>shown</code> output of the tooltip is dispatched on the field as <code>hintShown</code>.</p>"
+      }
+    }
+  },
+  "HostDirectives": {
+    "summary": "The host directives of a component, keyed by their class: the type of <code>hostDirectives</code> of <code>CustomElement</code>.",
+    "description": "<p>A read-only map from the class of each host directive of the component to its instance, the value of <a href=\"#/en/reference/api/core/CustomElement\"><code>hostDirectives</code></a> of <code>CustomElement</code>. It has the members of a <code>ReadonlyMap</code>, <code>has</code>, <code>size</code>, <code>keys</code>, <code>values</code>, <code>entries</code>, <code>forEach</code> and the iteration, with a <code>get</code> typed by the class it receives. It is empty when the component declares no host directive.</p>",
+    "members": {
+      "get": "<p>Returns the instance of the directive of the given class, typed as that class, so the component reads its inputs and calls its methods; <code>undefined</code> when the class is not one of its host directives. The instances exist as soon as the element is created, so <code>get</code> works in a field initializer, while the directives start when the component is connected.</p>"
+    },
+    "usage": {
+      "template": {
+        "title": "Reading a host directive from the template",
+        "body": "<p>A template cannot name a class, so it cannot call <code>get</code>: keep the instance in a field of the component, and the template reads it from there.</p>"
+      }
+    }
+  }
+}

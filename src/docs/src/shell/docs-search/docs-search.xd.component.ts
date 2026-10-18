@@ -3,11 +3,30 @@ import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
 import { navigate } from '../../core/router/router';
-import { searchPages } from '../../core/routes/routes';
-import type { DocsPage } from '../../core/routes/routes';
+import { pageTitle, searchPages } from '../../core/routes/routes';
+import type * as ApiData from '../../pages/reference/api/api.data';
 
 /**
- * Searches the pages of the documentation by title and keywords. Pressing `/` anywhere focuses it.
+ * A result of the search: a page, or a symbol of the API reference.
+ */
+type SearchResult = {
+  /**
+   * The path of the page displaying it.
+   */
+  readonly path: string;
+  /**
+   * The title of the page, or the name of the symbol.
+   */
+  readonly title: string;
+  /**
+   * The path of the page, or the kind and the package of the symbol.
+   */
+  readonly detail: string;
+};
+
+/**
+ * Searches the pages of the documentation by title and keywords, and the symbols of the API reference by name and
+ * package. Pressing `/` anywhere focuses it.
  */
 @WebComponent({
   selector: 'docs-search',
@@ -33,9 +52,14 @@ export class DocsSearchComponent extends CustomElement {
    */
   public readonly active = signal(0);
   /**
-   * The pages matching the query.
+   * The symbols named exactly as the query, then the pages matching it, then the other symbols matching it.
    */
   public readonly results = computed(() => this._computeResults());
+  /**
+   * The data of the API reference, `undefined` until its module is loaded: it is loaded the first time the field is
+   * used, not with the top bar.
+   */
+  private readonly _apiData = signal<typeof ApiData | undefined>(undefined);
   /**
    * Focuses the search field when `/` is pressed outside of a text field.
    */
@@ -61,6 +85,7 @@ export class DocsSearchComponent extends CustomElement {
    * @param event - The `input` event of the search field.
    */
   public onInput(event: Event): void {
+    this._loadApiData();
     this.query.set((event.target as HTMLInputElement).value);
     this.active.set(0);
     this.expanded.set(true);
@@ -83,9 +108,9 @@ export class DocsSearchComponent extends CustomElement {
         this.active.set(count ? (this.active() - 1 + count) % count : 0);
         break;
       case 'Enter': {
-        const page = this.results()[this.active()];
-        if (page) {
-          this.go(page.path);
+        const result = this.results()[this.active()];
+        if (result) {
+          this.go(result.path);
         }
         break;
       }
@@ -99,6 +124,7 @@ export class DocsSearchComponent extends CustomElement {
    * Shows the results again when the field is focused.
    */
   public open(): void {
+    this._loadApiData();
     this.expanded.set(true);
   }
 
@@ -120,12 +146,41 @@ export class DocsSearchComponent extends CustomElement {
   }
 
   /**
+   * Loads the data of the API reference, once.
+   */
+  private _loadApiData(): void {
+    if (!this._apiData()) {
+      import('../../pages/reference/api/api.data').then(module => this._apiData.set(module));
+    }
+  }
+
+  /**
    * Computes the value of `results`.
    *
-   * @returns The pages matching the query.
+   * @returns The symbols named exactly as the query, then the pages matching it, then the other symbols matching it.
    */
-  private _computeResults(): DocsPage[] {
-    return searchPages(this.query(), translations());
+  private _computeResults(): SearchResult[] {
+    const query = this.query();
+    const messages = translations();
+    const results: SearchResult[] = searchPages(query, messages).map(page => ({ path: page.path, title: pageTitle(page, messages), detail: page.path }));
+    const apiData = this._apiData();
+    const symbols = apiData?.searchSymbols(query);
+    if (!apiData || !symbols?.length) {
+      return results;
+    }
+
+    const exact = query.trim().toLowerCase();
+    let exactCount = 0;
+    for (let i = 0; i < symbols.length; i++) {
+      const { apiPackage, symbol } = symbols[i];
+      const result = { path: apiData.symbolPath(apiPackage.name, symbol.name), title: symbol.name, detail: `${messages.reference.kinds[symbol.kind]} · ${apiPackage.name}` };
+      if (symbol.name.toLowerCase() === exact) {
+        results.splice(exactCount++, 0, result);
+      } else {
+        results.push(result);
+      }
+    }
+    return results;
   }
 
   /**

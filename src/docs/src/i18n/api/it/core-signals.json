@@ -1,0 +1,230 @@
+{
+  "signal": {
+    "summary": "Crea un signal scrivibile: una funzione che ne restituisce il valore, con <code>set</code>, <code>update</code> e <code>get</code>.",
+    "description": "<p><code>signal()</code> memorizza <code>value</code> in un nuovo <a href=\"#/it/reference/api/signals/Signal.State\"><code>Signal.State</code></a> e restituisce un <a href=\"#/it/reference/api/core/signals/Signal\"><code>Signal</code></a>: una funzione che restituisce il valore attuale. Una chiamata fatta mentre è in esecuzione un <a href=\"#/it/reference/api/core/signals/computed\">signal derivato</a>, un <a href=\"#/it/reference/api/core/signals/effect\">effetto</a> o un binding del template registra anche il signal come una sua dipendenza; altrove restituisce solo il valore.</p><p><code>set(valore)</code> sostituisce il valore e <code>update(fn)</code> lo calcola da quello attuale. Entrambi confrontano il nuovo valore con quello attuale tramite <code>equals</code>, <code>Object.is</code> di default, e non fanno nulla quando sono uguali. Altrimenti chi dipende dal signal viene avvisato in modo sincrono che qualcosa è cambiato, e gli effetti e i binding dei template che lo leggono vengono eseguiti di nuovo in un microtask, una sola volta per tutte le scritture dello stesso blocco sincrono.</p><p>Il tipo del valore viene ricavato da <code>value</code>. Passalo come argomento di tipo quando il valore iniziale è più ristretto dei valori che arriveranno, come in <code>signal&lt;User | null&gt;(null)</code>.</p><p>Come ogni funzione di <code>@xaendar/core/signals</code>, lavora sul <code>Signal</code> globale che <a href=\"#/it/reference/api/signals/loadSignals\"><code>loadSignals()</code></a> installa: vedi <a href=\"#/it/installation\">Installazione</a>.</p>",
+    "members": {
+      "value": "<p>Il valore iniziale, memorizzato così com’è: non viene copiato, e <code>equals</code> non viene chiamato su di esso. Le scritture successive vengono confrontate con il valore attuale, per riferimento nel caso di oggetti e array, a meno che <code>equals</code> non dica altrimenti.</p>",
+      "equals": "<p>Decide se un nuovo valore è uguale a quello attuale. Ogni <code>set</code> e <code>update</code> lo chiama in modo sincrono, con il valore attuale e quello nuovo, e con <code>this</code> legato al <code>Signal.State</code> sottostante, non alla funzione restituita da <code>signal()</code>. Quando restituisce <code>true</code> la scrittura viene ignorata: il signal mantiene il vecchio valore e non avvisa nessuno.</p><p>Il default è <code>Object.is</code>, che confronta oggetti e array per riferimento, non per contenuto. Mantienilo un confronto puro ed economico tra i suoi due argomenti: se lancia un errore, lo lancia anche la scrittura. Vedi <a href=\"#/it/reference/api/signals/SignalEqual\"><code>SignalEqual</code></a>.</p>",
+      "watched": "<p>Viene chiamata quando il signal passa da nessun dipendente a uno. Un dipendente è un effetto o un binding del template che legge il signal, direttamente o tramite signal derivati; conta come dipendente anche un signal derivato che lo legge, da una valutazione alla successiva, anche quando niente osserva il signal derivato. Insieme a <code>unwatched</code>, è il posto giusto per avviare e fermare ciò che alimenta il signal: un timer, una sottoscrizione, un listener.</p><p>Mentre viene eseguita i signal sono congelati: leggerne o scriverne uno lancia un errore, quindi rimanda quel lavoro con <code>queueMicrotask</code> o un timer. Un dipendente rilascia le sue dipendenze e le raccoglie di nuovo a ogni sua esecuzione, quindi un signal con un solo dipendente vede <code>unwatched</code> e poi di nuovo <code>watched</code> a ognuna di quelle esecuzioni: mantieni le due callback economiche, ciascuna l’inverso dell’altra.</p>",
+      "unwatched": "<p>Viene chiamata quando il signal perde l’ultimo dipendente: l’effetto che lo legge viene eliminato, il binding del template viene rimosso, oppure il signal derivato che lo legge viene valutato di nuovo senza leggerlo. Annulla lì ciò che <code>watched</code> ha avviato. Mentre viene eseguita i signal sono congelati, come in <code>watched</code>.</p>"
+    },
+    "usage": {
+      "readingAndWriting": {
+        "title": "Leggere e scrivere",
+        "body": "<p>Chiama il signal, o il suo <code>get()</code>, per leggerlo. <code>set</code> sostituisce il valore; <code>update</code> lo calcola da quello attuale, letto senza tracciamento, quindi un effetto può aggiornare un signal senza dipendere da esso.</p>"
+      },
+      "identity": {
+        "title": "I valori si confrontano per riferimento",
+        "body": "<p>Modificare il valore sul posto — <code>push</code>, <code>splice</code>, assegnare una proprietà — passa inosservato: il signal contiene sempre lo stesso riferimento, quindi nessuno viene avvisato e i template continuano a mostrare dati vecchi. Anche reimpostare lo stesso riferimento viene ignorato. Tratta i valori come immutabili, e scrivi nuovi array e oggetti.</p>"
+      },
+      "inAComponent": {
+        "title": "In un componente",
+        "body": "<p>Un membro inizializzato con <code>signal()</code> viene riconosciuto come signal dal compilatore dei template: le interpolazioni del testo e i binding degli attributi che lo leggono si aggiornano quando cambia. Lo stesso vale per un signal dichiarato a livello di modulo e importato dal template con <code>@import</code>. Un membro che contiene un signal restituito da una tua funzione ha bisogno del tipo <a href=\"#/it/reference/api/core/signals/Signal\"><code>Signal</code></a>: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>.</p>"
+      }
+    }
+  },
+  "computed": {
+    "summary": "Crea un signal in sola lettura il cui valore deriva da altri signal, valutato in modo lazy quando viene letto.",
+    "description": "<p><code>computed()</code> avvolge <code>value</code> in un nuovo <a href=\"#/it/reference/api/signals/Signal.Computed\"><code>Signal.Computed</code></a> e restituisce un <a href=\"#/it/reference/api/core/signals/Computed\"><code>Computed</code></a>: una funzione che restituisce il valore derivato, disponibile anche come <code>get()</code>. Non ha <code>set</code> né <code>update</code>: per cambiarne il valore, cambia i signal che legge.</p><p>Alla creazione non viene eseguito nulla. La prima lettura esegue la funzione e registra come dipendenze i signal che ha letto. Finché il signal derivato è osservato — letto da un <a href=\"#/it/reference/api/core/signals/effect\">effetto</a> o da un binding del template, direttamente o tramite altri signal derivati — il suo valore resta in cache, e viene valutato di nuovo solo dalla prima lettura dopo il cambiamento di una dipendenza. Quando niente lo osserva, ogni lettura lo valuta di nuovo.</p><p>Un cambiamento viene propagato in ordine topologico: un signal derivato viene valutato dopo quelli che legge, e una sola volta, quindi nessuno vede un valore vecchio mescolato a uno nuovo. Leggere un signal derivato mentre viene valutato, come fanno due signal derivati che si leggono a vicenda, lancia <code>Circular dependency detected while computing a Computed signal</code>.</p>",
+    "members": {
+      "value": "<p>La funzione che deriva il valore. Ogni signal che legge è una dipendenza, e le dipendenze vengono raccolte di nuovo a ogni valutazione: un signal letto solo in un ramo non percorso non lo è. Le letture dentro <a href=\"#/it/reference/api/core/signals/untracked\"><code>untracked</code></a> non vengono registrate.</p><p>Dentro una <code>function</code> normale, <code>this</code> è il <code>Signal.Computed</code> sottostante; una arrow function mantiene il <code>this</code> circostante, l’istanza in una classe. Mantieni la funzione pura: può essere eseguita a ogni lettura, o mai, quindi scritture ed effetti collaterali vanno in un effetto.</p>",
+      "equals": "<p>Decide se un nuovo risultato è uguale a quello in cache. Viene chiamato dopo ogni valutazione tranne la prima e quelle che seguono un errore, con il valore in cache e quello nuovo, e con <code>this</code> legato al <code>Signal.Computed</code> sottostante. Quando restituisce <code>true</code>, il signal derivato mantiene il valore in cache e chi dipende da lui non viene avvisato del cambiamento: i signal derivati, gli effetti e i binding dei template che leggono solo lui non vengono eseguiti di nuovo.</p><p>Il default è <code>Object.is</code>. Un confronto per contenuto è adatto a una funzione che restituisce un nuovo array o oggetto a ogni valutazione. Se <code>equals</code> lancia un errore, l’errore diventa il risultato, lanciato da ogni lettura.</p>"
+    },
+    "usage": {
+      "inAClass": {
+        "title": "In una classe",
+        "body": "<p>In un componente, memorizza il signal derivato in un campo: il compilatore dei template riconosce come signal un membro inizializzato con <code>computed()</code>, quindi i binding degli attributi che lo leggono sono reattivi. La sua funzione legge gli altri membri tramite <code>this</code>, quindi deve essere una arrow function, o chiamare un metodo da una arrow function.</p>"
+      },
+      "errors": {
+        "title": "Gli errori restano in cache",
+        "body": "<p>Quando la funzione lancia un errore, l’errore viene memorizzato come un valore: ogni lettura lo rilancia. Finché il signal derivato è osservato, la funzione non viene eseguita di nuovo finché una dipendenza non cambia, e la prossima valutazione andata a buon fine cancella l’errore.</p>"
+      }
+    }
+  },
+  "effect": {
+    "summary": "Esegue una funzione subito, e di nuovo ogni volta che cambia un signal che ha letto: il modo in cui i signal raggiungono il mondo esterno.",
+    "description": "<p><code>effect()</code> esegue <code>fn</code> subito e in modo sincrono, registrando i signal che legge. Quando uno di essi cambia, <code>fn</code> viene eseguita di nuovo in un microtask, e le sue dipendenze vengono raccolte di nuovo. Restituisce una funzione, la funzione di eliminazione, che ferma l’effetto per sempre: le dipendenze vengono rilasciate e <code>fn</code> non viene più eseguita.</p><p>La funzione viene eseguita dentro un <a href=\"#/it/reference/api/signals/Signal.Computed\"><code>Signal.Computed</code></a> osservato da un <code>Watcher</code> di <a href=\"#/it/reference/api/signals/Signal.subtle\"><code>Signal.subtle</code></a>. Il watcher viene avvisato in modo sincrono che una dipendenza è cambiata, e programma una sola esecuzione per tutti i cambiamenti dello stesso blocco sincrono. Un signal letto direttamente che cambia e poi torna al valore precedente fa comunque eseguire <code>fn</code>; un signal derivato il cui risultato non è cambiato no.</p><p>Un effetto autonomo vive finché non viene chiamata la sua funzione di eliminazione, qualunque cosa accada al codice che lo ha creato. Componenti e direttive hanno il proprio <code>this.effect(fn, options?)</code>, su <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> e <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: accetta gli stessi argomenti, e il suo effetto viene eliminato quando l’elemento lascia la pagina. Anche i binding dei template sono effetti.</p>",
+    "members": {
+      "fn": "<p>La funzione da eseguire. Ogni signal che legge è una dipendenza, e le dipendenze vengono raccolte di nuovo a ogni esecuzione; le letture dentro <a href=\"#/it/reference/api/core/signals/untracked\"><code>untracked</code></a> non vengono registrate. Ciò che restituisce viene ignorato: una funzione di cleanup restituita come in altre librerie non viene mai chiamata.</p><p>Può scrivere signal, ma scriverne uno che legge anche programma ogni volta una nuova esecuzione.</p>",
+      "onBeforeRun": "<p>Viene chiamata prima di ogni esecuzione, la prima compresa. Un’esecuzione programmata da un cambiamento la chiama anche quando alla fine non chiama <code>fn</code>, perché i signal derivati letti da <code>fn</code> hanno mantenuto il loro valore.</p>",
+      "onAfterRun": "<p>Viene chiamata dopo ogni esecuzione, la prima compresa, anche quando <code>fn</code> lancia un errore: prima che l’errore esca da <code>effect()</code> o dal microtask. Come <code>onBeforeRun</code>, viene chiamata anche quando un’esecuzione programmata non chiama <code>fn</code>.</p>",
+      "onCleanup": "<p>Viene chiamata quando viene chiamata la funzione di eliminazione, prima che le dipendenze vengano rilasciate. Non viene eseguita tra un’esecuzione e l’altra: fai pulizia dopo l’esecuzione precedente all’inizio di <code>fn</code>, o in <code>onBeforeRun</code>.</p><p>Quando la prima esecuzione lancia un errore, non viene restituita alcuna funzione di eliminazione, e <code>onCleanup</code> non viene mai chiamata. Chiamare una seconda volta la funzione di eliminazione di un effetto autonomo chiama di nuovo <code>onCleanup</code>, poi lancia <code>Cannot unwatch a signal that is not being watched</code>.</p>"
+    },
+    "usage": {
+      "batching": {
+        "title": "Una sola esecuzione per blocco sincrono",
+        "body": "<p>Tutte le scritture fatte nello stesso blocco sincrono causano una sola esecuzione, in un microtask, che vede i valori finali.</p>"
+      },
+      "components": {
+        "title": "Gli effetti di componenti e direttive",
+        "body": "<p>In un componente o in una direttiva, crea gli effetti con <code>this.effect()</code>, in <code>onInit</code> o in <code>afterRender</code>: vengono eliminati quando l’elemento lascia la pagina. Un <code>effect()</code> autonomo creato lì continua a essere eseguito dopo che l’elemento non c’è più, e la connessione successiva ne crea un altro.</p>"
+      },
+      "errors": {
+        "title": "Errori",
+        "body": "<p>Un errore lanciato dalla prima esecuzione viene lanciato da <code>effect()</code> stessa: l’effetto viene rimosso e non viene restituita alcuna funzione di eliminazione. Un errore lanciato da un’esecuzione successiva esce dal microtask, arriva al gestore globale degli errori, e l’effetto continua a reagire ai cambiamenti successivi.</p>"
+      },
+      "loops": {
+        "title": "Scrivere un signal che legge",
+        "body": "<p>Un effetto che scrive un signal che legge anche programma una nuova esecuzione a ogni esecuzione: la coda dei microtask non si svuota mai e la pagina si blocca. Deriva invece i valori con <a href=\"#/it/reference/api/core/signals/computed\"><code>computed()</code></a>. <code>update()</code> legge il valore attuale senza tracciarlo, quindi è sicuro per i signal che l’effetto non legge altrimenti.</p>"
+      }
+    }
+  },
+  "untracked": {
+    "summary": "Esegue una funzione senza registrare come dipendenze i signal che legge, e ne restituisce il risultato.",
+    "description": "<p><code>untracked(fn)</code> chiama <code>fn</code> in modo sincrono, senza alcun calcolo in corso, e restituisce ciò che restituisce. I signal letti al suo interno non diventano dipendenze del <a href=\"#/it/reference/api/core/signals/computed\">signal derivato</a>, dell’<a href=\"#/it/reference/api/core/signals/effect\">effetto</a> o del binding del template in esecuzione in quel momento, che quindi non viene rieseguito quando cambiano. Fuori da questi, chiama semplicemente <code>fn</code>.</p><p>Solo le letture fatte dentro <code>fn</code> non sono tracciate: lo stesso signal letto altrove nello stesso calcolo resta una dipendenza. Le scritture non cambiano. Se <code>fn</code> lancia un errore, l’errore viene rilanciato, e il tracciamento riprende come prima.</p><p>È la stessa funzione di <code>untrack</code> di <a href=\"#/it/reference/api/signals/Signal.subtle\"><code>Signal.subtle</code></a>.</p>",
+    "members": {
+      "fn": "<p>La funzione da chiamare. Ciò che restituisce viene restituito da <code>untracked</code>. Solo le letture che fa in modo sincrono non sono tracciate: in una funzione <code>async</code>, quelle prima del primo <code>await</code>. Le letture dopo un <code>await</code> avvengono quando il calcolo è finito, e non vengono mai tracciate.</p>"
+    },
+    "usage": {
+      "currentValue": {
+        "title": "Leggere il valore attuale",
+        "body": "<p>Usalo quando un effetto o un signal derivato ha bisogno del valore attuale di un signal, ma non deve essere rieseguito quando quel signal cambia.</p>"
+      },
+      "callingCode": {
+        "title": "Chiamare codice che legge signal",
+        "body": "<p>Un metodo chiamato da un effetto può leggere signal propri, che diventerebbero dipendenze dell’effetto. Avvolgere la chiamata li lascia fuori, così solo le letture scritte nell’effetto decidono quando viene eseguito.</p>"
+      },
+      "update": {
+        "title": "update() è già non tracciato",
+        "body": "<p><code>update</code> di un <a href=\"#/it/reference/api/core/signals/Signal\"><code>Signal</code></a> legge il valore attuale con <code>untracked</code>: un effetto può usarlo per aggiungere elementi a un signal senza dipendere da quel signal.</p>"
+      },
+      "polyfill": {
+        "title": "Letto quando il modulo viene valutato",
+        "body": "<p><code>untracked</code> viene preso dal <code>Signal.subtle</code> globale appena <code>@xaendar/core/signals</code> viene valutato: importare il modulo prima che <a href=\"#/it/reference/api/signals/loadSignals\"><code>loadSignals()</code></a> sia stata eseguita fallisce subito. Chiamala prima, poi carica il resto dell’applicazione con <code>await import()</code>, come mostra <a href=\"#/it/installation\">Installazione</a>.</p>"
+      }
+    }
+  },
+  "Signal": {
+    "summary": "Il tipo dei signal scrivibili creati da <code>signal()</code>: una funzione che restituisce il valore, con <code>get</code>, <code>set</code> e <code>update</code>.",
+    "description": "<p>Un <code>Signal&lt;Value&gt;</code> è ciò che restituisce <a href=\"#/it/reference/api/core/signals/signal\"><code>signal()</code></a>. Chiamarlo, come in <code>count()</code>, restituisce il valore attuale e, dentro un signal derivato, un effetto o un binding del template, registra il signal come dipendenza. I suoi metodi leggono e cambiano il valore.</p><p>A runtime è una funzione con <code>get</code>, <code>set</code> e <code>update</code>, che lavorano su un <a href=\"#/it/reference/api/signals/Signal.State\"><code>Signal.State</code></a> interno. Sono legati a esso, quindi funzionano anche passati da soli, come in <code>promise.then(count.set)</code>. La funzione stessa non è un’istanza di <code>Signal.State</code>.</p><p>Usa il tipo per annotare un membro che contiene un signal creato altrove: il compilatore dei template riconosce i membri tipizzati con i tipi di <code>@xaendar/core/signals</code>, e rende reattivi i binding degli attributi che li leggono.</p>",
+    "members": {
+      "get": "<p>Restituisce il valore attuale, come chiamare il signal, e registra il signal come dipendenza del signal derivato, dell’effetto o del binding del template in esecuzione. Lancia un errore mentre i signal sono congelati, dentro le callback <code>watched</code> e <code>unwatched</code>.</p>",
+      "set": "<p>Sostituisce il valore, a meno che <code>equals</code>, <code>Object.is</code> di default, non lo trovi uguale a quello attuale: in quel caso la chiamata non fa nulla. Altrimenti chi dipende dal signal viene avvisato in modo sincrono, e gli effetti e i binding dei template che lo leggono vengono eseguiti di nuovo in un microtask. Lancia un errore mentre i signal sono congelati, e quando lo lancia <code>equals</code>.</p>",
+      "update": "<p>Chiama <code>updater</code> con il valore attuale e imposta ciò che restituisce, con le regole di <code>set</code>. Il valore attuale viene letto con <a href=\"#/it/reference/api/core/signals/untracked\"><code>untracked</code></a>: chiamare <code>update</code> in un effetto non rende l’effetto dipendente dal signal. Restituisci un nuovo array o oggetto invece di modificare quello attuale: lo stesso riferimento è uguale a sé stesso, e la scrittura verrebbe ignorata.</p>"
+    },
+    "usage": {
+      "annotating": {
+        "title": "Annotare i membri",
+        "body": "<p>Un membro inizializzato da una tua funzione che restituisce un signal non viene riconosciuto dal compilatore dei template: le interpolazioni del testo lo leggono, ma i binding degli attributi vengono valutati una volta sola. Annotalo con <code>Signal</code> importato da <code>@xaendar/core/signals</code>; un tuo alias di tipo, anche dello stesso tipo, non viene riconosciuto.</p>"
+      }
+    }
+  },
+  "Computed": {
+    "summary": "Il tipo dei signal in sola lettura creati da <code>computed()</code>: una funzione che restituisce il valore derivato, con <code>get</code>.",
+    "description": "<p>Un <code>Computed&lt;Value&gt;</code> è ciò che restituisce <a href=\"#/it/reference/api/core/signals/computed\"><code>computed()</code></a>. Chiamarlo, come in <code>total()</code>, restituisce il valore derivato, valutandolo quando serve, e lo registra come dipendenza del signal derivato, dell’effetto o del binding del template in esecuzione. Non ha <code>set</code> né <code>update</code>.</p><p>A runtime è una funzione con <code>get</code>, legato a un <a href=\"#/it/reference/api/signals/Signal.Computed\"><code>Signal.Computed</code></a> interno; la funzione stessa non è un’istanza di <code>Signal.Computed</code>.</p><p>Usa il tipo per annotare membri ed export che contengono un signal derivato creato altrove: come con <a href=\"#/it/reference/api/core/signals/Signal\"><code>Signal</code></a>, il compilatore dei template riconosce allora il membro, e i binding degli attributi che lo leggono sono reattivi.</p>",
+    "members": {
+      "get": "<p>Restituisce il valore, come chiamare il signal derivato. Prima valuta la funzione quando il valore in cache è vecchio, o sempre quando niente osserva il signal derivato, e lancia l’errore dell’ultima valutazione, se ne ha lanciato uno. Lancia un errore anche in caso di dipendenza circolare, e mentre i signal sono congelati.</p>"
+    },
+    "usage": {
+      "readOnlyViews": {
+        "title": "Viste in sola lettura di uno store",
+        "body": "<p>Un modulo può tenere privati i suoi signal scrivibili, ed esportare signal derivati che li leggono insieme alle funzioni che li cambiano: gli altri moduli possono leggere lo stato, non scriverlo.</p>"
+      }
+    }
+  },
+  "InputSignal": {
+    "summary": "Il tipo degli input dichiarati con <code>@Property</code>: un signal che il padre scrive dal proprio template e che il componente può solo leggere.",
+    "description": "<p>Il decoratore <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a>, e <code>@Property.required</code>, vanno su un <code>accessor</code> di un componente o di una direttiva di tipo <code>InputSignal&lt;ActualValue&gt;</code>, e lo sostituiscono con un signal di input. L’input contiene il suo valore di default finché un template non lo lega, poi ogni valore legato, convertito da <code>transform</code> e confrontato con <code>equals</code> (vedi <a href=\"#/it/reference/api/core/signals/InputSignalOptions\"><code>InputSignalOptions</code></a>). Quando un binding condizionale smette di valere, torna al valore di default.</p><p>Chiamarlo, come in <code>this.label()</code>, o chiamare il suo <code>get()</code>, restituisce il valore e lo traccia come ogni signal: i template, i signal derivati e gli effetti che lo leggono si aggiornano quando il padre lega un nuovo valore. Non ha un <code>set</code> pubblico: lo scrivono solo i binding dei template che usano il componente.</p><p>Il tipo conta anche durante la build: i template che legano l’input vengono controllati rispetto a <code>ActualValue</code>, e l’annotazione, importata da <code>@xaendar/core/signals</code>, dice al compilatore dei template che l’accessor è un signal.</p>",
+    "members": {
+      "get": "<p>Restituisce il valore attuale, come chiamare l’input, e lo registra come dipendenza del signal derivato, dell’effetto o del binding del template in esecuzione.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Dichiarare gli input",
+        "body": "<p>Il primo argomento di <code>@Property</code> è il valore di default, il secondo le sue opzioni: <code>alias</code>, il nome usato dai template, e le opzioni dell’input. <code>@Property.required()</code> dichiara un input senza default, che ogni template che usa il componente deve legare.</p>"
+      },
+      "narrowerTypes": {
+        "title": "Tipi più ristretti del default",
+        "body": "<p>TypeScript ricava il tipo del decoratore dal valore di default, quindi un default come <code>'ts'</code>, <code>[]</code> o <code>null</code> non corrisponde a un tipo più ristretto dell’accessor. Passa il tipo del signal anche al decoratore, invece di allargare l’accessor e fare un cast di ciò che leggi.</p>"
+      },
+      "readOnly": {
+        "title": "In sola lettura dentro il componente",
+        "body": "<p>Scrivere un input dall’interno del componente non compila, e forzato con un cast lancia un errore. Per un valore che cambia anche il componente, copia l’input in un signal locale con un effetto, e scrivi quello locale.</p>"
+      }
+    }
+  },
+  "QuerySignal": {
+    "summary": "Il tipo delle query dichiarate con <code>@Query</code> e le sue varianti: un signal in sola lettura che contiene gli elementi trovati, tenuto aggiornato dal framework.",
+    "description": "<p>I decoratori <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a> vanno su un <code>accessor</code> di un componente di tipo <code>QuerySignal&lt;Value&gt;</code>, e lo sostituiscono con un signal di query. <code>Value</code> è l’elemento trovato oppure <code>null</code> per <code>@Query</code> e <code>@Query.content</code>, l’elemento per le loro varianti <code>required</code>, e un array di elementi per le loro varianti <code>all</code>; il tipo degli elementi è descritto da <a href=\"#/it/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p><p>Contiene <code>null</code>, o un array vuoto, finché il componente non viene connesso per la prima volta. A ogni connessione la query viene eseguita subito dopo il render, prima di <code>afterRender</code>; poi un <code>MutationObserver</code> la esegue di nuovo ogni volta che vengono aggiunti o rimossi elementi dal template o, per le query sul contenuto, dal contenuto proiettato, e anche quando cambiano un attributo <code>slot</code> o gli slot. Gli altri cambiamenti degli attributi, come una classe, non vengono osservati. Quando il componente lascia la pagina l’osservazione si ferma, e il signal mantiene l’ultimo risultato. Le varianti <code>all</code> notificano solo quando la lista degli elementi cambia.</p><p>Chiamarlo, o chiamare il suo <code>get()</code>, restituisce il risultato e lo traccia come ogni signal. Non ha <code>set</code>.</p>",
+    "members": {
+      "get": "<p>Restituisce il risultato attuale, come chiamare la query, e lo registra come dipendenza del signal derivato, dell’effetto o del binding del template in esecuzione. Le varianti <code>required</code> lanciano un errore quando nessun elemento corrisponde, anche prima della prima connessione: <code>No element matches the required query '…' of &lt;…&gt;</code>, oppure <code>required content query</code> per le query sul contenuto.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Dichiarare le query",
+        "body": "<p>Il target è un selettore CSS o la classe di un componente (vedi <a href=\"#/it/reference/api/core/signals/QueryTarget\"><code>QueryTarget</code></a>). Un argomento di tipo restringe gli elementi trovati da un selettore; una classe dà le sue istanze, con i loro membri pubblici.</p>"
+      },
+      "whenToRead": {
+        "title": "Quando leggerla",
+        "body": "<p>Una query è vuota in <code>onInit</code> e viene riempita prima di <code>afterRender</code>, poi segue il template un microtask dopo i suoi cambiamenti. Leggila in <code>afterRender</code>, negli handler degli eventi, oppure in modo reattivo: i signal derivati e gli effetti che la leggono la seguono, e un effetto creato in <code>onInit</code> viene rieseguito quando la query viene riempita. Le query sul contenuto sono ancora vuote in <code>afterRender</code>, perché il padre proietta il contenuto dopo il render del componente.</p>"
+      },
+      "required": {
+        "title": "Query obbligatorie",
+        "body": "<p>Le varianti <code>required</code> sono per un elemento che c’è sempre: il loro tipo non contiene <code>null</code>, e leggerle quando nessun elemento corrisponde lancia un errore. Leggerle in <code>onInit</code> o nel template lancia un errore, perché la query viene riempita dopo il render. Per un elemento dentro un <code>@if</code> usa le varianti facoltative.</p>"
+      }
+    }
+  },
+  "EffectOptions": {
+    "summary": "Le opzioni di <code>effect()</code> e di <code>this.effect()</code>: callback intorno a ogni esecuzione di un effetto, e alla sua eliminazione.",
+    "description": "<p>Il secondo argomento di <a href=\"#/it/reference/api/core/signals/effect\"><code>effect()</code></a>, e di <code>this.effect()</code> di componenti e direttive, che lo inoltrano. Tutte le proprietà sono facoltative. Il loro comportamento, con i casi particolari, è descritto nella pagina di <code>effect()</code>.</p>",
+    "members": {
+      "onBeforeRun": "<p>Viene chiamata prima di ogni esecuzione, la prima compresa.</p>",
+      "onAfterRun": "<p>Viene chiamata dopo ogni esecuzione, anche quando la funzione dell’effetto lancia un errore.</p>",
+      "onCleanup": "<p>Viene chiamata quando l’effetto viene eliminato, non tra un’esecuzione e l’altra.</p>"
+    }
+  },
+  "InputSignalOptions": {
+    "summary": "Le opzioni di un input: le opzioni di un signal, più <code>transform</code>, che converte i valori legati dai template.",
+    "description": "<p>Le opzioni accettate da <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a> e <code>@Property.required</code>, insieme ad <code>alias</code>, per l’<a href=\"#/it/reference/api/core/signals/InputSignal\"><code>InputSignal</code></a> che creano. <code>ActualValue</code> è il tipo dell’input, <code>IncomingValue</code> il tipo dei valori legati: lo stesso, a meno che <code>transform</code> non li converta.</p><p><code>equals</code>, <code>watched</code> e <code>unwatched</code> vengono da <a href=\"#/it/reference/api/signals/SignalOptions\"><code>SignalOptions</code></a>, e funzionano come le opzioni di <a href=\"#/it/reference/api/core/signals/signal\"><code>signal()</code></a>.</p>",
+    "members": {
+      "transform": "<p>Converte ogni valore legato da un template, statico o calcolato da un’espressione, prima che venga confrontato con <code>equals</code> e memorizzato. Non viene eseguita sul valore di default, né quando l’input ci torna perché un binding condizionale ha smesso di valere.</p><p>Non cambia il tipo rispetto a cui vengono controllati i template: quello è <code>ActualValue</code>, il tipo dell’<code>InputSignal</code>, non il parametro di <code>transform</code>. Una transform da <code>string</code> a <code>number</code> non permette un valore statico su un input di tipo <code>number</code>: preferisci transform che mantengono il tipo, che ripuliscono o normalizzano il valore, e lega espressioni.</p>",
+      "equals": "<p>Confronta il valore restituito da <code>transform</code> con quello attuale: quando restituisce <code>true</code>, l’input mantiene il suo valore e non notifica nessuno. Decide anche se tornare al valore di default è un cambiamento. Il default è <code>Object.is</code>, quindi un nuovo array con lo stesso contenuto è un cambiamento.</p>",
+      "watched": "<p>Viene chiamata quando l’input acquisisce il primo dipendente, con i signal congelati. Vedi <a href=\"#/it/reference/api/core/signals/signal\"><code>signal()</code></a>.</p>",
+      "unwatched": "<p>Viene chiamata quando l’input perde l’ultimo dipendente, con i signal congelati. Vedi <a href=\"#/it/reference/api/core/signals/signal\"><code>signal()</code></a>.</p>"
+    },
+    "usage": {
+      "passing": {
+        "title": "Passare le opzioni",
+        "body": "<p>Le opzioni sono il secondo argomento di <code>@Property</code>, dopo il valore di default, e l’unico di <code>@Property.required</code>.</p>"
+      }
+    }
+  },
+  "QueryTarget": {
+    "summary": "Ciò che una query cerca: un selettore CSS, o la classe di un componente.",
+    "description": "<p>Il primo argomento di ogni decoratore <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>. Una query sulla vista cerca solo nello shadow root del suo componente, una query sul contenuto solo tra gli elementi proiettati in esso, o nel suo light DOM: nessuna delle due trova gli elementi dentro lo shadow root di un componente figlio.</p><p>Il target decide anche il tipo degli elementi trovati: vedi <a href=\"#/it/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p>",
+    "members": {
+      "selector": "<p>Qualsiasi selettore CSS, come lo accetta <code>querySelector</code>: un nome di tag (<code>input</code>, <code>ex-badge</code>), una classe (<code>.row</code>), un attributo (<code>[item]</code>), o una loro combinazione. Gli elementi trovati sono di tipo <code>HTMLElement</code>, a meno che il decoratore non riceva un tipo più ristretto come primo argomento di tipo, come in <code>@Query&lt;HTMLInputElement&gt;('input')</code>.</p>",
+      "class": "<p>La classe di un componente decorato con <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: la query cerca il selettore del componente, e gli elementi trovati sono tipizzati come istanze della classe, con i suoi membri pubblici.</p><p>Qualsiasi classe che estende <code>HTMLElement</code> supera il controllo dei tipi, ma una classe senza selettore, come una classe nativa quale <code>HTMLInputElement</code>, fa lanciare un errore alla query quando viene creato il componente che la dichiara.</p>"
+    },
+    "usage": {
+      "kinds": {
+        "title": "Un target per tipo",
+        "body": "<p>Un selettore, un selettore con il tipo dell’elemento, la classe di un componente, e un selettore per tutte le corrispondenze.</p>"
+      }
+    }
+  },
+  "QueryElement": {
+    "summary": "Il tipo di ogni elemento trovato da una query, ricavato dal suo target.",
+    "description": "<p>Per un <a href=\"#/it/reference/api/core/signals/QueryTarget\"><code>QueryTarget</code></a> che è un selettore CSS, è <code>ElementType</code>: i decoratori passano il loro primo argomento di tipo, <code>HTMLElement</code> di default. Per la classe di un componente, è il tipo delle istanze della classe, e <code>ElementType</code> viene ignorato.</p><p>I decoratori <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a> lo usano per tipizzare i loro signal, come <code>QuerySignal&lt;QueryElement&lt;Target, ElementType&gt; | null&gt;</code> per <code>@Query</code>: raramente serve scriverlo.</p>",
+    "usage": {
+      "resolving": {
+        "title": "Come si risolve",
+        "body": "<p>Scritto a mano, richiede entrambi gli argomenti di tipo.</p>"
+      }
+    }
+  },
+  "QuerySlotOptions": {
+    "summary": "Le opzioni delle query sul contenuto: in quali slot cercare, oppure in tutto il light DOM.",
+    "description": "<p>Il secondo argomento di <code>@Query.content</code>, <code>@Query.content.required</code> e <code>@Query.content.all</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Senza opzioni, una query sul contenuto cerca tra gli elementi assegnati a qualsiasi slot del componente, e i loro discendenti. <code>slots</code> la restringe ad alcuni slot, <code>lightDom</code> la estende a tutto il light DOM dell’elemento: il tipo non permette entrambe.</p>",
+    "members": {
+      "slots": "<p>Il nome dello slot in cui cercare, o una lista di nomi, dove la stringa vuota è lo slot di default. Quando è omesso, si cerca in tutti gli slot.</p><p>I risultati seguono gli slot nell’ordine del template, poi gli elementi nell’ordine in cui sono stati assegnati, ciascuno seguito dai suoi discendenti corrispondenti. Uno slot che inoltra il contenuto di un altro slot viene appiattito, e il contenuto di fallback degli slot non viene mai trovato. Una lista vuota non corrisponde a nessuno slot.</p>",
+      "lightDom": "<p>Quando è <code>true</code>, la query cerca tra tutti i discendenti dell’elemento nel light DOM, assegnati a uno slot o no, in ordine di documento, e viene eseguita di nuovo solo quando vengono aggiunti o rimossi elementi. Il default è <code>false</code>.</p>"
+    },
+    "usage": {
+      "choosing": {
+        "title": "Scegliere gli slot",
+        "body": "<p>Query sul contenuto con ciascuna opzione, e una combinazione che non compila.</p>"
+      }
+    }
+  }
+}

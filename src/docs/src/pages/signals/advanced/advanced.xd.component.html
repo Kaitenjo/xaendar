@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -36,53 +37,59 @@
     heading="{translations().pages.signals.advanced.edgeCases.callout2.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.signals.advanced.apiSummary.title") />
+<h2 @@i18n(key="pages.signals.advanced.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.signals.advanced.apiSummary.th1") />
-        <th @@i18n(key="pages.signals.advanced.apiSummary.th2") />
+        <th @@i18n(key="pages.signals.advanced.summary.th1") />
+        <th @@i18n(key="pages.signals.advanced.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td1") />
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td2") />
+        <td @@i18n(key="pages.signals.advanced.summary.td1") />
+        <td @@i18n(key="pages.signals.advanced.summary.td2") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td3") />
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td4") />
+        <td @@i18n(key="pages.signals.advanced.summary.td3") />
+        <td @@i18n(key="pages.signals.advanced.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td5") />
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td6") />
-      </tr>
-      <tr>
-        <td>
-          <code>new Signal.subtle.Watcher(notify)</code>
-        </td>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td7") />
+        <td @@i18n(key="pages.signals.advanced.summary.td5") />
+        <td @@i18n(key="pages.signals.advanced.summary.td6") />
       </tr>
       <tr>
         <td>
-          <code>Signal.subtle.untrack(fn)</code>
+          <a href="{`#/${currentLang()}/reference/api/signals/Signal.subtle`}">
+            <code>new Signal.subtle.Watcher(notify)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td8") />
+        <td @@i18n(key="pages.signals.advanced.summary.td7") />
       </tr>
       <tr>
         <td>
-          <code>Signal.subtle.currentComputed()</code>
+          <a href="{`#/${currentLang()}/reference/api/signals/Signal.subtle`}">
+            <code>Signal.subtle.untrack(fn)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td9") />
+        <td @@i18n(key="pages.signals.advanced.summary.td8") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td10") />
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td11") />
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/signals/Signal.subtle`}">
+            <code>Signal.subtle.currentComputed()</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.signals.advanced.summary.td9") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td12") />
-        <td @@i18n(key="pages.signals.advanced.apiSummary.td13") />
+        <td @@i18n(key="pages.signals.advanced.summary.td10") />
+        <td @@i18n(key="pages.signals.advanced.summary.td11") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.signals.advanced.summary.td12") />
+        <td @@i18n(key="pages.signals.advanced.summary.td13") />
       </tr>
     </tbody>
   </table>

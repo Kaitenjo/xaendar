@@ -102,7 +102,7 @@ Query.all = function all<ElementType extends HTMLElement = HTMLElement, Target e
  *
  * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
  *   web component decorated with `@WebComponent`, whose selector is matched.
- * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
  * @returns An accessor decorator that replaces the field with a `QuerySignal`.
  *
  * @example
@@ -136,7 +136,7 @@ Query.content = Object.assign(function slot<ElementType extends HTMLElement = HT
    *
    * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
    *   web component decorated with `@WebComponent`, whose selector is matched.
-   * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+   * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
    * @returns An accessor decorator that replaces the field with a `QuerySignal`.
    *
    * @example
@@ -163,7 +163,7 @@ Query.content = Object.assign(function slot<ElementType extends HTMLElement = HT
    *
    * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
    *   web component decorated with `@WebComponent`, whose selector is matched.
-   * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+   * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
    * @returns An accessor decorator that replaces the field with a `QuerySignal`.
    *
    * @example
@@ -236,7 +236,7 @@ export function queryAll<Target extends QueryTarget, ElementType extends HTMLEle
  * @template Target - The {@link QueryTarget} of the query.
  * @param element - The component whose projected content is queried.
  * @param target - A CSS selector, or the class of a web component.
- * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
  * @returns A {@link QuerySignal} of the matching element.
  * @throws When the target is a class not decorated with `@WebComponent`.
  */
@@ -251,7 +251,7 @@ export function querySlot<Target extends QueryTarget, ElementType extends HTMLEl
  * @template Target - The {@link QueryTarget} of the query.
  * @param element - The component whose projected content is queried.
  * @param target - A CSS selector, or the class of a web component.
- * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
  * @returns A {@link QuerySignal} of the matching element.
  * @throws When the target is a class not decorated with `@WebComponent`.
  */
@@ -268,7 +268,7 @@ export function querySlotRequired<Target extends QueryTarget, ElementType extend
  * @template Target - The {@link QueryTarget} of the query.
  * @param element - The component whose projected content is queried.
  * @param target - A CSS selector, or the class of a web component.
- * @param options - Restricts the query to a single slot, or extends it to the whole light DOM.
+ * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
  * @returns A {@link QuerySignal} of the matching elements.
  * @throws When the target is a class not decorated with `@WebComponent`.
  */

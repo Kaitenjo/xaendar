@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -76,52 +77,66 @@
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.directives.custom.apiSummary.title") />
+<h2 @@i18n(key="pages.directives.custom.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.directives.custom.apiSummary.th1") />
-        <th @@i18n(key="pages.directives.custom.apiSummary.th2") />
+        <th @@i18n(key="pages.directives.custom.summary.th1") />
+        <th @@i18n(key="pages.directives.custom.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>element</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>element</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td1") />
+        <td @@i18n(key="pages.directives.custom.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>onInit()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>onInit()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td2") />
+        <td @@i18n(key="pages.directives.custom.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>onDestroy()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>onDestroy()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td3") />
+        <td @@i18n(key="pages.directives.custom.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>effect(fn, options?)</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>effect(fn, options?)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td4") />
+        <td @@i18n(key="pages.directives.custom.summary.td4") />
       </tr>
       <tr>
         <td>
-          <code>dispatchEvent(event)</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomDirective`}">
+            <code>dispatchEvent(event)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td5") />
+        <td @@i18n(key="pages.directives.custom.summary.td5") />
       </tr>
       <tr>
         <td>
-          <code>{ '@Property' }</code>,
-          <code>{ '@Event' }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>{ '@Property' }</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/Event`}">
+            <code>{ '@Event' }</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.apiSummary.td6") />
+        <td @@i18n(key="pages.directives.custom.summary.td6") />
       </tr>
     </tbody>
   </table>

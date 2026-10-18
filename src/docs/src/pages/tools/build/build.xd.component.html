@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
@@ -38,40 +39,42 @@
     heading="{translations().pages.tools.build.edgeCases.callout5.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.tools.build.apiSummary.title") />
+<h2 @@i18n(key="pages.tools.build.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.tools.build.apiSummary.th1") />
-        <th @@i18n(key="pages.tools.build.apiSummary.th2") />
+        <th @@i18n(key="pages.tools.build.summary.th1") />
+        <th @@i18n(key="pages.tools.build.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>xaendarPlugin()</code>
+          <a href="{`#/${currentLang()}/reference/api/build-tools/xaendarPlugin`}">
+            <code>xaendarPlugin()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.tools.build.apiSummary.td1") />
+        <td @@i18n(key="pages.tools.build.summary.td1") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.apiSummary.td2") />
-        <td @@i18n(key="pages.tools.build.apiSummary.td3") />
+        <td @@i18n(key="pages.tools.build.summary.td2") />
+        <td @@i18n(key="pages.tools.build.summary.td3") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.apiSummary.td4") />
+        <td @@i18n(key="pages.tools.build.summary.td4") />
         <td>
           <code>virtual:xaendar-template:…</code>,
           <code>virtual:xaendar-style?…</code>
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.apiSummary.td5") />
-        <td @@i18n(key="pages.tools.build.apiSummary.td6") />
+        <td @@i18n(key="pages.tools.build.summary.td5") />
+        <td @@i18n(key="pages.tools.build.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.apiSummary.td7") />
-        <td @@i18n(key="pages.tools.build.apiSummary.td8") />
+        <td @@i18n(key="pages.tools.build.summary.td7") />
+        <td @@i18n(key="pages.tools.build.summary.td8") />
       </tr>
     </tbody>
   </table>

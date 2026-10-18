@@ -1,5 +1,5 @@
 @import { translations } from '../../core/i18n/i18n.ts'
-@import { lang as currentLang, path } from '../../core/router/router.ts'
+@import { lang as currentLang, navPath } from '../../core/router/router.ts'
 @import { itemTitle, NAV, pageTitle } from '../../core/routes/routes.ts'
 
 <nav class="nav">
@@ -10,7 +10,7 @@
         @for (item of section().items; track item()) {
           <li>
             @if (item().page) {
-              <a class="{item().page?.path === path() ? 'link link--active' : 'link'}"
+              <a class="{item().page?.path === navPath() ? 'link link--active' : 'link'}"
                 href="{`#/${currentLang()}/${item().page?.path}`}">
                 { itemTitle(item(), translations()) }
               </a>
@@ -25,7 +25,7 @@
               <ul class="list list--nested">
                 @for (page of item().pages ?? []; track page().path) {
                   <li>
-                    <a class="{page().path === path() ? 'link link--nested link--active' : 'link link--nested'}"
+                    <a class="{page().path === navPath() ? 'link link--nested link--active' : 'link link--nested'}"
                       href="{`#/${currentLang()}/${page().path}`}">
                       { pageTitle(page(), translations()) }
                     </a>

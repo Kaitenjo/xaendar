@@ -27,6 +27,8 @@ npm test --prefix src/docs # `xd test`: the docs site's specs (utilities and com
 
 `src/docs` is the framework's documentation/storybook site, written in Xaendar itself and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally). It is a separate npm project (own `package.json`/lockfile/`tsconfig.json`, whose `paths` point at the packages' sources). Live examples live in `src/docs/src/examples/**` and are shown with their exact source via `?raw` globs (`src/docs/src/core/sources`); pages are bilingual: one template per page, whose texts (HTML strings) live in `src/docs/src/i18n/en.json` / `it.json`, fetched at runtime (`core/i18n/i18n.ts`) and rendered with `@@i18n(key="pages.…")` or bound as `{ translations().pages.… }`. Both files must have the same keys (`i18n/messages.spec.ts`).
 
+The API reference is data-driven: one page component (`pages/reference/api-symbol`) renders every symbol, reached at `#/<lang>/reference/api/<package path>/<Name>`. The symbols of each package are in `pages/reference/api/packages/<package>.data.ts`, their texts in `src/docs/src/i18n/api/<lang>/<package>.json` (loaded only by that page, rendered with `@@html`), their examples in `src/docs/src/snippets/api/<package>/`. `pages/reference/api/api.data.spec.ts` fails when an export of a documented package (`_`-prefixed runtime helpers excluded) has no page, when the two languages differ, and on links to symbols that don't exist: a new export needs its page.
+
 Package-level build/publish is driven from `schematics/` (its own TS project, built with `npm run build:schematics`), not from per-package npm scripts — the individual `packages/*/package.json` files have no scripts of their own:
 
 ```bash

@@ -9,7 +9,7 @@ import { untracked } from '../untracked';
  * underlying {@link Signal.State} API and an `update` method to derive the next
  * value from the previous one.
  *
- * @template T - The type of the stored value. Defaults to `any`.
+ * @template T - The type of the stored value. Defaults to `unknown`.
  * @param value - The initial value of the signal.
  * @param options - Configuration options for the signal.
  * @returns A {@link SignalType} instance.

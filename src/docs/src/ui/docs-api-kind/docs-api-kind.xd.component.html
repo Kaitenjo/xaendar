@@ -1,0 +1,6 @@
+<span class="{`kind kind--${kind()}`}" title="{label()}">
+  <span class="initial" aria-hidden="true">{ initials[kind()] }</span>
+  @if (labelled()) {
+    <span class="label">{ label() }</span>
+  }
+</span>

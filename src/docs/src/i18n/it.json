@@ -48,7 +48,6 @@
     "fix": "Soluzione",
     "workaround": "Come aggirarlo",
     "readMore": "Approfondisci",
-    "internal": "Interno",
     "kinds": {
       "decorator": "Decoratore",
       "class": "Classe",
@@ -61,9 +60,23 @@
       "limitation": "Limite",
       "docs": "Documentazione"
     },
-    "module": "Modulo",
+    "kind": "Tipo",
     "phase": "Fase",
-    "area": "Area"
+    "area": "Area",
+    "symbol": {
+      "api": "API",
+      "description": "Descrizione",
+      "usage": "Note d’uso",
+      "guides": "Guide",
+      "notFound": "Nessun simbolo ha questo nome",
+      "groups": {
+        "variants": "Varianti",
+        "parameters": "Parametri",
+        "options": "Opzioni",
+        "properties": "Proprietà",
+        "methods": "Metodi"
+      }
+    }
   },
   "nav": {
     "home": "Home",
@@ -111,15 +124,15 @@
       "templates/text-interpolation": "Interpolazione del testo",
       "templates/binding": "Binding di attributi e proprietà",
       "templates/events": "Gestione degli eventi",
-      "templates/if": "Condizioni con @if",
-      "templates/for": "Liste con @for",
-      "templates/switch": "Diramazioni con @switch",
-      "templates/conditional-bindings": "Binding condizionali",
-      "templates/template-variables": "Variabili di template",
+      "templates/if": "@if, @else if and @else",
+      "templates/for": "@for",
+      "templates/switch": "@switch",
+      "templates/imports": "@import",
       "templates/let": "@let",
-      "templates/reusable-templates": "Template riutilizzabili",
+      "templates/template-variables": "Variabili di template",
+      "templates/conditional-bindings": "Binding condizionali",
+      "templates/reusable-templates": "Template e @render",
       "templates/expressions": "Sintassi delle espressioni",
-      "templates/imports": "Import",
       "templates/svg-mathml": "SVG e MathML",
       "directives/overview": "Panoramica",
       "directives/custom": "Direttive custom",
@@ -209,14 +222,14 @@
             "p1": "Lo shadow root è sempre aperto, e non si può sostituire: la classe base lo ha già agganciato."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Compila template e foglio di stile, e definisce il custom element.",
           "td2": "La classe base: un <code>HTMLElement</code> con uno shadow root aperto e gli hook del ciclo di vita.",
           "td3": "Dove viene renderizzato il template.",
-          "td4": "<code>this.effect(fn, opzioni?)</code>",
+          "td4": "<a href=\"#/it/reference/api/core/CustomElement\"><code>this.effect(fn, opzioni?)</code></a>",
           "td5": "Un effect eliminato quando l’elemento viene rimosso. Vedi <a href=\"#/it/signals/effects\">Effect</a>.",
           "td6": "Hook facoltativi. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>."
         }
@@ -256,8 +269,8 @@
             "body": "Il componente non può leggere gli elementi proiettati tramite il proprio template, né dar loro uno stile oltre a <code>::slotted()</code>: sono elementi del template del padre, con lo stile del suo foglio. Vedi <a href=\"#/it/components/styling\">Stili</a>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
           "td1": "Lo slot di default: i figli senza attributo <code>slot</code>.",
@@ -300,8 +313,8 @@
             "body": "Una query sul contenuto si aggiorna quando vengono aggiunti o rimossi elementi, quando cambia il loro attributo <code>slot</code> e quando cambiano gli slot del componente. Il cambiamento di qualsiasi altro attributo, come una classe, non la aggiorna, come per le <a href=\"#/it/components/queries\">query sulla vista</a>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Il primo elemento proiettato che corrisponde a <code>target</code>, oppure <code>null</code>.",
@@ -350,8 +363,8 @@
             "body": "La libreria crea, sposta e rimuove gli elementi dei template e i componenti. Spostarli, rimuoverli o riattaccarli con le API del DOM non è supportato: modifica solo gli elementi che hai creato tu, come il gauge qui sopra."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "Compito",
           "th2": "Dove",
           "td1": "Raggiungere un elemento del template",
@@ -392,8 +405,8 @@
             "body": "Solo le classi decorate con <code>@WebComponent</code> devono stare in file <code>.xd.component.ts</code>. Una classe base senza decoratore può stare in qualsiasi file, come <code>counter-base.ts</code>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "Membro della classe base",
           "th2": "Ereditato",
           "th3": "Visto dai template",
@@ -466,8 +479,8 @@
             "body": "Un componente caricato più tardi, per esempio con un import dinamico, riceve i binding come attributi stringa finché non viene definito, e i suoi valori di default dopo. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Un input facoltativo, che vale <code>default</code> finché non viene legato.",
@@ -515,8 +528,8 @@
             "body": "Gli input non sono attributi, quindi la classe base non dichiara <code>observedAttributes</code>: leggi gli input in modo reattivo. Vedi <a href=\"#/it/components/inputs\">Input</a>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Eseguito a ogni collegamento, prima del render.",
@@ -571,8 +584,8 @@
             "p1": "Un componente è un <code>HTMLElement</code>, quindi un evento chiamato <code>remove</code>, <code>click</code> o <code>focus</code> sostituirebbe un metodo dell’elemento. TypeScript lo rifiuta, e lo stesso vale per un input o un signal chiamato <code>title</code>, <code>lang</code> o <code>hidden</code>. Scegli un altro nome, oppure mantieni il nome nei template con un <code>alias</code>."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Dichiara un evento con il nome dell’accessor. <code>options</code> imposta <code>bubbles</code>, <code>cancelable</code> e <code>composed</code> per ogni emissione.",
@@ -614,8 +627,8 @@
             "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore. Altrimenti la query lancia un errore quando il componente viene creato."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Il primo elemento del template che corrisponde a <code>target</code>, oppure <code>null</code>.",
@@ -673,8 +686,8 @@
             "body": "C’è un solo registro per pagina e non c’è modo di annullare la definizione di un nome. Due applicazioni nella stessa pagina, o due versioni della stessa libreria, non possono definire lo stesso selettore: il prefisso è l’unica protezione."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "<code>@import { Classe } from \"./percorso.xd.component.ts\"</code>",
@@ -737,8 +750,8 @@
             "body": "Gli stili della pagina, compresi i reset come <code>box-sizing: border-box</code>, non si applicano dentro gli shadow root. Ripetili nei fogli di stile dei componenti, oppure condividi un file tra più componenti."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "Selettore",
           "th2": "Scritto in",
           "th3": "Colpisce",
@@ -786,7 +799,7 @@
             "p1": "Le parentesi di una direttiva contengono i suoi input e i suoi listener, e le condizioni su di essi, ma nessun’altra direttiva."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi dentro un tag",
           "th2": "Comportamento",
@@ -838,15 +851,15 @@
           "p1": "Una direttiva parte quando l’elemento ha i suoi attributi ed è nel documento, ma prima che i suoi figli vengano renderizzati: <code>onInit</code> vede l’<code>id</code> e la label legata, ma nessuna voce della lista, e le voci compaiono un microtask dopo. Il codice che ha bisogno dei figli può attendere un microtask, oppure osservarli con un <code>MutationObserver</code>.",
           "p2": "Una direttiva riceve i suoi input <strong>prima</strong> di <code>onInit</code>: la label è già <code>first</code>, non il default. Lo stesso vale per un componente figlio, come mostrato in <a href=\"#/it/components/inputs\">Input</a>.",
           "callout1": {
-            "heading": "Nel costruttore non c’è ancora niente",
-            "p1": "L’elemento e il contesto della direttiva vengono impostati dopo il costruttore. Lì <code>this.element</code> è <code>undefined</code> e <code>this.effect</code> lancia un errore: la configurazione va in <code>onInit</code>."
+            "heading": "Nel costruttore l’elemento non c’è ancora",
+            "p1": "L’elemento della direttiva viene impostato dopo il costruttore: lì <code>this.element</code> è <code>undefined</code>, e gli input hanno ancora i valori predefiniti. <code>this.effect</code> si può chiamare lì, come in un componente: l’effetto viene eseguito subito ed eliminato insieme alla direttiva. La configurazione che legge l’elemento o gli input va in <code>onInit</code>."
           },
           "callout2": {
             "heading": "Una volta per elemento, e solo input noti",
             "p1": "Una direttiva si può applicare una sola volta allo stesso elemento. I suoi input sono controllati come quelli di un componente: nomi sconosciuti e tipi sbagliati sono errori di compilazione."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Membro",
           "th2": "Descrizione",
@@ -917,11 +930,11 @@
             "p1": "Il compilatore non controlla che <code>@@</code> sia usato per le direttive custom e <code>*</code> per quelle strutturali. L’errore emerge quando l’elemento viene renderizzato."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<code>@Directive({ selector: 'nome' })</code>",
+          "td1": "<a href=\"#/it/reference/api/core/Directive\"><code>@Directive({ selector: 'nome' })</code></a>",
           "td2": "Registra la classe con il selettore.",
           "td3": "Classe base delle direttive che agiscono su un elemento di tipo <code>T</code>.",
           "td4": "Classe base delle direttive che decidono se un elemento viene renderizzato.",
@@ -972,7 +985,7 @@
             "p1": "Una direttiva strutturale non ha un elemento su cui emettere eventi, dato che l’elemento potrebbe non esistere, quindi non accetta listener. Nemmeno i suoi input si possono legare in modo condizionale; la direttiva stessa, invece, si può applicare con una condizione, come mostrato in <a href=\"#/it/directives/conditional\">Direttive condizionali</a>."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
@@ -1273,7 +1286,7 @@
             "body": "Il codice dopo un <code>await</code> gira fuori dall’effect che lo ha avviato, quindi i signal che legge non vengono tracciati. Leggi ciò da cui dipende la richiesta prima del primo <code>await</code>. La stessa regola vale per le <a href=\"#/it/directives/structural\">direttive strutturali</a> asincrone."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Esigenza",
           "th2": "Strumento",
@@ -1315,7 +1328,7 @@
             "p1": "<code>checked</code> è un attributo booleano: legato a <code>false</code>, spunta comunque la casella. E, come <code>value</code>, è solo lo stato iniziale."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Esigenza",
           "th2": "Strumento",
@@ -1354,7 +1367,7 @@
             "body": "La direttiva sostituisce tutto ciò che l’elemento contiene, e i figli scritti nel template vengono renderizzati subito dopo <code>onInit</code>, come mostrato in <a href=\"#/it/directives/custom\">Direttive custom</a>. Applicala a un elemento vuoto."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Risultato",
@@ -1381,7 +1394,7 @@
             "body": "Due elementi con la stessa chiave si distinguono solo per il loro ordine, quindi lo stato delle loro righe può scambiarsi quando la lista cambia. Ricava le chiavi da un contatore o dagli id del server, mai dalla posizione o da un campo modificabile dagli utenti, come il nome."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Operazione",
           "th2": "Codice",
@@ -1421,7 +1434,7 @@
             "body": "Lo <code>@switch</code> distrugge la pagina che lascia. Lo stato che deve sopravvivere a una pagina, come un filtro o una bozza, va in un modulo, come il router stesso."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Parte",
           "th2": "Strumento",
@@ -1460,7 +1473,7 @@
             "body": "Un tema non può ristilare l’interno di un componente con i selettori normali. Ciò che il componente non legge da una custom property, o non espone come part, resta come lo definisce il componente."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Strumento",
           "th2": "Uso",
@@ -1478,10 +1491,14 @@
       "api": {
         "eyebrow": "Riferimento",
         "title": "Riferimento API",
-        "lead": "Ogni export di <code>@xaendar/core</code>, <code>@xaendar/core/signals</code> e <code>@xaendar/signals</code>, con la sua firma e la pagina che lo spiega. Filtra per nome, per testo o per modulo.",
-        "callout1": {
-          "heading": "Tre punti d’ingresso",
-          "body": "Componenti, direttive e decoratori vengono da <code>@xaendar/core</code>; le funzioni dei signal da <code>@xaendar/core/signals</code>; <code>loadSignals</code> e il <code>Signal</code> globale da <code>@xaendar/signals</code>. Gli export segnati come interni sono usati dai template compilati."
+        "lead": "Ogni simbolo esportato dai pacchetti di Xaendar, raggruppato per pacchetto. Ognuno porta alla sua pagina: cosa fa, la sua firma, le sue opzioni e i suoi membri uno per uno, ed esempi. Filtra per nome o per tipo.",
+        "packages": {
+          "@xaendar/core": "Componenti, direttive, i loro decoratori e le loro classi base.",
+          "@xaendar/core/signals": "I signal di componenti e direttive: signal, computed, effect e untracked, e i tipi di input e query.",
+          "@xaendar/signals": "Il Signal globale della proposta TC39, installato da loadSignals, su cui si basano i signal di @xaendar/core/signals.",
+          "@xaendar/build-tools": "Il plugin di Vite che compila template e fogli di stile, e le sue opzioni.",
+          "@xaendar/common": "Utilità condivise dai pacchetti: conversione di maiuscole e minuscole, funzioni sugli oggetti, nomi di custom element.",
+          "@xaendar/types": "Tipi di utilità condivisi dai pacchetti: costruttori, decoratori, funzioni."
         }
       },
       "comingFromAngular": {
@@ -1513,7 +1530,7 @@
           "td16": "Pipe",
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
-          "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template riutilizzabili</a>",
+          "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
           "td20": "<code>@let</code>, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
@@ -1615,22 +1632,22 @@
             "body": "<code>watch()</code> su un signal già osservato dallo stesso watcher lancia <code>Cannot watch a signal that is already being watched</code>; <code>unwatch()</code> su un signal che non osserva lancia <code>Cannot unwatch a signal that is not being watched</code>. Entrambi lanciano un errore anche mentre i signal sono congelati."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<code>loadSignals(opzioni?)</code>",
+          "td1": "<a href=\"#/it/reference/api/signals/loadSignals\"><code>loadSignals(opzioni?)</code></a>",
           "td2": "Installa l’oggetto globale <code>Signal</code>; <code>devMode</code> abilita log e avvisi.",
-          "td3": "<code>new Signal.State(valore, opzioni?)</code>",
+          "td3": "<a href=\"#/it/reference/api/signals/Signal.State\"><code>new Signal.State(valore, opzioni?)</code></a>",
           "td4": "Un nodo scrivibile: <code>get()</code>, <code>set()</code>.",
-          "td5": "<code>new Signal.Computed(fn, opzioni?)</code>",
+          "td5": "<a href=\"#/it/reference/api/signals/Signal.Computed\"><code>new Signal.Computed(fn, opzioni?)</code></a>",
           "td6": "Un nodo derivato: <code>get()</code>.",
           "td7": "<code>watch(...signal)</code>, <code>unwatch(...signal)</code>, <code>getPending()</code>.",
           "td8": "Equivale a <code>untracked</code>.",
           "td9": "Il signal derivato in corso di valutazione, o <code>null</code>.",
-          "td10": "<code>Signal.subtle.introspectSources(nodo)</code>, <code>introspectSinks(nodo)</code>",
+          "td10": "<a href=\"#/it/reference/api/signals/Signal.subtle\"><code>Signal.subtle.introspectSources(nodo)</code></a>, <a href=\"#/it/reference/api/signals/Signal.subtle\"><code>introspectSinks(nodo)</code></a>",
           "td11": "I nodi da cui dipende un nodo, e quelli che dipendono da esso.",
-          "td12": "<code>Signal.subtle.hasSources(nodo)</code>, <code>hasSinks(nodo)</code>",
+          "td12": "<a href=\"#/it/reference/api/signals/Signal.subtle\"><code>Signal.subtle.hasSources(nodo)</code></a>, <a href=\"#/it/reference/api/signals/Signal.subtle\"><code>hasSinks(nodo)</code></a>",
           "td13": "Se quelle liste non sono vuote."
         }
       },
@@ -1675,14 +1692,14 @@
             "body": "La funzione restituita da <code>computed()</code> ha <code>get()</code> ma non <code>set()</code> né <code>update()</code>. Per cambiarne il valore, cambia le sue dipendenze."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<code>computed(fn, opzioni?)</code>",
+          "td1": "<a href=\"#/it/reference/api/core/signals/computed\"><code>computed(fn, opzioni?)</code></a>",
           "td2": "Crea un signal in sola lettura derivato dai signal letti da <code>fn</code>.",
           "td3": "Legge il valore, valutando <code>fn</code> se serve; rilancia un errore in cache.",
-          "td4": "<code>opzioni.equals</code>",
+          "td4": "<a href=\"#/it/reference/api/core/signals/computed\"><code>opzioni.equals</code></a>",
           "td5": "Decide se un nuovo risultato è un cambiamento, <code>Object.is</code> di default."
         }
       },
@@ -1701,7 +1718,7 @@
         },
         "effectsOfAComponent": {
           "title": "Gli effetti di un componente",
-          "p1": "Componenti e direttive hanno il proprio <code>this.effect(fn, opzioni?)</code>. Funziona come <code>effect()</code>, ma l’effetto viene eliminato automaticamente quando il componente lascia la pagina. Crealo in <code>onInit</code> o in <code>afterRender</code>. Un <code>effect()</code> autonomo vive finché non viene chiamata la sua funzione di eliminazione, qualunque cosa accada al componente che lo ha creato.",
+          "p1": "Componenti e direttive hanno il proprio <code>this.effect(fn, opzioni?)</code>. Funziona come <code>effect()</code>, ma l’effetto viene eliminato automaticamente quando il componente lascia la pagina. Crealo in <code>onInit</code> o in <code>afterRender</code>; si può creare anche nel costruttore o in un inizializzatore di campo, dove viene eseguito prima che gli input siano legati. Un <code>effect()</code> autonomo vive finché non viene chiamata la sua funzione di eliminazione, qualunque cosa accada al componente che lo ha creato.",
           "example1": "this.effect() contro effect()",
           "p2": "Aggiungi il figlio, aspetta qualche secondo e rimuovilo: l’effetto creato con <code>this.effect()</code> si ferma, quello autonomo continua a scrivere nel log — e a far avanzare l’orologio — finché non viene eliminato."
         },
@@ -1714,7 +1731,7 @@
         },
         "disposing": {
           "title": "Eliminare un effetto",
-          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Quella di <code>this.effect()</code> si può chiamare quante volte si vuole, anche dopo che il componente non c’è più; quella di un <code>effect()</code> autonomo lancia un errore la seconda volta.",
+          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Un effetto si elimina una volta sola: chiamare la funzione di eliminazione una seconda volta lancia un errore, che l’effetto sia autonomo o legato con <code>this.effect()</code>. Quella di <code>this.effect()</code> lancia un errore anche dopo che il componente o la direttiva non c’è più, perché lo scollegamento ha già eliminato l’effetto.",
           "example1": "Eliminare due volte"
         },
         "errors": {
@@ -1741,19 +1758,19 @@
             "body": "Il JSDoc di <code>onCleanup</code> dice che viene eseguita prima di ogni riesecuzione, e il README di <code>@xaendar/signals</code> mostra due scritture sincrone che producono due esecuzioni. Entrambi sono sbagliati: il comportamento è quello descritto in questa pagina."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<code>effect(fn, opzioni?)</code>",
+          "td1": "<a href=\"#/it/reference/api/core/signals/effect\"><code>effect(fn, opzioni?)</code></a>",
           "td2": "Esegue <code>fn</code> subito e dopo ogni cambiamento di ciò che ha letto; restituisce la funzione di eliminazione.",
-          "td3": "<code>this.effect(fn, opzioni?)</code>",
-          "td4": "Uguale, eliminato insieme al componente o alla direttiva. La sua funzione di eliminazione è idempotente.",
-          "td5": "<code>opzioni.onBeforeRun</code>",
+          "td3": "<a href=\"#/it/reference/api/core/CustomElement\"><code>this.effect(fn, opzioni?)</code></a>",
+          "td4": "Uguale, eliminato insieme al componente o alla direttiva. La sua funzione di eliminazione lancia un errore se l’effetto è già eliminato.",
+          "td5": "<a href=\"#/it/reference/api/core/signals/EffectOptions\"><code>opzioni.onBeforeRun</code></a>",
           "td6": "Chiamata prima di ogni esecuzione.",
-          "td7": "<code>opzioni.onAfterRun</code>",
+          "td7": "<a href=\"#/it/reference/api/core/signals/EffectOptions\"><code>opzioni.onAfterRun</code></a>",
           "td8": "Chiamata dopo ogni esecuzione, anche fallita.",
-          "td9": "<code>opzioni.onCleanup</code>",
+          "td9": "<a href=\"#/it/reference/api/core/signals/EffectOptions\"><code>opzioni.onCleanup</code></a>",
           "td10": "Chiamata una volta, all’eliminazione."
         }
       },
@@ -1830,19 +1847,19 @@
             "body": "Leggere un signal in un gestore di eventi o in un metodo qualsiasi restituisce solo il valore: nessuno si sottoscrive. Vengono tracciate solo le letture fatte mentre è in esecuzione un signal derivato, un effetto o un binding del template."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<code>signal(valore, opzioni?)</code>",
+          "td1": "<a href=\"#/it/reference/api/core/signals/signal\"><code>signal(valore, opzioni?)</code></a>",
           "td2": "Crea un signal scrivibile.",
           "td3": "Legge il valore, tracciandolo nei contesti reattivi.",
-          "td4": "<code>sig.set(valore)</code>",
+          "td4": "<a href=\"#/it/reference/api/core/signals/Signal\"><code>sig.set(valore)</code></a>",
           "td5": "Sostituisce il valore, a meno che non sia uguale a quello attuale.",
           "td6": "Imposta <code>fn(attuale)</code>, leggendo il valore attuale senza tracciarlo.",
-          "td7": "<code>opzioni.equals</code>",
+          "td7": "<a href=\"#/it/reference/api/core/signals/signal\"><code>opzioni.equals</code></a>",
           "td8": "Uguaglianza personalizzata, <code>Object.is</code> di default.",
-          "td9": "<code>opzioni.watched</code>, <code>opzioni.unwatched</code>",
+          "td9": "<a href=\"#/it/reference/api/signals/SignalOptions\"><code>opzioni.watched</code></a>, <a href=\"#/it/reference/api/signals/SignalOptions\"><code>opzioni.unwatched</code></a>",
           "td10": "Vedi <a href=\"#/it/signals/options\">Opzioni dei signal</a>."
         }
       },
@@ -1899,8 +1916,8 @@
             "body": "Le letture fatte prima o dopo la chiamata vengono tracciate normalmente. E sono le letture a non essere tracciate, non i signal: lo stesso signal letto altrove nello stesso effetto resta una dipendenza."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Esegue <code>fn</code> senza tracciare ciò che legge, e ne restituisce il risultato. Disponibile anche come <code>Signal.subtle.untrack</code>."
@@ -1964,7 +1981,7 @@
             "body": "<code>[class.nome]</code> non si può scrivere tra le parentesi di una direttiva, che legano solo le sue proprietà: scrivilo sull’elemento. Una classe si può attivare al massimo una volta su un elemento, come un attributo si può legare una volta, salvo in rami diversi della stessa condizione."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Risultato",
@@ -2003,7 +2020,7 @@
             "p1": "Lo stesso attributo non si può scrivere sia fuori sia dentro una condizione. Rami diversi della stessa condizione, invece, possono legarlo ciascuno a modo suo."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi dentro un tag",
           "th2": "Descrizione",
@@ -2046,7 +2063,7 @@
             "body": "Sul tag di un componente si possono legare solo gli eventi che dichiara con <code>@Event</code>, non quelli nativi; sugli elementi nativi solo quelli nativi. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2087,7 +2104,7 @@
             "body": "Ogni signal letto da un’espressione viene tracciato nel testo, nelle condizioni e nei cicli. In un attributo, solo i membri signal e i signal importati che l’espressione nomina: vedi <a href=\"#/it/templates/binding\">Binding</a>. Gli handler degli eventi seguono una propria sintassi, più limitata: vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Ammesso",
           "th2": "Non ammesso",
@@ -2140,7 +2157,7 @@
             "p1": "Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array. L’espressione di <code>track</code> legge l’elemento, le variabili implicite, i membri del componente e gli import, ma nessuna variabile di template. Un numero negativo non renderizza nulla."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2153,7 +2170,7 @@
       },
       "if": {
         "eyebrow": "Template",
-        "title": "Condizioni con @if",
+        "title": "Condizioni con @if, @else if and @else",
         "lead": "<code>@if</code> renderizza un blocco solo finché la sua condizione è truthy, con rami facoltativi <code>@else if</code> e <code>@else</code>. La condizione è reattiva: viene rieseguita ogni volta che cambia un signal che legge, e il blocco cambia ramo quando il risultato lo richiede.",
         "branches": {
           "title": "Rami",
@@ -2177,7 +2194,7 @@
             "body": "La condizione segue JavaScript: <code>0</code>, <code>''</code>, <code>null</code>, <code>undefined</code> e <code>NaN</code> selezionano il ramo <code>@else</code>. Per un conteggio che può valere zero, confrontalo in modo esplicito, come fa <code>guests() &gt; 0</code>."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2233,7 +2250,7 @@
             "body": "Un signal esportato da un pacchetto compilato si riconosce dal suo tipo nelle dichiarazioni (<code>Signal&lt;number&gt;</code>), e resta reattivo. Il corpo delle sue funzioni non fa parte delle dichiarazioni: un binding di attributo che ne chiama una viene valutato una sola volta, anche se la funzione legge un signal. Avvolgi la chiamata in un membro <code>computed</code> della classe."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2317,7 +2334,7 @@
             "body": "<code>&lt;DIV&gt;</code> con <code>&lt;/DIV&gt;</code> compila e renderizza un <code>div</code>, come in HTML; basta che i due tag corrispondano."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Regola",
           "th2": "Scrivi",
@@ -2354,7 +2371,7 @@
             "body": "Come per l’HTML, un binding imposta un attributo con <code>setAttribute</code>: i numeri diventano stringhe, che SVG accetta per la geometria. Le proprietà degli elementi SVG, come i valori animati, vanno impostate nel codice."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Elemento",
           "th2": "Namespace",
@@ -2383,7 +2400,7 @@
             "p1": "Il valore di un case non può leggere i membri del componente. Confronta con dei letterali, oppure sposta la logica in un computed che ne restituisce uno."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2436,7 +2453,7 @@
             "body": "Una variabile si dichiara direttamente sull’elemento, senza valore, al massimo una per elemento: non dentro un binding condizionale, né dentro le parentesi di una direttiva. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2487,7 +2504,7 @@
             "body": "Una <code>@let</code> si dichiara nel contenuto, mai tra i binding di un tag, con un nome tutto suo nel suo scope: TypeScript segnala una variabile di template, un template o un’altra <code>@let</code> con lo stesso nome. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
@@ -2498,7 +2515,7 @@
       },
       "reusableTemplates": {
         "eyebrow": "Template",
-        "title": "Template riutilizzabili",
+        "title": "Template riutilizzabili con @render",
         "lead": "<code>&lt;template #name(…)&gt;</code> dichiara un pezzo di template una volta sola, con parametri tipizzati, come una funzione. <code>@render name(…)</code> lo renderizza ovunque possa stare del contenuto, e TypeScript controlla gli argomenti come controlla quelli di una chiamata.",
         "declaring": {
           "title": "Dichiarare e renderizzare",
@@ -2544,8 +2561,8 @@
             "body": "Un template viene renderizzato dal template che lo dichiara, nel suo scope: non può essere passato a un altro componente, né letto dalla classe."
           }
         },
-        "apiSummary": {
-          "title": "Riepilogo API",
+        "summary": {
+          "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
           "td1": "Dichiara un template con parametri tipizzati, visibile in tutto il suo scope.",
@@ -2570,7 +2587,7 @@
           "example1": "Valori di ogni tipo",
           "p2": "L’ultima riga è l’errore più comune: un signal è una funzione, e senza la chiamata il testo mostra la funzione stessa. Nessuno lo segnala, perché mostrare una funzione è lecito."
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Valore",
           "th2": "Testo",
@@ -2593,7 +2610,7 @@
         "configuration": {
           "title": "Configurazione",
           "p1": "L’ordine conta. Babel compila prima i decoratori standard, e il plugin lavora poi sul suo output: cerca i blocchi statici che Babel genera in ogni classe decorata, e aggiunge la sua registrazione prima di essi. Con i plugin nell’ordine sbagliato, ogni componente fallisce con il messaggio mostrato in <a href=\"#/it/installation\">Installazione</a>.",
-          "p2": "Il plugin non ha opzioni. Legge <code>tsconfig.json</code> dalla cartella da cui viene avviato Vite, e ne usa le opzioni del compilatore, comprese quelle strict, per il type check dei template."
+          "p2": "Il plugin accetta un’opzione, <code>customElements</code>: i pattern dei tag dei custom element di altre librerie, come <code>['sl-*']</code>, che i template usano come elementi nativi, senza importarli. La CLI passa la lista dichiarata in <code>xaendar.json</code>. Vedi <a href=\"#/it/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> e <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Legge <code>tsconfig.json</code> dalla cartella da cui viene avviato Vite, e ne usa le opzioni del compilatore, comprese quelle strict, per il type check dei template."
         },
         "whatThePluginDoes": {
           "title": "Cosa fa il plugin",
@@ -2621,11 +2638,11 @@
             "body": "Come <code>styleUrl</code> si possono usare solo file <code>.css</code>, e le regole <code>@import</code> al loro interno vengono scartate dal browser, perché i fogli di stile costruiti non le supportano. Vedi <a href=\"#/it/components/styling\">Stili</a>."
           }
         },
-        "apiSummary": {
+        "summary": {
           "title": "Riepilogo",
           "th1": "Elemento",
           "th2": "Valore",
-          "td1": "Il plugin Vite, senza opzioni; dopo la trasformazione Babel dei decoratori.",
+          "td1": "Il plugin Vite, con l’opzione <code>customElements</code>; dopo la trasformazione Babel dei decoratori.",
           "td2": "File compilati",
           "td3": "<code>*.xd.component.ts</code>, con i loro <code>templateUrl</code> e <code>styleUrl</code>",
           "td4": "Moduli virtuali",
@@ -2777,46 +2794,6 @@
         "p1": "Le guide approfondiscono ogni concetto, con i suoi casi limite: inizia dai <a href=\"#/it/signals/overview\">signal</a>, dagli <a href=\"#/it/components/inputs\">input</a> e dalle <a href=\"#/it/templates/for\">liste</a>."
       }
     }
-  },
-  "api": {
-    "WebComponent": "Definisce una classe che estende CustomElement come custom element, con il suo template compilato e il suo foglio di stile. Le opzioni devono essere stringhe letterali.",
-    "Property": "Dichiara un input. L’accessor contiene un InputSignal, impostato dai binding del template padre.",
-    "Property.required": "Dichiara un input che ogni uso del componente deve legare, in ogni ramo di un binding condizionale. Controllato in compilazione.",
-    "Event": "Dichiara un output. emit(detail?, options?) emette sull’elemento host un CustomEvent con il nome dell’accessor.",
-    "Query": "Il primo elemento della shadow root che corrisponde a un selettore o a una classe componente, tenuto aggiornato come signal.",
-    "Query.required": "Come Query, per un elemento che c’è sempre: niente null nel tipo, e leggerla lancia un errore quando nessun elemento corrisponde.",
-    "Query.all": "Tutti gli elementi della shadow root che corrispondono a un selettore o a una classe componente.",
-    "Query.content": "Il primo elemento proiettato negli slot del componente che corrisponde a un selettore o a una classe componente.",
-    "Query.content.required": "Come Query.content, per un contenuto proiettato che c’è sempre: niente null nel tipo, e leggerla lancia un errore quando nessun elemento corrisponde.",
-    "Query.content.all": "Tutti gli elementi proiettati che corrispondono a un selettore o a una classe componente, nell’ordine degli slot.",
-    "Directive": "Registra una classe che estende CustomDirective o StructuralDirective con un selettore, usato come @@selettore o *selettore.",
-    "CustomElement": "Classe base dei componenti: una shadow root aperta, gli hook del ciclo di vita, e effect eliminati alla disconnessione. hostDirectives contiene le istanze delle host directive, con chiave la loro classe.",
-    "CustomDirective": "Classe base delle direttive che agiscono sull’elemento a cui sono applicate.",
-    "StructuralDirective": "Classe base delle direttive che decidono se l’elemento a cui sono applicate viene renderizzato.",
-    "Output": "La classe di un accessor @Event: emit(detail?, options?) emette l’evento. Senza argomento di tipo l’evento non porta un detail, e i template non possono leggere $event.",
-    "EventOptions": "Le opzioni di un output, passate a @Event o a un singolo emit. Serve almeno una chiave.",
-    "WebComponentOptions": "Le opzioni di @WebComponent.",
-    "HostDirectiveOptions": "Una direttiva applicata all’elemento di un componente, con gli input e gli output della direttiva che il componente espone, come stringhe o come oggetti { name, alias }. HostDirectiveMember è il tipo di ciascuna.",
-    "HostDirectiveMember": "Una proprietà o un evento di una host directive esposto sul componente: il suo nome, oppure il nome e l’alias con cui viene esposto.",
-    "HostDirectives": "Le host directive di un componente, con chiave la classe: hostDirectives.get(Tooltip) è l’istanza, tipizzata come la direttiva.",
-    "DirectiveOptions": "Le opzioni di @Directive.",
-    "_Context, _if, _for, _switch, _renderElement, _renderText, _defineRender, mountNode, createAnchor, RenderFunction, RenderDefinition, …": "Il runtime dei template compilati, con i suoi tipi (BindingHost, RenderElementAttribute, …). Sono esportati per il codice generato, non per le applicazioni.",
-    "signal": "Un signal scrivibile: si legge chiamandolo, si scrive con set o update.",
-    "computed": "Un signal derivato da altri, valutato in modo lazy e tenuto in cache finché non cambia una dipendenza.",
-    "effect": "Esegue una funzione subito, e di nuovo in un microtask dopo che cambiano i signal letti. Restituisce la funzione che lo elimina.",
-    "untracked": "Esegue una funzione senza tracciare i signal che legge.",
-    "Signal": "Il tipo restituito da signal(). Annotare un membro con questo tipo rende reattivi gli attributi che lo leggono.",
-    "Computed": "Il tipo restituito da computed().",
-    "InputSignal": "Il tipo di un input: in sola lettura per il componente, impostato dai binding del padre.",
-    "QuerySignal": "Il tipo di una query: un signal in sola lettura aggiornato un microtask dopo i cambi del DOM.",
-    "EffectOptions": "Hook di un effect. onCleanup viene eseguito una volta, quando l’effect viene eliminato.",
-    "InputSignalOptions": "Le opzioni di @Property, insieme ad alias.",
-    "QueryTarget, QueryElement, QuerySlotOptions": "Il bersaglio di una query, il tipo di elemento che ne risulta, e le opzioni delle query sul contenuto.",
-    "loadSignals": "Installa il polyfill globale Signal. Va eseguito prima che @xaendar/core venga caricato: chiamalo nell’entry point, poi carica l’applicazione con un import dinamico.",
-    "SignalOptions": "Le opzioni di signal() e di Signal.State. computed() usa solo equals.",
-    "SignalEqual, ExtractSignalType": "Il tipo di una funzione di uguaglianza, e il tipo del valore di un signal.",
-    "Signal.State, Signal.Computed": "Le classi della proposta TC39, installate globalmente da loadSignals. signal() e computed() le avvolgono.",
-    "Signal.subtle": "L’API di basso livello della proposta: watcher, introspezione, e i simboli delle callback watched e unwatched."
   },
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
@@ -3011,7 +2988,7 @@
       "cause": "Uno styleUrl che non è un file .css.",
       "fix": "Usa CSS semplice."
     },
-    "Could not find the static initializer block for class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
+    "Could not find the static block applying the decorators of class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
       "cause": "I decoratori non sono stati compilati prima del plugin Xaendar.",
       "fix": "Metti il plugin Babel prima di xaendarPlugin()."
     },
@@ -3035,7 +3012,7 @@
       "cause": "Un simbolo importato come root, $event o un nome che inizia con __, che il compilatore usa per sé.",
       "fix": "Importalo con un altro nome con as."
     },
-    "XCard does not seems to have a Render Function": {
+    "XCard does not seem to have a Render Function": {
       "cause": "Il componente non è stato compilato, o la classe è una sottoclasse senza un proprio @WebComponent.",
       "fix": "Cerca il messaggio del compilatore stampato prima."
     },
@@ -3054,10 +3031,6 @@
     "Error: Selector \"exTint\" is already used by directive TintDirective": {
       "cause": "Due classi direttiva registrate con lo stesso selettore.",
       "fix": "Rinominane una."
-    },
-    "TypeError: Cannot read properties of undefined (reading 'addUnlistener')": {
-      "cause": "this.effect chiamato nel costruttore di una direttiva, prima che esista il suo contesto.",
-      "fix": "Crea gli effect in onInit."
     },
     "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry": {
       "cause": "Due classi definite con lo stesso selettore a runtime.",
@@ -3080,8 +3053,8 @@
       "fix": "Rimanda il lavoro con queueMicrotask."
     },
     "Cannot unwatch a signal that is not being watched": {
-      "cause": "Il disposer di un effect standalone chiamato due volte.",
-      "fix": "Chiamalo una volta sola."
+      "cause": "Il disposer di un effect chiamato quando l’effect è già eliminato: una seconda volta, oppure, per this.effect(), dopo che il componente o la direttiva non c’è più.",
+      "fix": "Chiamalo una volta sola, mentre l’effect è attivo."
     },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "Un nome di componente, o un nome di progetto seguito da -root, che non è un nome valido per un custom element.",

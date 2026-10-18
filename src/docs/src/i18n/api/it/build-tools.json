@@ -1,0 +1,34 @@
+{
+  "xaendarPlugin": {
+    "summary": "Crea il plugin Vite che compila in anticipo i template e i fogli di stile dei componenti, e verifica i tipi del progetto.",
+    "description": "<p>Il plugin, di nome <code>xaendar</code>, va nei <code>plugins</code> della configurazione di Vite, dopo la trasformazione dei decorator standard. La CLI <code>xd</code> lo aggiunge da sola, con le opzioni lette da <code>xaendar.json</code>. Le opzioni sono descritte qui sotto; il loro tipo è <a href=\"#/it/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a>.</p><p>Per ogni componente dichiarato in un file che termina con <code>.xd.component.ts</code>, il plugin legge le opzioni di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a> dal codice sorgente, valida e riserva il selettore, esegue il type check del template rispetto alla classe, e aggiunge al modulo gli import di due moduli virtuali: la funzione di render compilata dal template, e il <code>CSSStyleSheet</code> costruito dal foglio di stile. Un template o un foglio di stile condiviso da più componenti viene compilato una volta sola, in un modulo che importano tutti. Un <code>@WebComponent</code> in un file TypeScript con un altro nome è un errore.</p><p>Vite toglie i tipi senza controllarli, quindi li controlla il plugin: una build verifica i tipi di tutto il progetto alla fine, come <code>tsc --noEmit</code>, e il dev server controlla ogni file TypeScript quando lo serve. Le opzioni del compilatore, comprese quelle strict, vengono dal <code>tsconfig.json</code> della cartella da cui parte Vite, o della cartella più vicina sopra di essa che ne contiene uno: avvia Vite dalla radice del progetto.</p><p>Nel dev server, il plugin osserva ciò da cui dipende ogni componente: il suo template, il suo foglio di stile, i componenti importati dal suo template, le classi che estende e i file letti dal suo type check. Modificarne uno ricompila il componente.</p>",
+    "members": {
+      "customElements": "<p>I pattern dei nomi di tag dei custom element di altre librerie, come Shoelace o un elemento scritto senza Xaendar, che i template usano senza importarli. In un pattern, <code>*</code> sta per qualsiasi sequenza di caratteri, e ogni altro carattere sta per sé stesso: <code>sl-*</code> corrisponde a <code>sl-button</code> e a <code>sl-icon-button</code>, <code>vanilla-stars</code> solo a sé stesso. Un pattern deve corrispondere all’intero nome del tag.</p><p>Il default è nessuno: ogni tag con un trattino usato da un template deve allora essere un componente importato con <code>@import</code>, altrimenti la build fallisce. La CLI passa i <code>customElements</code> di <code>xaendar.json</code>.</p><p>Il compilatore tratta un tag corrispondente come un elemento nativo: i suoi binding scrivono attributi, quindi l’elemento riceve stringhe, i suoi attributi non vengono verificati rispetto ad alcuna classe, e <code>$event</code> prende il tipo che <code>HTMLElementEventMap</code> dichiara per l’evento, <code>any</code> per un evento che non dichiara. La libreria deve comunque definire l’elemento a runtime. Un tag che corrisponde a un pattern ed è anche un componente importato dal template fa fallire la build: usa pattern specifici per le altre librerie. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.</p>"
+    },
+    "usage": {
+      "configuration": {
+        "title": "Aggiungerlo alla configurazione di Vite",
+        "body": "<p>Un progetto che usa Vite direttamente elenca il plugin dopo la trasformazione Babel dei decorator standard: il plugin aggiunge la sua registrazione prima del blocco statico che Babel genera in ogni classe decorata. Nell’ordine opposto, ogni componente fallisce con l’errore qui sotto.</p>"
+      },
+      "cli": {
+        "title": "Progetti eseguiti dalla CLI",
+        "body": "<p><code>xd start</code>, <code>xd build</code> e <code>xd test</code> aggiungono da soli Babel e il plugin alla configurazione di <code>vite.config.ts</code>, che quindi non li elenca. La CLI passa al plugin i <code>customElements</code> dello <code>xaendar.json</code> che trova nella cartella da cui viene eseguita, nessuno se il file o il campo mancano.</p>"
+      },
+      "errors": {
+        "title": "Leggere gli errori",
+        "body": "<p>I messaggi del plugin iniziano con <code>Xaendar:</code>, e quelli del type check con <code>[TypeChecker]</code>, seguiti dalla posizione nel template e dall’estratto coinvolto. Un componente che non si può compilare fa fallire la build; nel dev server resta senza funzione di render, e lancia un errore quando viene connesso. Un file TypeScript con errori di tipo non viene servito, e i suoi errori compaiono anche nell’overlay di Vite. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi.</p>"
+      },
+      "styles": {
+        "title": "Fogli di stile",
+        "body": "<p>Sono supportati solo i file <code>.css</code>: un foglio di stile con un’altra estensione non si compila. I commenti vengono rimossi, e in <code>vite build</code> il CSS viene anche minificato con Lightning CSS, a meno che <code>build.cssMinify</code> non sia <code>false</code>. Ogni file diventa un solo <code>CSSStyleSheet</code>, adottato da ogni componente che punta a esso. Vedi <a href=\"#/it/components/styling\">Stili</a>.</p>"
+      }
+    }
+  },
+  "XaendarPluginOptions": {
+    "summary": "Il tipo delle opzioni di <code>xaendarPlugin()</code>.",
+    "description": "<p>L’oggetto passato a <a href=\"#/it/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>, la cui pagina descrive ogni opzione. Ogni opzione è facoltativa: <code>xaendarPlugin()</code> senza argomenti usa i default.</p>",
+    "members": {
+      "customElements": "<p>I pattern dei nomi di tag dei custom element di altre librerie, come <code>sl-*</code>, che i template usano come elementi nativi. Il default è nessuno. Vedi <a href=\"#/it/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a> per la sintassi dei pattern e per come il compilatore tratta i tag che vi corrispondono.</p>"
+    }
+  }
+}

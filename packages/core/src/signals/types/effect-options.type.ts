@@ -5,16 +5,15 @@ import { NoArgsVoidFunction } from '@xaendar/types';
  */
 export type EffectOptions = {
   /**
-   * Registers a cleanup function that is called before the effect re-runs or when it is disposed.
-   * @param cleanupFn - The function to invoke during cleanup.
+   * Called once, when the effect is disposed, before it stops watching its dependencies.
    */
   onCleanup?: NoArgsVoidFunction;
   /**
-   * Called before the effect re-runs.
+   * Called before each run of the effect, the first one included.
    */
   onBeforeRun?: () => void;
   /**
-   * Called after the effect re-runs.
+   * Called after each run of the effect, the first one included, also when the run throws.
    */
   onAfterRun?: () => void;
 }

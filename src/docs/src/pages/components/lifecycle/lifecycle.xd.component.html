@@ -1,4 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -73,39 +74,47 @@
     heading="{translations().pages.components.lifecycle.edgeCases.callout4.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.components.lifecycle.apiSummary.title") />
+<h2 @@i18n(key="pages.components.lifecycle.summary.title") />
 <div class="table-wrap">
-  <table class="api-summary">
+  <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.lifecycle.apiSummary.th1") />
-        <th @@i18n(key="pages.components.lifecycle.apiSummary.th2") />
+        <th @@i18n(key="pages.components.lifecycle.summary.th1") />
+        <th @@i18n(key="pages.components.lifecycle.summary.th2") />
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>
-          <code>onInit()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>onInit()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.apiSummary.td1") />
+        <td @@i18n(key="pages.components.lifecycle.summary.td1") />
       </tr>
       <tr>
         <td>
-          <code>afterRender()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>afterRender()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.apiSummary.td2") />
+        <td @@i18n(key="pages.components.lifecycle.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>onDestroy()</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>onDestroy()</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.apiSummary.td3") />
+        <td @@i18n(key="pages.components.lifecycle.summary.td3") />
       </tr>
       <tr>
         <td>
-          <code>this.effect(fn, options?)</code>
+          <a href="{`#/${currentLang()}/reference/api/core/CustomElement`}">
+            <code>this.effect(fn, options?)</code>
+          </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.apiSummary.td4") />
+        <td @@i18n(key="pages.components.lifecycle.summary.td4") />
       </tr>
     </tbody>
   </table>

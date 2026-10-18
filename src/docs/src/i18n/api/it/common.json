@@ -1,0 +1,132 @@
+{
+  "Stack": {
+    "summary": "Uno stack LIFO (last in, first out) i cui elementi si possono leggere anche per indice.",
+    "description": "<p>Uno <code>Stack</code> tiene i suoi elementi nell’ordine in cui sono stati inseriti: <code>push</code> ne aggiunge uno in cima, <code>pop</code> toglie quello in cima. Gli indici partono dal fondo, come in un array: <code>stack[0]</code> è il primo elemento inserito, <code>stack[stack.length - 1]</code> la cima, e un indice senza elemento restituisce <code>undefined</code>.</p><p>Gli indici servono solo a leggere: lo stack cambia solo con <code>push</code> e <code>pop</code>. Uno stack non si può neanche iterare né espandere con lo spread: cicla su <code>values</code>, una copia dei suoi elementi.</p><p>Xaendar lo usa dove un’operazione annidata, una volta finita, deve ripristinare lo stato che ha interrotto: gli stati del lexer del compilatore e le computazioni in corso nel runtime dei signal.</p>",
+    "members": {
+      "length": "<p>Il numero di elementi nello stack.</p>",
+      "values": "<p>Una copia degli elementi, dal fondo alla cima: modificarla non modifica lo stack. Ogni lettura crea una nuova copia.</p>",
+      "push": "<p>Aggiunge un elemento in cima allo stack e restituisce la nuova lunghezza.</p>",
+      "pop": "<p>Toglie l’elemento in cima allo stack e lo restituisce, oppure restituisce <code>undefined</code> se lo stack è vuoto.</p>"
+    },
+    "usage": {
+      "pushingAndPopping": {
+        "title": "Inserire, leggere e togliere",
+        "body": "<p>I tag aperti e non ancora chiusi, come li tiene un parser: il tag più interno è in cima, e chiuderlo lo toglie.</p>"
+      }
+    }
+  },
+  "toPascalCase": {
+    "summary": "Converte una stringa in kebab-case, snake_case o camelCase in PascalCase.",
+    "description": "<p>Toglie ogni <code>-</code> e <code>_</code> e rende maiuscolo il carattere che lo segue, poi rende maiuscolo il primo carattere. Nient’altro cambia: le altre lettere restano come sono, quindi <code>'USER-CARD'</code> diventa <code>'USERCARD'</code>, e spazi e punti restano al loro posto.</p><p>La CLI lo usa per dare alla classe di un componente il nome del suo selettore: <code>xd g c user-card</code> dichiara <code>UserCardComponent</code>. Vedi <a href=\"#/it/tools/cli\">CLI</a>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Convertire i nomi",
+        "body": "<p>Le tre convenzioni danno lo stesso risultato, e un nome in maiuscolo resta in maiuscolo.</p>"
+      }
+    }
+  },
+  "toKebabCase": {
+    "summary": "Converte una stringa in camelCase, PascalCase o snake_case in kebab-case.",
+    "description": "<p>Mette un <code>-</code> tra una lettera minuscola e la maiuscola che la segue, sostituisce ogni <code>_</code> con <code>-</code>, poi rende minuscola tutta la stringa.</p><p>Solo una minuscola seguita da una maiuscola inizia una nuova parola: una sequenza di maiuscole, come in un acronimo, non viene divisa, e neanche una cifra seguita da una maiuscola. <code>'parseXML'</code> diventa <code>'parse-xml'</code>, ma <code>'XMLParser'</code> diventa <code>'xmlparser'</code>. Gli spazi restano.</p><p>Per i nomi fatti di parole minuscole annulla <a href=\"#/it/reference/api/common/toPascalCase\"><code>toPascalCase</code></a>: <code>toKebabCase(toPascalCase('user-card'))</code> è <code>'user-card'</code>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Convertire i nomi",
+        "body": "<p>Nomi di classi e di proprietà diventano nomi nello stile dei custom element e delle classi CSS.</p>"
+      }
+    }
+  },
+  "indent": {
+    "summary": "Indenta di due spazi una riga, o ogni riga di un array.",
+    "description": "<p>Aggiunge due spazi all’inizio di una stringa, o di ogni stringa di un array. Un array dà un nuovo array, e quello passato resta com’è. Anche le righe vuote vengono indentate. Il compilatore lo usa per indentare il codice che genera, un livello per chiamata.</p><p>Una stringa è trattata come una riga sola: se contiene degli a capo, solo la sua prima riga viene indentata. Dividila prima, e passa l’array.</p>",
+    "usage": {
+      "indenting": {
+        "title": "Indentare il codice generato",
+        "body": "<p>Ogni chiamata aggiunge un livello, due spazi, a ciò che riceve. Un blocco in una sola stringa va prima diviso in righe.</p>"
+      }
+    }
+  },
+  "isNonEmpty": {
+    "summary": "Verifica se un oggetto ha almeno una proprietà propria enumerabile, e in quel caso ne restringe il tipo.",
+    "description": "<p>Restituisce <code>true</code> quando <code>Object.keys(object)</code> non è vuoto: quando l’oggetto ha almeno una proprietà propria, enumerabile, con chiave stringa. Una proprietà che vale <code>undefined</code> conta; le proprietà ereditate, quelle non enumerabili e le chiavi symbol no.</p><p>È un type guard: dove restituisce <code>true</code>, l’oggetto ha il tipo <code>NonEmptyObject&lt;Obj&gt;</code> di <a href=\"https://github.com/sindresorhus/type-fest\">type-fest</a>. Un tipo con tutte le chiavi opzionali diventa un tipo che ne richiede almeno una, come fa <a href=\"#/it/reference/api/types/RequireOne\"><code>RequireOne</code></a>, e un tipo con una chiave obbligatoria resta com’è. Il type guard legge le chiavi, non i valori: un oggetto la cui unica chiave vale <code>undefined</code> lo supera.</p><p>Gli array sono oggetti: <code>[]</code> è vuoto, <code>[0]</code> no. Una <code>Map</code> o un <code>Set</code> tengono le loro voci fuori dalle proprietà, quindi non contano: controlla la loro <code>size</code>.</p>",
+    "usage": {
+      "narrowing": {
+        "title": "Richiedere almeno un filtro",
+        "body": "<p>Una funzione che ha bisogno di almeno una tra alcune chiavi opzionali dichiara il suo parametro con <code>RequireOne</code>. Un oggetto del tipo semplice non gli è assegnabile, finché <code>isNonEmpty</code> non lo ha verificato.</p>"
+      }
+    }
+  },
+  "isEmpty": {
+    "summary": "Verifica se un oggetto non ha proprietà proprie enumerabili.",
+    "description": "<p>L’opposto di <a href=\"#/it/reference/api/common/isNonEmpty\"><code>isNonEmpty</code></a>: restituisce <code>true</code> quando <code>Object.keys(object)</code> è vuoto. Contano le stesse proprietà: proprie, enumerabili, con chiave stringa, anche quando valgono <code>undefined</code>. Le voci di una <code>Map</code> o di un <code>Set</code> non sono proprietà, quindi non contano.</p><p>Non è un type guard: restituisce un semplice <code>boolean</code>, e il tipo dell’oggetto non cambia.</p>",
+    "usage": {
+      "whatCounts": {
+        "title": "Cosa conta come vuoto",
+        "body": "<p>Il risultato segue <code>Object.keys</code>, anche per array, mappe e chiavi symbol.</p>"
+      }
+    }
+  },
+  "keys": {
+    "summary": "Restituisce i nomi delle proprietà proprie enumerabili di un oggetto, tipizzati con le chiavi del suo tipo.",
+    "description": "<p>Chiama <code>Object.keys</code> e tipizza il risultato come array delle chiavi del tipo dell’oggetto, invece di <code>string[]</code>, così ogni nome può indicizzare l’oggetto senza cast. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Il tipo si fida dell’oggetto: le proprietà che non dichiara vengono restituite comunque, e le chiavi numeriche tornano come stringhe, come le restituisce sempre <code>Object.keys</code>: <code>keys({ 1: 'one' })</code> è <code>['1']</code>, tipizzato <code>1[]</code>.</p><p>I due overload accettano un oggetto oppure <code>undefined</code>, non un valore tipizzato come l’uno o l’altro: verifica un valore del genere prima della chiamata.</p>",
+    "usage": {
+      "typedKeys": {
+        "title": "Chiavi tipizzate",
+        "body": "<p>I nomi tornano tipizzati con le chiavi dell’oggetto, quindi un ciclo su di essi ne legge i valori senza cast.</p>"
+      }
+    }
+  },
+  "entries": {
+    "summary": "Restituisce le coppie [chiave, valore] proprie enumerabili di un oggetto, tipizzate con le chiavi e i valori del suo tipo.",
+    "description": "<p>Chiama <code>Object.entries</code> e tipizza ogni coppia come <code>[Key, Value]</code>: una chiave del tipo dell’oggetto, dove <code>Object.entries</code> dà <code>string</code>, e i suoi valori, dove <code>Object.entries</code> dà <code>any</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>La chiave e il valore di una coppia sono tipizzati separatamente: per <code>{ id: number; name: string }</code> una coppia è <code>['id' | 'name', string | number]</code>, quindi controllare la chiave non restringe il valore. Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, le chiavi numeriche tornano come stringhe, e un valore tipizzato come oggetto o <code>undefined</code> non corrisponde a nessuno dei due overload.</p>",
+    "usage": {
+      "typedPairs": {
+        "title": "Coppie tipizzate",
+        "body": "<p>Le coppie vengono destrutturate nel ciclo, con il nome tipizzato con le chiavi del tema.</p>"
+      }
+    }
+  },
+  "values": {
+    "summary": "Restituisce i valori delle proprietà proprie enumerabili di un oggetto, tipizzati con i valori del suo tipo.",
+    "description": "<p>Chiama <code>Object.values</code> e tipizza il risultato con i valori del tipo dell’oggetto, un’unione quando sono diversi. <code>Object.values</code> deduce lo stesso per un tipo oggetto letterale, ma dà <code>any[]</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, e un valore tipizzato come oggetto o <code>undefined</code> non corrisponde a nessuno dei due overload.</p>",
+    "usage": {
+      "typedValues": {
+        "title": "Valori tipizzati",
+        "body": "<p>I valori tornano tipizzati, pronti per i metodi degli array.</p>"
+      }
+    }
+  },
+  "slice": {
+    "summary": "Estrae una parte di una stringa come una nuova stringa, che non tiene in memoria l’originale.",
+    "description": "<p>Restituisce gli stessi caratteri di <code>value.slice(start, end)</code>, con gli stessi indici: <code>start</code> incluso, <code>end</code> escluso, un indice negativo contato dalla fine, uno mancante che indica l’inizio o la fine della stringa.</p><p>La differenza è nella memoria. V8, il motore di Chrome e di Node.js, può restituire il risultato di <code>String.prototype.slice</code> come una vista sulla stringa originale, una <em>sliced string</em>, che tiene in vita tutta l’originale finché vive la parte. <code>slice</code> copia la parte passando per <code>JSON.stringify</code> e <code>JSON.parse</code>, così il risultato possiede i suoi caratteri e l’originale può essere liberata dal garbage collector.</p><p>Il compilatore e il plugin di Vite lo usano per le parti di un sorgente che tengono dopo averlo letto: nomi, espressioni, testi. La copia ha un costo, che vale la pena pagare per parti brevi che sopravvivono a una stringa lunga.</p>",
+    "usage": {
+      "keepingAPart": {
+        "title": "Tenere una parte di una stringa lunga",
+        "body": "<p>Gli indici funzionano come in <code>String.prototype.slice</code>. Il nome tenuto dal sorgente non trattiene il sorgente.</p>"
+      }
+    }
+  },
+  "isValidCustomElementName": {
+    "summary": "Verifica se una stringa può essere il nome di un custom element, e quando non può stampa il motivo.",
+    "description": "<p>Un nome è valido quando:</p><ul><li>inizia con una lettera ASCII minuscola;</li><li>contiene un trattino;</li><li>contiene solo lettere ASCII minuscole, cifre, <code>-</code>, <code>.</code> e <code>_</code>;</li><li>non è uno dei nomi riservati dalla specifica HTML: <code>annotation-xml</code>, <code>color-profile</code>, <code>font-face</code>, <code>font-face-src</code>, <code>font-face-uri</code>, <code>font-face-format</code>, <code>font-face-name</code>, <code>missing-glyph</code>.</li></ul><p>Queste regole sono più severe della specifica, che accetta anche la maggior parte dei caratteri non ASCII, come <code>é</code>: un nome valido qui è valido anche per il browser. I nomi riservati sono gli elementi SVG e MathML con un trattino; gli altri elementi nativi non ne hanno, quindi i loro nomi non sono mai validi.</p><p>Un nome non valido restituisce <code>false</code>: non viene lanciato nulla. Il plugin di Vite verifica con questa funzione il selettore di ogni componente, e la CLI il nome di un nuovo componente (<code>xd g c</code>) e del componente radice di un nuovo progetto (<code>xd new</code>): entrambi stampano il suo messaggio quando un nome non è valido. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.</p>",
+    "members": {
+      "tagName": "<p>Il nome da verificare, così com’è: non viene né ripulito dagli spazi né reso minuscolo, quindi uno spazio o una maiuscola lo rendono non valido.</p>",
+      "logErrors": "<p>Se stampare con <code>console.error</code> il motivo per cui il nome non è valido, con le regole o i nomi riservati. Il compilatore passa <code>false</code> per distinguere i custom element di un template dagli elementi nativi senza stampare nulla.</p>"
+    },
+    "usage": {
+      "checking": {
+        "title": "Nomi validi e non validi",
+        "body": "<p>Ogni nome viene verificato così come è scritto, secondo le regole qui sopra.</p>"
+      }
+    }
+  },
+  "matchesCustomElementPattern": {
+    "summary": "Verifica se un nome di tag corrisponde ad almeno uno di una lista di pattern, in cui <code>*</code> sta per qualsiasi sequenza di caratteri.",
+    "description": "<p>Un pattern corrisponde al nome di tag intero. <code>*</code> sta per qualsiasi sequenza di caratteri, trattini e sequenza vuota compresi, quindi <code>sl-*</code> corrisponde a <code>sl-button</code> e a <code>sl-icon-button</code>, ma non a <code>xsl-button</code>. Ogni altro carattere corrisponde solo a se stesso, distinguendo maiuscole e minuscole: un <code>.</code> è un punto, non un carattere qualsiasi. Senza pattern, il risultato è <code>false</code>.</p><p>I pattern sono quelli di <code>customElements</code> in <code>xaendar.json</code>: il compilatore usa questa funzione per riconoscere i tag dei custom element di altre librerie, che tratta come elementi nativi. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.</p>",
+    "usage": {
+      "otherLibraries": {
+        "title": "Riconoscere i tag di altre librerie",
+        "body": "<p>Una lista come la dichiara <code>customElements</code>: un pattern per un’intera libreria, e il nome di un singolo elemento.</p>"
+      }
+    }
+  }
+}

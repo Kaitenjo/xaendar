@@ -16,14 +16,11 @@ export type ClassAccessorDecoratorValue<Field = unknown> = {
 };
 
 /**
- * Represents a class accessor decorator function.
- *
- * Note: the `context` parameter uses `Field` (not `ReturnTypeField`) because
- * `ClassAccessorDecoratorContext` is tied to the original field type.
+ * Represents a class accessor decorator function. It may return a replacement getter, setter or initializer,
+ * or `void` to leave the accessor unchanged.
  *
  * @template Class - The class that owns the decorated accessor.
- * @template Value - The original type of the accessor's value.
- * @template ActualValue - The type returned/set by the replacement accessor (defaults to `InitialValue`).
+ * @template Value - The type of the accessor's value, the same for the original accessor and its replacement.
  */
 export type AccessorDecorator<
   Class extends object, 

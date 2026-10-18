@@ -17,10 +17,10 @@ describe('getSelector', () => {
   it('throws when the class has no metadata', () => {
     class Plain { }
 
-    expect(() => getSelector(Plain as unknown as Constructor<HTMLElement>)).toThrow('Plain does not seems to be decorated with @WebComponent');
+    expect(() => getSelector(Plain as unknown as Constructor<HTMLElement>)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
 
   it('throws when the metadata of the class do not hold a selector', () => {
-    expect(() => getSelector(withMetadata({}))).toThrow('Decorated does not seems to be decorated with @WebComponent');
+    expect(() => getSelector(withMetadata({}))).toThrow('Decorated does not seem to be decorated with @WebComponent');
   });
 });

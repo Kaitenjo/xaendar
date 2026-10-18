@@ -94,6 +94,26 @@ describe('Property decorator', () => {
     expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ first: 'first', second: 'second' });
   });
 
+  it('keeps the aliases of a subclass out of the metadata of its parent and of its siblings', () => {
+    const parent: Metadata = {};
+    setup(undefined, undefined, 'label', parent);
+    const child: Metadata = Object.create(parent);
+    const sibling: Metadata = Object.create(parent);
+    setup(undefined, { alias: 'hint' }, 'text', child);
+    setup(undefined, undefined, 'count', sibling);
+
+    expect(parent[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ label: 'label' });
+    expect(child[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ label: 'label', hint: 'text' });
+    expect(sibling[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ label: 'label', count: 'count' });
+  });
+
+  it('registers the aliases of a subclass whose parent declares no input', () => {
+    const child: Metadata = Object.create({});
+    setup(undefined, undefined, 'text', child);
+
+    expect(child[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ text: 'text' });
+  });
+
   it('forwards the transform option', () => {
     const signal = setup<number, string>(0, { transform: Number }).init();
     setValue(signal, '7');
