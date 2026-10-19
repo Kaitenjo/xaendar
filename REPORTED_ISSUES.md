@@ -7,7 +7,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/common
 
-14. **`isValidCustomElementName` è più severa della specifica HTML**, che accetta caratteri non ASCII (`my-élément`), mentre la guida Selectors and registration dice che il compilatore applica "le stesse regole" del browser.
 15. **`Array.prototype.removeItem`.** `packages/common/src/utils/array/array.util.ts` installa un'estensione di `Array.prototype`: non è un export, quindi non è nella reference. Decidere se documentarla.
 
 

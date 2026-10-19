@@ -24,6 +24,12 @@ describe('isValidCustomElementName()', () => {
     it('returns true for a name starting with a single letter followed by a hyphen', () => {
       expect(isValidCustomElementName('x-tag')).toBe(true);
     });
+
+    it('returns true for a name with the non-ASCII characters the HTML specification accepts', () => {
+      expect(isValidCustomElementName('my-élément')).toBe(true);
+      expect(isValidCustomElementName('math-α')).toBe(true);
+      expect(isValidCustomElementName('emotion-😍')).toBe(true);
+    });
   });
 
   describe('invalid format', () => {
@@ -61,6 +67,12 @@ describe('isValidCustomElementName()', () => {
 
     it('returns false when the name contains #', () => {
       expect(isValidCustomElementName('my#-element')).toBe(false);
+    });
+
+    it('returns false when the name starts with a non-ASCII letter or contains a non-ASCII character the HTML specification excludes', () => {
+      expect(isValidCustomElementName('é-tag')).toBe(false);
+      expect(isValidCustomElementName('my-element×')).toBe(false);
+      expect(isValidCustomElementName('my-element\u037E')).toBe(false);
     });
 
     it('returns false when the name is an empty string', () => {

@@ -6,5 +6,6 @@ isValidCustomElementName('my.card_v2-x'); // true: digits, dots and underscores 
 isValidCustomElementName('card');         // false: no hyphen
 isValidCustomElementName('User-card');    // false: an uppercase letter
 isValidCustomElementName('font-face');    // false: a reserved name
-isValidCustomElementName('my-élément');   // false: only ASCII characters are accepted
+isValidCustomElementName('my-élément');   // true: most non-ASCII characters are accepted
+isValidCustomElementName('my-card!');     // false: an ASCII symbol
 isValidCustomElementName('card', false);  // false, without logging

@@ -1,10 +1,7 @@
 Tag <card> is not a valid custom element name. Custom element names must:
-- contain a hyphen
-- no spaces.
-- start with a lowercase letter.
-- not contain uppercase letters.
-- not be a native HTML tag name.
-- not contain the following chars: '@', '#', '$', '%', '&', '*', '!', '?', '/', '\', '|', "'", '"', '<', '>', '='
+- start with a lowercase ASCII letter.
+- contain a hyphen.
+- not contain uppercase ASCII letters, whitespace, or ASCII symbols other than '-', '.' and '_'.
 
 Tag <font-face> is a reserved tag name and cannot be used as a custom element name.
 Reserved names are:
