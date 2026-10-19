@@ -85,6 +85,12 @@ describe('highlight', () => {
     expect(tokens(highlight(`xd new app -s css # go`, 'bash'))).toEqual(['fn:xd', 'attr:-s', 'com:# go']);
   });
 
+  it('highlights the code of a file saved with CRLF line breaks as the same code with LF ones', () => {
+    for (const [lang, code] of SAMPLES) {
+      expect(highlight(code.replaceAll('\n', '\r\n'), lang)).toBe(highlight(code, lang));
+    }
+  });
+
   it('tolerates unterminated constructs', () => {
     for (const code of ['<div title="{ a', '{ a(', '@if (a', `'abc`, '/* x', '<!-- x']) {
       expect(() => highlight(code, 'html')).not.toThrow();

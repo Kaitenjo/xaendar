@@ -375,25 +375,27 @@ function highlightBash(code: string): string {
 }
 
 /**
- * Highlights code, producing HTML made of escaped text and `<span class="tok-*">` tokens.
+ * Highlights code, producing HTML made of escaped text and `<span class="tok-*">` tokens. The line breaks of files
+ * saved with CRLF become LF: a `\r` left in a token would be drawn as one more line break.
  *
  * @param code - The code to highlight.
  * @param lang - The language of the code.
  * @returns The highlighted HTML, safe to assign to `innerHTML`.
  */
 export function highlight(code: string, lang: CodeLang): string {
+  const text = code.replace(/\r\n?/g, '\n');
   switch (lang) {
     case 'ts':
-      return highlightTs(code);
+      return highlightTs(text);
     case 'html':
-      return highlightTemplate(code);
+      return highlightTemplate(text);
     case 'css':
-      return highlightCss(code);
+      return highlightCss(text);
     case 'json':
-      return highlightJson(code);
+      return highlightJson(text);
     case 'bash':
-      return highlightBash(code);
+      return highlightBash(text);
     default:
-      return escapeHtml(code);
+      return escapeHtml(text);
   }
 }
