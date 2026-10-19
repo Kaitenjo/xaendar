@@ -43,6 +43,19 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('types the properties of $event and the calls passed to a handler, checking them against its parameters', async () => {
+    const source = [
+      '@import { formatDate } from \'./utils\';',
+      '<input (keydown)="select($event.keyCode)" (input)="select($event.key)" />',
+      '<b (click)="select(formatDate($event.timeStamp).length)" (dblclick)="select(formatDate($event.detail))">x</b>'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['key', 'Property \'key\' does not exist on type \'InputEvent\'.', DiagnosticCategory.Error],
+      ['formatDate', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('types a @let with its value, or with the signal of its value when it reads one, reporting its reads before it', async () => {
     project.write('src/store.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport declare const total: Signal<number>;\n');
     const source = [

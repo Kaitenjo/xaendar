@@ -2,13 +2,16 @@
 import { loadSignals } from '@xaendar/signals';
 import type { AccessorDecorator, Constructor } from '@xaendar/types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
+import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
 import { _Context } from '../../utils/context/context.util';
+import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { WebComponent } from '../web-component/web-component.decorator';
-import { Query, query, queryAll, queryRequired, querySlot, querySlotAll, querySlotRequired } from './query.decorator';
+import { Query, query, queryAll, queryRef, queryRefAll, queryRefRequired, queryRequired, querySlot, querySlotAll, querySlotRequired } from './query.decorator';
 
 loadSignals();
 
@@ -49,6 +52,30 @@ function defineComponent(base: Constructor<CustomElement> = CustomElement): { kl
 function item(): HTMLElement {
   const element = document.createElement('div');
   element.setAttribute('item', '');
+  return element;
+}
+
+/**
+ * A custom directive the queries look for.
+ */
+class Tooltip extends CustomDirective { }
+
+/**
+ * Creates an element a template applies a new {@link Tooltip} to.
+ */
+function withTooltip(): { element: HTMLElement, tooltip: Tooltip } {
+  const element = document.createElement('span');
+  const tooltip = new Tooltip();
+  _addAppliedDirective(element, tooltip);
+  return { element, tooltip };
+}
+
+/**
+ * Creates an element named by the given element ref.
+ */
+function named(name: string): HTMLInputElement {
+  const element = document.createElement('input');
+  _setElementRef(element, name);
   return element;
 }
 
@@ -168,6 +195,59 @@ describe('query', () => {
 
     expect(() => query(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
   });
+
+  it('holds the first instance of the directive when the target is a directive', async () => {
+    const element = create();
+    const signal = query(element, Tooltip);
+    document.body.appendChild(element);
+    const first = withTooltip();
+
+    element.shadowRoot!.append(item(), first.element, withTooltip().element);
+    await flush();
+
+    expect(signal()).toBe(first.tooltip);
+  });
+});
+
+describe('queryRef', () => {
+  it('holds the first element named by the ref, null when there is none', async () => {
+    const element = create();
+    const signal = queryRef<HTMLInputElement>(element, 'field');
+    document.body.appendChild(element);
+    expect(signal()).toBeNull();
+    const field = named('field');
+
+    element.shadowRoot!.append(named('other'), field, named('field'));
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('throws when required and no element is named by the ref', async () => {
+    const element = create();
+    const signal = queryRefRequired(element, 'field');
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element is named by the required ref '#field' of <${element.localName}>`);
+
+    const field = named('field');
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('holds all the elements named by the ref, in document order', async () => {
+    const element = create();
+    const signal = queryRefAll(element, 'note');
+    document.body.appendChild(element);
+    const [first, second] = [named('note'), named('note')];
+
+    element.shadowRoot!.append(first, named('other'), second);
+    await flush();
+
+    expect(signal()).toEqual([first, second]);
+  });
 });
 
 describe('queryRequired', () => {
@@ -226,6 +306,13 @@ describe('queryRequired', () => {
 
     expect(spy).toHaveBeenCalledExactlyOnceWith(target);
     dispose();
+  });
+
+  it('names the class of the directive in the error when the target is a directive', () => {
+    const element = create();
+    const signal = queryRequired(element, Tooltip);
+
+    expect(() => signal()).toThrow(`No element matches the required query 'Tooltip' of <${element.localName}>`);
   });
 
   it('names the selector of the component in the error when the target is a class', () => {
@@ -343,6 +430,18 @@ describe('queryAll', () => {
 
     expect(tags()).toEqual([first]);
     expect(classes()).toEqual([second]);
+  });
+
+  it('holds all the instances of the directive when the target is a directive, in the order of their elements', async () => {
+    const element = create();
+    const signal = queryAll(element, Tooltip);
+    document.body.appendChild(element);
+    const [first, second] = [withTooltip(), withTooltip()];
+
+    element.shadowRoot!.append(first.element, item(), second.element);
+    await flush();
+
+    expect(signal()).toEqual([first.tooltip, second.tooltip]);
   });
 
   it('holds all the instances of the component when the target is a class', async () => {
@@ -584,7 +683,62 @@ describe('querySlotAll', () => {
   });
 });
 
+describe('Query.ref decorator', () => {
+  it('creates a signal holding the first element named by the ref', async () => {
+    const element = create();
+    const signal = init(Query.ref('field'), element);
+    document.body.appendChild(element);
+    const field = named('field');
+
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('creates a signal holding the element named by the ref, throwing when there is none', () => {
+    const element = create();
+    const signal = init(Query.ref.required('field'), element);
+
+    expect(() => signal()).toThrow('No element is named by the required ref \'#field\'');
+  });
+
+  it('creates a signal holding all the elements named by the ref', async () => {
+    const element = create();
+    const signal = init(Query.ref.all('note'), element);
+    document.body.appendChild(element);
+    const [first, second] = [named('note'), named('note')];
+
+    element.shadowRoot!.append(first, second);
+    await flush();
+
+    expect(signal()).toEqual([first, second]);
+  });
+});
+
 describe('Query.content decorator', () => {
+  it('creates a signal holding the instances of a directive applied to the projected elements', () => {
+    const [first, second] = [withTooltip(), withTooltip()];
+    const wrapper = document.createElement('div');
+    wrapper.append(second.element);
+    const element = withSlots(first.element, wrapper);
+    const firstSignal = init(Query.content(Tooltip), element);
+    const allSignal = init(Query.content.all(Tooltip), element);
+
+    document.body.appendChild(element);
+
+    expect(firstSignal()).toBe(first.tooltip);
+    expect(allSignal()).toEqual([first.tooltip, second.tooltip]);
+  });
+
+  it('names the class of the directive in the error of a required content query', () => {
+    const element = withSlots();
+    const signal = init(Query.content.required(Tooltip), element);
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element matches the required content query 'Tooltip' of <${element.localName}>`);
+  });
+
   it('creates a signal holding the first projected element matching the target', () => {
     const target = item();
     const element = withSlots(target, item());

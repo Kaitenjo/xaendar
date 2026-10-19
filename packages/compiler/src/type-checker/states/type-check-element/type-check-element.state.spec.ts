@@ -96,8 +96,16 @@ describe('typeCheckElement', () => {
       expect(lines[0].mappings![0]).toEqual({ columnStart: 0, columnEnd: 51, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
     });
 
-    it('leaves $event undeclared when only a member of it is passed, since it must be passed whole', () => {
-      expect(text(run('<div (click)="f($event.target)"></div>'))).toEqual(['root.f($event.target);']);
+    it.each([
+      ['a property of it', 'f($event.target)', 'root.f($event.target);'],
+      ['a call reading it', 'f(format($event.timeStamp, n()))', 'root.f(root.format($event.timeStamp, root.n()));']
+    ])('declares $event when an argument reads %s', (_description, handler, call) => {
+      expect(text(run(`<div (click)="${handler}"></div>`))).toEqual([
+        '{',
+        '  let $event!: HTMLElementEventMap[\'click\'];',
+        `  ${call}`,
+        '}'
+      ]);
     });
 
     it.each(['$', '$e', '$ev', '$even'])('declares $event while its beginning %s is being written, so that it is proposed', beginning => {

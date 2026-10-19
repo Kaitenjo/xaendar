@@ -158,6 +158,21 @@ export const CORE_API: ApiPackage = {
           signature: 'Query.all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>[]>>'
         },
         {
+          name: 'Query.ref',
+          group: 'variants',
+          signature: 'Query.ref<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType | null>>'
+        },
+        {
+          name: 'Query.ref.required',
+          group: 'variants',
+          signature: 'Query.ref.required<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType>>'
+        },
+        {
+          name: 'Query.ref.all',
+          group: 'variants',
+          signature: 'Query.ref.all<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType[]>>'
+        },
+        {
           name: 'Query.content',
           group: 'variants',
           signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
@@ -179,6 +194,11 @@ export const CORE_API: ApiPackage = {
           snippets: ['components/query-undecorated-error.txt']
         },
         {
+          name: 'name',
+          group: 'parameters',
+          signature: 'name: string'
+        },
+        {
           name: 'slots',
           group: 'options',
           signature: 'slots?: string | string[]'
@@ -195,7 +215,7 @@ export const CORE_API: ApiPackage = {
         { key: 'content', snippets: ['api/core/query-content.ts', 'api/core/query-content-options.ts'] },
         { key: 'state' }
       ],
-      guides: ['components/queries', 'components/content-queries', 'components/content-projection', 'components/dom-apis']
+      guides: ['components/queries', 'components/content-queries', 'components/content-projection', 'components/dom-apis', 'templates/element-refs']
     },
     {
       name: 'CustomElement',

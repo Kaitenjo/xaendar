@@ -26,6 +26,8 @@ const { CustomDirective } = await import('../../models/custom-directive/custom-d
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
+const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
+const { _getElementRef } = await import('../element-refs/element-refs.util');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -362,6 +364,7 @@ describe('_renderElement', () => {
 
     expect(element?.tagName).toBe('SECTION');
     expect(scope.get('panel')).toBe(element);
+    expect(_getElementRef(element!)).toBe('panel');
     expect(seen).toEqual([element, element]);
   });
 
@@ -964,6 +967,17 @@ describe('_renderElement', () => {
       context.clear();
 
       expect(instance.destroyed).toHaveBeenCalledOnce();
+    });
+
+    it('registers the directive on its element for the queries, until it is disposed', () => {
+      const context = createRoot();
+      const element = render(document.createElement('div'), context, { directives: [directive()] });
+      const instance = lastInstance();
+      expect(_getAppliedDirectives(element, LabelDirective)).toEqual([instance]);
+
+      context.clear();
+
+      expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
     });
 
     it('binds the properties of a conditional binding only while its condition is true, then resets them', async () => {

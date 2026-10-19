@@ -16,9 +16,11 @@ import type { RenderElementAttribute } from '../../types/render-element-attribut
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
+import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
 import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
 import { _Context, createAnchor } from '../context/context.util';
 import { _getDirective } from '../directive-registry/directive-registry.util';
+import { _setElementRef } from '../element-refs/element-refs.util';
 import { trackNode } from '../track-node/track-node.util';
 
 /**
@@ -120,6 +122,7 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   const element = context.createElement(tagName);
   if (ref) {
     context.set(ref, element);
+    _setElementRef(element, ref);
   }
 
   // The directives of the branches selected before the element is mounted, applied once it is
@@ -304,7 +307,11 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     });
 
     // Registered before connecting, so that `onDestroy` runs before the effects created in `onInit` are disposed
-    context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
+    context.addUnlistener(() => {
+      directive[DIRECTIVE_DISCONNECT]();
+      _removeAppliedDirective(element, directive);
+    });
+    _addAppliedDirective(element, directive);
     directive[DIRECTIVE_CONNECT](context);
   }
 }

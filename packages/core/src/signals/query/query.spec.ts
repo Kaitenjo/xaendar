@@ -4,10 +4,13 @@ import type { Constructor } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_SELECTOR } from '../../costants';
 import { CustomElement } from '../../models/custom-element/custom-element';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
 import { _Context } from '../../utils/context/context.util';
+import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { effect } from '../effect/effect';
-import { createQuerySignal, createSlotQuerySignal, toSelector } from './query';
+import { createQuerySignal, createSlotQuerySignal, toMatcher, toRefMatcher } from './query';
 
 loadSignals();
 
@@ -67,19 +70,47 @@ function withMetadata(metadata: unknown): Constructor<HTMLElement> {
   return klass;
 }
 
-describe('toSelector', () => {
-  it.each(['x-button', 'div', '.card', '#main', '[item]', 'ul > li.active'])('is the string itself when the target is the CSS selector "%s"', selector => {
-    expect(toSelector(selector)).toBe(selector);
+describe('toMatcher', () => {
+  it.each(['x-button', 'div', '.card', '#main', '[item]', 'ul > li.active'])('matches the elements themselves with the CSS selector "%s"', selector => {
+    expect(toMatcher(selector)).toEqual({ selector, description: selector });
   });
 
-  it('is the selector the class is registered with when the target is a class', () => {
-    expect(toSelector(withMetadata({ [INTERNAL_SELECTOR]: 'x-button' }))).toBe('x-button');
+  it('matches the elements with the selector the class is registered with when the target is a component', () => {
+    expect(toMatcher(withMetadata({ [INTERNAL_SELECTOR]: 'x-button' }))).toEqual({ selector: 'x-button', description: 'x-button' });
   });
 
   it('throws when the target is a class not decorated with @WebComponent', () => {
     class Plain extends CustomElement { }
 
-    expect(() => toSelector(Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
+    expect(() => toMatcher(Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
+  });
+
+  it('picks the instances of a directive, and of its subclasses, applied to any element, in the order of the elements', () => {
+    class Tooltip extends CustomDirective { }
+    class RichTooltip extends Tooltip { }
+    class Other extends CustomDirective { }
+    const [first, second, bare] = [document.createElement('p'), document.createElement('p'), document.createElement('p')];
+    const [tooltip, rich, other] = [new Tooltip(), new RichTooltip(), new Other()];
+    _addAppliedDirective(first, other);
+    _addAppliedDirective(first, rich);
+    _addAppliedDirective(second, tooltip);
+
+    const matcher = toMatcher(Tooltip);
+    expect(matcher).toMatchObject({ selector: '*', description: 'Tooltip' });
+    expect(matcher.pick!([first, bare, second])).toEqual([rich, tooltip]);
+  });
+});
+
+describe('toRefMatcher', () => {
+  it('picks the elements named by the ref, in order', () => {
+    const [first, other, bare, second] = [document.createElement('input'), document.createElement('input'), document.createElement('input'), document.createElement('input')];
+    _setElementRef(first, 'note');
+    _setElementRef(other, 'title');
+    _setElementRef(second, 'note');
+
+    const matcher = toRefMatcher('note');
+    expect(matcher).toMatchObject({ selector: '*', description: '#note' });
+    expect(matcher.pick!([first, other, bare, second])).toEqual([first, second]);
   });
 });
 
@@ -180,7 +211,7 @@ describe('createSlotQuerySignal', () => {
    * Creates a slot query signal on the given element, then connects the element to the document.
    */
   function connectedSlot(element: CustomElement, options: Parameters<typeof createSlotQuerySignal>[2] = {}) {
-    const signal = createSlotQuerySignal(element, '[item]', options, all, []);
+    const signal = createSlotQuerySignal(element, toMatcher('[item]'), options, all, []);
     document.body.appendChild(element);
     return signal;
   }
@@ -189,7 +220,7 @@ describe('createSlotQuerySignal', () => {
     const element = withSlots('');
     element.append(item());
 
-    expect(createSlotQuerySignal(element, '[item]', {}, all, [])()).toEqual([]);
+    expect(createSlotQuerySignal(element, toMatcher('[item]'), {}, all, [])()).toEqual([]);
   });
 
   it('holds the projected elements and their descendants matching the selector, slots in tree order', () => {

@@ -285,7 +285,7 @@
         "lead": "Una query sul contenuto trova elementi tra il contenuto proiettato nel componente, invece che nel suo template. È il modo in cui un componente lavora con figli che non renderizza: un gruppo di tab con i suoi pannelli, una lista con i suoi elementi, un form con i suoi campi. Come per le query sulla vista, il risultato è un signal che segue i cambiamenti del contenuto.",
         "queryingTheProjectedContent": {
           "title": "Interrogare il contenuto proiettato",
-          "p1": "<code>@Query.content</code> e <code>@Query.content.all</code> accettano gli stessi target delle query sulla vista, un selettore CSS o la classe di un componente, e cercano tra gli elementi assegnati agli slot del componente, insieme ai loro discendenti.",
+          "p1": "<code>@Query.content</code> e <code>@Query.content.all</code> accettano gli stessi target delle query sulla vista, un selettore CSS, la classe di un componente o la classe di una direttiva custom, e cercano tra gli elementi assegnati agli slot del componente, insieme ai loro discendenti.",
           "example1": "Un gruppo di tab costruito dai suoi pannelli",
           "p2": "Il gruppo renderizza una tab per ogni pannello che trova, con l’etichetta che il pannello ha ricevuto dal padre, e dice a ogni pannello se è attivo tramite un signal del pannello: la query è tipizzata dalla classe, quindi il gruppo può raggiungere i membri pubblici delle istanze. Aggiungi un pannello: il padre lo renderizza dentro il gruppo, la query lo trova, e compare una nuova tab.",
           "p3": "<code>@Query.content.required</code> toglie <code>null</code> dal tipo, e leggerla lancia un errore quando nessun elemento proiettato corrisponde. Il contenuto proiettato arriva dopo <code>afterRender</code> (vedi i casi limite qui sotto), quindi lì lancia ancora: leggila negli handler degli eventi, e usa <code>@Query.content</code> per seguire il contenuto mentre arriva."
@@ -606,6 +606,13 @@
           "p2": "<em>Add</em> legge il valore del campo e lo svuota tramite l’elemento trovato da <code>field</code>, e chiama <code>increment()</code> sul badge trovato tramite la sua classe. La lista è renderizzata da un <code>@for</code>, e <code>rows</code> la segue: <code>found</code>, un computed che legge la query, si aggiorna da solo.",
           "p3": "Una query cerca nello shadow root del proprio componente, e solo lì: trova gli elementi che il template proietta in un componente figlio, perché sono scritti in questo template, ma non gli elementi dentro lo shadow root del figlio."
         },
+        "refsAndDirectives": {
+          "title": "Element ref e direttive",
+          "p1": "<code>@Query.ref('name')</code> contiene l’elemento a cui un <a href=\"#/it/templates/element-refs\">element ref</a> del template dà un nome, <code>#name</code>, e <code>@Query.ref.all</code> gli elementi di ogni riga del <code>@for</code> che lo dichiara. A differenza di un selettore, un ref non dipende dal tag o dalle classi dell’elemento. <code>@Query.ref.required</code> lancia un errore quando nessun elemento ha quel ref.",
+          "p2": "La classe di una <a href=\"#/it/directives/custom\">direttiva custom</a> trova la direttiva, non l’elemento: la query contiene le istanze applicate agli elementi del template, con <code>@@selector</code> o come host directive di un componente, tipizzate con la classe.",
+          "example1": "Un ref per il campo, uno per ogni riga, e le direttive applicate alle righe",
+          "p3": "<em>Add</em> legge il campo tramite il suo ref. <em>Mark every row</em> chiama un metodo di ogni direttiva trovata da <code>@Query.all(MarkDirective)</code>, e il conteggio segue i signal delle direttive."
+        },
         "whenTheResultIs": {
           "title": "Quando il risultato è disponibile",
           "p1": "La query viene riempita subito dopo il render, prima di <code>afterRender</code>, e viene aggiornata da un <code>MutationObserver</code> ogni volta che gli elementi del template vengono aggiunti o rimossi. Quindi è vuota in <code>onInit</code>, ed è un po’ in ritardo rispetto ai cambiamenti del template.",
@@ -622,8 +629,8 @@
           "example1": "Una query su una classe che cambia",
           "p1": "L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa: aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.",
           "callout3": {
-            "heading": "Una classe che non è un componente",
-            "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore. Altrimenti la query lancia un errore quando il componente viene creato."
+            "heading": "Una classe che non è né un componente né una direttiva",
+            "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore, oppure estendere <code>CustomDirective</code>. Altrimenti la query lancia un errore quando il componente viene creato."
           }
         },
         "summary": {
@@ -633,7 +640,8 @@
           "td1": "Il primo elemento del template che corrisponde a <code>target</code>, oppure <code>null</code>.",
           "td2": "Tutti gli elementi corrispondenti, in ordine di documento. Notifica solo quando la lista cambia.",
           "td3": "Come <code>@Query</code>, senza <code>null</code>: leggerla lancia un errore quando nessun elemento corrisponde.",
-          "td4": "Un selettore CSS, oppure la classe di un componente.",
+          "td4": "Un selettore CSS, la classe di un componente o la classe di una direttiva custom.",
+          "td6": "Gli elementi a cui l’element ref <code>#name</code> dà un nome, anche con <code>.all</code> e <code>.required</code>.",
           "td5": "Un signal in sola lettura: <code>query()</code> oppure <code>query.get()</code>."
         }
       },
@@ -1306,7 +1314,7 @@
         "readingTheFields": {
           "title": "Leggere i campi",
           "example1": "Un form di registrazione",
-          "p1": "Ogni campo ha un listener che scrive il suo signal: <code>input</code> per i campi di testo, <code>change</code> per select e checkbox. Il metodo riceve l’evento e legge <code>value</code> o <code>checked</code> dal suo target, dato che un template non può leggere da solo <code>$event.target</code>, come spiegato in <a href=\"#/it/templates/events\">Eventi</a>.",
+          "p1": "Ogni campo ha un listener che scrive il suo signal: <code>input</code> per i campi di testo, <code>change</code> per select e checkbox. Il metodo riceve l’evento e legge <code>value</code> o <code>checked</code> dal suo target, dato che <code>$event.target</code> è tipizzato <code>EventTarget | null</code>, che non ha né l’uno né l’altro, come spiegato in <a href=\"#/it/templates/events\">Eventi</a>.",
           "p2": "<code>errors</code> è un computed sui campi, quindi è sempre aggiornato, e il template lo mostra solo dopo il primo tentativo di invio. Il listener di <code>submit</code> chiama <code>preventDefault()</code>, che impedisce al browser di ricaricare la pagina; <code>novalidate</code> spegne la validazione del browser, qui sostituita da quella del computed."
         },
         "writingTheFields": {
@@ -2033,20 +2041,21 @@
       "events": {
         "eyebrow": "Template",
         "title": "Gestione degli eventi",
-        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente, di uno dei suoi membri, come <code>cart.clear()</code>, o di un <a href=\"#/it/templates/element-refs\">element ref</a>, come <code>dialog.showModal()</code>. L’handler è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
+        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente, di uno dei suoi membri, come <code>cart.clear()</code>, o di un <a href=\"#/it/templates/element-refs\">element ref</a>, come <code>dialog.showModal()</code>. L’handler è sempre una singola chiamata a un metodo, i cui argomenti sono espressioni: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
         "callingAMethod": {
           "title": "Chiamare un metodo",
           "example1": "Ogni tipo di argomento",
           "p1": "Gli argomenti possono essere:",
           "li1": "letterali: stringhe, numeri, <code>true</code>, <code>false</code>, <code>null</code>;",
-          "li2": "<code>$event</code>, l’evento stesso, in qualsiasi posizione;",
+          "li2": "<code>$event</code>, l’evento stesso, in qualsiasi posizione, e le sue proprietà, come in <code>$event.key</code>;",
           "li3": "membri del componente, variabili di un <code>@for</code> e element ref, con le loro proprietà, come in <code>color().id</code> o <code>field.value</code>;",
+          "li5": "espressioni e chiamate, come <code>count() + 1</code> o <code>format(item().id)</code>, valutate quando arriva l’evento;",
           "li4": "un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.",
           "p2": "Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile con il parametro del metodo."
         },
         "whatAHandlerCannot": {
           "title": "Cosa non può contenere un handler",
-          "p1": "Chiamate dentro gli argomenti, espressioni, assegnazioni, arrow function e più di un’istruzione vengono rifiutate. I messaggi del lexer non sempre dicono perché, quindi eccoli, accanto all’handler che li produce:",
+          "p1": "Assegnazioni, arrow function e più di un’istruzione vengono rifiutate. I messaggi del lexer non sempre dicono perché, quindi eccoli, accanto all’handler che li produce:",
           "p2": "Per tutti la soluzione è la stessa: un metodo del componente che fa il lavoro, chiamato con i valori di cui ha bisogno."
         },
         "edgeCases": {
@@ -2054,8 +2063,8 @@
           "example1": "Niente modificatori degli eventi",
           "p1": "I template non hanno modificatori degli eventi: <code>(keydown.enter)</code> ascolta un evento che si chiama letteralmente <code>keydown.enter</code>, che il browser non invia mai, e il primo contatore non si muove. Filtra il tasto nel metodo, come fa il secondo campo. Lo stesso vale per <code>preventDefault()</code> e <code>stopPropagation()</code>: chiamali su <code>$event</code>.",
           "callout2": {
-            "heading": "Le proprietà di $event",
-            "body": "<code>$event</code> si può passare solo intero: <code>$event.target</code> o <code>$event.detail</code> in un handler non compilano. Leggile nel metodo."
+            "heading": "Il target di $event",
+            "body": "<code>$event.target</code> è tipizzato <code>EventTarget | null</code>: l’evento può arrivare da un discendente dell’elemento, quindi <code>$event.target.value</code> non compila. Leggi il campo con un <a href=\"#/it/templates/element-refs\">element ref</a>, come in <code>save(field.value)</code>, oppure restringi il target nel metodo."
           },
           "callout3": {
             "heading": "Eventi dei componenti",
@@ -2067,8 +2076,8 @@
           "th1": "Sintassi",
           "th2": "Descrizione",
           "td1": "Chiama un metodo del componente, di uno dei suoi membri o di un element ref, per ogni evento.",
-          "td2": "Passa l’evento, tipizzato in base al nome.",
-          "td3": "Letterali, membri, variabili di un ciclo e le loro proprietà.",
+          "td2": "Passa l’evento, tipizzato in base al nome, o una sua proprietà.",
+          "td3": "Letterali, membri, variabili di un ciclo, le loro proprietà, espressioni e chiamate.",
           "td4": "Un listener attivo solo finché vale la condizione. Vedi <a href=\"#/it/templates/conditional-bindings\">Binding condizionali</a>."
         }
       },
@@ -2417,7 +2426,8 @@
           "title": "Dare un nome a un elemento",
           "example1": "Un campo messo a fuoco, svuotato e letto tramite il suo ref",
           "p1": "I pulsanti vengono prima del campo e lo usano comunque: un handler viene eseguito quando il template è renderizzato, quando ogni elemento del suo scope esiste. <code>field.focus()</code> chiama un metodo dell’elemento, <code>clear(field)</code> passa l’elemento a un metodo del componente, <code>search(field.value)</code> una sua proprietà.",
-          "p2": "Leggere una proprietà tramite un ref non è reattivo: <code>{ field.value }</code> mostra il valore che il campo aveva quando il testo è stato renderizzato. Segui le modifiche con un evento, come fa il campo con <code>(input)</code>, e tienile in un signal."
+          "p2": "Leggere una proprietà tramite un ref non è reattivo: <code>{ field.value }</code> mostra il valore che il campo aveva quando il testo è stato renderizzato. Segui le modifiche con un evento, come fa il campo con <code>(input)</code>, e tienile in un signal.",
+          "p3": "Anche la classe raggiunge un element ref, senza selettore: <code>@Query.ref('field')</code> contiene l’elemento chiamato <code>#field</code>, e <code>@Query.ref.all</code> quelli di ogni riga di un <code>@for</code>. Vedi <a href=\"#/it/components/queries\">Query sulla vista</a>."
         },
         "types": {
           "title": "Il tipo di un ref",
@@ -2812,8 +2822,8 @@
       "fix": "Usa i doppi apici per ogni valore di attributo."
     },
     "[Lexer] Event must be included in Double Quotes": {
-      "cause": "Un listener con una chiamata annidata o un’espressione come argomento, come go(n()) o go(n() + 1), o con due istruzioni.",
-      "fix": "Chiama un solo metodo, con letterali, membri, variabili del ciclo, accessi a proprietà o $event come argomenti, e calcola il resto nel metodo."
+      "cause": "Un listener con più di un’istruzione, come (click)=\"save(); close()\".",
+      "fix": "Chiama un solo metodo, e fai il resto nel metodo."
     },
     "[Lexer] Event handler cannot be empty": {
       "cause": "Una arrow function come listener, come (click)=\"() => go()\".",
@@ -2922,10 +2932,6 @@
     "Type 'string' does not satisfy the expected type 'number'.": {
       "cause": "Un valore statico, sempre una stringa, legato a un input di un altro tipo.",
       "fix": "Lega un’espressione: count=\"{ 3 }\"."
-    },
-    "Cannot find name '$event'. Did you mean 'event'?": {
-      "cause": "$event usato come $event.target, o in un’altra espressione che lo legge.",
-      "fix": "Passa $event intero e leggi il target nel metodo."
     },
     "Property 'secret' is private and only accessible within class 'XCard'.": {
       "cause": "Un membro private o protected letto dal template.",

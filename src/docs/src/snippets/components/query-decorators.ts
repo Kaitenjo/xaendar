@@ -18,3 +18,13 @@ public accessor badge!: QuerySignal<CounterBadgeComponent | null>;
  */
 @Query.all('.row')
 public accessor rows!: QuerySignal<HTMLElement[]>;
+/**
+ * A directive class: the instances applied to the elements, not the elements.
+ */
+@Query.all(TooltipDirective)
+public accessor tooltips!: QuerySignal<TooltipDirective[]>;
+/**
+ * An element ref of the template, #field: no selector involved.
+ */
+@Query.ref<HTMLInputElement>('field')
+public accessor input!: QuerySignal<HTMLInputElement | null>;

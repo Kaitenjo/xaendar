@@ -190,11 +190,12 @@
     }
   },
   "QueryTarget": {
-    "summary": "Ciò che una query cerca: un selettore CSS, o la classe di un componente.",
+    "summary": "Ciò che una query cerca: un selettore CSS, la classe di un componente o la classe di una direttiva custom.",
     "description": "<p>Il primo argomento di ogni decoratore <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>. Una query sulla vista cerca solo nello shadow root del suo componente, una query sul contenuto solo tra gli elementi proiettati in esso, o nel suo light DOM: nessuna delle due trova gli elementi dentro lo shadow root di un componente figlio.</p><p>Il target decide anche il tipo degli elementi trovati: vedi <a href=\"#/it/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p>",
     "members": {
       "selector": "<p>Qualsiasi selettore CSS, come lo accetta <code>querySelector</code>: un nome di tag (<code>input</code>, <code>ex-badge</code>), una classe (<code>.row</code>), un attributo (<code>[item]</code>), o una loro combinazione. Gli elementi trovati sono di tipo <code>HTMLElement</code>, a meno che il decoratore non riceva un tipo più ristretto come primo argomento di tipo, come in <code>@Query&lt;HTMLInputElement&gt;('input')</code>.</p>",
-      "class": "<p>La classe di un componente decorato con <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: la query cerca il selettore del componente, e gli elementi trovati sono tipizzati come istanze della classe, con i suoi membri pubblici.</p><p>Qualsiasi classe che estende <code>HTMLElement</code> supera il controllo dei tipi, ma una classe senza selettore, come una classe nativa quale <code>HTMLInputElement</code>, fa lanciare un errore alla query quando viene creato il componente che la dichiara.</p>"
+      "class": "<p>La classe di un componente decorato con <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: la query cerca il selettore del componente, e gli elementi trovati sono tipizzati come istanze della classe, con i suoi membri pubblici.</p><p>Qualsiasi classe che estende <code>HTMLElement</code> supera il controllo dei tipi, ma una classe senza selettore, come una classe nativa quale <code>HTMLInputElement</code>, fa lanciare un errore alla query quando viene creato il componente che la dichiara.</p>",
+      "directive": "<p>La classe di una <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: la query contiene le istanze della direttiva, e delle sue sottoclassi, applicate agli elementi in cui cerca, invece degli elementi. Vengono trovate sia una direttiva applicata con <code>@@selector</code>, sia una host directive di un componente.</p>"
     },
     "usage": {
       "kinds": {

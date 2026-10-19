@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+input {
+  font: inherit;
+}
+
+ul {
+  margin: 0.6rem 0;
+}
+
+li {
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.marked {
+  background: #fde68a;
+  color: #1f2937;
+}
+
+p {
+  margin: 0;
+  font-size: 0.85rem;
+}

@@ -62,6 +62,15 @@ describe('generateElement', () => {
     expectValidJavascript(code);
   });
 
+  it('declares $event when an argument reads a property of it, or passes it to a call', async () => {
+    const { code } = await run('<div (input)="f($event.target.value)" (keydown)="g(format($event.key, a()))"></div>');
+    const output = code.join('\n');
+
+    expect(output).toContain('handler: ($event) => this.f($event.target.value)');
+    expect(output).toContain('handler: ($event) => this.g(this.format($event.key, this.a()))');
+    expectValidJavascript(code);
+  });
+
   it('calls a method of a member on that member', async () => {
     const context = new CompilerContext();
     context.addSignalClassField('count');

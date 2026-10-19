@@ -1,6 +1,6 @@
 import { indent, isValidCustomElementName } from '@xaendar/common';
 import type { AsyncFunction, Function } from '@xaendar/types';
-import { factory, identifierToKeywordKind, isIdentifier, SyntaxKind } from 'typescript';
+import { factory, identifierToKeywordKind, SyntaxKind } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
@@ -13,6 +13,7 @@ import type { StructuralDirectiveNode } from '../../../parser/types/nodes/struct
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
@@ -243,7 +244,8 @@ function appendClassBindings(mappedAttributes: string[], classBindings: ClassBin
  *
  * The handler of each descriptor is an arrow function making the whole call of the template, with the
  * method and its arguments resolved like any other expression: a method of a member (`cart.clear()`)
- * is called on that member. The arrow function declares the native event as `$event` when the call passes it.
+ * is called on that member. The arrow function declares the native event as `$event` when an argument reads it, whole or
+ * in part (`$event.target`).
  *
  * @param events - The event nodes to bind to the element.
  * @param compilerContext - Current render scope context, used to resolve identifier references.
@@ -255,7 +257,7 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
   const mappedEvents = events.map(({ name, handler, parameters }) => {
     const method = resolveHandler(handler, compilerContext);
     const args = parameters.map(parameter => resolveExpression(parameter, compilerContext).expression).join(', ');
-    const eventParameter = parameters.some(parameter => isIdentifier(parameter) && parameter.text === '$event') ? '$event' : '';
+    const eventParameter = parameters.some(readsEvent) ? '$event' : '';
 
     return [
       '{',

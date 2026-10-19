@@ -41,15 +41,15 @@ Declares an output. emit(detail?, options?) dispatches a CustomEvent named after
 ### Query (decorator)
 
 ```ts
-@Query('.selector' | ComponentClass) accessor name!: QuerySignal<E | null>
+@Query('.selector' | ComponentClass | DirectiveClass) accessor name!: QuerySignal<E | null>
 ```
 
-The first element of the shadow root matching a selector or a component class, kept up to date as a signal.
+The first element of the shadow root matching a selector or a component class, kept up to date as a signal. With the class of a custom directive it holds the instance of the directive applied to an element (with `@@selector` or as a host directive), not the element.
 
 ### Query.required (decorator)
 
 ```ts
-@Query.required('.selector' | ComponentClass) accessor name!: QuerySignal<E>
+@Query.required('.selector' | ComponentClass | DirectiveClass) accessor name!: QuerySignal<E>
 ```
 
 Like Query, for an element that is always there: no null in the type, and reading it throws when no element matches.
@@ -57,15 +57,25 @@ Like Query, for an element that is always there: no null in the type, and readin
 ### Query.all (decorator)
 
 ```ts
-@Query.all('.selector' | ComponentClass) accessor name!: QuerySignal<E[]>
+@Query.all('.selector' | ComponentClass | DirectiveClass) accessor name!: QuerySignal<E[]>
 ```
 
-Every element of the shadow root matching a selector or a component class.
+Every element of the shadow root matching a selector or a component class, or every instance of a directive class.
+
+### Query.ref (decorator)
+
+```ts
+@Query.ref<E>('name') accessor name!: QuerySignal<E | null>
+@Query.ref.required<E>('name') accessor name!: QuerySignal<E>
+@Query.ref.all<E>('name') accessor name!: QuerySignal<E[]>
+```
+
+The element of the template named by the element ref `#name`, without the `#`; `.all` holds one per row of the `@for` declaring it, `.required` drops null and throws when no element has the ref. Only the template of the component: never the projected content.
 
 ### Query.content (decorator)
 
 ```ts
-@Query.content('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E | null>
+@Query.content('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E | null>
 ```
 
 The first element projected into the slots of the component that matches a selector or a component class.
@@ -73,7 +83,7 @@ The first element projected into the slots of the component that matches a selec
 ### Query.content.required (decorator)
 
 ```ts
-@Query.content.required('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>
+@Query.content.required('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>
 ```
 
 Like Query.content, for projected content that is always there: no null in the type, and reading it throws when no element matches.
@@ -81,7 +91,7 @@ Like Query.content, for projected content that is always there: no null in the t
 ### Query.content.all (decorator)
 
 ```ts
-@Query.content.all('.selector' | ComponentClass, { slots?, lightDom? }) accessor name!: QuerySignal<E[]>
+@Query.content.all('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E[]>
 ```
 
 Every projected element matching a selector or a component class, in the order of the slots.
@@ -251,7 +261,7 @@ The options of @Property, together with alias.
 ### QueryTarget, QueryElement, QuerySlotOptions (type)
 
 ```ts
-QueryTarget = string | Constructor<HTMLElement>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }
+QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }
 ```
 
 The target of a query, the element type it resolves to, and the options of the content queries.

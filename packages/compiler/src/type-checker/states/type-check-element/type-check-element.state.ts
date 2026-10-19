@@ -16,6 +16,7 @@ import type { StructuralDirectiveNode } from '../../../parser/types/nodes/struct
 import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
 import { ComponentEventMetadata, ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
@@ -698,7 +699,7 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
 /**
  * Type-checks an event binding by emitting a call to the handler on `root`, or as written for a handler the template
  * imports, with its resolved arguments.
- * When the handler is passed `$event`, the call is wrapped in a block declaring `$event` with the type
+ * When an argument reads `$event`, whole or in part, the call is wrapped in a block declaring `$event` with the type
  * of the event, so that the following events can declare it again.
  *
  * @param event - The event node to type-check.
@@ -775,19 +776,17 @@ function mappedEventName(text: string, span: Span, name: string, nameSpan: Span)
 }
 
 /**
- * Tells whether an event binding passes `$event` to its handler.
- *
- * `$event` can only be passed as a whole parameter: a parameter merely referencing it, like `$event.target`,
- * doesn't count, so `$event` is left undeclared and TypeScript reports it.
+ * Tells whether an event binding passes `$event` to its handler: an argument reads it, whole or in part, as in
+ * `$event`, `$event.target` or `format($event.detail)`.
  *
  * The beginning of `$event` being written (`$`, `$ev`…) counts too, so that `$event` is declared, and TypeScript
  * proposes it: the incomplete name itself is reported by TypeScript, as it is not declared.
  *
  * @param parameters - The parameters of the event binding.
- * @returns `true` if one of the parameters is `$event`, or its beginning, `false` otherwise.
+ * @returns `true` if one of the parameters reads `$event`, or is its beginning, `false` otherwise.
  */
 function passesEvent(parameters: Expression[]): boolean {
-  return parameters.some(isEventBeginning);
+  return parameters.some(parameter => isEventBeginning(parameter) || readsEvent(parameter));
 }
 
 /**

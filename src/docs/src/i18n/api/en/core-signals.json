@@ -190,11 +190,12 @@
     }
   },
   "QueryTarget": {
-    "summary": "What a query looks for: a CSS selector, or the class of a component.",
+    "summary": "What a query looks for: a CSS selector, the class of a component, or the class of a custom directive.",
     "description": "<p>The first argument of every <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorator. A view query looks only in the shadow root of its component, a content query only among the elements projected into it, or in its light DOM: neither finds the elements inside the shadow root of a child component.</p><p>The target also decides the type of the elements found: see <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p>",
     "members": {
       "selector": "<p>Any CSS selector, as <code>querySelector</code> accepts it: a tag name (<code>input</code>, <code>ex-badge</code>), a class (<code>.row</code>), an attribute (<code>[item]</code>), or a combination of them. The elements found are typed <code>HTMLElement</code>, unless the decorator gets a narrower type as its first type argument, as in <code>@Query&lt;HTMLInputElement&gt;('input')</code>.</p>",
-      "class": "<p>The class of a component decorated with <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: the query looks for the selector of the component, and the elements found are typed as instances of the class, with its public members.</p><p>Any class extending <code>HTMLElement</code> type-checks, but a class without a selector, such as a native class like <code>HTMLInputElement</code>, makes the query throw when the component declaring it is created.</p>"
+      "class": "<p>The class of a component decorated with <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: the query looks for the selector of the component, and the elements found are typed as instances of the class, with its public members.</p><p>Any class extending <code>HTMLElement</code> type-checks, but a class without a selector, such as a native class like <code>HTMLInputElement</code>, makes the query throw when the component declaring it is created.</p>",
+      "directive": "<p>The class of a <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: the query holds the instances of the directive, and of its subclasses, applied to the elements it looks into, rather than the elements. A directive applied with <code>@@selector</code> and a host directive of a component are both found.</p>"
     },
     "usage": {
       "kinds": {

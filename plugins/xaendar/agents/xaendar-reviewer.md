@@ -24,7 +24,7 @@ Check at least the following:
 - Whitespace between interpolations that is expected to render (`{ first } { second }`).
 - `track $index()` on lists whose rows hold state (fields, focus) and get inserted or prepended items.
 - Listeners on `window`/`document` without removal in `onDestroy`. Directive setup in the constructor.
-- `(keydown.enter)`-style modifiers. Listeners with logic, nested calls or `$event.x`.
+- `(keydown.enter)`-style modifiers. Listeners with assignments, arrow functions or several statements. `$event.target.x`, which does not type-check (`EventTarget | null`).
 - Components or directives that are never loaded at runtime (not matched by the `main.ts` glob or imports), or not `@import`ed by a template that uses them.
 
 **Type and build problems the build does not report**

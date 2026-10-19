@@ -3,6 +3,7 @@
 <div class="row">
   <ex-button (click)="greet('Ada', 2)">greet('Ada', 2)</ex-button>
   <ex-button (click)="inspect('button', $event)">inspect('button', $event)</ex-button>
+  <ex-button (click)="greet(colors[apples() % 3].name, pears() + 1)">greet(colors[apples() % 3].name, pears() + 1)</ex-button>
 </div>
 <div class="row">
   @for (color of colors; track color().id) {
@@ -12,7 +13,7 @@
 <div class="row">
   <ex-button (click)="bump(apples)">bump(apples): { apples() }</ex-button>
   <ex-button (click)="bump(pears)">bump(pears): { pears() }</ex-button>
-  <input type="text" placeholder="onInput($event)" aria-label="Type here" (input)="onInput($event)" />
+  <input type="text" placeholder="onKey($event.key, $event.repeat)" aria-label="Type here" (keydown)="onKey($event.key, $event.repeat)" />
 </div>
 <ol class="log">
   @for (line of calls(); track line().id) {

@@ -1,21 +1,79 @@
-import type { NoArgsVoidFunction } from '@xaendar/types';
+import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
+import { _getAppliedDirectives } from '../../utils/applied-directives/applied-directives.util';
+import { _getElementRef } from '../../utils/element-refs/element-refs.util';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
+import type { QueryMatcher } from '../types/query-matcher.type';
 import type { QuerySignal } from '../types/query-signal.type';
 import type { QuerySlotOptions } from '../types/query-slot-options.type';
 import type { QueryTarget } from '../types/query-target.type';
 
 /**
- * Resolves the CSS selector matching the elements a query looks for.
+ * Resolves how a query finds what it looks for.
  *
- * @param target - A CSS selector (a tag name, `.class`, `[attribute]`, a combination of them...),
- *   or the class of a web component decorated with `@WebComponent`.
- * @returns The string itself when the target is a CSS selector, the selector the component is registered with for a class.
- * @throws When the target is a class not decorated with `@WebComponent`.
+ * @param target - A CSS selector (a tag name, `.class`, `[attribute]`, a combination of them...), the class of a
+ *   web component decorated with `@WebComponent`, or the class of a custom directive.
+ * @returns The matcher: the elements matching the selector itself, the ones matching the selector a component is
+ *   registered with, or the instances of the directive applied to any element.
+ * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
-export function toSelector(target: QueryTarget): string {
-  return typeof target === 'string' ? target : getSelector(target);
+export function toMatcher(target: QueryTarget): QueryMatcher {
+  if (typeof target === 'string') {
+    return { selector: target, description: target };
+  }
+
+  if (isDirectiveClass(target)) {
+    return { selector: '*', description: target.name, pick: elements => getDirectives(elements, target) };
+  }
+
+  const selector = getSelector(target);
+  return { selector, description: selector };
+}
+
+/**
+ * Resolves how a query finds the elements an element ref names: the ref names one element, or one in each row of a
+ * `@for`.
+ *
+ * @param name - The name of the ref, without the `#`.
+ * @returns The matcher of the elements named by the ref.
+ */
+export function toRefMatcher(name: string): QueryMatcher {
+  return {
+    selector: '*',
+    description: `#${name}`,
+    pick: elements => elements.filter(element => _getElementRef(element) === name)
+  };
+}
+
+/**
+ * Tells whether the class a query looks for is a custom directive, rather than a web component.
+ *
+ * @param target - The class.
+ * @returns `true` if the class extends `CustomDirective`.
+ */
+function isDirectiveClass(target: Exclude<QueryTarget, string>): target is Constructor<CustomDirective> {
+  return target.prototype instanceof CustomDirective;
+}
+
+/**
+ * Collects the instances of a custom directive applied to some elements, as host directives or by a template.
+ *
+ * @param elements - The elements, in order.
+ * @param Directive - The class of the directive.
+ * @returns The instances, in the order of the elements.
+ */
+function getDirectives(elements: Element[], Directive: Constructor<CustomDirective>): CustomDirective[] {
+  const retVal = new Array<CustomDirective>();
+  for (let i = 0; i < elements.length; i++) {
+    const directives = _getAppliedDirectives(elements[i], Directive);
+    if (directives?.length) {
+      retVal.push(...directives);
+    }
+  }
+
+  return retVal;
 }
 
 /**
@@ -47,10 +105,10 @@ function observeShadowRoot(element: CustomElement, update: NoArgsVoidFunction): 
  * @returns A {@link QuerySignal} instance.
  */
 export function createQuerySignal<Value>(
-  element: CustomElement, 
-  read: (shadowRoot: ShadowRoot) => Value, 
-  initialValue: Value, 
-  equals?: (a: Value, b: Value) => boolean, 
+  element: CustomElement,
+  read: (shadowRoot: ShadowRoot) => Value,
+  initialValue: Value,
+  equals?: (a: Value, b: Value) => boolean,
   observe: (element: CustomElement, update: NoArgsVoidFunction) => NoArgsVoidFunction = observeShadowRoot
 ): QuerySignal<Value> {
   const signal = new Signal.State<Value>(initialValue, { equals });
@@ -71,30 +129,32 @@ export function createQuerySignal<Value>(
 }
 
 /**
- * Creates a signal holding a value computed from the elements matching a selector in the content projected
- * into the element (or in its whole light DOM, with the `lightDom` option), kept up to date while the element is connected.
+ * Creates a signal holding a value computed from what a matcher finds in the content projected into the element (or
+ * in its whole light DOM, with the `lightDom` option), kept up to date while the element is connected.
  *
- * @template Item - The type of the matching elements.
+ * @template Item - The type of what the matcher finds: the matching elements, or the instances of a directive.
  * @template Value - The type of the queried value.
  * @param element - The component whose projected content is queried.
- * @param selector - The CSS selector the elements must match.
+ * @param matcher - How the query finds what it looks for, see {@link toMatcher}.
  * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
- * @param map - Computes the value from the matching elements, in order.
+ * @param map - Computes the value from what the matcher finds, in order.
  * @param initialValue - The value held until the element is connected for the first time.
  * @param equals - Tells whether two values are equal, to avoid notifying when the result didn't change.
  * @returns A {@link QuerySignal} instance.
  */
-export function createSlotQuerySignal<Item extends Element, Value>(
+export function createSlotQuerySignal<Item, Value>(
   element: CustomElement,
-  selector: string,
-  options: QuerySlotOptions, 
-  map: (elements: Item[]) => Value,
+  matcher: QueryMatcher,
+  options: QuerySlotOptions,
+  map: (items: Item[]) => Value,
   initialValue: Value,
   equals?: (a: Value, b: Value) => boolean
 ): QuerySignal<Value> {
+  const { selector, pick } = matcher;
+  const read = (elements: Element[]) => map((pick ? pick(elements) : elements) as Item[]);
   return options.lightDom
-    ? createQuerySignal(element, () => map(Array.from(element.querySelectorAll<Item>(selector))), initialValue, equals, observeLightDom)
-    : createQuerySignal(element, shadowRoot => map(getProjectedElements<Item>(shadowRoot, selector, options.slots)), initialValue, equals, observeProjection);
+    ? createQuerySignal(element, () => read(Array.from(element.querySelectorAll(selector))), initialValue, equals, observeLightDom)
+    : createQuerySignal(element, shadowRoot => read(getProjectedElements(shadowRoot, selector, options.slots)), initialValue, equals, observeProjection);
 }
 
 /**
@@ -137,13 +197,12 @@ function observeProjection(element: CustomElement, update: NoArgsVoidFunction): 
  * matching descendants, in order: slots in tree order, then assigned elements in assignment order.
  * Nested slots are flattened, and the fallback content of the slots is ignored.
  *
- * @template Item - The type of the matching elements.
  * @param shadowRoot - The Shadow DOM whose slots are inspected.
  * @param selector - The CSS selector the elements must match.
  * @param slots - The name of the slot to inspect, or the names of the slots, the empty string for the default slot. When omitted, all the slots are inspected.
  * @returns The matching elements.
  */
-function getProjectedElements<Item extends Element>(shadowRoot: ShadowRoot, selector: string, slots?: string | string[]): Item[] {
+function getProjectedElements(shadowRoot: ShadowRoot, selector: string, slots?: string | string[]): Element[] {
   const match = typeof slots === 'object' ? (item: HTMLSlotElement) => slots.includes(item.name) : (item: HTMLSlotElement) => item.name === slots;
   let retVal = Array.from(shadowRoot.querySelectorAll('slot'))
   if (slots !== undefined) {
@@ -153,9 +212,9 @@ function getProjectedElements<Item extends Element>(shadowRoot: ShadowRoot, sele
   return retVal.flatMap(item => item.assignedElements({ flatten: true }))
     .filter(assigned => assigned.getRootNode() !== shadowRoot)
     .flatMap(assigned => {
-      const retVal = [...assigned.querySelectorAll<Item>(selector)];
+      const retVal = [...assigned.querySelectorAll(selector)];
       if (assigned.matches(selector)) {
-        retVal.unshift(assigned as Item);
+        retVal.unshift(assigned);
       }
       return retVal;
     });

@@ -1,0 +1,14 @@
+@import { MarkDirective } from './mark.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <input #field type="text" value="Directives" aria-label="New item" />
+  <ex-button (click)="add()">Add</ex-button>
+  <ex-button (click)="toggleAll()">Mark every row</ex-button>
+</div>
+<ul>
+  @for (item of items(); track item()) {
+    <li #row @@exMark>{ item() }</li>
+  }
+</ul>
+<p>{ rows().length } rows found by the ref, { marked() } marked</p>

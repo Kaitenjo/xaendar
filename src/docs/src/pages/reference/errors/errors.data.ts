@@ -285,11 +285,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: "Cannot find name '$event'. Did you mean 'event'?",
-    page: 'components/outputs'
-  },
-  {
-    phase: 'TypeChecker',
     message: "Property 'secret' is private and only accessible within class 'XCard'.",
     page: 'templates/expressions'
   },

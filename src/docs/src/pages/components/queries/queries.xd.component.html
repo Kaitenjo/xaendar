@@ -6,6 +6,7 @@
 @import { ViewQueryComponent } from '../../../examples/components/queries/view-query/view-query.xd.component.ts'
 @import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
 @import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
+@import { RefQueryComponent } from '../../../examples/components/queries/ref-query/ref-query.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
 
 <span @@i18n(key="pages.components.queries.eyebrow") class="eyebrow" />
@@ -21,6 +22,15 @@
 </docs-example>
 <p @@i18n(key="pages.components.queries.queryingTheTemplate.p2") />
 <p @@i18n(key="pages.components.queries.queryingTheTemplate.p3") />
+
+<h2 @@i18n(key="pages.components.queries.refsAndDirectives.title") />
+<p @@i18n(key="pages.components.queries.refsAndDirectives.p1") />
+<p @@i18n(key="pages.components.queries.refsAndDirectives.p2") />
+<docs-example name="components/queries/ref-query"
+  heading="{translations().pages.components.queries.refsAndDirectives.example1}">
+  <ex-ref-query />
+</docs-example>
+<p @@i18n(key="pages.components.queries.refsAndDirectives.p3") />
 
 <h2 @@i18n(key="pages.components.queries.whenTheResultIs.title") />
 <p @@i18n(key="pages.components.queries.whenTheResultIs.p1") />
@@ -89,6 +99,14 @@
           </a>
         </td>
         <td @@i18n(key="pages.components.queries.summary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/Query`}">
+            <code>{ '@Query.ref(name)' }</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.components.queries.summary.td6") />
       </tr>
       <tr>
         <td>

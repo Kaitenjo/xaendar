@@ -270,7 +270,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'QueryTarget',
       kind: 'type',
-      signature: 'type QueryTarget = string | Constructor<HTMLElement>',
+      signature: 'type QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>',
       members: [
         {
           name: 'selector',
@@ -282,12 +282,17 @@ export const CORE_SIGNALS_API: ApiPackage = {
           group: 'variants',
           signature: 'Constructor<HTMLElement>',
           snippets: ['api/core-signals/query-target-native.ts']
+        },
+        {
+          name: 'directive',
+          group: 'variants',
+          signature: 'Constructor<CustomDirective>'
         }
       ],
       usage: [
         { key: 'kinds', snippets: ['components/query-decorators.ts'] }
       ],
-      guides: ['components/queries', 'components/content-queries']
+      guides: ['components/queries', 'components/content-queries', 'directives/custom']
     },
     {
       name: 'QueryElement',

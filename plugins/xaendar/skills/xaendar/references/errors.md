@@ -26,8 +26,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Lexer] Event must be included in Double Quotes`
 
-- **Cause:** A listener with a nested call or an expression as argument, such as go(n()) or go(n() + 1), or with two statements.
-- **Fix:** Call a single method, with literals, members, loop variables, property accesses or $event as arguments, and compute the rest in the method.
+- **Cause:** A listener with more than one statement, such as (click)="save(); close()".
+- **Fix:** Call a single method, and do the rest in the method.
 
 ### `[Lexer] Event handler cannot be empty`
 
@@ -287,11 +287,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A static value, always a string, bound to an input of another type.
 - **Fix:** Bind an expression: count="{ 3 }".
-
-### `Cannot find name '$event'. Did you mean 'event'?`
-
-- **Cause:** $event used as $event.target, or another expression reading it.
-- **Fix:** Pass $event whole and read the target in the method.
 
 ### `Property 'secret' is private and only accessible within class 'XCard'.`
 

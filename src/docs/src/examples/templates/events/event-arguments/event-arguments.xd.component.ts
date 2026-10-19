@@ -72,12 +72,13 @@ export class EventArgumentsComponent extends CustomElement {
   }
 
   /**
-   * Receives the input event of a field.
+   * Receives two properties of the keydown event of a field.
    *
-   * @param event - The input event.
+   * @param key - The key pressed.
+   * @param repeat - Whether the key is held down.
    */
-  public onInput(event: Event): void {
-    this._record(`onInput → ${JSON.stringify((event.target as HTMLInputElement).value)}`);
+  public onKey(key: string, repeat: boolean): void {
+    this._record(`onKey(${JSON.stringify(key)}, ${repeat})`);
   }
 
   /**
