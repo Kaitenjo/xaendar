@@ -18,7 +18,7 @@ export function generateCommand(): Command {
         .argument('<name>', 'Name of the component, used as its selector')
         .option('-p, --path <path>', 'Custom path for the generated component (default: current directory)')
         .option('-f, --force', 'Force generation deleting current component if already exists')
-        .description('Generate a new component (creates <name>/ folder with .ts, .html, .css, .spec.ts)')
+        .description('Generate a new component (creates <name>/ folder with .ts, .html, .spec.ts and the stylesheet in the format set in xaendar.json)')
         .action((name: string, options: { path?: string, force?: boolean }) => {
           const path = options.path || process.cwd();
           generateComponent(name, path, !!options.force);

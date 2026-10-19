@@ -43,10 +43,10 @@ export function createLoadHook(state: XaendarPluginState): LoadHook {
  * Compiles a style file into the module exporting its stylesheet, watching every file the
  * compiled CSS depends on: editing any of them invalidates the module.
  */
-function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string): ReturnType<LoadHook> {
+async function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string): Promise<ReturnType<LoadHook>> {
   let styleResult: StyleCompileResult;
   try {
-    styleResult = compileStyle(stylePath, state.host);
+    styleResult = await compileStyle(stylePath, state.host);
     if (state.minifyStyles && styleResult.cssText) {
       styleResult.cssText = minifyCss(styleResult.cssText, stylePath);
     }

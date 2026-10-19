@@ -20,7 +20,8 @@ export type SourceFile = {
 
 /**
  * Infers the language of a file from its extension. A `.txt` file named after an error (`…-error.txt`,
- * `…-errors.txt`) shows the output of a failure: its language is `error`.
+ * `…-errors.txt`) shows the output of a failure: its language is `error`. SCSS and Less files are
+ * highlighted as CSS.
  *
  * @param fileName - The name of the file.
  * @returns The language of the file, `text` when the extension is unknown.
@@ -38,6 +39,8 @@ export function langOf(fileName: string): CodeLang {
     case 'html':
       return 'html';
     case 'css':
+    case 'scss':
+    case 'less':
       return 'css';
     case 'json':
       return 'json';

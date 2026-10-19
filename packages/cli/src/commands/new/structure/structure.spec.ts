@@ -54,6 +54,21 @@ describe('buildStructure()', () => {
     expect((indexHtmlEntry as { content: string }).content).toContain('my-app-root');
   });
 
+  it('names the global stylesheet, links it and installs its compiler after the style of the project', () => {
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+
+    const entries = buildStructure({ name: 'my-app', style: 'sass' });
+    const srcEntry = entries.find((entry) => entry.name === 'src');
+    const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
+    const stylesEntry = children?.find((entry) => entry.name === 'styles.sass');
+    const indexHtmlEntry = children?.find((entry) => entry.name === 'index.html');
+    const packageJsonEntry = entries.find((entry) => entry.name === 'package.json');
+
+    expect((stylesEntry as { content: string }).content).toContain('  box-sizing: border-box\n');
+    expect((indexHtmlEntry as { content: string }).content).toContain('href="./styles.sass"');
+    expect((packageJsonEntry as { content: string }).content).toContain('"sass": ');
+  });
+
   it('exits the process when the CLI package.json cannot be read', () => {
     vi.mocked(readFileSync).mockImplementation(() => {
       throw new Error('ENOENT');

@@ -17,6 +17,18 @@
     "typescript": "^6.0.3",
     "vite": "^8.3.1"
   },
+  "peerDependencies": {
+    "less": "^4.9.1",
+    "sass": "^1.105.2"
+  },
+  "peerDependenciesMeta": {
+    "less": {
+      "optional": true
+    },
+    "sass": {
+      "optional": true
+    }
+  },
   "xaendar": {
     "target": "node",
     "dts": true

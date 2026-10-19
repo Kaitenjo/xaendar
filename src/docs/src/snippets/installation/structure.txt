@@ -7,7 +7,7 @@ my-app/
     ├── index.html
     ├── main.ts         installs the Signal polyfill, then loads bootstrap.ts
     ├── bootstrap.ts    imports the components, so that they get defined
-    ├── styles.css      global styles (html, body)
+    ├── styles.css      global styles (html, body); .scss, .sass or .less with another format
     └── my-app-root/
         ├── my-app-root.xd.component.ts
         ├── my-app-root.xd.component.html

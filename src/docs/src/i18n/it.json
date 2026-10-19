@@ -43,6 +43,7 @@
     "all": "Tutti",
     "results": "risultati",
     "noResults": "Nessun elemento corrisponde al filtro.",
+    "noIssues": "Al momento non ci sono problemi noti.",
     "cause": "Causa",
     "fix": "Soluzione",
     "workaround": "Come aggirarlo",
@@ -180,7 +181,7 @@
           "td3": "sì",
           "td4": "Il template, relativo al file della classe.",
           "td5": "no",
-          "td6": "Un file <code>.css</code> relativo al file della classe. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
+          "td6": "Un file <code>.css</code>, <code>.scss</code>, <code>.sass</code> o <code>.less</code> relativo al file della classe. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
           "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le tre opzioni direttamente dal codice sorgente."
         },
         "theBaseClassAnd": {
@@ -716,7 +717,7 @@
         "lead": "Ogni componente ha il proprio foglio di stile, adottato dal suo shadow root: le sue regole colpiscono gli elementi del suo template e nient’altro, e le regole della pagina non colpiscono quegli elementi. Cosa attraversa il confine lo decide il CSS stesso: le proprietà ereditate, le custom property, l’elemento host, il contenuto proiettato e le parti che un componente espone.",
         "theComponentStylesheet": {
           "title": "Il foglio di stile del componente",
-          "p1": "<code>styleUrl</code> punta a un normale file <code>.css</code>. Il plugin lo compila una sola volta in un <code>CSSStyleSheet</code>, che ogni istanza del componente adotta quando viene collegata: cento istanze condividono un solo foglio di stile. Lo condividono anche i componenti che puntano allo stesso file.",
+          "p1": "<code>styleUrl</code> punta a un file <code>.css</code>, oppure a un file Sass o Less, come descritto più avanti. Il plugin lo compila una sola volta in un <code>CSSStyleSheet</code>, che ogni istanza del componente adotta quando viene collegata: cento istanze condividono un solo foglio di stile. Lo condividono anche i componenti che puntano allo stesso file.",
           "example1": "Due paragrafi con la stessa classe",
           "p2": "Entrambi i paragrafi hanno la classe <code>title</code>, e ogni foglio di stile dà uno stile solo al proprio: il bordo rosso resta nel padre, il maiuscolo resta nel figlio. Il colore e il corsivo, invece, raggiungono il figlio: sono impostati sul suo elemento host, e le proprietà ereditate entrano nello shadow root come in qualsiasi altro elemento."
         },
@@ -742,17 +743,23 @@
           "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo.",
           "example1": "Una barra di avanzamento"
         },
+        "sassAndLess": {
+          "title": "Sass e Less",
+          "p1": "Un file <code>.scss</code> o <code>.sass</code> (la sintassi indentata) viene compilato con il pacchetto <code>sass</code>, un file <code>.less</code> con <code>less</code>. Gli import tra fogli di stile funzionano: <code>@use</code>, <code>@forward</code> e <code>@import</code> in Sass, <code>@import</code> in Less vengono risolti in fase di build, rispetto al foglio di stile, e il dev server osserva ogni file importato, partial compresi. Il CSS risultante segue poi gli stessi passaggi di un file <code>.css</code>.",
+          "p2": "I due pacchetti sono peer dependency opzionali di <code>@xaendar/build-tools</code>: il progetto installa quello che usa, con <code>npm i -D sass</code> o <code>npm i -D less</code>. <code>xd new</code> lo aggiunge a <code>package.json</code> quando scegli uno di questi formati. Se manca, il primo foglio di stile che ne ha bisogno non si compila:",
+          "p3": "Un errore nel codice Sass o Less viene segnalato allo stesso modo: <code>Failed to compile style</code>, il percorso del foglio di stile, poi il messaggio del compilatore."
+        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Un oggetto legato a style",
           "p1": "Un binding su un elemento nativo imposta un attributo, e un attributo è una stringa: un oggetto diventa <code>[object Object]</code>, che il browser ignora. Costruisci tu la stringa.",
           "callout2": {
-            "heading": "Preprocessori",
-            "p1": "Sono supportati solo i file <code>.css</code>: Sass, Less e gli altri vengono rifiutati."
+            "heading": "Altri preprocessori",
+            "p1": "Sono supportati solo i file <code>.css</code>, <code>.scss</code>, <code>.sass</code> e <code>.less</code>: Stylus e gli altri vengono rifiutati."
           },
           "callout3": {
             "heading": "@import e URL relativi nel foglio di stile di un componente",
-            "p1": "Il foglio di stile viene costruito nel browser a partire dal testo del file, quindi non ha un URL proprio. Una regola <code>@import</code> viene scartata con un avviso, e un <code>url()</code> relativo viene risolto rispetto alla pagina invece che al file CSS. Usa un file per componente, oppure condividi un file tra più componenti, e riferisciti alle risorse con percorsi assoluti, per esempio dalla cartella <code>public</code>."
+            "p1": "Il foglio di stile viene costruito nel browser a partire dal testo del file, quindi non ha un URL proprio. In un file <code>.css</code>, una regola <code>@import</code> viene scartata con un avviso: funzionano solo gli import di Sass e Less, risolti in fase di build. Un <code>url()</code> relativo viene risolto rispetto alla pagina invece che al foglio di stile, qualunque sia il suo formato. Usa un file per componente, oppure condividi un file tra più componenti, e riferisciti alle risorse con percorsi assoluti, per esempio dalla cartella <code>public</code>."
           },
           "callout4": {
             "heading": "Il foglio di stile globale non raggiunge i componenti",
@@ -1160,7 +1167,7 @@
       "lead": "Crea un progetto con lo strumento a riga di comando <code>xd</code>, oppure aggiungi Xaendar a mano a un progetto Vite esistente. In entrambi i casi servono gli stessi quattro ingredienti: i pacchetti di runtime, la trasformazione dei decorator, il plugin Vite di Xaendar e il polyfill dei signal.",
       "createAProjectWith": {
         "title": "Creare un progetto con la CLI",
-        "p1": "<code>xd new</code> crea la cartella, scrive i file qui sotto ed esegue <code>npm install</code>. <code>npm start</code> esegue <code>xd start</code>, che serve l’applicazione sulla porta 4200 e la ricompila a ogni modifica; <code>npm run build</code> esegue <code>xd build</code>, che scrive il bundle di produzione in <code>dist</code>.",
+        "p1": "<code>xd new</code> chiede il formato dei fogli di stile (CSS, SCSS, Sass o Less; CSS in questa pagina), crea la cartella, scrive i file qui sotto ed esegue <code>npm install</code>. <code>npm start</code> esegue <code>xd start</code>, che serve l’applicazione sulla porta 4200 e la ricompila a ogni modifica; <code>npm run build</code> esegue <code>xd build</code>, che scrive il bundle di produzione in <code>dist</code>.",
         "p2": "Tre file meritano uno sguardo più da vicino.",
         "subtitle1": "index.html",
         "p3": "La pagina carica un solo script modulo: <code>main.ts</code>, l’entry point.",
@@ -2626,8 +2633,8 @@
         "whatThePluginDoes": {
           "title": "Cosa fa il plugin",
           "p1": "Vengono compilati solo i file il cui nome termina con <code>.xd.component.ts</code>. Per ogni classe componente in un file del genere, il plugin legge le opzioni di <code>@WebComponent</code>, valida e riserva il selettore, esegue il type check del template rispetto alla classe, e aggiunge al modulo due import da moduli virtuali: la funzione di render del template e il foglio di stile.",
-          "p2": "Ogni template diventa un modulo che esporta la sua funzione <code>render</code>. Il parametro <code>signals</code> nel suo id elenca i membri della classe riconosciuti come signal, che decidono quali binding sono reattivi. Ogni file CSS diventa un modulo che esporta un <code>CSSStyleSheet</code>: i componenti che puntano allo stesso file condividono lo stesso foglio.",
-          "p3": "I commenti vengono rimossi dal CSS. In <code>vite build</code>, il CSS viene anche minificato con Lightning CSS, a meno che la configurazione di Vite non disattivi la minificazione del CSS."
+          "p2": "Ogni template diventa un modulo che esporta la sua funzione <code>render</code>. Il parametro <code>signals</code> nel suo id elenca i membri della classe riconosciuti come signal, che decidono quali binding sono reattivi. Ogni foglio di stile diventa un modulo che esporta un <code>CSSStyleSheet</code>: i componenti che puntano allo stesso file condividono lo stesso foglio.",
+          "p3": "Un file <code>.scss</code> o <code>.sass</code> viene prima compilato con il pacchetto <code>sass</code>, un file <code>.less</code> con <code>less</code>: peer dependency opzionali di <code>@xaendar/build-tools</code>, che il progetto installa da sé (vedi <a href=\"#/it/components/styling\">Stili</a>). Poi i commenti vengono rimossi dal CSS. In <code>vite build</code>, il CSS viene anche minificato con Lightning CSS, a meno che la configurazione di Vite non disattivi la minificazione del CSS."
         },
         "errors": {
           "title": "Errori",
@@ -2636,7 +2643,7 @@
         },
         "devServer": {
           "title": "Dev server",
-          "p1": "Il plugin osserva, per ogni componente, il suo template, il suo foglio di stile, le classi che estende e i componenti importati dal suo template. Modificare uno di essi ricompila ciò che ne dipende, e la pagina si ricarica."
+          "p1": "Il plugin osserva, per ogni componente, il suo template, il suo foglio di stile e i file che questo importa con Sass o Less, le classi che estende e i componenti importati dal suo template. Modificare uno di essi ricompila ciò che ne dipende, e la pagina si ricarica."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2645,8 +2652,8 @@
             "body": "<code>tsconfig.json</code> viene letto dalla cartella da cui parte Vite, non da quella di <code>vite.config.ts</code>. Avvia <code>xd</code> o Vite dalla radice del progetto."
           },
           "callout5": {
-            "heading": "Preprocessori e import CSS",
-            "body": "Come <code>styleUrl</code> si possono usare solo file <code>.css</code>, e le regole <code>@import</code> al loro interno vengono scartate dal browser, perché i fogli di stile costruiti non le supportano. Vedi <a href=\"#/it/components/styling\">Stili</a>."
+            "heading": "Import CSS",
+            "body": "Le regole <code>@import</code> in un file <code>.css</code> vengono scartate dal browser, perché i fogli di stile costruiti non le supportano. Gli import di Sass e Less funzionano, perché vengono risolti in fase di build. Vedi <a href=\"#/it/components/styling\">Stili</a>."
           }
         },
         "summary": {
@@ -2660,7 +2667,7 @@
           "td5": "Type check",
           "td6": "Solo i template, con le opzioni del <code>tsconfig.json</code> della cartella di lavoro",
           "td7": "Stili",
-          "td8": "Solo <code>.css</code>; un <code>CSSStyleSheet</code> condiviso per file; minificati nelle build"
+          "td8": "<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code> (con il pacchetto <code>sass</code> o <code>less</code>); un <code>CSSStyleSheet</code> condiviso per file; minificati nelle build"
         }
       },
       "cli": {
@@ -2670,7 +2677,8 @@
         "xdNew": {
           "title": "xd new",
           "p1": "Il nome del progetto viene usato per la cartella, per <code>package.json</code> e per il componente radice, <code>&lt;nome&gt;-root</code>. I file generati sono descritti in <a href=\"#/it/installation\">Installazione</a>. Il comando si ferma se la cartella esiste e non è vuota.",
-          "p2": "<code>xaendar.json</code> registra le impostazioni del progetto: l’estensione scelta con <code>--style</code> e, in <code>customElements</code>, i tag di altre librerie usati dai template (vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>)."
+          "p2": "Se <code>--style</code> non lo indica, il comando chiede il formato dei fogli di stile: <code>css</code>, <code>scss</code>, <code>sass</code> (la sintassi indentata) o <code>less</code>. Un <code>--style</code> non valido ferma il comando prima di scrivere qualsiasi file.",
+          "p3": "Come risposta vale il numero o il nome di un formato; una risposta vuota sceglie CSS, e una non valida fa ripetere la domanda. Senza un terminale interattivo, come in CI, il comando usa CSS senza chiedere. Il formato è l’estensione del foglio di stile globale, per esempio <code>src/styles.css</code> o <code>src/styles.scss</code>, e dei fogli di stile dei componenti; con SCSS, Sass o Less, <code>package.json</code> riceve anche <code>sass</code> o <code>less</code> tra le sue <code>devDependencies</code>. <code>xaendar.json</code> registra le impostazioni del progetto: il formato, letto da <code>xd generate component</code>, e, in <code>customElements</code>, i tag di altre librerie usati dai template (vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>)."
         },
         "xdStartAndXd": {
           "title": "xd start e xd build",
@@ -2682,7 +2690,7 @@
         },
         "xdComponent": {
           "title": "xd generate component",
-          "p1": "Il comando crea una cartella con il nome del componente, con la classe, il template, il foglio di stile e una spec. Il nome viene usato come selettore, quindi deve essere un nome valido per un custom element; la classe prende lo stesso nome in PascalCase.",
+          "p1": "Il comando crea una cartella con il nome del componente, con la classe, il template, il foglio di stile e una spec. Il nome viene usato come selettore, quindi deve essere un nome valido per un custom element; la classe prende lo stesso nome in PascalCase. Il foglio di stile ha il formato del progetto: il comando lo legge dal <code>xaendar.json</code> più vicino, risalendo dalla cartella di destinazione (<code>--path</code> o quella corrente), e scrive <code>user-card.xd.component.scss</code> per <code>scss</code>, con uno <code>styleUrl</code> che punta a esso. Senza <code>xaendar.json</code>, o senza il formato al suo interno, il foglio di stile è un file <code>.css</code>; un formato che la CLI non conosce ferma il comando.",
           "p2": "Ricorda di importare il nuovo componente nei template che lo usano, con <code>@import</code>: questo lo definisce anche."
         },
         "edgeCases": {
@@ -2691,10 +2699,6 @@
             "heading": "Nomi non validi",
             "p1": "I nomi dei componenti vengono controllati prima di scrivere qualsiasi file.",
             "p2": "Anche il nome di un progetto viene controllato prima di scrivere qualsiasi file: dà il nome al componente radice, <code>&lt;nome&gt;-root</code>."
-          },
-          "callout3": {
-            "heading": "--style accetta ciò che il plugin non sa compilare",
-            "p1": "<code>xd new</code> accetta <code>scss</code>, <code>less</code> e <code>styl</code>, ma il plugin compila solo file <code>.css</code>. <code>xd generate component</code>, dal canto suo, ignora <code>xaendar.json</code> e scrive sempre un file <code>.css</code>."
           },
           "callout5": {
             "heading": "I pacchetti pubblicati sono più vecchi di questa documentazione",
@@ -2707,11 +2711,11 @@
           "th2": "Opzioni",
           "th3": "Descrizione",
           "td1": "<code>xd new &lt;nome&gt;</code>",
-          "td2": "Crea un progetto e ne installa le dipendenze.",
+          "td2": "Crea un progetto e ne installa le dipendenze; senza <code>--style</code> chiede il formato dei fogli di stile.",
           "td3": "Avvia il dev server di Vite con i plugin Xaendar.",
           "td4": "Compila il progetto con i plugin Xaendar.",
           "td5": "<code>xd generate component &lt;nome&gt;</code>, <code>xd g c</code>",
-          "td6": "Crea la cartella di un componente.",
+          "td6": "Crea la cartella di un componente, con un foglio di stile nel formato di <code>xaendar.json</code>.",
           "td7": "Versione e aiuto.",
           "td8": "Esegue le spec con i plugin Xaendar."
         }
@@ -2991,9 +2995,17 @@
       "cause": "Una classe decorata con @WebComponent in un file che non segue la convenzione dei componenti, quindi il plugin non la compila.",
       "fix": "Sposta la classe in un file che termina con .xd.component.ts."
     },
-    "Unsupported stylesheet extension \".scss\" for <path>.": {
-      "cause": "Uno styleUrl che non è un file .css.",
-      "fix": "Usa CSS semplice."
+    "Unsupported stylesheet extension \".styl\" for <path>.": {
+      "cause": "Uno styleUrl che non è un file .css, .scss, .sass o .less, come un foglio di stile Stylus.",
+      "fix": "Usa CSS, Sass o Less."
+    },
+    "The \"sass\" package is required to compile <path>: install it with \"npm i -D sass\".": {
+      "cause": "Un foglio di stile .scss o .sass in un progetto che non ha il pacchetto sass; lo stesso vale per un foglio di stile .less senza il pacchetto less. Sono peer dependency opzionali di @xaendar/build-tools.",
+      "fix": "Installa il pacchetto indicato nel messaggio, con npm i -D sass o npm i -D less."
+    },
+    "Failed to compile style - <path>": {
+      "cause": "Un foglio di stile che il plugin non è riuscito a compilare: la riga successiva ne dà il motivo, come un errore di Sass o Less, un pacchetto mancante o un’estensione non supportata.",
+      "fix": "Correggi ciò che riporta la riga successiva, nel foglio di stile al percorso indicato o in un file che importa."
     },
     "Could not find the static block applying the decorators of class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
       "cause": "I decoratori non sono stati compilati prima del plugin Xaendar.",
@@ -3048,8 +3060,8 @@
       "fix": "Usa this.shadowRoot."
     },
     "@import rules are not allowed here.": {
-      "cause": "Un avviso del browser: il foglio di stile di un componente è un foglio costruito, che scarta le regole @import.",
-      "fix": "Metti ogni regola nel file CSS del componente."
+      "cause": "Un avviso del browser: il foglio di stile di un componente è un foglio costruito, che scarta le regole @import di un file .css.",
+      "fix": "Metti ogni regola nel file CSS del componente, oppure usa Sass o Less, i cui import vengono risolti in fase di build."
     },
     "Circular dependency detected while computing a Computed signal": {
       "cause": "Un computed che legge sé stesso, direttamente o attraverso altri.",
@@ -3075,9 +3087,13 @@
       "cause": "xd generate component sovrascriverebbe una cartella esistente.",
       "fix": "Scegli un altro nome, o aggiungi --force per sostituirla."
     },
-    "✖  Invalid style option: sass": {
-      "cause": "xd new accetta css, scss, less e styl.",
-      "fix": "Usa css: è l’unica estensione che il plugin compila."
+    "✖  Invalid style option: styl. Use one of css, scss, sass, less.": {
+      "cause": "Un’opzione --style di xd new che non è uno dei formati che il plugin compila.",
+      "fix": "Passa css, scss, sass o less, oppure ometti --style per scegliere il formato da un elenco."
+    },
+    "✖  Invalid style \"styl\" in <path>: use one of css, scss, sass, less.": {
+      "cause": "xd generate component ha trovato, nel xaendar.json più vicino, un generate.components.style che non è uno dei formati che il plugin compila.",
+      "fix": "Impostalo a css, scss, sass o less, oppure rimuovilo per avere CSS."
     },
     "[Lexer] An element ref takes no value: write #name, which names the element it is declared on": {
       "cause": "Un valore dato a un element ref, come in #field=\"name\".",
@@ -3216,11 +3232,5 @@
       "fix": "Leggila negli handler degli eventi. Se il contenuto è opzionale, o per seguirlo mentre arriva, usa @Query.content."
     }
   },
-  "issues": {
-    "style-options-the-plugin-cannot-compile": {
-      "title": "Opzioni di stile che il plugin non sa compilare",
-      "details": "xd new accetta scss, less e styl, che il plugin rifiuta; xd generate component ignora xaendar.json e scrive sempre CSS.",
-      "workaround": "Usa css."
-    }
-  }
+  "issues": {}
 }

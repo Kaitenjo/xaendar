@@ -43,6 +43,7 @@
     "all": "All",
     "results": "results",
     "noResults": "Nothing matches the filter.",
+    "noIssues": "No known issues at the moment.",
     "cause": "Cause",
     "fix": "Fix",
     "workaround": "Workaround",
@@ -180,7 +181,7 @@
           "td3": "yes",
           "td4": "The template, relative to the class file.",
           "td5": "no",
-          "td6": "A <code>.css</code> file relative to the class file. See <a href=\"#/en/components/styling\">Styling</a>.",
+          "td6": "A <code>.css</code>, <code>.scss</code>, <code>.sass</code> or <code>.less</code> file relative to the class file. See <a href=\"#/en/components/styling\">Styling</a>.",
           "p1": "The decorator does two things at run time: it stores the selector in the metadata of the class, where <code>@Query(Class)</code> finds it, and it calls <code>customElements.define(selector, Class)</code>. The rest happens at build time, where the plugin reads the three options straight from the source code."
         },
         "theBaseClassAnd": {
@@ -716,7 +717,7 @@
         "lead": "Each component has its own stylesheet, adopted by its shadow root: its rules match the elements of its template and nothing else, and the rules of the page do not match them. What crosses the boundary is decided by CSS itself: inherited properties, custom properties, the host element, the projected content and the parts a component exposes.",
         "theComponentStylesheet": {
           "title": "The component stylesheet",
-          "p1": "<code>styleUrl</code> points to a plain <code>.css</code> file. The plugin compiles it once into a <code>CSSStyleSheet</code>, which every instance of the component adopts when it is connected: a hundred instances share one stylesheet. Components pointing to the same file share it too.",
+          "p1": "<code>styleUrl</code> points to a <code>.css</code> file, or to a Sass or Less one, as described below. The plugin compiles it once into a <code>CSSStyleSheet</code>, which every instance of the component adopts when it is connected: a hundred instances share one stylesheet. Components pointing to the same file share it too.",
           "example1": "Two paragraphs with the same class",
           "p2": "Both paragraphs have the class <code>title</code>, and each stylesheet styles only its own: the red border stays in the parent, the uppercase stays in the child. The color and the italic, instead, reach the child: they are set on its host element, and inherited properties flow into the shadow root like into any other element."
         },
@@ -742,17 +743,23 @@
           "p1": "<code>class</code> and <code>style</code> are attributes like any other: bind them to an expression and the attribute is rewritten when the value changes. Building the string in a computed signal keeps the template short and the binding reactive.",
           "example1": "A progress bar"
         },
+        "sassAndLess": {
+          "title": "Sass and Less",
+          "p1": "A <code>.scss</code> or <code>.sass</code> file (the indented syntax) is compiled with the <code>sass</code> package, a <code>.less</code> file with <code>less</code>. Imports between stylesheets work: <code>@use</code>, <code>@forward</code> and <code>@import</code> in Sass, <code>@import</code> in Less are resolved at build time, relative to the stylesheet, and the dev server watches every imported file, partials included. The resulting CSS then goes through the same steps as a <code>.css</code> file.",
+          "p2": "The two packages are optional peer dependencies of <code>@xaendar/build-tools</code>: the project installs the one it uses, with <code>npm i -D sass</code> or <code>npm i -D less</code>. <code>xd new</code> adds it to <code>package.json</code> when you choose one of these formats. Without it, the first stylesheet that needs it fails to compile:",
+          "p3": "An error in the Sass or Less code is reported in the same way: <code>Failed to compile style</code>, the path of the stylesheet, then the message of the compiler."
+        },
         "edgeCases": {
           "title": "Edge cases",
           "example1": "An object bound to style",
           "p1": "A binding on a native element sets an attribute, and an attribute is a string: an object becomes <code>[object Object]</code>, and the browser ignores it. Build the string yourself.",
           "callout2": {
-            "heading": "Preprocessors",
-            "p1": "Only <code>.css</code> files are supported: Sass, Less and the others are rejected."
+            "heading": "Other preprocessors",
+            "p1": "Only <code>.css</code>, <code>.scss</code>, <code>.sass</code> and <code>.less</code> files are supported: Stylus and the others are rejected."
           },
           "callout3": {
             "heading": "@import and relative URLs in a component stylesheet",
-            "p1": "The stylesheet is built in the browser from the text of the file, so it has no URL of its own. An <code>@import</code> rule is dropped with a warning, and a relative <code>url()</code> is resolved against the page instead of the CSS file. Use one file per component, or share a file between components, and refer to assets with absolute paths, for example from the <code>public</code> folder."
+            "p1": "The stylesheet is built in the browser from the text of the file, so it has no URL of its own. In a <code>.css</code> file, an <code>@import</code> rule is dropped with a warning: only the imports of Sass and Less, resolved at build time, work. A relative <code>url()</code> is resolved against the page instead of the stylesheet, whatever its format. Use one file per component, or share a file between components, and refer to assets with absolute paths, for example from the <code>public</code> folder."
           },
           "callout4": {
             "heading": "The global stylesheet does not reach components",
@@ -1160,7 +1167,7 @@
       "lead": "Create a project with the <code>xd</code> command line tool, or add Xaendar to an existing Vite project by hand. Either way you end up with the same four ingredients: the runtime packages, the decorators transform, the Xaendar Vite plugin and the signals polyfill.",
       "createAProjectWith": {
         "title": "Create a project with the CLI",
-        "p1": "<code>xd new</code> creates the folder, writes the files below and runs <code>npm install</code>. <code>npm start</code> runs <code>xd start</code>, which serves the application on port 4200 and rebuilds it as you edit; <code>npm run build</code> runs <code>xd build</code>, which writes the production bundle in <code>dist</code>.",
+        "p1": "<code>xd new</code> asks the format of the stylesheets (CSS, SCSS, Sass or Less; CSS in this page), creates the folder, writes the files below and runs <code>npm install</code>. <code>npm start</code> runs <code>xd start</code>, which serves the application on port 4200 and rebuilds it as you edit; <code>npm run build</code> runs <code>xd build</code>, which writes the production bundle in <code>dist</code>.",
         "p2": "Three files deserve a closer look.",
         "subtitle1": "index.html",
         "p3": "The page loads a single module script: <code>main.ts</code>, the entry point.",
@@ -2626,8 +2633,8 @@
         "whatThePluginDoes": {
           "title": "What the plugin does",
           "p1": "Only files whose name ends with <code>.xd.component.ts</code> are compiled. For each component class in such a file, the plugin reads the options of <code>@WebComponent</code>, validates and claims the selector, type-checks the template against the class, and adds to the module two imports from virtual modules: the render function of the template and the stylesheet.",
-          "p2": "Each template becomes a module exporting its <code>render</code> function. The <code>signals</code> parameter in its id lists the members of the class recognized as signals, which decide which bindings are reactive. Each CSS file becomes a module exporting a <code>CSSStyleSheet</code>: components pointing to the same file share the same sheet.",
-          "p3": "Comments are removed from the CSS. In <code>vite build</code>, the CSS is also minified with Lightning CSS, unless the Vite configuration turns CSS minification off."
+          "p2": "Each template becomes a module exporting its <code>render</code> function. The <code>signals</code> parameter in its id lists the members of the class recognized as signals, which decide which bindings are reactive. Each stylesheet becomes a module exporting a <code>CSSStyleSheet</code>: components pointing to the same file share the same sheet.",
+          "p3": "A <code>.scss</code> or <code>.sass</code> file is first compiled with the <code>sass</code> package, a <code>.less</code> file with <code>less</code>: optional peer dependencies of <code>@xaendar/build-tools</code>, which the project installs itself (see <a href=\"#/en/components/styling\">Styling</a>). Comments are then removed from the CSS. In <code>vite build</code>, the CSS is also minified with Lightning CSS, unless the Vite configuration turns CSS minification off."
         },
         "errors": {
           "title": "Errors",
@@ -2636,7 +2643,7 @@
         },
         "devServer": {
           "title": "Dev server",
-          "p1": "The plugin watches, for each component, its template, its stylesheet, the classes it extends and the components its template imports. Editing any of them recompiles what depends on it, and the page reloads."
+          "p1": "The plugin watches, for each component, its template, its stylesheet and the files the stylesheet imports with Sass or Less, the classes it extends and the components its template imports. Editing any of them recompiles what depends on it, and the page reloads."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -2645,8 +2652,8 @@
             "body": "<code>tsconfig.json</code> is read from the folder Vite is started from, not from the folder of <code>vite.config.ts</code>. Start <code>xd</code> or Vite from the root of the project."
           },
           "callout5": {
-            "heading": "Preprocessors and CSS imports",
-            "body": "Only <code>.css</code> files can be used as <code>styleUrl</code>, and <code>@import</code> rules inside them are dropped by the browser, since constructed stylesheets do not support them. See <a href=\"#/en/components/styling\">Styling</a>."
+            "heading": "CSS imports",
+            "body": "<code>@import</code> rules in a <code>.css</code> file are dropped by the browser, since constructed stylesheets do not support them. The imports of Sass and Less work, because they are resolved at build time. See <a href=\"#/en/components/styling\">Styling</a>."
           }
         },
         "summary": {
@@ -2660,7 +2667,7 @@
           "td5": "Type check",
           "td6": "Templates only, with the options of <code>tsconfig.json</code> in the working directory",
           "td7": "Styles",
-          "td8": "<code>.css</code> only; a shared <code>CSSStyleSheet</code> per file; minified in builds"
+          "td8": "<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code> (with the <code>sass</code> or <code>less</code> package); a shared <code>CSSStyleSheet</code> per file; minified in builds"
         }
       },
       "cli": {
@@ -2670,7 +2677,8 @@
         "xdNew": {
           "title": "xd new",
           "p1": "The name of the project is used for the folder, for <code>package.json</code>, and for the root component, <code>&lt;name&gt;-root</code>. The generated files are described in <a href=\"#/en/installation\">Installation</a>. The command stops if the folder exists and is not empty.",
-          "p2": "<code>xaendar.json</code> records the settings of the project: the extension chosen with <code>--style</code> and, in <code>customElements</code>, the tags of other libraries used by the templates (see <a href=\"#/en/components/registration\">Selectors and registration</a>)."
+          "p2": "Unless <code>--style</code> gives it, the command asks the format of the stylesheets: <code>css</code>, <code>scss</code>, <code>sass</code> (the indented syntax) or <code>less</code>. An invalid <code>--style</code> stops the command before anything is written.",
+          "p3": "The answer is the number or the name of a format; an empty answer picks CSS, and an invalid one asks again. Without an interactive terminal, as in CI, the command uses CSS without asking. The format is the extension of the global stylesheet, <code>src/styles.css</code> or <code>src/styles.scss</code> for example, and of the stylesheets of the components; with SCSS, Sass or Less, <code>package.json</code> also gets <code>sass</code> or <code>less</code> among its <code>devDependencies</code>. <code>xaendar.json</code> records the settings of the project: the format, read by <code>xd generate component</code>, and, in <code>customElements</code>, the tags of other libraries used by the templates (see <a href=\"#/en/components/registration\">Selectors and registration</a>)."
         },
         "xdStartAndXd": {
           "title": "xd start and xd build",
@@ -2682,7 +2690,7 @@
         },
         "xdComponent": {
           "title": "xd generate component",
-          "p1": "The command creates a folder named after the component, with the class, the template, the stylesheet and a spec. The name is used as the selector, so it must be a valid custom element name; the class is named after it in PascalCase.",
+          "p1": "The command creates a folder named after the component, with the class, the template, the stylesheet and a spec. The name is used as the selector, so it must be a valid custom element name; the class is named after it in PascalCase. The stylesheet has the format of the project: the command reads it from the nearest <code>xaendar.json</code>, looking from the target folder (<code>--path</code> or the current one) up, and writes <code>user-card.xd.component.scss</code> for <code>scss</code>, with a <code>styleUrl</code> pointing to it. Without <code>xaendar.json</code>, or without the format in it, the stylesheet is a <code>.css</code> file; a format the CLI does not know stops the command.",
           "p2": "Remember to import the new component in the templates using it, with <code>@import</code>: that also defines it."
         },
         "edgeCases": {
@@ -2691,10 +2699,6 @@
             "heading": "Invalid names",
             "p1": "Component names are checked before anything is written.",
             "p2": "The name of a project is checked too, before anything is written: it names the root component, <code>&lt;name&gt;-root</code>."
-          },
-          "callout3": {
-            "heading": "--style accepts what the plugin cannot compile",
-            "p1": "<code>xd new</code> accepts <code>scss</code>, <code>less</code> and <code>styl</code>, but the plugin compiles only <code>.css</code> files. <code>xd generate component</code>, on its side, ignores <code>xaendar.json</code> and always writes a <code>.css</code> file."
           },
           "callout5": {
             "heading": "The published packages are older than this documentation",
@@ -2707,11 +2711,11 @@
           "th2": "Options",
           "th3": "Description",
           "td1": "<code>xd new &lt;name&gt;</code>",
-          "td2": "Creates a project and installs its dependencies.",
+          "td2": "Creates a project and installs its dependencies; asks the format of the stylesheets without <code>--style</code>.",
           "td3": "Starts the Vite dev server with the Xaendar plugins.",
           "td4": "Builds the project with the Xaendar plugins.",
           "td5": "<code>xd generate component &lt;name&gt;</code>, <code>xd g c</code>",
-          "td6": "Creates a component folder.",
+          "td6": "Creates a component folder, with a stylesheet in the format of <code>xaendar.json</code>.",
           "td7": "Version and help.",
           "td8": "Runs the specs with the Xaendar plugins."
         }
@@ -2991,9 +2995,17 @@
       "cause": "A class decorated with @WebComponent in a file that does not follow the component convention, so the plugin does not compile it.",
       "fix": "Move the class to a file ending with .xd.component.ts."
     },
-    "Unsupported stylesheet extension \".scss\" for <path>.": {
-      "cause": "A styleUrl that is not a .css file.",
-      "fix": "Use plain CSS."
+    "Unsupported stylesheet extension \".styl\" for <path>.": {
+      "cause": "A styleUrl that is not a .css, .scss, .sass or .less file, such as a Stylus stylesheet.",
+      "fix": "Use CSS, Sass or Less."
+    },
+    "The \"sass\" package is required to compile <path>: install it with \"npm i -D sass\".": {
+      "cause": "A .scss or .sass stylesheet in a project that does not have the sass package; the same holds for a .less stylesheet without the less package. They are optional peer dependencies of @xaendar/build-tools.",
+      "fix": "Install the package named in the message, with npm i -D sass or npm i -D less."
+    },
+    "Failed to compile style - <path>": {
+      "cause": "A stylesheet the plugin could not compile: the next line gives the reason, such as an error of Sass or Less, a missing package or an unsupported extension.",
+      "fix": "Fix what the next line reports, in the stylesheet at the given path or in a file it imports."
     },
     "Could not find the static block applying the decorators of class \"MyAppRootComponent\" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.": {
       "cause": "The decorators were not compiled before the Xaendar plugin ran.",
@@ -3048,8 +3060,8 @@
       "fix": "Use this.shadowRoot."
     },
     "@import rules are not allowed here.": {
-      "cause": "A browser warning: a component stylesheet is a constructed stylesheet, which drops @import rules.",
-      "fix": "Put every rule in the CSS file of the component."
+      "cause": "A browser warning: a component stylesheet is a constructed stylesheet, which drops the @import rules of a .css file.",
+      "fix": "Put every rule in the CSS file of the component, or use Sass or Less, whose imports are resolved at build time."
     },
     "Circular dependency detected while computing a Computed signal": {
       "cause": "A computed signal reading itself, directly or through others.",
@@ -3075,9 +3087,13 @@
       "cause": "xd generate component would overwrite an existing folder.",
       "fix": "Pick another name, or add --force to replace it."
     },
-    "✖  Invalid style option: sass": {
-      "cause": "xd new accepts css, scss, less and styl.",
-      "fix": "Use css: it is the only extension the plugin compiles."
+    "✖  Invalid style option: styl. Use one of css, scss, sass, less.": {
+      "cause": "A --style option of xd new that is not one of the formats the plugin compiles.",
+      "fix": "Pass css, scss, sass or less, or leave --style out to choose the format from a list."
+    },
+    "✖  Invalid style \"styl\" in <path>: use one of css, scss, sass, less.": {
+      "cause": "xd generate component found, in the nearest xaendar.json, a generate.components.style that is not one of the formats the plugin compiles.",
+      "fix": "Set it to css, scss, sass or less, or remove it to get CSS."
     },
     "[Lexer] An element ref takes no value: write #name, which names the element it is declared on": {
       "cause": "A value given to an element ref, as in #field=\"name\".",
@@ -3216,11 +3232,5 @@
       "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
     }
   },
-  "issues": {
-    "style-options-the-plugin-cannot-compile": {
-      "title": "Style options the plugin cannot compile",
-      "details": "xd new accepts scss, less and styl, which the plugin rejects; xd generate component ignores xaendar.json and always writes CSS.",
-      "workaround": "Use css."
-    }
-  }
+  "issues": {}
 }

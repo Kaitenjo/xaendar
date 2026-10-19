@@ -355,7 +355,17 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
-    message: 'Unsupported stylesheet extension ".scss" for <path>.',
+    message: 'Unsupported stylesheet extension ".styl" for <path>.',
+    page: 'components/styling'
+  },
+  {
+    phase: 'Build',
+    message: 'The "sass" package is required to compile <path>: install it with "npm i -D sass".',
+    page: 'components/styling'
+  },
+  {
+    phase: 'Build',
+    message: 'Failed to compile style - <path>',
     page: 'components/styling'
   },
   {
@@ -535,7 +545,12 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'CLI',
-    message: '✖  Invalid style option: sass',
+    message: '✖  Invalid style option: styl. Use one of css, scss, sass, less.',
+    page: 'tools/cli'
+  },
+  {
+    phase: 'CLI',
+    message: '✖  Invalid style "styl" in <path>: use one of css, scss, sass, less.',
     page: 'tools/cli'
   }
 ];

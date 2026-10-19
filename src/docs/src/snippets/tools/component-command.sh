@@ -1,4 +1,4 @@
-# Creates ./user-card/ with the four files of a component
+# Creates ./user-card/ with the four files of a component; the stylesheet has the format of xaendar.json
 xd generate component user-card
 xd g c user-card
 

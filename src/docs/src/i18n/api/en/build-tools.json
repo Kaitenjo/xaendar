@@ -20,7 +20,7 @@
       },
       "styles": {
         "title": "Stylesheets",
-        "body": "<p>Only <code>.css</code> files are supported: a stylesheet with another extension fails to compile. Comments are removed, and in <code>vite build</code> the CSS is also minified with Lightning CSS, unless <code>build.cssMinify</code> is <code>false</code>. Each file becomes one <code>CSSStyleSheet</code>, adopted by every component pointing to it. See <a href=\"#/en/components/styling\">Styling</a>.</p>"
+        "body": "<p>A stylesheet can be a <code>.css</code>, <code>.scss</code>, <code>.sass</code> or <code>.less</code> file: any other extension fails to compile. Sass and Less files are compiled with the <code>sass</code> and <code>less</code> packages, optional peer dependencies that the project installs itself, and their imports are resolved at build time. Comments are then removed, and in <code>vite build</code> the CSS is also minified with Lightning CSS, unless <code>build.cssMinify</code> is <code>false</code>. Each file becomes one <code>CSSStyleSheet</code>, adopted by every component pointing to it. See <a href=\"#/en/components/styling\">Styling</a>.</p>"
       }
     }
   },

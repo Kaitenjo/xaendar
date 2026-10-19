@@ -2,6 +2,7 @@
 import type { Constructor } from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { CustomElement } from '../../models/custom-element/custom-element';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { _addAppliedDirective, _getAppliedDirectives, _removeAppliedDirective } from './applied-directives.util';
 
@@ -10,11 +11,12 @@ class RichTooltip extends Tooltip { }
 class Other extends CustomDirective { }
 
 /**
- * Creates an element holding the given host directives, as a component does.
+ * Creates a component holding the given host directives: an instance of `CustomElement`, built without running its
+ * constructor, which would create the host directives declared by `@WebComponent`.
  */
 function withHostDirectives(...directives: CustomDirective[]): Element {
   const hostDirectives = new Map(directives.map(directive => [directive.constructor as Constructor<CustomDirective>, directive]));
-  return Object.assign(document.createElement('div'), { hostDirectives: hostDirectives as unknown as HostDirectives });
+  return Object.assign(Object.create(CustomElement.prototype) as CustomElement, { hostDirectives: hostDirectives as unknown as HostDirectives });
 }
 
 describe('applied directives', () => {

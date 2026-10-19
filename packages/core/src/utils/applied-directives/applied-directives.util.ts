@@ -1,6 +1,6 @@
-import { CustomElement } from '@xaendar/core';
 import type { Constructor } from '@xaendar/types';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { CustomElement } from '../../models/custom-element/custom-element';
 
 /**
  * Module-private registry mapping each element to the custom directives a template applies to it (`@@selector`), in

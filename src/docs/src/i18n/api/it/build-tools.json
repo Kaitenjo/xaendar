@@ -20,7 +20,7 @@
       },
       "styles": {
         "title": "Fogli di stile",
-        "body": "<p>Sono supportati solo i file <code>.css</code>: un foglio di stile con un’altra estensione non si compila. I commenti vengono rimossi, e in <code>vite build</code> il CSS viene anche minificato con Lightning CSS, a meno che <code>build.cssMinify</code> non sia <code>false</code>. Ogni file diventa un solo <code>CSSStyleSheet</code>, adottato da ogni componente che punta a esso. Vedi <a href=\"#/it/components/styling\">Stili</a>.</p>"
+        "body": "<p>Un foglio di stile può essere un file <code>.css</code>, <code>.scss</code>, <code>.sass</code> o <code>.less</code>: qualsiasi altra estensione non si compila. I file Sass e Less vengono compilati con i pacchetti <code>sass</code> e <code>less</code>, peer dependency opzionali che il progetto installa da sé, e i loro import vengono risolti in fase di build. Poi i commenti vengono rimossi, e in <code>vite build</code> il CSS viene anche minificato con Lightning CSS, a meno che <code>build.cssMinify</code> non sia <code>false</code>. Ogni file diventa un solo <code>CSSStyleSheet</code>, adottato da ogni componente che punta a esso. Vedi <a href=\"#/it/components/styling\">Stili</a>.</p>"
       }
     }
   },

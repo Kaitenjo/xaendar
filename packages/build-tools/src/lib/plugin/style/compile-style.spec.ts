@@ -9,10 +9,10 @@ function createHost(readFileResult: string | undefined): NodeCompilerHost {
 }
 
 describe('compileStyle()', () => {
-  it('compiles a .css file, stripping comments and trimming the result', () => {
+  it('compiles a .css file, stripping comments and trimming the result', async () => {
     const host = createHost('  /* header comment */\n.button { color: red; } /* trailing */  ');
 
-    const result = compileStyle('/src/button.css', host);
+    const result = await compileStyle('/src/button.css', host);
 
     expect(result).toEqual({
       cssText: '.button { color: red; }',
@@ -20,10 +20,10 @@ describe('compileStyle()', () => {
     });
   });
 
-  it('returns undefined cssText when the stylesheet file could not be read', () => {
+  it('returns undefined cssText when the stylesheet file could not be read', async () => {
     const host = createHost(undefined);
 
-    const result = compileStyle('/src/missing.css', host);
+    const result = await compileStyle('/src/missing.css', host);
 
     expect(result).toEqual({
       cssText: undefined,
@@ -31,17 +31,44 @@ describe('compileStyle()', () => {
     });
   });
 
-  it('throws for an unsupported stylesheet extension', () => {
-    const host = createHost('body {}');
+  it('compiles a .scss file with Sass, stripping the comments it keeps', async () => {
+    const host = createHost('/* header */\n$color: red;\n.button { color: $color; }');
 
-    expect(() => compileStyle('/src/button.scss', host))
-      .toThrow('Unsupported stylesheet extension ".scss" for /src/button.scss.');
+    const result = await compileStyle('/src/button.scss', host);
+
+    expect(result.cssText).toBe('.button {\n  color: red;\n}');
   });
 
-  it('throws with a "(none)" placeholder when the entry path has no extension', () => {
+  it('compiles a .sass file with the indented syntax', async () => {
+    const host = createHost('$color: red\n.button\n  color: $color\n');
+
+    const result = await compileStyle('/src/button.sass', host);
+
+    expect(result.cssText).toBe('.button {\n  color: red;\n}');
+  });
+
+  it('compiles a .less file with Less', async () => {
+    const host = createHost('@color: red;\n.button { color: @color; }');
+
+    const result = await compileStyle('/src/button.less', host);
+
+    expect(result).toEqual({
+      cssText: '.button {\n  color: red;\n}',
+      dependencyPaths: ['/src/button.less']
+    });
+  });
+
+  it('throws for an unsupported stylesheet extension', async () => {
     const host = createHost('body {}');
 
-    expect(() => compileStyle('/src/button', host))
-      .toThrow('Unsupported stylesheet extension "(none)" for /src/button.');
+    await expect(compileStyle('/src/button.styl', host))
+      .rejects.toThrow('Unsupported stylesheet extension ".styl" for /src/button.styl.');
+  });
+
+  it('throws with a "(none)" placeholder when the entry path has no extension', async () => {
+    const host = createHost('body {}');
+
+    await expect(compileStyle('/src/button', host))
+      .rejects.toThrow('Unsupported stylesheet extension "(none)" for /src/button.');
   });
 });

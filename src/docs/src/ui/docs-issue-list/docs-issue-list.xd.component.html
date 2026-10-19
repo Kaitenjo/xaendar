@@ -34,5 +34,5 @@
     }
   </ul>
 } @else {
-  <p class="empty">{ translations().reference.noResults }</p>
+  <p class="empty">{ query() || area() ? translations().reference.noResults : translations().reference.noIssues }</p>
 }

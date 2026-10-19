@@ -3,7 +3,7 @@ import { computed, signal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
 import { lang } from '../../core/router/router';
 import { ISSUES } from '../../pages/reference/known-issues/known-issues.data';
-import type { IssueEntry } from '../../pages/reference/known-issues/known-issues.data';
+import type { IssueEntry, IssueTexts } from '../../pages/reference/known-issues/known-issues.data';
 
 /**
  * The searchable list of the known issues.
@@ -58,7 +58,7 @@ export class DocsIssueListComponent extends CustomElement {
     const query = this.query().trim().toLowerCase();
     const area = this.area();
     const current = lang();
-    const texts = translations().issues;
+    const texts: Readonly<Record<string, IssueTexts>> = translations().issues;
     return ISSUES
       .filter(entry => !area || entry.area === area)
       .map(entry => ({

@@ -8,7 +8,8 @@ import { packageJson } from '../templates/package-json/package-json';
 import { tsconfigJson } from '../templates/tsconfig-json/tsconfig-json';
 import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
 import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
-import { stylesCss } from '../templates/styles-css/styles-css';
+import { styles } from '../templates/styles/styles';
+import type { Style } from '../../../utils/style/style';
 
 /**
  * The context required to resolve all file contents when scaffolding
@@ -20,9 +21,9 @@ export type ProjectContext = {
    */
   name: string;
   /** 
-   * The CSS preprocessor chosen for the project (css, scss, less, styl).
+   * The stylesheet format chosen for the project.
    */
-  style: string;
+  style: Style;
 };
 
 /**
@@ -138,7 +139,7 @@ export function buildStructure(context: ProjectContext): Entry[] {
     {
       type: 'file',
       name: 'package.json',
-      content: packageJson(name, version),
+      content: packageJson(name, version, context.style),
     },
     {
       type: 'file',
@@ -162,7 +163,7 @@ export function buildStructure(context: ProjectContext): Entry[] {
         {
           type: 'file',
           name: 'index.html',
-          content: indexHtml(componentName),
+          content: indexHtml(componentName, context.style),
         },
         {
           type: 'file',
@@ -180,8 +181,8 @@ export function buildStructure(context: ProjectContext): Entry[] {
         },
         {
           type: 'file',
-          name: 'styles.css',
-          content: stylesCss()
+          name: `styles.${context.style}`,
+          content: styles(context.style)
         }
       ]
     }

@@ -1,3 +1,2 @@
 Failed to compile style - /src/rating/rating.scss
-Error: Unsupported stylesheet extension ".scss" for /src/rating/rating.scss.
-  Plugin: xaendar
+Error: The "sass" package is required to compile /src/rating/rating.scss: install it with "npm i -D sass".

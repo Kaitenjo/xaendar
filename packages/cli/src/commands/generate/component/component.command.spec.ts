@@ -9,10 +9,16 @@ vi.mock('node:fs', () => ({
   writeFileSync: vi.fn()
 }));
 
+vi.mock('../../../utils/style/style', () => ({
+  readProjectStyle: vi.fn()
+}));
+
+import { readProjectStyle } from '../../../utils/style/style';
 import { generateComponent } from './component.command';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(readProjectStyle).mockReturnValue('css');
 });
 
 describe('generateComponent()', () => {
@@ -73,7 +79,21 @@ describe('generateComponent()', () => {
     ]);
   });
 
-  it('uses the provided style extension for the stylesheet file', () => {
+  it('uses the style of the project, read from the target path, when none is provided', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readProjectStyle).mockReturnValue('less');
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generateComponent('my-button', '/projects');
+
+    const dir = join('/projects', 'my-button');
+    const writtenFiles = vi.mocked(writeFileSync).mock.calls.map(([path]) => path);
+
+    expect(readProjectStyle).toHaveBeenCalledWith('/projects');
+    expect(writtenFiles).toContain(join(dir, 'my-button.xd.component.less'));
+  });
+
+  it('uses the provided style extension for the stylesheet file, without reading the style of the project', () => {
     vi.mocked(existsSync).mockReturnValue(false);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -82,6 +102,7 @@ describe('generateComponent()', () => {
     const dir = join('/projects', 'my-button');
     const writtenFiles = vi.mocked(writeFileSync).mock.calls.map(([path]) => path);
 
+    expect(readProjectStyle).not.toHaveBeenCalled();
     expect(writtenFiles).toContain(join(dir, 'my-button.xd.component.scss'));
   });
 

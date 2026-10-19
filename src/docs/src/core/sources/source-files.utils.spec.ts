@@ -8,6 +8,8 @@ describe('langOf', () => {
     ['a.mjs', 'ts'],
     ['a.xd.component.html', 'html'],
     ['a.CSS', 'css'],
+    ['a.scss', 'css'],
+    ['a.less', 'css'],
     ['tsconfig.json', 'json'],
     ['setup.sh', 'bash'],
     ['notes.txt', 'text'],

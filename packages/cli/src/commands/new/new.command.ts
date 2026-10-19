@@ -5,12 +5,15 @@ import { resolve } from 'node:path/win32';
 import { generateComponent } from '../generate/component/component.command';
 import { buildStructure, Entry } from './structure/structure';
 import { execSync } from 'node:child_process';
+import { isStyle, STYLES, type Style } from '../../utils/style/style';
+import { promptStyle } from './prompt-style/prompt-style';
 
 /**
  * Creates and returns the `new` command.
  *
  * Scaffolds a new Xaendar project by generating the base directory structure
- * and initial component files.
+ * and initial component files. The stylesheet format is asked on the terminal
+ * when `--style` is not given.
  *
  * @returns The configured `new` {@link Command} instance ready to be
  *   added to the root program.
@@ -20,9 +23,8 @@ export function newCommand(): Command {
     .description('Scaffold a new Xaendar project')
     .argument('<name>', 'Name of the project to create')
     .option('-p, --path <path>', 'Custom path for the generated project (default: current directory)')
-    .option('-s, --style <style>', 'CSS preprocessor to use (css, scss, less, styl)', 'css')
-    .action((name: string, options: { path?: string, style?: string }) => {
-      const style = resolveStyleOptions(options.style);
+    .option('-s, --style <style>', `Stylesheet format of the components (${STYLES.join(', ')})`)
+    .action(async (name: string, options: { path?: string, style?: string }) => {
       const workingDirectory = options.path || process.cwd();
       const projectDirectory = resolve(workingDirectory, name);
 
@@ -31,6 +33,7 @@ export function newCommand(): Command {
         process.exit(1);
       }
 
+      const style = await resolveStyle(options.style);
       checkAndCreateProjectDirectory(projectDirectory);
       createFiles(buildStructure({ name, style }), projectDirectory, style);
       execSync('npm i', { stdio: 'inherit', cwd: projectDirectory });
@@ -38,19 +41,21 @@ export function newCommand(): Command {
 }
 
 /**
- * Resolves the style option, providing a default and validating the input.
+ * Resolves the stylesheet format of the project: the one given with `--style`, validated, or else the one
+ * chosen on the terminal. Without an interactive terminal (e.g. in CI) nothing can be asked, and `css` is used.
  *
- * @param style - The CSS preprocessor option provided by the user.
- * @returns The validated style string, defaulting to `'css'` if not provided.
+ * Exits the process with code `1` if the given format is not supported.
+ *
+ * @param style - The `--style` option, if given.
+ * @returns The stylesheet format of the project.
  */
-function resolveStyleOptions(style: string | undefined): string {
-  const validStyles = ['css', 'scss', 'less', 'styl'];
-  if (!style) {
-    return 'css';
+async function resolveStyle(style: string | undefined): Promise<Style> {
+  if (style === undefined) {
+    return process.stdin.isTTY ? promptStyle() : 'css';
   }
 
-  if (!validStyles.includes(style)) {
-    console.error(`✖  Invalid style option: ${style}`);
+  if (!isStyle(style)) {
+    console.error(`✖  Invalid style option: ${style}. Use one of ${STYLES.join(', ')}.`);
     process.exit(1);
   }
 
@@ -80,9 +85,9 @@ function checkAndCreateProjectDirectory(path: string): void {
  * Recursively processes the provided entries to create files and directories on disk.
  * @param entries - An array of entries defining the structure to create.
  * @param basePath - The base path where the entries should be created.
- * @param style - The CSS preprocessor style to use for generated components, passed down to the component generator.
+ * @param style - The stylesheet format of the generated components, passed down to the component generator.
  */
-function createFiles(entries: Entry[], basePath: string, style: string): void {
+function createFiles(entries: Entry[], basePath: string, style: Style): void {
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     switch (entry.type) {

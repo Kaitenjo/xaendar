@@ -166,7 +166,8 @@ async function buildNode(projectName: string, projectPath: string, pkg: XaendarP
     dts,
     sourcemap: false,
     clean: true,
-    external: pkg.dependencies ? Object.keys(pkg.dependencies) : undefined,
+    // The optional peer dependencies (e.g. the stylesheet preprocessors) come from the project using the package
+    external: Object.keys(Object.assign({}, pkg.dependencies, pkg.peerDependencies)),
     tsconfig: resolve(projectsPath, '../tsconfig.json')
   });
   return writePackageJsonForNodeProject(projectName, pkg, { types, outDir });
@@ -200,7 +201,9 @@ function writePackageJsonForNodeProject(projectName: string, pkg: XaendarPackage
     },
     main: `./dist/${projectName}.js`,
     ...options.types,
-    dependencies: pkg.dependencies
+    dependencies: pkg.dependencies,
+    peerDependencies: pkg.peerDependencies,
+    peerDependenciesMeta: pkg.peerDependenciesMeta
   };
 
   mkdirSync(options.outDir, { recursive: true });

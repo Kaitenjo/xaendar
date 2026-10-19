@@ -1,6 +1,7 @@
 import { isValidCustomElementName, toPascalCase } from '@xaendar/common';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readProjectStyle, type Style } from '../../../utils/style/style';
 
 /**
  * Scaffolds a new Xaendar component inside a dedicated folder.
@@ -8,7 +9,7 @@ import { join } from 'node:path';
  * Creates the directory `<path>/<name>/` and writes the following files:
  * - `<name>.xd.component.ts`      — class decorated with `@WebComponent`
  * - `<name>.xd.component.html`    — minimal template
- * - `<name>.xd.component.css`     — empty stylesheet
+ * - `<name>.xd.component.<style>` — empty stylesheet (`.css`, `.scss`, `.sass` or `.less`)
  * - `<name>.xd.component.spec.ts` — Vitest skeleton
  *
  * Exits the process with code `1` if the target directory already exists
@@ -21,16 +22,16 @@ import { join } from 'node:path';
  *   Defaults to the current working directory.
  * @param force - When `true`, deletes an existing directory with the same name
  *   before generating the new component.
- * @param style - The stylesheet extension to use (e.g. `css`, `scss`). Defaults to `css`.
+ * @param style - The stylesheet format, which is the extension of the stylesheet. Defaults to the one
+ *   of the project (`generate.components.style` in the nearest `xaendar.json`), or `css` without one.
  */
-export function generateComponent(name: string, path: string, force?: boolean, style?: string): void {
+export function generateComponent(name: string, path: string, force?: boolean, style?: Style): void {
   if (!isValidCustomElementName(name)) {
     process.exit(1);
   }
-  
+
   const dir = join(path, name);
-  // Fallback we should read form xaendar config file
-  style ??= 'css';
+  style ??= readProjectStyle(path);
 
   if (existsSync(dir)) {
     if (force) {

@@ -20,5 +20,5 @@ export interface StyleCompiler {
    * @param host - Compiler host used to read the file from disk.
    * @returns The compiled CSS content and every file path the component should watch.
    */
-  compile(entryPath: string, host: NodeCompilerHost): StyleCompileResult;
+  compile(entryPath: string, host: NodeCompilerHost): Promise<StyleCompileResult>;
 }
