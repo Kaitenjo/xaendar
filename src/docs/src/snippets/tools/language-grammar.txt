@@ -1,9 +1,12 @@
 Highlighted in .xd.component.html files:
   @import { A } from './a.ts'          keyword, names and path
+  <my-card>  <my-list(Item)>           component tags and their type arguments
   (click)="save()"                     event name and handler
-  title="{ expr }"                     attribute bound to an expression
+  title="{ expr }"  { expr }           bound attributes and interpolations
+  @@tooltip(…)  *when(…)               directives
+  #field  @let total = …;              element refs and template variables
+  <template row(item)>  @render row(…) templates and their rendering
   @if @else @for @switch @case @default
 
-Not highlighted:
-  { expr } in text                     the grammar expects {{ expr }}, which is not Xaendar syntax
-  @@directive(…) and *directive(…)
+Colored by the server once the template compiles:
+  inputs, events, directives and template variables

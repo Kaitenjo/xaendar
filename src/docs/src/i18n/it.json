@@ -2786,53 +2786,57 @@
       "languageService": {
         "eyebrow": "Strumenti",
         "title": "Language service e VS Code",
-        "lead": "Il repository contiene un’estensione di VS Code per i template, fatta di due parti: una grammatica per l’evidenziazione della sintassi, e un client che avvia <code>@xaendar/language-server</code>, pensato per portare i controlli del compilatore nell’editor. Entrambe sono in una fase iniziale: questa pagina descrive cosa fanno oggi.",
+        "lead": "Il repository contiene un’estensione di VS Code per i template, fatta di due parti: una grammatica per l’evidenziazione della sintassi, e un client che avvia <code>@xaendar/language-server</code>, che porta i controlli del compilatore nell’editor mentre scrivi.",
         "callout1": {
-          "heading": "Lavori in corso",
-          "body": "Il repository non ha un passaggio di pacchettizzazione per il Marketplace, e il language server non segnala ancora diagnostica né offre completamenti. I messaggi del compilatore sono disponibili nel terminale di <code>xd start</code>, come descritto in <a href=\"#/it/tools/build\">Build e plugin Vite</a>."
+          "heading": "Non è sul Marketplace",
+          "body": "Il repository non ha un passaggio di pacchettizzazione per il Marketplace: l’estensione viene compilata dal repository e avviata in una finestra di sviluppo di VS Code. I messaggi del compilatore sono disponibili anche nel terminale di <code>xd start</code>, come descritto in <a href=\"#/it/tools/build\">Build e plugin Vite</a>."
         },
         "runningTheExtension": {
           "title": "Avviare l’estensione",
           "p1": "L’estensione viene compilata dal repository e avviata in una finestra di sviluppo di VS Code.",
-          "p2": "Si attiva nei workspace che contengono file <code>.xd.component.html</code>, li associa al linguaggio <em>Xaendar Template</em>, e avvia il server via IPC."
+          "p2": "Si attiva quando viene aperto un file HTML o TypeScript, serve i template (<code>.xd.component.html</code>) e i file dei componenti (<code>.xd.component.ts</code>), e avvia il server via IPC. All’avvio il server indicizza i file <code>.xd.component.ts</code> del workspace, per sapere quale componente usa ogni template."
         },
         "syntaxHighlighting": {
           "title": "Evidenziazione della sintassi",
-          "p1": "La grammatica viene iniettata in quella HTML di VS Code: i template mantengono l’evidenziazione dell’HTML, e alcuni costrutti di Xaendar ricevono colori propri."
+          "p1": "La grammatica viene iniettata in quella HTML di VS Code: i template mantengono l’evidenziazione dell’HTML, e i costrutti di Xaendar ricevono colori propri. Quando un template compila, il server aggiunge i colori semantici a input, eventi, direttive e variabili del template."
         },
         "theLanguageServer": {
           "title": "Il language server",
-          "p1": "Il server è progettato per compilare ogni template mentre viene modificato, con lo stesso shim di type check usato dal plugin Vite, e per trasformarne il risultato in funzionalità dell’editor:",
-          "li1": "<strong>Diagnostica</strong>: dopo 300 ms senza digitare, gli errori semantici di TypeScript sul template, nella loro posizione; gli errori di sintassi del template sulla sua prima riga.",
-          "li2": "<strong>Completamenti</strong>: i completamenti di TypeScript dentro le espressioni del template, attivati da <code>.</code>, <code>{</code> e <code>(</code>."
+          "p1": "Il server compila ogni template mentre viene modificato, con lo stesso codice di type check del plugin Vite, e ne trasforma il risultato in funzionalità dell’editor:",
+          "li1": "<strong>Diagnostica</strong>: 250 ms dopo l’ultima modifica, gli errori del template nella loro posizione: errori di sintassi, tag né importati né dichiarati, import che non si risolvono, e gli errori TypeScript delle sue espressioni. Gli import inutilizzati sono sbiaditi. I tag che corrispondono ai <code>customElements</code> dello <code>xaendar.json</code> più vicino sono controllati come elementi nativi, e una modifica di quel file fa ricontrollare i template aperti.",
+          "li2": "<strong>Completamenti</strong>: i percorsi e i simboli di un <code>@import</code>; i componenti e le direttive sui nomi dei tag e sui selettori delle direttive, aggiungendo il loro <code>@import</code>; gli input e gli output sui nomi di attributi ed eventi; i blocchi dopo <code>@</code>; le variabili del template e i membri del componente nelle espressioni.",
+          "li3": "<strong>Hover</strong>: la firma e il JSDoc di componenti, direttive, input, output e simboli importati.",
+          "li4": "<strong>Vai alla definizione</strong>: dal template alla classe, al membro o al simbolo; dal <code>@WebComponent</code> di un file componente al suo template e al suo foglio di stile.",
+          "li5": "<strong>Code action</strong>: rimuovere un import inutilizzato, e organizzare gli import (<code>source.organizeImports</code>, Alt+Shift+O): quelli inutilizzati rimossi, le istruzioni dallo stesso modulo unite, tutte ordinate.",
+          "li6": "<strong>Formattazione</strong>: elementi e blocchi indentati come fa l’editor, e i tag di apertura più lunghi di <code>xaendar.format.printWidth</code> (120 di default) scritti un elemento per riga."
         },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
-            "heading": "Nessun template viene mai associato a un componente",
-            "body": "Per compilare un template, il server deve conoscere la classe componente che lo usa. L’indice che associa i template ai componenti viene costruito all’avvio, ma il codice che lo riempie è disattivato: ogni template viene saltato, quindi non si ottengono né diagnostica né completamenti."
+            "heading": "Un template che non compila",
+            "body": "Finché un template non compila, come mentre scrivi, hover e colori semantici non mostrano nulla, e vai alla definizione usa l’ultima versione che compilava. I completamenti di <code>@import</code>, nomi dei tag, binding, blocchi e variabili continuano a funzionare. Un template che nessun componente usa non riceve diagnostica."
           },
           "callout2": {
-            "heading": "Le interpolazioni non sono evidenziate",
-            "body": "La grammatica si aspetta <code>{{ expr }}</code>, una sintassi che Xaendar non usa. Le interpolazioni scritte come <code>{ expr }</code> nel testo, e le direttive, mantengono i colori dell’HTML semplice."
+            "heading": "Nomi di tag con caratteri non ASCII",
+            "body": "La grammatica colora come componenti i tag fatti di lettere ASCII minuscole, cifre, punti, underscore e trattini. Un tag con altri caratteri, come <code>my-élément</code>, è valido per il browser e per il compilatore, ma mantiene i colori dell’HTML semplice."
           },
           "callout3": {
-            "heading": "Altri limiti",
-            "body": "Il server dichiara il supporto all’hover ma non lo implementa, e parte cinque secondi dopo l’estensione."
+            "heading": "La formattazione richiede tag chiusi",
+            "body": "La formattazione funziona anche finché il template non compila, ma solo se tutti i suoi tag e blocchi sono chiusi: altrimenti il template resta com’è."
           }
         },
         "summary": {
           "title": "Riepilogo",
           "th1": "Funzionalità",
           "th2": "Stato",
-          "td1": "Evidenziazione di <code>@import</code>, control flow, eventi, attributi legati",
+          "td1": "Evidenziazione della sintassi dei template, colori semantici",
           "td2": "Disponibile",
-          "td3": "Evidenziazione di interpolazioni e direttive",
-          "td4": "Assente",
-          "td5": "Diagnostica e completamenti",
-          "td6": "Implementati, non attivi",
-          "td7": "Hover, vai alla definizione, formattazione",
-          "td8": "Non implementati",
+          "td3": "Diagnostica e completamenti",
+          "td4": "Disponibile",
+          "td5": "Hover e vai alla definizione",
+          "td6": "Disponibile",
+          "td7": "Code action sugli import, formattazione",
+          "td8": "Disponibile",
           "td9": "Pacchetto per il Marketplace",
           "td10": "Non disponibile"
         }

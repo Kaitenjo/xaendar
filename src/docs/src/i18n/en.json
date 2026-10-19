@@ -2786,53 +2786,57 @@
       "languageService": {
         "eyebrow": "Developer tools",
         "title": "Language service and VS Code",
-        "lead": "The repository contains a VS Code extension for templates, made of two parts: a grammar for syntax highlighting, and a client starting <code>@xaendar/language-server</code>, meant to bring the checks of the compiler into the editor. Both are at an early stage: this page describes what they do today.",
+        "lead": "The repository contains a VS Code extension for templates, made of two parts: a grammar for syntax highlighting, and a client starting <code>@xaendar/language-server</code>, which brings the checks of the compiler into the editor while you type.",
         "callout1": {
-          "heading": "Work in progress",
-          "body": "The repository has no packaging step for the Marketplace, and the language server does not report diagnostics or offer completions yet. The compiler messages are available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
+          "heading": "Not on the Marketplace",
+          "body": "The repository has no packaging step for the Marketplace: the extension is built from the repository and run in a development window of VS Code. The compiler messages are also available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
         },
         "runningTheExtension": {
           "title": "Running the extension",
           "p1": "The extension is built from the repository and started in a development window of VS Code.",
-          "p2": "It activates in workspaces containing <code>.xd.component.html</code> files, associates them with the language <em>Xaendar Template</em>, and starts the server over IPC."
+          "p2": "It activates when an HTML or TypeScript file is opened, serves the templates (<code>.xd.component.html</code>) and the component files (<code>.xd.component.ts</code>), and starts the server over IPC. At startup the server indexes the <code>.xd.component.ts</code> files of the workspace, to know which component uses each template."
         },
         "syntaxHighlighting": {
           "title": "Syntax highlighting",
-          "p1": "The grammar is injected into the HTML grammar of VS Code: templates keep the highlighting of HTML, and some Xaendar constructs get their own colors."
+          "p1": "The grammar is injected into the HTML grammar of VS Code: templates keep the highlighting of HTML, and the Xaendar constructs get their own colors. Once a template compiles, the server adds semantic colors to inputs, events, directives and the variables of the template."
         },
         "theLanguageServer": {
           "title": "The language server",
-          "p1": "The server is designed to compile each template as it is edited, with the same type-check shim used by the Vite plugin, and to turn the result into editor features:",
-          "li1": "<strong>Diagnostics</strong>: after 300 ms without typing, the semantic errors of TypeScript on the template, at their position; syntax errors of the template at its first line.",
-          "li2": "<strong>Completions</strong>: the completions of TypeScript inside template expressions, triggered by <code>.</code>, <code>{</code> and <code>(</code>."
+          "p1": "The server compiles each template as it is edited, with the same type-check code as the Vite plugin, and turns the result into editor features:",
+          "li1": "<strong>Diagnostics</strong>: 250 ms after the last change, the errors of the template at their position: syntax errors, tags that are neither imported nor declared, imports that cannot be resolved, and the TypeScript errors of its expressions. Unused imports are faded. The tags matching the <code>customElements</code> of the nearest <code>xaendar.json</code> are checked like native elements, and a change of that file checks the open templates again.",
+          "li2": "<strong>Completions</strong>: the paths and the symbols of an <code>@import</code>; the components and directives on tag names and directive selectors, adding their <code>@import</code>; the inputs and outputs on attribute and event names; the blocks after <code>@</code>; the variables of the template and the members of the component in expressions.",
+          "li3": "<strong>Hover</strong>: the signature and the JSDoc of components, directives, inputs, outputs and imported symbols.",
+          "li4": "<strong>Go to definition</strong>: from the template to the class, the member or the symbol; from the <code>@WebComponent</code> of a component file to its template and its stylesheet.",
+          "li5": "<strong>Code actions</strong>: removing an unused import, and organizing the imports (<code>source.organizeImports</code>, Alt+Shift+O): unused ones removed, statements from the same module merged, all of them sorted.",
+          "li6": "<strong>Formatting</strong>: elements and blocks indented as the editor does, and the opening tags longer than <code>xaendar.format.printWidth</code> (120 by default) written one item per line."
         },
         "edgeCases": {
           "title": "Edge cases",
           "callout1": {
-            "heading": "No template is ever associated with a component",
-            "body": "To compile a template, the server must know the component class using it. The index mapping templates to components is built at startup, but the code filling it is disabled: every template is skipped, so neither diagnostics nor completions are produced."
+            "heading": "A template that does not compile",
+            "body": "While a template does not compile, as when you are typing, hover and semantic colors show nothing, and go to definition uses the last version that compiled. The completions of the <code>@import</code>, of tag names, of bindings, of blocks and of the variables keep working. A template that no component uses gets no diagnostics."
           },
           "callout2": {
-            "heading": "Interpolations are not highlighted",
-            "body": "The grammar expects <code>{{ expr }}</code>, a syntax that Xaendar does not use. Interpolations written as <code>{ expr }</code> in text, and directives, keep the colors of plain HTML."
+            "heading": "Tag names with non-ASCII characters",
+            "body": "The grammar colors as components the tags made of lowercase ASCII letters, digits, dots, underscores and hyphens. A tag with other characters, such as <code>my-élément</code>, is valid for the browser and for the compiler, but keeps the colors of plain HTML."
           },
           "callout3": {
-            "heading": "Other limits",
-            "body": "The server announces hover support but implements no hover, and starts five seconds after the extension."
+            "heading": "Formatting needs closed tags",
+            "body": "Formatting works while the template does not compile, but only when all of its tags and blocks are closed: otherwise the template is left as it is."
           }
         },
         "summary": {
           "title": "Summary",
           "th1": "Feature",
           "th2": "State",
-          "td1": "Highlighting of <code>@import</code>, control flow, events, bound attributes",
+          "td1": "Highlighting of the template syntax, semantic colors",
           "td2": "Available",
-          "td3": "Highlighting of interpolations and directives",
-          "td4": "Missing",
-          "td5": "Diagnostics and completions",
-          "td6": "Implemented, not active",
-          "td7": "Hover, go to definition, formatting",
-          "td8": "Not implemented",
+          "td3": "Diagnostics and completions",
+          "td4": "Available",
+          "td5": "Hover and go to definition",
+          "td6": "Available",
+          "td7": "Code actions on imports, formatting",
+          "td8": "Available",
           "td9": "Marketplace package",
           "td10": "Not available"
         }
