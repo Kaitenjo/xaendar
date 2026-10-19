@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,8 @@ describe('compileSass()', () => {
   const host = new NodeCompilerHost();
 
   beforeEach(() => {
-    dir = toPosixPath(mkdtempSync(join(tmpdir(), 'xaendar-sass-')));
+    // The real path, which Sass resolves the partials to: the temporary directory can be reached through a short name or a symlink
+    dir = toPosixPath(realpathSync.native(mkdtempSync(join(tmpdir(), 'xaendar-sass-'))));
   });
 
   afterEach(() => {
