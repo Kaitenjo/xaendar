@@ -10,7 +10,7 @@ import { findConfigFile, readConfigFile, sys } from 'typescript';
 export function readCustomElements(fromDir: string): readonly string[] | undefined {
   const configPath = findConfigFile(fromDir, sys.fileExists, 'xaendar.json');
   if (configPath) {
-    const config: { customElements?: readonly string[] } = readConfigFile(configPath, sys.readFile).config;
+    const { config } = readConfigFile(configPath, sys.readFile) as { config?: { customElements?: readonly string[] } };
     return config?.customElements;
   }
 }
