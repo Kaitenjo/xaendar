@@ -297,7 +297,7 @@ Installs the global Signal polyfill. It must run before @xaendar/core is loaded:
 ### SignalOptions (type)
 
 ```ts
-{ equals?: SignalEqual<T>; [Signal.subtle.watched]?: () => void; [Signal.subtle.unwatched]?: () => void }
+{ equals?: SignalEqual<T>; watched?: () => void; unwatched?: () => void }
 ```
 
 The options of signal() and of Signal.State. computed() only uses equals.
@@ -321,7 +321,7 @@ The classes of the TC39 proposal, installed globally by loadSignals. signal() an
 ### Signal.subtle (global)
 
 ```ts
-Watcher, untrack, currentComputed, introspectSources, introspectSinks, hasSources, hasSinks, watched, unwatched
+Watcher, untrack, currentComputed, introspectSources, introspectSinks, hasSources, hasSinks
 ```
 
-The low-level API of the proposal: watchers, introspection, and the symbols of the watched and unwatched callbacks.
+The low-level API of the proposal: watchers and introspection.
