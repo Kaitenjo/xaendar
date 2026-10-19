@@ -34,7 +34,12 @@ type Exposure = {
  */
 export function _createHostDirectives(element: CustomElement): HostDirectives {
   const directives = new Map<Constructor<CustomDirective>, CustomDirective>();
-  const declarations = getWebComponentMetadata(element.constructor)?.[INTERNAL_HOST_DIRECTIVES];
+  /*
+    Like the other options of `@WebComponent`, the host directives belong to the class declaring them: the ones of the
+    parent class, reachable through the prototype of the metadata, are not inherited, as the compiler does not see them
+  */
+  const metadata = getWebComponentMetadata(element.constructor);
+  const declarations = metadata && Object.hasOwn(metadata, INTERNAL_HOST_DIRECTIVES) ? metadata[INTERNAL_HOST_DIRECTIVES] : undefined;
 
   if (declarations?.length) {
     for (let i = 0; i < declarations.length; i++) {

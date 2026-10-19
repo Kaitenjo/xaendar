@@ -169,7 +169,7 @@
           "li1": "lo <strong>stato</strong> nei signal (<code>value</code>, <code>hovered</code>): scriverne uno aggiorna esattamente i nodi che lo leggono;",
           "li2": "lo <strong>stato derivato</strong> nei computed (<code>shown</code>, <code>label</code>);",
           "li3": "i <strong>gestori di eventi</strong> nei metodi, chiamati dal template con <code>(click)=\"rate(star)\"</code>;",
-          "li4": "le <strong>costanti</strong> nei membri semplici (<code>stars</code>): il template le legge, ma nessuno viene avvisato se cambiano.",
+          "li4": "le <strong>costanti</strong> nei membri semplici (<code>stars</code>): il template le legge, ma nessuno viene avvisato se cambiano. Vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a> per la regola.",
           "p3": "Il template legge i membri pubblici della classe per nome, senza <code>this</code>. Viene controllato rispetto alla classe durante la build: un membro scritto male o un argomento sbagliato fanno fallire la build."
         },
         "theDecorator": {
@@ -393,7 +393,7 @@
         },
         "extendingAComponent": {
           "title": "Estendere un componente",
-          "p1": "Un componente può estenderne un altro. La sottoclasse ha bisogno del proprio decoratore, che le dà un selettore e una funzione di render; il suo <code>templateUrl</code> può puntare al template del padre."
+          "p1": "Un componente può estenderne un altro. La sottoclasse ha bisogno del proprio decoratore, che le dà un selettore e una funzione di render; il suo <code>templateUrl</code> può puntare al template del padre. Le opzioni del decoratore non vengono ereditate: le <code>hostDirectives</code> del padre vanno elencate di nuovo in quello della sottoclasse, se le servono."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -693,7 +693,7 @@
           "p1": "L’observer osserva gli elementi aggiunti e rimossi, non i loro attributi. Selezionare un task ne cambia solo la classe, quindi la query su <code>.selected</code> mantiene il vecchio risultato finché non cambia la lista stessa: aggiungi un task e la query si riallinea. Usa le query per trovare gli elementi, e tieni lo stato nei signal.",
           "callout3": {
             "heading": "Una classe che non è né un componente né una direttiva",
-            "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore, oppure estendere <code>CustomDirective</code>. Altrimenti la query lancia un errore quando il componente viene creato."
+            "p1": "Una classe passata a una query deve essere decorata con <code>@WebComponent</code>, che le dà il selettore, oppure estendere <code>CustomDirective</code>. Altrimenti la query lancia un errore quando il componente viene creato, anche per una sottoclasse di un componente che non è decorata a sua volta: il selettore del padre non viene ereditato."
           }
         },
         "summary": {
@@ -1701,7 +1701,7 @@
         },
         "introspection": {
           "title": "Introspezione",
-          "p1": "<code>Signal.subtle</code> può ispezionare il grafo vivo: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>currentComputed</code>, che restituisce il signal derivato in corso di valutazione, se c’è. Valutare un signal derivato lo collega alle sue sorgenti, in entrambe le direzioni; smettere di osservarlo lo scollega di nuovo.",
+          "p1": "<code>Signal.subtle</code> può ispezionare il grafo vivo: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, e <code>currentComputed</code>, che restituisce il signal derivato in corso di valutazione, se c’è. Valutare un signal derivato ne registra le sorgenti; quando viene osservato, anche le sorgenti lo registrano come sink, e smettere di osservarlo lo scollega di nuovo.",
           "example1": "Ispezionare price → total ← quantity"
         },
         "devMode": {
@@ -2141,10 +2141,6 @@
           "callout2": {
             "heading": "Il target di $event",
             "body": "<code>$event.target</code> è tipizzato <code>EventTarget | null</code>: l’evento può arrivare da un discendente dell’elemento, quindi <code>$event.target.value</code> non compila. Leggi il campo con un <a href=\"#/it/templates/element-refs\">element ref</a>, come in <code>save(field.value)</code>, oppure restringi il target nel metodo."
-          },
-          "callout3": {
-            "heading": "Eventi dei componenti",
-            "body": "Sul tag di un componente si possono legare sia gli eventi che dichiara con <code>@Event</code> sia gli eventi nativi del suo elemento, come <code>(click)</code>; sugli elementi nativi solo quelli nativi. Un nome che non è né l'uno né l'altro fa fallire la build. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
           }
         },
         "summary": {
@@ -2403,11 +2399,11 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "Una @ nel testo",
-            "p1": "Una <code>@</code> seguita da lettere apre un blocco, quindi un indirizzo email nel testo non compila. Dentro i valori degli attributi <code>@</code> è sicura."
+            "p1": "Una <code>@</code> seguita da lettere apre un blocco, quindi un indirizzo email nel testo non compila: scrivi invece <code>&amp;commat;</code>. Dentro i valori degli attributi <code>@</code> è sicura."
           },
           "callout2": {
             "heading": "Un segno di minore nel testo",
-            "p1": "<code>&lt;</code> apre sempre un tag, e l’errore indica un punto successivo. <code>&gt;</code> è sicuro."
+            "p1": "<code>&lt;</code> apre sempre un tag, e l’errore indica un punto successivo: scrivi invece <code>&amp;lt;</code>. <code>&gt;</code> è sicuro."
           },
           "callout3": {
             "heading": "Un commento non chiuso",
@@ -2732,7 +2728,7 @@
           "td3": "<code>*.xd.component.ts</code>, con i loro <code>templateUrl</code> e <code>styleUrl</code>",
           "td4": "Moduli virtuali",
           "td5": "Type check",
-          "td6": "Solo i template, con le opzioni del <code>tsconfig.json</code> della cartella di lavoro",
+          "td6": "L'intero progetto e i template, con le opzioni del <code>tsconfig.json</code> della cartella di lavoro",
           "td7": "Stili",
           "td8": "<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code> (con il pacchetto <code>sass</code> o <code>less</code>); un <code>CSSStyleSheet</code> condiviso per file; minificati nelle build"
         }

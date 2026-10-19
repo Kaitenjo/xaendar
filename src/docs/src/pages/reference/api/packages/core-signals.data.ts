@@ -122,7 +122,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'Signal',
       kind: 'type',
-      signature: `type Signal<Value = unknown> = Signal.State<Value> & {
+      signature: `type Signal<Value = unknown> = Pick<Signal.State<Value>, 'get' | 'set'> & {
   (): Value;
   update(updater: (prev: Value) => Value): void;
 }`,
@@ -151,7 +151,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'Computed',
       kind: 'type',
-      signature: `type Computed<Value = unknown> = Signal.Computed<Value> & {
+      signature: `type Computed<Value = unknown> = Pick<Signal.Computed<Value>, 'get'> & {
   (): Value;
 }`,
       members: [
@@ -169,7 +169,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'InputSignal',
       kind: 'type',
-      signature: `type InputSignal<ActualValue = unknown> = Omit<Signal.State<ActualValue>, 'set'> & {
+      signature: `type InputSignal<ActualValue = unknown> = Pick<Signal.State<ActualValue>, 'get'> & {
   (): ActualValue;
 }`,
       members: [
@@ -189,7 +189,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'QuerySignal',
       kind: 'type',
-      signature: `type QuerySignal<Value = unknown> = Omit<Signal.State<Value>, 'set'> & {
+      signature: `type QuerySignal<Value = unknown> = Pick<Signal.State<Value>, 'get'> & {
   (): Value;
 }`,
       members: [

@@ -7,6 +7,11 @@ declare global {
      */
     class State<T = any> {
       /**
+       * Makes the class nominal, as the `#` fields of the implementation do: only its instances are assignable to it,
+       * not any object with the same public members, such as the signal functions of `@xaendar/core`.
+       */
+      #private;
+      /**
        * Creates a new `State` signal.
        *
        * @param initialValue - The initial value of the signal.
@@ -51,6 +56,11 @@ declare global {
      * @template T The type of the computed value.
      */
     class Computed<T = any> {
+      /**
+       * Makes the class nominal, as the `#` fields of the implementation do: only its instances are assignable to it,
+       * not any object with the same public members, such as the signal functions of `@xaendar/core`.
+       */
+      #private;
       /**
        * Creates a new `Computed` signal.
        *
@@ -137,6 +147,11 @@ declare global {
        * type parameter.
        */
       class Watcher {
+        /**
+         * Makes the class nominal, as the `#` fields of the implementation do: only its instances are assignable to it,
+         * not any object with the same public members, such as the signal functions of `@xaendar/core`.
+         */
+        #private;
         /**
          * Creates a new Watcher.
          *

@@ -72,15 +72,17 @@ export const TYPES_API: ApiPackage = {
       kind: 'type',
       signature: `type AccessorDecorator<
   Class extends object,
-  Value = unknown
-> = (value: ClassAccessorDecoratorValue<Value>, context: ClassAccessorDecoratorContext<Class, Value>) => {
+  Value = unknown,
+  Metadata extends object = DecoratorMetadataObject
+> = (value: ClassAccessorDecoratorValue<Value>, context: DecoratorMetadataContext<ClassAccessorDecoratorContext<Class, Value>, Metadata>) => {
   get?(this: Class): Value;
   set?(this: Class, value: Value): void;
   init?(this: Class, initialValue: Value): Value;
 } | void;`,
       members: [
         { name: 'Class', group: 'parameters', signature: 'Class extends object' },
-        { name: 'Value', group: 'parameters', signature: 'Value = unknown' }
+        { name: 'Value', group: 'parameters', signature: 'Value = unknown' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
       usage: [{ key: 'writing', snippets: ['api/types/accessor-decorator.ts'] }]
     },
@@ -89,13 +91,30 @@ export const TYPES_API: ApiPackage = {
       kind: 'type',
       signature: `type ClassDecorator<
   T extends Object,
-  Statics extends { [key: string]: any } = { [key: string]: any }
-> = (klass: Constructor<T, Statics>, context: ClassDecoratorContext) => void;`,
+  Statics extends { [key: string]: any } = { [key: string]: any },
+  Metadata extends object = DecoratorMetadataObject
+> = (klass: Constructor<T, Statics>, context: DecoratorMetadataContext<ClassDecoratorContext<Constructor<T, Statics>>, Metadata>) => void;`,
       members: [
         { name: 'T', group: 'parameters', signature: 'T extends Object' },
-        { name: 'Statics', group: 'parameters', signature: 'Statics extends { [key: string]: any } = { [key: string]: any }' }
+        { name: 'Statics', group: 'parameters', signature: 'Statics extends { [key: string]: any } = { [key: string]: any }' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
       usage: [{ key: 'registering', snippets: ['api/types/class-decorator.ts'] }]
+    },
+    {
+      name: 'DecoratorMetadataContext',
+      kind: 'type',
+      signature: `type DecoratorMetadataContext<
+  Context extends { metadata: DecoratorMetadataObject },
+  Metadata extends object = DecoratorMetadataObject
+> = Omit<Context, 'metadata'> & {
+  metadata: Partial<Metadata>
+};`,
+      members: [
+        { name: 'Context', group: 'parameters', signature: 'Context extends { metadata: DecoratorMetadataObject }' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
+      ],
+      usage: [{ key: 'typing', snippets: ['api/types/decorator-metadata-context.ts'] }]
     },
     {
       name: 'FieldDecorator',
@@ -103,25 +122,44 @@ export const TYPES_API: ApiPackage = {
       signature: `type FieldDecorator<
   Class extends Object,
   Field,
-  ReturnType = Field
-> = (field: undefined, context: ClassFieldDecoratorContext<Class, Field>) => ((value: Field) => ReturnType);`,
+  ReturnType = Field,
+  Metadata extends object = DecoratorMetadataObject
+> = (field: undefined, context: DecoratorMetadataContext<ClassFieldDecoratorContext<Class, Field>, Metadata>) => ((value: Field) => ReturnType) | void;`,
       members: [
         { name: 'Class', group: 'parameters', signature: 'Class extends Object' },
         { name: 'Field', group: 'parameters', signature: 'Field' },
-        { name: 'ReturnType', group: 'parameters', signature: 'ReturnType = Field' }
+        { name: 'ReturnType', group: 'parameters', signature: 'ReturnType = Field' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
       usage: [{ key: 'transforming', snippets: ['api/types/field-decorator.ts'] }]
+    },
+    {
+      name: 'GetterDecorator',
+      kind: 'type',
+      signature: `type GetterDecorator<
+  Class extends Object,
+  Value,
+  Metadata extends object = DecoratorMetadataObject
+> = (value: (this: Class) => Value, context: DecoratorMetadataContext<ClassGetterDecoratorContext<Class, Value>, Metadata>) => ((this: Class) => Value) | void;`,
+      members: [
+        { name: 'Class', group: 'parameters', signature: 'Class extends Object' },
+        { name: 'Value', group: 'parameters', signature: 'Value' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
+      ],
+      usage: [{ key: 'replacing', snippets: ['api/types/getter-decorator.ts'] }]
     },
     {
       name: 'MethodDecorator',
       kind: 'type',
       signature: `type MethodDecorator<
   T extends Object,
-  Method extends Function
-> = (value: Method, context: ClassMethodDecoratorContext<T, Method>) => Method | void;`,
+  Method extends Function,
+  Metadata extends object = DecoratorMetadataObject
+> = (value: Method, context: DecoratorMetadataContext<ClassMethodDecoratorContext<T, Method>, Metadata>) => Method | void;`,
       members: [
         { name: 'T', group: 'parameters', signature: 'T extends Object' },
-        { name: 'Method', group: 'parameters', signature: 'Method extends Function' }
+        { name: 'Method', group: 'parameters', signature: 'Method extends Function' },
+        { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
       usage: [{ key: 'wrapping', snippets: ['api/types/method-decorator.ts'] }]
     },

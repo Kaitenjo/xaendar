@@ -136,6 +136,15 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Signal.Computed internal slots"
    */
   #callback: (this: Computed<T>) => T;
+  /**
+   * The value of `GLOBAL_STATE.version` at the end of the last evaluation.
+   *
+   * While this Signal has no sinks it is not notified of the changes of its sources: when it gains its first sink, a
+   * different global version means that its cached value may be stale (see `addSink`).
+   *
+   * @internalSlot
+   */
+  #version: number;
 
   /**
    * Creates a new `Computed` signal.
@@ -158,6 +167,7 @@ export class Computed<T = any> {
     this.#state = 'dirty';
     this.#hasValue = false;
     this.#hasError = false;
+    this.#version = GLOBAL_STATE.version;
   }
 
   /**
@@ -187,9 +197,12 @@ export class Computed<T = any> {
       throw new Error('Circular dependency detected while computing a Computed signal');
     }
 
-    GLOBAL_STATE.computing?.addSource(this, PRIVATE);
-
     if (this.#sinks.size === 0) {
+      /*
+        Without sinks it is not told about the changes of its sources, so it is evaluated at every read: it becomes
+        ~dirty~ first, which has no sinks to notify, so that it enters ~computing~ and a read of itself is a cycle
+      */
+      this.setState('dirty', PRIVATE);
       this.#computeValue();
     } else if (this.#state === 'dirty' || this.#state === 'checked') {
       while (this.#state === 'dirty' || this.#state === 'checked') {
@@ -197,6 +210,12 @@ export class Computed<T = any> {
         deepest.#computeValue();
       }
     }
+
+    /*
+      Recorded once the value is up to date: when an outer live Computed reads this one for the first time, this one
+      becomes live with a fresh value, and its evaluation does not propagate to the outer one while it is computing
+    */
+    GLOBAL_STATE.computing?.addSource(this, PRIVATE);
 
     if (this.#hasError) {
       throw this.#error;
@@ -219,8 +238,15 @@ export class Computed<T = any> {
    */
   public addSource(source: State | Computed, symbol: symbol) {
     assertPrivateContext(symbol);
+    if (this.#sources.has(source)) {
+      return;
+    }
+
     this.#sources.add(source);
-    source.addSink(this, PRIVATE)
+    // A source read in the previous evaluation already has this Signal as a sink: adding it again changes nothing
+    if (this.#sinks.size) {
+      source.addSink(this, PRIVATE);
+    }
   }
 
   /**
@@ -286,6 +312,11 @@ export class Computed<T = any> {
   public addSink(sink: Computed<unknown> | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
     if (this.#sinks.size === 0) {
+      // Without sinks it missed the changes of its sources: a State changed since its last evaluation may have made it stale
+      if (this.#state === 'clean' && this.#version !== GLOBAL_STATE.version) {
+        this.#state = 'dirty';
+      }
+
       for (const source of this.#sources) {
         source.addSink(this, PRIVATE);
       }
@@ -338,10 +369,11 @@ export class Computed<T = any> {
    * Executes `#callback` to recompute this Signal's value.
    *
    * Implements the "recalculate dirty computed Signal" algorithm:
-   * 1. Clears stale sources and removes this Signal from their sinks.
+   * 1. Starts collecting the sources again, keeping the previous ones aside.
    * 2. Sets `computing` to this Signal for automatic dependency tracking.
    * 3. Runs the callback, caching the return value or any thrown exception.
-   * 4. Restores the previous `computing` value.
+   * 4. Restores the previous `computing` value, and, when this Signal is live, removes it from the sinks of the
+   *    previous sources it no longer reads.
    * 5. Runs the "set Signal value" algorithm to detect value changes.
    * 6. Transitions state to `~clean~`.
    * 7. Propagates `~dirty~` to sinks (or attempts `~clean~` if value unchanged),
@@ -350,10 +382,12 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Algorithm: recalculate dirty computed Signal"
    */
   #computeValue(): void {
-    for (const source of this.#sources) {
-      source.removeSink(this, PRIVATE);
-    }
-    this.#sources.clear();
+    /*
+      The sources are collected again, without unlinking the previous ones first: a source read by both evaluations
+      keeps this Signal as a sink, so it is not unwatched and watched again at every evaluation
+    */
+    const previousSources = this.#sources;
+    this.#sources = new Set;
 
     pushComputed(this);
     this.setState('computing', PRIVATE);
@@ -374,6 +408,16 @@ export class Computed<T = any> {
     } finally {
       popComputed();
     }
+
+    // Only a live Signal is a sink of its sources: it stops being one of the sources it no longer reads
+    if (this.#sinks.size) {
+      for (const source of previousSources) {
+        if (!this.#sources.has(source)) {
+          source.removeSink(this, PRIVATE);
+        }
+      }
+    }
+    this.#version = GLOBAL_STATE.version;
 
     const outcome = thrown ? this.#setError(error) : this.#setValue(newValue);
 

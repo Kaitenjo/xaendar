@@ -197,7 +197,7 @@ describe('Watcher', () => {
       }
     });
 
-    it('transitions to ~watching~ after the callback runs', () => {
+    it('transitions to ~waiting~ after the callback runs', () => {
       const watcher = new Watcher(vi.fn());
       watcher.watch(new State(1));
       watcher.notify(PRIVATE);
@@ -215,7 +215,7 @@ describe('Watcher', () => {
       expect(cb).toHaveBeenCalledOnce();
     });
 
-    it('is called twice for multiple State changes (transitions to waiting after first)', () => {
+    it('is called once for multiple State changes, until watch() re-arms the watcher', () => {
       const cb = vi.fn();
       const watcher = new Watcher(cb);
       const state = new State(1);
@@ -226,7 +226,32 @@ describe('Watcher', () => {
       cb.mockClear();
       state.set(2);
       state.set(3);
+      expect(cb).toHaveBeenCalledOnce();
+
+      watcher.watch();
+      state.set(4);
       expect(cb).toHaveBeenCalledTimes(2);
+    });
+
+    it('is called once for a change reaching it through both a State and a Computed depending on it', () => {
+      const cb = vi.fn();
+      const watcher = new Watcher(cb);
+      const state = new State(1);
+      const computed = new Computed(() => state.get());
+      watcher.watch(state, computed);
+      computed.get();
+
+      state.set(2);
+      expect(cb).toHaveBeenCalledOnce();
+    });
+
+    it('does nothing while the watcher is ~waiting~', () => {
+      const cb = vi.fn();
+      const watcher = new Watcher(cb);
+
+      watcher.notify(PRIVATE);
+      expect(cb).not.toHaveBeenCalled();
+      expect(watcher.getState(PRIVATE)).toBe('waiting');
     });
 
     it('is called when a watched Computed dependency changes', () => {

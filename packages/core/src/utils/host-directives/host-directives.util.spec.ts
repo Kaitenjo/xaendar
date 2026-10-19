@@ -63,6 +63,19 @@ describe('_createHostDirectives', () => {
     expect(create([]).hostDirectives.size).toBe(0);
   });
 
+  it('does not inherit the host directives of the parent class, as the compiler does not see them', () => {
+    const parentMetadata = { hostDirectives: [TooltipDirective] };
+    const Parent = class extends CustomElement { };
+    Object.defineProperty(Parent, Symbol.for('Symbol.metadata'), { value: parentMetadata });
+    const Child = class extends Parent { };
+    // The metadata of a decorated subclass has the one of its parent as prototype
+    Object.defineProperty(Child, Symbol.for('Symbol.metadata'), { value: Object.create(parentMetadata) });
+    const name = `x-host-${counter++}`;
+    customElements.define(name, Child);
+
+    expect((document.createElement(name) as HostElement).hostDirectives.size).toBe(0);
+  });
+
   it('creates an instance of a directive declared by its class, applied to the component', () => {
     const element = create([TooltipDirective]);
     const directive = element.hostDirectives.get(TooltipDirective);

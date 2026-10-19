@@ -118,7 +118,9 @@ export class Watcher {
    * The `watched` callback of each Signal (if any) is called with
    * `frozen = true`.
    *
-   * @param signals - One or more `State` signals to start watching.
+   * Called without Signals, it only re-arms the Watcher after a notification, so that the next change notifies it again.
+   *
+   * @param signals - The `State` and `Computed` signals to start watching, none to only re-arm the Watcher.
    * @throws If `frozen` is `true` at the time of the call.
    *
    * @see Signal algorithms — 'Method: Signal.subtle.Watcher.prototype.watch(...signals)'
@@ -215,11 +217,19 @@ this.#state = newState
   }
 
   /**
-   * Invoce the notify callback when a watched dependency changes
+   * Invokes the notify callback when a watched dependency changes, once: the Watcher then waits in the `~waiting~`
+   * state, ignoring the next changes, until `watch` re-arms it. The changes made in the meantime are found with
+   * `getPending`.
+   *
    * @param symbol - The private symbol for prevent external calls.
+   * @throws The exception thrown by the notify callback.
    */
   public notify(symbol: symbol): void {
   assertPrivateContext(symbol);
+
+    if (this.#state !== 'watching') {
+      return;
+    }
 
     GLOBAL_STATE.frozen = true;
 

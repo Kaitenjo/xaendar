@@ -270,6 +270,59 @@ describe('effect', () => {
 
         expect(order).toEqual(['before', 'fn(1)', 'after']);
       });
+
+      it('are not called when fn does not run, because the computed signal it reads kept its value', async () => {
+        const source = new Signal.State(1);
+        const parity = new Signal.Computed(() => source.get() % 2);
+        const order: string[] = [];
+
+        effect(
+          () => { order.push(`fn(${parity.get()})`); },
+          {
+            onBeforeRun: () => order.push('before'),
+            onAfterRun: () => order.push('after'),
+          }
+        );
+
+        order.length = 0;
+        source.set(3);
+        await flushMicrotasks();
+
+        expect(order).toEqual([]);
+      });
+
+      it('are not called by a run scheduled before the effect is disposed', async () => {
+        const state = new Signal.State(0);
+        const onBeforeRun = vi.fn();
+        const onAfterRun = vi.fn();
+        const dispose = effect(() => { state.get(); }, { onBeforeRun, onAfterRun });
+
+        state.set(1);
+        dispose();
+        await flushMicrotasks();
+
+        expect(onBeforeRun).toHaveBeenCalledOnce();
+        expect(onAfterRun).toHaveBeenCalledOnce();
+      });
+
+      it('do not make the signals they read dependencies of the effect', async () => {
+        const state = new Signal.State(0);
+        const read = new Signal.State(0);
+        const spy = vi.fn();
+
+        effect(
+          () => { spy(state.get()); },
+          {
+            onBeforeRun: () => { read.get(); },
+            onAfterRun: () => { read.get(); },
+          }
+        );
+
+        read.set(1);
+        await flushMicrotasks();
+
+        expect(spy).toHaveBeenCalledOnce();
+      });
     });
 
     describe('onCleanup', () => {

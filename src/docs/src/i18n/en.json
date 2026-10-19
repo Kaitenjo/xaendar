@@ -393,7 +393,7 @@
         },
         "extendingAComponent": {
           "title": "Extending a component",
-          "p1": "A component can extend another one. The subclass needs its own decorator, which gives it a selector and a render function; its <code>templateUrl</code> can point to the template of the parent."
+          "p1": "A component can extend another one. The subclass needs its own decorator, which gives it a selector and a render function; its <code>templateUrl</code> can point to the template of the parent. The options of the decorator are not inherited: the <code>hostDirectives</code> of the parent are listed again in the one of the subclass, if it needs them."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -693,7 +693,7 @@
           "p1": "The observer watches elements being added and removed, not their attributes. Selecting a task changes only its class, so the query on <code>.selected</code> keeps its old result until the list itself changes: add a task and it catches up. Use queries to find elements, and keep the state in signals.",
           "callout3": {
             "heading": "A class that is neither a component nor a directive",
-            "p1": "A class passed to a query must be decorated with <code>@WebComponent</code>, which gives it its selector, or extend <code>CustomDirective</code>. Otherwise the query throws when the component is created."
+            "p1": "A class passed to a query must be decorated with <code>@WebComponent</code>, which gives it its selector, or extend <code>CustomDirective</code>. Otherwise the query throws when the component is created, also for a subclass of a component that is not decorated itself: the selector of its parent is not inherited."
           }
         },
         "summary": {
@@ -1701,7 +1701,7 @@
         },
         "introspection": {
           "title": "Introspection",
-          "p1": "<code>Signal.subtle</code> can inspect the live graph: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, and <code>currentComputed</code>, which returns the computed signal being evaluated, if any. Evaluating a computed signal links it to its sources, in both directions; unwatching it unlinks it again.",
+          "p1": "<code>Signal.subtle</code> can inspect the live graph: <code>introspectSources</code>, <code>introspectSinks</code>, <code>hasSources</code>, <code>hasSinks</code>, and <code>currentComputed</code>, which returns the computed signal being evaluated, if any. Evaluating a computed signal records its sources; once it is watched, the sources record it as a sink too, and unwatching it unlinks it again.",
           "example1": "Inspecting price → total ← quantity"
         },
         "devMode": {
@@ -2141,10 +2141,6 @@
           "callout2": {
             "heading": "The target of $event",
             "body": "<code>$event.target</code> is typed <code>EventTarget | null</code>: the event may come from a descendant of the element, so <code>$event.target.value</code> does not compile. Read the field through an <a href=\"#/en/templates/element-refs\">element ref</a>, as in <code>save(field.value)</code>, or narrow the target in the method."
-          },
-          "callout3": {
-            "heading": "Events of components",
-            "body": "On the tag of a component you can bind both the events it declares with <code>@Event</code> and the native events of its element, such as <code>(click)</code>; on native elements only the native ones. A name that is neither fails the build. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a>."
           }
         },
         "summary": {
@@ -2732,7 +2728,7 @@
           "td3": "<code>*.xd.component.ts</code>, with their <code>templateUrl</code> and <code>styleUrl</code>",
           "td4": "Virtual modules",
           "td5": "Type check",
-          "td6": "Templates only, with the options of <code>tsconfig.json</code> in the working directory",
+          "td6": "The whole project and templates, with the options of <code>tsconfig.json</code> in the working directory",
           "td7": "Styles",
           "td8": "<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code> (with the <code>sass</code> or <code>less</code> package); a shared <code>CSSStyleSheet</code> per file; minified in builds"
         }

@@ -17,6 +17,8 @@ function watchEffect(run: () => void): () => void {
         for (let i = 0; i < pending.length; i++) {
           pending[i].get();
         }
+        // A watcher notifies once: watch() re-arms it for the next change
+        watcher.watch();
       });
     }
   });

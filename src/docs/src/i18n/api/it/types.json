@@ -62,7 +62,8 @@
     "description": "<p>Un decoratore standard (TC39) applicato a un campo <code>accessor</code>. Riceve il getter e il setter originali del campo, come <a href=\"#/it/reference/api/types/ClassAccessorDecoratorValue\"><code>ClassAccessorDecoratorValue</code></a>, e il contesto che TypeScript passa ai decoratori di accessor. Restituisce i sostituti, ognuno opzionale: <code>get</code> e <code>set</code> prendono il posto degli originali, <code>init</code> riceve il valore iniziale del campo e restituisce quello con cui parte. Non restituire nulla lascia il campo com’è.</p><p><a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a> ne restituisce uno, e i tipi di <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a> e <a href=\"#/it/reference/api/core/Event\"><code>@Event</code></a> derivano da esso.</p>",
     "members": {
       "Class": "<p>La classe che dichiara l’accessor: il tipo di <code>this</code> nei <code>get</code>, <code>set</code> e <code>init</code> restituiti.</p>",
-      "Value": "<p>Il tipo dell’accessor: ciò che <code>get</code> restituisce e che <code>set</code> e <code>init</code> ricevono. Il decoratore si applica solo agli accessor di questo tipo.</p>"
+      "Value": "<p>Il tipo dell’accessor: ciò che <code>get</code> restituisce e che <code>set</code> e <code>init</code> ricevono. Il decoratore si applica solo agli accessor di questo tipo.</p>",
+      "Metadata": "<p>La forma dei metadata che i decoratori della classe vi salvano, così che <code>context.metadata</code> sia tipizzato: vedi <a href=\"#/it/reference/api/types/DecoratorMetadataContext\"><code>DecoratorMetadataContext</code></a>. Il default è il <code>DecoratorMetadataObject</code> non tipizzato.</p>"
     },
     "usage": {
       "writing": {
@@ -76,7 +77,8 @@
     "description": "<p>Un decoratore standard (TC39) applicato a una classe. Riceve la classe, come <a href=\"#/it/reference/api/types/Constructor\"><code>Constructor</code></a> di <code>T</code>, e il contesto che TypeScript passa ai decoratori di classe. Il suo tipo di ritorno è <code>void</code>: registra la classe, salva metadati o aggiunge inizializzatori con <code>context.addInitializer</code>, invece di sostituirla.</p><p>Si applica solo a classi concrete le cui istanze sono assegnabili a <code>T</code>. <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a> e <a href=\"#/it/reference/api/core/Directive\"><code>@Directive</code></a> ne restituiscono uno.</p>",
     "members": {
       "T": "<p>Il tipo delle istanze: il decoratore si applica solo alle classi le cui istanze sono assegnabili a esso.</p>",
-      "Statics": "<p>I membri statici che la classe deve avere, come tipo oggetto. Il default accetta qualsiasi classe.</p>"
+      "Statics": "<p>I membri statici che la classe deve avere, come tipo oggetto. Il default accetta qualsiasi classe.</p>",
+      "Metadata": "<p>La forma dei metadata che i decoratori della classe vi salvano, così che <code>context.metadata</code> sia tipizzato: vedi <a href=\"#/it/reference/api/types/DecoratorMetadataContext\"><code>DecoratorMetadataContext</code></a>. Il default è il <code>DecoratorMetadataObject</code> non tipizzato.</p>"
     },
     "usage": {
       "registering": {
@@ -85,13 +87,28 @@
       }
     }
   },
+  "DecoratorMetadataContext": {
+    "summary": "Il contesto di un decoratore standard il cui <code>metadata</code> ha la forma che i decoratori della classe vi salvano, tipizzato senza cast.",
+    "description": "<p>TypeScript tipizza <code>context.metadata</code> come <code>DecoratorMetadataObject</code>, un record di valori <code>unknown</code>: leggerne o scriverne una chiave richiede un cast. Questo tipo prende il contesto di un decoratore, come <code>ClassFieldDecoratorContext&lt;Class, Value&gt;</code>, e ne sostituisce il <code>metadata</code> con la forma indicata. Gli altri tipi di decoratore del pacchetto prendono la stessa forma come parametro <code>Metadata</code>.</p><p>Il metadata è <code>Partial</code>: mentre la classe viene decorata contiene solo ciò che vi hanno salvato i decoratori applicati fin lì, e il metadata di una sottoclasse parte da quello della classe padre. È anche il motivo per cui il contesto passato da TypeScript gli è assegnabile: una chiave obbligatoria renderebbe il decoratore inapplicabile.</p>",
+    "members": {
+      "Context": "<p>Il contesto del decoratore, come lo dichiara TypeScript: <code>ClassDecoratorContext</code>, <code>ClassMethodDecoratorContext</code>, <code>ClassGetterDecoratorContext</code>, <code>ClassFieldDecoratorContext</code> o <code>ClassAccessorDecoratorContext</code>, con i loro argomenti di tipo.</p>",
+      "Metadata": "<p>La forma dei metadata, come tipo oggetto. Il default è <code>DecoratorMetadataObject</code>.</p>"
+    },
+    "usage": {
+      "typing": {
+        "title": "Tipizzare i metadata",
+        "body": "<p>Il decoratore salva la descrizione di un comando nei metadata della sua classe: <code>context.metadata.help</code> è una <code>string</code>, senza cast.</p>"
+      }
+    }
+  },
   "FieldDecorator": {
     "summary": "Il tipo di un decoratore standard di un campo di classe, che restituisce l’inizializzatore del campo.",
-    "description": "<p>Un decoratore standard (TC39) applicato a un campo che non è un <code>accessor</code>. Quando il decoratore viene eseguito il campo non ha ancora un valore, quindi riceve <code>undefined</code> e il contesto che TypeScript passa ai decoratori di campo. Restituisce un inizializzatore: una funzione che riceve il valore con cui il campo è dichiarato e restituisce quello con cui viene inizializzato. Lo standard permette anche a un decoratore di campo di non restituire nulla; questo tipo no.</p><p>L’inizializzatore viene eseguito una volta per istanza, quando il campo viene inizializzato: le assegnazioni successive non vengono intercettate. Per agire su ogni scrittura, decora un <code>accessor</code> con un <a href=\"#/it/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
+    "description": "<p>Un decoratore standard (TC39) applicato a un campo che non è un <code>accessor</code>. Quando il decoratore viene eseguito il campo non ha ancora un valore, quindi riceve <code>undefined</code> e il contesto che TypeScript passa ai decoratori di campo. Restituisce un inizializzatore: una funzione che riceve il valore con cui il campo è dichiarato e restituisce quello con cui viene inizializzato. Può anche non restituire nulla, per lasciare il campo com’è.</p><p>L’inizializzatore viene eseguito una volta per istanza, quando il campo viene inizializzato: le assegnazioni successive non vengono intercettate. Per agire su ogni scrittura, decora un <code>accessor</code> con un <a href=\"#/it/reference/api/types/AccessorDecorator\"><code>AccessorDecorator</code></a>.</p>",
     "members": {
       "Class": "<p>La classe che dichiara il campo.</p>",
       "Field": "<p>Il tipo dichiarato del campo: ciò che riceve l’inizializzatore.</p>",
-      "ReturnType": "<p>Il tipo restituito dall’inizializzatore, <code>Field</code> di default. TypeScript richiede che sia assegnabile al tipo del campo: un tipo più ristretto è accettato, uno diverso rende il decoratore inapplicabile.</p>"
+      "ReturnType": "<p>Il tipo restituito dall’inizializzatore, <code>Field</code> di default. TypeScript richiede che sia assegnabile al tipo del campo: un tipo più ristretto è accettato, uno diverso rende il decoratore inapplicabile.</p>",
+      "Metadata": "<p>La forma dei metadata che i decoratori della classe vi salvano, così che <code>context.metadata</code> sia tipizzato: vedi <a href=\"#/it/reference/api/types/DecoratorMetadataContext\"><code>DecoratorMetadataContext</code></a>. Il default è il <code>DecoratorMetadataObject</code> non tipizzato.</p>"
     },
     "usage": {
       "transforming": {
@@ -100,12 +117,28 @@
       }
     }
   },
+  "GetterDecorator": {
+    "summary": "Il tipo di un decoratore standard di getter, che può sostituire il getter con un altro che restituisce lo stesso tipo.",
+    "description": "<p>Un decoratore standard (TC39) applicato a un getter. Riceve il getter e il contesto che TypeScript passa ai decoratori di getter, e restituisce un sostituto, chiamato con lo stesso <code>this</code>, oppure nulla per mantenere il getter.</p><p>Il sostituto deve restituire un tipo assegnabile a quello del getter: un decoratore tipizzato con <code>Value</code> si applica solo ai getter che restituiscono quel tipo.</p>",
+    "members": {
+      "Class": "<p>La classe che dichiara il getter: il tipo di <code>this</code> nel getter e nel suo sostituto.</p>",
+      "Value": "<p>Il tipo restituito dal getter, e anche dal suo sostituto.</p>",
+      "Metadata": "<p>La forma dei metadata che i decoratori della classe vi salvano, così che <code>context.metadata</code> sia tipizzato: vedi <a href=\"#/it/reference/api/types/DecoratorMetadataContext\"><code>DecoratorMetadataContext</code></a>. Il default è il <code>DecoratorMetadataObject</code> non tipizzato.</p>"
+    },
+    "usage": {
+      "replacing": {
+        "title": "Sostituire un getter",
+        "body": "<p>Il sostituto chiama il getter originale con lo stesso <code>this</code>, e arrotonda ciò che restituisce.</p>"
+      }
+    }
+  },
   "MethodDecorator": {
     "summary": "Il tipo di un decoratore di metodo standard, che può sostituire il metodo con un altro dello stesso tipo.",
     "description": "<p>Un decoratore standard (TC39) applicato a un metodo. Riceve il metodo e il contesto che TypeScript passa ai decoratori di metodo, e restituisce un sostituto dello stesso tipo, oppure nulla per mantenere il metodo.</p><p><code>Method</code> estende <a href=\"#/it/reference/api/types/Function\"><code>Function</code></a> di questo pacchetto, non quello globale: il suo default, <code>(...args: any[]) =&gt; void</code>, accetta qualsiasi metodo.</p>",
     "members": {
       "T": "<p>La classe che dichiara il metodo.</p>",
-      "Method": "<p>Il tipo del metodo, che deve avere anche il sostituto. Un tipo ampio, come <code>(...args: any[]) =&gt; unknown</code>, fa applicare il decoratore a qualsiasi metodo.</p>"
+      "Method": "<p>Il tipo del metodo, che deve avere anche il sostituto. Un tipo ampio, come <code>(...args: any[]) =&gt; unknown</code>, fa applicare il decoratore a qualsiasi metodo.</p>",
+      "Metadata": "<p>La forma dei metadata che i decoratori della classe vi salvano, così che <code>context.metadata</code> sia tipizzato: vedi <a href=\"#/it/reference/api/types/DecoratorMetadataContext\"><code>DecoratorMetadataContext</code></a>. Il default è il <code>DecoratorMetadataObject</code> non tipizzato.</p>"
     },
     "usage": {
       "wrapping": {

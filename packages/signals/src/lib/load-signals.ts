@@ -26,17 +26,21 @@ import { setDevMode } from './utils/dev-mode/dev-mode';
 export function loadSignals(options?: { devMode?: boolean }): void {
   setDevMode(options?.devMode ?? false)
 
+  /*
+    The global declaration is the public shape of the proposal, made nominal by a brand of its own: the classes of the
+    implementation, nominal through their own `#` fields, are installed as the declared ones
+  */
   globalThis.Signal ??= {
-    State,
-    Computed,
+    State: State as unknown as typeof Signal.State,
+    Computed: Computed as unknown as typeof Signal.Computed,
     subtle: {
       untrack,
-      currentComputed,
+      currentComputed: currentComputed as unknown as typeof Signal.subtle.currentComputed,
       introspectSources: introspectSources as unknown as typeof Signal.subtle.introspectSources,
       introspectSinks: introspectSinks as unknown as typeof Signal.subtle.introspectSinks,
       hasSinks: hasSinks as unknown as typeof Signal.subtle.hasSinks,
       hasSources: hasSources as unknown as typeof Signal.subtle.hasSources,
-      Watcher
+      Watcher: Watcher as unknown as typeof Signal.subtle.Watcher
     }
   }
 }

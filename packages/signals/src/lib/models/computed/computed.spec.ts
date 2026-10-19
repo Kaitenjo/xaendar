@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GLOBAL_STATE } from '../../utils/globals/globals';
 import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
+import { Watcher } from '../watcher/watcher';
 import { Computed } from './computed';
 import { setDevMode } from '../../utils/dev-mode/dev-mode';
 
@@ -77,6 +78,28 @@ describe('Computed', () => {
       const computed = new Computed(() => 0);
       computed.setState('computing', PRIVATE);
       expect(() => computed.get()).toThrow('Circular dependency');
+    });
+
+    it('detects a Computed reading itself at every read, not only at the first one', () => {
+      const computed: Computed<number> = new Computed(() => computed.get() + 1);
+
+      expect(() => computed.get()).toThrow('Circular dependency detected');
+      expect(() => computed.get()).toThrow('Circular dependency detected');
+    });
+
+    it('enters ~computing~ through ~dirty~ when evaluated again without sinks, with no invalid transition', () => {
+      setDevMode(true);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const computed = new Computed(() => 1);
+        computed.get();
+        computed.get();
+        expect(warnSpy).not.toHaveBeenCalled();
+        expect(computed.getState(PRIVATE)).toBe('clean');
+      } finally {
+        warnSpy.mockRestore();
+        setDevMode(false);
+      }
     });
 
     it('registers itself as source of an outer Computed', () => {
@@ -343,6 +366,16 @@ describe('Computed', () => {
       expect(spy).toHaveBeenNthCalledWith(1, 'Invalid state transition from dirty to clean in Computed Signal')
       setDevMode(false);
     });
+
+    it('ignores an invalid transition silently outside dev mode', () => {
+      setDevMode(false);
+      const spy = vi.spyOn(console, 'warn');
+      const computed = new Computed(() => 1);
+      computed.setState('clean', PRIVATE);
+      expect(computed.getState(PRIVATE)).toBe('dirty');
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
   });
 
   describe('addSink() / removeSink()', () => {
@@ -403,11 +436,114 @@ describe('Computed', () => {
       expect(computed.getSources(PRIVATE)).toContain(state);
     });
 
-    it('adds itself as a sink of the source', () => {
+    it('adds itself as a sink of the source only while it has sinks', () => {
       const computed = new Computed(() => 1);
       const state = new State(1);
       computed.addSource(state, PRIVATE);
-      expect(state.getSinks(PRIVATE)).toContain(computed);
+      expect(state.getSinks(PRIVATE)).toEqual([]);
+
+      const other = new State(2);
+      computed.addSink(makeMockWatcher(), PRIVATE);
+      computed.addSource(other, PRIVATE);
+      expect(state.getSinks(PRIVATE)).toEqual([computed]);
+      expect(other.getSinks(PRIVATE)).toEqual([computed]);
+    });
+
+    it('registers a source read twice once', () => {
+      const computed = new Computed(() => 1);
+      const state = new State(1);
+      computed.addSource(state, PRIVATE);
+      computed.addSource(state, PRIVATE);
+      expect(computed.getSources(PRIVATE)).toEqual([state]);
+    });
+  });
+
+  describe('links with the sources', () => {
+    it('does not make its sources watched while nothing watches it', () => {
+      const watched = vi.fn();
+      const state = new State(1, { watched });
+      const computed = new Computed(() => state.get() * 2);
+
+      expect(computed.get()).toBe(2);
+      expect(watched).not.toHaveBeenCalled();
+      expect(state.getSinks(PRIVATE)).toEqual([]);
+    });
+
+    it('keeps its sources watched across its evaluations, while it is watched', () => {
+      const watched = vi.fn();
+      const unwatched = vi.fn();
+      const state = new State(1, { watched, unwatched });
+      const computed = new Computed(() => state.get() * 2);
+      const watcher = new Watcher(() => undefined);
+      watcher.watch(computed);
+      computed.get();
+
+      for (let i = 2; i < 5; i++) {
+        state.set(i);
+        expect(computed.get()).toBe(i * 2);
+      }
+
+      expect(watched).toHaveBeenCalledOnce();
+      expect(unwatched).not.toHaveBeenCalled();
+
+      watcher.unwatch(computed);
+      expect(unwatched).toHaveBeenCalledOnce();
+    });
+
+    it('unwatches a source it no longer reads', () => {
+      const unwatched = vi.fn();
+      const useOther = new State(false);
+      const first = new State('first', { unwatched });
+      const other = new State('other');
+      const computed = new Computed(() => useOther.get() ? other.get() : first.get());
+      const watcher = new Watcher(() => undefined);
+      watcher.watch(computed);
+      computed.get();
+
+      useOther.set(true);
+      expect(computed.get()).toBe('other');
+      expect(unwatched).toHaveBeenCalledOnce();
+      expect(first.getSinks(PRIVATE)).toEqual([]);
+      expect(other.getSinks(PRIVATE)).toEqual([computed]);
+    });
+
+    it('evaluates again, once watched, when a State changed since it was evaluated without sinks', () => {
+      const state = new State(1);
+      const callback = vi.fn(() => state.get());
+      const computed = new Computed(callback);
+      computed.get();
+      state.set(2);
+
+      new Watcher(() => undefined).watch(computed);
+      expect(computed.get()).toBe(2);
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps its value, once watched, when no State changed since it was evaluated without sinks', () => {
+      const state = new State(1);
+      const callback = vi.fn(() => state.get());
+      const computed = new Computed(callback);
+      computed.get();
+
+      new Watcher(() => undefined).watch(computed);
+      expect(computed.get()).toBe(1);
+      expect(callback).toHaveBeenCalledOnce();
+    });
+
+    it('becomes the sink of an inner Computed read for the first time, which then notifies it', () => {
+      const state = new State(1);
+      const inner = new Computed(() => state.get() + 1);
+      inner.get();
+      const outer = new Computed(() => inner.get() * 10);
+      const notify = vi.fn();
+      new Watcher(notify).watch(outer);
+
+      expect(outer.get()).toBe(20);
+      expect(inner.getSinks(PRIVATE)).toEqual([outer]);
+
+      state.set(2);
+      expect(notify).toHaveBeenCalledOnce();
+      expect(outer.get()).toBe(30);
     });
   });
 

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { EffectOptions, loadSignals } from '@xaendar/signals';
+import { EffectOptions } from '@xaendar/core/signals';
+import { loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
@@ -149,6 +150,7 @@ export class State<T = any> {
 
     if (!this.#equals.call(this, this.#value, newValue)) {
       this.#value = newValue;
+      GLOBAL_STATE.version++;
       for (const sink of this.#sinks) {
         sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE)
       }
@@ -203,9 +205,8 @@ export class State<T = any> {
   public removeSink(sink: Computed | Watcher, symbol: symbol): void {
     assertPrivateContext(symbol);
     this.#sinks.delete(sink);
-    const empty = this.#sinks.size === 0;
 
-    if (empty && this.#unwatched) {
+    if (!this.#sinks.size && this.#unwatched) {
       GLOBAL_STATE.frozen = true;
       try {
         this.#unwatched();

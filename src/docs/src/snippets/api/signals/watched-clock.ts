@@ -14,13 +14,8 @@ export const now = signal(new Date(), {
     timer ??= setInterval(() => now.set(new Date()), 1000);
   },
   unwatched() {
-    // A new evaluation of the only computed signal reading the clock runs unwatched, then watched again:
-    // the timer stops only if nothing depends on the clock once the graph is updated
-    queueMicrotask(() => {
-      if (!Signal.subtle.hasSinks(this)) {
-        clearInterval(timer);
-        timer = undefined;
-      }
-    });
+    // Nothing depends on the clock any more: the timer stops until watched runs again
+    clearInterval(timer);
+    timer = undefined;
   }
 });

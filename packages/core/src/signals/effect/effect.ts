@@ -49,38 +49,44 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
    * tracking (via pushComputed / popComputed) works for free.
    * The Computed always returns `undefined` — we only care about the
    * side-effects and the tracked sources, not the value.
+   *
+   * The hooks run inside it, around `fn`: exactly when `fn` runs, and untracked, so
+   * the signals they read are not dependencies of the effect.
    */
-  const computed = new Signal.Computed<void>(() => fn());
-
-  let needsEnqueue = true;
+  const computed = new Signal.Computed<void>(() => {
+    if (options?.onBeforeRun) {
+      Signal.subtle.untrack(options.onBeforeRun);
+    }
+    try {
+      fn();
+    } finally {
+      if (options?.onAfterRun) {
+        Signal.subtle.untrack(options.onAfterRun);
+      }
+    }
+  });
 
   /**
    * The Watcher is notified synchronously as soon as any tracked dependency
    * changes. Its job is purely to schedule the re-execution; the actual
    * re-evaluation happens asynchronously in a microtask so that multiple
-   * synchronous signal updates are batched into a single re-run.
+   * synchronous signal updates are batched into a single re-run: the Watcher
+   * notifies once, then waits until the microtask re-arms it.
    */
   const watcher = new Signal.subtle.Watcher(() => {
-    if (needsEnqueue) {
-      needsEnqueue = false;
-      queueMicrotask(() => {
-        needsEnqueue = true;
-        options?.onBeforeRun?.();
-        try {
-          const pendings = watcher.getPending();
-          for (let i = 0; i < pendings.length; i++) {
-            pendings[i].get();
-          }
-        } finally {
-          options?.onAfterRun?.();
-          watcher.watch();
+    queueMicrotask(() => {
+      try {
+        const pendings = watcher.getPending();
+        for (let i = 0; i < pendings.length; i++) {
+          pendings[i].get();
         }
-      });
-    }
+      } finally {
+        watcher.watch();
+      }
+    });
   });
 
   // Initial synchronous execution + first subscription.
-  options?.onBeforeRun?.();
   watcher.watch(computed);
   try {
     computed.get();
@@ -88,8 +94,6 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
     // The caller gets no disposer: stop watching, or the effect would re-run forever
     watcher.unwatch(computed);
     throw error;
-  } finally {
-    options?.onAfterRun?.();
   }
 
   /**

@@ -5,13 +5,14 @@ import { GlobalState } from '../../types/global-state.type';
 /**
  * Global state for the signals runtime.
  * Tracks the currently computing `Computed` instance, whether the state is frozen,
- * and the current generation counter.
+ * and the version of the State values.
  *
  * @internal
  */
 export const GLOBAL_STATE: GlobalState = {
   computing: null,
-  frozen: false
+  frozen: false,
+  version: 0
 };
 
 /**

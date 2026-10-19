@@ -18,10 +18,11 @@ const watcher = new Signal.subtle.Watcher(() => {});
 Signal.subtle.hasSources(total);            // false: total has not been evaluated yet
 total.get();
 Signal.subtle.introspectSources(total);     // [price, quantity]
-Signal.subtle.introspectSinks(price);       // [total]: the evaluation linked total to its sources
+Signal.subtle.introspectSinks(price);       // []: nothing watches total, so it is not a sink of its sources
 
 watcher.watch(total);
 Signal.subtle.hasSinks(total);              // true
+Signal.subtle.introspectSinks(price);       // [total]: watched, total is linked to its sources
 Signal.subtle.introspectSources(watcher);   // [total]
 
 watcher.unwatch(total);
