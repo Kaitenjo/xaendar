@@ -14,4 +14,3 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## Documentazione
 
-26. **Esempio `content-queries/tabs`**: `src/docs/src/examples/components/content-queries/tabs/tab-group.xd.component.ts` usa `.forEach`, vietato dalle regole di stile.

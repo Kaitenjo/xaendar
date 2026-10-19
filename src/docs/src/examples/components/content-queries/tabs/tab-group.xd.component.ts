@@ -32,7 +32,10 @@ export class TabGroupComponent extends CustomElement {
   public onInit(): void {
     this.effect(() => {
       const active = this.activeIndex();
-      this.panels().forEach((panel, index) => panel.active.set(index === active));
+      const panels = this.panels();
+      for (let i = 0; i < panels.length; i++) {
+        panels[i].active.set(i === active);
+      }
     });
   }
 
