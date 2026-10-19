@@ -7,7 +7,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/common
 
-12. **`Stack`, firme degli indici.** `packages/common/src/models/stack/stack.ts:12`: `[index: number]: T` permette `stack[0] = x`, ma la scrittura si perde (le letture vengono da `_elements`). `[prop: string | symbol]: unknown` (riga 14) fa compilare refusi come `stPck.lenght`.
 13. **`keys`/`entries`/`values`.** `packages/common/src/utils/object/object-utils.ts:28-70`: un argomento tipizzato `Obj | undefined` non corrisponde a nessun overload ("No overload matches this call"), quindi l'overload `undefined` funziona solo con un `undefined` letterale. I tipi dichiarano chiavi numeriche (`1[]`), ma a runtime le chiavi sono stringhe (`['1']`).
 14. **`isValidCustomElementName` è più severa della specifica HTML**, che accetta caratteri non ASCII (`my-élément`), mentre la guida Selectors and registration dice che il compilatore applica "le stesse regole" del browser.
 15. **`Array.prototype.removeItem`.** `packages/common/src/utils/array/array.util.ts` installa un'estensione di `Array.prototype`: non è un export, quindi non è nella reference. Decidere se documentarla.

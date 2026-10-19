@@ -9,14 +9,15 @@ export class Stack<T = unknown> {
    */
   private _elements = new Array<T>;
 
-  [index: number]: T;
-
-  [prop: string | symbol]: unknown;
+  /**
+   * The element at an index, counted from the bottom: read-only, the stack changes only through `push` and `pop`.
+   */
+  readonly [index: number]: T;
 
   constructor() {
     return new Proxy(this, {
       get(target, prop) {
-        return typeof prop === 'symbol' || isNaN(Number(prop)) ? target[prop] : target._elements[Number(prop)];
+        return typeof prop === 'symbol' || isNaN(Number(prop)) ? Reflect.get(target, prop) : target._elements[Number(prop)];
       }
     });
   }

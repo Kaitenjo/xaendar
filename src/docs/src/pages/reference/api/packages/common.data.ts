@@ -10,8 +10,7 @@ export const COMMON_API: ApiPackage = {
       name: 'Stack',
       kind: 'class',
       signature: `class Stack<T = unknown> {
-  [index: number]: T;
-  [prop: string | symbol]: unknown;
+  readonly [index: number]: T;
   constructor();
   get length(): number;
   get values(): T[];

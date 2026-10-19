@@ -82,14 +82,23 @@ describe('Stack', () => {
       stack.push(1);
       expect(stack[5]).toBeUndefined();
     });
+
+    it('should only allow reading indexes and the members of the stack', () => {
+      stack.push(1);
+      // @ts-expect-error indexes are read-only
+      stack[0] = 2;
+      // @ts-expect-error a stack has no lenght member
+      expect(stack.lenght).toBeUndefined();
+      expect(stack[0]).toBe(1);
+    });
   });
 
   describe('symbol keys', () => {
     it('should read them from the stack instead of treating them as indexes', () => {
       const key = Symbol('key');
-      stack[key] = 'value';
-      expect(stack[key]).toBe('value');
-      expect(stack[Symbol.iterator]).toBeUndefined();
+      Reflect.set(stack, key, 'value');
+      expect(Reflect.get(stack, key)).toBe('value');
+      expect(Reflect.get(stack, Symbol.iterator)).toBeUndefined();
     });
 
     it('should convert the stack to a string', () => {
