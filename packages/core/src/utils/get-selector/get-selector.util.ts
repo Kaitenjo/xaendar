@@ -15,17 +15,8 @@ import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
  * @throws When the class is not decorated with `@WebComponent`, also when its parent class is.
  */
 export function getSelector(constructor: Constructor<HTMLElement>): string {
-  const error = new Error(`${constructor.name} does not seem to be decorated with @WebComponent`);
-  if (Object.hasOwn(constructor, Symbol.for('Symbol.metadata'))) {
-    throw error;
-  }
-
-  const metadata = getWebComponentMetadata(constructor);
-  if (!metadata || !Object.hasOwn(metadata, INTERNAL_SELECTOR)) {
-    throw error;
-  }
-
-  const selector = metadata[INTERNAL_SELECTOR];
+  const metadata = Object.hasOwn(constructor, Symbol.for('Symbol.metadata')) ? getWebComponentMetadata(constructor) : undefined;
+  const selector = metadata && Object.hasOwn(metadata, INTERNAL_SELECTOR) ? metadata[INTERNAL_SELECTOR] : undefined;
   if (!selector) {
     throw new Error(`${constructor.name} does not seem to be decorated with @WebComponent`);
   }
