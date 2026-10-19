@@ -4,7 +4,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/compiler / language-core
 
-11. **`$event` sugli output void.** Il compilatore accetta `$event` anche sugli output senza dettaglio, tipizzato `CustomEvent<null>`, mentre la guida Outputs dice che un template passa `$event` solo agli eventi che portano un dettaglio.
 
 ## @xaendar/common
 

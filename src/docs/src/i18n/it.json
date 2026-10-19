@@ -551,7 +551,7 @@
           "title": "Ascoltare nel padre",
           "p1": "Il padre lega un metodo all’evento con <code>(valueChange)=\"setQuantity($event)\"</code>. <code>$event</code> è il <code>CustomEvent</code> stesso: il metodo legge il valore in <code>event.detail</code>.",
           "example1": "I dati scendono, gli eventi salgono",
-          "p2": "Il selettore non cambia mai la quantità: mostra il proprio input e chiede un nuovo valore con <code>valueChange</code>. Il padre possiede la quantità e decide: oltre <code>5</code> ignora la richiesta, e il selettore continua a mostrare il valore che riceve. Insieme, un input e un output rendono un componente controllato dal padre, ed è così che Xaendar sostituisce il two-way binding. <code>cleared</code> non ha detail, e il suo handler non riceve argomenti: un template passa <code>$event</code> solo agli eventi che portano un detail."
+          "p2": "Il selettore non cambia mai la quantità: mostra il proprio input e chiede un nuovo valore con <code>valueChange</code>. Il padre possiede la quantità e decide: oltre <code>5</code> ignora la richiesta, e il selettore continua a mostrare il valore che riceve. Insieme, un input e un output rendono un componente controllato dal padre, ed è così che Xaendar sostituisce il two-way binding. <code>cleared</code> non ha detail, e il suo handler non riceve argomenti. Un template può comunque passargli <code>$event</code>, tipizzato <code>CustomEvent&lt;null&gt;</code>: il suo <code>detail</code> è <code>null</code>, ma l’evento c’è, ad esempio per chiamare <code>preventDefault()</code> su un evento dichiarato <code>cancelable</code>."
         },
         "eventOptions": {
           "title": "Opzioni dell’evento",

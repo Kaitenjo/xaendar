@@ -551,7 +551,7 @@
           "title": "Listening in the parent",
           "p1": "The parent binds a method to the event with <code>(valueChange)=\"setQuantity($event)\"</code>. <code>$event</code> is the <code>CustomEvent</code> itself: the method reads the value in <code>event.detail</code>.",
           "example1": "Data down, events up",
-          "p2": "The picker never changes the quantity: it shows its input and asks for a new value with <code>valueChange</code>. The parent owns the quantity and decides: past <code>5</code> it ignores the request, and the picker keeps showing the value it receives. Together, an input and an output make a component controlled by its parent, which is how Xaendar replaces two-way binding. <code>cleared</code> has no detail, and its handler takes no argument: a template passes <code>$event</code> only to the events that carry a detail."
+          "p2": "The picker never changes the quantity: it shows its input and asks for a new value with <code>valueChange</code>. The parent owns the quantity and decides: past <code>5</code> it ignores the request, and the picker keeps showing the value it receives. Together, an input and an output make a component controlled by its parent, which is how Xaendar replaces two-way binding. <code>cleared</code> has no detail, and its handler takes no argument. A template can still pass <code>$event</code> to it, typed <code>CustomEvent&lt;null&gt;</code>: its <code>detail</code> is <code>null</code>, but the event itself is there, for instance to call <code>preventDefault()</code> on an event declared <code>cancelable</code>."
         },
         "eventOptions": {
           "title": "Event options",
