@@ -45,5 +45,12 @@ export default defineConfig(
       '@typescript-eslint/consistent-type-imports': 'off',
       '@typescript-eslint/no-require-imports': 'off'
     }
+  },
+  {
+    // A `#private;` field in a declaration file is the brand making a class nominal, never read by design
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-unused-private-class-members': 'off'
+    }
   }
 );
