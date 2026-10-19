@@ -67,7 +67,7 @@
   },
   "keys": {
     "summary": "Restituisce i nomi delle proprietà proprie enumerabili di un oggetto, tipizzati con le chiavi del suo tipo.",
-    "description": "<p>Chiama <code>Object.keys</code> e tipizza il risultato come array delle chiavi del tipo dell’oggetto, invece di <code>string[]</code>, così ogni nome può indicizzare l’oggetto senza cast. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Il tipo si fida dell’oggetto: le proprietà che non dichiara vengono restituite comunque, e le chiavi numeriche tornano come stringhe, come le restituisce sempre <code>Object.keys</code>: <code>keys({ 1: 'one' })</code> è <code>['1']</code>, tipizzato <code>1[]</code>.</p><p>I due overload accettano un oggetto oppure <code>undefined</code>, non un valore tipizzato come l’uno o l’altro: verifica un valore del genere prima della chiamata.</p>",
+    "description": "<p>Chiama <code>Object.keys</code> e tipizza il risultato come array delle chiavi del tipo dell’oggetto, invece di <code>string[]</code>, così ogni nome può indicizzare l’oggetto senza cast. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Il tipo si fida dell’oggetto: le proprietà che non dichiara vengono restituite comunque, e le chiavi numeriche sono tipizzate come stringhe, come le restituisce sempre <code>Object.keys</code>: <code>keys({ 1: 'one' })</code> è <code>['1']</code>, tipizzato <code>'1'[]</code>.</p><p>È accettato anche un valore tipizzato come oggetto o <code>undefined</code>: il risultato è allora tipizzato come array o <code>undefined</code>.</p>",
     "usage": {
       "typedKeys": {
         "title": "Chiavi tipizzate",
@@ -77,7 +77,7 @@
   },
   "entries": {
     "summary": "Restituisce le coppie [chiave, valore] proprie enumerabili di un oggetto, tipizzate con le chiavi e i valori del suo tipo.",
-    "description": "<p>Chiama <code>Object.entries</code> e tipizza ogni coppia come <code>[Key, Value]</code>: una chiave del tipo dell’oggetto, dove <code>Object.entries</code> dà <code>string</code>, e i suoi valori, dove <code>Object.entries</code> dà <code>any</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>La chiave e il valore di una coppia sono tipizzati separatamente: per <code>{ id: number; name: string }</code> una coppia è <code>['id' | 'name', string | number]</code>, quindi controllare la chiave non restringe il valore. Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, le chiavi numeriche tornano come stringhe, e un valore tipizzato come oggetto o <code>undefined</code> non corrisponde a nessuno dei due overload.</p>",
+    "description": "<p>Chiama <code>Object.entries</code> e tipizza ogni coppia come <code>[Key, Value]</code>: una chiave del tipo dell’oggetto, dove <code>Object.entries</code> dà <code>string</code>, e i suoi valori, dove <code>Object.entries</code> dà <code>any</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>La chiave e il valore di una coppia sono tipizzati separatamente: per <code>{ id: number; name: string }</code> una coppia è <code>['id' | 'name', string | number]</code>, quindi controllare la chiave non restringe il valore. Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, le chiavi numeriche sono tipizzate come stringhe, ed è accettato un valore tipizzato come oggetto o <code>undefined</code>.</p>",
     "usage": {
       "typedPairs": {
         "title": "Coppie tipizzate",
@@ -87,7 +87,7 @@
   },
   "values": {
     "summary": "Restituisce i valori delle proprietà proprie enumerabili di un oggetto, tipizzati con i valori del suo tipo.",
-    "description": "<p>Chiama <code>Object.values</code> e tipizza il risultato con i valori del tipo dell’oggetto, un’unione quando sono diversi. <code>Object.values</code> deduce lo stesso per un tipo oggetto letterale, ma dà <code>any[]</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, e un valore tipizzato come oggetto o <code>undefined</code> non corrisponde a nessuno dei due overload.</p>",
+    "description": "<p>Chiama <code>Object.values</code> e tipizza il risultato con i valori del tipo dell’oggetto, un’unione quando sono diversi. <code>Object.values</code> deduce lo stesso per un tipo oggetto letterale, ma dà <code>any[]</code> per un’interfaccia o una classe. Chiamata con <code>undefined</code>, restituisce <code>undefined</code>.</p><p>Come per <a href=\"#/it/reference/api/common/keys\"><code>keys</code></a>, il tipo si fida dell’oggetto, ed è accettato un valore tipizzato come oggetto o <code>undefined</code>.</p>",
     "usage": {
       "typedValues": {
         "title": "Valori tipizzati",

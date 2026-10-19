@@ -67,7 +67,7 @@
   },
   "keys": {
     "summary": "Returns the own enumerable property names of an object, typed with the keys of its type.",
-    "description": "<p>Calls <code>Object.keys</code> and types the result as an array of the keys of the type of the object, instead of <code>string[]</code>, so each name can index the object without a cast. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The type trusts the object: properties it does not declare are returned anyway, and numeric keys come back as strings, as <code>Object.keys</code> always returns them: <code>keys({ 1: 'one' })</code> is <code>['1']</code>, typed <code>1[]</code>.</p><p>The two overloads accept an object or <code>undefined</code>, not a value typed as either of them: check such a value before the call.</p>",
+    "description": "<p>Calls <code>Object.keys</code> and types the result as an array of the keys of the type of the object, instead of <code>string[]</code>, so each name can index the object without a cast. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The type trusts the object: properties it does not declare are returned anyway, and numeric keys are typed as strings, as <code>Object.keys</code> always returns them: <code>keys({ 1: 'one' })</code> is <code>['1']</code>, typed <code>'1'[]</code>.</p><p>A value typed as an object or <code>undefined</code> is accepted too: the result is then typed as an array or <code>undefined</code>.</p>",
     "usage": {
       "typedKeys": {
         "title": "Typed keys",
@@ -77,7 +77,7 @@
   },
   "entries": {
     "summary": "Returns the own enumerable [key, value] pairs of an object, typed with the keys and the values of its type.",
-    "description": "<p>Calls <code>Object.entries</code> and types each pair as <code>[Key, Value]</code>: a key of the type of the object, where <code>Object.entries</code> gives <code>string</code>, and its values, where <code>Object.entries</code> gives <code>any</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The key and the value of a pair are typed separately: for <code>{ id: number; name: string }</code> a pair is <code>['id' | 'name', string | number]</code>, so checking the key does not narrow the value. As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, numeric keys come back as strings, and a value typed as an object or <code>undefined</code> matches neither overload.</p>",
+    "description": "<p>Calls <code>Object.entries</code> and types each pair as <code>[Key, Value]</code>: a key of the type of the object, where <code>Object.entries</code> gives <code>string</code>, and its values, where <code>Object.entries</code> gives <code>any</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The key and the value of a pair are typed separately: for <code>{ id: number; name: string }</code> a pair is <code>['id' | 'name', string | number]</code>, so checking the key does not narrow the value. As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, numeric keys are typed as strings, and a value typed as an object or <code>undefined</code> is accepted.</p>",
     "usage": {
       "typedPairs": {
         "title": "Typed pairs",
@@ -87,7 +87,7 @@
   },
   "values": {
     "summary": "Returns the own enumerable property values of an object, typed with the values of its type.",
-    "description": "<p>Calls <code>Object.values</code> and types the result with the values of the type of the object, a union when they differ. <code>Object.values</code> infers the same for an object literal type, but gives <code>any[]</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, and a value typed as an object or <code>undefined</code> matches neither overload.</p>",
+    "description": "<p>Calls <code>Object.values</code> and types the result with the values of the type of the object, a union when they differ. <code>Object.values</code> infers the same for an object literal type, but gives <code>any[]</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, and a value typed as an object or <code>undefined</code> is accepted.</p>",
     "usage": {
       "typedValues": {
         "title": "Typed values",

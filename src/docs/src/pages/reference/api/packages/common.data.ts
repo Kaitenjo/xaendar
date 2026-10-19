@@ -59,22 +59,25 @@ function indent(lines: string[]): string[];`,
     {
       name: 'keys',
       kind: 'function',
-      signature: `function keys<Obj extends object, Key extends keyof Obj>(object: Obj): Key[];
-function keys(object: undefined): undefined;`,
+      signature: `function keys<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`>(object: Obj): Key[];
+function keys(object: undefined): undefined;
+function keys<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`>(object: Obj | undefined): Key[] | undefined;`,
       usage: [{ key: 'typedKeys', snippets: ['api/common/keys.ts'] }]
     },
     {
       name: 'entries',
       kind: 'function',
-      signature: `function entries<Obj extends object, Key extends keyof Obj, Value extends Obj[Key] = Obj[Key]>(object: Obj): [Key, Value][];
-function entries(object: undefined): undefined;`,
+      signature: `function entries<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`, Value extends Obj[keyof Obj] = Obj[keyof Obj]>(object: Obj): [Key, Value][];
+function entries(object: undefined): undefined;
+function entries<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`, Value extends Obj[keyof Obj] = Obj[keyof Obj]>(object: Obj | undefined): [Key, Value][] | undefined;`,
       usage: [{ key: 'typedPairs', snippets: ['api/common/entries.ts'] }]
     },
     {
       name: 'values',
       kind: 'function',
       signature: `function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key] = Obj[Key]>(object: Obj): Value[];
-function values(object: undefined): undefined;`,
+function values(object: undefined): undefined;
+function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key] = Obj[Key]>(object: Obj | undefined): Value[] | undefined;`,
       usage: [{ key: 'typedValues', snippets: ['api/common/values.ts'] }]
     },
     {
