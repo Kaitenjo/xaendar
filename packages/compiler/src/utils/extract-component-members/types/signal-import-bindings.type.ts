@@ -3,7 +3,7 @@
  */
 export type SignalImportBindings = {
   /**
-   * Local names of the named imports (`import { signal } from '...'`).
+   * Local names of the named imports of the signal functions and types (`import { signal } from '...'`).
    */
   named: Set<string>;
   /**

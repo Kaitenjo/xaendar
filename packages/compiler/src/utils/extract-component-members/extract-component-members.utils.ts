@@ -17,6 +17,12 @@ import type { SignalImportBindings } from './types/signal-import-bindings.type';
 const SIGNAL_MODULE_SPECIFIERS: ReadonlySet<string> = new Set(['@xaendar/core/signals']);
 
 /**
+ * The exports of the signal modules that make a member a signal: the functions creating a signal and the signal
+ * types. The others (`effect`, `untracked`, `EffectOptions`, the query option types...) don't.
+ */
+const SIGNAL_EXPORTS: ReadonlySet<string> = new Set(['signal', 'computed', 'Signal', 'Computed', 'InputSignal', 'SettableInputSignal', 'QuerySignal']);
+
+/**
  * Finds the function declarations of a file: the module functions a template imports.
  */
 const FUNCTION_FINDER: DeclarationFinder<FunctionDeclaration> = {
@@ -244,10 +250,11 @@ function findVariable(statement: Statement, name: string): VariableDeclaration |
 }
 
 /**
- * Collects the local names the signal modules are imported under in `sourceFile`.
+ * Collects the local names the signal modules, and their signal exports (see {@link SIGNAL_EXPORTS}), are imported
+ * under in `sourceFile`.
  *
  * @param sourceFile - The file whose imports are inspected.
- * @returns The named and namespace bindings of the signal modules.
+ * @returns The named bindings of the signal exports and the namespace bindings of the signal modules.
  */
 function collectSignalImportBindings(sourceFile: SourceFile): SignalImportBindings {
   const named = new Set<string>();
@@ -271,7 +278,11 @@ function collectSignalImportBindings(sourceFile: SourceFile): SignalImportBindin
       namespaces.add(namedBindings.name.text);
     } else {
       for (let i = 0; i < namedBindings.elements.length; i++) {
-        named.add(namedBindings.elements[i].name.text);
+        // import { signal as createSignal } from '@xaendar/core/signals';
+        const { name, propertyName } = namedBindings.elements[i];
+        if (SIGNAL_EXPORTS.has((propertyName ?? name).text)) {
+          named.add(name.text);
+        }
       }
     }
   });
@@ -411,7 +422,7 @@ function resolvesToSignalBinding(expr: Expression, bindings: SignalImportBinding
     }
   */
   if (isPropertyAccessExpression(expr) && isIdentifier(expr.expression)) {
-    return bindings.namespaces.has(expr.expression.text);
+    return bindings.namespaces.has(expr.expression.text) && SIGNAL_EXPORTS.has(expr.name.text);
   }
 
   return false;
@@ -435,7 +446,7 @@ function isSignalType(type: TypeNode, bindings: SignalImportBindings): boolean {
     return resolvesEntityNameToSignalBinding(type.typeName, bindings);
   }
 
-  return isImportTypeNode(type) && !type.isTypeOf && !!type.qualifier && isLiteralTypeNode(type.argument) && isStringLiteralLike(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
+  return isImportTypeNode(type) && !type.isTypeOf && !!type.qualifier && isIdentifier(type.qualifier) && SIGNAL_EXPORTS.has(type.qualifier.text) && isLiteralTypeNode(type.argument) && isStringLiteralLike(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
 }
 
 /**
@@ -467,7 +478,7 @@ function resolvesEntityNameToSignalBinding(entityName: EntityName, bindings: Sig
     }
   */
   if (isQualifiedName(entityName) && isIdentifier(entityName.left)) {
-    return bindings.namespaces.has(entityName.left.text);
+    return bindings.namespaces.has(entityName.left.text) && SIGNAL_EXPORTS.has(entityName.right.text);
   }
 
   return false;

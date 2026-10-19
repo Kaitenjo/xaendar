@@ -4,7 +4,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/compiler / language-core
 
-10. **Ogni import da `@xaendar/core/signals` conta come signal.** `packages/compiler/src/utils/extract-component-members/extract-component-members.utils.ts:252-280`: un membro annotato `EffectOptions` o inizializzato con `effect()` è trattato come signal. Rende solo reattivi più binding del necessario.
 11. **`$event` sugli output void.** Il compilatore accetta `$event` anche sugli output senza dettaglio, tipizzato `CustomEvent<null>`, mentre la guida Outputs dice che un template passa `$event` solo agli eventi che portano un dettaglio.
 
 ## @xaendar/common

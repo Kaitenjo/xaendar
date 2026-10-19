@@ -149,6 +149,29 @@ describe('extractComponentMembers', () => {
       expect(members).toEqual(['a', 'b', 'c']);
     });
 
+    it('ignores the exports of the signals module that are neither signal functions nor signal types', () => {
+      const members = setup(`
+        import { effect, untracked, EffectOptions, QueryOptions, signal as createSignal, InputSignal as Input } from '@xaendar/core/signals';
+        import * as s from '@xaendar/core/signals';
+        class Cmp {
+          a = effect(() => {});
+          b = untracked(() => 1);
+          c!: EffectOptions;
+          d!: QueryOptions;
+          e = s.effect(() => {});
+          f!: s.EffectOptions;
+          g!: import('@xaendar/core/signals').EffectOptions;
+          h!: import('@xaendar/core/signals').ns.Signal<number>;
+          i = createSignal(0);
+          j!: Input<number>;
+          k!: s.QuerySignal<HTMLElement>;
+          l!: import('@xaendar/core/signals').Computed<number>;
+        }
+      `);
+
+      expect(members).toEqual(['i', 'j', 'k', 'l']);
+    });
+
     it('ignores side-effect and default imports of the signals module', () => {
       const members = setup(`
         import '@xaendar/core/signals';
