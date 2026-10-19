@@ -28,6 +28,8 @@
   "exclude": [
     "**/vite-config.ts",
     "**/vite.config.ts",
-    "dist"
+    "dist",
+    "schematics",
+    "src/docs"
   ]
 }

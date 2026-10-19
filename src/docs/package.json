@@ -6,6 +6,7 @@
   "scripts": {
     "build": "xd build",
     "start": "xd start",
+    "pretest": "tsc --noEmit -p tsconfig.json",
     "test": "xd test",
     "xd": "xd"
   },

@@ -14,6 +14,7 @@ This is a monorepo of the framework's own client libraries, published as separat
 npm run test              # run all vitest specs once
 npm run test:watch        # watch mode
 npm run test:coverage     # with coverage — 100% lines/functions/branches/statements is enforced (vitest.config.ts)
+npm run typecheck:specs   # type-checks the specs (vitest strips types): each package with its tsconfig.spec.json, plus src/docs; runs before the three commands above
 npx vitest packages/core/src/utils/context/context.util.spec.ts   # run a single spec file
 npx vitest -t "name of test"                              # run tests matching a name
 

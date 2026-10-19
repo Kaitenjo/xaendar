@@ -20,10 +20,14 @@
     "pack:projects": "npm run pack --prefix schematics",
     "publish:projects": "npm run publish --prefix schematics",
     "start": "npm start --prefix src/docs",
+    "pretest": "npm run typecheck:specs",
     "test": "vitest",
+    "pretest:watch": "npm run typecheck:specs",
     "test:watch": "vitest --watch",
+    "pretest:coverage": "npm run typecheck:specs",
     "test:coverage": "vitest --coverage",
     "typecheck:projects": "npm run typecheck-projects --prefix schematics",
+    "typecheck:specs": "node schematics/src/typecheck-specs.ts",
     "update:version": "npm run update-version --prefix schematics"
   },
   "dependencies": {
