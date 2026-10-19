@@ -13,6 +13,7 @@ import { EventNode } from '../../types/nodes/event-node.type';
 import { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { TemplateNode } from '../../types/nodes/template-node.type';
 import type { ElementRefNode } from '../../types/nodes/element-ref-node.type';
+import type { TemplateDeclarationNode } from '../../types/nodes/template-declaration-node.type';
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { isBracketBinding, parseClassBinding } from '../parse-class-binding/parse-class-binding.state';
@@ -21,14 +22,15 @@ import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
 import { parseElementRef } from '../parse-element-ref/parse-element-ref.state';
+import { parseTemplateDeclaration } from '../parse-template-declaration/parse-template-declaration.state';
 import { isStructuralElement } from '../../utils/scope-declarations/scope-declarations.utils';
 import { parseTemplateParameters } from '../../utils/template-parameters/template-parameters.utils';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
- * Parses a TAG_OPEN_NAME token and the subsequent element ref, attributes, class bindings, events, conditional bindings, directives,
+ * Parses a TAG_OPEN_NAME token and the subsequent element ref or declaration of a template, attributes, class bindings, events, conditional bindings, directives,
  * structural directives and children into an `ElementNode`. Handles both regular and self-closing tags.
- * A `<template>` is not an element but the declaration of a template, e.g. `<template #row(item: Item)>`, parsed into a
+ * A `<template>` is not an element but the declaration of a template, e.g. `<template row(item: Item)>`, parsed into a
  * `TemplateNode`.
  *
  * @param cursor - Parser cursor positioned at the TAG_OPEN_NAME token.
@@ -51,7 +53,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const directives = new Array<DirectiveNode>();
   const structuralDirectives = new Array<StructuralDirectiveNode>();
   let ref: ElementRefNode | undefined;
-  // The text of the parameters of a template, declared by the element ref of a `<template>`
+  let declaration: TemplateDeclarationNode | undefined;
+  // The text of the parameters of a template, declared by a `<template>` after its name
   let parameters: string | undefined;
   let read = true;
 
@@ -65,9 +68,13 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         }
 
         ref = declared;
-        parameters = token.parts[1];
         break;
       }
+
+      case TokenType.TEMPLATE_DECLARATION:
+        declaration = parseTemplateDeclaration(cursor, token);
+        parameters = token.parts[1];
+        break;
 
       case TokenType.ATTRIBUTE:
         if (isBracketBinding(token)) {
@@ -108,12 +115,12 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const typeArguments = token.parts[1] === undefined ? undefined : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>;
   if (tagName === 'template') {
-    const binding = typeArguments?.[0] ?? attributes[0] ?? classBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
-      throw new Error('A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
+      throw new Error('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
     }
 
-    node = toTemplateNode(nameSpan, ref, parameters);
+    node = toTemplateNode(nameSpan, declaration, parameters);
   } else {
     node = {
       type: ASTNodeType.Element,
@@ -293,29 +300,29 @@ function assertUniqueInBranches(conditionalBindings: ConditionalBindingNode[], d
 }
 
 /**
- * Builds the node of the declaration of a template, `<template #name(…)>`, without its children.
+ * Builds the node of the declaration of a template, `<template name(…)>`, without its children.
  *
  * @param nameSpan - Span of the tag name, `template`.
- * @param ref - The element ref naming the template, if the `<template>` declares one.
- * @param parameters - The text of the parameters the element ref declares, if any.
+ * @param declaration - The name of the template, if the `<template>` declares one.
+ * @param parameters - The text of the parameters the template declares after its name, if any.
  * @returns The node of the template.
- * @throws If the template has no name, or no parameters (`#name()` declares none), or they are not valid.
+ * @throws If the template has no name, or no parameters (`name()` declares none), or they are not valid.
  */
-function toTemplateNode(nameSpan: TemplateNode['nameSpan'], ref: ElementRefNode | undefined, parameters: string | undefined): MaybeASTNodeWithSpan<TemplateNode> {
-  if (!ref) {
-    throw new Error('A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())', { cause: nameSpan });
+function toTemplateNode(nameSpan: TemplateNode['nameSpan'], declaration: TemplateDeclarationNode | undefined, parameters: string | undefined): MaybeASTNodeWithSpan<TemplateNode> {
+  if (!declaration) {
+    throw new Error('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())', { cause: nameSpan });
   }
 
   if (parameters === undefined) {
-    throw new Error(`A template lists its parameters in parentheses after its name, even when it has none: <template #${ref.name}()>`, { cause: ref.span });
+    throw new Error(`A template lists its parameters in parentheses after its name, even when it has none: <template ${declaration.name}()>`, { cause: declaration.nameSpan });
   }
 
   return {
     type: ASTNodeType.Template,
     nameSpan,
-    ref,
+    declaration,
     // The parameters follow the name, after the `(` opening them
-    parameters: parseTemplateParameters(parameters, ref.nameSpan.end + 1, ref.name),
+    parameters: parseTemplateParameters(parameters, declaration.nameSpan.end + 1, declaration.name),
     children: []
   };
 }

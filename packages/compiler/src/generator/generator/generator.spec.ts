@@ -74,7 +74,7 @@ describe('Generator', () => {
 
   describe('templates', () => {
     it('registers a template at the start of its scope, and renders its content in a scope of its own, reading the parameters as signals', async () => {
-      const template = '@render row(name(), 1)<template #row(label: string, count: number)><p>{ label() } { count() }</p></template>';
+      const template = '@render row(name(), 1)<template row(label: string, count: number)><p>{ label() } { count() }</p></template>';
       const code = await generate(template, ['name']);
       const start = template.indexOf('<template');
 
@@ -96,7 +96,7 @@ describe('Generator', () => {
     });
 
     it('gives the parameters whose argument may be left out their default value, reading the parameters and the members', async () => {
-      const code = await generate('<template #row(item: Item, label = item().name + suffix(), count?: number, later: number = 1)>{ label() }</template>', ['suffix']);
+      const code = await generate('<template row(item: Item, label = item().name + suffix(), count?: number, later: number = 1)>{ label() }</template>', ['suffix']);
 
       expect(code).toContain([
         '  context.addIdentifier(\'item\', params[0]);',
@@ -107,20 +107,20 @@ describe('Generator', () => {
     });
 
     it('declares the element refs and the templates of the content of a template in its scope', async () => {
-      const code = await generate('<template #row()><input #field /><template #inner() /></template>');
+      const code = await generate('<template row()><input #field /><template inner() /></template>');
 
       expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', _template\(context, template_inner_\d+\.bind\(this\)\)\);/);
     });
 
     it('creates the content of a template in the namespace of its declaration, and renders it there', async () => {
-      const code = await generate('<svg><template #dot(x: number) /><g>@render dot(1)</g></svg>');
+      const code = await generate('<svg><template dot(x: number) /><g>@render dot(1)</g></svg>');
 
       expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params\) \{\n {2}const context = new _Context\(parentContext\);\n {2}context\.createElement = _createSVGElement;/);
       expect(code).toContain('_renderTemplate(svg0__g1, context, null, context.get(\'dot\'), [() => 1]);');
     });
 
     it('registers the templates of a block in the function rendering it, forwarding its anchor to the @render', async () => {
-      const code = await generate('@if (a) { <template #row() />@render row() }');
+      const code = await generate('@if (a) { <template row() />@render row() }');
 
       expect(code).toMatch(/function if0\(if0, parentContext, anchor\) \{\n {2}const context = new _Context\(parentContext\);\n {2}context\.addIdentifier\('row', _template\(context, template_row_\d+\.bind\(this\)\)\);/);
       expect(code).toContain('_renderTemplate(if0, context, anchor, context.get(\'row\'), []);');
@@ -128,8 +128,8 @@ describe('Generator', () => {
 
     it.each([
       ['a name that is not a template', '<input #field />@render field()', '[Generator] "field" is not a template visible here'],
-      ['a template of another namespace', '<template #note() /><svg>@render note()</svg>', '[Generator] Template "note" is declared among HTML elements, and its content cannot be rendered among SVG elements'],
-      ['a template declared twice in a scope', '<template #row() /><template #row() />', '[Generator] Identifier "row" is already declared in this scope.']
+      ['a template of another namespace', '<template note() /><svg>@render note()</svg>', '[Generator] Template "note" is declared among HTML elements, and its content cannot be rendered among SVG elements'],
+      ['a template declared twice in a scope', '<template row() /><template row() />', '[Generator] Identifier "row" is already declared in this scope.']
     ])('throws for the render of %s', async (_description, template, message) => {
       await expect(generate(template)).rejects.toThrow(message);
     });
@@ -153,7 +153,7 @@ describe('Generator', () => {
     });
 
     it('declares the @let of a block, of the content of a template and of a @for body in their own scope', async () => {
-      const code = await generate('@for (item of items; track item()) { @let name = item().name; }<template #row()>@let id = 1;</template>');
+      const code = await generate('@for (item of items; track item()) { @let name = item().name; }<template row()>@let id = 1;</template>');
 
       expect(code).toMatch(/= vars;\n {2}context\.declare\('name', 'let'\);\n {2}context\.set\('name', _let\(\(\) => context\.get\('item'\)\(\)\.name\)\);/);
       expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);

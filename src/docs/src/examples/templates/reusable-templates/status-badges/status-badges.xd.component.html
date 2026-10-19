@@ -1,6 +1,6 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<template #badge(text: string, tone = 'neutral', count?: number)>
+<template badge(text: string, tone = 'neutral', count?: number)>
   <span class="{`badge ${tone()}`}">
     { text() }
     @if (count() !== undefined) {

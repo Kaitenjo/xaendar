@@ -31,7 +31,6 @@
     "note": "Nota",
     "tip": "Suggerimento",
     "warning": "Attenzione",
-    "edge": "Caso limite",
     "unsupported": "Non supportato",
     "issue": "Problema noto"
   },
@@ -1530,7 +1529,7 @@
           "td16": "Pipe",
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
-          "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
+          "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
           "td20": "<code>@let</code>, chiamata anche variabile di template, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
@@ -2516,10 +2515,10 @@
       "reusableTemplates": {
         "eyebrow": "Template",
         "title": "Template riutilizzabili con @render",
-        "lead": "<code>&lt;template #name(…)&gt;</code> dichiara un pezzo di template una volta sola, con parametri tipizzati, come una funzione. <code>@render name(…)</code> lo renderizza ovunque possa stare del contenuto, e TypeScript controlla gli argomenti come controlla quelli di una chiamata.",
+        "lead": "<code>&lt;template name(…)&gt;</code> dichiara un pezzo di template una volta sola, con parametri tipizzati, come una funzione. <code>@render name(…)</code> lo renderizza ovunque possa stare del contenuto, e TypeScript controlla gli argomenti come controlla quelli di una chiamata.",
         "declaring": {
           "title": "Dichiarare e renderizzare",
-          "p1": "Un <code>&lt;template&gt;</code> è una dichiarazione: dove è scritto non renderizza niente. Il suo nome segue il <code>#</code>, poi vengono i suoi parametri, ciascuno con il suo tipo, tra parentesi che si scrivono anche quando non ce ne sono. Ogni <code>@render</code> renderizza una nuova istanza del suo contenuto, con elementi tutti suoi.",
+          "p1": "Un <code>&lt;template&gt;</code> è una dichiarazione: dove è scritto non renderizza niente. Il suo nome segue quello del tag, poi vengono i suoi parametri, ciascuno con il suo tipo, tra parentesi che si scrivono anche quando non ce ne sono. Ogni <code>@render</code> renderizza una nuova istanza del suo contenuto, con elementi tutti suoi.",
           "example1": "Una riga renderizzata tre volte",
           "p2": "Nel contenuto un parametro è un signal, letto come l’item di un <code>@for</code>: <code>label()</code>. Quando un argomento cambia, l’istanza non viene renderizzata di nuovo: si aggiornano solo i nodi che leggono il parametro, come fanno gli importi quando premi il pulsante."
         },
@@ -3080,9 +3079,9 @@
       "cause": "Un #name dentro il blocco di un binding condizionale, o dentro le parentesi di una direttiva (… outside of its directives).",
       "fix": "Dichiara la variabile direttamente sul tag."
     },
-    "[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name": {
-      "cause": "Parentesi dopo il nome di un element ref su un elemento diverso da <template>.",
-      "fix": "Scrivi #name da solo, oppure dichiara un <template> per avere dei parametri."
+    "[Lexer] An element ref is just #name, without parentheses": {
+      "cause": "Parentesi dopo il nome di un element ref.",
+      "fix": "Scrivi #name da solo."
     },
     "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())": {
       "cause": "Un @render senza il nome del template, senza parentesi, o con uno spazio o un punto tra il nome e le parentesi.",
@@ -3108,19 +3107,19 @@
       "cause": "Una @let con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
       "fix": "Usa un identificatore che il codice generato non riserva."
     },
-    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())": {
-      "cause": "Un <template> senza #name(…): un <template> è sempre la dichiarazione di un template.",
+    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())": {
+      "cause": "Un <template> senza name(…): un <template> è sempre la dichiarazione di un template.",
       "fix": "Dagli un nome e dichiara i suoi parametri, poi renderizzalo con @render."
     },
-    "[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>": {
-      "cause": "Un <template #row> senza parentesi.",
-      "fix": "Scrivi <template #row()>."
+    "[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>": {
+      "cause": "Un <template row> senza parentesi.",
+      "fix": "Scrivi <template row()>."
     },
-    "[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it": {
+    "[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it": {
       "cause": "Un attributo, un evento, un binding condizionale, una direttiva o dei type argument su un <template>.",
       "fix": "Spostali sugli elementi dentro il template."
     },
-    "[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>": {
+    "[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template row(item: Item, index: number)>": {
       "cause": "I parametri di un template con una virgola mancante o doppia, un punto e virgola, o qualcosa che non è un parametro.",
       "fix": "Separa i parametri con una sola virgola: nome: Tipo, nome: Tipo."
     },
@@ -3156,7 +3155,7 @@
       "cause": "Due element ref o template con lo stesso nome nello stesso scope, o uno con il nome di una variabile del @for che lo racchiude.",
       "fix": "Rinominane uno: uno scope annidato (un blocco, la riga di un @for) può riusare il nome."
     },
-    "[TypeChecker] \"row\" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one": {
+    "[TypeChecker] \"row\" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one": {
       "cause": "Un @render di un nome che non è un template dichiarato nel suo scope o in uno che lo racchiude: un membro, un import, un element ref, o un template dichiarato in un altro ramo o in un’altra riga. La build lo segnala anche come [Generator].",
       "fix": "Dichiara il template dove il @render lo vede, oppure passa i dati come argomenti a un template dichiarato più all’esterno."
     },

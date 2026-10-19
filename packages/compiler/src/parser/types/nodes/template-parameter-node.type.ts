@@ -2,7 +2,7 @@ import type { Expression } from 'typescript';
 import type { Span } from '../../../types/span.type';
 
 /**
- * A parameter of a template, e.g. `item: Item` in `<template #row(item: Item)>`: its content reads it as a signal. A
+ * A parameter of a template, e.g. `item: Item` in `<template row(item: Item)>`: its content reads it as a signal. A
  * parameter may be optional (`count?: number`) or have a default value (`dense: boolean = false`, or `dense = false`,
  * typed by its value): a `@render` may then leave out its argument, and only the last parameters may be so.
  */

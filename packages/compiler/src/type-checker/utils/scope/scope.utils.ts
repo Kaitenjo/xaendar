@@ -58,7 +58,7 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
   const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, context.namespace, {
     ref: (_element, { name }) => register(name),
-    template: ({ ref: { name } }, namespace) => {
+    template: ({ declaration: { name } }, namespace) => {
       register(name);
       context.addTemplate(name, namespace);
     },
@@ -89,14 +89,14 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
  * default value are inferred, and the variable holding the template, typed with it.
  *
  * @example
- * // <template #row(item: Item, index: number)>
+ * // <template row(item: Item, index: number)>
  * type __Params12 = Parameters<typeof __template12>;
  * let row!: __Template<__Params12>;
  *
  * @param template - The template.
  * @returns The lines declaring the template.
  */
-function declareTemplate({ ref: { name, nameSpan }, span }: TemplateNode): Line[] {
+function declareTemplate({ declaration: { name, nameSpan }, span }: TemplateNode): Line[] {
   const parametersType = getParametersType({ span });
   return [
     plain(`type ${parametersType} = Parameters<typeof ${getContentFunction({ span })}>;`),

@@ -69,9 +69,9 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A #name inside the block of a conditional binding, or inside the parentheses of a directive (… outside of its directives).
 - **Fix:** Declare the variable directly on the tag.
 
-### `[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name`
+### `[Lexer] An element ref is just #name, without parentheses`
 
-- **Cause:** Parentheses after the name of an element ref on an element other than a <template>.
+- **Cause:** Parentheses after the name of an element ref.
 - **Fix:** Write #name alone.
 
 ### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())`
@@ -166,22 +166,22 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
-### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())`
+### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())`
 
-- **Cause:** A <template> without #name(…): a <template> is always the declaration of a template.
+- **Cause:** A <template> without name(…): a <template> is always the declaration of a template.
 - **Fix:** Name it and declare its parameters, then render it with @render.
 
-### `[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>`
+### `[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>`
 
-- **Cause:** A <template #row> without parentheses.
-- **Fix:** Write <template #row()>.
+- **Cause:** A <template row> without parentheses.
+- **Fix:** Write <template row()>.
 
-### `[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it`
+### `[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it`
 
 - **Cause:** An attribute, an event, a conditional binding, a directive or type arguments on a <template>.
 - **Fix:** Move them to the elements inside the template.
 
-### `[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>`
+### `[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template row(item: Item, index: number)>`
 
 - **Cause:** The parameters of a template with a missing or doubled comma, a semicolon, or anything but parameters.
 - **Fix:** Separate the parameters with single commas: name: Type, name: Type.
@@ -343,7 +343,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Two element refs with the same name in the same scope, or an element ref named like a variable of the enclosing @for.
 - **Fix:** Rename one of them: a nested scope (a block, the row of a @for) can reuse the name.
 
-### `[TypeChecker] "row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one`
+### `[TypeChecker] "row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one`
 
 - **Cause:** A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, an element ref, or a template declared in another branch or row. The build reports it as [Generator] too.
 - **Fix:** Declare the template where the @render can see it, or pass the data as arguments to a template declared further out.

@@ -35,7 +35,7 @@ export type LayoutEvent = {
 };
 
 /**
- * An element ref naming an element, `#name`, or a `<template>` declaring itself with its parameters, `#name(parameters)`.
+ * An element ref naming an element, `#name`.
  */
 export type LayoutElementRef = {
   /**
@@ -46,10 +46,24 @@ export type LayoutElementRef = {
    * The name of the ref.
    */
   readonly name: string;
+};
+
+/**
+ * A `<template>` declaring itself with its name and its parameters, `name(parameters)`.
+ */
+export type LayoutTemplateDeclaration = {
   /**
-   * The parameters as written between the parentheses, `undefined` if the ref declares none.
+   * Discriminant identifying the item as the declaration of a template.
    */
-  readonly parameters?: string;
+  readonly kind: 'declaration';
+  /**
+   * The name of the template.
+   */
+  readonly name: string;
+  /**
+   * The parameters as written between the parentheses.
+   */
+  readonly parameters: string;
 };
 
 /**
@@ -126,7 +140,7 @@ export type LayoutConditionalBinding = LayoutBlock<LayoutItem[]>;
 /**
  * What an opening tag or the parentheses of a directive hold.
  */
-export type LayoutItem = LayoutElementRef | LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
+export type LayoutItem = LayoutElementRef | LayoutTemplateDeclaration | LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
 
 /**
  * An element, with the content between its tags as written.

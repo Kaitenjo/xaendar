@@ -95,7 +95,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name',
+    message: '[Lexer] An element ref is just #name, without parentheses',
     page: 'templates/element-refs'
   },
   {
@@ -195,22 +195,22 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())',
+    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())',
     page: 'templates/reusable-templates'
   },
   {
     phase: 'Parser',
-    message: '[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template #row()>',
+    message: '[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>',
     page: 'templates/reusable-templates'
   },
   {
     phase: 'Parser',
-    message: '[Parser] A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it',
+    message: '[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it',
     page: 'templates/reusable-templates'
   },
   {
     phase: 'Parser',
-    message: '[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>',
+    message: '[Parser] The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template row(item: Item, index: number)>',
     page: 'templates/reusable-templates'
   },
   {
@@ -410,7 +410,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] "row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one',
+    message: '[TypeChecker] "row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one',
     page: 'templates/reusable-templates'
   },
   {

@@ -19,7 +19,7 @@ const NAMESPACE_NAMES: Readonly<Record<ElementNamespace, string>> = { html: 'HTM
  */
 export function assertRenderTarget(callee: string, calleeSpan: Span, templateNamespace: ElementNamespace | undefined, namespace: ElementNamespace): void {
   if (!templateNamespace) {
-    throw new Error(`"${callee}" is not a template visible here: declare it with <template #${callee}(…)> in this scope or in an enclosing one`, { cause: calleeSpan });
+    throw new Error(`"${callee}" is not a template visible here: declare it with <template ${callee}(…)> in this scope or in an enclosing one`, { cause: calleeSpan });
   }
 
   if (templateNamespace !== namespace) {

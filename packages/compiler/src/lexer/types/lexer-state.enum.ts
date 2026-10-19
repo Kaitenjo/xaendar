@@ -95,9 +95,14 @@ export enum LexerState {
    */
   STRUCTURAL_DIRECTIVE = 'structural-directive',
   /**
-   * Consuming an element ref starting with `#`, with the parameters it declares on a `<template>`.
+   * Consuming an element ref starting with `#`.
    */
   ELEMENT_REF = 'element-ref',
+  /**
+   * Consuming the declaration of a template on a `<template>`, its name and its parameters, e.g. `row(item: Item)` in
+   * `<template row(item: Item)>`.
+   */
+  TEMPLATE_DECLARATION = 'template-declaration',
   /**
    * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item())` in
    * `@render row(item())`.

@@ -131,7 +131,7 @@ describe('getTemplateExpressionCompletions', () => {
   }, TIMEOUT);
 
   it('proposes the variables of the template and the members of the component in the arguments of a @render, also after the ( opening them', async () => {
-    const declaration = '\n<template #row(label: string, count: number) />';
+    const declaration = '\n<template row(label: string, count: number) />';
     expect((await sortedCompletionsOf(`@render row(|${declaration}`, '(')).slice(0, 3)).toEqual(['row:let:0000', 'items:property:1', 'title:property:1']);
     expect(await completionsOf(`@render row(title, ite|)${declaration}`)).toContain('items:property:1@19-22');
   }, TIMEOUT);

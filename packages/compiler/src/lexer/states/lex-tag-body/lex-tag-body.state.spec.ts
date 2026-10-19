@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
+import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { lexTagBody } from './lex-tag-body.state';
 
@@ -54,6 +55,13 @@ describe('lexTagBody', () => {
     const cursor = new LexerCursor('#name type="text"');
     expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.ELEMENT_REF });
     expect(cursor.peek()).toBe('n'.charCodeAt(0));
+  });
+
+  it('transitions to TEMPLATE_DECLARATION on a name in a <template> declaring none yet, leaving the name to it', () => {
+    const templateContext: LexerTransitionFunctionContext = { history: [], tokens: [{ type: TokenType.TAG_OPEN_NAME, parts: ['template'] }] };
+    const cursor = new LexerCursor('row(item: Item)>');
+    expect(lexTagBody(cursor, templateContext)).toEqual({ state: LexerState.TEMPLATE_DECLARATION });
+    expect(cursor.peek()).toBe('r'.charCodeAt(0));
   });
 
   it('skips whitespace and keeps scanning', () => {

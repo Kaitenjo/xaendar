@@ -19,7 +19,7 @@ import type { Span } from '../../../types/span.type';
 
 /**
  * A part of the template whose nodes are rendered together: the template itself, or the content of a template
- * (`<template #name(…)>`), rendered by each `@render` calling it.
+ * (`<template name(…)>`), rendered by each `@render` calling it.
  */
 type Level = TemplateNode | null;
 
@@ -157,7 +157,7 @@ function declareNames(nodes: readonly ASTNode[], names: ScopeNames, level: Level
   // The namespaces of the elements don't decide when they are created
   visitScopeDeclarations(nodes, 'html', {
     ref: (element, { name }) => declare(name, { position: element.span.start, level }),
-    template: template => declare(template.ref.name, { position: null, level, template }),
+    template: template => declare(template.declaration.name, { position: null, level, template }),
     let: node => declare(node.name, { position: node.span.end, level, let: node })
   });
 

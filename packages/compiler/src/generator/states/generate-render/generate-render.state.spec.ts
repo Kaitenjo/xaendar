@@ -34,7 +34,7 @@ describe('generateRender', () => {
   });
 
   it('throws for a name not referring to a template, pointing to it', async () => {
-    await expect(generateRender(parse('@render row()'), 'root', '0', new CompilerContext(), null)).rejects.toThrow(new Error('"row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one', { cause: { start: 8, end: 11 } }));
+    await expect(generateRender(parse('@render row()'), 'root', '0', new CompilerContext(), null)).rejects.toThrow(new Error('"row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one', { cause: { start: 8, end: 11 } }));
   });
 
   it('throws for a template creating its content in another namespace', async () => {

@@ -3,7 +3,7 @@ import { getTemplateSpan } from '../expression-validator/expression-validator';
 import { parseTemplateParameters } from './template-parameters.utils';
 
 /**
- * The offset of the parameters in the template, as the ones of `<template #row(`.
+ * The offset of the parameters in the template, as the ones of `<template row(`.
  */
 const OFFSET = 15;
 
@@ -38,7 +38,7 @@ describe('parseTemplateParameters', () => {
     ['a semicolon', 'item: Item; index: number'],
     ['a bracket closing nothing', 'item: Item]']
   ])('throws for %s, pointing to the parameters', (_description, text) => {
-    expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow('The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #row(item: Item, index: number)>');
+    expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow('The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template row(item: Item, index: number)>');
     expect(() => parseTemplateParameters(text, OFFSET, 'row')).toThrow(expect.objectContaining({ cause: { start: OFFSET, end: OFFSET + text.length } }));
   });
 

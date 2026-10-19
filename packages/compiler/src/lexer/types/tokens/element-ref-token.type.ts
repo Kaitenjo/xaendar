@@ -2,8 +2,7 @@ import { TokenType } from '../token-type.enum';
 import { TokenWithSpan } from '../token.type';
 
 /**
- * Token emitted when the lexer consumes an element ref, e.g. `#name` in `<input #name />`, or the declaration of a
- * template, e.g. `#row(item: Item)` in `<template #row(item: Item)>`.
+ * Token emitted when the lexer consumes an element ref, e.g. `#name` in `<input #name />`.
  */
 export type ElementRefToken = TokenWithSpan<{
   /**
@@ -11,8 +10,7 @@ export type ElementRefToken = TokenWithSpan<{
    */
   type: TokenType.ELEMENT_REF;
   /**
-   * The name of the variable, then the text of the parameters of the template (`item: Item` in `#row(item: Item)`,
-   * empty in `#empty()`) if it declares them.
+   * The name of the ref.
    */
-  parts: [name: string, parameters?: string];
+  parts: [name: string];
 }>

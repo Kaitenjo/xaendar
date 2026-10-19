@@ -1,7 +1,7 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 @import { Entry } from './entry.type.ts'
 
-<template #branch(entry: Entry)>
+<template branch(entry: Entry)>
   <li>
     <span class="{entry().children.length ? 'folder' : 'file'}">{ entry().name }</span>
     @if (entry().children.length) {

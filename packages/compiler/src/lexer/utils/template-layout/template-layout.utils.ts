@@ -1,4 +1,4 @@
-import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutLet, LayoutRender, LayoutElementRef } from '../../types/template-layout/template-layout.type';
+import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutLet, LayoutRender, LayoutElementRef, LayoutTemplateDeclaration } from '../../types/template-layout/template-layout.type';
 import { findClosing, findOutside } from '../balanced-text/balanced-text.utils';
 
 /**
@@ -358,7 +358,8 @@ function readItems(reader: Reader, end: 'tag' | 'paren' | 'brace'): LayoutItem[]
 }
 
 /**
- * Reads an item: an element ref, a directive, a conditional binding, an event or an attribute.
+ * Reads an item: an element ref, a directive, a conditional binding, an event, an attribute or the declaration of a
+ * template.
  *
  * @param reader - The reader, at the start of the item.
  * @returns The item.
@@ -383,7 +384,7 @@ function readItem(reader: Reader): LayoutItem {
     return block as LayoutConditionalBinding;
   }
 
-  return source[position] === '(' ? readEvent(reader) : readAttribute(reader);
+  return source[position] === '(' ? readEvent(reader) : readAttributeOrDeclaration(reader);
 }
 
 /**
@@ -416,14 +417,29 @@ function readValue(reader: Reader): string {
 }
 
 /**
- * Reads an attribute, with its value if it has one.
+ * Reads an attribute, with its value if it has one, or the declaration of a template, a name followed by the parameters
+ * of the template in parentheses.
  *
  * @param reader - The reader, at the start of the name.
- * @returns The attribute.
+ * @returns The attribute or the declaration.
+ * @throws If the parameters of the template are not closed.
  */
-function readAttribute(reader: Reader): LayoutAttribute {
+function readAttributeOrDeclaration(reader: Reader): LayoutAttribute | LayoutTemplateDeclaration {
+  const { source } = reader;
   const name = readName(reader, NAME);
-  if (reader.source[reader.position] !== '=') {
+  // Only a template declares a name followed by parentheses
+  if (source[reader.position] === '(') {
+    const end = findClosing(source, reader.position);
+    if (end === undefined) {
+      return fail('The parameters of a template are not closed');
+    }
+
+    const parameters = source.slice(reader.position + 1, end);
+    reader.position = end + 1;
+    return { kind: 'declaration', name, parameters };
+  }
+
+  if (source[reader.position] !== '=') {
     return { kind: 'attribute', name };
   }
 
@@ -450,28 +466,14 @@ function readEvent(reader: Reader): LayoutEvent {
 }
 
 /**
- * Reads an element ref, with the parameters of the template it declares if it has them.
+ * Reads an element ref.
  *
  * @param reader - The reader, on the `#`.
  * @returns The element ref.
- * @throws If its parameters are not closed.
  */
 function readElementRef(reader: Reader): LayoutElementRef {
-  const { source } = reader;
   reader.position++;
-  const ref: { -readonly [Key in keyof LayoutElementRef]: LayoutElementRef[Key] } = { kind: 'ref', name: readName(reader, NAME) };
-
-  if (source[reader.position] === '(') {
-    const end = findClosing(source, reader.position);
-    if (end === undefined) {
-      return fail('The parameters of a template are not closed');
-    }
-
-    ref.parameters = source.slice(reader.position + 1, end);
-    reader.position = end + 1;
-  }
-
-  return ref;
+  return { kind: 'ref', name: readName(reader, NAME) };
 }
 
 /**

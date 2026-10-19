@@ -21,7 +21,8 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
- * @returns The binding being written, `undefined` if the offset is not on the name of an attribute or event of an opening tag.
+ * @returns The binding being written, `undefined` if the offset is not on the name of an attribute or event of an opening tag,
+ *   or the tag is a `<template>`, which declares only its name and its parameters.
  */
 export function getBindingContext(source: string, offset: number): BindingContext | undefined {
   const before = source.slice(0, offset);
@@ -47,8 +48,12 @@ export function getBindingContext(source: string, offset: number): BindingContex
     return undefined;
   }
 
-  const inDirective = lexer.history.some(state => state === LexerState.DIRECTIVE || state === LexerState.STRUCTURAL_DIRECTIVE);
   const tagName = tokens.findLast((token): token is TagOpenNameToken => token.type === TokenType.TAG_OPEN_NAME)!.parts[0];
+  if (tagName === 'template') {
+    return undefined;
+  }
+
+  const inDirective = lexer.history.some(state => state === LexerState.DIRECTIVE || state === LexerState.STRUCTURAL_DIRECTIVE);
   const directive = inDirective
     ? tokens.findLast((token): token is DirectiveToken | StructuralDirectiveToken => token.type === TokenType.DIRECTIVE || token.type === TokenType.STRUCTURAL_DIRECTIVE)!.parts[0]
     : undefined;

@@ -10,6 +10,7 @@
     { "include": "#event" },
     { "include": "#directive" },
     { "include": "#element-ref" },
+    { "include": "#template-declaration" },
     { "include": "#control-flow" },
     { "include": "#control-flow-bare" },
     { "include": "#render" },
@@ -121,13 +122,19 @@
       ]
     },
     "element-ref": {
+      "match": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(?=[\\s/>])",
+      "captures": {
+        "1": { "name": "punctuation.definition.element-ref.xaendar" },
+        "2": { "name": "variable.other.constant.xaendar" }
+      }
+    },
+    "template-declaration": {
       "patterns": [
         {
-          "begin": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(\\()",
+          "begin": "(?<=<template)\\s+([A-Za-z_$][\\w$]*)(\\()",
           "beginCaptures": {
-            "1": { "name": "punctuation.definition.element-ref.xaendar" },
-            "2": { "name": "entity.name.function.xaendar" },
-            "3": { "name": "punctuation.definition.parameters.begin.xaendar" }
+            "1": { "name": "entity.name.function.xaendar" },
+            "2": { "name": "punctuation.definition.parameters.begin.xaendar" }
           },
           "end": "\\)",
           "endCaptures": {
@@ -155,13 +162,6 @@
             { "match": ",", "name": "punctuation.separator.parameter.xaendar" },
             { "include": "source.ts#type" }
           ]
-        },
-        {
-          "match": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(?=[\\s/>])",
-          "captures": {
-            "1": { "name": "punctuation.definition.element-ref.xaendar" },
-            "2": { "name": "variable.other.constant.xaendar" }
-          }
         }
       ]
     },

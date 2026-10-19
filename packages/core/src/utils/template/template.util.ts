@@ -12,7 +12,7 @@ import type { _Context } from '../context/context.util';
 type RenderTemplate = Function<[parentNode: Element, declarationContext: _Context, referenceNode: Comment | null, params: Computed<unknown>[]], _Context>;
 
 /**
- * A template declared in a template, e.g. `<template #row(item: Item)>`, as the scope declaring it holds it.
+ * A template declared in a template, e.g. `<template row(item: Item)>`, as the scope declaring it holds it.
  */
 export type _Template = {
   /**

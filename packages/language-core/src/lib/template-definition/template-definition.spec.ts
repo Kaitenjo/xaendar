@@ -170,11 +170,11 @@ describe('getTemplateDefinition of imported symbols', () => {
 
 describe('getTemplateDefinition of templates', () => {
   it('leads the name a @render calls to the declaration of the template, and the reads of a parameter to its declaration', async () => {
-    const source = '@render row(title)\n<template #row(label: string)>{ label() }</template>';
+    const source = '@render row(title)\n<template row(label: string)>{ label() }</template>';
     const templates = (await project.analyze(source)).analysis!;
     const definitionsAt = (offset: number) => getTemplateDefinition(templates, offset).map(({ fileName, span }) => [fileName.replace(`${project.root}/`, ''), source.slice(span.start, span.end), span.start]);
 
-    expect(definitionsAt(source.indexOf('row') + 1)).toEqual([['src/app.html', 'row', source.indexOf('#row') + 1]]);
+    expect(definitionsAt(source.indexOf('row') + 1)).toEqual([['src/app.html', 'row', source.indexOf('row(label')]]);
     expect(definitionsAt(source.indexOf('label()') + 1)).toEqual([['src/app.html', 'label', source.indexOf('label:')]]);
   }, TIMEOUT);
 });

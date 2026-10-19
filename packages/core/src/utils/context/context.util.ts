@@ -96,11 +96,9 @@ export class _Context {
    * @param value - The value of the variable.
    */
   public set(name: string, value: unknown): void {
-    if (this._variables.has(name)) {
-      this._variables.set(name, value);
-    } else {
-      this._parent.set(name, value);
-    }
+    this._variables.has(name)
+      ? this._variables.set(name, value)
+      : this._parent.set(name, value);
   }
 
   /**

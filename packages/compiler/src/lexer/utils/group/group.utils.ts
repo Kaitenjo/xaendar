@@ -5,7 +5,7 @@ import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
  * Consumes a group up to the character closing the one opening it, already consumed, and the closing character too:
  * - `<…>`, e.g. the type arguments of a directive, `string, Map<string, number>` in `@@selector<string, Map<string, number>>(...)`;
  * - `(…)`, e.g. the type arguments of a web component, `string, (value: number) => void` in `<my-list(string, (value: number) => void)>`,
- *   or the parameters of a template, `item: Item` in `<template #row(item: Item)>`.
+ *   or the parameters of a template, `item: Item` in `<template row(item: Item)>`.
  *
  * The groups of the same kind nested in it don't close it, nor do the characters inside a string (an escaped quote
  * doesn't close the string), nor the `>` of the arrow of a function type.

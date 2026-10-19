@@ -94,7 +94,7 @@ describe('typeCheckScope', () => {
   });
 
   it('declares the templates of the scope, however deeply nested, with the parameters of the functions their content is checked in', () => {
-    const template = '<div><template #row(item: Item, index: number) /></div><svg><template #empty() /></svg>';
+    const template = '<div><template row(item: Item, index: number) /></div><svg><template empty() /></svg>';
     const context = new TypeCheckContext();
     const skipTemplates: ProcessNode = (node, nodeContext) => (node.type === ASTNodeType.Template ? [] : processNode(node, nodeContext));
     const { declarations } = typeCheckScope(parse(template), context, skipTemplates);

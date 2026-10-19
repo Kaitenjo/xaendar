@@ -17,7 +17,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes an element ref, and the declaration of a template with its parameters', () => {
-    const tokens = new Lexer('<input #name type="text" />\n<template #row(item: Item)></template>').tokenize();
+    const tokens = new Lexer('<input #name type="text" />\n<template row(item: Item)></template>').tokenize();
     expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
       [TokenType.TAG_OPEN_NAME, ['input']],
       [TokenType.ELEMENT_REF, ['name']],
@@ -25,7 +25,7 @@ describe('Lexer', () => {
       [TokenType.ATTRIBUTE_VALUE, ['text']],
       [TokenType.TAG_SELF_CLOSE, []],
       [TokenType.TAG_OPEN_NAME, ['template']],
-      [TokenType.ELEMENT_REF, ['row', 'item: Item']],
+      [TokenType.TEMPLATE_DECLARATION, ['row', 'item: Item']],
       [TokenType.TAG_OPEN_END, []],
       [TokenType.TAG_CLOSE_NAME, ['template']]
     ]);

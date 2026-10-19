@@ -71,7 +71,7 @@ export enum ASTNodeType {
    */
   StructuralDirective,
   /**
-   * The declaration of a template with parameters, `<template #name(…)>`.
+   * The declaration of a template with parameters, `<template name(…)>`.
    */
   Template,
   /**

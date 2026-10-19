@@ -10,7 +10,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 
 describe('typeCheckTemplate', () => {
   it('checks the content in an arrow function taking the signals of the parameters, mapped onto their names and types', () => {
-    const template = '<template #row(item: Item, index: number)><p /></template>';
+    const template = '<template row(item: Item, index: number)><p /></template>';
     const contexts = new Array<TypeCheckContext>();
     const processNode: ProcessNode = (_node, context) => {
       contexts.push(context);
@@ -40,7 +40,7 @@ describe('typeCheckTemplate', () => {
   });
 
   it('initializes the parameters whose argument may be left out, with their default value or undefined', () => {
-    const template = '<template #row(item: Item, label = item().name + suffix, dense: boolean = false, count?: number)></template>';
+    const template = '<template row(item: Item, label = item().name + suffix, dense: boolean = false, count?: number)></template>';
     const [first] = typeCheckTemplate(parse(template), () => [], new TypeCheckContext());
 
     expect(first.text).toBe('const __template0 = (item: __Parameter<Item>, label = __default(item().name + root.suffix), dense = __default<boolean>(false), count = __optional<number>()): void => {');
@@ -52,7 +52,7 @@ describe('typeCheckTemplate', () => {
   });
 
   it('checks the content of a template without parameters in an arrow function without parameters, declaring the names of its scope', () => {
-    const lines = typeCheckTemplate(parse('<template #row()><input #field /></template>'), () => [], new TypeCheckContext());
+    const lines = typeCheckTemplate(parse('<template row()><input #field /></template>'), () => [], new TypeCheckContext());
 
     expect(lines.map(({ text }) => text)).toEqual([
       'const __template0 = (): void => {',

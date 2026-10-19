@@ -35,7 +35,7 @@ import { checkVariableOrder } from '../utils/variable-order/variable-order.utils
  *   DOM node; an expression only references the elements a template
  *   variable names (`#name`), which are declared at the start of the block
  *   of their scope, typed with the type of the element. A template
- *   (`<template #name(…)>`) is declared there too, its content is an arrow
+ *   (`<template name(…)>`) is declared there too, its content is an arrow
  *   function taking its parameters, and a `@render` calls it. A `@let` is
  *   declared there too, typed with the constant its value is checked in.
  * - No control-flow block gets its own function. In the JS output, each

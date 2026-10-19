@@ -8,7 +8,7 @@
 </ul>
 <ex-button (click)="promote()">promote()</ex-button>
 
-<template #row(person: Member, position: number)>
+<template row(person: Member, position: number)>
   <li>
     <span class="position">{ position() + 1 }</span>
     <span class="name">{ person().name }</span>

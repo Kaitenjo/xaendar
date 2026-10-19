@@ -48,7 +48,7 @@ export type TemplateSemanticToken = {
  * - the selector of a directive or structural directive: `decorator`;
  * - the element refs (`#name`), the variables of a `@for` block, the parameters of a template, the `@let` and
  *   `$event`, where declared and where read, the head of a handler called on a variable included: `variable`, `readonly`;
- * - the name of a template, where declared (`<template #name(…)>`) and where rendered (`@render name(…)`): `function`.
+ * - the name of a template, where declared (`<template name(…)>`) and where rendered (`@render name(…)`): `function`.
  *
  * The tag names, of components too, and the native attributes and events are left to the grammar.
  *
@@ -88,8 +88,8 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add(span, 'variable', ['readonly']);
       }
     },
-    template: ({ ref, parameters }) => {
-      add(ref.nameSpan, 'function');
+    template: ({ declaration, parameters }) => {
+      add(declaration.nameSpan, 'function');
       for (let i = 0; i < parameters.length; i++) {
         add(parameters[i].nameSpan, 'variable', ['readonly']);
       }

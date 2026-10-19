@@ -133,7 +133,9 @@ export class CustomElement extends HTMLElement {
     this.onInit?.();
     const unwatchFns = this._context.getUnlistenFns();
     this._context = render.call(this);
-    this._context.addUnlistener(...unwatchFns);
+    if (unwatchFns.length) {
+      this._context.addUnlistener(...unwatchFns);
+    }
     for (let i = 0; i < this[CONNECTED_HOOKS].length; i++) {
       this[CONNECTED_HOOKS][i]();
     }

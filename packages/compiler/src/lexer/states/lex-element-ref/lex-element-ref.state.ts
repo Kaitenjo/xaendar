@@ -2,29 +2,21 @@ import { CR, EQUAL_THEN, GREATER_THEN, LF, LPAREN, SLASH, SPACE, TAB } from '../
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import type { MaybeTokenWithSpan, Token } from '../../types/token.type';
-import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
-import type { ElementRefToken } from '../../types/tokens/element-ref-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
-import { lexGroup } from '../../utils/group/group.utils';
 
 /**
- * Consumes an element ref, after the `#` already consumed by the tag body, and transitions back to TAG_BODY:
- * - `#name` names the element it is declared on, e.g. `<input #name />`;
- * - `#name(…)` declares a template, and is only valid on a `<template>`, e.g. `<template #row(item: Item)>`: the
- *   parameters are read up to the parenthesis closing them, and are the second part of the token (empty for `#name()`).
+ * Consumes an element ref, after the `#` already consumed by the tag body, and transitions back to TAG_BODY: `#name`
+ * names the element it is declared on, e.g. `<input #name />`.
  *
  * @param cursor - The lexer cursor positioned right after `#`.
- * @param context - The lexer context, whose tokens tell the element the variable is declared on.
+ * @param _context - Unused lexer context.
  * @returns Transition result with the ELEMENT_REF token and the TAG_BODY state.
- * @throws If the name is empty or given a value, the parameters are declared on an element other than a `<template>`
- *   or twice, or they are not followed by a whitespace, `/` or `>`.
+ * @throws If the name is empty, or followed by parentheses or a value.
  */
-export function lexElementRef(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexElementRef(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let name = '';
-  let parameters: string | undefined;
   let retVal!: LexerTransitionFunctionReturnType;
 
   while (read) {
@@ -39,61 +31,24 @@ export function lexElementRef(cursor: LexerCursor, context: LexerTransitionFunct
         assertName(name);
         retVal = {
           state: LexerState.TAG_BODY,
-          tokens: [toElementRefToken(name, parameters)]
+          tokens: [{ type: TokenType.ELEMENT_REF, parts: [name] }]
         };
         read = false;
         break;
 
       case LPAREN:
-        assertName(name);
-        if (parameters !== undefined) {
-          throw 'A template declares its parameters only once, right after its name';
-        }
-
-        if (getTagName(context.tokens) !== 'template') {
-          throw 'Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name';
-        }
-
-        // Consume '('
-        cursor.advance();
-        parameters = lexGroup(cursor, LPAREN);
-        break;
+        throw 'An element ref is just #name, without parentheses';
 
       case EQUAL_THEN:
         throw 'An element ref takes no value: write #name, which names the element it is declared on';
 
       default:
-        if (parameters !== undefined) {
-          throw 'The parameters of a template must be followed by a whitespace, / or >, e.g. <template #row(item: Item)>';
-        }
-
         cursor.advance();
         name = `${name}${cursor.currentChar.value}`;
     }
   }
 
   return retVal;
-}
-
-/**
- * Builds the token of an element ref.
- *
- * @param name - The name of the variable.
- * @param parameters - The text of the parameters, if the variable declares a template.
- * @returns The token, whose second part is the text of the parameters only when the variable declares them.
- */
-function toElementRefToken(name: string, parameters: string | undefined): MaybeTokenWithSpan<ElementRefToken> {
-  return parameters === undefined ? { type: TokenType.ELEMENT_REF, parts: [name] } : { type: TokenType.ELEMENT_REF, parts: [name, parameters] };
-}
-
-/**
- * Returns the tag name of the element whose opening tag is being lexed: the one of the last opening tag emitted.
- *
- * @param tokens - The tokens emitted so far.
- * @returns The tag name, `undefined` if no opening tag was emitted.
- */
-function getTagName(tokens: readonly Token[]): string | undefined {
-  return tokens.findLast((token): token is TagOpenNameToken => token.type === TokenType.TAG_OPEN_NAME)?.parts[0];
 }
 
 /**

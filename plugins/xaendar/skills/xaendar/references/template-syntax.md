@@ -78,12 +78,12 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
   @render row(item(), $index())                  <!-- arguments checked like a call -->
 }
 
-<template #row(row: Row, index: number)>         <!-- renders nothing where declared -->
+<template row(row: Row, index: number)>         <!-- renders nothing where declared -->
   <li>{ index() + 1 }. { row().name }</li>       <!-- parameters are signals -->
 </template>
 ```
 
-- `<template #name(params)>` declares a template: only `#name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is reactive. No rest or destructuring.
+- `<template name(params)>` declares a template: only `name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is reactive. No rest or destructuring.
 - `@render name(args)` renders a new instance wherever content goes. A changed argument updates only the nodes reading its parameter. No spread arguments.
 - Visible in the whole of its scope, like an element ref. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
 - Content created in the namespace of the declaration: a `@render` in another namespace is an error. An element ref the content reads must come before every `@render`. Only the declaring template renders it.
@@ -236,5 +236,5 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 | `(keydown.enter)` | A filter in the method |
 | `@empty`, `@defer` | `@if` around the `@for`; dynamic imports |
 | Pipes | Methods (in text) and computed signals |
-| `ng-template` + `ngTemplateOutlet` | `<template #name(…)>` + `@render name(…)`, in the same template |
+| `ng-template` + `ngTemplateOutlet` | `<template name(…)>` + `@render name(…)`, in the same template |
 | `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |

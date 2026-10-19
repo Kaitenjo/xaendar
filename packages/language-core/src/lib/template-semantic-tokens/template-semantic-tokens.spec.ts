@@ -68,7 +68,7 @@ describe('getTemplateSemanticTokens', () => {
   }, TIMEOUT);
 
   it('colors the name of a template where declared and where rendered, and its parameters where declared and where read', async () => {
-    const source = '@render row(title)\n<template #row(label: string, shown = !label())>{ label() }</template>';
+    const source = '@render row(title)\n<template row(label: string, shown = !label())>{ label() }</template>';
     const { analysis } = await project.analyze(source);
 
     expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([

@@ -227,14 +227,14 @@ describe('parseElement', () => {
 
   describe('templates', () => {
     it('parses a <template> into the declaration of a template, with its name, its parameters and its content', () => {
-      const template = '<template #row(item: Item, index: number)><li>{ item() }</li></template>';
+      const template = '<template row(item: Item, index: number)><li>{ item() }</li></template>';
       const [node] = parse(template) as TemplateNode[];
       const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
       expect(node).toMatchObject({
         type: ASTNodeType.Template,
         nameSpan: { start: 1, end: 9 },
         closeNameSpan: { start: template.lastIndexOf('template'), end: template.lastIndexOf('template') + 8 },
-        ref: { name: 'row', nameSpan: at('row'), span: at('#row') },
+        declaration: { name: 'row', nameSpan: at('row') },
         parameters: [
           { name: 'item', nameSpan: at('item'), type: 'Item', typeSpan: at('Item') },
           { name: 'index', nameSpan: at('index'), type: 'number', typeSpan: at('number') }
@@ -245,38 +245,38 @@ describe('parseElement', () => {
     });
 
     it('parses a self-closing template without parameters', () => {
-      const [node] = parse('<template #empty() />') as TemplateNode[];
+      const [node] = parse('<template empty() />') as TemplateNode[];
       expect(node).toMatchObject({ type: ASTNodeType.Template, parameters: [], children: [] });
       expect(node).not.toHaveProperty('closeNameSpan');
     });
 
     it('throws for a <template> without name, pointing to its tag name', () => {
       const template = '<template></template>';
-      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template #row(item: Item)>, then render it with @render row(item())');
+      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())');
       expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 1, end: 9 } }));
     });
 
     it('throws for a template without parameters, pointing to its name', () => {
-      const template = '<template #row></template>';
-      expect(() => parse(template)).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template #row()>');
-      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 10, end: 14 } }));
+      const template = '<template row></template>';
+      expect(() => parse(template)).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template row()>');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 10, end: 13 } }));
     });
 
     it.each([
-      ['type arguments', '<template(string) #row()></template>', 'string'],
-      ['an attribute', '<template #row() class="a"></template>', 'class="a"'],
-      ['a class binding', '<template #row() [class.on]="{a}"></template>', '[class.on]'],
-      ['an event', '<template #row() (click)="go()"></template>', '(click)="go()"'],
-      ['a conditional binding', '<template #row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
-      ['a directive', '<template #row() @@tint></template>', 'tint'],
-      ['a structural directive', '<template #row() *hasRole></template>', 'hasRole']
+      ['type arguments', '<template(string) row()></template>', 'string'],
+      ['an attribute', '<template row() class="a"></template>', 'class="a"'],
+      ['a class binding', '<template row() [class.on]="{a}"></template>', '[class.on]'],
+      ['an event', '<template row() (click)="go()"></template>', '(click)="go()"'],
+      ['a conditional binding', '<template row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
+      ['a directive', '<template row() @@tint></template>', 'tint'],
+      ['a structural directive', '<template row() *hasRole></template>', 'hasRole']
     ])('throws for a template declaring %s, pointing to it', (_description, template, binding) => {
-      expect(() => parse(template)).toThrow('A <template> declares only its name and its parameters, e.g. <template #row(item: Item)>: it renders nothing where it is declared, but where a @render calls it');
+      expect(() => parse(template)).toThrow('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it');
       expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(binding) }) }));
     });
 
     it('throws for invalid parameters', () => {
-      expect(() => parse('<template #row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type or a default value, e.g. item: string or item = \'\'');
+      expect(() => parse('<template row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type or a default value, e.g. item: string or item = \'\'');
     });
   });
 

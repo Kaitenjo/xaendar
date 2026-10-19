@@ -225,7 +225,7 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
       add(`context.declare('${name}');`);
     },
     template: (template, namespace) => {
-      const { name } = template.ref;
+      const { name } = template.declaration;
       const key = `template_${name}_${template.span.start}`;
       compilerContext.addIdentifier(name, 'value');
       compilerContext.addTemplate(name, namespace);

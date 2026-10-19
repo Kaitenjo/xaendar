@@ -1,4 +1,4 @@
-<template #card(title: string, item: Item)>       <!-- declares the template: its name, then its typed parameters -->
+<template card(title: string, item: Item)>       <!-- declares the template: its name, then its typed parameters -->
   <h3>{ title() }</h3>                            <!-- a parameter is a signal -->
   <p>{ item().description }</p>
 </template>
@@ -6,4 +6,4 @@
 @render card('First', items()[0])                 <!-- renders an instance here -->
 @render card('Second', items()[1])                <!-- and another one here -->
 
-<template #divider() />                           <!-- the parentheses are written without parameters too -->
+<template divider() />                           <!-- the parentheses are written without parameters too -->

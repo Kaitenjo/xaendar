@@ -10,7 +10,7 @@ import { assertDeclaredName } from '../identifier/identifier.utils';
 const FUNCTION_PREFIX = 'function __template(';
 
 /**
- * Parses the parameters of a template, e.g. `item: Item, index: number` in `<template #row(item: Item, index: number)>`,
+ * Parses the parameters of a template, e.g. `item: Item, index: number` in `<template row(item: Item, index: number)>`,
  * as the ones of a function: each one is a name followed by its type, which may be any type, imported ones included.
  * A parameter may be optional (`count?: number`), or have a default value, with its type (`dense: boolean = false`) or
  * typed by the value (`dense = false`): its argument may then be left out, so only the last parameters may be so.
@@ -34,7 +34,7 @@ export function parseTemplateParameters(text: string, offset: number, template: 
   const declaration = sourceFile.statements[0];
 
   if (sourceFile.statements.length !== 1 || !isFunctionDeclaration(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
-    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template #${template}(item: Item, index: number)>`, { cause: toSpan(FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
+    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toSpan(FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
   }
 
   const parameters = new Array<TemplateParameterNode>();

@@ -68,8 +68,8 @@ describe('getTemplateDiagnostics', () => {
       '@render row(items[0], \'a\')',
       '@render row(items[0])',
       '@render row(items[0], 1, 2)',
-      '<template #row(item: Row, index: number)>{ item().id } { item().nam } { index().toFixed() }</template>',
-      '<template #wrong(value: Nope) />'
+      '<template row(item: Row, index: number)>{ item().id } { item().nam } { index().toFixed() }</template>',
+      '<template wrong(value: Nope) />'
     ].join('\n');
 
     // The templates are declared at the start of their scope, before the @render, and their parameters are checked with their content
@@ -90,10 +90,10 @@ describe('getTemplateDiagnostics', () => {
       '@render row(items[0], undefined)',
       '@render row(items[0], \'x\', 1)',
       '@render row()',
-      '<template #row(item: Row, label = \'#\' + item().id, dense: boolean = title === \'\', count?: number)>',
+      '<template row(item: Row, label = \'#\' + item().id, dense: boolean = title === \'\', count?: number)>',
       '  { label().toUpperCase() } { dense() } { count().toFixed() } { label().nope }',
       '</template>',
-      '<template #wrong(first: number = \'a\', second = third(), third: number = 1) />'
+      '<template wrong(first: number = \'a\', second = third(), third: number = 1) />'
     ].join('\n');
 
     expect(await diagnose(source)).toEqual([
@@ -109,9 +109,9 @@ describe('getTemplateDiagnostics', () => {
 
   it('reports the render of a name that is not a template, and the reads of a template before the elements they need', async () => {
     expect(await diagnose('<input #field />\n@render field()')).toEqual([
-      ['field', '"field" is not a template visible here: declare it with <template #field(…)> in this scope or in an enclosing one', DiagnosticCategory.Error]
+      ['field', '"field" is not a template visible here: declare it with <template field(…)> in this scope or in an enclosing one', DiagnosticCategory.Error]
     ]);
-    expect(await diagnose('@render row()\n<input #field />\n<template #row()>{ field.value }</template>')).toEqual([
+    expect(await diagnose('@render row()\n<input #field />\n<template row()>{ field.value }</template>')).toEqual([
       ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);

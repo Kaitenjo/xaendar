@@ -120,47 +120,47 @@ describe('checkVariableOrder', () => {
     const readByRender = (name: string, callee: string) => `"${name}" is read by the template rendered by @render ${callee} before the element it names is created: render the template after the element, or read the ref from an event handler`;
 
     it('checks the arguments of a @render, evaluated when it is rendered', () => {
-      expect(errorsOf('@render row(field.value)<input #field /><template #row(value: string) />')).toEqual([[readBefore('field'), 'field']]);
+      expect(errorsOf('@render row(field.value)<input #field /><template row(value: string) />')).toEqual([[readBefore('field'), 'field']]);
     });
 
     it('checks the reads of the content of a template against its own element refs, and accepts its parameters and the templates', () => {
-      expect(errorsOf('<template #row(item: Item)><p>{ item() } { other } { inner.value }</p><input #inner /><template #other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
+      expect(errorsOf('<template row(item: Item)><p>{ item() } { other } { inner.value }</p><input #inner /><template other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
     });
 
     it('checks the default values of the parameters like the content of the template, against its own element refs and each @render', () => {
-      expect(errorsOf('<template #row(label = inner.value)><input #inner /></template>')).toEqual([[readBefore('inner'), 'inner']]);
-      expect(errorsOf('@render row()<input #field /><template #row(label = field.value) />')).toEqual([[readByRender('field', 'row'), 'row']]);
-      expect(errorsOf('<input #field /><template #row(item: Item, label = item().name + field.value) />@render row(1)')).toBeUndefined();
+      expect(errorsOf('<template row(label = inner.value)><input #inner /></template>')).toEqual([[readBefore('inner'), 'inner']]);
+      expect(errorsOf('@render row()<input #field /><template row(label = field.value) />')).toEqual([[readByRender('field', 'row'), 'row']]);
+      expect(errorsOf('<input #field /><template row(item: Item, label = item().name + field.value) />@render row(1)')).toBeUndefined();
     });
 
     it('checks the element refs declared outside of a template, which its content reads, against each @render of the template', () => {
-      const template = '<template #row()><p>{ field.value }</p></template>@render row()<input #field />@render row()';
+      const template = '<template row()><p>{ field.value }</p></template>@render row()<input #field />@render row()';
       expect(errorsOf(template)).toEqual([[readByRender('field', 'row'), 'row']]);
       const callee = template.indexOf('@render row()') + '@render '.length;
       expect(checkVariableOrder(parse(template))![0].cause).toEqual({ start: callee, end: callee + 3 });
     });
 
     it('accepts the reads of a template rendered after the elements it reads, and the reads of its event handlers', () => {
-      expect(errorsOf('<input #field />@render row()<template #row()><p (click)="pick(late)">{ field.value }</p></template><input #late />')).toBeUndefined();
+      expect(errorsOf('<input #field />@render row()<template row()><p (click)="pick(late)">{ field.value }</p></template><input #late />')).toBeUndefined();
     });
 
     it('spreads the reads of a template to the templates rendering it, up to the part of the template declaring what they read', () => {
       const template = [
         '@render outer()',
         '<input #field />',
-        '<template #outer()>@render inner()</template>',
-        '<template #inner()><p>{ field.value }</p></template>',
+        '<template outer()>@render inner()</template>',
+        '<template inner()><p>{ field.value }</p></template>',
         '@render outer()'
       ].join('');
       expect(errorsOf(template)).toEqual([[readByRender('field', 'outer'), 'outer']]);
     });
 
     it('checks an element ref declared in the content of a template, read by a template the content renders', () => {
-      expect(errorsOf('<template #outer()>@render inner()<input #field /><template #inner()>{ field.value }</template></template>')).toEqual([[readByRender('field', 'inner'), 'inner']]);
+      expect(errorsOf('<template outer()>@render inner()<input #field /><template inner()>{ field.value }</template></template>')).toEqual([[readByRender('field', 'inner'), 'inner']]);
     });
 
     it('terminates on a recursive template', () => {
-      expect(errorsOf('<template #tree(node: Node)>{ field.value }@for (child of node().children; track child()) { @render tree(child()) }</template><input #field />@render tree(root)')).toBeUndefined();
+      expect(errorsOf('<template tree(node: Node)>{ field.value }@for (child of node().children; track child()) { @render tree(child()) }</template><input #field />@render tree(root)')).toBeUndefined();
     });
 
     it('ignores the @render of a name that is not a template, which the type-check reports', () => {
@@ -184,7 +184,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('reports a @let read by a template rendered before it, and by the track expression of a @for', () => {
-      expect(errorsOf('@render row()<template #row()>{ total }</template>@let total = 1;')).toEqual([[
+      expect(errorsOf('@render row()<template row()>{ total }</template>@let total = 1;')).toEqual([[
         '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler', 'row'
       ]]);
       expect(errorsOf('@let total = 1;@for (item of items(); track total + item()) { }')).toEqual([[

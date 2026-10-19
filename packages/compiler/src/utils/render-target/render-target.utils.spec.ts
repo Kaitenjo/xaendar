@@ -9,7 +9,7 @@ describe('assertRenderTarget', () => {
   });
 
   it('throws for a name not referring to a template, pointing to it', () => {
-    expect(() => assertRenderTarget('row', span, undefined, 'html')).toThrow(new Error('"row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one', { cause: span }));
+    expect(() => assertRenderTarget('row', span, undefined, 'html')).toThrow(new Error('"row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one', { cause: span }));
   });
 
   it.each([

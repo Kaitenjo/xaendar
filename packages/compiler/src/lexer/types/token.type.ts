@@ -30,6 +30,7 @@ import { TagCloseNameToken } from './tokens/tag-close-name-token.type';
 import { TagCloseToken } from './tokens/tag-close-token.type';
 import { TagOpenNameToken } from './tokens/tag-open-name-token.type';
 import { TagSelfCloseToken } from './tokens/tag-self-close-token.type';
+import { TemplateDeclarationToken } from './tokens/template-declaration-token.type';
 import { ElementRefToken } from './tokens/element-ref-token.type';
 import { TextToken } from './tokens/text-token.type';
 
@@ -64,6 +65,7 @@ export type Token =
   | DirectiveCloseToken
   | StructuralDirectiveToken
   | ElementRefToken
+  | TemplateDeclarationToken
   | RenderToken
   | RenderCallToken
   | LetToken
@@ -98,6 +100,7 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<DirectiveCloseToken>
   | MaybeTokenWithSpan<StructuralDirectiveToken>
   | MaybeTokenWithSpan<ElementRefToken>
+  | MaybeTokenWithSpan<TemplateDeclarationToken>
   | MaybeTokenWithSpan<RenderToken>
   | MaybeTokenWithSpan<RenderCallToken>
   | MaybeTokenWithSpan<LetToken>

@@ -108,10 +108,14 @@ export enum TokenType {
    */
   STRUCTURAL_DIRECTIVE,
   /**
-   * An element ref, e.g. `#name` in `<input #name />`, or the declaration of a template, e.g. `#row(item: Item)`
-   * in `<template #row(item: Item)>`.
+   * An element ref, e.g. `#name` in `<input #name />`.
    */
   ELEMENT_REF,
+  /**
+   * The declaration of a template on a `<template>`, its name and its parameters, e.g. `row(item: Item)` in
+   * `<template row(item: Item)>`.
+   */
+  TEMPLATE_DECLARATION,
   /**
    * Opening keyword of a `@render`, e.g. `@render` in `@render row(item())`.
    */

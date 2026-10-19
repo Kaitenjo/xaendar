@@ -56,15 +56,15 @@ describe('visitScopeDeclarations', () => {
   });
 
   it('visits nothing without a callback', () => {
-    expect(() => visitScopeDeclarations(parse('<input #name /><template #row() />'), 'html', {})).not.toThrow();
+    expect(() => visitScopeDeclarations(parse('<input #name /><template row() />'), 'html', {})).not.toThrow();
   });
 
   it('visits the templates of the scope with the namespace of their content, but not the declarations of their content', () => {
     const templates = new Array<[name: string, namespace: string]>();
     const variables = new Array<string>();
-    visitScopeDeclarations(parse('<template #row(item: Item)><input #inRow /><template #inner() /></template><svg><template #dot() /></svg>'), 'html', {
+    visitScopeDeclarations(parse('<template row(item: Item)><input #inRow /><template inner() /></template><svg><template dot() /></svg>'), 'html', {
       ref: (_element, { name }) => variables.push(name),
-      template: ({ ref: { name } }, namespace) => templates.push([name, namespace])
+      template: ({ declaration: { name } }, namespace) => templates.push([name, namespace])
     });
 
     expect(templates).toEqual([['row', 'html'], ['dot', 'svg']]);
@@ -73,10 +73,10 @@ describe('visitScopeDeclarations', () => {
 
   it('visits the @let of the scope, however deeply nested, together with the other declarations in the order they are written', () => {
     const names = new Array<string>();
-    const template = '@let first = 1;<div><input #name />@let second = 2;</div><template #row() />@if (open()) { @let inBranch = 3; }';
+    const template = '@let first = 1;<div><input #name />@let second = 2;</div><template row() />@if (open()) { @let inBranch = 3; }';
     visitScopeDeclarations(parse(template), 'html', {
       ref: (_element, { name }) => names.push(name),
-      template: ({ ref: { name } }) => names.push(name),
+      template: ({ declaration: { name } }) => names.push(name),
       let: ({ name }) => names.push(name)
     });
 

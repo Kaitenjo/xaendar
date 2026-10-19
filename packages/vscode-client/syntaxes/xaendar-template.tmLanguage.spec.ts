@@ -195,8 +195,8 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'Item)/')).toContain('entity.name.type.ts');
   });
 
-  it('colors the element refs, and the declaration of a template with its parameters, leaving the # of the values alone', () => {
-    const template = '<input #field type="text" /><p data-color="#fde68a" href="#top">Issue #42</p><template #row(item: Item, index: number)></template>';
+  it('colors the element refs, leaving the # of the values alone, and the declaration of a template with its parameters', () => {
+    const template = '<input #field type="text" /><p data-color="#fde68a" href="#top">Issue #42, see fn(1)</p><template row(item: Item, index: number)></template>';
 
     expect(scopesOf(template, '#field')).toContain('punctuation.definition.element-ref.xaendar');
     expect(scopesOf(template, 'field')).toContain('variable.other.constant.xaendar');
@@ -204,6 +204,7 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'fde68a')).not.toContain('variable.other.constant.xaendar');
     expect(scopesOf(template, 'top')).not.toContain('variable.other.constant.xaendar');
     expect(scopesOf(template, '42')).not.toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, 'fn')).not.toContain('entity.name.function.xaendar');
     expect(scopesOf(template, 'row')).toContain('entity.name.function.xaendar');
     expect(scopesOf(template, '(item')).toContain('punctuation.definition.parameters.begin.xaendar');
     expect(scopesOf(template, 'item:')).toContain('variable.parameter.xaendar');
@@ -215,7 +216,7 @@ describe('xaendar-template grammar', () => {
   });
 
   it('colors the optional parameters of a template, and the default values as expressions', () => {
-    const template = '<template #row(item: Item, label = format(item(), 2), dense: boolean = false, count?: number, run: Handler = noop)></template>';
+    const template = '<template row(item: Item, label = format(item(), 2), dense: boolean = false, count?: number, run: Handler = noop)></template>';
 
     expect(scopesOf(template, 'label')).toContain('variable.parameter.xaendar');
     expect(scopesOf(template, '= format')).toContain('keyword.operator.assignment.xaendar');

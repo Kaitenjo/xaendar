@@ -18,7 +18,7 @@ import { DEFAULT, getContentFunction, OPTIONAL, PARAMETER } from '../../utils/te
  * in JavaScript: it reads the names the content reads, and the parameters before it.
  *
  * @example
- * // <template #row(item: Item, dense: boolean = false, count?: number)>…</template>
+ * // <template row(item: Item, dense: boolean = false, count?: number)>…</template>
  * const __template12 = (item: __Parameter<Item>, dense = __default<boolean>(false), count = __optional<number>()): void => {
  *   …
  * };

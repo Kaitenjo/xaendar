@@ -33,7 +33,7 @@ describe('TypeChecker', () => {
   });
 
   it('declares the templates at the start of their scope, checks their content in an arrow function and their @render as a call, with the helpers they need before the function', async () => {
-    const template = '@render row(title, 1)\n<template #row(label: string, count: number)><p>{ label() }</p></template>';
+    const template = '@render row(title, 1)\n<template row(label: string, count: number)><p>{ label() }</p></template>';
     const start = template.indexOf('<template');
     const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([]);
 
@@ -107,7 +107,7 @@ describe('TypeChecker', () => {
   it.each([
     ['read before it', '<p>{ total }</p>@let total = 1;', '"total" is read before its @let: only an event handler can read a @let declared after it'],
     ['read by its own value', '@let total = total + 1;', '"total" is read before its @let'],
-    ['read by a template rendered before it', '@render row()<template #row()>{ total }</template>@let total = 1;', '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler'],
+    ['read by a template rendered before it', '@render row()<template row()>{ total }</template>@let total = 1;', '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler'],
     ['read by the track expression of a @for', '@for (item of items; track total) { @let total = 1; }', 'The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables']
   ])('fails on a @let %s', async (_description, template, message) => {
     await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow(message);

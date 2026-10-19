@@ -41,7 +41,7 @@ export type TemplateVisitor = {
    */
   readonly forBlock?: (node: ForNode) => void;
   /**
-   * Invoked for every template declared (`<template #name(…)>`).
+   * Invoked for every template declared (`<template name(…)>`).
    */
   readonly template?: (node: TemplateNode) => void;
   /**
@@ -100,7 +100,7 @@ class TemplateWalker {
     // The namespaces of the elements don't matter here
     visitScopeDeclarations(nodes, 'html', {
       ref: (_element, { name }) => declare(name),
-      template: ({ ref: { name } }) => declare(name),
+      template: ({ declaration: { name } }) => declare(name),
       let: ({ name }) => declare(name)
     });
 

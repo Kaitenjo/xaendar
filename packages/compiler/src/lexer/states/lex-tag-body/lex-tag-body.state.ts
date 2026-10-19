@@ -4,19 +4,21 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { isConditionalBindingKeyword } from '../../utils/conditional-binding/conditional-binding.utils';
+import { expectsTemplateDeclaration } from '../../utils/template-declaration/template-declaration.utils';
 
 /**
  * Scans the body of an open tag to determine what comes next:
  * a conditional binding (`@if`, `@switch`), a directive (`@@`), a structural directive (`*`), an element ref (`#`),
- * an event binding (`(`), an attribute, the end of the tag (`>` or `/`), or whitespace.
+ * an event binding (`(`), the declaration of a template on a `<template>` (`row(item: Item)`), an attribute, the end of the
+ * tag (`>` or `/`), or whitespace.
  * Transitions to the appropriate state without emitting any tokens.
  *
  * @param cursor - The lexer cursor positioned inside a tag body.
- * @param _context - Unused lexer context.
+ * @param context - The lexer context, whose tokens tell whether the tag is a `<template>` to declare.
  * @returns Transition result with the next state and no tokens.
  * @throws If a `@` starts neither a conditional binding nor a directive.
  */
-export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexTagBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let retVal!: LexerTransitionFunctionReturnType;
 
@@ -85,7 +87,7 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
 
       default:
         retVal = {
-          state: LexerState.ATTRIBUTE
+          state: expectsTemplateDeclaration(context.tokens) ? LexerState.TEMPLATE_DECLARATION : LexerState.ATTRIBUTE
         }
         read = false;
     }

@@ -16,7 +16,6 @@ export class Stack<T = unknown> {
   constructor() {
     return new Proxy(this, {
       get(target, prop) {
-        // Symbol keys (Symbol.toPrimitive, Symbol.iterator...) cannot be converted to a number: they are never indexes
         return typeof prop === 'symbol' || isNaN(Number(prop)) ? target[prop] : target._elements[Number(prop)];
       }
     });

@@ -130,12 +130,12 @@ describe('walkTemplate', () => {
     const templatesTemplate = [
       '@render row(field)',
       '<label><input #field /></label>',
-      '<template #row(item: Item, label = item().name)>{ item() } <i #inRow></i> @render row(inRow)</template>'
+      '<template row(item: Item, label = item().name)>{ item() } <i #inRow></i> @render row(inRow)</template>'
     ].join('\n');
     const visits = new Array<string>();
     walkTemplate(parseTemplate(templatesTemplate), [], {
       ref: node => visits.push(`ref ${node.name}`),
-      template: node => visits.push(`template ${node.ref.name}`),
+      template: node => visits.push(`template ${node.declaration.name}`),
       render: node => visits.push(`render ${node.callee}`),
       expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
     });
