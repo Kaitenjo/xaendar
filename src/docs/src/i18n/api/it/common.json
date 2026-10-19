@@ -16,8 +16,8 @@
     }
   },
   "toPascalCase": {
-    "summary": "Converte una stringa in kebab-case, snake_case o camelCase in PascalCase.",
-    "description": "<p>Toglie ogni <code>-</code> e <code>_</code> e rende maiuscolo il carattere che lo segue, poi rende maiuscolo il primo carattere. Nient’altro cambia: le altre lettere restano come sono, quindi <code>'USER-CARD'</code> diventa <code>'USERCARD'</code>, e spazi e punti restano al loro posto.</p><p>La CLI lo usa per dare alla classe di un componente il nome del suo selettore: <code>xd g c user-card</code> dichiara <code>UserCardComponent</code>. Vedi <a href=\"#/it/tools/cli\">CLI</a>.</p>",
+    "summary": "Converte una stringa in kebab-case, snake_case, dot.case o camelCase in PascalCase.",
+    "description": "<p>Toglie ogni <code>-</code>, <code>_</code> e <code>.</code> e rende maiuscolo il carattere che lo segue, poi rende maiuscolo il primo carattere. Nient’altro cambia: le altre lettere restano come sono, quindi <code>'USER-CARD'</code> diventa <code>'USERCARD'</code>, e gli spazi restano al loro posto.</p><p>La CLI lo usa per dare alla classe di un componente il nome del suo selettore: <code>xd g c user-card</code> dichiara <code>UserCardComponent</code>, e <code>xd g c my.card-x</code> dichiara <code>MyCardXComponent</code>. La CLI toglie anche i caratteri che un selettore accetta ma il nome di una classe no, come un’emoji. Vedi <a href=\"#/it/tools/cli\">CLI</a>.</p>",
     "usage": {
       "converting": {
         "title": "Convertire i nomi",

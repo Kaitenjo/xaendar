@@ -1,5 +1,5 @@
 /**
- * Converts a `kebab-case`, `snake_case`, or `camelCase` string to
+ * Converts a `kebab-case`, `snake_case`, `dot.case` or `camelCase` string to
  * `PascalCase`.
  *
  * @param str - The input string to convert.
@@ -8,11 +8,12 @@
  * @example
  * toPascalCase('my-button') // → 'MyButton'
  * toPascalCase('my_button') // → 'MyButton'
+ * toPascalCase('my.button') // → 'MyButton'
  * toPascalCase('myButton')  // → 'MyButton'
  */
 export function toPascalCase(str: string): string {
   return str
-    .replace(/[-_](.)/g, (_, c: string) => c.toUpperCase())
+    .replace(/[-_.](.)/g, (_, c: string) => c.toUpperCase())
     .replace(/^(.)/, (_, c: string) => c.toUpperCase());
 }
 

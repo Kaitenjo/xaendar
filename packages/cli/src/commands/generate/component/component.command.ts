@@ -1,6 +1,7 @@
-import { isValidCustomElementName, toPascalCase } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/common';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { toComponentClassName } from '../../../utils/component-class-name/component-class-name.utils';
 import { readProjectStyle, type Style } from '../../../utils/style/style';
 
 /**
@@ -70,7 +71,7 @@ export function generateComponent(name: string, path: string, force?: boolean, s
  * @returns A string containing the full TypeScript source.
  */
 function tsTemplate(name: string, style: string): string {
-  const className = toPascalCase(name);
+  const className = toComponentClassName(name);
   return `import { CustomElement, WebComponent } from '@xaendar/core';
 
 @WebComponent({
@@ -78,7 +79,7 @@ function tsTemplate(name: string, style: string): string {
   styleUrl: './${name}.xd.component.${style}',
   templateUrl: './${name}.xd.component.html'
 })
-export class ${className}Component extends CustomElement {
+export class ${className} extends CustomElement {
 
 }`;
 }
@@ -114,16 +115,16 @@ function cssTemplate(_name: string): string {
  * @returns A string containing a minimal `describe` / `it` test skeleton.
  */
 function specTemplate(name: string): string {
-  const className = toPascalCase(name);
+  const className = toComponentClassName(name);
   return `import { describe, expect, it } from 'vitest';
-import { ${className}Component } from './${name}.xd.component';
+import { ${className} } from './${name}.xd.component';
 
-describe('${className}Component', () => {
+describe('${className}', () => {
   it('renders its template', () => {
     const element = document.createElement('${name}');
     document.body.append(element);
 
-    expect(element).toBeInstanceOf(${className}Component);
+    expect(element).toBeInstanceOf(${className});
     expect(element.shadowRoot?.textContent).toContain('${name} works!');
     element.remove();
   });

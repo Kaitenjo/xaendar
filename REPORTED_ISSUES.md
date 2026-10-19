@@ -11,7 +11,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/cli
 
-20. **`toPascalCase` mantiene i punti**: `xd g c my.el-x`, nome valido, genera `class My.elXComponent`, TypeScript non valido (`packages/cli/src/commands/generate/component/component.command.ts:72`).
 
 ## Documentazione
 

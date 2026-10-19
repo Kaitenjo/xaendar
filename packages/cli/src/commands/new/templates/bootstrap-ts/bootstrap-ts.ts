@@ -1,4 +1,4 @@
-import { toPascalCase } from '@xaendar/common';
+import { toComponentClassName } from '../../../../utils/component-class-name/component-class-name.utils';
 
 /**
  * Generates the content of the project module `src/bootstrap.ts`, loaded by `main.ts` once the
@@ -9,7 +9,7 @@ import { toPascalCase } from '@xaendar/common';
  * @returns The formatted TypeScript source string.
  */
 export function bootstrapTs(componentName: string): string {
-  const componentClassName = `${toPascalCase(componentName)}Component`;
+  const componentClassName = toComponentClassName(componentName);
   return `import { ${componentClassName} } from './${componentName}/${componentName}.xd.component';
 
 console.log(${componentClassName});`;

@@ -10,6 +10,10 @@ describe('toPascalCase()', () => {
     expect(toPascalCase('my_button')).toBe('MyButton');
   });
 
+  it('converts a dot.case string to PascalCase', () => {
+    expect(toPascalCase('my.el-x')).toBe('MyElX');
+  });
+
   it('converts a camelCase string to PascalCase', () => {
     expect(toPascalCase('myButton')).toBe('MyButton');
   });

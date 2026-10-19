@@ -16,8 +16,8 @@
     }
   },
   "toPascalCase": {
-    "summary": "Converts a kebab-case, snake_case or camelCase string to PascalCase.",
-    "description": "<p>Removes every <code>-</code> and <code>_</code> and upper-cases the character that follows it, then upper-cases the first character. Nothing else changes: the other letters keep their case, so <code>'USER-CARD'</code> becomes <code>'USERCARD'</code>, and spaces and dots stay where they are.</p><p>The CLI uses it to name the class of a component after its selector: <code>xd g c user-card</code> declares <code>UserCardComponent</code>. See <a href=\"#/en/tools/cli\">CLI</a>.</p>",
+    "summary": "Converts a kebab-case, snake_case, dot.case or camelCase string to PascalCase.",
+    "description": "<p>Removes every <code>-</code>, <code>_</code> and <code>.</code> and upper-cases the character that follows it, then upper-cases the first character. Nothing else changes: the other letters keep their case, so <code>'USER-CARD'</code> becomes <code>'USERCARD'</code>, and spaces stay where they are.</p><p>The CLI uses it to name the class of a component after its selector: <code>xd g c user-card</code> declares <code>UserCardComponent</code>, and <code>xd g c my.card-x</code> declares <code>MyCardXComponent</code>. The CLI also drops the characters a selector accepts but a class name does not, such as an emoji. See <a href=\"#/en/tools/cli\">CLI</a>.</p>",
     "usage": {
       "converting": {
         "title": "Converting names",

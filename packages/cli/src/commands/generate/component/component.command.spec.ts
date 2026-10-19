@@ -119,6 +119,17 @@ describe('generateComponent()', () => {
     expect(tsContent).toContain("selector: 'my-button'");
   });
 
+  it('names the class of a name with dots with a valid identifier', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    generateComponent('my.el-x', '/projects', false, 'css');
+
+    const tsContent = vi.mocked(writeFileSync).mock.calls.find(([path]) => (path as string).endsWith('.xd.component.ts'))?.[1] as string;
+
+    expect(tsContent).toContain('export class MyElXComponent extends CustomElement');
+  });
+
   it('generates an HTML template referencing the component name', () => {
     vi.mocked(existsSync).mockReturnValue(false);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
