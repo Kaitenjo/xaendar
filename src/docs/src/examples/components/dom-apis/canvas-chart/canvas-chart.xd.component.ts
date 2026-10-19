@@ -45,10 +45,10 @@ export class CanvasChartComponent extends CustomElement {
       const width = canvas.width / values.length;
       context.clearRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = this.color();
-      values.forEach((value, index) => {
-        const height = canvas.height * value / 100;
-        context.fillRect(index * width + 4, canvas.height - height, width - 8, height);
-      });
+      for (let i = 0; i < values.length; i++) {
+        const height = canvas.height * values[i] / 100;
+        context.fillRect(i * width + 4, canvas.height - height, width - 8, height);
+      }
       this.draws.update(draws => draws + 1);
     });
   }

@@ -32,7 +32,11 @@ export class ComponentEffectsComponent extends CustomElement {
    * Disposes every standalone effect created so far.
    */
   public disposeLeaked(): void {
-    leaked.splice(0).forEach(dispose => dispose());
+    const disposers = leaked.splice(0);
+    for (let i = 0; i < disposers.length; i++) {
+      disposers[i]();
+    }
+
     this.alive.set(0);
   }
 
