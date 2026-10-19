@@ -6,6 +6,15 @@ Tag <Widget> is not a valid custom element name. Custom element names must:
 
 $ xd g c font-face
 Tag <font-face> is a reserved tag name and cannot be used as a custom element name.
+Reserved names are:
+- annotation-xml
+- color-profile
+- font-face
+- font-face-src
+- font-face-uri
+- font-face-format
+- font-face-name
+- missing-glyph
 
 $ xd g c user-card       (the folder exists)
 ✖  Directory "user-card" already exists.
