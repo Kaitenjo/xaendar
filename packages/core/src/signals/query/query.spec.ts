@@ -101,6 +101,63 @@ describe('toMatcher', () => {
   });
 });
 
+describe('toMatcher with read', () => {
+  class Tooltip extends CustomDirective { }
+  class Mark extends CustomDirective { }
+
+  /**
+   * Creates an element with the given attribute, the given directives applied to it.
+   */
+  function withDirectives(attribute: string, ...directives: CustomDirective[]): HTMLElement {
+    const element = document.createElement('p');
+    element.setAttribute(attribute, '');
+    for (let i = 0; i < directives.length; i++) {
+      _addAppliedDirective(element, directives[i]);
+    }
+    return element;
+  }
+
+  it('reads the instances of a directive applied to the elements a selector finds, skipping the elements without it', () => {
+    const [mark, other] = [new Mark(), new Mark()];
+    const elements = [withDirectives('item'), withDirectives('item', new Tooltip(), mark), withDirectives('item', other)];
+
+    const matcher = toMatcher('[item]', Mark);
+    expect(matcher).toMatchObject({ selector: '[item]', description: '[item], read: Mark' });
+    expect(matcher.pick!(elements)).toEqual([mark, other]);
+  });
+
+  it('reads the elements a directive is applied to', () => {
+    const elements = [withDirectives('a'), withDirectives('b', new Tooltip()), withDirectives('c', new Tooltip(), new Tooltip())];
+
+    const matcher = toMatcher(Tooltip, 'element');
+    expect(matcher).toMatchObject({ selector: '*', description: 'Tooltip, read: element' });
+    expect(matcher.pick!(elements)).toEqual([elements[1], elements[2]]);
+  });
+
+  it('reads another directive applied to the elements a directive is applied to', () => {
+    const mark = new Mark();
+    const elements = [withDirectives('a', new Mark()), withDirectives('b', new Tooltip(), mark), withDirectives('c', new Tooltip())];
+
+    expect(toMatcher(Tooltip, Mark).pick!(elements)).toEqual([mark]);
+  });
+
+  it('keeps the elements themselves when reading the element of a selector or of a component', () => {
+    expect(toMatcher('[item]', 'element')).toEqual({ selector: '[item]', description: '[item], read: element' });
+    expect(toMatcher(withMetadata({ [INTERNAL_SELECTOR]: 'x-button' }), 'element')).toEqual({ selector: 'x-button', description: 'x-button, read: element' });
+  });
+
+  it('reads the instances of a directive applied to the elements a ref names', () => {
+    const mark = new Mark();
+    const [named, other] = [withDirectives('a', mark), withDirectives('b', new Mark())];
+    _setElementRef(named, 'row');
+
+    const matcher = toRefMatcher('row', Mark);
+    expect(matcher.description).toBe('#row, read: Mark');
+    expect(matcher.pick!([named, other])).toEqual([mark]);
+    expect(toRefMatcher('row', 'element').pick!([named, other])).toEqual([named]);
+  });
+});
+
 describe('toRefMatcher', () => {
   it('picks the elements named by the ref, in order', () => {
     const [first, other, bare, second] = [document.createElement('input'), document.createElement('input'), document.createElement('input'), document.createElement('input')];

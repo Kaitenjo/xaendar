@@ -611,7 +611,8 @@
           "p1": "<code>@Query.ref('name')</code> holds the element an <a href=\"#/en/templates/element-refs\">element ref</a> of the template names, <code>#name</code>, and <code>@Query.ref.all</code> the elements of every row of the <code>@for</code> declaring it. Unlike a selector, a ref doesn't depend on the tag or the classes of the element. <code>@Query.ref.required</code> throws when no element is named by the ref.",
           "p2": "The class of a <a href=\"#/en/directives/custom\">custom directive</a> finds the directive, not the element: the query holds the instances applied to the elements of the template, with <code>@@selector</code> or as host directives of a component, typed by the class.",
           "example1": "A ref for the field, one for every row, and the directives applied to the rows",
-          "p3": "<em>Add</em> reads the field through its ref. <em>Mark every row</em> calls a method of each directive found by <code>@Query.all(MarkDirective)</code>, and the count follows the signals of the directives."
+          "p3": "<em>Add</em> reads the field through its ref. <em>Mark every row</em> calls a method of each directive found by <code>@Query.all(MarkDirective)</code>, and the count follows the signals of the directives.",
+          "p4": "The queries holding a single element take a <code>read</code> option, which tells what they hold for the element they find: the instance of a directive applied to it, by its class, or the element itself, <code>'element'</code>, also when the target is a directive. The <code>.all</code> variants do not take it."
         },
         "whenTheResultIs": {
           "title": "When the result is there",
@@ -642,6 +643,7 @@
           "td3": "Like <code>@Query</code>, without <code>null</code>: reading it throws when no element matches.",
           "td4": "A CSS selector, the class of a component or the class of a custom directive.",
           "td6": "The elements named by the element ref <code>#name</code>, with <code>.all</code> and <code>.required</code> too.",
+          "td7": "What a single-element query holds for the element: <code>'element'</code>, or the class of a directive applied to it. Not on <code>.all</code>.",
           "td5": "A read-only signal: <code>query()</code> or <code>query.get()</code>."
         }
       },

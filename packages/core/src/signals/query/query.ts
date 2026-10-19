@@ -6,45 +6,86 @@ import { _getAppliedDirectives } from '../../utils/applied-directives/applied-di
 import { _getElementRef } from '../../utils/element-refs/element-refs.util';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QueryMatcher } from '../types/query-matcher.type';
+import type { QueryRead } from '../types/query-read.type';
 import type { QuerySignal } from '../types/query-signal.type';
 import type { QuerySlotOptions } from '../types/query-slot-options.type';
 import type { QueryTarget } from '../types/query-target.type';
 
 /**
- * Resolves how a query finds what it looks for.
+ * Resolves how a query finds what it looks for: the elements its target matches, and what it holds for each of them.
  *
  * @param target - A CSS selector (a tag name, `.class`, `[attribute]`, a combination of them...), the class of a
  *   web component decorated with `@WebComponent`, or the class of a custom directive.
+ * @param read - What the query holds for each element found: the element itself (`'element'`), or the instances of a
+ *   custom directive applied to it. By default the element, or the instances of the directive the target is.
  * @returns The matcher: the elements matching the selector itself, the ones matching the selector a component is
- *   registered with, or the instances of the directive applied to any element.
+ *   registered with, or the ones a directive is applied to, mapped to what is read from them.
  * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
-export function toMatcher(target: QueryTarget): QueryMatcher {
+export function toMatcher(target: QueryTarget, read?: QueryRead): QueryMatcher {
   if (typeof target === 'string') {
-    return { selector: target, description: target };
+    return withRead({ selector: target, description: describe(target, read) }, read);
   }
 
   if (isDirectiveClass(target)) {
-    return { selector: '*', description: target.name, pick: elements => getDirectives(elements, target) };
+    const description = describe(target.name, read);
+    // By default the instances of the directive, otherwise the elements it is applied to, mapped to what is read
+    return read === undefined
+      ? { selector: '*', description, pick: elements => getDirectives(elements, target) }
+      : withRead({ selector: '*', description, pick: elements => elements.filter(element => _getAppliedDirectives(element, target) !== undefined) }, read);
   }
 
   const selector = getSelector(target);
-  return { selector, description: selector };
+  return withRead({ selector, description: describe(selector, read) }, read);
 }
 
 /**
- * Resolves how a query finds the elements an element ref names: the ref names one element, or one in each row of a
- * `@for`.
+ * Resolves how a query finds the elements an element ref names, and what it holds for each of them: the ref names
+ * one element, or one in each row of a `@for`.
  *
  * @param name - The name of the ref, without the `#`.
- * @returns The matcher of the elements named by the ref.
+ * @param read - What the query holds for each element: the element itself (`'element'`, the default), or the
+ *   instances of a custom directive applied to it.
+ * @returns The matcher of the elements named by the ref, mapped to what is read from them.
  */
-export function toRefMatcher(name: string): QueryMatcher {
-  return {
+export function toRefMatcher(name: string, read?: QueryRead): QueryMatcher {
+  return withRead({
     selector: '*',
-    description: `#${name}`,
+    description: describe(`#${name}`, read),
     pick: elements => elements.filter(element => _getElementRef(element) === name)
-  };
+  }, read);
+}
+
+/**
+ * Describes what a query looks for, as the error messages write it.
+ *
+ * @param target - What the target finds: a selector, the class of a directive or `#ref`.
+ * @param read - What the query reads from the elements, if the options say it.
+ * @returns The description, naming what is read too.
+ */
+function describe(target: string, read: QueryRead | undefined): string {
+  if (read === undefined) {
+    return target;
+  }
+
+  return `${target}, read: ${read === 'element' ? read : read.name}`;
+}
+
+/**
+ * Makes a matcher of elements hold what is read from each of them.
+ *
+ * @param matcher - The matcher of the elements.
+ * @param read - What is read: the instances of a directive applied to each element; `undefined` and `'element'` keep
+ *   the elements.
+ * @returns The matcher holding what is read.
+ */
+function withRead(matcher: QueryMatcher, read: QueryRead | undefined): QueryMatcher {
+  if (read === undefined || read === 'element') {
+    return matcher;
+  }
+
+  const { selector, description, pick } = matcher;
+  return { selector, description, pick: elements => getDirectives(pick ? pick(elements) as Element[] : elements, read) };
 }
 
 /**

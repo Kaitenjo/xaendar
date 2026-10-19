@@ -611,7 +611,8 @@
           "p1": "<code>@Query.ref('name')</code> contiene l’elemento a cui un <a href=\"#/it/templates/element-refs\">element ref</a> del template dà un nome, <code>#name</code>, e <code>@Query.ref.all</code> gli elementi di ogni riga del <code>@for</code> che lo dichiara. A differenza di un selettore, un ref non dipende dal tag o dalle classi dell’elemento. <code>@Query.ref.required</code> lancia un errore quando nessun elemento ha quel ref.",
           "p2": "La classe di una <a href=\"#/it/directives/custom\">direttiva custom</a> trova la direttiva, non l’elemento: la query contiene le istanze applicate agli elementi del template, con <code>@@selector</code> o come host directive di un componente, tipizzate con la classe.",
           "example1": "Un ref per il campo, uno per ogni riga, e le direttive applicate alle righe",
-          "p3": "<em>Add</em> legge il campo tramite il suo ref. <em>Mark every row</em> chiama un metodo di ogni direttiva trovata da <code>@Query.all(MarkDirective)</code>, e il conteggio segue i signal delle direttive."
+          "p3": "<em>Add</em> legge il campo tramite il suo ref. <em>Mark every row</em> chiama un metodo di ogni direttiva trovata da <code>@Query.all(MarkDirective)</code>, e il conteggio segue i signal delle direttive.",
+          "p4": "Le query che contengono un solo elemento accettano l’opzione <code>read</code>, che dice cosa contengono per l’elemento che trovano: l’istanza di una direttiva applicata all’elemento, indicata dalla sua classe, oppure l’elemento stesso, <code>'element'</code>, anche quando il target è una direttiva. Le varianti <code>.all</code> non la accettano."
         },
         "whenTheResultIs": {
           "title": "Quando il risultato è disponibile",
@@ -642,6 +643,7 @@
           "td3": "Come <code>@Query</code>, senza <code>null</code>: leggerla lancia un errore quando nessun elemento corrisponde.",
           "td4": "Un selettore CSS, la classe di un componente o la classe di una direttiva custom.",
           "td6": "Gli elementi a cui l’element ref <code>#name</code> dà un nome, anche con <code>.all</code> e <code>.required</code>.",
+          "td7": "Cosa contiene una query a elemento singolo per l’elemento: <code>'element'</code>, o la classe di una direttiva applicata all’elemento. Non sulle <code>.all</code>.",
           "td5": "Un signal in sola lettura: <code>query()</code> oppure <code>query.get()</code>."
         }
       },

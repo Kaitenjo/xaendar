@@ -227,5 +227,26 @@
         "body": "<p>Content queries with each option, and a combination that does not compile.</p>"
       }
     }
+  },
+  "QueryOptions": {
+    "summary": "The options of the queries holding a single element: what they read from the element they find.",
+    "description": "<p>The second argument of <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> and <code>@Query.ref.required</code>, and, together with <a href=\"#/en/reference/api/core/signals/QuerySlotOptions\"><code>QuerySlotOptions</code></a>, of <code>@Query.content</code> and <code>@Query.content.required</code> (see <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>). The <code>.all</code> variants take no <code>read</code>.</p>",
+    "members": {
+      "read": "<p>What the query holds for the element it finds, see <a href=\"#/en/reference/api/core/signals/QueryRead\"><code>QueryRead</code></a>. By default the element, or the instance of the directive when the target is the class of a directive.</p>"
+    },
+    "usage": {
+      "reading": {
+        "title": "Reading a directive or an element",
+        "body": "<p>A directive read from the element a selector or a ref finds, the element a directive is applied to, the option among the options of the slots, and a variant that does not take it.</p>"
+      }
+    }
+  },
+  "QueryRead": {
+    "summary": "What a query reads from the element it finds: the element, or the instance of a directive applied to it.",
+    "description": "<p>The type of the <code>read</code> option of the queries holding a single element (see <a href=\"#/en/reference/api/core/signals/QueryOptions\"><code>QueryOptions</code></a>). It types what the query holds: <code>'element'</code> by the type argument of the decorator, a directive as an instance of its class.</p>",
+    "members": {
+      "element": "<p>The element itself. It changes the result only when the target is the class of a directive, which otherwise holds the instance of the directive: with <code>'element'</code> the query holds the element it is applied to.</p>",
+      "directive": "<p>The class of a <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: the query holds the instance applied to the element, with <code>@@selector</code> or as a host directive, or of a subclass. The elements without it are skipped.</p>"
+    }
   }
 }

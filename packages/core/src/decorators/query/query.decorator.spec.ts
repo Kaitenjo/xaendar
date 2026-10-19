@@ -716,6 +716,76 @@ describe('Query.ref decorator', () => {
   });
 });
 
+describe('read option', () => {
+  /**
+   * A custom directive the queries read from the elements.
+   */
+  class Mark extends CustomDirective { }
+
+  it('holds the directive applied to the first element the selector finds that has it', async () => {
+    const element = create();
+    const signal = init(Query('[item]', { read: Mark }), element);
+    document.body.appendChild(element);
+    const marked = item();
+    const mark = new Mark();
+    _addAppliedDirective(marked, mark);
+
+    element.shadowRoot!.append(item(), marked);
+    await flush();
+
+    expect(signal()).toBe(mark);
+  });
+
+  it('holds the element a directive is applied to', async () => {
+    const element = create();
+    const signal = init(Query(Tooltip, { read: 'element' }), element);
+    document.body.appendChild(element);
+    const { element: withIt } = withTooltip();
+
+    element.shadowRoot!.append(item(), withIt);
+    await flush();
+
+    expect(signal()).toBe(withIt);
+  });
+
+  it('names what is read in the error of a required query', () => {
+    const element = create();
+    const signal = init(Query.required('[item]', { read: Mark }), element);
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item], read: Mark' of <${element.localName}>`);
+  });
+
+  it('holds the directive applied to the element named by a ref, throwing when required and there is none', async () => {
+    const element = create();
+    const signal = init(Query.ref('field', { read: Tooltip }), element);
+    const required = init(Query.ref.required('field', { read: Tooltip }), element);
+    document.body.appendChild(element);
+    expect(() => required()).toThrow(`No element is named by the required ref '#field, read: Tooltip' of <${element.localName}>`);
+    const field = named('field');
+    const tooltip = new Tooltip();
+    _addAppliedDirective(field, tooltip);
+
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(tooltip);
+    expect(required()).toBe(tooltip);
+  });
+
+  it('holds the directive applied to the first projected element, among the options of the slots', () => {
+    const { element: projected, tooltip } = withTooltip();
+    projected.slot = 'a';
+    const element = withSlots(withTooltip().element, projected);
+    const signal = init(Query.content('span', { slots: 'a', read: Tooltip }), element);
+    const required = init(Query.content.required(Tooltip, { slots: 'a', read: 'element' }), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(tooltip);
+    expect(required()).toBe(projected);
+  });
+});
+
 describe('Query.content decorator', () => {
   it('creates a signal holding the instances of a directive applied to the projected elements', () => {
     const [first, second] = [withTooltip(), withTooltip()];

@@ -953,7 +953,7 @@ describe('_renderElement', () => {
         directives: [directive({ events: [{ name: 'change', handler: ($event: Event) => onChange($event.type) }] })]
       });
 
-      lastInstance().dispatchEvent(new Event('change'));
+      lastInstance().dispatchEvent(new CustomEvent('change'));
 
       expect(onChange).toHaveBeenCalledWith('change');
     });
@@ -1073,14 +1073,14 @@ describe('_renderElement', () => {
         })]
       });
 
-      lastInstance().dispatchEvent(new Event('change'));
-      lastInstance().dispatchEvent(new Event('nested'));
+      lastInstance().dispatchEvent(new CustomEvent('change'));
+      lastInstance().dispatchEvent(new CustomEvent('nested'));
       expect(onChange).toHaveBeenCalledTimes(2);
 
       enabled.set(false);
       await flush();
-      lastInstance().dispatchEvent(new Event('change'));
-      lastInstance().dispatchEvent(new Event('nested'));
+      lastInstance().dispatchEvent(new CustomEvent('change'));
+      lastInstance().dispatchEvent(new CustomEvent('nested'));
       expect(onChange).toHaveBeenCalledTimes(2);
     });
 

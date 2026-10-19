@@ -227,5 +227,26 @@
         "body": "<p>Query sul contenuto con ciascuna opzione, e una combinazione che non compila.</p>"
       }
     }
+  },
+  "QueryOptions": {
+    "summary": "Le opzioni delle query che contengono un solo elemento: cosa leggono dall’elemento che trovano.",
+    "description": "<p>Il secondo argomento di <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> e <code>@Query.ref.required</code>, e, insieme a <a href=\"#/it/reference/api/core/signals/QuerySlotOptions\"><code>QuerySlotOptions</code></a>, di <code>@Query.content</code> e <code>@Query.content.required</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Le varianti <code>.all</code> non accettano <code>read</code>.</p>",
+    "members": {
+      "read": "<p>Cosa contiene la query per l’elemento che trova, vedi <a href=\"#/it/reference/api/core/signals/QueryRead\"><code>QueryRead</code></a>. Di default l’elemento, oppure l’istanza della direttiva quando il target è la classe di una direttiva.</p>"
+    },
+    "usage": {
+      "reading": {
+        "title": "Leggere una direttiva o un elemento",
+        "body": "<p>Una direttiva letta dall’elemento che trovano un selettore o un ref, l’elemento a cui è applicata una direttiva, l’opzione insieme alle opzioni degli slot, e una variante che non la accetta.</p>"
+      }
+    }
+  },
+  "QueryRead": {
+    "summary": "Cosa legge una query dall’elemento che trova: l’elemento, o l’istanza di una direttiva applicata all’elemento.",
+    "description": "<p>Il tipo dell’opzione <code>read</code> delle query che contengono un solo elemento (vedi <a href=\"#/it/reference/api/core/signals/QueryOptions\"><code>QueryOptions</code></a>). Tipizza ciò che la query contiene: <code>'element'</code> con l’argomento di tipo del decoratore, una direttiva come istanza della sua classe.</p>",
+    "members": {
+      "element": "<p>L’elemento stesso. Cambia il risultato solo quando il target è la classe di una direttiva, che altrimenti contiene l’istanza della direttiva: con <code>'element'</code> la query contiene l’elemento a cui è applicata.</p>",
+      "directive": "<p>La classe di una <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>: la query contiene l’istanza applicata all’elemento, con <code>@@selector</code> o come host directive, o di una sottoclasse. Gli elementi che non ce l’hanno vengono saltati.</p>"
+    }
   }
 }

@@ -330,6 +330,42 @@ export const CORE_SIGNALS_API: ApiPackage = {
         { key: 'choosing', snippets: ['api/core-signals/query-slot-options.ts'] }
       ],
       guides: ['components/content-queries', 'components/content-projection']
+    },
+    {
+      name: 'QueryOptions',
+      kind: 'type',
+      signature: `type QueryOptions = {
+  read?: QueryRead;
+}`,
+      members: [
+        {
+          name: 'read',
+          group: 'properties',
+          signature: 'read?: QueryRead'
+        }
+      ],
+      usage: [
+        { key: 'reading', snippets: ['api/core/query-read.ts'] }
+      ],
+      guides: ['components/queries']
+    },
+    {
+      name: 'QueryRead',
+      kind: 'type',
+      signature: "type QueryRead = 'element' | Constructor<CustomDirective>",
+      members: [
+        {
+          name: 'element',
+          group: 'variants',
+          signature: "'element'"
+        },
+        {
+          name: 'directive',
+          group: 'variants',
+          signature: 'Constructor<CustomDirective>'
+        }
+      ],
+      guides: ['components/queries']
     }
   ]
 };

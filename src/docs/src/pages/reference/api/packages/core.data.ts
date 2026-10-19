@@ -144,12 +144,12 @@ export const CORE_API: ApiPackage = {
     {
       name: 'Query',
       kind: 'decorator',
-      signature: 'function Query<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>',
+      signature: 'function Query<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>\nfunction Query<ElementType extends Element = HTMLElement>(target: QueryTarget, options: { read: \'element\' }): AccessorDecorator<CustomElement, QuerySignal<ElementType | null>>\nfunction Query<Read extends Constructor<CustomDirective>>(target: QueryTarget, options: { read: Read }): AccessorDecorator<CustomElement, QuerySignal<InstanceType<Read> | null>>',
       members: [
         {
           name: 'Query.required',
           group: 'variants',
-          signature: 'Query.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>',
+          signature: 'Query.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>',
           snippets: ['components/query-required.ts']
         },
         {
@@ -160,12 +160,12 @@ export const CORE_API: ApiPackage = {
         {
           name: 'Query.ref',
           group: 'variants',
-          signature: 'Query.ref<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType | null>>'
+          signature: 'Query.ref<ElementType extends Element = HTMLElement>(name: string, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<ElementType | null>>'
         },
         {
           name: 'Query.ref.required',
           group: 'variants',
-          signature: 'Query.ref.required<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType>>'
+          signature: 'Query.ref.required<ElementType extends Element = HTMLElement>(name: string, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<ElementType>>'
         },
         {
           name: 'Query.ref.all',
@@ -175,12 +175,12 @@ export const CORE_API: ApiPackage = {
         {
           name: 'Query.content',
           group: 'variants',
-          signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
+          signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
         },
         {
           name: 'Query.content.required',
           group: 'variants',
-          signature: 'Query.content.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
+          signature: 'Query.content.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
         },
         {
           name: 'Query.content.all',
@@ -197,6 +197,12 @@ export const CORE_API: ApiPackage = {
           name: 'name',
           group: 'parameters',
           signature: 'name: string'
+        },
+        {
+          name: 'read',
+          group: 'options',
+          signature: 'read?: QueryRead',
+          snippets: ['api/core/query-read.ts']
         },
         {
           name: 'slots',

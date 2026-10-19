@@ -1,6 +1,6 @@
+import { CustomElement } from '@xaendar/core';
 import type { Constructor } from '@xaendar/types';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
-import type { HostDirectives } from '../../types/web-component/host-directives.type';
 
 /**
  * Module-private registry mapping each element to the custom directives a template applies to it (`@@selector`), in
@@ -16,11 +16,7 @@ const applied = new WeakMap<Element, CustomDirective[]>();
  */
 export function _addAppliedDirective(element: Element, directive: CustomDirective): void {
   const directives = applied.get(element);
-  if (directives) {
-    directives.push(directive);
-  } else {
-    applied.set(element, [directive]);
-  }
+  directives?.push(directive) || applied.set(element, [directive]);
 }
 
 /**
@@ -43,15 +39,15 @@ export function _removeAppliedDirective(element: Element, directive: CustomDirec
  * @returns The directives, `undefined` when none is applied.
  */
 export function _getAppliedDirectives<Directive extends CustomDirective>(element: Element, Directive: Constructor<Directive>): Directive[] | undefined {
-  let retVal: Directive[] | undefined;
+  const retVal = new Array<Directive>;
   const isDirective = (directive: CustomDirective): directive is Directive => directive instanceof Directive;
   const add = (directive: CustomDirective) => {
     if (isDirective(directive)) {
-      (retVal ??= []).push(directive);
+      retVal.push(directive);
     }
   };
 
-  const hostDirectives = (element as Partial<Record<'hostDirectives', HostDirectives>>).hostDirectives;
+  const hostDirectives = element instanceof CustomElement ? element.hostDirectives : undefined;
   if (hostDirectives?.size) {
     for (const directive of hostDirectives.values()) {
       add(directive);
@@ -65,5 +61,5 @@ export function _getAppliedDirectives<Directive extends CustomDirective>(element
     }
   }
 
-  return retVal;
+  return retVal.length === 0 ? undefined : retVal;
 }

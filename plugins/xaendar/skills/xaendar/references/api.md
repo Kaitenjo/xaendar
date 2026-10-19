@@ -46,6 +46,8 @@ Declares an output. emit(detail?, options?) dispatches a CustomEvent named after
 
 The first element of the shadow root matching a selector or a component class, kept up to date as a signal. With the class of a custom directive it holds the instance of the directive applied to an element (with `@@selector` or as a host directive), not the element.
 
+With `{ read }` (single-element variants only, not `.all`): `@Query('.help', { read: TooltipDirective })` holds the directive applied to the first matching element that has it, `@Query<HTMLButtonElement>(TooltipDirective, { read: 'element' })` the element a directive is applied to. `Query.required`, `Query.ref`, `Query.ref.required`, `Query.content` and `Query.content.required` take the option too (the content ones next to `slots`/`lightDom`).
+
 ### Query.required (decorator)
 
 ```ts
@@ -261,7 +263,7 @@ The options of @Property, together with alias.
 ### QueryTarget, QueryElement, QuerySlotOptions (type)
 
 ```ts
-QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }
+QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; QueryOptions = { read?: QueryRead }; QueryRead = 'element' | Constructor<CustomDirective>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }
 ```
 
 The target of a query, the element type it resolves to, and the options of the content queries.
