@@ -17,7 +17,7 @@
       <li class="entry">
         <div class="entry-head">
           <h3 class="entry-title">{ entry().titleText }</h3>
-          <span class="{`badge ${entry().kind === 'bug' ? 'issue' : 'muted'}`}">
+          <span class="badge" [class.issue]="{entry().kind === 'bug'}" [class.muted]="{entry().kind !== 'bug'}">
             { translations().reference.issueKinds[entry().kind] }
           </span>
           <span class="module">{ entry().area }</span>

@@ -15,9 +15,9 @@
   }
 </ul>
 <div class="filters">
-  <ex-button class="{filter() === 'all' ? 'active' : ''}" (click)="show('all')">All</ex-button>
-  <ex-button class="{filter() === 'active' ? 'active' : ''}" (click)="show('active')">Active</ex-button>
-  <ex-button class="{filter() === 'done' ? 'active' : ''}" (click)="show('done')">Done</ex-button>
+  <ex-button [class.active]="{filter() === 'all'}" (click)="show('all')">All</ex-button>
+  <ex-button [class.active]="{filter() === 'active'}" (click)="show('active')">Active</ex-button>
+  <ex-button [class.active]="{filter() === 'done'}" (click)="show('done')">Done</ex-button>
 </div>
 @switch (filter()) {
   @case ('all') {

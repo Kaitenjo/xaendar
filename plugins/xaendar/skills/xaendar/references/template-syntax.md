@@ -30,7 +30,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 ```html
 <!-- Native elements: attributes, set with setAttribute -->
-<a href="/home" title="{ tooltip() }" class="{`link ${active() ? 'on' : ''}`}">Home</a>
+<a href="/home" title="{ tooltip() }" class="link">Home</a>
 
 <!-- A class, on native elements and components: present while the value is truthy -->
 <li class="task" [class.done]="{ task().done }">…</li>

@@ -5,7 +5,7 @@
 
 <docs-topbar class="topbar" (menuToggle)="toggleNav()" />
 <div class="layout">
-  <aside class="{navOpen() ? 'nav nav--open' : 'nav'}">
+  <aside class="nav" [class.nav--open]="{navOpen()}">
     <docs-sidenav />
   </aside>
   @if (navOpen()) {

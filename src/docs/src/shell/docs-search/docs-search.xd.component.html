@@ -14,7 +14,7 @@
     <ul class="results" role="listbox">
       @for (result of results(); track result().path; index = $index) {
         <li>
-          <a class="{index() === active() ? 'result result--active' : 'result'}"
+          <a class="result" [class.result--active]="{index() === active()}"
             href="{`#/${currentLang()}/${result().path}`}" (mousedown)="go(result().path)">
             <span class="result__title">{ result().title }</span>
             <span class="result__path">{ result().detail }</span>

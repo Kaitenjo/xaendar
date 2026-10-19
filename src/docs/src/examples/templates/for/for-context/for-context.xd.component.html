@@ -6,7 +6,7 @@
 </div>
 <ol>
   @for (task of tasks(); track task().id; position = $index) {
-    <li class="{$even() ? 'row row--even' : 'row'}">
+    <li class="row" [class.row--even]="{$even()}">
       <span class="title">{ task().title }</span>
       <code>$index { position() } · $first { $first() } · $last { $last() } · $even { $even() } · $odd { $odd() }</code>
       <ex-button aria-label="Remove" (click)="removeTask(task().id)">✕</ex-button>

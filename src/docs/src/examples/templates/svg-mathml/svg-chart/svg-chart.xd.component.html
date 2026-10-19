@@ -5,7 +5,7 @@
   <line x1="0" y1="110" x2="300" y2="110" class="axis" />
   @for (bar of bars(); track bar()) {
     <rect x="{bar().x}" y="{bar().y}" width="40" height="{bar().height}"
-      class="{bar().day === hovered() ? 'bar bar--hovered' : 'bar'}" (mouseenter)="highlight(bar().day)" />
+      class="bar" [class.bar--hovered]="{bar().day === hovered()}" (mouseenter)="highlight(bar().day)" />
     <text x="{bar().x + 20}" y="125" text-anchor="middle">{ bar().day }</text>
   }
 </svg>

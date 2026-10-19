@@ -1,6 +1,6 @@
 <div class="tabs" role="tablist">
   @for (tab of tabs(); track tab()) {
-    <button role="tab" class="{tab().index === activeIndex() ? 'tab tab--active' : 'tab'}"
+    <button role="tab" class="tab" [class.tab--active]="{tab().index === activeIndex()}"
       (click)="select(tab().index)">
       { tab().label }
     </button>

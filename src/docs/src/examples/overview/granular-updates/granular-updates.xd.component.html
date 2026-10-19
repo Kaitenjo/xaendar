@@ -10,7 +10,7 @@
     <strong>{ count() }</strong>
     times.
   </p>
-  <p class="{count() % 2 === 0 ? 'even' : 'odd'}">This line is styled by the parity of the count.</p>
+  <p [class.even]="{count() % 2 === 0}" [class.odd]="{count() % 2 !== 0}">This line is styled by the parity of the count.</p>
   <p>This paragraph is static: it is never touched again.</p>
 </div>
 <div class="controls">

@@ -2,4 +2,4 @@
 <div class="track">
   <div class="{barClass()}" style="{barStyle()}" />
 </div>
-<p class="{status() === 'done' ? 'label label--done' : 'label'}">{ progress() }% · { status() }</p>
+<p class="label" [class.label--done]="{status() === 'done'}">{ progress() }% · { status() }</p>

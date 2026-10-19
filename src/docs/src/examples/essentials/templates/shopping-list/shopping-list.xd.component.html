@@ -9,7 +9,7 @@
   <ul>
     <!-- Items are tracked by identity: a replaced item is rendered again -->
     @for (item of items(); track item()) {
-      <li class="{item().done ? 'done' : ''}">
+      <li [class.done]="{item().done}">
         <label>
           <input
             @if (item().done) {

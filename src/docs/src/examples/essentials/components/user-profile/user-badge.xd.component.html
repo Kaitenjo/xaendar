@@ -1,5 +1,5 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<span class="{online() ? 'dot dot--online' : 'dot'}" />
+<span class="dot" [class.dot--online]="{online()}" />
 <span class="name">{ name() }</span>
 <ex-button (click)="sayHi()">Wave 👋</ex-button>

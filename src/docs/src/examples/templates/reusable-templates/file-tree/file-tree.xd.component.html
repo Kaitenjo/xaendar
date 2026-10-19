@@ -3,7 +3,7 @@
 
 <template branch(entry: Entry)>
   <li>
-    <span class="{entry().children.length ? 'folder' : 'file'}">{ entry().name }</span>
+    <span [class.folder]="{entry().children.length}" [class.file]="{!entry().children.length}">{ entry().name }</span>
     @if (entry().children.length) {
       <ul>
         @for (child of entry().children; track child().name) {

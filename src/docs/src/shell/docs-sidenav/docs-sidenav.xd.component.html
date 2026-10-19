@@ -10,7 +10,7 @@
         @for (item of section().items; track item()) {
           <li>
             @if (item().page) {
-              <a class="{item().page?.path === navPath() ? 'link link--active' : 'link'}"
+              <a class="link" [class.link--active]="{item().page?.path === navPath()}"
                 href="{`#/${currentLang()}/${item().page?.path}`}">
                 { itemTitle(item(), translations()) }
               </a>
@@ -25,7 +25,7 @@
               <ul class="list list--nested">
                 @for (page of item().pages ?? []; track page().path) {
                   <li>
-                    <a class="{page().path === navPath() ? 'link link--nested link--active' : 'link link--nested'}"
+                    <a class="link link--nested" [class.link--active]="{page().path === navPath()}"
                       href="{`#/${currentLang()}/${page().path}`}">
                       { pageTitle(page(), translations()) }
                     </a>

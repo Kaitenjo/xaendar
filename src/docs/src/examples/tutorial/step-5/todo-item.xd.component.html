@@ -1,6 +1,6 @@
 @import { ButtonComponent } from '../../shared/button/button.xd.component.ts'
 
-<label class="{todo().done ? 'done' : ''}">
+<label [class.done]="{todo().done}">
   <input
     @if (todo().done) {
       checked

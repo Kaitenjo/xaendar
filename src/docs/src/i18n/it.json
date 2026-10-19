@@ -725,7 +725,7 @@
           "title": "Lo stile dell’host",
           "p1": "Dentro il foglio di stile, <code>:host</code> colpisce l’elemento del componente stesso. Un custom element è <code>display: inline</code> per default, quindi la maggior parte dei componenti imposta qui un display. <code>:host(selettore)</code> colpisce l’host solo quando corrisponde anche al selettore: una classe, un attributo o uno stato impostati dall’esterno.",
           "example1": ":host, :host(.selected), :host([tone='danger'])",
-          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Il clic è gestito da un unico listener sul contenitore, perché un template non può ascoltare eventi nativi sul tag di un componente: vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
+          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Ogni chip ascolta il proprio <code>(click)</code>: un evento nativo legato sul tag di un componente viene aggiunto al suo elemento, come su un elemento nativo. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
         },
         "themingWithCustomProperties": {
           "title": "Temi con le custom property",
@@ -740,7 +740,7 @@
         },
         "dynamicClassesAndStyles": {
           "title": "Classi e stili dinamici",
-          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo.",
+          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>[class.nome]=\"{ condizione }\"</code>, come fa l’etichetta: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "example1": "Una barra di avanzamento"
         },
         "sassAndLess": {
@@ -2077,7 +2077,7 @@
           },
           "callout3": {
             "heading": "Eventi dei componenti",
-            "body": "Sul tag di un componente si possono legare solo gli eventi che dichiara con <code>@Event</code>, non quelli nativi; sugli elementi nativi solo quelli nativi. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
+            "body": "Sul tag di un componente si possono legare sia gli eventi che dichiara con <code>@Event</code> sia gli eventi nativi del suo elemento, come <code>(click)</code>; sugli elementi nativi solo quelli nativi. Un nome che non è né l'uno né l'altro fa fallire la build. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
           }
         },
         "summary": {

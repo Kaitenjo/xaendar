@@ -1,5 +1,5 @@
 <!-- Native elements: attributes, set with setAttribute -->
-<a href="/home" title="{tooltip()}" class="{`link ${active() ? 'on' : ''}`}">Home</a>
+<a href="/home" title="{tooltip()}" class="link" [class.on]="{active()}">Home</a>
 
 <!-- Components: inputs, set as InputSignals -->
 <x-card heading="Static string" count="{3}" user="{user()}" />
