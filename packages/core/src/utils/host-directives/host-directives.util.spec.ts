@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { CustomElement as HostElement } from '../../models/custom-element/custom-element';
+import type { EventOptions } from '../../models/event-options/event-options';
 import type { HostDirectiveOptions } from '../../types/web-component/host-directive-options.type';
 
 await vi.hoisted(async () => {
@@ -21,7 +22,9 @@ const { _setProperty } = await import('../render-element/render-element.util');
 class TooltipDirective extends CustomDirective {
   public readonly text = input<string>('');
   public readonly position = input<string>('top');
-  public readonly opened = new Output<unknown>((detail?: unknown) => this.dispatchEvent(new CustomEvent('opened', { detail, bubbles: true })));
+  public readonly opened = new Output<unknown>((detail: unknown, _options?: EventOptions) => {
+    this.dispatchEvent(new CustomEvent('opened', { detail, bubbles: true }));
+  });
   public readonly closed = new Output(() => this.dispatchEvent(new CustomEvent('closed')));
   public readonly fake = { emit: () => undefined };
 }
@@ -175,7 +178,7 @@ describe('_createHostDirectives', () => {
     it('does not dispatch any event on the component unless asked to', () => {
       const element = create([TooltipDirective]);
       const heard = listen(element);
-      element.hostDirectives.get(TooltipDirective)?.opened.emit();
+      element.hostDirectives.get(TooltipDirective)?.opened.emit(undefined);
 
       expect(heard).toEqual([]);
     });

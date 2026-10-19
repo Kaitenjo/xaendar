@@ -1,4 +1,4 @@
-import type { ComponentMetadata, TypeCheckResult } from '@xaendar/compiler';
+import type { CompileOptions, ComponentMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -100,6 +100,11 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
 import { createTransformHook } from './transform';
 
 /**
+ * `compile` as the transform hook calls it: the overload type-checking the template only.
+ */
+const compileTypeCheck: (input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'reactiveMembers' | 'customElements' | 'cache'>) => Promise<TypeCheckResult> = compile;
+
+/**
  * Path of the component file the tests transform.
  */
 const COMPONENT_PATH = '/src/foo/foo.xd.component.ts';
@@ -172,7 +177,7 @@ function createPluginContext(): TransformPluginContext {
  * @param typecheckBody - Fields to override on the default resolved result.
  */
 function mockSuccessfulCompile(typecheckBody: Partial<TypeCheckResult> = {}) {
-  vi.mocked(compile).mockResolvedValue({ mappingTable: new Map(), ...typecheckBody } as TypeCheckResult);
+  vi.mocked(compileTypeCheck).mockResolvedValue({ mappingTable: new Map(), ...typecheckBody } as TypeCheckResult);
 }
 
 /**
@@ -636,7 +641,7 @@ describe('createTransformHook()', () => {
   });
 
   describe('in a build', () => {
-    it.each([
+    it.each<[name: string, arrange: () => unknown, fileExists?: () => boolean]>([
       ['an option of the decorator is not a string literal', () => vi.mocked(findWebComponentErrors).mockReturnValue(['The templateUrl option of FooComponent must be a string literal'])],
       ['the selector is not a valid custom element name', () => vi.mocked(isValidCustomElementName).mockReturnValue(false)],
       ['the selector is already used by another component', () => vi.mocked(claimSelectors).mockResolvedValue('selector conflict')],

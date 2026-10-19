@@ -58,7 +58,7 @@ describe('lexTagBody', () => {
   });
 
   it('transitions to TEMPLATE_DECLARATION on a name in a <template> declaring none yet, leaving the name to it', () => {
-    const templateContext: LexerTransitionFunctionContext = { history: [], tokens: [{ type: TokenType.TAG_OPEN_NAME, parts: ['template'] }] };
+    const templateContext: LexerTransitionFunctionContext = { history: [], tokens: [{ type: TokenType.TAG_OPEN_NAME, parts: ['template'], span: { start: 0, end: 0 } }] };
     const cursor = new LexerCursor('row(item: Item)>');
     expect(lexTagBody(cursor, templateContext)).toEqual({ state: LexerState.TEMPLATE_DECLARATION });
     expect(cursor.peek()).toBe('r'.charCodeAt(0));

@@ -1,7 +1,5 @@
-import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
-import { CustomElement } from '../../models';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options.type';
 
@@ -23,8 +21,8 @@ function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   name: string | symbol = 'label',
   metadata: Metadata = {}
 ): Decorated<ActualValue> {
-  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<CustomElement, InputSignal<ActualValue>>;
-  const decorated = Property<CustomElement, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue>>, context);
+  const decorator = Property<InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
+  const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ActualValue>;
 }
 
@@ -33,8 +31,8 @@ function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
   name: string | symbol = 'label',
   metadata: Metadata = {}
 ): Decorated<ActualValue> {
-  const context = { name, metadata } as unknown as ClassAccessorDecoratorContext<CustomElement, InputSignal<ActualValue>>;
-  const decorated = Property.required<CustomElement, ActualValue, IncomingValue>(options)({} as ClassAccessorDecoratorValue<InputSignal<ActualValue>>, context);
+  const decorator = Property.required<ActualValue, IncomingValue>(options);
+  const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ActualValue>;
 }
 

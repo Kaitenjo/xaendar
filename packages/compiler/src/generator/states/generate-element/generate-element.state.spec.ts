@@ -11,6 +11,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 
 const cacheWith = (properties: Record<string, ComponentPropertyMetadata>): CompilerCache => ({
   getOrInsert: async () => ({ properties: new Map(Object.entries(properties)) }) as never,
+  getImport: () => Promise.reject(new Error('No import')),
   set: () => undefined
 });
 
@@ -413,7 +414,7 @@ describe('generateElement', () => {
 
     it('does not query the metadata of a native element', async () => {
       const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, set: () => undefined };
+      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
       const { code } = await run('<div @if (cond()) { title="x" }></div>', context);
 
       expect(code.join('\n')).toContain('unbind: _removeAttribute');
@@ -421,7 +422,7 @@ describe('generateElement', () => {
 
     it('generates a custom element of another library like a native element, without querying its metadata', async () => {
       const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, set: () => undefined };
+      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
       context.addCustomElementPatterns('sl-*');
       const { code } = await run('<sl-button @if (cond()) { variant="primary" }></sl-button>', context);
 
@@ -589,6 +590,7 @@ describe('generateElement', () => {
             ])
           } as never;
         },
+        getImport: () => Promise.reject(new Error('No import')),
         set: () => undefined
       };
       const { code } = await run('<div @@myDirective(label="x" @if (cond()) { display="{mode()}" (toggled)="onToggled()" @if (inner()) { title="z" } } @else { display="none" })></div>', context);

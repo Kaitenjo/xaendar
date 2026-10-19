@@ -30,49 +30,49 @@ describe('lexEventParameter', () => {
   it('keeps a comma inside brackets as part of the same parameter', () => {
     const cursor = new LexerCursor('[a,b])"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['[a,b]']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['[a,b]']]);
   });
 
   it('keeps a comma inside braces as part of the same parameter', () => {
     const cursor = new LexerCursor('{a,b})"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['{a,b}']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['{a,b}']]);
   });
 
   it('keeps a comma inside double quotes as part of the same parameter', () => {
     const cursor = new LexerCursor('"a,b")"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['"a,b"']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['"a,b"']]);
   });
 
   it('keeps a comma inside single quotes as part of the same parameter', () => {
     const cursor = new LexerCursor('\'a,b\')"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['\'a,b\'']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['\'a,b\'']]);
   });
 
   it('keeps the calls inside a parameter, with their commas, as part of it', () => {
     const cursor = new LexerCursor('item().id,format(a, b()),$event)"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['item().id'], ['format(a, b())'], ['$event']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['item().id'], ['format(a, b())'], ['$event']]);
   });
 
   it('keeps the parentheses written in the strings inside a call as part of the parameter', () => {
     const cursor = new LexerCursor('format(\'(\', \')\'))"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['format(\'(\', \')\')']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['format(\'(\', \')\')']]);
   });
 
   it('treats an unmatched closing parenthesis inside an open delimiter as a literal character', () => {
     const cursor = new LexerCursor('[)"a])"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['["a]']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['["a]']]);
   });
 
   it('does not close a bracket delimiter on a mismatched closing character', () => {
     const cursor = new LexerCursor('[{a}])"');
     const result = lexEventParameter(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['[{a}]']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['[{a}]']]);
   });
 
   it('throws when the parameter list is not closed with a double quote', () => {

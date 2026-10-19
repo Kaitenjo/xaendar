@@ -25,11 +25,16 @@ vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
   };
 });
 
-import { compile } from '@xaendar/compiler';
+import { compile, type CompileOptions } from '@xaendar/compiler';
 import type { PluginContext } from 'rolldown';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getImportOrExtract, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
 import { createLoadHook } from './load';
+
+/**
+ * `compile` as the load hook calls it: the overload compiling the render function only.
+ */
+const compileRender: (input: string, options: Omit<CompileOptions, 'baseDir'>) => Promise<string> = compile;
 
 const TEMPLATE_PATH = '/src/foo/foo.xd.component.html';
 const TEMPLATE_MODULE_ID = `\0${createTemplateModuleSpecifier(TEMPLATE_PATH, ['items', 'count'])}`;
@@ -67,7 +72,7 @@ async function load(state: XaendarPluginState, ctx: PluginContext, id: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(compile).mockResolvedValue('function render() {}');
+  vi.mocked(compileRender).mockResolvedValue('function render() {}');
 });
 
 describe('createLoadHook()', () => {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { LayoutAtom } from '../../types/template-layout/template-layout.type';
 import { parseTemplateLayout } from './template-layout.utils';
+
+/**
+ * The atom of an element.
+ */
+type ElementAtom = Extract<LayoutAtom, { kind: 'element' }>;
 
 describe('parseTemplateLayout', () => {
   it('reads text, interpolations and comments, with the whitespace as written', () => {
@@ -47,7 +53,7 @@ describe('parseTemplateLayout', () => {
   });
 
   it('reads the directives and structural directives of a tag, with their type arguments and bindings', () => {
-    const [element] = parseTemplateLayout('<p @@tooltip<Map<string, number>>(text="a" (shown)="log()") @@plain *each(of="{ rows }")></p>') as [{ items: unknown[] }];
+    const [element] = parseTemplateLayout('<p @@tooltip<Map<string, number>>(text="a" (shown)="log()") @@plain *each(of="{ rows }")></p>') as [ElementAtom];
 
     expect(element.items).toEqual([
       {
@@ -99,7 +105,7 @@ describe('parseTemplateLayout', () => {
   });
 
   it('reads the conditional bindings of a tag, the @else branches and the cases of a @switch included', () => {
-    const [element] = parseTemplateLayout('<p @if ( a ) { id="x" } @else if (b) { hidden } @else { lang="it" } @switch (c) { @case (1) @case (2) { dir="ltr" } @default { } }></p>') as [{ items: unknown[] }];
+    const [element] = parseTemplateLayout('<p @if ( a ) { id="x" } @else if (b) { hidden } @else { lang="it" } @switch (c) { @case (1) @case (2) { dir="ltr" } @default { } }></p>') as [ElementAtom];
 
     expect(element.items).toEqual([
       {

@@ -248,7 +248,7 @@ describe('Generator', () => {
 
   it('forwards the compiler cache to the context', async () => {
     const template = '<my-el @if (cond()) { title="x" }></my-el>';
-    const cache = { getOrInsert: async () => ({ properties: new Map() }) as never, set: () => undefined };
+    const cache = { getOrInsert: async () => ({ properties: new Map() }) as never, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
     const code = await new Generator(template, parse(template), cache).generate([]);
 
     expect(code).toContain('unbind: _removeAttribute');

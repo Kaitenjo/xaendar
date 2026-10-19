@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { LexerState } from '../types/lexer-state.enum';
 import { TokenType } from '../types/token-type.enum';
 import { TemplateError } from '../../models/template-error/template-error.model';
+import type { Span } from '../../types/span.type';
 import { Lexer } from './lexer';
+
+/**
+ * A token as the tests read it: the fields some tokens don't carry are optional.
+ */
+type ReadToken = { type: TokenType, parts?: readonly (string | undefined)[], span?: Span };
 
 describe('Lexer', () => {
   it('tokenizes a simple element with text content', () => {
-    const tokens = new Lexer('<div>Hello</div>').tokenize();
+    const tokens: ReadToken[] = new Lexer('<div>Hello</div>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
       TokenType.TAG_OPEN_NAME,
       TokenType.TAG_OPEN_END,
@@ -17,7 +23,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes an element ref, and the declaration of a template with its parameters', () => {
-    const tokens = new Lexer('<input #name type="text" />\n<template row(item: Item)></template>').tokenize();
+    const tokens: ReadToken[] = new Lexer('<input #name type="text" />\n<template row(item: Item)></template>').tokenize();
     expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
       [TokenType.TAG_OPEN_NAME, ['input']],
       [TokenType.ELEMENT_REF, ['name']],
@@ -33,8 +39,8 @@ describe('Lexer', () => {
 
   it('tokenizes the render of a template, the keyword spanning from the @ and the call from the name to the closing parenthesis', () => {
     const template = '<ul>@render row(item(), \')\')</ul>';
-    const tokens = new Lexer(template).tokenize();
-    expect(tokens.map(({ type, parts, span }) => [type, parts, template.slice(span.start, span.end)])).toEqual([
+    const tokens: ReadToken[] = new Lexer(template).tokenize();
+    expect(tokens.map(({ type, parts, span }) => [type, parts, template.slice(span?.start, span?.end)])).toEqual([
       [TokenType.TAG_OPEN_NAME, ['ul'], '<ul'],
       [TokenType.TAG_OPEN_END, [], '>'],
       [TokenType.RENDER, undefined, '@render '],
@@ -44,7 +50,7 @@ describe('Lexer', () => {
   });
 
   it('tokenizes a condition holding a parenthesis in a string, then its block', () => {
-    const tokens = new Lexer('@if (mark() === \')\') {x}').tokenize();
+    const tokens: ReadToken[] = new Lexer('@if (mark() === \')\') {x}').tokenize();
     expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
       [TokenType.IF, undefined],
       [TokenType.CONDITION, ['mark() === \')\'']],
@@ -352,7 +358,7 @@ describe('Lexer', () => {
       const tokens = describeTokens(lines.join(separator));
 
       expect(tokens).toEqual(describeTokens(lines.join(' ')));
-      expect(tokens.flatMap(token => token.parts).filter(part => /[\t\r\n]/.test(part))).toEqual([]);
+      expect(tokens.flatMap(token => token.parts).filter(part => /[\t\r\n]/.test(part ?? ''))).toEqual([]);
     });
 
     it('does not include the line breaks between the bindings in the span of their tokens', () => {

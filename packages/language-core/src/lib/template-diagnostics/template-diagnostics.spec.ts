@@ -18,7 +18,7 @@ afterAll(() => {
 /**
  * Analyzes a template and returns its diagnostics as the text of the template they are reported on and their message.
  */
-const diagnose = async (source: string) => getTemplateDiagnostics(await project.analyze(source)).map(({ span, message, category }) => [source.slice(span.start, span.end), message, category]);
+const diagnose = async (source: string) => getTemplateDiagnostics(await project.analyze(source)).map(({ span, message, category }): [text: string, message: string, category: DiagnosticCategory] => [source.slice(span.start, span.end), message, category]);
 
 describe('getTemplateDiagnostics', () => {
   it('reports the type errors on the exact characters of the template they come from', async () => {

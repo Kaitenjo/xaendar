@@ -3,7 +3,7 @@ import { TokenType } from '../../types/token-type.enum';
 import type { Token } from '../../types/token.type';
 import { expectsTemplateDeclaration } from './template-declaration.utils';
 
-const openTag = (tagName: string): Token => ({ type: TokenType.TAG_OPEN_NAME, parts: [tagName] });
+const openTag = (tagName: string): Token => ({ type: TokenType.TAG_OPEN_NAME, parts: [tagName], span: { start: 0, end: 0 } });
 
 describe('expectsTemplateDeclaration', () => {
   it('expects the declaration in a <template> declaring none yet', () => {
@@ -11,7 +11,7 @@ describe('expectsTemplateDeclaration', () => {
   });
 
   it('expects no declaration once the <template> declares one', () => {
-    expect(expectsTemplateDeclaration([openTag('template'), { type: TokenType.TEMPLATE_DECLARATION, parts: ['row', ''] }])).toBe(false);
+    expect(expectsTemplateDeclaration([openTag('template'), { type: TokenType.TEMPLATE_DECLARATION, parts: ['row', ''], span: { start: 0, end: 0 } }])).toBe(false);
   });
 
   it.each([

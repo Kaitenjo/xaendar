@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_HOST_PROPERTIES } from '../../costants';
-import type { HostMetadata } from '../../types/host/host-metadata.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { HostProperty } from './host-property.decorator';
 
 /**
  * Applies `@HostProperty(name)` to a member, as the decorators of a class do, storing the binding in `metadata`.
  */
-function decorate(name: string, metadata: DecoratorMetadataObject = {}, member = 'value', isStatic = false): HostMetadata {
+function decorate(name: string, metadata: DecoratorMetadataObject = {}, member = 'value', isStatic = false): WebComponentMetadata {
   const context = { kind: 'field', name: member, static: isStatic, metadata, access: { get: (owner: Record<string, unknown>) => owner[member] } };
   (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, context);
 
-  return metadata as HostMetadata;
+  return metadata as WebComponentMetadata;
 }
 
 describe('HostProperty decorator', () => {

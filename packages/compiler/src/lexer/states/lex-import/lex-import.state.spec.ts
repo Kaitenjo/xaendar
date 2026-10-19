@@ -12,14 +12,14 @@ describe('lexImport', () => {
     const cursor = new LexerCursor(' { A, B }');
     const result = lexImport(cursor, context);
     expect(result.state).toBe(LexerState.IMPORT_PATH);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['A'], ['B']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['A'], ['B']]);
     expect(result.tokens?.every(t => t.type === TokenType.IMPORT)).toBe(true);
   });
 
   it('marks the specifiers of an @import lazy, whatever the spaces around the modifier', () => {
     for (const source of [' lazy { A, B }', ' lazy{ A, B }', '   lazy   {A,B}']) {
       const result = lexImport(new LexerCursor(source), context);
-      expect(result.tokens?.map(t => t.parts)).toEqual([['A'], ['B']]);
+      expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['A'], ['B']]);
       expect(result.tokens?.every(t => t.type === TokenType.IMPORT && t.lazy === true)).toBe(true);
     }
   });
@@ -41,6 +41,6 @@ describe('lexImport', () => {
   it('preserves the spaces around the as keyword of aliased specifiers', () => {
     const cursor = new LexerCursor('{ A as B, * as ns, default   as D }');
     const result = lexImport(cursor, context);
-    expect(result.tokens?.map(t => t.parts)).toEqual([['A as B'], ['* as ns'], ['default as D']]);
+    expect(result.tokens?.map(t => 'parts' in t ? t.parts : undefined)).toEqual([['A as B'], ['* as ns'], ['default as D']]);
   });
 });

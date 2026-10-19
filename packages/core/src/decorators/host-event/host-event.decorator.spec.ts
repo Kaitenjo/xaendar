@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_HOST_EVENTS } from '../../costants';
-import type { HostMetadata } from '../../types/host/host-metadata.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { HostEvent } from './host-event.decorator';
 
 /**
  * Applies `@HostEvent(name, options)` to a method, as the decorators of a class do, storing the listener in `metadata`.
  */
-function decorate(name: string, options?: AddEventListenerOptions, metadata: DecoratorMetadataObject = {}, isStatic = false): HostMetadata {
+function decorate(name: string, options?: AddEventListenerOptions, metadata: DecoratorMetadataObject = {}, isStatic = false): WebComponentMetadata {
   const context = { kind: 'method', name: 'handle', static: isStatic, metadata, access: { get: (owner: Record<string, unknown>) => owner['handle'] } };
   (HostEvent(name, options) as unknown as (value: unknown, context: unknown) => void)(() => undefined, context);
 
-  return metadata as HostMetadata;
+  return metadata as WebComponentMetadata;
 }
 
 describe('HostEvent decorator', () => {
