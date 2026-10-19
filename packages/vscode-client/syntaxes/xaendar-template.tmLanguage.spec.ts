@@ -195,10 +195,10 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'Item)/')).toContain('entity.name.type.ts');
   });
 
-  it('colors the template variables, and the declaration of a template with its parameters, leaving the # of the values alone', () => {
+  it('colors the element refs, and the declaration of a template with its parameters, leaving the # of the values alone', () => {
     const template = '<input #field type="text" /><p data-color="#fde68a" href="#top">Issue #42</p><template #row(item: Item, index: number)></template>';
 
-    expect(scopesOf(template, '#field')).toContain('punctuation.definition.template-variable.xaendar');
+    expect(scopesOf(template, '#field')).toContain('punctuation.definition.element-ref.xaendar');
     expect(scopesOf(template, 'field')).toContain('variable.other.constant.xaendar');
     expect(scopesOf(template, 'type')).toContain('entity.other.attribute-name.html');
     expect(scopesOf(template, 'fde68a')).not.toContain('variable.other.constant.xaendar');

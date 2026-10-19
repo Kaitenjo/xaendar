@@ -67,14 +67,14 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     appendArgument(retVal.code, members[i]);
   }
 
-  // The template variable naming the element, declared by its scope, follows the children
-  const variable = node.variable ? `, '${node.variable.name}'` : '';
+  // The element ref naming the element, declared by its scope, follows the children
+  const ref = node.ref ? `, '${node.ref.name}'` : '';
   hasChildren
     ? retVal.code.push(
-      indent(`(${nodeName}, parentContext) => ${nodeName}Children.call(this, ${nodeName}, parentContext)${variable}`),
+      indent(`(${nodeName}, parentContext) => ${nodeName}Children.call(this, ${nodeName}, parentContext)${ref}`),
       ');'
     )
-    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} null${variable});`;
+    : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} null${ref});`;
 
   switch (tagName) {
     case 'svg':

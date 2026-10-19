@@ -38,7 +38,7 @@ const component = (typeParameters?: string[]) => ({
 const text = (lines: Array<{ text: string }>) => lines.map(({ text: lineText }) => lineText);
 
 describe('typeCheckScope', () => {
-  it('declares the template variables of the scope, however deeply nested, which the expressions of the whole scope read as written', () => {
+  it('declares the element refs of the scope, however deeply nested, which the expressions of the whole scope read as written', () => {
     const template = '<p>{ field.value }</p><label><input #field /></label>';
     const { declarations, lines } = typeCheckScope(parse(template), new TypeCheckContext(), processNode);
 

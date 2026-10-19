@@ -43,7 +43,7 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  * A custom element of another library may dispatch events the map doesn't declare: their `$event` is `any`.
  *
  * The content of an element a structural directive is applied to is a scope of its own: a block of the type-check code
- * when it declares template variables.
+ * when it declares element refs.
  *
  * @param node - The `ElementNode` to type-check.
  * @param processNode - Callback used to type-check each child node.
@@ -78,8 +78,8 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
 
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEventType, context));
 
-  // The element is type-checked: the template variable naming its generic component is typed with the instantiation
-  if (node.variable && context.getImportBySelector(tagName)?.typeParameters) {
+  // The element is type-checked: the element ref naming its generic component is typed with the instantiation
+  if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
 
@@ -120,8 +120,8 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
  */
 function typeCheckComponentBindings(node: ElementNode, declaredMetadata: ComponentMetadata, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
-  // The instantiation of a component named by a template variable is declared in the scope of the variable, which is typed with it
-  const suffix = node.variable ? getInstantiationSuffix(node) : undefined;
+  // The instantiation of a component named by an element ref is declared in the scope of the ref, which is typed with it
+  const suffix = node.ref ? getInstantiationSuffix(node) : undefined;
   const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
@@ -165,7 +165,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
 
   /*
     The instantiation of a generic component is declared around the checks, as the types of the bindings name it,
-    or in the scope of the template variable naming the element, under names of its own
+    or in the scope of the element ref naming the element, under names of its own
   */
   return suffix === undefined ? [plain('{'), ...indentLines([...declarations, ...lines]), plain('}')] : [...declarations, ...lines];
 }
@@ -321,7 +321,7 @@ const PROBED = '__Probed';
  * (or the selector of the directive, or the tag name of the element, when there are none), so that a type that doesn't
  * satisfy a constraint is reported there.
  *
- * The declarations of a generic component named by a template variable are written in the scope of the variable, which
+ * The declarations of a generic component named by an element ref are written in the scope of the ref, which
  * is typed with the instantiation: their names end with a suffix telling them apart from the ones of the other elements
  * of the scope, and the instantiation is declared even when nothing is inferred.
  *
@@ -330,7 +330,7 @@ const PROBED = '__Probed';
  * @param attributes - The attributes bound to the properties, whose values the type parameters are inferred from.
  * @param ownerSpan - Span of the selector of the directive, or of the tag name of the element.
  * @param context - Current type-check scope.
- * @param suffix - The suffix of the names of the declarations of a component named by a template variable (see
+ * @param suffix - The suffix of the names of the declarations of a component named by an element ref (see
  *   `getInstantiationSuffix`), `undefined` when they are written around the checks of the bindings.
  * @returns The metadata to check the bindings against, and the lines to write before the checks, `undefined` when the
  *   type parameters are neither declared nor inferred, and the instantiation needs no name.
@@ -376,7 +376,7 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
 
   let instance = instantiate(given);
   if (!probe) {
-    // A template variable is typed with the instantiation, even when nothing is inferred
+    // An element ref is typed with the instantiation, even when nothing is inferred
     return suffix === undefined
       ? { metadata: withOwnerType(metadata, generic, instance) }
       : { metadata: withOwnerType(metadata, generic, instanceName), declarations: [plain(`type ${instanceName} = ${instance};`)] };

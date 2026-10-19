@@ -67,7 +67,7 @@ describe('_Context', () => {
       const scope = root.addChild();
       scope.declare('field');
 
-      expect(() => scope.addChild().get('field')).toThrow(new ReferenceError('Template variable "field" is read before the element it names is rendered'));
+      expect(() => scope.addChild().get('field')).toThrow(new ReferenceError('Element ref "field" is read before the element it names is rendered'));
     });
 
     it('throws when a @let is read before it is initialized', () => {

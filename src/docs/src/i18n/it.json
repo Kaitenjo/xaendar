@@ -129,7 +129,7 @@
       "templates/switch": "@switch",
       "templates/imports": "@import",
       "templates/let": "@let",
-      "templates/template-variables": "Variabili di template",
+      "templates/element-refs": "Element ref",
       "templates/conditional-bindings": "Binding condizionali",
       "templates/reusable-templates": "Template e @render",
       "templates/expressions": "Sintassi delle espressioni",
@@ -1531,7 +1531,7 @@
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
           "td19": "<code>&lt;template #name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
-          "td20": "<code>@let</code>, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
+          "td20": "<code>@let</code>, chiamata anche variabile di template, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
@@ -2034,14 +2034,14 @@
       "events": {
         "eyebrow": "Template",
         "title": "Gestione degli eventi",
-        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente, di uno dei suoi membri, come <code>cart.clear()</code>, o di una <a href=\"#/it/templates/template-variables\">variabile di template</a>, come <code>dialog.showModal()</code>. L’handler è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
+        "lead": "Un attributo il cui nome è tra parentesi ascolta l’evento con quel nome e chiama un metodo del componente, di uno dei suoi membri, come <code>cart.clear()</code>, o di un <a href=\"#/it/templates/element-refs\">element ref</a>, come <code>dialog.showModal()</code>. L’handler è sempre una singola chiamata a un metodo, con argomenti semplici: la logica vive nella classe, dove si può leggere, tipizzare e testare.",
         "callingAMethod": {
           "title": "Chiamare un metodo",
           "example1": "Ogni tipo di argomento",
           "p1": "Gli argomenti possono essere:",
           "li1": "letterali: stringhe, numeri, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, l’evento stesso, in qualsiasi posizione;",
-          "li3": "membri del componente, variabili di un <code>@for</code> e variabili di template, con le loro proprietà, come in <code>color().id</code> o <code>field.value</code>;",
+          "li3": "membri del componente, variabili di un <code>@for</code> e element ref, con le loro proprietà, come in <code>color().id</code> o <code>field.value</code>;",
           "li4": "un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.",
           "p2": "Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile con il parametro del metodo."
         },
@@ -2067,7 +2067,7 @@
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
-          "td1": "Chiama un metodo del componente, di uno dei suoi membri o di una variabile di template, per ogni evento.",
+          "td1": "Chiama un metodo del componente, di uno dei suoi membri o di un element ref, per ogni evento.",
           "td2": "Passa l’evento, tipizzato in base al nome.",
           "td3": "Letterali, membri, variabili di un ciclo e le loro proprietà.",
           "td4": "Un listener attivo solo finché vale la condizione. Vedi <a href=\"#/it/templates/conditional-bindings\">Binding condizionali</a>."
@@ -2154,7 +2154,7 @@
           "p3": "Una chiave ripetuta nella lista ha una riga per ogni occorrenza, abbinate in ordine, quindi le righe seguono l’array a ogni cambiamento: premi il pulsante qualche volta. Le righe con la stessa chiave si distinguono solo per il loro ordine, quindi le chiavi uniche restano la scelta sicura quando le righe hanno uno stato.",
           "callout1": {
             "heading": "Cosa si può iterare, e cosa no",
-            "p1": "Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array. L’espressione di <code>track</code> legge l’elemento, le variabili implicite, i membri del componente e gli import, ma nessuna variabile di template. Un numero negativo non renderizza nulla."
+            "p1": "Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array. L’espressione di <code>track</code> legge l’elemento, le variabili implicite, i membri del componente e gli import, ma nessun element ref. Un numero negativo non renderizza nulla."
           }
         },
         "summary": {
@@ -2410,47 +2410,47 @@
           "td4": "Renderizzato quando nessun case corrisponde, ovunque sia scritto."
         }
       },
-      "templateVariables": {
+      "elementRefs": {
         "eyebrow": "Template",
-        "title": "Variabili di template",
-        "lead": "<code>#name</code> su un elemento gli dà un nome nel template: le espressioni lo leggono come una variabile, tipizzata con il tipo dell’elemento, un <code>HTMLInputElement</code> per un <code>&lt;input&gt;</code> o la classe di un componente. Gli handler degli eventi ne chiamano i metodi, oppure lo passano ai metodi del componente.",
+        "title": "Element ref",
+        "lead": "<code>#name</code> su un elemento è un element ref, o ref: dà un nome all’elemento nel template, e le espressioni lo leggono, tipizzato con il tipo dell’elemento, un <code>HTMLInputElement</code> per un <code>&lt;input&gt;</code> o la classe di un componente. Gli handler degli eventi ne chiamano i metodi, oppure lo passano ai metodi del componente. Da non confondere con le variabili di template, dichiarate con <a href=\"#/it/templates/let\">@let</a>.",
         "naming": {
           "title": "Dare un nome a un elemento",
-          "example1": "Un campo messo a fuoco, svuotato e letto tramite la sua variabile",
+          "example1": "Un campo messo a fuoco, svuotato e letto tramite il suo ref",
           "p1": "I pulsanti vengono prima del campo e lo usano comunque: un handler viene eseguito quando il template è renderizzato, quando ogni elemento del suo scope esiste. <code>field.focus()</code> chiama un metodo dell’elemento, <code>clear(field)</code> passa l’elemento a un metodo del componente, <code>search(field.value)</code> una sua proprietà.",
-          "p2": "Leggere una proprietà tramite una variabile non è reattivo: <code>{ field.value }</code> mostra il valore che il campo aveva quando il testo è stato renderizzato. Segui le modifiche con un evento, come fa il campo con <code>(input)</code>, e tienile in un signal."
+          "p2": "Leggere una proprietà tramite un ref non è reattivo: <code>{ field.value }</code> mostra il valore che il campo aveva quando il testo è stato renderizzato. Segui le modifiche con un evento, come fa il campo con <code>(input)</code>, e tienile in un signal."
         },
         "types": {
-          "title": "Il tipo di una variabile",
-          "p1": "Una variabile ha il tipo del suo elemento: quello che il DOM dichiara per il suo tag, come <code>HTMLDialogElement</code> per un <code>&lt;dialog&gt;</code> o <code>SVGCircleElement</code> per un <code>&lt;circle&gt;</code> dentro un <code>&lt;svg&gt;</code>, oppure la classe di un componente, istanziata con i suoi type argument quando è generica. TypeScript controlla ogni membro letto o chiamato tramite la variabile.",
+          "title": "Il tipo di un ref",
+          "p1": "Un ref ha il tipo del suo elemento: quello che il DOM dichiara per il suo tag, come <code>HTMLDialogElement</code> per un <code>&lt;dialog&gt;</code> o <code>SVGCircleElement</code> per un <code>&lt;circle&gt;</code> dentro un <code>&lt;svg&gt;</code>, oppure la classe di un componente, istanziata con i suoi type argument quando è generica. TypeScript controlla ogni membro letto o chiamato tramite il ref.",
           "example1": "Un dialog nativo aperto e chiuso con i suoi metodi",
-          "p2": "La variabile di un componente è la sua istanza, perché il componente è l’elemento: si possono chiamare anche i suoi metodi e i suoi signal, come fanno <code>counter.reset()</code> e <code>{ counter.count() }</code> nel primo snippet."
+          "p2": "Il ref di un componente è la sua istanza, perché il componente è l’elemento: si possono chiamare anche i suoi metodi e i suoi signal, come fanno <code>counter.reset()</code> e <code>{ counter.count() }</code> nel primo snippet."
         },
         "scope": {
           "title": "Scope e ordine",
-          "p1": "Una variabile è visibile in tutto il suo scope, anche dentro altri elementi e prima del suo elemento. Uno scope è il template, un ramo di <code>@if</code>, un case di <code>@switch</code>, una riga di <code>@for</code>, oppure il contenuto di un elemento a cui è applicata una direttiva strutturale: una variabile dichiarata lì non è visibile fuori, e uno scope annidato può dichiarare una variabile con lo stesso nome di una esterna, che nasconde.",
-          "p2": "Un elemento però viene creato quando il render lo raggiunge. Un handler può usare una variabile dichiarata dopo, mentre ogni altra espressione, un’interpolazione, un binding o una condizione, legge solo quelle dichiarate prima: il compilatore rifiuta le altre.",
-          "example1": "Una variabile per ogni riga",
+          "p1": "Un ref è visibile in tutto il suo scope, anche dentro altri elementi e prima del suo elemento. Uno scope è il template, un ramo di <code>@if</code>, un case di <code>@switch</code>, una riga di <code>@for</code>, oppure il contenuto di un elemento a cui è applicata una direttiva strutturale: un ref dichiarato lì non è visibile fuori, e uno scope annidato può dichiarare un ref con lo stesso nome di uno esterno, che nasconde.",
+          "p2": "Un elemento però viene creato quando il render lo raggiunge. Un handler può usare un ref dichiarato dopo, mentre ogni altra espressione, un’interpolazione, un binding o una condizione, legge solo quelli dichiarati prima: il compilatore rifiuta gli altri.",
+          "example1": "Un ref per ogni riga",
           "p3": "Ogni riga del <code>@for</code> ha il suo <code>note</code>. Invertire la lista sposta le righe insieme ai loro campi, e a quello che ci hai scritto.",
-          "p4": "Il compilatore segnala le variabili usate dove non possono esserlo:"
+          "p4": "Il compilatore segnala i ref usati dove non possono esserlo:"
         },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
             "heading": "Elementi che possono non esistere",
-            "body": "Un elemento a cui è applicata una direttiva strutturale, direttamente o con un binding condizionale, non può dichiarare una variabile, perché la direttiva può non renderizzarlo. Dichiarala su un elemento al suo interno, il cui contenuto è uno scope a sé, oppure usa un <code>@if</code>."
+            "body": "Un elemento a cui è applicata una direttiva strutturale, direttamente o con un binding condizionale, non può dichiarare un ref, perché la direttiva può non renderizzarlo. Dichiaralo su un elemento al suo interno, il cui contenuto è uno scope a sé, oppure usa un <code>@if</code>."
           },
           "callout2": {
             "heading": "Eventi durante il render",
-            "body": "Un handler eseguito mentre il template è ancora in fase di render, per un evento che un componente figlio emette dal suo <code>onInit</code>, può leggere una variabile il cui elemento non è ancora stato creato: lancia un <code>ReferenceError</code> con il nome della variabile, invece di leggerne un’altra con lo stesso nome."
+            "body": "Un handler eseguito mentre il template è ancora in fase di render, per un evento che un componente figlio emette dal suo <code>onInit</code>, può leggere un ref il cui elemento non è ancora stato creato: lancia un <code>ReferenceError</code> con il nome del ref, invece di leggerne un altro con lo stesso nome."
           },
           "callout3": {
             "heading": "L’espressione di track di @for",
-            "body": "L’espressione di track di un <code>@for</code> legge solo l’item e le variabili implicite del ciclo: non può leggere una variabile di template."
+            "body": "L’espressione di track di un <code>@for</code> legge solo l’item e le variabili implicite del ciclo: non può leggere un element ref."
           },
           "callout4": {
-            "heading": "Dove si dichiara una variabile",
-            "body": "Una variabile si dichiara direttamente sull’elemento, senza valore, al massimo una per elemento: non dentro un binding condizionale, né dentro le parentesi di una direttiva. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
+            "heading": "Dove si dichiara un ref",
+            "body": "Un ref si dichiara direttamente sull’elemento, senza valore, al massimo uno per elemento: non dentro un binding condizionale, né dentro le parentesi di una direttiva. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
           }
         },
         "summary": {
@@ -2466,7 +2466,7 @@
       "let": {
         "eyebrow": "Template",
         "title": "@let",
-        "lead": "<code>@let nome = valore;</code> dà un nome a una parte di un signal che il template legge più volte, come un campo dell’oggetto che contiene: <code>@let address = user().address;</code>, poi <code>address().city</code>, invece di un getter nella classe che serve solo ad accorciare l’accesso. I calcoli restano nella classe, in un <code>computed</code> o in un metodo.",
+        "lead": "<code>@let nome = valore;</code>, chiamata anche variabile di template, dà un nome a una parte di un signal che il template legge più volte, come un campo dell’oggetto che contiene: <code>@let address = user().address;</code>, poi <code>address().city</code>, invece di un getter nella classe che serve solo ad accorciare l’accesso. I calcoli restano nella classe, in un <code>computed</code> o in un metodo.",
         "declaring": {
           "title": "Dichiarare una @let",
           "p1": "Una <code>@let</code> va ovunque possa stare del contenuto: il nome, <code>=</code>, un’espressione e un <code>;</code>, obbligatorio. Il valore può andare a capo, e un <code>;</code> dentro una stringa o tra parentesi tonde, quadre o graffe non lo chiude. Una <code>@let</code> non renderizza niente e non si può riassegnare: il suo valore segue l’espressione con cui è dichiarata.",
@@ -2480,7 +2480,7 @@
         },
         "scope": {
           "title": "Scope e ordine",
-          "p1": "Una <code>@let</code> ha lo scope di una <a href=\"#/it/templates/template-variables\">variabile di template</a>: tutto il template, un ramo di <code>@if</code>, un caso di <code>@switch</code>, una riga di <code>@for</code>, il contenuto di un template o di un elemento a cui è applicata una direttiva strutturale, anche dentro altri elementi. Uno scope annidato può dichiarare una <code>@let</code> con lo stesso nome di una esterna, che nasconde.",
+          "p1": "Una <code>@let</code> ha lo scope di un <a href=\"#/it/templates/element-refs\">element ref</a>: tutto il template, un ramo di <code>@if</code>, un caso di <code>@switch</code>, una riga di <code>@for</code>, il contenuto di un template o di un elemento a cui è applicata una direttiva strutturale, anche dentro altri elementi. Uno scope annidato può dichiarare una <code>@let</code> con lo stesso nome di una esterna, che nasconde.",
           "example1": "Una @let per ogni riga",
           "p2": "Ogni riga ha il suo <code>stats</code>, un signal perché legge l’item della riga: completare un’attività aggiorna solo la riga di quella persona.",
           "p3": "Una <code>@let</code> viene inizializzata quando il render la raggiunge: un handler può leggerla ovunque nel suo scope, mentre ogni altra espressione, compreso il suo stesso valore, la legge solo dopo il suo <code>;</code>. Il contenuto di un template la legge solo se ogni <code>@render</code> del template viene dopo. Il compilatore segnala gli altri casi:"
@@ -2501,7 +2501,7 @@
           },
           "callout4": {
             "heading": "Dove si dichiara una @let",
-            "body": "Una <code>@let</code> si dichiara nel contenuto, mai tra i binding di un tag, con un nome tutto suo nel suo scope: TypeScript segnala una variabile di template, un template o un’altra <code>@let</code> con lo stesso nome. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
+            "body": "Una <code>@let</code> si dichiara nel contenuto, mai tra i binding di un tag, con un nome tutto suo nel suo scope: TypeScript segnala un element ref, un template o un’altra <code>@let</code> con lo stesso nome. <code>root</code>, <code>$event</code> e i nomi che iniziano con <code>__</code> o <code>$$</code> sono riservati."
           }
         },
         "summary": {
@@ -2537,7 +2537,7 @@
         },
         "scope": {
           "title": "Cosa legge un template",
-          "p1": "Il contenuto di un template legge i nomi del punto in cui è dichiarato, come una closure: i membri del componente, gli import, le variabili di template e i template del suo scope, l’item del <code>@for</code> attorno alla dichiarazione. Non legge i nomi del punto in cui viene renderizzato: passali come argomenti.",
+          "p1": "Il contenuto di un template legge i nomi del punto in cui è dichiarato, come una closure: i membri del componente, gli import, gli element ref e i template del suo scope, l’item del <code>@for</code> attorno alla dichiarazione. Non legge i nomi del punto in cui viene renderizzato: passali come argomenti.",
           "p2": "Un template può renderizzare se stesso. La ricorsione finisce dove finiscono i dati, con un <code>@if</code> o un <code>@for</code> sui figli, e ogni livello è una nuova istanza.",
           "example1": "Un albero renderizzato da un template ricorsivo",
           "p3": "Il compilatore segnala i template dichiarati o renderizzati dove non possono stare:"
@@ -2549,8 +2549,8 @@
             "body": "Il contenuto di un template viene creato nel namespace della sua dichiarazione: un template dichiarato tra elementi HTML renderizza elementi HTML, uno dichiarato dentro un <code>&lt;svg&gt;</code> renderizza elementi SVG. Renderizzarlo in un altro namespace è un errore."
           },
           "callout2": {
-            "heading": "Variabili di template lette da un template",
-            "body": "Il contenuto di un template viene renderizzato dove si trova un <code>@render</code>: una variabile di template di uno scope esterno che il contenuto legge, fuori da un handler, deve essere dichiarata prima di ogni <code>@render</code> del template."
+            "heading": "Element ref letti da un template",
+            "body": "Il contenuto di un template viene renderizzato dove si trova un <code>@render</code>: un element ref di uno scope esterno che il contenuto legge, fuori da un handler, deve essere dichiarato prima di ogni <code>@render</code> del template."
           },
           "callout3": {
             "heading": "Argomenti e parametri",
@@ -3072,16 +3072,16 @@
       "cause": "xd new accetta css, scss, less e styl.",
       "fix": "Usa css: è l’unica estensione che il plugin compila."
     },
-    "[Lexer] A template variable takes no value: write #name, which names the element it is declared on": {
-      "cause": "Un valore dato a una variabile di template, come in #field=\"name\".",
+    "[Lexer] An element ref takes no value: write #name, which names the element it is declared on": {
+      "cause": "Un valore dato a un element ref, come in #field=\"name\".",
       "fix": "Scrivi #field da solo: dà il nome all’elemento su cui è dichiarato."
     },
-    "[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings": {
+    "[Lexer] An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings": {
       "cause": "Un #name dentro il blocco di un binding condizionale, o dentro le parentesi di una direttiva (… outside of its directives).",
       "fix": "Dichiara la variabile direttamente sul tag."
     },
-    "[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name": {
-      "cause": "Parentesi dopo il nome di una variabile di template su un elemento diverso da <template>.",
+    "[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name": {
+      "cause": "Parentesi dopo il nome di un element ref su un elemento diverso da <template>.",
       "fix": "Scrivi #name da solo, oppure dichiara un <template> per avere dei parametri."
     },
     "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())": {
@@ -3092,16 +3092,16 @@
       "cause": "Una @let senza nome o senza =, o il cui blocco si chiude prima del suo ;. Lo stesso messaggio arriva come [Parser] quando il template finisce prima del ;, o manca il valore.",
       "fix": "Scrivi @let nome = valore; con un ; alla fine del valore."
     },
-    "[Parser] <input> declares more than one template variable (#first, #second): an element has a single name": {
-      "cause": "Due variabili di template sullo stesso elemento.",
+    "[Parser] <input> declares more than one element ref (#first, #second): an element has a single name": {
+      "cause": "Due element ref sullo stesso elemento.",
       "fix": "Tieni un solo nome per elemento."
     },
-    "[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own": {
-      "cause": "Una variabile di template su un elemento a cui è applicata una direttiva strutturale, direttamente o con un binding condizionale.",
+    "[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the ref on an element inside it, whose content is a scope of its own": {
+      "cause": "Un element ref su un elemento a cui è applicata una direttiva strutturale, direttamente o con un binding condizionale.",
       "fix": "Dichiarala su un elemento interno, oppure renderizza l’elemento con un @if e dichiara la variabile dentro il blocco."
     },
-    "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.": {
-      "cause": "Una variabile di template con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
+    "[Parser] '2fields' is not a valid name for an element ref: it must be an identifier.": {
+      "cause": "Un element ref con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
       "fix": "Usa un identificatore che il codice generato non riserva."
     },
     "[Parser] '2total' is not a valid name for a @let: it must be an identifier.": {
@@ -3144,28 +3144,28 @@
       "cause": "Un argomento con lo spread (...values) in un @render.",
       "fix": "Passa un argomento per ogni parametro."
     },
-    "[TypeChecker] \"field\" is read before the element it names is created: only an event handler can read a template variable declared after it": {
-      "cause": "Un’interpolazione, un binding, una condizione, l’iterabile di un @for o un argomento di un @render che legge una variabile di template il cui elemento viene dopo nel suo scope.",
+    "[TypeChecker] \"field\" is read before the element it names is created: only an event handler can read an element ref declared after it": {
+      "cause": "Un’interpolazione, un binding, una condizione, l’iterabile di un @for o un argomento di un @render che legge un element ref il cui elemento viene dopo nel suo scope.",
       "fix": "Sposta l’elemento prima dell’espressione, oppure leggi la variabile da un handler, che viene eseguito quando il template è renderizzato."
     },
-    "[TypeChecker] The track expression of a @for cannot read the template variable \"field\": it only reads the item of the @for and its implicit variables": {
-      "cause": "Una variabile di template letta dall’espressione di track di un @for.",
+    "[TypeChecker] The track expression of a @for cannot read the element ref \"field\": it only reads the item of the @for and its implicit variables": {
+      "cause": "Un element ref letto dall’espressione di track di un @for.",
       "fix": "Traccia l’item, una sua proprietà, oppure $index."
     },
     "Cannot redeclare block-scoped variable 'field'.": {
-      "cause": "Due variabili di template o template con lo stesso nome nello stesso scope, o uno con il nome di una variabile del @for che lo racchiude.",
+      "cause": "Due element ref o template con lo stesso nome nello stesso scope, o uno con il nome di una variabile del @for che lo racchiude.",
       "fix": "Rinominane uno: uno scope annidato (un blocco, la riga di un @for) può riusare il nome."
     },
     "[TypeChecker] \"row\" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one": {
-      "cause": "Un @render di un nome che non è un template dichiarato nel suo scope o in uno che lo racchiude: un membro, un import, una variabile di template, o un template dichiarato in un altro ramo o in un’altra riga. La build lo segnala anche come [Generator].",
+      "cause": "Un @render di un nome che non è un template dichiarato nel suo scope o in uno che lo racchiude: un membro, un import, un element ref, o un template dichiarato in un altro ramo o in un’altra riga. La build lo segnala anche come [Generator].",
       "fix": "Dichiara il template dove il @render lo vede, oppure passa i dati come argomenti a un template dichiarato più all’esterno."
     },
     "[TypeChecker] Template \"row\" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in": {
       "cause": "Un @render dentro un <svg> (o un <math>) di un template dichiarato tra elementi HTML, o viceversa: il contenuto viene creato nel namespace della dichiarazione. La build lo segnala anche come [Generator].",
       "fix": "Dichiara il template nel namespace del suo @render."
     },
-    "[TypeChecker] \"field\" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler": {
-      "cause": "Il contenuto di un template legge una variabile di template di uno scope esterno, fuori da un handler, e un @render del template viene prima dell’elemento della variabile.",
+    "[TypeChecker] \"field\" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler": {
+      "cause": "Il contenuto di un template legge un element ref di uno scope esterno, fuori da un handler, e un @render del template viene prima dell’elemento del ref.",
       "fix": "Sposta il @render dopo l’elemento, oppure passa il valore come argomento."
     },
     "[TypeChecker] \"total\" is read before its @let: only an event handler can read a @let declared after it": {
@@ -3188,8 +3188,8 @@
       "cause": "Un @render che passa meno o più argomenti dei parametri del template: viene segnalato sul @render, o sugli argomenti in più.",
       "fix": "Passa un argomento per ogni parametro."
     },
-    "ReferenceError: Template variable \"field\" is read before the element it names is rendered": {
-      "cause": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo onInit, che legge una variabile di template il cui elemento non è ancora creato.",
+    "ReferenceError: Element ref \"field\" is read before the element it names is rendered": {
+      "cause": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo onInit, che legge un element ref il cui elemento non è ancora creato.",
       "fix": "Emetti l’evento dopo il render (afterRender), oppure leggi la variabile più tardi."
     },
     "ReferenceError: @let \"total\" is read before its declaration is rendered": {

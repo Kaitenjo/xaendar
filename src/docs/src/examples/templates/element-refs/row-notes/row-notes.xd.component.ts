@@ -20,7 +20,7 @@ type Task = {
 };
 
 /**
- * Gives every row of a `@for` its own field, named by the same template variable in each one.
+ * Gives every row of a `@for` its own field, named by the same element ref in each one.
  */
 @WebComponent({
   selector: 'ex-row-notes',

@@ -29,17 +29,18 @@ export function isValidIdentifier(name: string): boolean {
 }
 
 /**
- * Ensures a name a template declares, e.g. the one of a template variable, can name it: it is an identifier, and not
+ * Ensures a name a template declares, e.g. the one of an element ref, can name it: it is an identifier, and not
  * one the generated code uses for itself (`root`, `$event` and the names starting with `__` or `$$`).
  *
  * @param name - The name.
  * @param span - The span of the name, which the error points to.
- * @param kind - What the name names, used in the error messages, e.g. `template variable`.
+ * @param kind - What the name names, used in the error messages, e.g. `element ref`.
  * @throws If the name is not an identifier, or is reserved.
  */
 export function assertDeclaredName(name: string, span: Span, kind: string): void {
   if (!isValidIdentifier(name)) {
-    throw new Error(`'${name}' is not a valid name for a ${kind}: it must be an identifier.`, { cause: span });
+    const article = /^[aeiou]/i.test(kind) ? 'an' : 'a';
+    throw new Error(`'${name}' is not a valid name for ${article} ${kind}: it must be an identifier.`, { cause: span });
   }
 
   if (RESERVED_NAMES.has(name) || name.startsWith('__') || name.startsWith('$$')) {

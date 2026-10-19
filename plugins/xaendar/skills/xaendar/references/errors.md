@@ -59,19 +59,19 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A listener inside the parentheses of a structural directive.
 - **Fix:** Write the listener on the tag, outside the directive.
 
-### `[Lexer] A template variable takes no value: write #name, which names the element it is declared on`
+### `[Lexer] An element ref takes no value: write #name, which names the element it is declared on`
 
-- **Cause:** A value given to a template variable, as in #field="name".
+- **Cause:** A value given to an element ref, as in #field="name".
 - **Fix:** Write #field alone: it names the element it is declared on.
 
-### `[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings`
+### `[Lexer] An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings`
 
 - **Cause:** A #name inside the block of a conditional binding, or inside the parentheses of a directive (… outside of its directives).
 - **Fix:** Declare the variable directly on the tag.
 
-### `[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name`
+### `[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name`
 
-- **Cause:** Parentheses after the name of a template variable on an element other than a <template>.
+- **Cause:** Parentheses after the name of an element ref on an element other than a <template>.
 - **Fix:** Write #name alone.
 
 ### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())`
@@ -146,19 +146,19 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An alias of @for written with let.
 - **Fix:** Write the alias as i = $index.
 
-### `[Parser] <input> declares more than one template variable (#first, #second): an element has a single name`
+### `[Parser] <input> declares more than one element ref (#first, #second): an element has a single name`
 
-- **Cause:** Two template variables on the same element.
+- **Cause:** Two element refs on the same element.
 - **Fix:** Keep one name per element.
 
-### `[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own`
+### `[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the ref on an element inside it, whose content is a scope of its own`
 
-- **Cause:** A template variable on an element a structural directive is applied to, directly or by a conditional binding.
+- **Cause:** An element ref on an element a structural directive is applied to, directly or by a conditional binding.
 - **Fix:** Declare it on an element inside, or render the element with an @if and declare the variable inside the block.
 
-### `[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.`
+### `[Parser] '2fields' is not a valid name for an element ref: it must be an identifier.`
 
-- **Cause:** A template variable named by something other than an identifier; `'root' is reserved in templates` for root, $event and the names starting with __ or $$.
+- **Cause:** An element ref named by something other than an identifier; `'root' is reserved in templates` for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
 
 
@@ -328,24 +328,24 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.
 - **Fix:** Use ?. or ??, or a precise type.
 
-### `[TypeChecker] "field" is read before the element it names is created: only an event handler can read a template variable declared after it`
+### `[TypeChecker] "field" is read before the element it names is created: only an event handler can read an element ref declared after it`
 
-- **Cause:** An interpolation, a binding, a condition or the iterable of a @for reading a template variable whose element comes after it in its scope.
+- **Cause:** An interpolation, a binding, a condition or the iterable of a @for reading an element ref whose element comes after it in its scope.
 - **Fix:** Move the element before the expression, or read the variable from an event handler, which runs once the template is rendered.
 
-### `[TypeChecker] The track expression of a @for cannot read the template variable "field": it only reads the item of the @for and its implicit variables`
+### `[TypeChecker] The track expression of a @for cannot read the element ref "field": it only reads the item of the @for and its implicit variables`
 
-- **Cause:** A template variable read by the track expression of a @for.
+- **Cause:** An element ref read by the track expression of a @for.
 - **Fix:** Track the item, a property of it, or $index.
 
 ### `Cannot redeclare block-scoped variable 'field'.`
 
-- **Cause:** Two template variables with the same name in the same scope, or a template variable named like a variable of the enclosing @for.
+- **Cause:** Two element refs with the same name in the same scope, or an element ref named like a variable of the enclosing @for.
 - **Fix:** Rename one of them: a nested scope (a block, the row of a @for) can reuse the name.
 
 ### `[TypeChecker] "row" is not a template visible here: declare it with <template #row(…)> in this scope or in an enclosing one`
 
-- **Cause:** A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, a template variable, or a template declared in another branch or row. The build reports it as [Generator] too.
+- **Cause:** A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, an element ref, or a template declared in another branch or row. The build reports it as [Generator] too.
 - **Fix:** Declare the template where the @render can see it, or pass the data as arguments to a template declared further out.
 
 ### `[TypeChecker] Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in`
@@ -353,9 +353,9 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @render inside an <svg> (or a <math>) of a template declared among HTML elements, or the other way round: the content is created in the namespace of the declaration. The build reports it as [Generator] too.
 - **Fix:** Declare the template inside the same namespace as its @render.
 
-### `[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler`
+### `[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler`
 
-- **Cause:** The content of a template reads a template variable of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the variable.
+- **Cause:** The content of a template reads an element ref of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the ref.
 - **Fix:** Move the @render after the element, or pass the value as an argument.
 
 
@@ -507,9 +507,9 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A browser warning: a component stylesheet is a constructed stylesheet, which drops @import rules.
 - **Fix:** Put every rule in the CSS file of the component.
 
-### `ReferenceError: Template variable "field" is read before the element it names is rendered`
+### `ReferenceError: Element ref "field" is read before the element it names is rendered`
 
-- **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a template variable whose element is not created yet.
+- **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading an element ref whose element is not created yet.
 - **Fix:** Emit the event after the render (afterRender), or read the variable later.
 
 

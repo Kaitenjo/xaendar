@@ -76,7 +76,7 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
     declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>')
   );
 
-  // The body is a scope of its own: the template variables it declares follow the ones of the loop
+  // The body is a scope of its own: the element refs it declares follow the ones of the loop
   const { declarations, lines: content } = typeCheckScope(node.children, forContext, processNode);
   body.push(
     ...declarations,

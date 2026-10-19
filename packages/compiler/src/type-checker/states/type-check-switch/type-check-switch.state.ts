@@ -21,7 +21,7 @@ import { typeCheckScope } from '../../utils/scope/scope.utils';
  * emitted as stacked `case` labels sharing that same body, matching real
  * JS/TS fallthrough syntax directly.
  *
- * Each body is a scope of its own, starting with the declarations of the template variables it declares.
+ * Each body is a scope of its own, starting with the declarations of the element refs it declares.
  */
 export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
@@ -38,7 +38,7 @@ export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, cont
       lines.push(plain('  default:'));
     }
 
-    // Each case is a scope of its own: a block, when it declares template variables, so that the other cases can declare them too
+    // Each case is a scope of its own: a block, when it declares element refs, so that the other cases can declare them too
     const { declarations, lines: content } = typeCheckScope(caseNode.children, new TypeCheckContext(context), processNode);
     const body = [...declarations, ...content, plain('break;')];
     lines.push(...indentLines(

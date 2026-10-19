@@ -15,7 +15,7 @@ describe('typeCheckIf', () => {
     expect(run('@if (a) { <b></b> }')).toEqual(['if (root.a) {', '  child;', '}']);
   });
 
-  it('declares the template variables of each branch at its start, in a scope of its own, so that two branches can declare the same name', () => {
+  it('declares the element refs of each branch at its start, in a scope of its own, so that two branches can declare the same name', () => {
     expect(run('@if (a) { <input #field /> } @else if (b) { <p #text></p> } @else { <select #field /> }')).toEqual([
       'if (root.a) {',
       '  let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',

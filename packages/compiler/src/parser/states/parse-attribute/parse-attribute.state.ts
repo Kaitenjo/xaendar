@@ -18,7 +18,7 @@ import { SwitchToken } from '../../../lexer/types/tokens/switch-token.type';
 import { TagCloseNameToken } from '../../../lexer/types/tokens/tag-close-name-token.type';
 import { TagCloseToken } from '../../../lexer/types/tokens/tag-close-token.type';
 import { TagSelfCloseToken } from '../../../lexer/types/tokens/tag-self-close-token.type';
-import type { TemplateVariableToken } from '../../../lexer/types/tokens/template-variable-token.type';
+import type { ElementRefToken } from '../../../lexer/types/tokens/element-ref-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
@@ -62,7 +62,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     | DirectiveToken
     | StructuralDirectiveToken
     | DirectiveCloseToken
-    | TemplateVariableToken
+    | ElementRefToken
   >();
 
   if (isBooleanAttributeSuccessor(nextToken.type)) {
@@ -115,7 +115,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
 /**
  * Tells whether the token following an attribute makes it a boolean attribute (declared without value),
  * i.e. it is another binding, a flow-control keyword or the end of a block of a conditional binding,
- * the start of a directive or of a structural directive, the end of a directive, a template variable, or the end of the tag.
+ * the start of a directive or of a structural directive, the end of a directive, an element ref, or the end of the tag.
  *
  * A flow-control keyword makes the attribute a boolean one even when it is misplaced,
  * so that it is reported by the state parsing the construct the attribute is declared in.
@@ -140,7 +140,7 @@ function isBooleanAttributeSuccessor(type: TokenType): boolean {
     case TokenType.DIRECTIVE:
     case TokenType.STRUCTURAL_DIRECTIVE:
     case TokenType.DIRECTIVE_CLOSE:
-    case TokenType.TEMPLATE_VARIABLE:
+    case TokenType.ELEMENT_REF:
       return true;
 
     default:

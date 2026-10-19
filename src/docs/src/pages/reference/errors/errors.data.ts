@@ -85,18 +85,18 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] A template variable takes no value: write #name, which names the element it is declared on',
-    page: 'templates/template-variables'
+    message: '[Lexer] An element ref takes no value: write #name, which names the element it is declared on',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings',
-    page: 'templates/template-variables'
+    message: '[Lexer] An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name',
-    page: 'templates/template-variables'
+    message: '[Lexer] Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Lexer',
@@ -175,18 +175,18 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] <input> declares more than one template variable (#first, #second): an element has a single name',
-    page: 'templates/template-variables'
+    message: '[Parser] <input> declares more than one element ref (#first, #second): an element has a single name',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Parser',
-    message: '[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own',
-    page: 'templates/template-variables'
+    message: '[Parser] <div> cannot declare #panel: its structural directives may not render it. Declare the ref on an element inside it, whose content is a scope of its own',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Parser',
-    message: "[Parser] '2fields' is not a valid name for a template variable: it must be an identifier.",
-    page: 'templates/template-variables'
+    message: "[Parser] '2fields' is not a valid name for an element ref: it must be an identifier.",
+    page: 'templates/element-refs'
   },
   {
     phase: 'Parser',
@@ -395,18 +395,18 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] "field" is read before the element it names is created: only an event handler can read a template variable declared after it',
-    page: 'templates/template-variables'
+    message: '[TypeChecker] "field" is read before the element it names is created: only an event handler can read an element ref declared after it',
+    page: 'templates/element-refs'
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] The track expression of a @for cannot read the template variable "field": it only reads the item of the @for and its implicit variables',
-    page: 'templates/template-variables'
+    message: '[TypeChecker] The track expression of a @for cannot read the element ref "field": it only reads the item of the @for and its implicit variables',
+    page: 'templates/element-refs'
   },
   {
     phase: 'TypeChecker',
     message: "Cannot redeclare block-scoped variable 'field'.",
-    page: 'templates/template-variables'
+    page: 'templates/element-refs'
   },
   {
     phase: 'TypeChecker',
@@ -420,7 +420,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler',
+    message: '[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler',
     page: 'templates/reusable-templates'
   },
   {
@@ -500,8 +500,8 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: 'ReferenceError: Template variable "field" is read before the element it names is rendered',
-    page: 'templates/template-variables'
+    message: 'ReferenceError: Element ref "field" is read before the element it names is rendered',
+    page: 'templates/element-refs'
   },
   {
     phase: 'Runtime',

@@ -8,16 +8,16 @@ import type { ConditionalBindingNode } from '../../types/nodes/conditional-bindi
 import type { ElementNode } from '../../types/nodes/element-node.type';
 import type { LetNode } from '../../types/nodes/let-node.type';
 import type { TemplateNode } from '../../types/nodes/template-node.type';
-import type { TemplateVariableNode } from '../../types/nodes/template-variable-node.type';
+import type { ElementRefNode } from '../../types/nodes/element-ref-node.type';
 
 /**
  * Callbacks invoked by {@link visitScopeDeclarations} for the names a scope of a template declares. Every callback is optional.
  */
 export type ScopeDeclarationVisitor = {
   /**
-   * Invoked for every element of the scope naming itself with a template variable, with the namespace it is created in.
+   * Invoked for every element of the scope naming itself with an element ref, with the namespace it is created in.
    */
-  readonly variable?: VoidFunction<[element: ElementNode, variable: TemplateVariableNode, namespace: ElementNamespace]>;
+  readonly ref?: VoidFunction<[element: ElementNode, ref: ElementRefNode, namespace: ElementNamespace]>;
   /**
    * Invoked for every template the scope declares, with the namespace its content is created in.
    */
@@ -30,7 +30,7 @@ export type ScopeDeclarationVisitor = {
 
 /**
  * Visits the names a scope of a template declares, in the order they are written, which are visible in the whole of it,
- * before their declaration too: the template variables of its elements, its templates and its `@let`s, however deeply
+ * before their declaration too: the element refs of its elements, its templates and its `@let`s, however deeply
  * nested, since an element doesn't open a scope. A control-flow block, the content of an element a structural directive is applied to and the content of a
  * template are scopes of their own, whose declarations are not visited.
  *
@@ -48,8 +48,8 @@ export function visitScopeDeclarations(nodes: readonly ASTNode[], namespace: Ele
     switch (node.type) {
       case ASTNodeType.Element: {
         const elementNamespace = getElementNamespace(node.tagName, namespace);
-        if (node.variable) {
-          visitor.variable?.(node, node.variable, elementNamespace);
+        if (node.ref) {
+          visitor.ref?.(node, node.ref, elementNamespace);
         }
 
         if (!isStructuralElement(node)) {

@@ -22,7 +22,7 @@ export const INSTANCE = '__Instance';
 
 /**
  * Returns the suffix of the names of the declarations instantiating the generic component of an element named by a
- * template variable: they are written in the scope of the variable, which is typed with the instantiation, instead of
+ * element ref: they are written in the scope of the ref, which is typed with the instantiation, instead of
  * in a block around the checks of the element, so they are told apart by the position of the element.
  *
  * @param element - The element.
@@ -33,7 +33,7 @@ export function getInstantiationSuffix(element: Pick<ElementNode, 'span'>): stri
 }
 
 /**
- * Type-checks the nodes of a scope in its context, together with the declarations of the template variables, of the
+ * Type-checks the nodes of a scope in its context, together with the declarations of the element refs, of the
  * templates and of the `@let` it declares, which the expressions and the `@render`s of the whole scope read as written,
  * the ones written before their declaration too. The names are registered in the context before the nodes are checked,
  * and declared once they are, when it is known whether the generic components the variables name were instantiated. A
@@ -57,8 +57,8 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
 
   const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, context.namespace, {
-    variable: (_element, { name }) => register(name),
-    template: ({ variable: { name } }, namespace) => {
+    ref: (_element, { name }) => register(name),
+    template: ({ ref: { name } }, namespace) => {
       register(name);
       context.addTemplate(name, namespace);
     },
@@ -73,7 +73,7 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
   const lines = nodes.flatMap(node => processNode(node, context));
   const declarations = new Array<Line>();
   visitScopeDeclarations(nodes, context.namespace, {
-    variable: (element, { name, nameSpan }, namespace) => {
+    ref: (element, { name, nameSpan }, namespace) => {
       declarations.push(line('let ', mapped(name, nameSpan), `!: ${getVariableType(element, namespace, context)};`));
     },
     template: template => declarations.push(...declareTemplate(template)),
@@ -96,7 +96,7 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
  * @param template - The template.
  * @returns The lines declaring the template.
  */
-function declareTemplate({ variable: { name, nameSpan }, span }: TemplateNode): Line[] {
+function declareTemplate({ ref: { name, nameSpan }, span }: TemplateNode): Line[] {
   const parametersType = getParametersType({ span });
   return [
     plain(`type ${parametersType} = Parameters<typeof ${getContentFunction({ span })}>;`),
@@ -105,7 +105,7 @@ function declareTemplate({ variable: { name, nameSpan }, span }: TemplateNode): 
 }
 
 /**
- * Returns the type of the template variable naming an element: the type the DOM declares for a native element (or a
+ * Returns the type of the element ref naming an element: the type the DOM declares for a native element (or a
  * custom element of another library), the class of a component, instantiated with the types of its type parameters when
  * it is generic, or `any` when the element failed type-checking before its generic component was instantiated.
  *

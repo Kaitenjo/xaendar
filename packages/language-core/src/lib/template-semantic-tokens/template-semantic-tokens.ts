@@ -46,7 +46,7 @@ export type TemplateSemanticToken = {
  * - an attribute bound to an input of a component or directive: `property`;
  * - an event bound to an output of a component or directive: `event`;
  * - the selector of a directive or structural directive: `decorator`;
- * - the template variables (`#name`), the variables of a `@for` block, the parameters of a template, the `@let` and
+ * - the element refs (`#name`), the variables of a `@for` block, the parameters of a template, the `@let` and
  *   `$event`, where declared and where read, the head of a handler called on a variable included: `variable`, `readonly`;
  * - the name of a template, where declared (`<template #name(…)>`) and where rendered (`@render name(…)`): `function`.
  *
@@ -80,7 +80,7 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add({ start: node.handlerSpan.start, end: node.handlerSpan.start + head.length }, 'variable', ['readonly']);
       }
     },
-    variable: node => add(node.nameSpan, 'variable', ['readonly']),
+    ref: node => add(node.nameSpan, 'variable', ['readonly']),
     directive: node => add(node.selectorSpan, 'decorator'),
     forBlock: node => {
       add(node.itemAliasSpan, 'variable', ['readonly']);
@@ -88,8 +88,8 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add(span, 'variable', ['readonly']);
       }
     },
-    template: ({ variable, parameters }) => {
-      add(variable.nameSpan, 'function');
+    template: ({ ref, parameters }) => {
+      add(ref.nameSpan, 'function');
       for (let i = 0; i < parameters.length; i++) {
         add(parameters[i].nameSpan, 'variable', ['readonly']);
       }

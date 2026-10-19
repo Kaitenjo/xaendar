@@ -79,7 +79,7 @@ export enum ASTNodeType {
    */
   Render,
   /**
-   * The declaration of a name for the value of an expression, `@let name = value;`.
+   * The declaration of a name for the value of an expression, `@let name = value;`, also called a template variable.
    */
   Let,
   /**

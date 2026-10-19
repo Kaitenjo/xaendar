@@ -31,7 +31,7 @@ describe('typeCheckSwitch', () => {
     expect(lines[0].mappings![0]).toBeDefined();
   });
 
-  it('writes the body of a case declaring template variables in a block of its own, starting with their declarations', () => {
+  it('writes the body of a case declaring element refs in a block of its own, starting with their declarations', () => {
     const template = '@switch (x) { @case (1) { <input #field /> } @default { <select #field /> } }';
     const lines = typeCheckSwitch(parse(template), processNode, new TypeCheckContext());
 

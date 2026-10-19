@@ -19,7 +19,7 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param context - The lexer context, whose history tells where the conditional binding was declared.
  * @returns An object containing the next lexer state and the tokens produced.
  * @throws If a directive or a structural directive is declared in a conditional binding belonging to a directive, a
- *   template variable is declared in it, or the tag ends before `}`.
+ *   element ref is declared in it, or the tag ends before `}`.
  */
 export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -69,7 +69,7 @@ export function lexConditionalBindingBody(cursor: LexerCursor, context: LexerTra
         break;
 
       case HASHTAG:
-        throw 'A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings';
+        throw 'An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings';
 
       // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
       case SPACE:

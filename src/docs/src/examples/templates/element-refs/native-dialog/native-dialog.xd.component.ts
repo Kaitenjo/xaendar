@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * Opens and closes a native dialog by calling the methods of the element its template variable names.
+ * Opens and closes a native dialog by calling the methods of the element its element ref names.
  */
 @WebComponent({
   selector: 'ex-native-dialog',

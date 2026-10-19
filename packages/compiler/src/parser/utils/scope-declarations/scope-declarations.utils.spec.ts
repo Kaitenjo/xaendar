@@ -7,19 +7,19 @@ import { isStructuralElement, visitScopeDeclarations } from './scope-declaration
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
 /**
- * Returns the template variables a scope declares, with the tag name and the namespace of the element declaring them.
+ * Returns the element refs a scope declares, with the tag name and the namespace of the element declaring them.
  */
 const declarationsOf = (template: string, namespace: Parameters<typeof visitScopeDeclarations>[1] = 'html') => {
   const declarations = new Array<[name: string, tagName: string, namespace: string]>();
   visitScopeDeclarations(parse(template), namespace, {
-    variable: (element, variable, elementNamespace) => declarations.push([variable.name, element.tagName, elementNamespace])
+    ref: (element, ref, elementNamespace) => declarations.push([ref.name, element.tagName, elementNamespace])
   });
 
   return declarations;
 };
 
 describe('visitScopeDeclarations', () => {
-  it('visits the template variables of the elements of the scope, however deeply nested, in the order they are declared', () => {
+  it('visits the element refs of the elements of the scope, however deeply nested, in the order they are declared', () => {
     expect(declarationsOf('<form #form><label>Name <input #name /></label><button #submit /></form><p>{ name.value }</p>')).toEqual([
       ['form', 'form', 'html'],
       ['name', 'input', 'html'],
@@ -63,8 +63,8 @@ describe('visitScopeDeclarations', () => {
     const templates = new Array<[name: string, namespace: string]>();
     const variables = new Array<string>();
     visitScopeDeclarations(parse('<template #row(item: Item)><input #inRow /><template #inner() /></template><svg><template #dot() /></svg>'), 'html', {
-      variable: (_element, { name }) => variables.push(name),
-      template: ({ variable: { name } }, namespace) => templates.push([name, namespace])
+      ref: (_element, { name }) => variables.push(name),
+      template: ({ ref: { name } }, namespace) => templates.push([name, namespace])
     });
 
     expect(templates).toEqual([['row', 'html'], ['dot', 'svg']]);
@@ -75,8 +75,8 @@ describe('visitScopeDeclarations', () => {
     const names = new Array<string>();
     const template = '@let first = 1;<div><input #name />@let second = 2;</div><template #row() />@if (open()) { @let inBranch = 3; }';
     visitScopeDeclarations(parse(template), 'html', {
-      variable: (_element, { name }) => names.push(name),
-      template: ({ variable: { name } }) => names.push(name),
+      ref: (_element, { name }) => names.push(name),
+      template: ({ ref: { name } }) => names.push(name),
       let: ({ name }) => names.push(name)
     });
 

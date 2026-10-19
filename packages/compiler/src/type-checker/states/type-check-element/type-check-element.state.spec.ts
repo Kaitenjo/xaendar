@@ -804,7 +804,7 @@ describe('typeCheckElement structural directives', () => {
       return text(typeCheckElement(parse(template), processChild, context));
     };
 
-    it('type-checks the content in a block of its own, declaring the template variables of the content first', () => {
+    it('type-checks the content in a block of its own, declaring the element refs of the content first', () => {
       expect(runTree('<div *myDirective><input #field (input)="save(field.value)" /></div>')).toEqual([
         '{',
         '  let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
@@ -813,7 +813,7 @@ describe('typeCheckElement structural directives', () => {
       ]);
     });
 
-    it('writes no block for a content declaring no template variable', () => {
+    it('writes no block for a content declaring no element ref', () => {
       expect(runTree('<div @if (cond()) { *myDirective }><span title="{a}"></span></div>')).toEqual([
         'if (root.cond()) {',
         '}',
@@ -1117,7 +1117,7 @@ describe('typeCheckElement generic components', () => {
     expect(lines.some(entry => entry.includes('__probe'))).toBe(false);
   });
 
-  describe('named by a template variable', () => {
+  describe('named by an element ref', () => {
     it('declares the instantiation in the scope of the variable, under names ending with the position of the element, and records it', () => {
       const context = new TypeCheckContext();
       context.addImport(genericComponent());

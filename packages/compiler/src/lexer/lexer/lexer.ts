@@ -25,7 +25,7 @@ import { lexTagClose } from '../states/lex-tag-close/lex-tag-close.state';
 import { lexTagOpenEnd } from '../states/lex-tag-open-end/lex-tag-open-end.state';
 import { lexTagOpenName } from '../states/lex-tag-open-name/lex-tag-open-name.state';
 import { lexRender } from '../states/lex-render/lex-render.state';
-import { lexTemplateVariable } from '../states/lex-template-variable/lex-template-variable.state';
+import { lexElementRef } from '../states/lex-element-ref/lex-element-ref.state';
 import { lexText } from '../states/lex-text/lex-text.state';
 import { endOfFile, LexerCursor } from '../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../types/lexer-state.enum';
@@ -83,7 +83,7 @@ export class Lexer {
     [LexerState.DIRECTIVE]: lexDirective,
     [LexerState.DIRECTIVE_BODY]: lexDirectiveBody,
     [LexerState.STRUCTURAL_DIRECTIVE]: lexStructuralDirective,
-    [LexerState.TEMPLATE_VARIABLE]: lexTemplateVariable,
+    [LexerState.ELEMENT_REF]: lexElementRef,
     [LexerState.RENDER]: lexRender,
     [LexerState.LET]: lexLet
   }

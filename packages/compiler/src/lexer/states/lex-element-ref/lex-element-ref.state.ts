@@ -4,24 +4,24 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import type { MaybeTokenWithSpan, Token } from '../../types/token.type';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
-import type { TemplateVariableToken } from '../../types/tokens/template-variable-token.type';
+import type { ElementRefToken } from '../../types/tokens/element-ref-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { lexGroup } from '../../utils/group/group.utils';
 
 /**
- * Consumes a template variable, after the `#` already consumed by the tag body, and transitions back to TAG_BODY:
+ * Consumes an element ref, after the `#` already consumed by the tag body, and transitions back to TAG_BODY:
  * - `#name` names the element it is declared on, e.g. `<input #name />`;
  * - `#name(…)` declares a template, and is only valid on a `<template>`, e.g. `<template #row(item: Item)>`: the
  *   parameters are read up to the parenthesis closing them, and are the second part of the token (empty for `#name()`).
  *
  * @param cursor - The lexer cursor positioned right after `#`.
  * @param context - The lexer context, whose tokens tell the element the variable is declared on.
- * @returns Transition result with the TEMPLATE_VARIABLE token and the TAG_BODY state.
+ * @returns Transition result with the ELEMENT_REF token and the TAG_BODY state.
  * @throws If the name is empty or given a value, the parameters are declared on an element other than a `<template>`
  *   or twice, or they are not followed by a whitespace, `/` or `>`.
  */
-export function lexTemplateVariable(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexElementRef(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
   let name = '';
   let parameters: string | undefined;
@@ -39,7 +39,7 @@ export function lexTemplateVariable(cursor: LexerCursor, context: LexerTransitio
         assertName(name);
         retVal = {
           state: LexerState.TAG_BODY,
-          tokens: [toTemplateVariableToken(name, parameters)]
+          tokens: [toElementRefToken(name, parameters)]
         };
         read = false;
         break;
@@ -51,7 +51,7 @@ export function lexTemplateVariable(cursor: LexerCursor, context: LexerTransitio
         }
 
         if (getTagName(context.tokens) !== 'template') {
-          throw 'Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element a template variable is just #name';
+          throw 'Only a <template> declares parameters, e.g. <template #row(item: Item)>: on any other element an element ref is just #name';
         }
 
         // Consume '('
@@ -60,7 +60,7 @@ export function lexTemplateVariable(cursor: LexerCursor, context: LexerTransitio
         break;
 
       case EQUAL_THEN:
-        throw 'A template variable takes no value: write #name, which names the element it is declared on';
+        throw 'An element ref takes no value: write #name, which names the element it is declared on';
 
       default:
         if (parameters !== undefined) {
@@ -76,14 +76,14 @@ export function lexTemplateVariable(cursor: LexerCursor, context: LexerTransitio
 }
 
 /**
- * Builds the token of a template variable.
+ * Builds the token of an element ref.
  *
  * @param name - The name of the variable.
  * @param parameters - The text of the parameters, if the variable declares a template.
  * @returns The token, whose second part is the text of the parameters only when the variable declares them.
  */
-function toTemplateVariableToken(name: string, parameters: string | undefined): MaybeTokenWithSpan<TemplateVariableToken> {
-  return parameters === undefined ? { type: TokenType.TEMPLATE_VARIABLE, parts: [name] } : { type: TokenType.TEMPLATE_VARIABLE, parts: [name, parameters] };
+function toElementRefToken(name: string, parameters: string | undefined): MaybeTokenWithSpan<ElementRefToken> {
+  return parameters === undefined ? { type: TokenType.ELEMENT_REF, parts: [name] } : { type: TokenType.ELEMENT_REF, parts: [name, parameters] };
 }
 
 /**
@@ -97,13 +97,13 @@ function getTagName(tokens: readonly Token[]): string | undefined {
 }
 
 /**
- * Ensures the name of a template variable is not empty.
+ * Ensures the name of an element ref is not empty.
  *
  * @param name - The name read so far.
  * @throws If the name is empty.
  */
 function assertName(name: string): void {
   if (!name) {
-    throw 'A template variable needs a name, e.g. #name';
+    throw 'An element ref needs a name, e.g. #name';
   }
 }

@@ -89,8 +89,8 @@ describe('walkTemplate', () => {
     expect(() => walkTemplate(parseTemplate(template), [], {})).not.toThrow();
   });
 
-  it('visits the template variables, visible in the whole of their scope, a block or the content of an element a structural directive is applied to opening one', () => {
-    const variablesTemplate = [
+  it('visits the element refs, visible in the whole of their scope, a block or the content of an element a structural directive is applied to opening one', () => {
+    const refsTemplate = [
       '<button (click)="pick(field)">{ field }</button><label><input #field /></label>',
       '@if (a) { { inBranch } <i #inBranch></i> }',
       '@for (item of items; track item()) { { inRow } <i #inRow></i> }',
@@ -99,8 +99,8 @@ describe('walkTemplate', () => {
       '{ c }'
     ].join('\n');
     const visits = new Array<string>();
-    walkTemplate(parseTemplate(variablesTemplate), [], {
-      variable: node => visits.push(`variable ${node.name}`),
+    walkTemplate(parseTemplate(refsTemplate), [], {
+      ref: node => visits.push(`ref ${node.name}`),
       event: (node, _owner, variables) => visits.push(`event ${node.name} [${[...variables].join(',')}]`),
       expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
     });
@@ -109,19 +109,19 @@ describe('walkTemplate', () => {
       'event click [field]',
       'expression field [field,$event]',
       'expression field [field]',
-      'variable field',
+      'ref field',
       'expression a [field]',
       'expression inBranch [field,inBranch]',
-      'variable inBranch',
+      'ref inBranch',
       'expression items [field]',
       'expression item() [field,item,$index,$first,$last,$even,$odd]',
       'expression inRow [field,item,$index,$first,$last,$even,$odd,inRow]',
-      'variable inRow',
+      'ref inRow',
       'expression b [field]',
       'expression inCase [field,inCase]',
-      'variable inCase',
+      'ref inCase',
       'expression inContent [field,inContent]',
-      'variable inContent',
+      'ref inContent',
       'expression c [field]'
     ]);
   });
@@ -134,8 +134,8 @@ describe('walkTemplate', () => {
     ].join('\n');
     const visits = new Array<string>();
     walkTemplate(parseTemplate(templatesTemplate), [], {
-      variable: node => visits.push(`variable ${node.name}`),
-      template: node => visits.push(`template ${node.variable.name}`),
+      ref: node => visits.push(`ref ${node.name}`),
+      template: node => visits.push(`template ${node.ref.name}`),
       render: node => visits.push(`render ${node.callee}`),
       expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
     });
@@ -143,11 +143,11 @@ describe('walkTemplate', () => {
     expect(visits).toEqual([
       'render row',
       'expression field [field,row]',
-      'variable field',
+      'ref field',
       'template row',
       'expression item().name [field,row,item,label]',
       'expression item() [field,row,item,label,inRow]',
-      'variable inRow',
+      'ref inRow',
       'render row',
       'expression inRow [field,row,item,label,inRow]'
     ]);

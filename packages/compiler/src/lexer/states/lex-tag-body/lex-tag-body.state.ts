@@ -7,7 +7,7 @@ import { isConditionalBindingKeyword } from '../../utils/conditional-binding/con
 
 /**
  * Scans the body of an open tag to determine what comes next:
- * a conditional binding (`@if`, `@switch`), a directive (`@@`), a structural directive (`*`), a template variable (`#`),
+ * a conditional binding (`@if`, `@switch`), a directive (`@@`), a structural directive (`*`), an element ref (`#`),
  * an event binding (`(`), an attribute, the end of the tag (`>` or `/`), or whitespace.
  * Transitions to the appropriate state without emitting any tokens.
  *
@@ -54,7 +54,7 @@ export function lexTagBody(cursor: LexerCursor, _context: LexerTransitionFunctio
         // Consume `#`.
         cursor.advance();
         retVal = {
-          state: LexerState.TEMPLATE_VARIABLE
+          state: LexerState.ELEMENT_REF
         }
         read = false;
         break;

@@ -50,7 +50,7 @@ describe('getTemplateSemanticTokens', () => {
     ]);
   }, TIMEOUT);
 
-  it('colors the template variables where declared and where read, the head of a handler called on one included', async () => {
+  it('colors the element refs where declared and where read, the head of a handler called on one included', async () => {
     const source = [
       '<button (click)="dialog.showModal()" (focus)="select(field)">{ field.value }</button>',
       '<input #field />',

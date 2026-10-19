@@ -51,8 +51,8 @@ describe('getBindingContext', () => {
     ['after the ) of an event', '<my-child (picked)'],
     ['in an event handler', '<my-child (picked)="la'],
     ['after a name that cannot be an attribute', '<my-child @la'],
-    ['on the name of a template variable', '<my-child #la'],
-    ['after the # of a template variable', '<my-child #'],
+    ['on the name of an element ref', '<my-child #la'],
+    ['after the # of an element ref', '<my-child #'],
     ['after a template that cannot be lexed', '<button (click)="onClick foo()"> la']
   ])('finds nothing %s', (_name, template) => {
     expect(contextOf(template)).toBeUndefined();

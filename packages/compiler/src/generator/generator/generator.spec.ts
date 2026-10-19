@@ -22,7 +22,7 @@ describe('Generator', () => {
     ].join('\n'));
   });
 
-  describe('template variables', () => {
+  describe('element refs', () => {
     it('declares the variables of the template scope in render, so that the expressions read them through the context, before their element too', async () => {
       const code = await generate('<button (click)="highlight(name)">Go</button><label>Name <input #name /></label>');
 
@@ -106,7 +106,7 @@ describe('Generator', () => {
       ].join('\n'));
     });
 
-    it('declares the template variables and the templates of the content of a template in its scope', async () => {
+    it('declares the element refs and the templates of the content of a template in its scope', async () => {
       const code = await generate('<template #row()><input #field /><template #inner() /></template>');
 
       expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', _template\(context, template_inner_\d+\.bind\(this\)\)\);/);

@@ -35,19 +35,19 @@ export type LayoutEvent = {
 };
 
 /**
- * A template variable naming an element, `#name`, or a `<template>` declaring itself with its parameters, `#name(parameters)`.
+ * An element ref naming an element, `#name`, or a `<template>` declaring itself with its parameters, `#name(parameters)`.
  */
-export type LayoutVariable = {
+export type LayoutElementRef = {
   /**
-   * Discriminant identifying the item as a template variable.
+   * Discriminant identifying the item as an element ref.
    */
-  readonly kind: 'variable';
+  readonly kind: 'ref';
   /**
-   * The name of the variable.
+   * The name of the ref.
    */
   readonly name: string;
   /**
-   * The parameters as written between the parentheses, `undefined` if the variable declares none.
+   * The parameters as written between the parentheses, `undefined` if the ref declares none.
    */
   readonly parameters?: string;
 };
@@ -126,7 +126,7 @@ export type LayoutConditionalBinding = LayoutBlock<LayoutItem[]>;
 /**
  * What an opening tag or the parentheses of a directive hold.
  */
-export type LayoutItem = LayoutVariable | LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
+export type LayoutItem = LayoutElementRef | LayoutAttribute | LayoutEvent | LayoutDirective | LayoutConditionalBinding;
 
 /**
  * An element, with the content between its tags as written.
@@ -202,7 +202,7 @@ export type LayoutAtom =
   | LayoutLet;
 
 /**
- * A `@let`, e.g. `@let total = price() * quantity();`.
+ * A `@let`, also called a template variable, e.g. `@let total = price() * quantity();`.
  */
 export type LayoutLet = {
   /**

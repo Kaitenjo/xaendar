@@ -31,9 +31,9 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
-  it('types a template variable with the type of the element it names, reporting its reads before the element and its duplicates', async () => {
+  it('types an element ref with the type of the element it names, reporting its reads before the element and its duplicates', async () => {
     expect(await diagnose('<p>{ field.value }</p>\n<input #field />\n{ field.valu }')).toEqual([
-      ['field', '"field" is read before the element it names is created: only an event handler can read a template variable declared after it', DiagnosticCategory.Error],
+      ['field', '"field" is read before the element it names is created: only an event handler can read an element ref declared after it', DiagnosticCategory.Error],
       ['valu', 'Property \'valu\' does not exist on type \'HTMLInputElement\'. Did you mean \'value\'?', DiagnosticCategory.Error]
     ]);
 
@@ -112,7 +112,7 @@ describe('getTemplateDiagnostics', () => {
       ['field', '"field" is not a template visible here: declare it with <template #field(…)> in this scope or in an enclosing one', DiagnosticCategory.Error]
     ]);
     expect(await diagnose('@render row()\n<input #field />\n<template #row()>{ field.value }</template>')).toEqual([
-      ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the variable from an event handler', DiagnosticCategory.Error]
+      ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 
@@ -123,7 +123,7 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
-  it('types a template variable naming a component with its class', async () => {
+  it('types an element ref naming a component with its class', async () => {
     expect(await diagnose('@import { Child } from \'./child\';\n<my-child #child label="a"></my-child>\n{ child.label() } { child.nope }')).toEqual([
       ['nope', 'Property \'nope\' does not exist on type \'Child\'.', DiagnosticCategory.Error]
     ]);
@@ -462,7 +462,7 @@ describe('getTemplateDiagnostics generic components', () => {
     ]);
   }, TIMEOUT);
 
-  it('types a template variable naming a generic component with the instantiation of the component', async () => {
+  it('types an element ref naming a generic component with the instantiation of the component', async () => {
     expect(await diagnose(`${imports}<my-grid #grid rows="{ items }"></my-grid>\n{ grid.rows()[0].name } { grid.rows()[0].missing }`)).toEqual([
       ['missing', 'Property \'missing\' does not exist on type \'{ id: number; name: string; }\'.', DiagnosticCategory.Error]
     ]);

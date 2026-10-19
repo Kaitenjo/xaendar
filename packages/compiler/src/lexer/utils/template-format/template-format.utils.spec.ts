@@ -255,7 +255,7 @@ describe('formatTemplate', () => {
       ));
     });
 
-    it('writes the template variable of an element, and the parameters of a <template> without the spaces around them', () => {
+    it('writes the element ref of an element, and the parameters of a <template> without the spaces around them', () => {
       expect(format('<input   #field   type="text"/>')).toBe(lines('<input #field type="text" />'));
       expect(format('<template #row(  item: Item, index: number )>\n<li>{ item() }</li>\n</template>')).toBe(lines(
         '<template #row(item: Item, index: number)>',

@@ -20,7 +20,7 @@ describe('TypeChecker', () => {
     expect([...mappingTable.keys()]).toEqual([1]);
   });
 
-  it('declares the template variables of the template at the start of the function, reading them as written in the whole template', async () => {
+  it('declares the element refs of the template at the start of the function, reading them as written in the whole template', async () => {
     const template = '<button (click)="pick(name)">Go</button><label><input #name /></label>';
     const { text } = await new TypeChecker(template, parse(template)).generate([]);
 
@@ -113,20 +113,20 @@ describe('TypeChecker', () => {
     await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow(message);
   });
 
-  it('fails on a template variable read before its element is created', async () => {
+  it('fails on an element ref read before its element is created', async () => {
     const template = '<p>{ field.value }</p><input #field />';
 
     await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow('[TypeChecker]');
     await expect(new TypeChecker(template, parse(template)).generate([])).rejects.toThrow('"field" is read before the element it names is created');
   });
 
-  it('collects every template variable read before its element, still writing the shim, while the errors are being collected', async () => {
+  it('collects every element ref read before its element, still writing the shim, while the errors are being collected', async () => {
     const template = '<p title="{ field.title }">{ field.value }</p><input #field />';
     const { errors, text } = await new TypeChecker(template, parse(template)).generateTolerant([]);
 
     expect(errors.map(error => (error as TemplateError).detail)).toEqual([
-      '"field" is read before the element it names is created: only an event handler can read a template variable declared after it',
-      '"field" is read before the element it names is created: only an event handler can read a template variable declared after it'
+      '"field" is read before the element it names is created: only an event handler can read an element ref declared after it',
+      '"field" is read before the element it names is created: only an event handler can read an element ref declared after it'
     ]);
     expect(text).toContain('field.value;');
   });

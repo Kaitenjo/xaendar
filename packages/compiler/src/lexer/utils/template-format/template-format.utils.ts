@@ -254,7 +254,7 @@ function isMultiline(item: LayoutItem): boolean {
  */
 function printItem(item: LayoutItem, level: number, options: TemplateFormatOptions): string {
   switch (item.kind) {
-    case 'variable':
+    case 'ref':
       return item.parameters === undefined ? `#${item.name}` : `#${item.name}(${item.parameters.trim()})`;
 
     case 'attribute':

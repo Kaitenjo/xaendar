@@ -1,7 +1,0 @@
-<p>{ field.value }</p> <input #field />           "field" is read before the element it names is created: only an event handler can read a template variable declared after it
-<input #field /> <select #field />                Cannot redeclare block-scoped variable 'field'.
-<div #panel *visible></div>                       <div> cannot declare #panel: its structural directives may not render it. Declare the variable on an element inside it, whose content is a scope of its own
-@for (item of items(); track field.id) { }        The track expression of a @for cannot read the template variable "field": it only reads the item of the @for and its implicit variables
-<input #root />                                   'root' is reserved in templates: give the template variable another name.
-<div @if (a()) { #panel }></div>                  [Lexer] A template variable names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings
-<input #field="name" />                           [Lexer] A template variable takes no value: write #name, which names the element it is declared on

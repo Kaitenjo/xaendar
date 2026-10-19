@@ -4,8 +4,8 @@ import type { ASTNodeWithSpan } from '../ast.type';
 import type { ASTNodeType } from '../node.enum';
 
 /**
- * AST node representing a `@let`, e.g. `@let total = price() * quantity();`: it names the value of an expression in the
- * expressions of its scope, as a signal when the expression reads one.
+ * AST node representing a `@let`, also called a template variable, e.g. `@let total = price() * quantity();`: it names
+ * the value of an expression in the expressions of its scope, as a signal when the expression reads one.
  */
 export type LetNode = ASTNodeWithSpan<{
   /**

@@ -109,7 +109,7 @@ describe('generateElement', () => {
     });
   });
 
-  it('passes the template variable naming the element after its children, rendering them in the scope of the element', async () => {
+  it('passes the element ref naming the element after its children, rendering them in the scope of the element', async () => {
     const context = new CompilerContext();
     const { code, functionsToProcess } = await run('<div #panel><span></span></div>', context);
     expect(code).toEqual([
@@ -121,7 +121,7 @@ describe('generateElement', () => {
     expectValidJavascript(code);
   });
 
-  it('passes the template variable naming an element without children after the null children', async () => {
+  it('passes the element ref naming an element without children after the null children', async () => {
     const { code } = await run('<input #field />');
     expect(code).toEqual(['_renderElement(root, context, null, \'input\', [], [], [], [], [], [], null, \'field\');']);
   });

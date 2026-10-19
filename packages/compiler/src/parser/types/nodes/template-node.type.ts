@@ -2,7 +2,7 @@ import type { Span } from '../../../types/span.type';
 import type { ASTNode, ASTNodeWithSpan } from '../ast.type';
 import type { ASTNodeType } from '../node.enum';
 import type { TemplateParameterNode } from './template-parameter-node.type';
-import type { TemplateVariableNode } from './template-variable-node.type';
+import type { ElementRefNode } from './element-ref-node.type';
 
 /**
  * AST node representing the declaration of a template, e.g. `<template #row(item: Item)>…</template>`: its content is
@@ -22,9 +22,9 @@ export type TemplateNode = ASTNodeWithSpan<{
    */
   closeNameSpan?: Span;
   /**
-   * The template variable naming the template, e.g. `#row` in `<template #row(item: Item)>`.
+   * The element ref naming the template, e.g. `#row` in `<template #row(item: Item)>`.
    */
-  variable: TemplateVariableNode;
+  ref: ElementRefNode;
   /**
    * The parameters of the template, in the order they are declared.
    */

@@ -62,10 +62,10 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
-  it('reads the template variable of an element, and the one of a <template> with its parameters', () => {
+  it('reads the element ref of an element, and the one of a <template> with its parameters', () => {
     expect(parseTemplateLayout('<input #field type="text" /><template #row(item: Item, render: (value: \')\') => void)></template>')).toEqual([
-      { kind: 'element', name: 'input', selfClosing: true, items: [{ kind: 'variable', name: 'field' }, { kind: 'attribute', name: 'type', value: 'text' }] },
-      { kind: 'element', name: 'template', selfClosing: false, items: [{ kind: 'variable', name: 'row', parameters: 'item: Item, render: (value: \')\') => void' }], children: [] }
+      { kind: 'element', name: 'input', selfClosing: true, items: [{ kind: 'ref', name: 'field' }, { kind: 'attribute', name: 'type', value: 'text' }] },
+      { kind: 'element', name: 'template', selfClosing: false, items: [{ kind: 'ref', name: 'row', parameters: 'item: Item, render: (value: \')\') => void' }], children: [] }
     ]);
   });
 
@@ -171,7 +171,7 @@ describe('parseTemplateLayout', () => {
     ['an attribute value that is not quoted', '<p a=b></p>'],
     ['an attribute value whose quote is not closed', '<p a="b></p>'],
     ['an event that is not followed by its handler', '<p (click)></p>'],
-    ['a template variable without a name', '<p # title="a"></p>'],
+    ['an element ref without a name', '<p # title="a"></p>'],
     ['the parameters of a template that are not closed', '<template #row(item: Item></template>'],
     ['a @render without a name', '@render (a)'],
     ['a @render without arguments', '@render row <p></p>'],

@@ -12,7 +12,7 @@ Applies to every Xaendar template (`*.xd.component.html`), including the templat
 
 After the tag name, write the items of the opening tag in this order:
 
-1. template variable: `#name`
+1. element ref: `#name`
 2. conditional structural directives: `@if (…) { *name(…) }`
 3. structural directives: `*name(…)`
 4. conditional directives: `@if (…) { @@name(…) }`
@@ -73,7 +73,7 @@ Between elements and inside a tag alike:
 
 ## @let
 
-Use a `@let` to name a part of a signal the template reads several times, instead of a getter that only shortens the access. Computations stay in the class (`computed`, getters, methods).
+Use a `@let`, also called a template variable, to name a part of a signal the template reads several times, instead of a getter that only shortens the access. Computations stay in the class (`computed`, getters, methods).
 
 ```html
 <!-- ✓ -->

@@ -4,7 +4,7 @@ import { Function, NoArgsVoidFunction } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
 
 /**
- * What declares a variable before it is initialized (see `_Context.declare`): a template variable, initialized once the
+ * What declares a variable before it is initialized (see `_Context.declare`): an element ref, initialized once the
  * element it names is rendered, or a `@let`, initialized once the render reaches it.
  */
 export type _DeclarationKind = 'element' | 'let';
@@ -75,12 +75,12 @@ export class _Context {
   }
 
   /**
-   * Declares a variable of this scope without initializing it: a template variable, whose element is rendered after the
+   * Declares a variable of this scope without initializing it: an element ref, whose element is rendered after the
    * scope is created, or a `@let`. Until it is initialized (see {@link set}), reading it throws, as reading a `let`
    * before its declaration does, instead of reading a variable of an ancestor scope named like it.
    *
    * @param name - The name of the variable.
-   * @param kind - What declares the variable. Defaults to a template variable.
+   * @param kind - What declares the variable. Defaults to an element ref.
    * @throws When an identifier with the same name is already declared in this scope.
    */
   public declare(name: string, kind: _DeclarationKind = 'element'): void {
@@ -89,7 +89,7 @@ export class _Context {
 
   /**
    * Initializes a variable declared in this scope or in one of its ancestor scopes (see {@link declare}), as an
-   * assignment does: e.g. the template variable of an element rendered in the context of the children of another
+   * assignment does: e.g. the element ref of an element rendered in the context of the children of another
    * element, which doesn't declare it.
    *
    * @param name - The name of the variable.
@@ -129,7 +129,7 @@ export class _Context {
     const value = this._variables.get(name);
     switch (value) {
       case _Context._uninitialized.element:
-        throw new ReferenceError(`Template variable "${name}" is read before the element it names is rendered`);
+        throw new ReferenceError(`Element ref "${name}" is read before the element it names is rendered`);
 
       case _Context._uninitialized.let:
         throw new ReferenceError(`@let "${name}" is read before its declaration is rendered`);

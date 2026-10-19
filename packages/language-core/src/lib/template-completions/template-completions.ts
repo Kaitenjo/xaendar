@@ -172,7 +172,7 @@ export async function getTemplateExpressionCompletions(templatePath: string, sou
   }
 
   // The variables come first, in the order they are declared (e.g. the item of a `@for`, then its implicit variables)
-  const variables = getTemplateVariables(analysis, identifier);
+  const variables = getTemplateNames(analysis, identifier);
   const names = new Set(variables);
   const proposed = variables.map((name, index): TemplateCompletion => ({ name, kind: ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, '0')}`, replacementSpan: span }));
   for (let i = 0; i < members.length; i++) {
@@ -403,19 +403,19 @@ function findShimPosition({ typeCheck, languageService, shimPath, bodyLineOffset
 }
 
 /**
- * Finds the variables of the template in scope at a position of its shim: the ones the type-check body declares (the
+ * Finds the names the template declares in scope at a position of its shim: the ones the type-check body declares (the
  * items of `@for` and their implicit variables, `$event`…), its internal ones (named with `$$` or `__` first) excluded.
  *
  * @param analysis - The analysis of the template.
  * @param shimPosition - The shim and the position in it.
- * @returns The names of the variables.
+ * @returns The names.
  */
-function getTemplateVariables({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile, position }: ShimPosition): string[] {
+function getTemplateNames({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile, position }: ShimPosition): string[] {
   const bodyStart = shimFile.getPositionOfLineAndCharacter(bodyLineOffset, 0);
-  const isTemplateVariable = ({ name, valueDeclaration }: Symbol) => valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
+  const isTemplateName = ({ name, valueDeclaration }: Symbol) => valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
   return languageService.getProgram()!.getTypeChecker()
     .getSymbolsInScope(findNode(shimFile, position), SymbolFlags.Variable)
-    .filter(isTemplateVariable)
+    .filter(isTemplateName)
     .map(({ name }) => name);
 }
 

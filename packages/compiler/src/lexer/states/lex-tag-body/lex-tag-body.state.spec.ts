@@ -50,9 +50,9 @@ describe('lexTagBody', () => {
     expect(cursor.peek()).toBe('h'.charCodeAt(0));
   });
 
-  it('transitions to TEMPLATE_VARIABLE and consumes "#" for a template variable', () => {
+  it('transitions to ELEMENT_REF and consumes "#" for an element ref', () => {
     const cursor = new LexerCursor('#name type="text"');
-    expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.TEMPLATE_VARIABLE });
+    expect(lexTagBody(cursor, context)).toEqual({ state: LexerState.ELEMENT_REF });
     expect(cursor.peek()).toBe('n'.charCodeAt(0));
   });
 

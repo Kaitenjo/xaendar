@@ -347,7 +347,7 @@ describe('_renderElement', () => {
     expect(_renderElement(document.createElement('div'), createRoot(), null, 'div', [], [], [], [], [], [], null)).toBeUndefined();
   });
 
-  it('initializes the template variable naming the element, declared by its scope, before binding it and rendering its children', () => {
+  it('initializes the element ref naming the element, declared by its scope, before binding it and rendering its children', () => {
     const parent = document.createElement('div');
     const scope = createRoot();
     scope.declare('panel');

@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type LetNode, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type TemplateVariableNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type EventNode, type ForNode, getForVariables, type IfNode, type ImportNode, isStructuralElement, type LetNode, type RenderNode, type StructuralDirectiveNode, type TemplateNode, type ElementRefNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { Expression } from 'typescript';
 
 /**
@@ -14,9 +14,9 @@ export type TemplateVisitor = {
    */
   readonly element?: (node: ElementNode, component: ComponentMetadata | undefined) => void;
   /**
-   * Invoked for every template variable an element declares (`#name`).
+   * Invoked for every element ref an element declares (`#name`).
    */
-  readonly variable?: (node: TemplateVariableNode) => void;
+  readonly ref?: (node: ElementRefNode) => void;
   /**
    * Invoked for every attribute of an element or of a directive, conditional bindings included, with the metadata
    * of the component or directive it is bound to, `undefined` for the attributes of any other element.
@@ -84,7 +84,7 @@ class TemplateWalker {
   constructor(private readonly _metadatas: readonly ComponentOrDirectiveMetadata[], private readonly _visitor: TemplateVisitor) { }
 
   /**
-   * Walks the nodes of a scope, whose template variables, templates and `@let` are visible in the whole of it (see
+   * Walks the nodes of a scope, whose element refs, templates and `@let` are visible in the whole of it (see
    * `visitScopeDeclarations`).
    *
    * @param nodes - The nodes of the scope.
@@ -99,8 +99,8 @@ class TemplateWalker {
 
     // The namespaces of the elements don't matter here
     visitScopeDeclarations(nodes, 'html', {
-      variable: (_element, { name }) => declare(name),
-      template: ({ variable: { name } }) => declare(name),
+      ref: (_element, { name }) => declare(name),
+      template: ({ ref: { name } }) => declare(name),
       let: ({ name }) => declare(name)
     });
 
@@ -190,7 +190,7 @@ class TemplateWalker {
   }
 
   /**
-   * Walks an element: its template variable, its bindings, its directives and its children, which are a scope of their
+   * Walks an element: its element ref, its bindings, its directives and its children, which are a scope of their
    * own when a structural directive is applied to the element.
    *
    * @param node - The element.
@@ -199,8 +199,8 @@ class TemplateWalker {
   private _walkElement(node: ElementNode, variables: ReadonlySet<string>): void {
     const component = this._metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === node.tagName);
     this._visitor.element?.(node, component);
-    if (node.variable) {
-      this._visitor.variable?.(node.variable);
+    if (node.ref) {
+      this._visitor.ref?.(node.ref);
     }
 
     this._walkBindings(node, component, variables);

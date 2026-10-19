@@ -17,11 +17,11 @@ const errorsOf = (template: string, ast: ASTNode[] = parse(template)) => checkVa
   return [message, template.slice(start, end)];
 });
 
-const readBefore = (name: string) => `"${name}" is read before the element it names is created: only an event handler can read a template variable declared after it`;
-const readByTrack = (name: string) => `The track expression of a @for cannot read the template variable "${name}": it only reads the item of the @for and its implicit variables`;
+const readBefore = (name: string) => `"${name}" is read before the element it names is created: only an event handler can read an element ref declared after it`;
+const readByTrack = (name: string) => `The track expression of a @for cannot read the element ref "${name}": it only reads the item of the @for and its implicit variables`;
 
 describe('checkVariableOrder', () => {
-  it('accepts the reads of a template variable after its element, in its own bindings and in its children', () => {
+  it('accepts the reads of an element ref after its element, in its own bindings and in its children', () => {
     expect(errorsOf('<input value="{ field.placeholder }" #field title="{ field.value }"><b>{ field.value }</b></input><p>{ field.value }</p>')).toBeUndefined();
   });
 
@@ -84,7 +84,7 @@ describe('checkVariableOrder', () => {
       ]);
     });
 
-    it('reports a template variable read by the track expression of a @for, declared by its body or outside of it', () => {
+    it('reports an element ref read by the track expression of a @for, declared by its body or outside of it', () => {
       expect(errorsOf('<input #field />@for (item of items(); track field.value + row.value + item()) { <input #row /> }')).toEqual([
         [readByTrack('field'), 'field'],
         [readByTrack('row'), 'row']
@@ -117,23 +117,23 @@ describe('checkVariableOrder', () => {
   });
 
   describe('templates', () => {
-    const readByRender = (name: string, callee: string) => `"${name}" is read by the template rendered by @render ${callee} before the element it names is created: render the template after the element, or read the variable from an event handler`;
+    const readByRender = (name: string, callee: string) => `"${name}" is read by the template rendered by @render ${callee} before the element it names is created: render the template after the element, or read the ref from an event handler`;
 
     it('checks the arguments of a @render, evaluated when it is rendered', () => {
       expect(errorsOf('@render row(field.value)<input #field /><template #row(value: string) />')).toEqual([[readBefore('field'), 'field']]);
     });
 
-    it('checks the reads of the content of a template against its own template variables, and accepts its parameters and the templates', () => {
+    it('checks the reads of the content of a template against its own element refs, and accepts its parameters and the templates', () => {
       expect(errorsOf('<template #row(item: Item)><p>{ item() } { other } { inner.value }</p><input #inner /><template #other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
     });
 
-    it('checks the default values of the parameters like the content of the template, against its own template variables and each @render', () => {
+    it('checks the default values of the parameters like the content of the template, against its own element refs and each @render', () => {
       expect(errorsOf('<template #row(label = inner.value)><input #inner /></template>')).toEqual([[readBefore('inner'), 'inner']]);
       expect(errorsOf('@render row()<input #field /><template #row(label = field.value) />')).toEqual([[readByRender('field', 'row'), 'row']]);
       expect(errorsOf('<input #field /><template #row(item: Item, label = item().name + field.value) />@render row(1)')).toBeUndefined();
     });
 
-    it('checks the template variables declared outside of a template, which its content reads, against each @render of the template', () => {
+    it('checks the element refs declared outside of a template, which its content reads, against each @render of the template', () => {
       const template = '<template #row()><p>{ field.value }</p></template>@render row()<input #field />@render row()';
       expect(errorsOf(template)).toEqual([[readByRender('field', 'row'), 'row']]);
       const callee = template.indexOf('@render row()') + '@render '.length;
@@ -155,7 +155,7 @@ describe('checkVariableOrder', () => {
       expect(errorsOf(template)).toEqual([[readByRender('field', 'outer'), 'outer']]);
     });
 
-    it('checks a template variable declared in the content of a template, read by a template the content renders', () => {
+    it('checks an element ref declared in the content of a template, read by a template the content renders', () => {
       expect(errorsOf('<template #outer()>@render inner()<input #field /><template #inner()>{ field.value }</template></template>')).toEqual([[readByRender('field', 'inner'), 'inner']]);
     });
 

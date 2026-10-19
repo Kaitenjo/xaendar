@@ -156,7 +156,7 @@ export class TypeChecker {
       this._context.addSignalClassField(reactiveMembers[i]);
     }
 
-    // The template variables read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
+    // The element refs read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
     const orderErrors = checkVariableOrder(this._ast);
     if (orderErrors?.length) {
       if (!this._errors) {
@@ -170,7 +170,7 @@ export class TypeChecker {
 
     // The declarations importing the symbols of the template are written at the top level, before the function
     const imports = this._ast.filter(node => node.type === ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
-    // The template is the outermost scope: the template variables it declares come first in the function
+    // The template is the outermost scope: the element refs it declares come first in the function
     const { declarations, lines: body } = typeCheckScope(this._ast.filter(node => node.type !== ASTNodeType.Import), this._context, this._processNode);
 
     // The types and the functions the type-check code of the templates and of the @let is written with are declared once, before the function

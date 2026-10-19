@@ -182,11 +182,11 @@ describe('parseElement', () => {
     });
   });
 
-  describe('template variables', () => {
-    it('parses the template variable naming the element, with the span of its name and of the whole of it', () => {
+  describe('element refs', () => {
+    it('parses the element ref naming the element, with the span of its name and of the whole of it', () => {
       const template = '<input disabled #field type="text" />';
       const [node] = parse(template) as ElementNode[];
-      expect(node.variable).toEqual({
+      expect(node.ref).toEqual({
         name: 'field',
         nameSpan: { start: template.indexOf('field'), end: template.indexOf('field') + 5 },
         span: { start: template.indexOf('#'), end: template.indexOf('field') + 5 }
@@ -196,12 +196,12 @@ describe('parseElement', () => {
 
     it('leaves the variable out of an element declaring none', () => {
       const [node] = parse('<input />') as ElementNode[];
-      expect(node).not.toHaveProperty('variable');
+      expect(node).not.toHaveProperty('ref');
     });
 
-    it('throws when an element declares more than one template variable, pointing to the second one', () => {
+    it('throws when an element declares more than one element ref, pointing to the second one', () => {
       const template = '<input #first #second />';
-      expect(() => parse(template)).toThrow('<input> declares more than one template variable (#first, #second): an element has a single name');
+      expect(() => parse(template)).toThrow('<input> declares more than one element ref (#first, #second): an element has a single name');
       expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: template.indexOf('#second'), end: template.indexOf(' />') } }));
     });
 
@@ -209,16 +209,16 @@ describe('parseElement', () => {
       ['directly', '<div #panel *hasRole(role="admin")></div>'],
       ['by a conditional binding', '<div #panel @if (cond()) { title="a" } @else { *hasRole }></div>'],
       ['by a nested conditional binding', '<div #panel @if (cond()) { @switch (mode()) { @case (1) { *hasRole } } }></div>']
-    ])('throws for a template variable on an element a structural directive is applied to %s', (_description, template) => {
+    ])('throws for an element ref on an element a structural directive is applied to %s', (_description, template) => {
       expect(() => parse(template)).toThrow('<div> cannot declare #panel: its structural directives may not render it');
     });
 
-    it('allows a template variable on an element whose conditional bindings apply no structural directive', () => {
+    it('allows an element ref on an element whose conditional bindings apply no structural directive', () => {
       expect(() => parse('<div #panel @if (cond()) { title="a" @if (other()) { @@tint } }></div>')).not.toThrow();
     });
 
     it.each([
-      ['not an identifier', '<input #2fields />', '\'2fields\' is not a valid name for a template variable'],
+      ['not an identifier', '<input #2fields />', '\'2fields\' is not a valid name for an element ref'],
       ['reserved', '<input #root />', '\'root\' is reserved in templates']
     ])('throws for a name %s', (_description, template, message) => {
       expect(() => parse(template)).toThrow(message);
@@ -234,7 +234,7 @@ describe('parseElement', () => {
         type: ASTNodeType.Template,
         nameSpan: { start: 1, end: 9 },
         closeNameSpan: { start: template.lastIndexOf('template'), end: template.lastIndexOf('template') + 8 },
-        variable: { name: 'row', nameSpan: at('row'), span: at('#row') },
+        ref: { name: 'row', nameSpan: at('row'), span: at('#row') },
         parameters: [
           { name: 'item', nameSpan: at('item'), type: 'Item', typeSpan: at('Item') },
           { name: 'index', nameSpan: at('index'), type: 'number', typeSpan: at('number') }

@@ -9,7 +9,7 @@
     { "include": "#custom-tag-close" },
     { "include": "#event" },
     { "include": "#directive" },
-    { "include": "#template-variable" },
+    { "include": "#element-ref" },
     { "include": "#control-flow" },
     { "include": "#control-flow-bare" },
     { "include": "#render" },
@@ -120,12 +120,12 @@
         }
       ]
     },
-    "template-variable": {
+    "element-ref": {
       "patterns": [
         {
           "begin": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(\\()",
           "beginCaptures": {
-            "1": { "name": "punctuation.definition.template-variable.xaendar" },
+            "1": { "name": "punctuation.definition.element-ref.xaendar" },
             "2": { "name": "entity.name.function.xaendar" },
             "3": { "name": "punctuation.definition.parameters.begin.xaendar" }
           },
@@ -159,7 +159,7 @@
         {
           "match": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(?=[\\s/>])",
           "captures": {
-            "1": { "name": "punctuation.definition.template-variable.xaendar" },
+            "1": { "name": "punctuation.definition.element-ref.xaendar" },
             "2": { "name": "variable.other.constant.xaendar" }
           }
         }

@@ -25,7 +25,7 @@ describe('lexDirectiveBody', () => {
     expect(() => lexDirectiveBody(new LexerCursor('*other)'), context)).toThrow('Directives cannot be declared inside another directive');
   });
 
-  it('throws for a template variable declared inside the directive', () => {
+  it('throws for an element ref declared inside the directive', () => {
     expect(() => lexDirectiveBody(new LexerCursor('#name)'), context)).toThrow('declare #name among the bindings of the tag, outside of its directives');
   });
 

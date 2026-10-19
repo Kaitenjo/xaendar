@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * Focuses, clears and reads a field through the template variable naming it, from buttons written before the field.
+ * Focuses, clears and reads a field through the element ref naming it, from buttons written before the field.
  */
 @WebComponent({
   selector: 'ex-search-field',
@@ -27,7 +27,7 @@ export class SearchFieldComponent extends CustomElement {
   /**
    * Empties the field and gives it the focus back.
    *
-   * @param field - The field, passed by its template variable.
+   * @param field - The field, passed by its element ref.
    */
   public clear(field: HTMLInputElement): void {
     field.value = '';

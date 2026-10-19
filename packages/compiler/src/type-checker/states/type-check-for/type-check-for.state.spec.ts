@@ -29,7 +29,7 @@ describe('typeCheckFor', () => {
     expect(lines[0].mappings![0]).toBeDefined();
   });
 
-  it('declares the template variables of the body after the variables of the loop, before the track expression', () => {
+  it('declares the element refs of the body after the variables of the loop, before the track expression', () => {
     const lines = typeCheckFor(parse('@for (item of items; track item().id) { <li><input #field /></li> }'), processNode, new TypeCheckContext());
 
     expect(lines.map(l => l.text).slice(6, 9)).toEqual([

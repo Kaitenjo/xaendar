@@ -28,7 +28,7 @@ export class TypeCheckContext extends CompilerContext {
    */
   private readonly _symbols = new Array<SymbolImport>();
   /**
-   * The positions of the elements whose generic component is instantiated in the scope of the template variable naming
+   * The positions of the elements whose generic component is instantiated in the scope of the element ref naming
    * them, which is typed with the instantiation: kept by the outermost scope, for the whole template.
    */
   private readonly _instantiations = new Set<number>();

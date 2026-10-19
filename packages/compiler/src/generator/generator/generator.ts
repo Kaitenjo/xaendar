@@ -138,7 +138,7 @@ export class Generator {
 
         /*
           A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
-          declaring its template variables, its templates and its @let
+          declaring its element refs, its templates and its @let
         */
         const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context) : undefined;
         if (declarations) {
@@ -194,10 +194,10 @@ export class Generator {
 }
 
 /**
- * Declares the template variables, the templates and the `@let` of a scope: registers them in its compiler context, so
+ * Declares the element refs, the templates and the `@let` of a scope: registers them in its compiler context, so
  * that every expression and every `@render` of the scope reads them, the ones written before their declaration too, and
  * writes the code declaring them in its runtime context:
- * - a template variable is declared uninitialized, and the element it names initializes it once rendered;
+ * - an element ref is declared uninitialized, and the element it names initializes it once rendered;
  * - a template is initialized with the function rendering its content (see {@link toTemplateFunction}), together with
  *   the runtime context of the scope, which its content reads names from;
  * - a `@let` is declared uninitialized, and initialized once the render reaches it (see `generateLet`): it is a signal
@@ -220,12 +220,12 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
   const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, compilerContext.namespace, {
     let: node => lets.push(node),
-    variable: (_element, { name }) => {
+    ref: (_element, { name }) => {
       compilerContext.addIdentifier(name, 'value');
       add(`context.declare('${name}');`);
     },
     template: (template, namespace) => {
-      const { name } = template.variable;
+      const { name } = template.ref;
       const key = `template_${name}_${template.span.start}`;
       compilerContext.addIdentifier(name, 'value');
       compilerContext.addTemplate(name, namespace);

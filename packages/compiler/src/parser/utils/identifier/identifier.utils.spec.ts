@@ -15,15 +15,15 @@ describe('assertDeclaredName', () => {
   const span = { start: 3, end: 7 };
 
   it('accepts an identifier the generated code doesn\'t use', () => {
-    expect(() => assertDeclaredName('name', span, 'template variable')).not.toThrow();
+    expect(() => assertDeclaredName('name', span, 'element ref')).not.toThrow();
   });
 
   it('throws for a name that is not an identifier, pointing to it', () => {
-    expect(() => assertDeclaredName('my-name', span, 'template variable')).toThrow('\'my-name\' is not a valid name for a template variable: it must be an identifier.');
-    expect(() => assertDeclaredName('class', span, 'template variable')).toThrow(expect.objectContaining({ cause: span }));
+    expect(() => assertDeclaredName('my-name', span, 'element ref')).toThrow('\'my-name\' is not a valid name for an element ref: it must be an identifier.');
+    expect(() => assertDeclaredName('class', span, 'element ref')).toThrow(expect.objectContaining({ cause: span }));
   });
 
   it.each(['root', '$event', '__probe', '$$item'])('throws for the reserved name %s', name => {
-    expect(() => assertDeclaredName(name, span, 'template variable')).toThrow(`'${name}' is reserved in templates: give the template variable another name.`);
+    expect(() => assertDeclaredName(name, span, 'element ref')).toThrow(`'${name}' is reserved in templates: give the element ref another name.`);
   });
 });

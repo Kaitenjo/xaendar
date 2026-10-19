@@ -49,22 +49,22 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
 - Static values are type-checked as `string`: a numeric input needs `count="{ 3 }"`, not `count="3"`.
 - Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with a function of `@xaendar/core/signals`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.
-- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of a template variable (`dialog.showModal()`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), template variables and their properties (`field.value`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
+- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of an element ref (`dialog.showModal()`). Arguments may be literals (`'a'`, `1`, `true`, `null`), `$event` (whole, in any position), members, `@for` variables, called, and their properties (`item().id`), element refs and their properties (`field.value`), or a signal or a `@for` variable without the call (passes the signal itself). No nested calls, assignments, arrow functions, `$event.target`, or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
 - On a component tag, an event it does not declare with `@Event` is a native event of its element (`(click)`), typed through `HTMLElementEventMap`; only composed native events leave its shadow root. A name that is neither is a build error.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
 
-## Template variables
+## Element refs
 
 ```html
-<button (click)="field.focus()">Focus</button>  <!-- a handler can use a variable declared after it -->
+<button (click)="field.focus()">Focus</button>  <!-- a handler can use a ref declared after it -->
 <label>Name <input #field /></label>            <!-- field: HTMLInputElement, visible in the whole scope -->
 <p>{ field.placeholder }</p>                   <!-- other expressions only after the element -->
 <ex-counter #counter />                         <!-- a component: the instance of its class -->
 <button (click)="counter.reset()">Reset</button>
 ```
 
-- `#name` names the element, as the first item of its tag. Its type is the DOM interface of the tag (the SVG or MathML one inside `<svg>`/`<math>`), or the class of an imported component, instantiated when it is generic. It is not a signal: reading a DOM property through it is not reactive.
+- `#name`, an element ref (or ref), names the element, as the first item of its tag. Not to be confused with the template variables, declared with `@let`. Its type is the DOM interface of the tag (the SVG or MathML one inside `<svg>`/`<math>`), or the class of an imported component, instantiated when it is generic. It is not a signal: reading a DOM property through it is not reactive.
 - It is visible in the whole of its scope, inside other elements too: the template, an `@if`/`@switch` branch, a `@for` row (one per row), or the content of an element a structural directive is applied to. Only event handlers can read it before its element; any other expression reading it before is a build error.
 - One per element, without a value, never inside a conditional binding or a directive, never on an element with a structural directive. Not readable by the `track` of a `@for`. `root`, `$event`, `__*` and `$$*` are reserved.
 
@@ -85,8 +85,8 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 - `<template #name(params)>` declares a template: only `#name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is reactive. No rest or destructuring.
 - `@render name(args)` renders a new instance wherever content goes. A changed argument updates only the nodes reading its parameter. No spread arguments.
-- Visible in the whole of its scope, like a template variable. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
-- Content created in the namespace of the declaration: a `@render` in another namespace is an error. A template variable the content reads must come before every `@render`. Only the declaring template renders it.
+- Visible in the whole of its scope, like an element ref. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
+- Content created in the namespace of the declaration: a `@render` in another namespace is an error. An element ref the content reads must come before every `@render`. Only the declaring template renders it.
 
 ## @let
 
@@ -96,9 +96,9 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 <p>{ address().street }, { address().city }, { country }</p>
 ```
 
-- `@let name = value;` goes wherever content goes, with the `;` required; the value may span lines. Use it to name a part of a signal read several times (`@let address = user().address;`), not for computations, which stay in the class.
+- `@let name = value;`, also called a template variable, goes wherever content goes, with the `;` required; the value may span lines. Use it to name a part of a signal read several times (`@let address = user().address;`), not for computations, which stay in the class.
 - A signal when the value reads one (a signal or reactive member, an imported signal, a `@for` variable, a template parameter, a signal `@let`), decided at compile time; otherwise a value computed once. Typed by its value, never assigned.
-- Scope like a template variable: visible in the whole scope, but only event handlers read it before its `;`, and a template reading it must be rendered after it. Not readable by the `track` of a `@for`. Same reserved names.
+- Scope like an element ref: visible in the whole scope, but only event handlers read it before its `;`, and a template reading it must be rendered after it. Not readable by the `track` of a `@for`. Same reserved names.
 
 ## Control flow
 

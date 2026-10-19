@@ -56,7 +56,7 @@ export type * from './parser/types/nodes/structural-directive-node.type';
 export type * from './parser/types/nodes/render-node.type';
 export type * from './parser/types/nodes/template-node.type';
 export type * from './parser/types/nodes/template-parameter-node.type';
-export type * from './parser/types/nodes/template-variable-node.type';
+export type * from './parser/types/nodes/element-ref-node.type';
 export type * from './parser/types/nodes/switch-binding-node.type';
 export type * from './parser/types/nodes/switch-node.type';
 export type * from './parser/types/nodes/text-node.type';

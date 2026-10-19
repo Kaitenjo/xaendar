@@ -108,10 +108,10 @@ export enum TokenType {
    */
   STRUCTURAL_DIRECTIVE,
   /**
-   * A template variable, e.g. `#name` in `<input #name />`, or the declaration of a template, e.g. `#row(item: Item)`
+   * An element ref, e.g. `#name` in `<input #name />`, or the declaration of a template, e.g. `#row(item: Item)`
    * in `<template #row(item: Item)>`.
    */
-  TEMPLATE_VARIABLE,
+  ELEMENT_REF,
   /**
    * Opening keyword of a `@render`, e.g. `@render` in `@render row(item())`.
    */

@@ -1,12 +1,12 @@
 import type { Span } from '../../../types/span.type';
 
 /**
- * A template variable declared on an element, e.g. `#name` in `<input #name />`: it names the element, or the instance
+ * An element ref declared on an element, e.g. `#name` in `<input #name />`: it names the element, or the instance
  * of the component it is, in the expressions of its scope.
  */
-export type TemplateVariableNode = {
+export type ElementRefNode = {
   /**
-   * The name of the variable.
+   * The name of the ref.
    */
   name: string;
   /**
@@ -14,7 +14,7 @@ export type TemplateVariableNode = {
    */
   nameSpan: Span;
   /**
-   * Span of the whole variable, `#` included.
+   * Span of the whole ref, `#` included.
    */
   span: Span;
 };

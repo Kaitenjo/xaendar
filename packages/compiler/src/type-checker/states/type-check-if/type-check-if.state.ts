@@ -19,7 +19,7 @@ import { typeCheckScope } from '../../utils/scope/scope.utils';
  * `else if`, TS already knows the first condition was false) — something
  * flat sibling functions could never express.
  *
- * Each branch is a scope of its own, starting with the declarations of the template variables it declares.
+ * Each branch is a scope of its own, starting with the declarations of the element refs it declares.
  */
 export function typeCheckIf(node: IfNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
@@ -46,7 +46,7 @@ export function typeCheckIf(node: IfNode, processNode: ProcessNode, context: Typ
 }
 
 /**
- * Type-checks the content of a branch in a scope of its own: the declarations of the template variables it declares,
+ * Type-checks the content of a branch in a scope of its own: the declarations of the element refs it declares,
  * then its nodes.
  *
  * @param children - The nodes of the branch.

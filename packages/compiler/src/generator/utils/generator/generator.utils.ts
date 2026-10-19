@@ -261,7 +261,7 @@ function containsResolvableIdentifier(node: Node, parent: Node, compilerContext:
  * Returns true if the identifier needs to be resolved against the context
  * or prefixed with `this.` — i.e. it is not the property-name side of a member
  * access expression, and it is not a global/builtin identifier. A local identifier
- * (class member, inherited ones included, or template variable) named like a global
+ * (class member, inherited ones included, or element ref) named like a global
  * shadows it, and so does a name the template imports: the global stays reachable as `window.name` or `globalThis.name`.
  */
 function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext): boolean {

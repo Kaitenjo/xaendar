@@ -1,4 +1,4 @@
-import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutLet, LayoutRender, LayoutVariable } from '../../types/template-layout/template-layout.type';
+import type { LayoutAtom, LayoutAttribute, LayoutBlock, LayoutBranch, LayoutConditionalBinding, LayoutDirective, LayoutElement, LayoutEvent, LayoutItem, LayoutLet, LayoutRender, LayoutElementRef } from '../../types/template-layout/template-layout.type';
 import { findClosing, findOutside } from '../balanced-text/balanced-text.utils';
 
 /**
@@ -358,7 +358,7 @@ function readItems(reader: Reader, end: 'tag' | 'paren' | 'brace'): LayoutItem[]
 }
 
 /**
- * Reads an item: a template variable, a directive, a conditional binding, an event or an attribute.
+ * Reads an item: an element ref, a directive, a conditional binding, an event or an attribute.
  *
  * @param reader - The reader, at the start of the item.
  * @returns The item.
@@ -367,7 +367,7 @@ function readItems(reader: Reader, end: 'tag' | 'paren' | 'brace'): LayoutItem[]
 function readItem(reader: Reader): LayoutItem {
   const { source, position } = reader;
   if (source[position] === '#') {
-    return readVariable(reader);
+    return readElementRef(reader);
   }
 
   if (source.startsWith('@@', position) || source[position] === '*') {
@@ -450,16 +450,16 @@ function readEvent(reader: Reader): LayoutEvent {
 }
 
 /**
- * Reads a template variable, with the parameters of the template it declares if it has them.
+ * Reads an element ref, with the parameters of the template it declares if it has them.
  *
  * @param reader - The reader, on the `#`.
- * @returns The variable.
+ * @returns The element ref.
  * @throws If its parameters are not closed.
  */
-function readVariable(reader: Reader): LayoutVariable {
+function readElementRef(reader: Reader): LayoutElementRef {
   const { source } = reader;
   reader.position++;
-  const variable: { -readonly [Key in keyof LayoutVariable]: LayoutVariable[Key] } = { kind: 'variable', name: readName(reader, NAME) };
+  const ref: { -readonly [Key in keyof LayoutElementRef]: LayoutElementRef[Key] } = { kind: 'ref', name: readName(reader, NAME) };
 
   if (source[reader.position] === '(') {
     const end = findClosing(source, reader.position);
@@ -467,11 +467,11 @@ function readVariable(reader: Reader): LayoutVariable {
       return fail('The parameters of a template are not closed');
     }
 
-    variable.parameters = source.slice(reader.position + 1, end);
+    ref.parameters = source.slice(reader.position + 1, end);
     reader.position = end + 1;
   }
 
-  return variable;
+  return ref;
 }
 
 /**
