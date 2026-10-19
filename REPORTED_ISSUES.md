@@ -7,7 +7,6 @@ Trovati durante la scrittura dell'API reference (ottobre 2026) e non corretti. I
 
 ## @xaendar/common
 
-15. **`Array.prototype.removeItem`.** `packages/common/src/utils/array/array.util.ts` installa un'estensione di `Array.prototype`: non è un export, quindi non è nella reference. Decidere se documentarla.
 
 
 ## @xaendar/cli

@@ -1,6 +1,4 @@
 // @vitest-environment happy-dom
-// Installs `Array.prototype.removeItem`, loaded at runtime through `@xaendar/signals`
-import '@xaendar/common';
 import { describe, expect, it } from 'vitest';
 import { _Context } from '../context/context.util';
 import { trackNode } from './track-node.util';

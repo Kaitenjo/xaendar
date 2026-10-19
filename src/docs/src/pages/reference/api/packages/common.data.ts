@@ -81,6 +81,12 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       usage: [{ key: 'typedValues', snippets: ['api/common/values.ts'] }]
     },
     {
+      name: 'removeItem',
+      kind: 'function',
+      signature: 'function removeItem<T>(array: T[], item: T): boolean',
+      usage: [{ key: 'removing', snippets: ['api/common/remove-item.ts'] }]
+    },
+    {
       name: 'slice',
       kind: 'function',
       signature: 'function slice(value: string, start?: number, end?: number): string',

@@ -1,5 +1,4 @@
-// Type-only: brings the `Array.prototype.removeItem` declaration into scope, the extension itself is installed at runtime by `@xaendar/signals` importing `@xaendar/common`
-import type {} from '@xaendar/common';
+import { removeItem } from '@xaendar/common';
 import { Function, NoArgsVoidFunction } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
 
@@ -185,7 +184,7 @@ export class _Context {
    * @param nodeToRemove - The DOM node to untrack.
    */
   public removeNode(nodeToRemove: Node): void {
-    this._nodes.removeItem(nodeToRemove);
+    removeItem(this._nodes, nodeToRemove);
   }
 
   /**

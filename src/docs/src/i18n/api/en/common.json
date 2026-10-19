@@ -95,6 +95,16 @@
       }
     }
   },
+  "removeItem": {
+    "summary": "Removes the first occurrence of an item from an array, in place, and tells whether it found it.",
+    "description": "<p>Looks for the item with <code>indexOf</code>, so with <code>===</code>, and removes it with <code>splice</code>: the array passed in changes, and nothing is copied. Only the first occurrence goes; the others stay. Returns <code>true</code> when the item was removed, <code>false</code> when the array does not contain it.</p><p><code>NaN</code> is never found, since <code>NaN === NaN</code> is false.</p>",
+    "usage": {
+      "removing": {
+        "title": "Removing an item",
+        "body": "<p>The array changes in place, and the result tells whether the item was there.</p>"
+      }
+    }
+  },
   "slice": {
     "summary": "Extracts a part of a string as a new string, which does not keep the original in memory.",
     "description": "<p>Returns the same characters as <code>value.slice(start, end)</code>, with the same indexes: <code>start</code> included, <code>end</code> excluded, a negative index counted from the end, a missing one meaning the start or the end of the string.</p><p>The difference is in memory. V8, the engine of Chrome and Node.js, can return the result of <code>String.prototype.slice</code> as a view on the original string, a <em>sliced string</em>, which keeps the whole original alive as long as the part is. <code>slice</code> copies the part through <code>JSON.stringify</code> and <code>JSON.parse</code>, so the result owns its characters and the original can be garbage collected.</p><p>The compiler and the Vite plugin use it for the parts of a source they keep after reading it: names, expressions, texts. The copy has a cost, worth paying for short parts that outlive a long string.</p>",
