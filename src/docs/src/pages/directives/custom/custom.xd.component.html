@@ -37,6 +37,11 @@
 <docs-code snippet="directives/native-event-in-directive.html" />
 <p @@i18n(key="pages.directives.custom.outputs.p4") />
 
+<h2 @@i18n(key="pages.directives.custom.hostBindings.title") />
+<p @@i18n(key="pages.directives.custom.hostBindings.p1") />
+<docs-code snippet="api/core/host-bindings-directive.ts" />
+<p @@i18n(key="pages.directives.custom.hostBindings.p2") />
+
 <h2 @@i18n(key="pages.directives.custom.svgElements.title") />
 <p @@i18n(key="pages.directives.custom.svgElements.p1") />
 <docs-example name="directives/custom/svg-grow" heading="{translations().pages.directives.custom.svgElements.example1}">
@@ -137,6 +142,17 @@
           </a>
         </td>
         <td @@i18n(key="pages.directives.custom.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/HostProperty`}">
+            <code>{ '@HostProperty' }</code>
+          </a>,
+          <a href="{`#/${currentLang()}/reference/api/core/HostEvent`}">
+            <code>{ '@HostEvent' }</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.directives.custom.summary.td7") />
       </tr>
     </tbody>
   </table>

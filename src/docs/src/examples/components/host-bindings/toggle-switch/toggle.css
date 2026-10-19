@@ -1,0 +1,48 @@
+/* Every rule reads the host: its class and attributes are written by @HostProperty */
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+
+:host(:focus-visible) {
+  outline: 2px solid #6750a4;
+  outline-offset: 2px;
+}
+
+:host([locked]) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.track {
+  position: relative;
+  width: 2.5rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 25%, transparent);
+  transition: background 0.15s ease-in-out;
+}
+
+.thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease-in-out;
+}
+
+:host(.on) .track {
+  background: #6750a4;
+}
+
+:host(.on) .thumb {
+  transform: translateX(1.1rem);
+}

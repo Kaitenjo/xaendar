@@ -127,6 +127,71 @@
       }
     }
   },
+  "HostProperty": {
+    "summary": "Lega un attributo, o una classe, dell’elemento host di un componente o di una direttiva custom a un campo, a un getter o a un accessor della classe.",
+    "description": "<p>Il decoratore va su un campo, un getter o un <code>accessor</code>, non statico, di una classe che estende <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> o <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. L’elemento host è il componente stesso, o l’elemento a cui la direttiva è applicata. Una <a href=\"#/it/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> non ha un elemento, e lì TypeScript rifiuta il decoratore.</p><p>Il nome è quello di un attributo, oppure <code>class.</code> seguito dal nome di una classe: <code>@HostProperty('class.on')</code> attiva e disattiva la classe <code>on</code> come fa <code>[class.on]</code> in un template, e l’elemento la ha finché il valore è truthy. Un membro che contiene una funzione, come un signal o un input, viene chiamato per ottenere il valore.</p><p>Il membro viene letto dentro un effetto ogni volta che l’elemento viene connesso, o la direttiva avviata: l’attributo viene riscritto ogni volta che cambia un signal letto dal membro, e un membro che non legge signal viene scritto una volta sola. Quando l’elemento viene disconnesso, o la direttiva distrutta, l’attributo viene rimosso e la classe tolta. Sostituisce l’effetto che imposta un attributo in <code>onInit</code> e il codice che lo rimuove in <code>onDestroy</code>.</p>",
+    "members": {
+      "name": "<p>Il nome dell’attributo, come si scrive in HTML (<code>aria-checked</code>, <code>tabindex</code>, <code>data-state</code>), oppure <code>class.</code> seguito dal nome di una classe. Un nome vuoto, o <code>class.</code> da solo, lancia un errore quando la classe viene definita.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Campi, getter e accessor",
+        "body": "<p>Un campo che contiene un valore semplice viene scritto una volta per connessione. Un campo che contiene un signal viene chiamato, e riscritto quando il signal cambia. Un getter viene riscritto ogni volta che cambia un signal che legge. Su un accessor dichiarato con <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a> il decoratore riflette l’input sull’host: l’accessor contiene un <code>InputSignal</code>, chiamato come ogni signal, e l’ordine dei due decoratori è indifferente. Un membro può avere più <code>@HostProperty</code>, uno per attributo.</p>"
+      },
+      "values": {
+        "title": "Dal valore all’attributo",
+        "body": "<p><code>null</code>, <code>undefined</code> e <code>false</code> rimuovono l’attributo, <code>true</code> lo scrive vuoto, come un attributo booleano quale <code>hidden</code>, e ogni altro valore viene scritto con <code>String(value)</code>. Gli stati ARIA come <code>aria-checked</code> e <code>aria-expanded</code> richiedono il testo <code>false</code>, che <code>false</code> rimuoverebbe: lì restituisci <code>String(value)</code>. Un binding <code>class.</code> guarda solo se il valore è truthy, e la sua classe resiste alle scritture dell’attributo <code>class</code>, fatte da un binding del padre o da un <code>@HostProperty('class')</code>.</p>"
+      },
+      "timing": {
+        "title": "Quando vengono scritti gli attributi",
+        "body": "<p>In un componente i binding partono dopo il render e dopo l’aggiornamento delle query, subito prima di <code>afterRender</code>: un getter può leggere le query, e <code>afterRender</code> trova gli attributi al loro posto, mentre <code>onInit</code> no. In una direttiva partono subito dopo <code>onInit</code>. Il primo valore viene scritto subito; i cambiamenti dei signal vengono scritti un microtask dopo, come fa ogni effetto. Alla disconnessione, o quando la direttiva viene distrutta, gli effetti vengono eliminati e gli attributi e le classi rimossi: spostare un componente nel documento li rimuove e li scrive di nuovo.</p>"
+      },
+      "conflicts": {
+        "title": "Un solo proprietario per attributo",
+        "body": "<p>L’elemento host è condiviso con il template che lo usa: il padre può legare lo stesso attributo sul tag, e così le altre direttive applicate all’elemento. Nessuno unisce i valori, e vince l’ultima scrittura: un attributo statico scritto dal padre viene sovrascritto alla connessione, e rimosso alla disconnessione. Lascia ogni attributo a un solo proprietario, oppure fai passare il valore del padre da un input riflesso con <code>@HostProperty</code>. Un binding <code>class.</code> è più sicuro: attiva e disattiva solo la propria classe, e la mantiene quando il padre scrive l’attributo <code>class</code>.</p>"
+      },
+      "directives": {
+        "title": "In una direttiva custom",
+        "body": "<p>Una direttiva custom lega l’elemento a cui è applicata: gli attributi vengono scritti subito dopo il suo <code>onInit</code>, e rimossi quando la direttiva viene distrutta. Insieme a <a href=\"#/it/reference/api/core/HostEvent\"><code>@HostEvent</code></a>, sostituisce gli effetti e i listener preparati in <code>onInit</code> e la pulizia in <code>onDestroy</code>.</p>"
+      },
+      "errors": {
+        "title": "Errori",
+        "body": "<p>Un nome vuoto, <code>class.</code> senza una classe e un membro statico lanciano un errore quando la classe viene definita, cioè quando il suo modulo viene importato. Una direttiva strutturale viene rifiutata da TypeScript.</p>"
+      }
+    }
+  },
+  "HostEvent": {
+    "summary": "Ascolta un evento dell’elemento host di un componente o di una direttiva custom con un metodo della classe.",
+    "description": "<p>Il decoratore va su un metodo, non statico, di una classe che estende <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> o <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. Il listener viene aggiunto all’elemento host, il componente stesso o l’elemento a cui la direttiva è applicata, ogni volta che l’elemento viene connesso, o la direttiva avviata, e rimosso quando l’elemento viene disconnesso, o la direttiva distrutta. Una <a href=\"#/it/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> non ha un elemento, e lì TypeScript rifiuta il decoratore.</p><p>Il metodo viene chiamato sull’istanza, con l’evento come unico argomento: non prende parametri, oppure ne prende uno, del tipo dell’evento che si aspetta (<code>KeyboardEvent</code>, <code>CustomEvent&lt;number&gt;</code>). Il nome dell’evento è una semplice stringa, quindi TypeScript non lo confronta con quel tipo: un parametro <code>KeyboardEvent</code> su <code>click</code> compila. Lo stesso metodo può ascoltare più eventi, con un decoratore per ciascuno.</p>",
+    "members": {
+      "name": "<p>Il nome dell’evento, che distingue maiuscole e minuscole: un evento nativo (<code>click</code>, <code>keydown</code>), un output del componente o di una direttiva applicata all’elemento (<code>valueChange</code>), o qualsiasi altro evento inviato sull’elemento. Un nome vuoto lancia un errore quando la classe viene definita.</p>",
+      "capture": "<p>Se il listener viene eseguito nella fase di capture, prima dei listener dei discendenti dell’host. Per default viene eseguito nella fase di bubbling.</p>",
+      "once": "<p>Se il listener viene rimosso dopo il primo evento. Viene aggiunto di nuovo alla successiva connessione dell’elemento.</p>",
+      "passive": "<p>Se il listener promette di non chiamare <code>preventDefault()</code>, così il browser non lo aspetta per scorrere su <code>touchstart</code>, <code>wheel</code> ed eventi simili. Un listener passivo non può annullare l’evento.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Dichiarare un listener",
+        "body": "<p>Un metodo ascolta gli eventi dell’host come farebbe un binding <code>(name)</code> sul suo tag, ma dall’interno della classe: ogni istanza lo ha, chiunque usi il componente. Il metodo resta un membro come gli altri: anche il template e gli altri metodi possono chiamarlo.</p>"
+      },
+      "reach": {
+        "title": "Quali eventi arrivano",
+        "body": "<p>Il listener è sull’elemento host: riceve gli eventi nativi dell’elemento, gli eventi inviati su di esso, compresi gli output del componente e delle sue direttive, e gli eventi che risalgono fino a lui. Dal contenuto proiettato negli slot gli eventi risalgono come in qualsiasi elemento. Dallo shadow root del componente escono solo gli eventi composed, ritargetizzati sull’host: <code>click</code>, <code>keydown</code> e <code>input</code> escono, mentre <code>change</code>, <code>submit</code> e gli output dei figli, che per default non sono composed, no. Ascolta questi ultimi nel template, sull’elemento che li invia.</p>"
+      },
+      "timing": {
+        "title": "Quando vengono aggiunti i listener",
+        "body": "<p>In un componente i listener vengono aggiunti dopo il render, subito prima di <code>afterRender</code>, e rimossi alla disconnessione: gli eventi che il componente invia in <code>onInit</code> non li raggiungono, quelli che invia in <code>afterRender</code> sì. In una direttiva vengono aggiunti subito dopo <code>onInit</code>. I listener del template del padre vengono aggiunti prima, quindi per lo stesso evento vengono eseguiti per primi.</p>"
+      },
+      "directives": {
+        "title": "In una direttiva custom",
+        "body": "<p>Una direttiva custom ascolta l’elemento a cui è applicata: i listener vengono aggiunti subito dopo il suo <code>onInit</code> e rimossi quando la direttiva viene distrutta, senza arrow function stabili né <code>removeEventListener</code> in <code>onDestroy</code>. I listener su altri target, come il documento, passano ancora da <code>addEventListener</code>.</p>"
+      },
+      "errors": {
+        "title": "Errori",
+        "body": "<p>Un nome vuoto e un metodo statico lanciano un errore quando la classe viene definita, cioè quando il suo modulo viene importato. Una direttiva strutturale e un metodo con più di un parametro vengono rifiutati da TypeScript.</p>"
+      }
+    }
+  },
   "CustomElement": {
     "summary": "La classe base di ogni componente: un <code>HTMLElement</code> con uno shadow root aperto, in cui il template viene renderizzato al collegamento, e gli hook del ciclo di vita attorno al render.",
     "description": "<p>Un componente è una classe che estende <code>CustomElement</code>, decorata con <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>, che le dà il template e la definisce come custom element. La classe è un vero <code>HTMLElement</code>: attributi, eventi e <code>classList</code> funzionano come su un elemento nativo.</p><p>Il costruttore aggancia uno shadow root aperto, lo <code>shadowRoot</code> dell’elemento, e crea le host directive del componente. Il template viene renderizzato nello shadow root quando l’elemento viene collegato al documento, e rimosso quando viene scollegato:</p><ul><li>al collegamento, il foglio di stile viene adottato, le host directive partono, viene eseguito <code>onInit</code>, il template viene renderizzato, le query sulla vista vengono riempite e viene eseguito <code>afterRender</code>;</li><li>allo scollegamento, viene eseguito <code>onDestroy</code>, gli effect creati con <code>this.effect()</code> vengono eliminati e il template rimosso, poi le host directive si fermano e le query sulla vista smettono di osservare.</li></ul><p>La classe base usa le callback dei custom element per questi passi, e le tiene private: un componente usa gli hook al loro posto. Non dichiara nemmeno <code>observedAttributes</code>, perché gli input non sono attributi. Quando <code>@for</code> sposta le righe che mantiene, i loro componenti vengono spostati, non scollegati: nessun hook viene eseguito.</p>",

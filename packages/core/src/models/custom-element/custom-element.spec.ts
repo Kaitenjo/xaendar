@@ -3,6 +3,7 @@ import { EffectOptions, loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { _Context } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
@@ -223,6 +224,32 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'clear', 'hook']);
+    });
+  });
+
+  describe('host bindings', () => {
+    it('binds the host element after the connected hooks, before afterRender, and unbinds it on disconnection', () => {
+      const calls = new Array<string>();
+      const { element, render } = createWithHooks({ afterRender: () => { calls.push('afterRender'); } });
+      render.mockImplementation(() => {
+        calls.push('render');
+        return createContext();
+      });
+      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(() => calls.push('hook'));
+      const metadata: DecoratorMetadataObject = {};
+      const read = () => {
+        calls.push('binding');
+        return 'switch';
+      };
+      (HostProperty('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: read } });
+      Object.defineProperty(element.constructor, Symbol.for('Symbol.metadata'), { value: metadata });
+
+      document.body.appendChild(element);
+      expect(calls).toEqual(['render', 'hook', 'binding', 'afterRender']);
+      expect(element.getAttribute('role')).toBe('switch');
+
+      element.remove();
+      expect(element.hasAttribute('role')).toBe(false);
     });
   });
 

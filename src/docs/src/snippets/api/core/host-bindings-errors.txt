@@ -1,0 +1,11 @@
+@HostProperty('class.')
+Error: @HostProperty('class.') names no class
+
+@HostEvent('')
+Error: @HostEvent() names no event
+
+@HostProperty('role') static defaultRole = 'switch';
+Error: @HostProperty('role') cannot decorate the static member defaultRole
+
+@HostEvent('click') static handle(): void { … }
+Error: @HostEvent('click') cannot decorate the static method handle

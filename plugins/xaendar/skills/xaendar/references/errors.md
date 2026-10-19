@@ -487,6 +487,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
 
+### `Error: @HostProperty('class.') names no class`
+
+- **Cause:** A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.
+- **Fix:** Name the attribute, or the class after class.: @HostProperty('class.on').
+
+### `Error: @HostEvent() names no event`
+
+- **Cause:** A @HostEvent with an empty name. Thrown when the class is defined.
+- **Fix:** Name the event: @HostEvent('click').
+
+### `Error: @HostProperty('role') cannot decorate the static member defaultRole`
+
+- **Cause:** A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.
+- **Fix:** Decorate an instance member, which may read the static one.
+
+### `Error: @HostEvent('click') cannot decorate the static method handle`
+
+- **Cause:** A @HostEvent on a static method: the host element belongs to an instance.
+- **Fix:** Decorate an instance method.
+
 ### `NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "x-card" has already been used with this registry`
 
 - **Cause:** Two classes defined with the same selector at runtime.

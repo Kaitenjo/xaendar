@@ -1,10 +1,11 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
+import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
 import type { BindingHost } from '../../types/binding-host.type';
 import { input } from '../../signals/input/input';
 import { InputSignal } from '../../signals/types/input-signal.type';
 import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../../types/property-decorator-options.type';
 import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 
 const propertyDecoratorOptionsWithRequiredBrand = Symbol('PropertyDecoratorOptionsWithRequiredBrand');
 type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & {
@@ -19,10 +20,10 @@ function createPropertyDecorator<
 >(
   value?: ActualValue | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue>,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<Class, Value>>, PropertyDecoratorReturnType<Class, Value>> {
+): Function<Parameters<AccessorDecorator<Class, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<Class, Value>> {
   return function (
     _target: ClassAccessorDecoratorValue<Value>,
-    context: ClassAccessorDecoratorContext<Class, Value>
+    context: DecoratorMetadataContext<ClassAccessorDecoratorContext<Class, Value>, WebComponentMetadata>
   ): PropertyDecoratorReturnType<Class, Value> {
     const propertyKey = context.name;
 
@@ -39,7 +40,7 @@ function createPropertyDecorator<
       actualOptions = value;
     }
 
-    const metadata = context.metadata as { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
+    const metadata = context.metadata;
     const attributeName = actualOptions?.alias ?? propertyKey;
     /*
       The metadata of a subclass inherits from the one of its parent class: the map of the parent is copied into the
@@ -91,7 +92,7 @@ export function Property<
 >(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
   return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
 }
 
@@ -121,7 +122,7 @@ Property.required = function required<
   IncomingValue = ActualValue
 >(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
   return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>({
     ...options,
     [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired',

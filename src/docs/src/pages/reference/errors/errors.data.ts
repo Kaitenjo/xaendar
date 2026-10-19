@@ -490,6 +490,26 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: "Error: @HostProperty('class.') names no class",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Error: @HostEvent() names no event',
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: "Error: @HostProperty('role') cannot decorate the static member defaultRole",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: "Error: @HostEvent('click') cannot decorate the static method handle",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
     message: "NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name \"x-card\" has already been used with this registry",
     page: 'components/registration'
   },

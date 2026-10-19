@@ -166,6 +166,7 @@ export const NAV: readonly NavSection[] = [
         page('components/styling', 'css shadow dom host slotted part custom properties'),
         page('components/inputs', 'Property input alias transform required InputSignal'),
         page('components/outputs', 'Event output emit CustomEvent detail bubbles composed'),
+        page('components/host-bindings', 'HostProperty HostEvent host attribute class listener HostBinding HostListener role aria'),
         page('components/lifecycle', 'onInit afterRender onDestroy connectedCallback'),
         page('components/content-projection', 'slot ng-content fallback named'),
         page('components/queries', 'Query viewChild querySelector'),

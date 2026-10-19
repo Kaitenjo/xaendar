@@ -2,6 +2,8 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { HostEvent } from '../../decorators/host-event/host-event.decorator';
+import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { _Context } from '../../utils/context/context.util';
 import { CustomDirective } from './custom-directive';
@@ -58,6 +60,30 @@ describe('CustomDirective', () => {
     connect(directive);
 
     expect(directive.onInitSpy).toHaveBeenCalledOnce();
+  });
+
+  it('binds its element after onInit, and unbinds it when disconnected', () => {
+    const calls = new Array<string>();
+    const Klass = class extends TestDirective { };
+    const metadata: DecoratorMetadataObject = {};
+    const handle = vi.fn();
+    (HostProperty('class.on') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => calls.push('binding') } });
+    (HostEvent('click') as unknown as (value: unknown, context: unknown) => void)(handle, { kind: 'method', name: 'handle', static: false, metadata, access: { get: () => handle } });
+    Object.defineProperty(Klass, Symbol.for('Symbol.metadata'), { value: metadata });
+    const element = document.createElement('div');
+    const directive = create(Klass, element);
+    directive.onInitSpy.mockImplementation(() => calls.push('onInit'));
+
+    const context = connect(directive);
+    expect(calls).toEqual(['onInit', 'binding']);
+    expect(element.classList.contains('on')).toBe(true);
+    element.click();
+    expect(handle).toHaveBeenCalledOnce();
+
+    context.clear();
+    expect(element.classList.contains('on')).toBe(false);
+    element.click();
+    expect(handle).toHaveBeenCalledOnce();
   });
 
   it('can be connected and disconnected without onInit and onDestroy', () => {

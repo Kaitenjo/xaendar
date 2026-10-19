@@ -224,6 +224,62 @@ export const CORE_API: ApiPackage = {
       guides: ['components/queries', 'components/content-queries', 'components/content-projection', 'components/dom-apis', 'templates/element-refs']
     },
     {
+      name: 'HostProperty',
+      kind: 'decorator',
+      signature: 'function HostProperty(name: string): HostPropertyDecorator\n\ntype HostPropertyDecorator = {\n  <This extends CustomElement | CustomDirective, Value>(value: undefined, context: ClassFieldDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value>(value: (this: This) => Value, context: ClassGetterDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value>(value: ClassAccessorDecoratorTarget<This, Value>, context: ClassAccessorDecoratorContext<This, Value>): void;\n};',
+      members: [
+        {
+          name: 'name',
+          group: 'parameters',
+          signature: 'name: string'
+        }
+      ],
+      usage: [
+        { key: 'declaring', snippets: ['api/core/host-property.ts'] },
+        { key: 'values', snippets: ['api/core/host-property-values.ts'] },
+        { key: 'timing' },
+        { key: 'conflicts' },
+        { key: 'directives', snippets: ['api/core/host-bindings-directive.ts'] },
+        { key: 'errors', snippets: ['api/core/host-bindings-errors.txt', 'api/core/host-bindings-structural-error.txt'] }
+      ],
+      guides: ['components/host-bindings', 'components/styling', 'directives/custom']
+    },
+    {
+      name: 'HostEvent',
+      kind: 'decorator',
+      signature: 'function HostEvent(name: string, options?: Pick<AddEventListenerOptions, \'capture\' | \'once\' | \'passive\'>): HostEventDecorator\n\ntype HostEventDecorator = <This extends CustomElement | CustomDirective, EventType extends Event>(value: (this: This, event: EventType) => unknown, context: ClassMethodDecoratorContext<This, (this: This, event: EventType) => unknown>) => void;',
+      members: [
+        {
+          name: 'name',
+          group: 'parameters',
+          signature: 'name: string'
+        },
+        {
+          name: 'capture',
+          group: 'options',
+          signature: 'capture?: boolean'
+        },
+        {
+          name: 'once',
+          group: 'options',
+          signature: 'once?: boolean'
+        },
+        {
+          name: 'passive',
+          group: 'options',
+          signature: 'passive?: boolean'
+        }
+      ],
+      usage: [
+        { key: 'declaring', snippets: ['api/core/host-event.ts'] },
+        { key: 'reach' },
+        { key: 'timing' },
+        { key: 'directives', snippets: ['api/core/host-bindings-directive.ts'] },
+        { key: 'errors', snippets: ['api/core/host-bindings-errors.txt', 'api/core/host-bindings-structural-error.txt'] }
+      ],
+      guides: ['components/host-bindings', 'components/outputs', 'templates/events', 'directives/custom']
+    },
+    {
       name: 'CustomElement',
       kind: 'class',
       signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  onDestroy?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n}',

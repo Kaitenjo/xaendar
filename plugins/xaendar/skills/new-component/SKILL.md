@@ -34,7 +34,7 @@ The first argument is the selector (for example `app-user-card`). The optional s
 
 3. **Register it at runtime**: open `src/main.ts`. If it already loads components through an `import.meta.glob` matching `**/*.xd.component.ts`, there is nothing to do. Otherwise add an import of the new class, following the existing style.
 
-4. **Implement it**, if a description was given, following the `xaendar` skill: inputs as `@Property` accessors typed `InputSignal<T>`, outputs as `@Event` accessors typed `Output<T>` (inline types only), state in signals, and a template that follows the template-syntax rules. Avoid member names that clash with `HTMLElement`. Apply the code conventions of the `xaendar` skill: member order, a `_` prefix on private members, `computed` callbacks in private `_computeX()` methods, and constants used only by this component kept as its members.
+4. **Implement it**, if a description was given, following the `xaendar` skill: inputs as `@Property` accessors typed `InputSignal<T>`, outputs as `@Event` accessors typed `Output<T>` (inline types only), attributes, classes and listeners of its own element as `@HostProperty` / `@HostEvent` members, state in signals, and a template that follows the template-syntax rules. Avoid member names that clash with `HTMLElement`. Apply the code conventions of the `xaendar` skill: member order, a `_` prefix on private members, `computed` callbacks in private `_computeX()` methods, and constants used only by this component kept as its members.
 
 5. **Use it**, if a parent was indicated: add `@import { <PascalCase>Component } from '<relative path>.xd.component.ts'` at the top of the parent template and place `<selector … />` there, binding every `@Property.required` input.
 

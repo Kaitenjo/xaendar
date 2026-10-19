@@ -1,6 +1,7 @@
-import { ClassDecorator, Constructor } from '@xaendar/types';
+import type { ClassDecorator, Constructor, DecoratorMetadataContext } from '@xaendar/types';
 import { INTERNAL_HOST_DIRECTIVES, INTERNAL_SELECTOR } from '../../costants';
 import { CustomElement } from '../../models/custom-element/custom-element';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
 
 /**
@@ -34,12 +35,9 @@ import { WebComponentOptions } from '../../types/web-component/web-component-opt
  * class MyFieldComponent extends CustomElement {}
  * ```
  */
-export function WebComponent<T extends CustomElement>(options: WebComponentOptions): ClassDecorator<T> {
-  return function (klass: Constructor<T>, context: ClassDecoratorContext<Constructor<T>>): void {
-    const metadata = context.metadata as { 
-      [INTERNAL_SELECTOR]?: string, 
-      [INTERNAL_HOST_DIRECTIVES]?: WebComponentOptions['hostDirectives'] 
-    };
+export function WebComponent<T extends CustomElement>(options: WebComponentOptions): ClassDecorator<T, object, WebComponentMetadata> {
+  return function (klass: Constructor<T>, context: DecoratorMetadataContext<ClassDecoratorContext<Constructor<T>>, WebComponentMetadata>): void {
+    const metadata = context.metadata;
     
     metadata[INTERNAL_SELECTOR] = options.selector;
     if (options.hostDirectives?.length) {

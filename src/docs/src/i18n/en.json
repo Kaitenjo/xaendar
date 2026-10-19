@@ -114,6 +114,7 @@
       "components/styling": "Styling",
       "components/inputs": "Inputs with @Property",
       "components/outputs": "Outputs with @Event",
+      "components/host-bindings": "Host bindings",
       "components/lifecycle": "Lifecycle",
       "components/content-projection": "Content projection with slots",
       "components/queries": "View queries",
@@ -596,6 +597,66 @@
           "td6": "Listens in the template of the parent. <code>$event</code> is the <code>CustomEvent</code>."
         }
       },
+      "hostBindings": {
+        "eyebrow": "Components",
+        "title": "Host bindings with @HostProperty and @HostEvent",
+        "lead": "A component is an element of the page: the template using it can set its attributes and listen to its events. Some of them, though, belong to the component, whoever uses it: the role of a switch and its state for assistive technologies, a class its stylesheet reads with <code>:host(.on)</code>, the clicks and the keys that operate it. <code>@HostProperty</code> and <code>@HostEvent</code> declare them on the members of the class, and keep them on the host element.",
+        "attributesAndClasses": {
+          "title": "Attributes and classes",
+          "p1": "<code>@HostProperty('name')</code> on a field, a getter or an accessor writes its value in the attribute <code>name</code> of the host element; <code>@HostProperty('class.name')</code> toggles the class <code>name</code>, which the element has while the value is truthy. The member is read inside an effect: a value that reads no signal is written once, while a signal, or a getter reading signals, is written again each time they change.",
+          "example1": "A switch drawn by its own element",
+          "p2": "Click the switches, or reach them with Tab and press Space. <code>role</code> reads no signal and is written once. <code>on</code> holds a signal, and the host has the class <code>on</code> while it is <code>true</code>: the stylesheet draws the switch from <code>:host(.on)</code>. The getters of <code>aria-checked</code>, <code>aria-disabled</code> and <code>tabindex</code> are written again when <code>on</code> or <code>locked</code> change. <code>locked</code> is an input reflected on the host: the parent binds it, and the stylesheet reads <code>:host([locked])</code>. Inspect the Wi-Fi switch with the developer tools to watch its attributes change while you turn the airplane mode on."
+        },
+        "events": {
+          "title": "Events of the host",
+          "p1": "<code>@HostEvent('name')</code> on a method listens to the event on the host element, from the connection to the disconnection. The method receives the event, typed by its parameter, or takes no parameter at all. In the switch, the clicks call <code>toggle</code>, those on the projected label included, and <code>onKeydown</code> turns Space and Enter into a toggle. The options are the ones of <code>addEventListener</code>: <code>capture</code>, <code>once</code> and <code>passive</code>.",
+          "p2": "The listener hears the native events of the host, the events dispatched on it, the outputs of the component included, and the events bubbling from its content. From its shadow root only the composed events come out, such as <code>click</code> and <code>keydown</code>: <code>change</code> and the outputs of the children stay inside, and are listened to in the template. See <a href=\"#/en/reference/api/core/HostEvent\"><code>HostEvent</code></a>."
+        },
+        "values": {
+          "title": "From values to attributes",
+          "p1": "<code>null</code>, <code>undefined</code> and <code>false</code> remove the attribute, <code>true</code> writes it empty, and any other value is written as a string. That suits boolean attributes such as <code>hidden</code>, but not ARIA states, which need the text <code>false</code>: return <code>String(value)</code> for them, as the switch does for <code>aria-checked</code>."
+        },
+        "timing": {
+          "title": "When they are applied",
+          "p1": "In a component, the attributes, the classes and the listeners are applied after the render and after the queries are updated, right before <code>afterRender</code>: a getter can read a query, and <code>afterRender</code> finds the host ready, while <code>onInit</code> does not. The changes of the signals are written a microtask later, as in every effect.",
+          "p2": "At disconnection everything is undone: the attributes are removed, the classes taken away, the listeners removed. A component moved in the document loses them, and gets them back at the new connection."
+        },
+        "directives": {
+          "title": "In custom directives",
+          "p1": "A custom directive declares them the same way, and binds the element it is applied to: the bindings start right after its <code>onInit</code> and stop when it is destroyed. The directive below copies a text when its element is clicked, with no <code>onInit</code> and no <code>onDestroy</code>. A structural directive holds no element: TypeScript rejects both decorators there. See <a href=\"#/en/directives/custom\">Custom directives</a>."
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "A member is reactive only through its signals",
+            "p1": "The effect sees only the signals the member reads while it runs: a getter returning the length of a plain array, or a field later assigned another plain value, is never written again. Keep the state the host shows in signals."
+          },
+          "callout2": {
+            "heading": "false removes the attribute",
+            "p1": "<code>aria-checked</code>, <code>aria-expanded</code> and the other ARIA states read the text <code>false</code>, which <code>false</code> would remove: return <code>String(value)</code>. To a screen reader a missing <code>aria-checked</code> does not mean unchecked."
+          },
+          "callout3": {
+            "heading": "The parent binds the same attribute",
+            "p1": "The host is also a tag in the template of the parent, which can write the same attribute, as can a directive applied to the element. The values are not merged: the last write wins. A static attribute of the parent is overwritten at connection, and removed at disconnection. Leave each attribute to a single owner, or take the value of the parent through an input reflected with <code>@HostProperty</code>, as <code>locked</code> does. Classes do not clash: <code>class.name</code> toggles only its own class, and keeps it when the parent writes <code>class</code>."
+          },
+          "callout4": {
+            "heading": "Nothing is bound yet in onInit",
+            "p1": "The bindings of a component start after the render: in <code>onInit</code> the host has none of its attributes, and the events dispatched there do not reach the <code>@HostEvent</code> methods. The listeners of the parent template, added before the element is inserted, run before them for the same event."
+          },
+          "callout5": {
+            "heading": "Errors",
+            "p1": "TypeScript rejects the decorators on a structural directive, and <code>@HostEvent</code> on a method with more than one parameter. An empty name, <code>class.</code> alone and a static member throw when the class is defined."
+          }
+        },
+        "summary": {
+          "title": "Summary",
+          "th1": "API",
+          "th2": "Description",
+          "td1": "Writes the value of a field, a getter or an accessor in an attribute of the host: removed for <code>null</code>, <code>undefined</code> and <code>false</code>, empty for <code>true</code>.",
+          "td2": "Toggles a class of the host while the value is truthy.",
+          "td3": "Listens to an event of the host with a method, which receives the event."
+        }
+      },
       "queries": {
         "eyebrow": "Components",
         "title": "View queries",
@@ -725,7 +786,7 @@
           "title": "Styling the host",
           "p1": "Inside the stylesheet, <code>:host</code> matches the element of the component itself. A custom element is <code>display: inline</code> by default, so most components set a display here. <code>:host(selector)</code> matches the host only when it also matches the selector: a class, an attribute or a state set from outside.",
           "example1": ":host, :host(.selected), :host([tone='danger'])",
-          "p2": "The parent only sets a class and an attribute; the chip decides how they look. Each chip listens to its own <code>(click)</code>: a native event bound on the tag of a component is added to its element, as on a native element. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a>."
+          "p2": "The parent only sets a class and an attribute; the chip decides how they look. Each chip listens to its own <code>(click)</code>: a native event bound on the tag of a component is added to its element, as on a native element. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a>. A component can also set classes and attributes on its own host, with <code>@HostProperty</code>: see <a href=\"#/en/components/host-bindings\">Host bindings</a>."
         },
         "themingWithCustomProperties": {
           "title": "Theming with custom properties",
@@ -844,6 +905,11 @@
           "p3": "Here the output carries a detail, and <code>$event</code> is the <code>CustomEvent</code> with the size.",
           "p4": "The parentheses also accept native events: they are added to the element as if they were written on the tag."
         },
+        "hostBindings": {
+          "title": "Binding the element",
+          "p1": "<code>@HostProperty</code> and <code>@HostEvent</code> work in a directive as in a component, on the element it is applied to: the attributes are written and the listeners added right after <code>onInit</code>, and everything is undone when the directive is destroyed. This directive copies a text when its element is clicked, with no <code>onInit</code> and no <code>onDestroy</code>:",
+          "p2": "The values, the timing and the edge cases are described in <a href=\"#/en/components/host-bindings\">Host bindings</a>."
+        },
         "svgElements": {
           "title": "SVG elements",
           "p1": "The argument of <code>CustomDirective</code> can be any element type. A directive meant for SVG circles gets the SVG API of the circle, such as its animated radius, without casts.",
@@ -884,7 +950,8 @@
           "td3": "Runs when the element leaves the template, before the effects are disposed.",
           "td4": "An effect disposed with the directive; returns a function disposing it earlier.",
           "td5": "Dispatches an event on the element; used by the outputs.",
-          "td6": "Inputs and outputs, as in components."
+          "td6": "Inputs and outputs, as in components.",
+          "td7": "Bind attributes, classes and listeners of the element, from <code>onInit</code> to the destruction."
         }
       },
       "overview": {
@@ -3230,6 +3297,22 @@
     "Error: No element matches the required content query '[header]' of <x-card>": {
       "cause": "A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.",
       "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
+    },
+    "Error: @HostProperty('class.') names no class": {
+      "cause": "A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.",
+      "fix": "Name the attribute, or the class after class.: @HostProperty('class.on')."
+    },
+    "Error: @HostEvent() names no event": {
+      "cause": "A @HostEvent with an empty name. Thrown when the class is defined.",
+      "fix": "Name the event: @HostEvent('click')."
+    },
+    "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
+      "cause": "A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.",
+      "fix": "Decorate an instance member, which may read the static one."
+    },
+    "Error: @HostEvent('click') cannot decorate the static method handle": {
+      "cause": "A @HostEvent on a static method: the host element belongs to an instance.",
+      "fix": "Decorate an instance method."
     }
   },
   "issues": {}

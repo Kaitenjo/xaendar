@@ -98,6 +98,22 @@ Like Query.content, for projected content that is always there: no null in the t
 
 Every projected element matching a selector or a component class, in the order of the slots.
 
+### HostProperty (decorator)
+
+```ts
+@HostProperty('aria-checked' | 'class.on') field = value | signal(…); get member(): T; accessor name!: InputSignal<T>
+```
+
+Binds an attribute, or a class (`'class.name'`), of the host element: the component itself, or the element a custom directive is applied to (not on a StructuralDirective: type error). Decorates a non-static field, getter or accessor, `@Property` ones included to reflect an input. The member is read in an effect each time the element connects (a directive: after its onInit; a component: after the render and the query hooks, before afterRender): written again when a signal it reads changes, otherwise once. A member holding a signal or any function is called. `null`, `undefined`, `false` remove the attribute, `true` writes it empty, other values `String(value)`: ARIA states need `String(bool)`. `class.name` toggles the class while the value is truthy and survives writes of `class`. Removed at disconnection / destruction. The parent binding the same attribute: last write wins. Throws for an empty name, `'class.'` or a static member.
+
+### HostEvent (decorator)
+
+```ts
+@HostEvent('keydown', { capture?, once?, passive? }) method(event?: KeyboardEvent): void
+```
+
+Listens to an event of the host element (component, or element of a custom directive; not StructuralDirective) with a non-static method taking no parameter or the event, typed as the method declares it. Added at connection / directive start (same timing as HostProperty), removed at disconnection / destruction. Hears native events, events dispatched on the element (the outputs of the component and of its directives included) and events bubbling from its content; from the shadow root only composed events (`click`, `keydown`, not `change` or child outputs). Replaces `addEventListener` in onInit + `removeEventListener` in onDestroy for the host. Throws for an empty name or a static method.
+
 ### Directive (decorator)
 
 ```ts

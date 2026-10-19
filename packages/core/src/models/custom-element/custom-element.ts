@@ -4,6 +4,7 @@ import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { _Context } from '../../utils/context/context.util';
+import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 
@@ -102,7 +103,8 @@ export class CustomElement extends HTMLElement {
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree and sets up
    * reactive signal subscriptions, then invokes the internal connected hooks
-   * (e.g. the ones of the query signals) and finally `afterRender`, if declared.
+   * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostProperty`
+   * and `@HostEvent`, and finally invokes `afterRender`, if declared.
    *
    * @throws When no render function is registered for this component class.
    */
@@ -139,6 +141,8 @@ export class CustomElement extends HTMLElement {
     for (let i = 0; i < this[CONNECTED_HOOKS].length; i++) {
       this[CONNECTED_HOOKS][i]();
     }
+    // Bound once the queries are up to date, so a `@HostProperty` can read them
+    _bindHost(this, this, this._context);
     this.afterRender?.();
   }
 

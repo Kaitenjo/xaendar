@@ -114,6 +114,7 @@
       "components/styling": "Stili",
       "components/inputs": "Input con @Property",
       "components/outputs": "Output con @Event",
+      "components/host-bindings": "Binding dell’host",
       "components/lifecycle": "Ciclo di vita",
       "components/content-projection": "Proiezione di contenuto con gli slot",
       "components/queries": "Query sulla vista",
@@ -596,6 +597,66 @@
           "td6": "Ascolta nel template del padre. <code>$event</code> è il <code>CustomEvent</code>."
         }
       },
+      "hostBindings": {
+        "eyebrow": "Componenti",
+        "title": "Binding dell’host con @HostProperty e @HostEvent",
+        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostProperty</code> e <code>@HostEvent</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
+        "attributesAndClasses": {
+          "title": "Attributi e classi",
+          "p1": "<code>@HostProperty('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostProperty('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
+          "example1": "Un interruttore disegnato dal proprio elemento",
+          "p2": "Fai clic sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo."
+        },
+        "events": {
+          "title": "Gli eventi dell’host",
+          "p1": "<code>@HostEvent('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, tipizzato dal suo parametro, oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKeydown</code> trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
+          "p2": "Il listener sente gli eventi nativi dell’host, gli eventi inviati su di esso, compresi gli output del componente, e gli eventi che risalgono dal suo contenuto. Dal suo shadow root escono solo gli eventi composed, come <code>click</code> e <code>keydown</code>: <code>change</code> e gli output dei figli restano dentro, e si ascoltano nel template. Vedi <a href=\"#/it/reference/api/core/HostEvent\"><code>HostEvent</code></a>."
+        },
+        "values": {
+          "title": "Dai valori agli attributi",
+          "p1": "<code>null</code>, <code>undefined</code> e <code>false</code> rimuovono l’attributo, <code>true</code> lo scrive vuoto, e ogni altro valore viene scritto come stringa. Va bene per gli attributi booleani come <code>hidden</code>, ma non per gli stati ARIA, che richiedono il testo <code>false</code>: per loro restituisci <code>String(value)</code>, come fa l’interruttore per <code>aria-checked</code>."
+        },
+        "timing": {
+          "title": "Quando vengono applicati",
+          "p1": "In un componente gli attributi, le classi e i listener vengono applicati dopo il render e dopo l’aggiornamento delle query, subito prima di <code>afterRender</code>: un getter può leggere una query, e <code>afterRender</code> trova l’host pronto, mentre <code>onInit</code> no. I cambiamenti dei signal vengono scritti un microtask dopo, come in ogni effetto.",
+          "p2": "Alla disconnessione tutto viene annullato: gli attributi vengono rimossi, le classi tolte, i listener rimossi. Un componente spostato nel documento li perde, e li riottiene alla nuova connessione."
+        },
+        "directives": {
+          "title": "Nelle direttive custom",
+          "p1": "Una direttiva custom li dichiara allo stesso modo, e lega l’elemento a cui è applicata: i binding partono subito dopo il suo <code>onInit</code> e si fermano quando viene distrutta. La direttiva qui sotto copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>. Una direttiva strutturale non ha un elemento: lì TypeScript rifiuta entrambi i decoratori. Vedi <a href=\"#/it/directives/custom\">Direttive custom</a>."
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Un membro è reattivo solo attraverso i suoi signal",
+            "p1": "L’effetto vede solo i signal che il membro legge mentre viene eseguito: un getter che restituisce la lunghezza di un array semplice, o un campo a cui in seguito viene assegnato un altro valore semplice, non viene mai riscritto. Tieni nei signal lo stato che l’host mostra."
+          },
+          "callout2": {
+            "heading": "false rimuove l’attributo",
+            "p1": "<code>aria-checked</code>, <code>aria-expanded</code> e gli altri stati ARIA leggono il testo <code>false</code>, che <code>false</code> rimuoverebbe: restituisci <code>String(value)</code>. Per uno screen reader un <code>aria-checked</code> assente non significa non selezionato."
+          },
+          "callout3": {
+            "heading": "Il padre lega lo stesso attributo",
+            "p1": "L’host è anche un tag nel template del padre, che può scrivere lo stesso attributo, come può farlo una direttiva applicata all’elemento. I valori non vengono uniti: vince l’ultima scrittura. Un attributo statico del padre viene sovrascritto alla connessione, e rimosso alla disconnessione. Lascia ogni attributo a un solo proprietario, oppure prendi il valore del padre da un input riflesso con <code>@HostProperty</code>, come fa <code>locked</code>. Le classi non si scontrano: <code>class.name</code> attiva e disattiva solo la propria classe, e la mantiene quando il padre scrive <code>class</code>."
+          },
+          "callout4": {
+            "heading": "In onInit non è ancora legato nulla",
+            "p1": "I binding di un componente partono dopo il render: in <code>onInit</code> l’host non ha nessuno dei suoi attributi, e gli eventi inviati lì non raggiungono i metodi con <code>@HostEvent</code>. I listener del template del padre, aggiunti prima che l’elemento venga inserito, vengono eseguiti prima di loro per lo stesso evento."
+          },
+          "callout5": {
+            "heading": "Errori",
+            "p1": "TypeScript rifiuta i decoratori su una direttiva strutturale, e <code>@HostEvent</code> su un metodo con più di un parametro. Un nome vuoto, <code>class.</code> da solo e un membro statico lanciano un errore quando la classe viene definita."
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "API",
+          "th2": "Descrizione",
+          "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code>, <code>undefined</code> e <code>false</code>, vuoto per <code>true</code>.",
+          "td2": "Attiva una classe dell’host finché il valore è truthy.",
+          "td3": "Ascolta un evento dell’host con un metodo, che riceve l’evento."
+        }
+      },
       "queries": {
         "eyebrow": "Componenti",
         "title": "Query sulla vista",
@@ -725,7 +786,7 @@
           "title": "Lo stile dell’host",
           "p1": "Dentro il foglio di stile, <code>:host</code> colpisce l’elemento del componente stesso. Un custom element è <code>display: inline</code> per default, quindi la maggior parte dei componenti imposta qui un display. <code>:host(selettore)</code> colpisce l’host solo quando corrisponde anche al selettore: una classe, un attributo o uno stato impostati dall’esterno.",
           "example1": ":host, :host(.selected), :host([tone='danger'])",
-          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Ogni chip ascolta il proprio <code>(click)</code>: un evento nativo legato sul tag di un componente viene aggiunto al suo elemento, come su un elemento nativo. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>."
+          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Ogni chip ascolta il proprio <code>(click)</code>: un evento nativo legato sul tag di un componente viene aggiunto al suo elemento, come su un elemento nativo. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>. Un componente può anche impostare classi e attributi sul proprio host, con <code>@HostProperty</code>: vedi <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
         },
         "themingWithCustomProperties": {
           "title": "Temi con le custom property",
@@ -844,6 +905,11 @@
           "p3": "Qui l’output porta un detail, e <code>$event</code> è il <code>CustomEvent</code> con la dimensione.",
           "p4": "Le parentesi accettano anche gli eventi nativi: vengono aggiunti all’elemento come se fossero scritti sul tag."
         },
+        "hostBindings": {
+          "title": "Legare l’elemento",
+          "p1": "<code>@HostProperty</code> e <code>@HostEvent</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
+          "p2": "I valori, i tempi e i casi limite sono descritti in <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
+        },
         "svgElements": {
           "title": "Elementi SVG",
           "p1": "L’argomento di <code>CustomDirective</code> può essere qualsiasi tipo di elemento. Una direttiva pensata per i cerchi SVG riceve l’API SVG del cerchio, come il suo raggio animato, senza cast.",
@@ -884,7 +950,8 @@
           "td3": "Eseguito quando l’elemento lascia il template, prima che gli effect vengano eliminati.",
           "td4": "Un effect eliminato con la direttiva; restituisce una funzione per eliminarlo prima.",
           "td5": "Emette un evento sull’elemento; usato dagli output.",
-          "td6": "Input e output, come nei componenti."
+          "td6": "Input e output, come nei componenti.",
+          "td7": "Legano attributi, classi e listener dell’elemento, da <code>onInit</code> alla distruzione."
         }
       },
       "overview": {
@@ -3230,6 +3297,22 @@
     "Error: No element matches the required content query '[header]' of <x-card>": {
       "cause": "Una @Query.content.required è stata letta mentre nessun elemento proiettato le corrispondeva: prima che il padre proiettasse il contenuto, afterRender compreso, oppure mentre l’elemento non era proiettato.",
       "fix": "Leggila negli handler degli eventi. Se il contenuto è opzionale, o per seguirlo mentre arriva, usa @Query.content."
+    },
+    "Error: @HostProperty('class.') names no class": {
+      "cause": "Un @HostProperty con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostProperty('') names no attribute.",
+      "fix": "Indica il nome dell’attributo, o quello della classe dopo class.: @HostProperty('class.on')."
+    },
+    "Error: @HostEvent() names no event": {
+      "cause": "Un @HostEvent con un nome vuoto. Viene lanciato quando la classe viene definita.",
+      "fix": "Indica il nome dell’evento: @HostEvent('click')."
+    },
+    "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
+      "cause": "Un @HostProperty su un campo, un getter o un accessor statico: l’elemento host appartiene a un’istanza.",
+      "fix": "Decora un membro d’istanza, che può leggere quello statico."
+    },
+    "Error: @HostEvent('click') cannot decorate the static method handle": {
+      "cause": "Un @HostEvent su un metodo statico: l’elemento host appartiene a un’istanza.",
+      "fix": "Decora un metodo d’istanza."
     }
   },
   "issues": {}

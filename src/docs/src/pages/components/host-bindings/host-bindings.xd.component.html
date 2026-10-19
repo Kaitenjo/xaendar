@@ -1,0 +1,94 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { ToggleSwitchComponent } from '../../../examples/components/host-bindings/toggle-switch/toggle-switch.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span @@i18n(key="pages.components.hostBindings.eyebrow") class="eyebrow" />
+<h1 @@i18n(key="pages.components.hostBindings.title") />
+<p @@i18n(key="pages.components.hostBindings.lead") class="lead" />
+
+<h2 @@i18n(key="pages.components.hostBindings.attributesAndClasses.title") />
+<p @@i18n(key="pages.components.hostBindings.attributesAndClasses.p1") />
+<docs-example name="components/host-bindings/toggle-switch"
+  heading="{translations().pages.components.hostBindings.attributesAndClasses.example1}">
+  <ex-toggle-switch />
+</docs-example>
+<p @@i18n(key="pages.components.hostBindings.attributesAndClasses.p2") />
+
+<h2 @@i18n(key="pages.components.hostBindings.events.title") />
+<p @@i18n(key="pages.components.hostBindings.events.p1") />
+<docs-code snippet="api/core/host-event.ts" />
+<p @@i18n(key="pages.components.hostBindings.events.p2") />
+
+<h2 @@i18n(key="pages.components.hostBindings.values.title") />
+<p @@i18n(key="pages.components.hostBindings.values.p1") />
+<docs-code snippet="api/core/host-property-values.ts" />
+
+<h2 @@i18n(key="pages.components.hostBindings.timing.title") />
+<p @@i18n(key="pages.components.hostBindings.timing.p1") />
+<p @@i18n(key="pages.components.hostBindings.timing.p2") />
+
+<h2 @@i18n(key="pages.components.hostBindings.directives.title") />
+<p @@i18n(key="pages.components.hostBindings.directives.p1") />
+<docs-code snippet="api/core/host-bindings-directive.ts" />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.components.hostBindings.edgeCases.title") />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.hostBindings.edgeCases.callout1.p1")
+      heading="{translations().pages.components.hostBindings.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.hostBindings.edgeCases.callout2.p1")
+      heading="{translations().pages.components.hostBindings.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.hostBindings.edgeCases.callout3.p1")
+      heading="{translations().pages.components.hostBindings.edgeCases.callout3.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.hostBindings.edgeCases.callout4.p1")
+      heading="{translations().pages.components.hostBindings.edgeCases.callout4.heading}" />
+    <docs-callout-item heading="{translations().pages.components.hostBindings.edgeCases.callout5.heading}">
+      <p @@i18n(key="pages.components.hostBindings.edgeCases.callout5.p1") />
+      <docs-code snippet="api/core/host-bindings-structural-error.txt" />
+      <docs-code snippet="api/core/host-bindings-errors.txt" />
+    </docs-callout-item>
+  </docs-callout>
+</section>
+
+<h2 @@i18n(key="pages.components.hostBindings.summary.title") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.hostBindings.summary.th1") />
+        <th @@i18n(key="pages.components.hostBindings.summary.th2") />
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/HostProperty`}">
+            <code>{ "@HostProperty('name')" }</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.components.hostBindings.summary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/HostProperty`}">
+            <code>{ "@HostProperty('class.name')" }</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.components.hostBindings.summary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/HostEvent`}">
+            <code>{ "@HostEvent('name', options?)" }</code>
+          </a>
+        </td>
+        <td @@i18n(key="pages.components.hostBindings.summary.td3") />
+      </tr>
+    </tbody>
+  </table>
+</div>

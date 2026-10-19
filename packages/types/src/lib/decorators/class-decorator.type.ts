@@ -1,4 +1,5 @@
 import { Constructor } from '../constructors/constructor.type';
+import type { DecoratorMetadataContext } from './decorator-metadata-context.type';
 
 /**
  * Represents a TC39 stage-3 class decorator function.
@@ -8,8 +9,10 @@ import { Constructor } from '../constructors/constructor.type';
  *
  * @template T - The instance type of the decorated class.
  * @template Statics - Optional static members of the class.
+ * @template Metadata - The shape of the metadata of the class (see {@link DecoratorMetadataContext}).
  */
 export type ClassDecorator<
-  T extends Object, 
-  Statics extends { [key: string]: any } = { [key: string]: any }
-> = (klass: Constructor<T, Statics>, context: ClassDecoratorContext) => void
+  T extends Object,
+  Statics extends { [key: string]: any } = { [key: string]: any },
+  Metadata extends object = DecoratorMetadataObject
+> = (klass: Constructor<T, Statics>, context: DecoratorMetadataContext<ClassDecoratorContext<Constructor<T, Statics>>, Metadata>) => void;

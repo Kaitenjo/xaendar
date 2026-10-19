@@ -3,6 +3,7 @@ import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIR
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import { _Context } from '../../utils/context/context.util';
+import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 
 /**
  * Base class for custom directives: behaviors applied to an existing HTML element
@@ -70,7 +71,8 @@ export abstract class CustomDirective<T extends Element = Element> {
 
   /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
-   * Invokes `onInit`, if declared.
+   * Invokes `onInit`, if declared, then binds the attributes, the classes and the events of the element declared by
+   * `@HostProperty` and `@HostEvent`.
    *
    * @param context - The context of the element the directive is applied to: the effects created
    *   via {@link effect} are registered on it, so they are disposed when it is cleared.
@@ -83,6 +85,7 @@ export abstract class CustomDirective<T extends Element = Element> {
       context.addUnlistener(...unlistenFns);
     }
     this.onInit?.();
+    _bindHost(this, this._element, context);
   }
 
   /**
