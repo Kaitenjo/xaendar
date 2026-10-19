@@ -65,7 +65,7 @@ function setup(...documents: TextDocument[]) {
     onCompletion: capture('completion'),
     onCodeAction: capture('codeAction'),
     onDocumentFormatting: capture('formatting'),
-    workspace: { getConfiguration: vi.fn(async () => null) },
+    workspace: { getConfiguration: vi.fn(async (): Promise<unknown> => null) },
     onShutdown: capture('shutdown'),
     languages: { semanticTokens: { on: capture('semanticTokens') } },
     listen: vi.fn(),
