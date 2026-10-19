@@ -115,6 +115,18 @@ describe('analyzeTemplate', () => {
     expect(analysis!.typeCheck.text).toContain('root.title');
   }, TIMEOUT);
 
+  it('checks the tags matching the customElements patterns of the nearest xaendar.json like native elements', async () => {
+    project.write('src/external/xaendar.json', JSON.stringify({ customElements: ['sl-*'] }));
+    project.write('src/external/external.ts', 'export class External { title = \'x\'; }\n');
+    const source = '<sl-button label="{ title }"></sl-button><my-unknown></my-unknown>';
+    const { analysis } = await analyzeTemplate(project.path('src/external/external.html'), source, new Map([[project.path('src/external/external.ts'), ['External']]]));
+
+    expect(analysis!.errors.map(failure => (failure as TemplateError).detail)).toEqual([
+      'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements'
+    ]);
+    expect(analysis!.typeCheck.text).toContain('root.title');
+  }, TIMEOUT);
+
   it('imports a specifier naming neither a component nor a directive as a symbol, which the type-check imports from its module', async () => {
     const { analysis, error } = await project.analyze('@import { Missing, Child } from \'./child\';');
 

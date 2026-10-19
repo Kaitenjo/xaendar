@@ -42,6 +42,7 @@ export function activate(context: ExtensionContext): void {
     synchronize: {
       fileEvents: [
         workspace.createFileSystemWatcher('**/*.ts'),
+        workspace.createFileSystemWatcher('**/xaendar.json'),
       ],
     },
   };

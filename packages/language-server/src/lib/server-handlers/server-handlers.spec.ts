@@ -316,6 +316,18 @@ describe('XaendarLanguageServer', () => {
       expect(registry.remove).toHaveBeenCalledTimes(1);
       expect(invalidateTemplateMetadata).toHaveBeenCalledWith(pathOf('file:///src/base.ts'));
     });
+
+    it('validates every open template again when a xaendar.json changes', async () => {
+      const { server } = setup(template(), TextDocument.create(COMPONENT_URI, 'typescript', 1, ''));
+      vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf('<b>{ title }</b>'));
+
+      await server.onDidChangeWatchedFiles({ changes: [{ uri: 'file:///xaendar.json', type: FileChangeType.Changed }] });
+      await vi.runAllTimersAsync();
+
+      expect(analyzeTemplate).toHaveBeenCalledTimes(1);
+      expect(analyzeTemplate).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), '<b>{ title }</b>', expect.anything());
+      expect(invalidateTemplateMetadata).not.toHaveBeenCalled();
+    });
   });
 
   describe('onDefinition', () => {

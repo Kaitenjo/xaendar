@@ -45,7 +45,8 @@ describe('extension', () => {
       { language: 'typescript', pattern: '**/*.xd.component.ts' }
     ]);
     expect(workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/*.ts');
-    expect(clientOptions.synchronize.fileEvents).toEqual([mocks.watcher]);
+    expect(workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/xaendar.json');
+    expect(clientOptions.synchronize.fileEvents).toEqual([mocks.watcher, mocks.watcher]);
     expect(mocks.start).toHaveBeenCalled();
   });
 

@@ -1,4 +1,5 @@
 import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
+import { basename } from 'node:path';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
 import { type CodeAction, CodeActionKind, type CodeActionParams, type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DocumentFormattingParams, type Diagnostic, DiagnosticTag, type DidChangeWatchedFilesParams, FileChangeType, type Hover, type HoverParams, type InitializeParams, type TextEdit, type InitializeResult, InsertTextFormat, type LocationLink, MarkupKind, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
@@ -9,6 +10,11 @@ import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from 
  * Suffix of the templates of the components.
  */
 const TEMPLATE_SUFFIX = '.xd.component.html';
+
+/**
+ * The configuration file of a Xaendar project, whose `customElements` patterns change how the templates are checked.
+ */
+const XAENDAR_CONFIG_FILE = 'xaendar.json';
 
 /**
  * Milliseconds a template waits, after the last change, before being validated again.
@@ -126,10 +132,7 @@ export class XaendarLanguageServer {
    */
   public async onInitialized(): Promise<void> {
     await this._registry.build(this._workspaceRoots);
-    const templates = this._documents.all().filter(isTemplate);
-    for (let i = 0; i < templates.length; i++) {
-      this._scheduleValidation(templates[i].uri);
-    }
+    this._scheduleOpenTemplatesValidation();
   }
 
   /**
@@ -166,7 +169,8 @@ export class XaendarLanguageServer {
   }
 
   /**
-   * Applies the changes of the TypeScript files watched by the client to the templates depending on them.
+   * Applies the changes of the TypeScript files watched by the client to the templates depending on them, and the
+   * changes of a `xaendar.json` to every open template.
    *
    * @param params - The changes.
    */
@@ -174,6 +178,11 @@ export class XaendarLanguageServer {
     for (let i = 0; i < changes.length; i++) {
       const { uri, type } = changes[i];
       const fileName = fromUri(uri);
+      if (basename(fileName) === XAENDAR_CONFIG_FILE) {
+        this._scheduleOpenTemplatesValidation();
+        continue;
+      }
+
       if (type === FileChangeType.Deleted) {
         this._registry.remove(fileName);
       }
@@ -513,6 +522,16 @@ export class XaendarLanguageServer {
       if (isAffected) {
         this._scheduleValidation(document.uri);
       }
+    }
+  }
+
+  /**
+   * Schedules the validation of every open template.
+   */
+  private _scheduleOpenTemplatesValidation(): void {
+    const templates = this._documents.all().filter(isTemplate);
+    for (let i = 0; i < templates.length; i++) {
+      this._scheduleValidation(templates[i].uri);
     }
   }
 

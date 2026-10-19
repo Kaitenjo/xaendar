@@ -9,6 +9,7 @@ import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
+import { readCustomElements } from '../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * A symbol imported by a template through an `@import` statement.
@@ -149,7 +150,8 @@ const metadataCaches = new Map<ProjectLanguageService, TemplateMetadataCache>();
 
 /**
  * Analyzes a template with a single compilation: parses it, resolves the components and directives it imports,
- * type-checks it and registers its shim in the LanguageService of its TypeScript project.
+ * type-checks it, the tags matching the `customElements` patterns of the nearest `xaendar.json` checked like native
+ * elements, and registers its shim in the LanguageService of its TypeScript project.
  *
  * @param templatePath - The path of the template.
  * @param source - The current source of the template, unsaved changes included.
@@ -203,7 +205,7 @@ async function analyze(templatePath: string, source: string, components: Readonl
     const { shadowingMembers, reactiveMembers, dependencies } = extractMembers(componentFiles, project, options);
     const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, [], symbols, reactiveMembers);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     
     const analysis: TemplateAnalysis = {
