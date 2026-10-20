@@ -82,7 +82,8 @@
 }
 
 button:focus-visible,
-.brand:focus-visible {
+.brand:focus-visible,
+a.icon:focus-visible {
   outline: none;
   box-shadow: var(--xd-focus);
 }

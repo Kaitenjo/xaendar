@@ -11,7 +11,8 @@
   "topbar": {
     "menu": "Toggle navigation",
     "theme": "Toggle light/dark theme",
-    "language": "Language"
+    "language": "Language",
+    "github": "Xaendar on GitHub"
   },
   "example": {
     "result": "Result",

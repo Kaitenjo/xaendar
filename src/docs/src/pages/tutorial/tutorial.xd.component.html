@@ -1,13 +1,12 @@
 @import { translations } from '../../core/i18n/i18n.ts'
-@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
-@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { translate as t } from '../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
 @import { TodoStep1Component } from '../../examples/tutorial/step-1/step-1.xd.component.ts'
 @import { TodoStep2Component } from '../../examples/tutorial/step-2/step-2.xd.component.ts'
 @import { TodoStep3Component } from '../../examples/tutorial/step-3/step-3.xd.component.ts'
 @import { TodoStep4Component } from '../../examples/tutorial/step-4/step-4.xd.component.ts'
 @import { TodoStep5Component } from '../../examples/tutorial/step-5/step-5.xd.component.ts'
-@import { translate as t } from '../../core/i18n/i18n.utils.ts'
-@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
+@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.tutorial.eyebrow') }

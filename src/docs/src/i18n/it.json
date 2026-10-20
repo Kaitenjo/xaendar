@@ -11,7 +11,8 @@
   "topbar": {
     "menu": "Apri/chiudi la navigazione",
     "theme": "Cambia tema chiaro/scuro",
-    "language": "Lingua"
+    "language": "Lingua",
+    "github": "Xaendar su GitHub"
   },
   "example": {
     "result": "Risultato",

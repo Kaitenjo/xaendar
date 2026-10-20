@@ -6,7 +6,8 @@ import { LANGS } from '../../core/router/route-hash.utils';
 import { href, lang, switchLang } from '../../core/router/router';
 
 /**
- * The top bar: logo, search, language and theme switches, and the menu button on narrow screens.
+ * The top bar: logo, search, language and theme switches, the link to the GitHub repository, and the menu
+ * button on narrow screens.
  */
 @WebComponent({
   selector: 'docs-topbar',
