@@ -31,6 +31,10 @@ type Item = {
 })
 export class InventoryComponent extends CustomElement {
   /**
+   * The id of the next item: ids are never reused, so the keys of the list stay unique.
+   */
+  private _nextId = 1;
+  /**
    * The items, in insertion order.
    */
   public readonly items = signal([this._create('Pens', 12), this._create('Notebooks', 4), this._create('Staplers', 1)]);
@@ -50,10 +54,6 @@ export class InventoryComponent extends CustomElement {
    * The total quantity, recomputed when any quantity changes.
    */
   public readonly total = computed(() => this._computeTotal());
-  /**
-   * The id of the next item: ids are never reused, so the keys of the list stay unique.
-   */
-  private _nextId = 1;
 
   /**
    * Adds the item described by the form, then clears the form.

@@ -1680,7 +1680,8 @@
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
           "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
-          "td20": "<code>@let</code>, chiamata anche variabile di template, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>"
+          "td20": "<code>@let</code>, chiamata anche variabile di template, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>",
+          "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",

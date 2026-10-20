@@ -1680,7 +1680,8 @@
           "td17": "Methods and computed signals",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
           "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
-          "td20": "<code>@let</code>, also called a template variable, a signal read with <code>name()</code> when its value reads one: see <a href=\"#/en/templates/let\">@let</a>"
+          "td20": "<code>@let</code>, also called a template variable, a signal read with <code>name()</code> when its value reads one: see <a href=\"#/en/templates/let\">@let</a>",
+          "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces. See <a href=\"#/en/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "What works differently",

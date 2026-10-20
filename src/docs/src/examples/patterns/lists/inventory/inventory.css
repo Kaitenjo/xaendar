@@ -32,6 +32,9 @@ td {
 }
 
 .quantity {
+  align-items: center;
+  display: flex;
+  gap: .5rem;
   white-space: nowrap;
 }
 
