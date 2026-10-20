@@ -1,4 +1,4 @@
-import { copyFileSync, cpSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { build as tsupBuild } from 'tsup';
@@ -145,8 +145,12 @@ function copyTypeScriptLibraries(outDir: string): void {
 }
 
 /**
- * Writes the extension `package.json`, copying the manifest fields of the source one (`engines`, `activationEvents`
- * and `contributes`), and copies the `syntaxes` folder holding the grammars it contributes into output.
+ * Writes the extension `package.json`, copying the manifest fields of the source one (`displayName`, `keywords`,
+ * `repository`, `homepage`, `engines`, `activationEvents` and `contributes`), and copies into output the `syntaxes`
+ * folder holding the grammars it contributes plus the `README.md`, `LICENSE`, `icon.png` and `.vscodeignore` files,
+ * when present.
+ *
+ * The Marketplace rejects scoped names, so the extension is published as `xaendar` whatever the source name is.
  *
  * @param projectName Extension package folder name.
  * @param projectPath Extension package root path.
@@ -154,14 +158,18 @@ function copyTypeScriptLibraries(outDir: string): void {
  * @param outDir Destination package directory under `dist`.
  */
 function writePackageJsonForExtensionProject(projectName: string, projectPath: string, pkg: XaendarPackageJson, outDir: string): void {
-  const distPkg = {
-    name: pkg.name!,
+  const distPkg: Record<string, unknown> = {
+    name: 'xaendar',
+    displayName: pkg['displayName'],
     version: pkg.version!,
     description: pkg.description ?? '',
     author: pkg.author ?? '',
     license: pkg.license ?? 'MIT',
     type: 'module',
     publisher: 'xaendar',
+    repository: pkg.repository,
+    homepage: pkg.homepage,
+    keywords: pkg.keywords,
     engines: pkg.engines,
     categories: ['Programming Languages', 'Linters'],
     activationEvents: pkg['activationEvents'],
@@ -169,9 +177,21 @@ function writePackageJsonForExtensionProject(projectName: string, projectPath: s
     contributes: pkg['contributes'],
   };
 
+  if (existsSync(resolve(projectPath, 'icon.png'))) {
+    distPkg['icon'] = 'icon.png';
+  }
+
   mkdirSync(outDir, { recursive: true });
   const packageJsonPath = resolve(outDir, 'package.json');
   writeFileSync(packageJsonPath, JSON.stringify(distPkg, null, 2), 'utf-8');
 
   cpSync(resolve(projectPath, 'syntaxes'), resolve(outDir, 'syntaxes'), { recursive: true, filter: source => !source.endsWith('.spec.ts') });
+
+  const assets = ['README.md', 'LICENSE', 'icon.png', '.vscodeignore'];
+  for (let i = 0; i < assets.length; i++) {
+    const assetPath = resolve(projectPath, assets[i]);
+    if (existsSync(assetPath)) {
+      copyFileSync(assetPath, resolve(outDir, assets[i]));
+    }
+  }
 }

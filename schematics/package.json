@@ -9,6 +9,7 @@
     "check-dependencies": "node dist/check-dependencies.js",
     "pack": "node dist/pack-projects.js",
     "publish": "node dist/publish.js",
+    "publish-extension": "node dist/publish-extension.js",
     "typecheck-projects": "node dist/typecheck-projects.js",
     "update-version": "node dist/update-version.js --bump=patch"
   }

@@ -1,10 +1,22 @@
 {
   "name": "@xaendar/vscode-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "",
+  "displayName": "Xaendar",
+  "description": "Language support for Xaendar templates: syntax highlighting, completion, diagnostics and formatting.",
+  "keywords": [
+    "xaendar",
+    "web components",
+    "template",
+    "html"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kaitenjo/xaendar.git"
+  },
+  "homepage": "https://github.com/Kaitenjo/xaendar#readme",
   "exports": {
     ".": "./src/public-api.ts"
   },

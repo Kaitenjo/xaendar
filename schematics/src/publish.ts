@@ -10,6 +10,12 @@ import { resolve } from 'node:path';
 const DIST_FOLDER = '../dist/@xaendar';
 
 /**
+ * Projects found in {@link DIST_FOLDER} that are not published to npm: the VS Code extension goes to the Marketplace
+ * (`vsce publish`).
+ */
+const EXCLUDED_PROJECTS = ['vscode-client'];
+
+/**
  * Verifies that the current environment is authenticated with npm.
  *
  * Runs `npm whoami` to check for a valid session or token.
@@ -45,7 +51,7 @@ function checkAuth(): void {
  * // Publishes @xaendar/core, @xaendar/utils, etc.
  */
 async function publishAll(): Promise<void> {
-  const packages = readdirSync(DIST_FOLDER);
+  const packages = readdirSync(DIST_FOLDER).filter(project => !EXCLUDED_PROJECTS.includes(project));
   console.log(`\n📦 Publishing ${packages.length} @xaendar package(s)...\n`);
 
   for (let i = 0; i < packages.length; i++) {
