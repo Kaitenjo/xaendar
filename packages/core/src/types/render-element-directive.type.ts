@@ -1,3 +1,5 @@
+import type { Constructor } from '@xaendar/types';
+import type { CustomDirective } from '../models/custom-directive/custom-directive';
 import type { _resetProperty } from '../utils';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
 import type { RenderElementAttribute } from './render-element-attribute.type';
@@ -8,9 +10,9 @@ import type { RenderElementEvent } from './render-element-event.type';
  */
 export type RenderElementDirective = {
   /**
-   * The selector the directive is registered with.
+   * The selector the directive is registered with, or the class of the directive, when it is applied by `createComponent`.
    */
-  selector: string,
+  selector: string | Constructor<CustomDirective>,
   /**
    * The list of directive properties to be bound: the attributes of an element, except the ones
    * unbound by removing the attribute, since a directive has no underlying attribute to remove.

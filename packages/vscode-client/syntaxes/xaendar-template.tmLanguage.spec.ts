@@ -127,13 +127,26 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'p>')).toContain('entity.name.tag.html');
   });
 
-  it('colors the tags with a dash as the native ones, in the opening and in the closing tag', () => {
+  it('colors the tags with a dash as custom elements, in the opening and in the closing tag', () => {
     const template = '<my-child label="a"></my-child><div></div>';
 
-    expect(scopesOf(template, 'my-child')).toContain('entity.name.tag.html');
-    expect(scopesOf(template, 'my-child', 1)).toContain('entity.name.tag.html');
+    expect(scopesOf(template, 'my-child')).toContain('entity.name.tag.custom.xaendar');
+    expect(scopesOf(template, 'my-child', 1)).toContain('entity.name.tag.custom.xaendar');
     expect(scopesOf(template, 'label')).toContain('entity.other.attribute-name.html');
     expect(scopesOf(template, 'div')).toContain('entity.name.tag.html');
+    expect(scopesOf(template, 'div')).not.toContain('entity.name.tag.custom.xaendar');
+  });
+
+  it('colors the custom elements with the non-ASCII characters of the HTML specification', () => {
+    const template = '<my-élément label="a"></my-élément><math-𝔸></math-𝔸>';
+
+    expect(scopesOf(template, 'my-élément')).toContain('entity.name.tag.custom.xaendar');
+    expect(scopesOf(template, 'my-élément', 1)).toContain('entity.name.tag.custom.xaendar');
+    expect(scopesOf(template, 'label')).toContain('entity.other.attribute-name.html');
+    expect(scopesOf(template, 'math-𝔸')).toContain('entity.name.tag.custom.xaendar');
+    expect(scopesOf(template, 'math-𝔸', 1)).toContain('entity.name.tag.custom.xaendar');
+    // Uppercase ASCII letters are not allowed in a custom element name
+    expect(scopesOf('<my-Child></my-Child>', 'my-Child')).not.toContain('entity.name.tag.custom.xaendar');
   });
 
   it('colors the event bindings, their handler and arguments as expressions', () => {
@@ -182,7 +195,7 @@ describe('xaendar-template grammar', () => {
   it('colors the type arguments of a web component as types, and keeps coloring its bindings', () => {
     const template = '<ex-list(string, Map<Item, (value: number) => void>) items="{ rows }" (picked)="log()"></ex-list><ex-bare(Item)/>';
 
-    expect(scopesOf(template, 'ex-list')).toContain('entity.name.tag.html');
+    expect(scopesOf(template, 'ex-list')).toContain('entity.name.tag.custom.xaendar');
     expect(scopesOf(template, '(string')).toContain('punctuation.definition.typeparameters.begin.xaendar');
     expect(scopesOf(template, 'string,')).toContain('support.type.primitive.ts');
     expect(scopesOf(template, 'Map')).toContain('entity.name.type.ts');
@@ -191,7 +204,7 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, 'items')).toContain('entity.other.attribute-name.html');
     expect(scopesOf(template, 'rows')).toContain('meta.embedded.expression.xaendar');
     expect(scopesOf(template, 'picked')).toContain('entity.name.function.event.xaendar');
-    expect(scopesOf(template, 'ex-bare')).toContain('entity.name.tag.html');
+    expect(scopesOf(template, 'ex-bare')).toContain('entity.name.tag.custom.xaendar');
     expect(scopesOf(template, 'Item)/')).toContain('entity.name.type.ts');
   });
 

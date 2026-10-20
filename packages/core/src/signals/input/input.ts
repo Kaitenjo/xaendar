@@ -28,6 +28,7 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
 
   const getter = function () { return signal.get(); }
 
+  // The brand of the InputSignal type exists only in the types, so the signal is cast to it
   return Object.assign(getter, {
     set(newValue: IncomingValue, symbol: symbol): void {
       assertPrivateContext(symbol);
@@ -39,6 +40,6 @@ export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?
       originalSet.call(signal, value as ActualValue);
     },
     get: signal.get.bind(signal),
-    [INPUT_SIGNAL_INSTANCE_SYMBOL]: true
+    [INPUT_SIGNAL_INSTANCE_SYMBOL]: true as const
   });
 }

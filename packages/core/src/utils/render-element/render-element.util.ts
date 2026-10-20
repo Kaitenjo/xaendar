@@ -292,7 +292,7 @@ function bindDirectives(element: Element, context: _Context, directives: RenderE
     const { selector, attributes, events, conditionalBindings } = directives[i];
     const Directive = resolveDirective(selector, CustomDirective);
     if (element instanceof CustomElement && element.hostDirectives?.has(Directive)) {
-      throw new Error(`Directive "${selector}" is applied more than once on <${element.localName}>: it is already a host directive of the component`);
+      throw new Error(`Directive ${typeof selector === 'string' ? `"${selector}"` : Directive.name} is applied more than once on <${element.localName}>: it is already a host directive of the component`);
     }
 
     // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
@@ -432,21 +432,24 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: Rende
 }
 
 /**
- * Retrieves the directive class registered for a selector, ensuring it is of the expected kind.
- * @param selector - The selector identifying the directive in templates.
+ * Retrieves the directive class registered for a selector, or takes the class given in its place, ensuring it is of the expected kind.
+ * @param selector - The selector identifying the directive in templates, or the class of the directive, applied without a selector by `createComponent`.
  * @param kind - The base class the directive is expected to extend.
- * @returns The directive class registered for the selector.
- * @throws When no directive is registered for the selector, or when it does not extend `kind`.
+ * @returns The directive class registered for the selector, or the given class.
+ * @throws When no directive is registered for the selector, or when the directive does not extend `kind`.
  */
-function resolveDirective<T extends CustomDirective | StructuralDirective>(selector: string, kind: AbstractConstructor<T>): Constructor<T> {
-  const Directive = _getDirective(selector);
+function resolveDirective<T extends CustomDirective | StructuralDirective>(selector: string | Constructor<CustomDirective | StructuralDirective>, kind: AbstractConstructor<T>): Constructor<T> {
+  const isSelector = typeof selector === 'string';
+  const Directive = isSelector ? _getDirective(selector) : selector;
   if (!Directive) {
     throw new Error(`No directive registered for selector "${selector}"`);
   }
 
   const isDirectiveKind = (Directive: Constructor<CustomDirective | StructuralDirective>): Directive is Constructor<T> => Directive.prototype instanceof kind
   if (!isDirectiveKind(Directive)) {
-    throw new Error(`Directive ${Directive.name} registered for selector "${selector}" is not a ${kind.name}`);
+    throw new Error(isSelector
+      ? `Directive ${Directive.name} registered for selector "${selector}" is not a ${kind.name}`
+      : `Directive ${Directive.name} is not a ${kind.name}`);
   }
 
   return Directive;

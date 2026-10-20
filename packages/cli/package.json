@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/cli",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Cli tool for Xaendar framework",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -10,12 +10,12 @@
   },
   "dependencies": {
     "@rolldown/plugin-babel": "^0.2.4",
-    "@xaendar/build-tools": "0.12.0",
-    "@xaendar/common": "0.12.0",
+    "@xaendar/build-tools": "0.13.0",
+    "@xaendar/common": "0.13.0",
     "commander": "^15.0.0",
-    "vite": "^8.3.1",
+    "vite": "^8.3.4",
     "tsx": "^4.23.15",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "devDependencies": {
     "type-fest": "^5.9.0"

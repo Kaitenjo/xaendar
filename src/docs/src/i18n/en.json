@@ -120,6 +120,7 @@
       "components/queries": "View queries",
       "components/content-queries": "Content queries",
       "components/dom-apis": "Using DOM APIs",
+      "components/dynamic-creation": "Creating components in code",
       "components/inheritance": "Inheritance",
       "templates/overview": "Template syntax",
       "templates/text-interpolation": "Text interpolation",
@@ -378,6 +379,65 @@
           "td8": "Add in <code>onInit</code>, remove in <code>onDestroy</code>.",
           "td9": "Foreign custom elements",
           "td10": "Create in <code>afterRender</code>, feed with an effect."
+        }
+      },
+      "dynamicCreation": {
+        "eyebrow": "Components",
+        "title": "Creating components in code",
+        "lead": "A template creates the components named by its tags. When which components to show, how many or where is known only at run time — notifications, dialogs, panels opened by the user — create them in code with <code>createComponent</code>: it binds their inputs and their events and applies directives to them, as a tag does, and returns a reference that destroys them.",
+        "creating": {
+          "title": "Creating a component",
+          "p1": "<code>createComponent</code> takes the class of a component, decorated with <code>@WebComponent</code>, and its options: <code>target</code> is the element the component is appended to, as its last child. It returns a reference: <code>element</code> is the instance of the component, already in the DOM, and <code>destroy</code> removes it.",
+          "p2": "The inputs are set before the element is appended, so <code>onInit</code> reads them, as it does for a component written in a template; the directives are applied once the element is in the DOM. The creation is not tracked: called inside an effect, it does not make the effect depend on the signals its getters read."
+        },
+        "bindings": {
+          "title": "Inputs and events",
+          "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
+          "p2": "A group with a <code>condition</code> is bound only while the condition holds, as a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a> written in the tag: as soon as it does not, its inputs go back to their <strong>default value</strong>, not to the last one they received, and its events are no longer listened to. The condition is a getter too, and follows the signals it reads."
+        },
+        "directives": {
+          "title": "Directives",
+          "p1": "<code>directives</code> lists the custom directives applied to the component, by class: no selector, and no import in a template. An entry is the class itself, applied as long as the component lives, or an object giving the class in <code>directive</code>, along with a <code>condition</code> and the groups of its own <code>properties</code> and <code>events</code>, typed after the directive. A directive with a condition is applied while the condition holds, with a new instance every time it holds again, as a <a href=\"#/en/directives/conditional\">conditional directive</a> in a template."
+        },
+        "destroying": {
+          "title": "Destroying",
+          "p1": "A component created in code lives until <code>destroy</code> is called: it removes the element, unbinds its inputs and its events and destroys its directives. Removing the element with the DOM APIs instead disconnects it, but leaves its bindings alive. A component creating others keeps their references and destroys the ones still alive in its <code>onDestroy</code>, since they are not part of its template.",
+          "example1": "A stack of notifications created in code",
+          "p2": "Each notification is bound to <code>urgent</code> through a conditional group, destroys itself when its <code>dismissed</code> output is emitted, and is marked by <code>NewestDirective</code> while it is the newest one: adding a notification moves the directive, removing it from the previous one. The stack destroys the notifications still open in its <code>onDestroy</code>. The listener of <code>dismissed</code> has a body in braces: an arrow function returning a call on <code>notification</code> would make the type of <code>notification</code> depend on itself, which TypeScript rejects."
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "The condition key is reserved",
+            "body": "In a group, <code>condition</code> is the condition of the group: an input named <code>condition</code> cannot be bound by <code>createComponent</code>, and is left out of the names a group accepts."
+          },
+          "callout2": {
+            "heading": "Literal types in the inputs of a directive",
+            "body": "The type of a directive is inferred from its entry while the entry is checked, so a getter returning a string literal is widened to <code>string</code> before it is compared with an input typed as a union of literals: write <code>() => 'red' as const</code>. The inputs of the component do not need it."
+          },
+          "callout3": {
+            "heading": "An input in a single group",
+            "body": "An input bound by two groups would be reset by the first one that stops holding, while the other still binds it: <code>createComponent</code> throws instead. To switch an input between two values, bind it once, with a getter choosing the value: <code>{ level: () => this.urgent() ? 'urgent' : 'info' }</code>."
+          },
+          "callout4": {
+            "heading": "No children, no structural directives",
+            "body": "The content of the component is not an option: append its children to <code>element</code>, which projects them through its slots. A structural directive cannot be applied in code, since there is no template to render or not: <code>createComponent</code> throws, as it does for a class not decorated with <code>@WebComponent</code> and for a directive the component already declares as a host directive."
+          }
+        },
+        "summary": {
+          "title": "Summary",
+          "th1": "Task",
+          "th2": "Where",
+          "td1": "Create a component",
+          "td2": "<code>createComponent(Component, { target })</code>, appended to <code>target</code>.",
+          "td3": "Bind inputs and events",
+          "td4": "Groups in <code>properties</code> and <code>events</code>, with getters for the values.",
+          "td5": "Bind them only sometimes",
+          "td6": "A <code>condition</code> in the group: the inputs it unbinds go back to their default value.",
+          "td7": "Apply directives",
+          "td8": "Classes, or <code>{ directive, condition, properties, events }</code>, in <code>directives</code>.",
+          "td9": "Destroy it",
+          "td10": "<code>destroy()</code> on the returned reference, in <code>onDestroy</code> of the component that created it."
         }
       },
       "inheritance": {
@@ -2798,7 +2858,7 @@
         },
         "syntaxHighlighting": {
           "title": "Syntax highlighting",
-          "p1": "The grammar is injected into the HTML grammar of VS Code: templates keep the highlighting of HTML, and the Xaendar constructs get their own colors. Once a template compiles, the server adds semantic colors to inputs, events, directives and the variables of the template."
+          "p1": "The grammar is injected into the HTML grammar of VS Code: templates keep the highlighting of HTML, and the Xaendar constructs get their own colors. The tags of custom elements, the ones whose name contains a hyphen, are azure, to tell them apart from the native ones, and the directives and the control flow are magenta: the extension gives the Xaendar constructs and their expressions the same colors in every theme. Once a template compiles, the server adds semantic colors to inputs, events, directives and the variables of the template."
         },
         "theLanguageServer": {
           "title": "The language server",
@@ -2817,10 +2877,6 @@
             "body": "While a template does not compile, as when you are typing, hover and semantic colors show nothing, and go to definition uses the last version that compiled. The completions of the <code>@import</code>, of tag names, of bindings, of blocks and of the variables keep working. A template that no component uses gets no diagnostics."
           },
           "callout2": {
-            "heading": "Tag names with non-ASCII characters",
-            "body": "The grammar colors as components the tags made of lowercase ASCII letters, digits, dots, underscores and hyphens. A tag with other characters, such as <code>my-élément</code>, is valid for the browser and for the compiler, but keeps the colors of plain HTML."
-          },
-          "callout3": {
             "heading": "Formatting needs closed tags",
             "body": "Formatting works while the template does not compile, but only when all of its tags and blocks are closed: otherwise the template is left as it is."
           }

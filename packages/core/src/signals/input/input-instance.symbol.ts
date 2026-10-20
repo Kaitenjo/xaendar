@@ -7,8 +7,6 @@ import type { SettableInputSignal } from '../types/settable-input-signal.type';
  * Used by {@link isInputSignal} to distinguish input signals from plain
  * `Signal.State` instances at runtime without exposing the marker in the
  * public API.
- *
- * @internal
  */
 export const INPUT_SIGNAL_INSTANCE_SYMBOL = Symbol('InputSignalInstance');
 

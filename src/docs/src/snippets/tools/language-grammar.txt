@@ -1,6 +1,6 @@
 Highlighted in .xd.component.html files:
   @import { A } from './a.ts'          keyword, names and path
-  <my-card>  <my-list(Item)>           component tags and their type arguments
+  <my-card>  <my-list(Item)>           component tags (azure) and their type arguments
   (click)="save()"                     event name and handler
   title="{ expr }"  { expr }           bound attributes and interpolations
   @@tooltip(…)  *when(…)               directives

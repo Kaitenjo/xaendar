@@ -1091,6 +1091,25 @@ describe('_renderElement', () => {
     it('throws when the directive registered for the selector is a structural directive', () => {
       expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: 'visible' })] })).toThrow('Directive VisibleDirective registered for selector "visible" is not a CustomDirective');
     });
+
+    it('instantiates a directive given by its class in place of a selector', () => {
+      const element = render(document.createElement('div'), createRoot(), { directives: [directive({ selector: LabelDirective })] });
+
+      expect(lastInstance().element).toBe(element);
+    });
+
+    it('throws when a directive given by its class is a structural directive', () => {
+      expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: VisibleDirective })] })).toThrow('Directive VisibleDirective is not a CustomDirective');
+    });
+
+    it('names a directive given by its class when the component already declares it as a host directive', () => {
+      const klass = class extends CustomElement { };
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [LabelDirective] } });
+      customElements.define('host-class-el', klass);
+
+      expect(() => _renderElement(document.createElement('div'), createRoot(), null, 'host-class-el', [], [], [], [directive({ selector: LabelDirective })], [], [], null))
+        .toThrow('Directive LabelDirective is applied more than once on <host-class-el>: it is already a host directive of the component');
+    });
   });
 
   describe('structural directives', () => {

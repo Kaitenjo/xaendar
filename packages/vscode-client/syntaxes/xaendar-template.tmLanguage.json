@@ -39,10 +39,10 @@
       ]
     },
     "custom-tag-open": {
-      "begin": "(<)([a-z][\\w.]*-[\\w.-]*)(?:(\\()((?:[^()]|\\((?:[^()]|\\([^()]*\\))*\\))*)(\\)))?(?=\\s|/?>)",
+      "begin": "(<)([a-z][.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*-[\\-.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*)(?:(\\()((?:[^()]|\\((?:[^()]|\\([^()]*\\))*\\))*)(\\)))?(?=\\s|/?>)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
-        "2": { "name": "entity.name.tag.html" },
+        "2": { "name": "entity.name.tag.custom.xaendar" },
         "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
         "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
         "5": { "name": "punctuation.definition.typeparameters.end.xaendar" }
@@ -57,10 +57,10 @@
       ]
     },
     "custom-tag-close": {
-      "match": "(</)([a-z][\\w.]*-[\\w.-]*)\\s*(>)",
+      "match": "(</)([a-z][.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*-[\\-.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*)\\s*(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
-        "2": { "name": "entity.name.tag.html" },
+        "2": { "name": "entity.name.tag.custom.xaendar" },
         "3": { "name": "punctuation.definition.tag.end.html" }
       },
       "name": "meta.tag.custom.end.html"

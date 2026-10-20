@@ -349,5 +349,44 @@
         "body": "<p>Un template non può nominare una classe, quindi non può chiamare <code>get</code>: conserva l’istanza in un campo del componente, e il template la legge da lì.</p>"
       }
     }
+  },
+  "createComponent": {
+    "summary": "Crea un componente nel codice, legando i suoi input e i suoi eventi e applicandogli direttive, e lo aggiunge a un elemento.",
+    "description": "<p>La controparte nel codice di un tag: <code>createComponent</code> crea il componente, lega i gruppi di <code>properties</code> ed <code>events</code>, aggiunge l’elemento a <code>target</code> e applica le <code>directives</code>, con lo stesso runtime di un template compilato, quindi i binding si comportano come in un template. Restituisce un <a href=\"#/it/reference/api/core/ComponentRef\"><code>ComponentRef</code></a>: l’elemento, e la funzione che lo distrugge.</p><p>Gli input vengono impostati prima che l’elemento sia aggiunto, così <code>onInit</code> li legge; le direttive vengono applicate quando l’elemento è nel DOM. La creazione non è tracciata dall’effect in cui viene chiamata. Vedi <a href=\"#/it/components/dynamic-creation\">Creare componenti nel codice</a>.</p>",
+    "members": {
+      "component": "<p>La classe del componente, decorata con <code>@WebComponent</code>: l’elemento creato è il suo tag, e l’istanza è tipizzata come la classe.</p>",
+      "target": "<p>L’elemento a cui il componente viene aggiunto, come ultimo figlio.</p>",
+      "properties": "<p>I gruppi di input da legare. Un gruppo lega input per nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, tipizzato come l’input: il getter gira in un effect, quindi l’input segue i signal che legge. Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale; poi i suoi input tornano al loro valore di default. Un input può stare in un solo gruppo.</p>",
+      "events": "<p>I gruppi di eventi da ascoltare sull’elemento: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. Un gruppo con una <code>condition</code> è ascoltato solo mentre la condizione vale.</p>",
+      "directives": "<p>Le direttive custom applicate all’elemento quando è nel DOM: una classe, applicata finché il componente vive, o un oggetto che dà la classe in <code>directive</code>, una <code>condition</code> facoltativa e i gruppi delle sue <code>properties</code> ed <code>events</code>, tipizzati sulla direttiva. Una direttiva con una condizione è applicata mentre la condizione vale, con una nuova istanza ogni volta che torna a valere. Una direttiva strutturale non si può applicare.</p>"
+    },
+    "usage": {
+      "creating": {
+        "title": "Creare e distruggere",
+        "body": "<p>Il componente vive finché non si chiama <code>destroy</code> sul riferimento restituito. Un componente che ne crea altri distrugge quelli ancora vivi nel suo <code>onDestroy</code>.</p>"
+      },
+      "errors": {
+        "title": "Errori",
+        "body": "<p>Le opzioni vengono verificate quando il componente viene creato, prima che l’elemento sia aggiunto.</p>"
+      }
+    }
+  },
+  "CreateComponentOptions": {
+    "summary": "Le opzioni di <code>createComponent</code>: dove viene aggiunto il componente, i binding dei suoi input e dei suoi eventi, e le direttive applicate.",
+    "description": "<p>Il secondo argomento di <a href=\"#/it/reference/api/core/createComponent\"><code>createComponent</code></a>, tipizzato sul componente e su ogni direttiva elencata: un gruppo accetta solo gli input, o gli output, che dichiarano, e un signal computed non è un input.</p>",
+    "members": {
+      "target": "<p>L’elemento a cui il componente viene aggiunto, come ultimo figlio.</p>",
+      "properties": "<p>I gruppi di input del componente da legare, ogni input con un getter che ne restituisce il valore. Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale.</p>",
+      "events": "<p>I gruppi di eventi da ascoltare sul componente: i suoi output e gli eventi nativi di un elemento. Un gruppo con una <code>condition</code> è ascoltato solo mentre la condizione vale.</p>",
+      "directives": "<p>Le direttive custom applicate al componente: le loro classi, o oggetti che danno anche una <code>condition</code> e i gruppi delle loro <code>properties</code> ed <code>events</code>.</p>"
+    }
+  },
+  "ComponentRef": {
+    "summary": "Un componente creato da <code>createComponent</code>: il suo elemento, e la funzione che lo distrugge.",
+    "description": "<p>Restituito da <a href=\"#/it/reference/api/core/createComponent\"><code>createComponent</code></a>. Conservalo per distruggere il componente: rimuovere l’elemento con le API del DOM lo disconnette, ma lascia vivi i suoi binding.</p>",
+    "members": {
+      "element": "<p>L’istanza del componente, già nel DOM: i suoi membri pubblici, query e output compresi, sono subito disponibili.</p>",
+      "destroy": "<p>Rimuove l’elemento dal target, scollega i suoi input e i suoi eventi e distrugge le sue direttive. Chiamarla di nuovo non fa nulla.</p>"
+    }
   }
 }

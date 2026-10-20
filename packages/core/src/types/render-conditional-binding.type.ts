@@ -21,11 +21,7 @@ export type RenderConditionalBinding<Bindings extends { conditionalBindings: Ren
     /**
      * The condition the branch is selected with. An `@else` branch has none, so it is selected whenever it is reached.
      */
-    condition?: NoArgsFunction<boolean>,
-    /**
-     * The list of nested conditional bindings to be attached to the element while the branch is selected.
-     */
-    conditionalBindings: Bindings[]
+    condition?: NoArgsFunction<boolean>
   })[],
   /**
    * Only a `@switch` declares an expression.

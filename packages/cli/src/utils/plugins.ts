@@ -47,6 +47,6 @@ function readCustomElements(): readonly string[] {
     return [];
   }
 
-  const customElements: string[] = JSON.parse(readFileSync(path, 'utf-8'));
+  const { customElements }: { customElements?: string[] } = JSON.parse(readFileSync(path, 'utf-8'));
   return customElements ?? [];
 }

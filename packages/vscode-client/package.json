@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/vscode-client",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -27,6 +27,290 @@
           "default": 120,
           "minimum": 40,
           "markdownDescription": "The width, in columns, a line of a template should stay within when it is formatted: the opening tags that don't fit are written one item per line. The indentation follows the editor (`editor.tabSize`, `editor.insertSpaces`)."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": [
+              "entity.name.tag.custom.xaendar"
+            ],
+            "settings": {
+              "foreground": "#38BDF8"
+            }
+          },
+          {
+            "scope": [
+              "keyword.control.xaendar",
+              "keyword.control.directive.xaendar",
+              "meta.embedded.expression.xaendar keyword.control"
+            ],
+            "settings": {
+              "foreground": "#C586C0"
+            }
+          },
+          {
+            "scope": [
+              "entity.name.function.event.xaendar",
+              "entity.name.function.input.xaendar",
+              "entity.name.function.xaendar",
+              "meta.embedded.expression.xaendar entity.name.function"
+            ],
+            "settings": {
+              "foreground": "#D2A8FF"
+            }
+          },
+          {
+            "scope": [
+              "variable.other.constant.xaendar",
+              "variable.language.xaendar",
+              "meta.embedded.expression.xaendar variable.language",
+              "meta.embedded.expression.xaendar variable.other.constant",
+              "meta.embedded.expression.xaendar variable.parameter",
+              "meta.embedded.expression.xaendar support.variable.property"
+            ],
+            "settings": {
+              "foreground": "#79C0FF"
+            }
+          },
+          {
+            "scope": [
+              "variable.parameter.xaendar"
+            ],
+            "settings": {
+              "foreground": "#FFA657"
+            }
+          },
+          {
+            "scope": [
+              "punctuation.section.embedded.begin.xaendar",
+              "punctuation.section.embedded.end.xaendar",
+              "meta.embedded.expression.xaendar storage.type"
+            ],
+            "settings": {
+              "foreground": "#FF7B72"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar",
+              "meta.embedded.expression.xaendar variable",
+              "meta.embedded.expression.xaendar punctuation",
+              "meta.embedded.expression.xaendar meta.brace"
+            ],
+            "settings": {
+              "foreground": "#C9D1D9"
+            }
+          },
+          {
+            "scope": [
+              "string.quoted.xaendar",
+              "meta.embedded.expression.xaendar string"
+            ],
+            "settings": {
+              "foreground": "#A5D6FF"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar constant.numeric"
+            ],
+            "settings": {
+              "foreground": "#B5CEA8"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar constant.language",
+              "meta.embedded.expression.xaendar keyword.operator.new",
+              "meta.embedded.expression.xaendar keyword.operator.expression",
+              "meta.embedded.expression.xaendar punctuation.definition.template-expression"
+            ],
+            "settings": {
+              "foreground": "#569CD6"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar keyword.operator"
+            ],
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar support.function"
+            ],
+            "settings": {
+              "foreground": "#DCDCAA"
+            }
+          },
+          {
+            "scope": [
+              "meta.embedded.expression.xaendar meta.object-literal.key"
+            ],
+            "settings": {
+              "foreground": "#9CDCFE"
+            }
+          },
+          {
+            "scope": [
+              "meta.type.parameters.xaendar entity.name.type",
+              "meta.parameters.xaendar entity.name.type",
+              "meta.embedded.expression.xaendar entity.name.type",
+              "meta.type.parameters.xaendar support.type",
+              "meta.parameters.xaendar support.type",
+              "meta.embedded.expression.xaendar support.type",
+              "meta.embedded.expression.xaendar support.class"
+            ],
+            "settings": {
+              "foreground": "#4EC9B0"
+            }
+          }
+        ],
+        "[*Light*]": {
+          "textMateRules": [
+            {
+              "scope": [
+                "entity.name.tag.custom.xaendar"
+              ],
+              "settings": {
+                "foreground": "#0369A1"
+              }
+            },
+            {
+              "scope": [
+                "keyword.control.xaendar",
+                "keyword.control.directive.xaendar",
+                "meta.embedded.expression.xaendar keyword.control"
+              ],
+              "settings": {
+                "foreground": "#AF00DB"
+              }
+            },
+            {
+              "scope": [
+                "entity.name.function.event.xaendar",
+                "entity.name.function.input.xaendar",
+                "entity.name.function.xaendar",
+                "meta.embedded.expression.xaendar entity.name.function"
+              ],
+              "settings": {
+                "foreground": "#8250DF"
+              }
+            },
+            {
+              "scope": [
+                "variable.other.constant.xaendar",
+                "variable.language.xaendar",
+                "meta.embedded.expression.xaendar variable.language",
+                "meta.embedded.expression.xaendar variable.other.constant",
+                "meta.embedded.expression.xaendar variable.parameter",
+                "meta.embedded.expression.xaendar support.variable.property"
+              ],
+              "settings": {
+                "foreground": "#0550AE"
+              }
+            },
+            {
+              "scope": [
+                "variable.parameter.xaendar"
+              ],
+              "settings": {
+                "foreground": "#953800"
+              }
+            },
+            {
+              "scope": [
+                "punctuation.section.embedded.begin.xaendar",
+                "punctuation.section.embedded.end.xaendar",
+                "meta.embedded.expression.xaendar storage.type"
+              ],
+              "settings": {
+                "foreground": "#CF222E"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar",
+                "meta.embedded.expression.xaendar variable",
+                "meta.embedded.expression.xaendar punctuation",
+                "meta.embedded.expression.xaendar meta.brace"
+              ],
+              "settings": {
+                "foreground": "#1F2328"
+              }
+            },
+            {
+              "scope": [
+                "string.quoted.xaendar",
+                "meta.embedded.expression.xaendar string"
+              ],
+              "settings": {
+                "foreground": "#0A3069"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar constant.numeric"
+              ],
+              "settings": {
+                "foreground": "#098658"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar constant.language",
+                "meta.embedded.expression.xaendar keyword.operator.new",
+                "meta.embedded.expression.xaendar keyword.operator.expression",
+                "meta.embedded.expression.xaendar punctuation.definition.template-expression"
+              ],
+              "settings": {
+                "foreground": "#0000FF"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar keyword.operator"
+              ],
+              "settings": {
+                "foreground": "#000000"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar support.function"
+              ],
+              "settings": {
+                "foreground": "#795E26"
+              }
+            },
+            {
+              "scope": [
+                "meta.embedded.expression.xaendar meta.object-literal.key"
+              ],
+              "settings": {
+                "foreground": "#001080"
+              }
+            },
+            {
+              "scope": [
+                "meta.type.parameters.xaendar entity.name.type",
+                "meta.parameters.xaendar entity.name.type",
+                "meta.embedded.expression.xaendar entity.name.type",
+                "meta.type.parameters.xaendar support.type",
+                "meta.parameters.xaendar support.type",
+                "meta.embedded.expression.xaendar support.type",
+                "meta.embedded.expression.xaendar support.class"
+              ],
+              "settings": {
+                "foreground": "#267F99"
+              }
+            }
+          ]
         }
       }
     },
@@ -61,6 +345,6 @@
     ]
   },
   "dependencies": {
-    "vscode-languageclient": "^10.1.1"
+    "vscode-languageclient": "^10.1.2"
   }
 }

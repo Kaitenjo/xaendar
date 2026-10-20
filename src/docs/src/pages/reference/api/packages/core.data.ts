@@ -521,6 +521,91 @@ export const CORE_API: ApiPackage = {
         { key: 'template', snippets: ['directives/host-directive.ts'] }
       ],
       guides: ['directives/custom']
+    },
+    {
+      name: 'createComponent',
+      kind: 'function',
+      signature: 'function createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>',
+      members: [
+        {
+          name: 'component',
+          group: 'parameters',
+          signature: 'component: Constructor<Component>'
+        },
+        {
+          name: 'target',
+          group: 'options',
+          signature: 'target: Element'
+        },
+        {
+          name: 'properties',
+          group: 'options',
+          signature: 'properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>',
+          snippets: ['api/core/create-component-groups.ts']
+        },
+        {
+          name: 'events',
+          group: 'options',
+          signature: 'events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>'
+        },
+        {
+          name: 'directives',
+          group: 'options',
+          signature: 'directives?: Array<Constructor<CustomDirective> | { directive: Constructor<CustomDirective>; condition?: () => boolean; properties?: …; events?: … }>',
+          snippets: ['api/core/create-component-directives.ts']
+        }
+      ],
+      usage: [
+        { key: 'creating', snippets: ['components/create-component.ts'] },
+        { key: 'errors', snippets: ['api/core/create-component-errors.txt'] }
+      ],
+      guides: ['components/dynamic-creation']
+    },
+    {
+      name: 'CreateComponentOptions',
+      kind: 'type',
+      signature: 'type CreateComponentOptions<Component, Directives extends readonly CustomDirective[] = CustomDirective[]> = {\n  target: Element;\n  properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>;\n  events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>;\n  directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } };\n};',
+      members: [
+        {
+          name: 'target',
+          group: 'properties',
+          signature: 'target: Element'
+        },
+        {
+          name: 'properties',
+          group: 'properties',
+          signature: 'properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>'
+        },
+        {
+          name: 'events',
+          group: 'properties',
+          signature: 'events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>'
+        },
+        {
+          name: 'directives',
+          group: 'properties',
+          signature: 'directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } }'
+        }
+      ],
+      guides: ['components/dynamic-creation']
+    },
+    {
+      name: 'ComponentRef',
+      kind: 'type',
+      signature: 'type ComponentRef<Component> = {\n  readonly element: Component;\n  destroy: () => void;\n};',
+      members: [
+        {
+          name: 'element',
+          group: 'properties',
+          signature: 'readonly element: Component'
+        },
+        {
+          name: 'destroy',
+          group: 'methods',
+          signature: 'destroy: () => void'
+        }
+      ],
+      guides: ['components/dynamic-creation']
     }
   ]
 };

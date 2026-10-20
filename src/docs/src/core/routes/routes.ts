@@ -172,6 +172,7 @@ export const NAV: readonly NavSection[] = [
         page('components/queries', 'Query viewChild querySelector'),
         page('components/content-queries', 'Query.content contentChild slots lightDom'),
         page('components/dom-apis', 'afterRender canvas focus ResizeObserver'),
+        page('components/dynamic-creation', 'createComponent imperative dynamic create destroy ComponentRef'),
         page('components/inheritance', 'extends base class subclass')
       ]),
       group('templates', [

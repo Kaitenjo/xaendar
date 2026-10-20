@@ -1,0 +1,27 @@
+:host {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.stack {
+  display: grid;
+  gap: 0.4rem;
+}
+
+ex-notification.newest {
+  border-radius: 6px;
+  outline: 2px solid var(--xd-accent);
+}
+
+.status {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}

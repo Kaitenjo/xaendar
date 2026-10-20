@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
+import ts from 'typescript';
 import { PluginOption, UserConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -10,6 +11,11 @@ import dts from 'vite-plugin-dts';
 export type ViteConfigOptions = {
   plugins?: PluginOption[],
   secondaryEntryPoints?: Record<string, string>,
+  /**
+   * Removes the `declare global` blocks from the declaration files: for a package whose sources declare the globals of another
+   * package only to be type-checked, while its users get them from that package.
+   */
+  removeGlobalDeclarations?: boolean,
 }
 
 /**
@@ -52,6 +58,16 @@ export default function getViteConfig(name: string, dirName: string, options?: V
           console.log(result === content, filePath);
           if (result !== content) {
             writeFileSync(filePath, result);
+          }
+        }
+
+        for (const entryPoint of Object.keys(secondaryEntryPoints)) {
+          importFromSecondaryEntryPoint(join(distDir, `${fileName}.d.ts`), join(distDir, `${entryPoint}.d.ts`), `${name}/${entryPoint}`);
+        }
+
+        if (options?.removeGlobalDeclarations) {
+          for (const filePath of dts) {
+            removeGlobalDeclarations(filePath);
           }
         }
       }
@@ -167,4 +183,191 @@ function createCopyReadmePlugin(dirName: string, outDir: string): PluginOption {
       }
     }
   };
+}
+
+/**
+ * A top-level declaration of a declaration file, as compared between two of them.
+ */
+type Declaration = {
+  /**
+   * The name of the declaration.
+   */
+  name: string,
+  /**
+   * Whether the declaration is exported.
+   */
+  exported: boolean,
+  /**
+   * The text of the declaration, without its JSDoc and without its `export` modifier.
+   */
+  text: string,
+  /**
+   * The statement declaring it.
+   */
+  statement: ts.Statement
+};
+
+/**
+ * Replaces, in the declaration file of the main entry point, the copies of the declarations exported by the declaration file
+ * of a secondary entry point with an import from the secondary entry point.
+ *
+ * The declaration files are bundled one per entry point, and each one inlines its own copy of the declarations it uses: a copy
+ * of a nominal type, such as one keyed by a `unique symbol`, is a type of its own, so a value typed through the secondary entry
+ * point would not match the same type used by the main one. Only the declarations the main file does not export and whose text is
+ * identical to the one exported by the secondary file are replaced.
+ *
+ * @param mainPath Path of the declaration file of the main entry point.
+ * @param secondaryPath Path of the declaration file of the secondary entry point.
+ * @param specifier The module specifier of the secondary entry point (for example, `@xaendar/core/signals`).
+ */
+function importFromSecondaryEntryPoint(mainPath: string, secondaryPath: string, specifier: string): void {
+  const content = readFileSync(mainPath, 'utf-8');
+  const main = readDeclarations(mainPath, content);
+  const secondary = new Map<string, Declaration>();
+  const secondaryDeclarations = readDeclarations(secondaryPath, readFileSync(secondaryPath, 'utf-8'));
+  for (let i = 0; i < secondaryDeclarations.length; i++) {
+    const declaration = secondaryDeclarations[i];
+    if (declaration.exported) {
+      secondary.set(declaration.name, declaration);
+    }
+  }
+
+  const copies = main.filter(declaration => !declaration.exported && secondary.get(declaration.name)?.text === declaration.text);
+  if (!copies.length) {
+    return;
+  }
+
+  // Removed from the last one, so that the positions of the previous ones stay valid
+  let result = content;
+  for (let i = copies.length - 1; i >= 0; i--) {
+    const { statement } = copies[i];
+    result = result.slice(0, statement.getFullStart()) + result.slice(statement.getEnd());
+  }
+
+  const names = copies.map(declaration => declaration.name).join(', ');
+  writeFileSync(mainPath, removeUnreferencedDeclarations(mainPath, `import { ${names} } from '${specifier}';\n${result}`));
+}
+
+/**
+ * Removes the declarations a declaration file does not export and does not reference any more, such as the ones only the copies
+ * replaced by `importFromSecondaryEntryPoint` used: the bundler writes only the declarations an entry point reaches, so one left
+ * without references belonged to a removed copy. Repeated until none is left, since removing one can leave another without references.
+ *
+ * @param path Path of the declaration file.
+ * @param content Content of the declaration file.
+ * @returns The content without the declarations no longer referenced.
+ */
+function removeUnreferencedDeclarations(path: string, content: string): string {
+  let result = content;
+  let unreferenced: Declaration[];
+  do {
+    const source = ts.createSourceFile(path, result, ts.ScriptTarget.Latest, true);
+    const references = countReferences(source);
+    unreferenced = readDeclarations(path, result).filter(declaration => !declaration.exported && !references.get(declaration.name));
+    // Removed from the last one, so that the positions of the previous ones stay valid
+    for (let i = unreferenced.length - 1; i >= 0; i--) {
+      const { statement } = unreferenced[i];
+      result = result.slice(0, statement.getFullStart()) + result.slice(statement.getEnd());
+    }
+  } while (unreferenced.length);
+
+  return result;
+}
+
+/**
+ * Counts the identifiers of a declaration file by name, leaving out the names of the top-level declarations themselves.
+ *
+ * @param source The declaration file.
+ * @returns The number of references to each name.
+ */
+function countReferences(source: ts.SourceFile): Map<string, number> {
+  const declarationNames = new Set<ts.Node>();
+  for (let i = 0; i < source.statements.length; i++) {
+    const name = nameNodeOf(source.statements[i]);
+    if (name) {
+      declarationNames.add(name);
+    }
+  }
+
+  const references = new Map<string, number>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && !declarationNames.has(node)) {
+      references.set(node.text, (references.get(node.text) ?? 0) + 1);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(source, visit);
+  return references;
+}
+
+/**
+ * Reads the named top-level declarations of a declaration file.
+ *
+ * @param path Path of the declaration file.
+ * @param content Content of the declaration file.
+ * @returns The declarations, in the order they are written.
+ */
+function readDeclarations(path: string, content: string): Declaration[] {
+  const source = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true);
+  const declarations = new Array<Declaration>();
+  for (let i = 0; i < source.statements.length; i++) {
+    const statement = source.statements[i];
+    const name = nameOf(statement);
+    if (name) {
+      const exported = ts.canHaveModifiers(statement) && !!ts.getModifiers(statement)?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+      declarations.push({ name, exported, text: statement.getText(source).replace(/^export /, ''), statement });
+    }
+  }
+
+  return declarations;
+}
+
+/**
+ * Reads the name of a top-level declaration.
+ *
+ * @param statement The statement declaring it.
+ * @returns The name, or `undefined` for a statement declaring no single name (imports, `declare global`, re-exports).
+ */
+function nameOf(statement: ts.Statement): string | undefined {
+  return nameNodeOf(statement)?.text;
+}
+
+/**
+ * Reads the identifier naming a top-level declaration.
+ *
+ * @param statement The statement declaring it.
+ * @returns The identifier, or `undefined` for a statement declaring no single name (imports, `declare global`, re-exports).
+ */
+function nameNodeOf(statement: ts.Statement): ts.Identifier | undefined {
+  if (ts.isVariableStatement(statement)) {
+    const { declarations } = statement.declarationList;
+    return declarations.length === 1 && ts.isIdentifier(declarations[0].name) ? declarations[0].name : undefined;
+  }
+
+  const isNamed = ts.isTypeAliasDeclaration(statement) || ts.isInterfaceDeclaration(statement) || ts.isClassDeclaration(statement)
+    || ts.isFunctionDeclaration(statement) || ts.isEnumDeclaration(statement);
+  return isNamed ? statement.name : undefined;
+}
+
+/**
+ * Removes the `declare global` blocks from a declaration file.
+ *
+ * @param filePath Path of the declaration file.
+ */
+function removeGlobalDeclarations(filePath: string): void {
+  const content = readFileSync(filePath, 'utf-8');
+  const source = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
+  const blocks = source.statements.filter(statement => ts.isModuleDeclaration(statement) && (statement.flags & ts.NodeFlags.GlobalAugmentation) !== 0);
+  if (!blocks.length) {
+    return;
+  }
+
+  // Removed from the last one, so that the positions of the previous ones stay valid
+  let result = content;
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    result = result.slice(0, blocks[i].getFullStart()) + result.slice(blocks[i].getEnd());
+  }
+
+  writeFileSync(filePath, result);
 }

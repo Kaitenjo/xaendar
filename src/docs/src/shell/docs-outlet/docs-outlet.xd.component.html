@@ -4,6 +4,7 @@
 @import lazy { ComponentsContentProjectionPage } from '../../pages/components/content-projection/content-projection.xd.component.ts'
 @import lazy { ComponentsContentQueriesPage } from '../../pages/components/content-queries/content-queries.xd.component.ts'
 @import lazy { ComponentsDomApisPage } from '../../pages/components/dom-apis/dom-apis.xd.component.ts'
+@import lazy { ComponentsDynamicCreationPage } from '../../pages/components/dynamic-creation/dynamic-creation.xd.component.ts'
 @import lazy { ComponentsInheritancePage } from '../../pages/components/inheritance/inheritance.xd.component.ts'
 @import lazy { ComponentsInputsPage } from '../../pages/components/inputs/inputs.xd.component.ts'
 @import lazy { ComponentsLifecyclePage } from '../../pages/components/lifecycle/lifecycle.xd.component.ts'
@@ -74,6 +75,9 @@
   }
   @case ('components/dom-apis') {
     <page-components-dom-apis />
+  }
+  @case ('components/dynamic-creation') {
+    <page-components-dynamic-creation />
   }
   @case ('components/inheritance') {
     <page-components-inheritance />

@@ -1,3 +1,5 @@
+import { INPUT_SIGNAL_INSTANCE_SYMBOL } from '../input/input-instance.symbol';
+
 /**
  * A reactive value sourced from outside the component (e.g. an attribute).
  *
@@ -10,6 +12,10 @@
  * @template ActualValue - The internal type stored by the signal. Defaults to `unknown`.
  */
 export type InputSignal<ActualValue = unknown> = Pick<Signal.State<ActualValue>, 'get'> & {
+  /**
+   * Marks the signal as an input, telling it apart from a computed or a query signal, which have the same shape.
+   */
+  readonly [INPUT_SIGNAL_INSTANCE_SYMBOL]: true;
   /**
    * Reads the current value of the input signal.
    *

@@ -349,5 +349,44 @@
         "body": "<p>A template cannot name a class, so it cannot call <code>get</code>: keep the instance in a field of the component, and the template reads it from there.</p>"
       }
     }
+  },
+  "createComponent": {
+    "summary": "Creates a component in code, binding its inputs and its events and applying directives to it, and appends it to an element.",
+    "description": "<p>The counterpart in code of a tag: <code>createComponent</code> creates the component, binds the groups of <code>properties</code> and <code>events</code>, appends the element to <code>target</code> and applies the <code>directives</code>, through the same runtime as a compiled template, so the bindings behave as they do in a template. It returns a <a href=\"#/en/reference/api/core/ComponentRef\"><code>ComponentRef</code></a>: the element, and the function destroying it.</p><p>The inputs are set before the element is appended, so that <code>onInit</code> reads them; the directives are applied once the element is in the DOM. The creation is not tracked by an effect it is called in. See <a href=\"#/en/components/dynamic-creation\">Creating components in code</a>.</p>",
+    "members": {
+      "component": "<p>The class of the component, decorated with <code>@WebComponent</code>: the element created is its tag, and the instance is typed as the class.</p>",
+      "target": "<p>The element the component is appended to, as its last child.</p>",
+      "properties": "<p>The groups of inputs to bind. A group binds inputs by the name of their <code>@Property</code> accessor, each one with a getter returning its value, typed as the input: the getter runs in an effect, so the input follows the signals it reads. A group with a <code>condition</code> is bound only while the condition holds; then its inputs go back to their default value. An input can be in a single group.</p>",
+      "events": "<p>The groups of events to listen to on the element: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. A group with a <code>condition</code> is listened to only while the condition holds.</p>",
+      "directives": "<p>The custom directives applied to the element once it is in the DOM: a class, applied as long as the component lives, or an object giving the class in <code>directive</code>, an optional <code>condition</code> and the groups of its <code>properties</code> and <code>events</code>, typed after the directive. A directive with a condition is applied while the condition holds, with a new instance every time it holds again. A structural directive cannot be applied.</p>"
+    },
+    "usage": {
+      "creating": {
+        "title": "Creating and destroying",
+        "body": "<p>The component lives until <code>destroy</code> is called on the returned reference. A component creating others destroys the ones still alive in its <code>onDestroy</code>.</p>"
+      },
+      "errors": {
+        "title": "Errors",
+        "body": "<p>The options are checked when the component is created, before the element is appended.</p>"
+      }
+    }
+  },
+  "CreateComponentOptions": {
+    "summary": "The options of <code>createComponent</code>: where the component is appended, the bindings of its inputs and of its events, and the directives applied to it.",
+    "description": "<p>The second argument of <a href=\"#/en/reference/api/core/createComponent\"><code>createComponent</code></a>, typed after the component and after each directive listed: a group accepts only the inputs, or the outputs, they declare, and a computed signal is not an input.</p>",
+    "members": {
+      "target": "<p>The element the component is appended to, as its last child.</p>",
+      "properties": "<p>The groups of inputs of the component to bind, each input with a getter returning its value. A group with a <code>condition</code> is bound only while the condition holds.</p>",
+      "events": "<p>The groups of events to listen to on the component: its outputs and the native events of an element. A group with a <code>condition</code> is listened to only while the condition holds.</p>",
+      "directives": "<p>The custom directives applied to the component: their classes, or objects also giving a <code>condition</code> and the groups of their <code>properties</code> and <code>events</code>.</p>"
+    }
+  },
+  "ComponentRef": {
+    "summary": "A component created by <code>createComponent</code>: its element, and the function destroying it.",
+    "description": "<p>Returned by <a href=\"#/en/reference/api/core/createComponent\"><code>createComponent</code></a>. Keep it to destroy the component: removing the element with the DOM APIs disconnects it, but leaves its bindings alive.</p>",
+    "members": {
+      "element": "<p>The instance of the component, already in the DOM: its public members, queries and outputs included, are available at once.</p>",
+      "destroy": "<p>Removes the element from the target, unbinds its inputs and its events and destroys its directives. Calling it again does nothing.</p>"
+    }
   }
 }

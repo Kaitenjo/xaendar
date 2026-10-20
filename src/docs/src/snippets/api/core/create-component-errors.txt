@@ -1,0 +1,11 @@
+properties: [{ count: () => 1 }, { condition: () => this.open(), count: () => 2 }]
+Error: Property "count" is bound by more than one group
+
+createComponent(PlainElement, { target })
+Error: PlainElement does not seem to be decorated with @WebComponent
+
+directives: [VisibleDirective]
+Error: Directive VisibleDirective is not a CustomDirective
+
+directives: [TooltipDirective]
+Error: Directive TooltipDirective is applied more than once on <ex-badge>: it is already a host directive of the component

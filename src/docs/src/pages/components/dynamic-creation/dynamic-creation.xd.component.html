@@ -1,0 +1,82 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { NotificationsComponent } from '../../../examples/components/dynamic-creation/notifications/notifications.xd.component.ts'
+@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+
+<span @@i18n(key="pages.components.dynamicCreation.eyebrow") class="eyebrow" />
+<h1 @@i18n(key="pages.components.dynamicCreation.title") />
+<p @@i18n(key="pages.components.dynamicCreation.lead") class="lead" />
+
+<h2 @@i18n(key="pages.components.dynamicCreation.creating.title") />
+<p @@i18n(key="pages.components.dynamicCreation.creating.p1") />
+<docs-code snippet="components/create-component.ts" />
+<p @@i18n(key="pages.components.dynamicCreation.creating.p2") />
+
+<h2 @@i18n(key="pages.components.dynamicCreation.bindings.title") />
+<p @@i18n(key="pages.components.dynamicCreation.bindings.p1") />
+<docs-code snippet="api/core/create-component-groups.ts" />
+<p @@i18n(key="pages.components.dynamicCreation.bindings.p2") />
+
+<h2 @@i18n(key="pages.components.dynamicCreation.directives.title") />
+<p @@i18n(key="pages.components.dynamicCreation.directives.p1") />
+<docs-code snippet="api/core/create-component-directives.ts" />
+
+<h2 @@i18n(key="pages.components.dynamicCreation.destroying.title") />
+<p @@i18n(key="pages.components.dynamicCreation.destroying.p1") />
+<docs-example name="components/dynamic-creation/notifications"
+  heading="{translations().pages.components.dynamicCreation.destroying.example1}">
+  <ex-notifications />
+</docs-example>
+<p @@i18n(key="pages.components.dynamicCreation.destroying.p2") />
+
+<section class="edge-cases">
+  <h2 @@i18n(key="pages.components.dynamicCreation.edgeCases.title") />
+  <docs-callout kind="edge">
+    <docs-callout-item @@i18n(key="pages.components.dynamicCreation.edgeCases.callout1.body")
+      heading="{translations().pages.components.dynamicCreation.edgeCases.callout1.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.dynamicCreation.edgeCases.callout2.body")
+      heading="{translations().pages.components.dynamicCreation.edgeCases.callout2.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.dynamicCreation.edgeCases.callout3.body")
+      heading="{translations().pages.components.dynamicCreation.edgeCases.callout3.heading}" />
+    <docs-callout-item @@i18n(key="pages.components.dynamicCreation.edgeCases.callout4.body")
+      heading="{translations().pages.components.dynamicCreation.edgeCases.callout4.heading}" />
+  </docs-callout>
+  <docs-code snippet="api/core/create-component-errors.txt" />
+</section>
+
+<h2 @@i18n(key="pages.components.dynamicCreation.summary.title") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th @@i18n(key="pages.components.dynamicCreation.summary.th1") />
+        <th @@i18n(key="pages.components.dynamicCreation.summary.th2") />
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td1") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td2") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td3") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td4") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td5") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td6") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td7") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td8") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td9") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td10") />
+      </tr>
+    </tbody>
+  </table>
+</div>
