@@ -159,7 +159,7 @@ function copyTypeScriptLibraries(outDir: string): void {
  */
 function writePackageJsonForExtensionProject(projectName: string, projectPath: string, pkg: XaendarPackageJson, outDir: string): void {
   const distPkg: Record<string, unknown> = {
-    name: 'xaendar',
+    name: 'language-service',
     displayName: pkg['displayName'],
     version: pkg.version!,
     description: pkg.description ?? '',
