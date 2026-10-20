@@ -384,11 +384,11 @@
       "dynamicCreation": {
         "eyebrow": "Components",
         "title": "Creating components in code",
-        "lead": "A template creates the components named by its tags. When which components to show, how many or where is known only at run time — notifications, dialogs, panels opened by the user — create them in code with <code>createComponent</code>: it binds their inputs and their events and applies directives to them, as a tag does, and returns a reference that destroys them.",
+        "lead": "A template creates the components named by its tags. When which components to show, how many or where is known only at run time — notifications, dialogs, panels opened by the user — create them in code with <code>createComponent</code>, a method of every component and custom directive: it binds their inputs and their events, applies directives to them and gives them their content, as a tag does, and the components it creates belong to the one creating them.",
         "creating": {
           "title": "Creating a component",
-          "p1": "<code>createComponent</code> takes the class of a component, decorated with <code>@WebComponent</code>, and its options: <code>target</code> is the element the component is appended to, as its last child. It returns a reference: <code>element</code> is the instance of the component, already in the DOM, and <code>destroy</code> removes it.",
-          "p2": "The inputs are set before the element is appended, so <code>onInit</code> reads them, as it does for a component written in a template; the directives are applied once the element is in the DOM. The creation is not tracked: called inside an effect, it does not make the effect depend on the signals its getters read."
+          "p1": "<code>this.createComponent</code>, inherited from <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> and from <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, takes the class of a component, decorated with <code>@WebComponent</code>, and its options: <code>target</code> is the element the component is appended to, as its last child. It returns a reference: <code>element</code> is the instance of the component, already in the DOM, and <code>destroy</code> removes it.",
+          "p2": "The inputs are set before the element is appended, so <code>onInit</code> reads them, as it does for a component written in a template; the directives are applied, and the content appended, once the element is in the DOM. The creation is not tracked: called inside an effect, it does not make the effect depend on the signals its getters read."
         },
         "bindings": {
           "title": "Inputs and events",
@@ -399,11 +399,15 @@
           "title": "Directives",
           "p1": "<code>directives</code> lists the custom directives applied to the component, by class: no selector, and no import in a template. An entry is the class itself, applied as long as the component lives, or an object giving the class in <code>directive</code>, along with a <code>condition</code> and the groups of its own <code>properties</code> and <code>events</code>, typed after the directive. A directive with a condition is applied while the condition holds, with a new instance every time it holds again, as a <a href=\"#/en/directives/conditional\">conditional directive</a> in a template."
         },
+        "content": {
+          "title": "Content",
+          "p1": "<code>content</code> lists the nodes appended to the component as its children, as the children written between the tags of a template: its template projects them through its <a href=\"#/en/components/content-projection\">slots</a>, a named slot taking the nodes with its name in their <code>slot</code> attribute. A <code>DocumentFragment</code> gives its nodes, so the content can come from a <code>&lt;template&gt;</code> or from a parsed string. The nodes are appended once the directives are applied, and are not removed when the component is destroyed: they leave the DOM along with its element."
+        },
         "destroying": {
           "title": "Destroying",
-          "p1": "A component created in code lives until <code>destroy</code> is called: it removes the element, unbinds its inputs and its events and destroys its directives. Removing the element with the DOM APIs instead disconnects it, but leaves its bindings alive. A component creating others keeps their references and destroys the ones still alive in its <code>onDestroy</code>, since they are not part of its template.",
+          "p1": "A component created in code belongs to the component, or to the directive, that created it: it is destroyed along with it, when that component is disconnected or that directive stops, after their <code>onDestroy</code>. Destroying it removes the element, unbinds its inputs and its events and destroys its directives. <code>destroy</code> on the reference does it earlier, and does nothing once it is done; removing the element with the DOM APIs instead disconnects it, but leaves its bindings alive until its creator is destroyed.",
           "example1": "A stack of notifications created in code",
-          "p2": "Each notification is bound to <code>urgent</code> through a conditional group, destroys itself when its <code>dismissed</code> output is emitted, and is marked by <code>NewestDirective</code> while it is the newest one: adding a notification moves the directive, removing it from the previous one. The stack destroys the notifications still open in its <code>onDestroy</code>. The listener of <code>dismissed</code> has a body in braces: an arrow function returning a call on <code>notification</code> would make the type of <code>notification</code> depend on itself, which TypeScript rejects."
+          "p2": "Each notification gets its text as content, projected through its slot, is bound to <code>urgent</code> through a conditional group, destroys itself when its <code>dismissed</code> output is emitted, and is marked by <code>NewestDirective</code> while it is the newest one: adding a notification moves the directive, removing it from the previous one. The notifications still open are destroyed along with the stack, which only resets its count in <code>onDestroy</code>. The listener of <code>dismissed</code> has a body in braces: an arrow function returning a call on <code>notification</code> would make the type of <code>notification</code> depend on itself, which TypeScript rejects."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -420,8 +424,8 @@
             "body": "An input bound by two groups would be reset by the first one that stops holding, while the other still binds it: <code>createComponent</code> throws instead. To switch an input between two values, bind it once, with a getter choosing the value: <code>{ level: () => this.urgent() ? 'urgent' : 'info' }</code>."
           },
           "callout4": {
-            "heading": "No children, no structural directives",
-            "body": "The content of the component is not an option: append its children to <code>element</code>, which projects them through its slots. A structural directive cannot be applied in code, since there is no template to render or not: <code>createComponent</code> throws, as it does for a class not decorated with <code>@WebComponent</code> and for a directive the component already declares as a host directive."
+            "heading": "No structural directives",
+            "body": "A structural directive cannot be applied in code, since there is no template to render or not: <code>createComponent</code> throws, as it does for a class not decorated with <code>@WebComponent</code> and for a directive the component already declares as a host directive."
           }
         },
         "summary": {
@@ -429,15 +433,17 @@
           "th1": "Task",
           "th2": "Where",
           "td1": "Create a component",
-          "td2": "<code>createComponent(Component, { target })</code>, appended to <code>target</code>.",
+          "td2": "<code>this.createComponent(Component, { target })</code> in a component or a directive, appended to <code>target</code>.",
           "td3": "Bind inputs and events",
           "td4": "Groups in <code>properties</code> and <code>events</code>, with getters for the values.",
           "td5": "Bind them only sometimes",
           "td6": "A <code>condition</code> in the group: the inputs it unbinds go back to their default value.",
           "td7": "Apply directives",
           "td8": "Classes, or <code>{ directive, condition, properties, events }</code>, in <code>directives</code>.",
-          "td9": "Destroy it",
-          "td10": "<code>destroy()</code> on the returned reference, in <code>onDestroy</code> of the component that created it."
+          "td9": "Give it content",
+          "td10": "Nodes in <code>content</code>, projected through its slots.",
+          "td11": "Destroy it",
+          "td12": "Nothing to do: it is destroyed along with its creator. <code>destroy()</code> on the returned reference destroys it earlier."
         }
       },
       "inheritance": {

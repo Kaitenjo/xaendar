@@ -1,12 +1,16 @@
-import { NoArgsVoidFunction } from '@xaendar/types';
+import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import type { ComponentRef } from '../../types/create-component/component-ref.type';
+import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { _Context } from '../../utils/context/context.util';
+import { _createComponent } from '../../utils/create-component/create-component.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
+import type { CustomDirective } from '../custom-directive/custom-directive';
 
 /**
  * Base class for all custom elements registered via `@WebComponent`.
@@ -68,12 +72,6 @@ export class CustomElement extends HTMLElement {
    * the Shadow DOM tree has been built and its signal subscriptions set up.
    */
   public afterRender?(): void;
-  
-  /**
-   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
-   * created via {@link effect} are disposed and the rendered content is removed.
-   */
-  public onDestroy?(): void;
 
   /**
    * Creates a signal effect bound to the lifecycle of this component:
@@ -94,6 +92,43 @@ export class CustomElement extends HTMLElement {
       this._context.removeUnlistener(stop);
       stop();
     };
+  }
+
+  /**
+   * Creates a component bound to the lifecycle of this component and appends it to the target, binding its inputs and its
+   * events, applying directives to it and appending the content to it, as a template does for the tag of the component:
+   * the inputs are set before the element is mounted, so that its `onInit` reads them, the directives are applied and the
+   * content appended once it is.
+   *
+   * The value of an input is given by a getter, run in an effect: the input follows the signals the getter reads. A group of
+   * inputs or of events with a `condition` is bound only while the condition holds, as an `@if` written in the tag: as soon as
+   * it doesn't, its inputs go back to their default value and its events are no longer listened to. A directive with a
+   * `condition` is applied while the condition holds, and a new instance of it each time the condition holds again.
+   *
+   * The component is destroyed when this component is disconnected, right after the effects created via {@link effect}, or
+   * earlier by `destroy` of the returned reference. It can be created at any time: in the constructor, in a field initializer,
+   * or in `onInit` before the first render. The creation is not tracked by an effect it is called in.
+   *
+   * @example
+   * ```ts
+   * const toast = this.createComponent(ToastComponent, {
+   *   target: document.body,
+   *   properties: [{ message: () => this.message() }, { condition: () => this.urgent(), level: () => 'error' }],
+   *   events: [{ closed: () => toast.destroy() }],
+   *   directives: [TooltipDirective],
+   *   content: [icon]
+   * });
+   * ```
+   *
+   * @param component - The class of the component, decorated with `@WebComponent`.
+   * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives
+   *   applied to it and its content.
+   * @returns The element of the component, along with the function destroying it ahead of the disconnection.
+   * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
+   * a custom directive, or when it is already a host directive of the component.
+   */
+  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component> {
+    return _createComponent(() => this._context, component, options);
   }
 
   /**
@@ -125,19 +160,14 @@ export class CustomElement extends HTMLElement {
     }
 
     /*
-      Effect called in the constructor and on init would raise an error
-      due to context field being undefined until the onInit has finished its
-      execution.
-
-      We create a temporaney context on field initialize and move his unlistener functions
-      to the real context when render has ended
+      The context of the render exists only once the render has ended: the effects and the components
+      created in the constructor, in a field initializer or in onInit wait in a staging context,
+      moved to the real one when the render has ended
     */
     this.onInit?.();
-    const unwatchFns = this._context.getUnlistenFns();
+    const staging = this._context;
     this._context = render.call(this);
-    if (unwatchFns.length) {
-      this._context.addUnlistener(...unwatchFns);
-    }
+    staging.moveTo(this._context);
     for (let i = 0; i < this[CONNECTED_HOOKS].length; i++) {
       this[CONNECTED_HOOKS][i]();
     }
@@ -175,4 +205,11 @@ export class CustomElement extends HTMLElement {
   private connectedMoveCallback(): void {
     // Declaring it is what keeps the element from being disconnected and connected again
   }
+
+  /**
+   * Optional lifecycle hook, invoked each time the element is removed from the DOM, before the effects
+   * created via {@link effect} are disposed, the components created via {@link createComponent} are destroyed
+   * and the rendered content is removed.
+   */
+  public onDestroy?(): void;
 }

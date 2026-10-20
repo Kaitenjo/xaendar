@@ -6,6 +6,7 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { SharedBaseComponent } from '../../../examples/components/inheritance/shared-base/shared-base.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { MANUAL_SUBCLASS, SUBCLASS_TEMPLATE } from './inheritance.snippets.ts'
 
 <span @@i18n(key="pages.components.inheritance.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.inheritance.title") />
@@ -22,14 +23,14 @@
 
 <h2 @@i18n(key="pages.components.inheritance.extendingAComponent.title") />
 <p @@i18n(key="pages.components.inheritance.extendingAComponent.p1") />
-<docs-code snippet="components/subclass-template.ts" />
+<docs-code snippet="{SUBCLASS_TEMPLATE}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.inheritance.edgeCases.title") />
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.components.inheritance.edgeCases.callout3.heading}">
       <p @@i18n(key="pages.components.inheritance.edgeCases.callout3.p1") />
-      <docs-code snippet="components/manual-subclass.ts" />
+      <docs-code snippet="{MANUAL_SUBCLASS}" />
     </docs-callout-item>
     <docs-callout-item @@i18n(key="pages.components.inheritance.edgeCases.callout4.body")
       heading="{translations().pages.components.inheritance.edgeCases.callout4.heading}" />

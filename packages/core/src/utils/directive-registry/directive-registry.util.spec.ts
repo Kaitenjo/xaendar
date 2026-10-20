@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';

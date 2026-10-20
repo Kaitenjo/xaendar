@@ -6,6 +6,8 @@ import { HostEvent } from '../../decorators/host-event/host-event.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { _Context } from '../../utils/context/context.util';
+import { _defineRender } from '../../utils/render-registry/render-registry.util';
+import { CustomElement } from '../custom-element/custom-element';
 import { CustomDirective } from './custom-directive';
 
 loadSignals();
@@ -41,6 +43,18 @@ function connect(directive: CustomDirective): _Context {
 
   return context;
 }
+
+/**
+ * A component created by the directives under test.
+ */
+const Child = (() => {
+  const klass = class extends CustomElement { };
+  Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector: 'x-directive-created' } });
+  _defineRender(klass, () => new _Context({} as never));
+  customElements.define('x-directive-created', klass);
+
+  return klass;
+})();
 
 describe('CustomDirective', () => {
   it('exposes the element it is applied to', () => {
@@ -281,6 +295,31 @@ describe('CustomDirective', () => {
       context.clear();
       expect(firstCleanup).toHaveBeenCalledOnce();
       expect(secondCleanup).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('createComponent', () => {
+    it('destroys the component on disconnection', () => {
+      const directive = create(TestDirective);
+      const context = connect(directive);
+      const { element } = directive.createComponent(Child, { target: document.body });
+      expect(element.isConnected).toBe(true);
+
+      context.clear();
+
+      expect(element.isConnected).toBe(false);
+    });
+
+    it('can be created before the connection, moving to the context of the element', () => {
+      const directive = create(TestDirective);
+      const { element, destroy } = directive.createComponent(Child, { target: document.body });
+      const context = connect(directive);
+      expect(context.getChildren()).toHaveLength(1);
+
+      destroy();
+
+      expect(element.isConnected).toBe(false);
+      expect(context.getChildren()).toHaveLength(0);
     });
   });
 

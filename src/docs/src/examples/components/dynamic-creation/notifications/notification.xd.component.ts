@@ -3,7 +3,7 @@ import type { Output } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**
- * A notification, created in code by the stack showing it.
+ * A notification, created in code by the stack showing it: its text is the content the stack gives it.
  */
 @WebComponent({
   selector: 'ex-notification',
@@ -11,11 +11,6 @@ import type { InputSignal } from '@xaendar/core/signals';
   templateUrl: './notification.xd.component.html'
 })
 export class NotificationComponent extends CustomElement {
-  /**
-   * The text of the notification.
-   */
-  @Property('')
-  public accessor message!: InputSignal<string>;
   /**
    * How much the notification matters.
    */

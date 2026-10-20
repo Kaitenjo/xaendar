@@ -6,6 +6,7 @@
 @import { SignalWatcherComponent } from '../../../examples/signals/advanced/watcher/watcher.xd.component.ts'
 @import { SignalIntrospectionComponent } from '../../../examples/signals/advanced/introspection/introspection.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { DEV_MODE } from './advanced.snippets.ts'
 
 <span @@i18n(key="pages.signals.advanced.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.advanced.title") />
@@ -28,7 +29,7 @@
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.advanced.devMode.title") />
-<docs-code snippet="signals/dev-mode.ts" />
+<docs-code snippet="{DEV_MODE}" />
 <p @@i18n(key="pages.signals.advanced.devMode.p1") />
 
 <section class="edge-cases">

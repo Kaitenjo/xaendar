@@ -10,6 +10,7 @@
 @import { ComputedErrorsComponent } from '../../../examples/signals/computed/errors/errors.xd.component.ts'
 @import { ComputedCircularComponent } from '../../../examples/signals/computed/circular/circular.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { COMPUTED_THIS } from './computed.snippets.ts'
 
 <span @@i18n(key="pages.signals.computed.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.computed.title") />
@@ -44,7 +45,7 @@
 
 <h2 @@i18n(key="pages.signals.computed.optionsAndThis.title") />
 <p @@i18n(key="pages.signals.computed.optionsAndThis.p1") />
-<docs-code snippet="signals/computed-this.ts" />
+<docs-code snippet="{COMPUTED_THIS}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.computed.edgeCases.title") />

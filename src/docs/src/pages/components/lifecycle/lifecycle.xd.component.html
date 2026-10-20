@@ -5,13 +5,14 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from './lifecycle.snippets.ts'
 
 <span @@i18n(key="pages.components.lifecycle.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.lifecycle.title") />
 <p @@i18n(key="pages.components.lifecycle.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.lifecycle.theHooks.title") />
-<docs-code snippet="components/lifecycle-hooks.ts" />
+<docs-code snippet="{LIFECYCLE_HOOKS}" />
 <div class="table-wrap">
   <table>
     <thead>
@@ -68,7 +69,7 @@
   <h2 @@i18n(key="pages.components.lifecycle.edgeCases.title") />
   <docs-callout kind="edge" heading="{translations().pages.components.lifecycle.edgeCases.callout2.heading}">
     <p @@i18n(key="pages.components.lifecycle.edgeCases.callout2.p1") />
-    <docs-code snippet="components/connected-callback.ts" />
+    <docs-code snippet="{CONNECTED_CALLBACK}" />
   </docs-callout>
   <docs-callout @@i18n(key="pages.components.lifecycle.edgeCases.callout4.body") kind="note"
     heading="{translations().pages.components.lifecycle.edgeCases.callout4.heading}" />

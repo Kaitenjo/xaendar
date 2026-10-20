@@ -5,6 +5,7 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { ThemePreviewComponent } from '../../../examples/patterns/theming/theme-preview/theme-preview.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { THEME_STORE } from './theming.snippets.ts'
 
 <span @@i18n(key="pages.patterns.theming.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.theming.title") />
@@ -20,7 +21,7 @@
 
 <h2 @@i18n(key="pages.patterns.theming.aThemeForThe.title") />
 <p @@i18n(key="pages.patterns.theming.aThemeForThe.p1") />
-<docs-code snippet="patterns/theme-store.ts" />
+<docs-code snippet="{THEME_STORE}" />
 <p @@i18n(key="pages.patterns.theming.aThemeForThe.p2") />
 <docs-code snippet="patterns/no-flash.html" />
 

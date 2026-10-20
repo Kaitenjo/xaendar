@@ -8,13 +8,15 @@
 @import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
 @import { RefQueryComponent } from '../../../examples/components/queries/ref-query/ref-query.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { QUERY_DECORATORS, QUERY_REQUIRED } from './queries.snippets.ts'
+@import { QUERY_READ } from '../../reference/api/packages/core.snippets.ts'
 
 <span @@i18n(key="pages.components.queries.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.queries.title") />
 <p @@i18n(key="pages.components.queries.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.queries.queryingTheTemplate.title") />
-<docs-code snippet="components/query-decorators.ts" />
+<docs-code snippet="{QUERY_DECORATORS}" />
 <p @@i18n(key="pages.components.queries.queryingTheTemplate.p1") />
 <docs-example name="components/queries/view-query"
   heading="{translations().pages.components.queries.queryingTheTemplate.example1}">
@@ -32,7 +34,7 @@
 </docs-example>
 <p @@i18n(key="pages.components.queries.refsAndDirectives.p3") />
 <p @@i18n(key="pages.components.queries.refsAndDirectives.p4") />
-<docs-code snippet="api/core/query-read.ts" />
+<docs-code snippet="{QUERY_READ}" />
 
 <h2 @@i18n(key="pages.components.queries.whenTheResultIs.title") />
 <p @@i18n(key="pages.components.queries.whenTheResultIs.p1") />
@@ -44,7 +46,7 @@
 
 <h2 @@i18n(key="pages.components.queries.requiredQueries.title") />
 <p @@i18n(key="pages.components.queries.requiredQueries.p1") />
-<docs-code snippet="components/query-required.ts" />
+<docs-code snippet="{QUERY_REQUIRED}" />
 <p @@i18n(key="pages.components.queries.requiredQueries.p2") />
 
 <section class="edge-cases">

@@ -2,7 +2,7 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { PAGES } from '../../../core/routes/routes';
 import { LANGS } from '../../../core/router/route-hash.utils';
-import type { ApiPackageName, ApiPackageTexts, ApiSymbol } from './api.data';
+import type { ApiMember, ApiPackageName, ApiPackageTexts, ApiSymbol } from './api.data';
 import { API, findApiSymbol, packageFile, searchSymbols, symbolPath } from './api.data';
 
 /**
@@ -67,7 +67,7 @@ function textsOf(root: string, lang: string, name: ApiPackageName): ApiPackageTe
 }
 
 /**
- * Lists the snippets shown on the page of a symbol.
+ * Lists the snippets read from `src/snippets` on the page of a symbol: the others are source files, imported.
  *
  * @param symbol - The symbol.
  * @returns The paths of the snippets of its members and of its usage notes.
@@ -76,21 +76,32 @@ function snippetsOf({ members, usage }: ApiSymbol): string[] {
   const snippets: string[] = [];
   if (members?.length) {
     for (let i = 0; i < members.length; i++) {
-      const member = members[i];
-      if (member.snippets?.length) {
-        snippets.push(...member.snippets);
-      }
+      addPaths(snippets, members[i].snippets);
     }
   }
   if (usage?.length) {
     for (let i = 0; i < usage.length; i++) {
-      const note = usage[i];
-      if (note.snippets?.length) {
-        snippets.push(...note.snippets);
-      }
+      addPaths(snippets, usage[i].snippets);
     }
   }
   return snippets;
+}
+
+/**
+ * Adds the paths among the snippets of a member or of a usage note.
+ *
+ * @param paths - The paths collected.
+ * @param snippets - The snippets of the member or of the note.
+ */
+function addPaths(paths: string[], snippets: ApiMember['snippets']): void {
+  if (snippets?.length) {
+    for (let i = 0; i < snippets.length; i++) {
+      const snippet = snippets[i];
+      if (typeof snippet === 'string') {
+        paths.push(snippet);
+      }
+    }
+  }
 }
 
 describe.each(API.map(apiPackage => [apiPackage.name, apiPackage] as const))('API reference of %s', (name, apiPackage) => {

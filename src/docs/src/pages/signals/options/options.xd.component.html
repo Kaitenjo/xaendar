@@ -5,11 +5,12 @@
 @import { SignalWatchedComponent } from '../../../examples/signals/options/watched/watched.xd.component.ts'
 @import { SignalFrozenComponent } from '../../../examples/signals/options/frozen/frozen.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { TYPES } from './options.snippets.ts'
 
 <span @@i18n(key="pages.signals.options.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.options.title") />
 <p @@i18n(key="pages.signals.options.lead") class="lead" />
-<docs-code snippet="signals/types.ts" />
+<docs-code snippet="{TYPES}" />
 
 <h2 @@i18n(key="pages.signals.options.equals.title") />
 <p @@i18n(key="pages.signals.options.equals.p1") />

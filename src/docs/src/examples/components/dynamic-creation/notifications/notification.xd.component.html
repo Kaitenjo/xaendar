@@ -1,6 +1,6 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="card" data-level="{level()}">
-  <span>{ message() }</span>
+  <span><slot /></span>
   <ex-button aria-label="Dismiss" (click)="dismiss()">✕</ex-button>
 </div>

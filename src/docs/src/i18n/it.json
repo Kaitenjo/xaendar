@@ -384,11 +384,11 @@
       "dynamicCreation": {
         "eyebrow": "Componenti",
         "title": "Creare componenti nel codice",
-        "lead": "Un template crea i componenti nominati dai suoi tag. Quando quali componenti mostrare, quanti o dove si sa solo a runtime — notifiche, dialog, pannelli aperti dall’utente — creali nel codice con <code>createComponent</code>: lega i loro input e i loro eventi e applica loro direttive, come fa un tag, e restituisce un riferimento che li distrugge.",
+        "lead": "Un template crea i componenti nominati dai suoi tag. Quando quali componenti mostrare, quanti o dove si sa solo a runtime — notifiche, dialog, pannelli aperti dall’utente — creali nel codice con <code>createComponent</code>, un metodo di ogni componente e direttiva custom: lega i loro input e i loro eventi, applica loro direttive e dà loro il contenuto, come fa un tag, e i componenti che crea appartengono a chi li crea.",
         "creating": {
           "title": "Creare un componente",
-          "p1": "<code>createComponent</code> riceve la classe di un componente, decorata con <code>@WebComponent</code>, e le sue opzioni: <code>target</code> è l’elemento a cui il componente viene aggiunto, come ultimo figlio. Restituisce un riferimento: <code>element</code> è l’istanza del componente, già nel DOM, e <code>destroy</code> la rimuove.",
-          "p2": "Gli input vengono impostati prima che l’elemento sia aggiunto, quindi <code>onInit</code> li legge, come per un componente scritto in un template; le direttive vengono applicate quando l’elemento è nel DOM. La creazione non è tracciata: chiamata dentro un effect, non fa dipendere l’effect dai signal letti dai suoi getter."
+          "p1": "<code>this.createComponent</code>, ereditato da <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> e da <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, riceve la classe di un componente, decorata con <code>@WebComponent</code>, e le sue opzioni: <code>target</code> è l’elemento a cui il componente viene aggiunto, come ultimo figlio. Restituisce un riferimento: <code>element</code> è l’istanza del componente, già nel DOM, e <code>destroy</code> la rimuove.",
+          "p2": "Gli input vengono impostati prima che l’elemento sia aggiunto, quindi <code>onInit</code> li legge, come per un componente scritto in un template; le direttive vengono applicate, e il contenuto aggiunto, quando l’elemento è nel DOM. La creazione non è tracciata: chiamata dentro un effect, non fa dipendere l’effect dai signal letti dai suoi getter."
         },
         "bindings": {
           "title": "Input ed eventi",
@@ -399,11 +399,15 @@
           "title": "Direttive",
           "p1": "<code>directives</code> elenca le direttive custom applicate al componente, per classe: nessun selettore, e nessun import in un template. Una voce è la classe stessa, applicata finché il componente vive, o un oggetto che dà la classe in <code>directive</code>, insieme a una <code>condition</code> e ai gruppi delle sue <code>properties</code> ed <code>events</code>, tipizzati sulla direttiva. Una direttiva con una condizione è applicata mentre la condizione vale, con una nuova istanza ogni volta che torna a valere, come una <a href=\"#/it/directives/conditional\">direttiva condizionale</a> in un template."
         },
+        "content": {
+          "title": "Contenuto",
+          "p1": "<code>content</code> elenca i nodi aggiunti al componente come suoi figli, come i figli scritti tra i tag in un template: il suo template li proietta attraverso i suoi <a href=\"#/it/components/content-projection\">slot</a>, uno slot con nome prendendo i nodi con il suo nome nell’attributo <code>slot</code>. Un <code>DocumentFragment</code> dà i suoi nodi, quindi il contenuto può venire da un <code>&lt;template&gt;</code> o da una stringa analizzata. I nodi vengono aggiunti dopo che le direttive sono applicate, e non vengono rimossi quando il componente viene distrutto: lasciano il DOM insieme al suo elemento."
+        },
         "destroying": {
           "title": "Distruggere",
-          "p1": "Un componente creato nel codice vive finché non si chiama <code>destroy</code>: rimuove l’elemento, scollega i suoi input e i suoi eventi e distrugge le sue direttive. Rimuovere l’elemento con le API del DOM invece lo disconnette, ma lascia vivi i suoi binding. Un componente che ne crea altri tiene i loro riferimenti e distrugge quelli ancora vivi nel suo <code>onDestroy</code>, perché non fanno parte del suo template.",
+          "p1": "Un componente creato nel codice appartiene al componente, o alla direttiva, che l’ha creato: viene distrutto insieme a lui, quando quel componente viene scollegato o quella direttiva si ferma, dopo il loro <code>onDestroy</code>. Distruggerlo rimuove l’elemento, scollega i suoi input e i suoi eventi e distrugge le sue direttive. <code>destroy</code> sul riferimento lo fa prima, e non fa nulla quando è già fatto; rimuovere l’elemento con le API del DOM invece lo disconnette, ma lascia vivi i suoi binding finché chi l’ha creato non viene distrutto.",
           "example1": "Uno stack di notifiche create nel codice",
-          "p2": "Ogni notifica è legata a <code>urgent</code> con un gruppo condizionale, si distrugge quando il suo output <code>dismissed</code> viene emesso, ed è marcata da <code>NewestDirective</code> finché è la più recente: aggiungere una notifica sposta la direttiva, togliendola dalla precedente. Lo stack distrugge le notifiche ancora aperte nel suo <code>onDestroy</code>. Il listener di <code>dismissed</code> ha un corpo tra graffe: una arrow function che restituisce una chiamata su <code>notification</code> farebbe dipendere il tipo di <code>notification</code> da sé stesso, cosa che TypeScript rifiuta."
+          "p2": "Ogni notifica riceve il suo testo come contenuto, proiettato nel suo slot, è legata a <code>urgent</code> con un gruppo condizionale, si distrugge quando il suo output <code>dismissed</code> viene emesso, ed è marcata da <code>NewestDirective</code> finché è la più recente: aggiungere una notifica sposta la direttiva, togliendola dalla precedente. Le notifiche ancora aperte vengono distrutte insieme allo stack, che nel suo <code>onDestroy</code> azzera soltanto il conteggio. Il listener di <code>dismissed</code> ha un corpo tra graffe: una arrow function che restituisce una chiamata su <code>notification</code> farebbe dipendere il tipo di <code>notification</code> da sé stesso, cosa che TypeScript rifiuta."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -420,8 +424,8 @@
             "body": "Un input legato da due gruppi verrebbe resettato dal primo che smette di valere, mentre l’altro lo lega ancora: <code>createComponent</code> invece lancia un errore. Per alternare un input tra due valori, legalo una volta sola, con un getter che sceglie il valore: <code>{ level: () => this.urgent() ? 'urgent' : 'info' }</code>."
           },
           "callout4": {
-            "heading": "Niente figli, niente direttive strutturali",
-            "body": "Il contenuto del componente non è un’opzione: aggiungi i suoi figli a <code>element</code>, che li proietta nei suoi slot. Una direttiva strutturale non si può applicare nel codice, perché non c’è un template da renderizzare o no: <code>createComponent</code> lancia un errore, come per una classe non decorata con <code>@WebComponent</code> e per una direttiva che il componente dichiara già come host directive."
+            "heading": "Niente direttive strutturali",
+            "body": "Una direttiva strutturale non si può applicare nel codice, perché non c’è un template da renderizzare o no: <code>createComponent</code> lancia un errore, come per una classe non decorata con <code>@WebComponent</code> e per una direttiva che il componente dichiara già come host directive."
           }
         },
         "summary": {
@@ -429,15 +433,17 @@
           "th1": "Compito",
           "th2": "Dove",
           "td1": "Creare un componente",
-          "td2": "<code>createComponent(Component, { target })</code>, aggiunto a <code>target</code>.",
+          "td2": "<code>this.createComponent(Component, { target })</code> in un componente o in una direttiva, aggiunto a <code>target</code>.",
           "td3": "Legare input ed eventi",
           "td4": "Gruppi in <code>properties</code> ed <code>events</code>, con getter per i valori.",
           "td5": "Legarli solo a volte",
           "td6": "Una <code>condition</code> nel gruppo: gli input che scollega tornano al valore di default.",
           "td7": "Applicare direttive",
           "td8": "Classi, o <code>{ directive, condition, properties, events }</code>, in <code>directives</code>.",
-          "td9": "Distruggerlo",
-          "td10": "<code>destroy()</code> sul riferimento restituito, nell’<code>onDestroy</code> del componente che l’ha creato."
+          "td9": "Dargli un contenuto",
+          "td10": "Nodi in <code>content</code>, proiettati attraverso i suoi slot.",
+          "td11": "Distruggerlo",
+          "td12": "Niente da fare: viene distrutto insieme a chi l’ha creato. <code>destroy()</code> sul riferimento restituito lo distrugge prima."
         }
       },
       "inheritance": {

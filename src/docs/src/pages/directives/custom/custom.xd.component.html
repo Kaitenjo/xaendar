@@ -10,6 +10,8 @@
 @import { BubblesComponent } from '../../../examples/directives/custom/svg-grow/bubbles.xd.component.ts'
 @import { DirectiveTimingComponent } from '../../../examples/directives/custom/directive-timing/directive-timing.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { CONSTRUCTOR_ACCESS, GENERIC_DIRECTIVE, HOST_DIRECTIVE } from './custom.snippets.ts'
+@import { HOST_BINDINGS_DIRECTIVE } from '../../reference/api/packages/core.snippets.ts'
 
 <span @@i18n(key="pages.directives.custom.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.directives.custom.title") />
@@ -39,7 +41,7 @@
 
 <h2 @@i18n(key="pages.directives.custom.hostBindings.title") />
 <p @@i18n(key="pages.directives.custom.hostBindings.p1") />
-<docs-code snippet="api/core/host-bindings-directive.ts" />
+<docs-code snippet="{HOST_BINDINGS_DIRECTIVE}" />
 <p @@i18n(key="pages.directives.custom.hostBindings.p2") />
 
 <h2 @@i18n(key="pages.directives.custom.svgElements.title") />
@@ -50,13 +52,13 @@
 
 <h2 @@i18n(key="pages.directives.custom.generics.title") />
 <p @@i18n(key="pages.directives.custom.generics.p1") />
-<docs-code snippet="directives/generic-directive.ts" />
+<docs-code snippet="{GENERIC_DIRECTIVE}" />
 <docs-code snippet="directives/generic-directive-usage.html" />
 <p @@i18n(key="pages.directives.custom.generics.p2") />
 
 <h2 @@i18n(key="pages.directives.custom.hostDirectives.title") />
 <p @@i18n(key="pages.directives.custom.hostDirectives.p1") />
-<docs-code snippet="directives/host-directive.ts" />
+<docs-code snippet="{HOST_DIRECTIVE}" />
 <p @@i18n(key="pages.directives.custom.hostDirectives.p2") />
 <docs-code snippet="directives/host-directive-usage.html" />
 <p @@i18n(key="pages.directives.custom.hostDirectives.p3") />
@@ -73,7 +75,7 @@
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout1.heading}">
       <p @@i18n(key="pages.directives.custom.edgeCases.callout1.p1") />
-      <docs-code snippet="directives/constructor-access.ts" />
+      <docs-code snippet="{CONSTRUCTOR_ACCESS}" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout2.heading}">
       <p @@i18n(key="pages.directives.custom.edgeCases.callout2.p1") />

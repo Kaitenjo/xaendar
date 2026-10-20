@@ -1,4 +1,5 @@
 import type { ApiPackage } from '../api.data';
+import { ABSTRACT_CONSTRUCTOR, ACCESSOR_DECORATOR, ASYNC_FUNCTION, BEAUTIFY, CLASS_DECORATOR, CONSTRUCTOR, CONTAINS_CHAR, DECORATOR_METADATA_CONTEXT, DICTIONARY, FIELD_DECORATOR, FUNCTION, GETTER_DECORATOR, METHOD_DECORATOR, MUTABLE, POSITIVE_INTEGER, REQUIRE_ONE, TUPLE_OF_LENGTH } from './types.snippets';
 
 /**
  * The symbols of `@xaendar/types`.
@@ -12,7 +13,7 @@ export const TYPES_API: ApiPackage = {
       signature: `type Beautify<T extends Object> = {
   [K in keyof T]: T[K]
 } & {};`,
-      usage: [{ key: 'reading', snippets: ['api/types/beautify.ts'] }]
+      usage: [{ key: 'reading', snippets: [BEAUTIFY] }]
     },
     {
       name: 'AbstractConstructor',
@@ -27,7 +28,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'T', group: 'parameters', signature: 'T extends object = object' },
         { name: 'Statics', group: 'parameters', signature: 'Statics extends Record<string, unknown> | undefined = undefined' }
       ],
-      usage: [{ key: 'abstractClasses', snippets: ['api/types/abstract-constructor.ts'] }]
+      usage: [{ key: 'abstractClasses', snippets: [ABSTRACT_CONSTRUCTOR] }]
     },
     {
       name: 'Constructor',
@@ -42,7 +43,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'T', group: 'parameters', signature: 'T extends object = object' },
         { name: 'Statics', group: 'parameters', signature: 'Statics extends Record<string, unknown> | undefined = undefined' }
       ],
-      usage: [{ key: 'creatingInstances', snippets: ['api/types/constructor.ts'] }]
+      usage: [{ key: 'creatingInstances', snippets: [CONSTRUCTOR] }]
     },
     {
       name: 'ContainsChar',
@@ -56,7 +57,7 @@ export const TYPES_API: ApiPackage = {
       ? true
       : ContainsChar<Rest, Contains>
     : false;`,
-      usage: [{ key: 'rejectingLiterals', snippets: ['api/types/contains-char.ts'] }]
+      usage: [{ key: 'rejectingLiterals', snippets: [CONTAINS_CHAR] }]
     },
     {
       name: 'ClassAccessorDecoratorValue',
@@ -65,7 +66,7 @@ export const TYPES_API: ApiPackage = {
   get(this: unknown): Field;
   set(this: unknown, value: Field): void;
 };`,
-      usage: [{ key: 'originalSetter', snippets: ['api/types/accessor-decorator.ts'] }]
+      usage: [{ key: 'originalSetter', snippets: [ACCESSOR_DECORATOR] }]
     },
     {
       name: 'AccessorDecorator',
@@ -84,7 +85,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'Value', group: 'parameters', signature: 'Value = unknown' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'writing', snippets: ['api/types/accessor-decorator.ts'] }]
+      usage: [{ key: 'writing', snippets: [ACCESSOR_DECORATOR] }]
     },
     {
       name: 'ClassDecorator',
@@ -99,7 +100,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'Statics', group: 'parameters', signature: 'Statics extends { [key: string]: any } = { [key: string]: any }' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'registering', snippets: ['api/types/class-decorator.ts'] }]
+      usage: [{ key: 'registering', snippets: [CLASS_DECORATOR] }]
     },
     {
       name: 'DecoratorMetadataContext',
@@ -114,7 +115,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'Context', group: 'parameters', signature: 'Context extends { metadata: DecoratorMetadataObject }' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'typing', snippets: ['api/types/decorator-metadata-context.ts'] }]
+      usage: [{ key: 'typing', snippets: [DECORATOR_METADATA_CONTEXT] }]
     },
     {
       name: 'FieldDecorator',
@@ -131,7 +132,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'ReturnType', group: 'parameters', signature: 'ReturnType = Field' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'transforming', snippets: ['api/types/field-decorator.ts'] }]
+      usage: [{ key: 'transforming', snippets: [FIELD_DECORATOR] }]
     },
     {
       name: 'GetterDecorator',
@@ -146,7 +147,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'Value', group: 'parameters', signature: 'Value' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'replacing', snippets: ['api/types/getter-decorator.ts'] }]
+      usage: [{ key: 'replacing', snippets: [GETTER_DECORATOR] }]
     },
     {
       name: 'MethodDecorator',
@@ -161,7 +162,7 @@ export const TYPES_API: ApiPackage = {
         { name: 'Method', group: 'parameters', signature: 'Method extends Function' },
         { name: 'Metadata', group: 'parameters', signature: 'Metadata extends object = DecoratorMetadataObject' }
       ],
-      usage: [{ key: 'wrapping', snippets: ['api/types/method-decorator.ts'] }]
+      usage: [{ key: 'wrapping', snippets: [METHOD_DECORATOR] }]
     },
     {
       name: 'Dictionary',
@@ -169,7 +170,7 @@ export const TYPES_API: ApiPackage = {
       signature: `type Dictionary<Key extends string | number | symbol, Value = string> = {
   [K in Key]?: Value
 };`,
-      usage: [{ key: 'optionalKeys', snippets: ['api/types/dictionary.ts'] }]
+      usage: [{ key: 'optionalKeys', snippets: [DICTIONARY] }]
     },
     {
       name: 'AsyncFunction',
@@ -180,7 +181,7 @@ export const TYPES_API: ApiPackage = {
 > = Arguments extends Array<any>
   ? (...args: Arguments) => Promise<ReturnType>
   : () => Promise<ReturnType>;`,
-      usage: [{ key: 'typing', snippets: ['api/types/async-function.ts'] }]
+      usage: [{ key: 'typing', snippets: [ASYNC_FUNCTION] }]
     },
     {
       name: 'Function',
@@ -191,7 +192,7 @@ export const TYPES_API: ApiPackage = {
 > = Arguments extends Array<any>
   ? (...args: Arguments) => ReturnType
   : () => ReturnType;`,
-      usage: [{ key: 'building', snippets: ['api/types/function.ts'] }]
+      usage: [{ key: 'building', snippets: [FUNCTION] }]
     },
     {
       name: 'NoArgsAsyncFunction',
@@ -229,7 +230,7 @@ export const TYPES_API: ApiPackage = {
       signature: `type Mutable<T extends Object> = {
   -readonly [P in keyof T]: T[P];
 };`,
-      usage: [{ key: 'building', snippets: ['api/types/mutable.ts'] }]
+      usage: [{ key: 'building', snippets: [MUTABLE] }]
     },
     {
       name: 'PositiveInteger',
@@ -240,7 +241,7 @@ export const TYPES_API: ApiPackage = {
     : ContainsChar<\`\${Value}\`, '.'> extends true
       ? never
       : Value;`,
-      usage: [{ key: 'checkingACount', snippets: ['api/types/positive-integer.ts'] }]
+      usage: [{ key: 'checkingACount', snippets: [POSITIVE_INTEGER] }]
     },
     {
       name: 'RequireOne',
@@ -254,7 +255,7 @@ export const TYPES_API: ApiPackage = {
       members: [
         { name: 'Keys', group: 'parameters', signature: 'Keys extends keyof T = keyof T' }
       ],
-      usage: [{ key: 'requiringOne', snippets: ['api/types/require-one.ts'] }]
+      usage: [{ key: 'requiringOne', snippets: [REQUIRE_ONE] }]
     },
     {
       name: 'TupleOfLength',
@@ -268,7 +269,7 @@ export const TYPES_API: ApiPackage = {
       : Acc['length'] extends Length
         ? Acc
         : TupleOfLength<Length, TupleType, [...Acc, TupleType]>;`,
-      usage: [{ key: 'fixedLength', snippets: ['api/types/tuple-of-length.ts'] }]
+      usage: [{ key: 'fixedLength', snippets: [TUPLE_OF_LENGTH] }]
     }
   ]
 };

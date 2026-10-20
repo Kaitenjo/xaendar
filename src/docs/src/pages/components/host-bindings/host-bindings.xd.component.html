@@ -6,6 +6,7 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { ToggleSwitchComponent } from '../../../examples/components/host-bindings/toggle-switch/toggle-switch.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { HOST_BINDINGS_DIRECTIVE, HOST_EVENT, HOST_PROPERTY_VALUES } from '../../reference/api/packages/core.snippets.ts'
 
 <span @@i18n(key="pages.components.hostBindings.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.hostBindings.title") />
@@ -21,12 +22,12 @@
 
 <h2 @@i18n(key="pages.components.hostBindings.events.title") />
 <p @@i18n(key="pages.components.hostBindings.events.p1") />
-<docs-code snippet="api/core/host-event.ts" />
+<docs-code snippet="{HOST_EVENT}" />
 <p @@i18n(key="pages.components.hostBindings.events.p2") />
 
 <h2 @@i18n(key="pages.components.hostBindings.values.title") />
 <p @@i18n(key="pages.components.hostBindings.values.p1") />
-<docs-code snippet="api/core/host-property-values.ts" />
+<docs-code snippet="{HOST_PROPERTY_VALUES}" />
 
 <h2 @@i18n(key="pages.components.hostBindings.timing.title") />
 <p @@i18n(key="pages.components.hostBindings.timing.p1") />
@@ -34,7 +35,7 @@
 
 <h2 @@i18n(key="pages.components.hostBindings.directives.title") />
 <p @@i18n(key="pages.components.hostBindings.directives.p1") />
-<docs-code snippet="api/core/host-bindings-directive.ts" />
+<docs-code snippet="{HOST_BINDINGS_DIRECTIVE}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.components.hostBindings.edgeCases.title") />

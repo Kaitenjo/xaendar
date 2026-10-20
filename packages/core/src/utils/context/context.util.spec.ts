@@ -194,6 +194,38 @@ describe('_Context', () => {
       expect(childClear).toHaveBeenCalledOnce();
     });
   });
+
+  describe('moveTo', () => {
+    it('moves the cleanups and the children to another context, leaving it empty', () => {
+      const staging = createRoot();
+      const target = createRoot();
+      const child = staging.addChild();
+      const childClear = vi.spyOn(child, 'clear');
+      const cleanup = vi.fn();
+      staging.addUnlistener(cleanup);
+
+      staging.moveTo(target);
+      staging.clear();
+      expect(cleanup).not.toHaveBeenCalled();
+      expect(childClear).not.toHaveBeenCalled();
+
+      target.clear();
+      expect(cleanup).toHaveBeenCalledOnce();
+      expect(childClear).toHaveBeenCalledOnce();
+    });
+
+    it('moves the children of a context without cleanups', () => {
+      const staging = createRoot();
+      const target = createRoot();
+      const child = staging.addChild();
+
+      staging.moveTo(target);
+
+      expect(target.getChildren()).toEqual([child]);
+      expect(target.getUnlistenFns()).toEqual([]);
+      expect(staging.getChildren()).toEqual([]);
+    });
+  });
 });
 
 describe('mountNode', () => {

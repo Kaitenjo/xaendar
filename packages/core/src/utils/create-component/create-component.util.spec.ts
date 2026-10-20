@@ -15,7 +15,7 @@ const { Output } = await import('../../models/output/output');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { _Context } = await import('../context/context.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
-const { createComponent } = await import('./create-component.util');
+const { _createComponent } = await import('./create-component.util');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -61,6 +61,7 @@ class Tooltip extends CustomDirective {
   public readonly toggled = new Output<boolean>((value, _options?) => { this.dispatchEvent(new CustomEvent('toggled', { detail: value })); });
   public readonly destroyed = vi.fn();
   public mounted?: boolean;
+  public children?: number;
 
   constructor() {
     super();
@@ -69,6 +70,7 @@ class Tooltip extends CustomDirective {
 
   public onInit(): void {
     this.mounted = this.element.isConnected;
+    this.children = this.element.childNodes.length;
   }
 
   public onDestroy(): void {
@@ -87,13 +89,19 @@ class Visible extends StructuralDirective {
 
 const lastTooltip = () => Tooltip.instances.at(-1)!;
 
-describe('createComponent', () => {
+/**
+ * The context of the component or of the directive creating the components: never cleared, unless a test does.
+ */
+const root = new _Context({} as never);
+const owner = () => root;
+
+describe('_createComponent', () => {
   it('appends the component to the target and returns its element', () => {
     const target = document.createElement('div');
     document.body.append(target);
     target.append(document.createElement('span'));
 
-    const { element } = createComponent(Card, { target });
+    const { element } = _createComponent(owner, Card, { target });
 
     expect(element).toBeInstanceOf(Card);
     expect(target.lastChild).toBe(element);
@@ -101,14 +109,14 @@ describe('createComponent', () => {
   });
 
   it('sets the inputs before the component is initialized', () => {
-    const { element } = createComponent(Card, { target: document.body, properties: [{ heading: () => 'Hello' }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'Hello' }] });
 
     expect(element.headingOnInit).toEqual(['Hello']);
   });
 
   it('updates an input when a signal read by its getter changes', async () => {
     const heading = signal('first');
-    const { element } = createComponent(Card, { target: document.body, properties: [{ heading: () => heading() }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => heading() }] });
 
     heading.set('second');
     await flush();
@@ -118,7 +126,7 @@ describe('createComponent', () => {
 
   it('binds a group of inputs only while its condition holds, resetting them to their default value', async () => {
     const enabled = signal(false);
-    const { element } = createComponent(Card, { target: document.body, properties: [{ heading: () => 'fixed' }, { condition: () => enabled(), count: () => 5, mode: () => 'compact' }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'fixed' }, { condition: () => enabled(), count: () => 5, mode: () => 'compact' }] });
     expect([element.count(), element.mode()]).toEqual([0, 'wide']);
 
     enabled.set(true);
@@ -131,14 +139,14 @@ describe('createComponent', () => {
   });
 
   it('throws when an input is bound by more than one group', () => {
-    expect(() => createComponent(Card, { target: document.body, properties: [{ count: () => 1 }, { condition: () => true, count: () => 2 }] }))
+    expect(() => _createComponent(owner, Card, { target: document.body, properties: [{ count: () => 1 }, { condition: () => true, count: () => 2 }] }))
       .toThrow('Property "count" is bound by more than one group');
   });
 
   it('listens to the events of the component and to the native ones', () => {
     const onChanged = vi.fn();
     const onClick = vi.fn();
-    const { element } = createComponent(Card, { target: document.body, events: [{ changed: event => onChanged(event.detail), click: onClick }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ changed: event => onChanged(event.detail), click: onClick }] });
 
     element.changed.emit(3);
     element.click();
@@ -150,7 +158,7 @@ describe('createComponent', () => {
   it('listens to a group of events only while its condition holds', async () => {
     const enabled = signal(true);
     const onClosed = vi.fn();
-    const { element } = createComponent(Card, { target: document.body, events: [{ condition: () => enabled(), closed: onClosed }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ condition: () => enabled(), closed: onClosed }] });
 
     element.closed.emit();
     enabled.set(false);
@@ -163,7 +171,7 @@ describe('createComponent', () => {
   it('throws when the class is not decorated with @WebComponent', () => {
     const Undecorated = class Undecorated extends CustomElement { };
 
-    expect(() => createComponent(Undecorated, { target: document.body })).toThrow('Undecorated does not seem to be decorated with @WebComponent');
+    expect(() => _createComponent(owner, Undecorated, { target: document.body })).toThrow('Undecorated does not seem to be decorated with @WebComponent');
   });
 
   it('is not tracked by an effect it is created in', async () => {
@@ -171,7 +179,7 @@ describe('createComponent', () => {
     const runs = vi.fn();
     const dispose = effect(() => {
       runs();
-      createComponent(Card, { target: document.body, properties: [{ heading: () => heading() }] });
+      _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => heading() }] });
     });
 
     heading.set('second');
@@ -183,7 +191,7 @@ describe('createComponent', () => {
 
   describe('directives', () => {
     it('applies a directive given by its class, once the component is mounted', () => {
-      const { element } = createComponent(Card, { target: document.body, directives: [Tooltip] });
+      const { element } = _createComponent(owner, Card, { target: document.body, directives: [Tooltip] });
 
       expect(lastTooltip().element).toBe(element);
       expect(lastTooltip().mounted).toBe(true);
@@ -193,7 +201,7 @@ describe('createComponent', () => {
       const enabled = signal(false);
       const onToggled = vi.fn();
       const onConditionalToggled = vi.fn();
-      createComponent(Card, {
+      _createComponent(owner, Card, {
         target: document.body,
         directives: [{
           directive: Tooltip,
@@ -215,7 +223,7 @@ describe('createComponent', () => {
 
     it('applies a directive only while its condition holds, a new instance each time it holds again', async () => {
       const enabled = signal(true);
-      createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, condition: () => enabled(), properties: [{ text: () => 'Hint' }] }] });
+      _createComponent(owner, Card, { target: document.body, directives: [{ directive: Tooltip, condition: () => enabled(), properties: [{ text: () => 'Hint' }] }] });
       const first = lastTooltip();
       expect([first.mounted, first.text()]).toEqual([true, 'Hint']);
 
@@ -230,7 +238,7 @@ describe('createComponent', () => {
     });
 
     it('throws when a directive is not a custom directive', () => {
-      expect(() => createComponent(Card, { target: document.body, directives: [Visible as never] })).toThrow('Directive Visible is not a CustomDirective');
+      expect(() => _createComponent(owner, Card, { target: document.body, directives: [Visible as never] })).toThrow('Directive Visible is not a CustomDirective');
     });
   });
 
@@ -239,7 +247,7 @@ describe('createComponent', () => {
       const target = document.createElement('div');
       document.body.append(target);
       const heading = signal('first');
-      const { element, destroy } = createComponent(Card, { target, properties: [{ heading: () => heading() }], directives: [Tooltip] });
+      const { element, destroy } = _createComponent(owner, Card, { target, properties: [{ heading: () => heading() }], directives: [Tooltip] });
 
       destroy();
       heading.set('second');
@@ -250,24 +258,99 @@ describe('createComponent', () => {
       expect(lastTooltip().destroyed).toHaveBeenCalledOnce();
       expect(element.heading()).toBe('first');
     });
+
+    it('removes the context of the component from the context its owner has when destroyed', () => {
+      const staging = new _Context({} as never);
+      const connected = new _Context({} as never);
+      let current = staging;
+      const { destroy } = _createComponent(() => current, Card, { target: document.body });
+      expect(staging.getChildren()).toHaveLength(1);
+
+      staging.moveTo(connected);
+      current = connected;
+      destroy();
+
+      expect(connected.getChildren()).toHaveLength(0);
+    });
+
+    it('does nothing when called again, or after its owner is cleared', () => {
+      const context = new _Context({} as never);
+      const { element, destroy } = _createComponent(() => context, Card, { target: document.body });
+
+      context.clear();
+      destroy();
+      destroy();
+
+      expect(element.isConnected).toBe(false);
+      expect(element.destroyed).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('owner', () => {
+    it('destroys the component when the context of its owner is cleared', async () => {
+      const context = new _Context({} as never);
+      const heading = signal('first');
+      const { element } = _createComponent(() => context, Card, { target: document.body, properties: [{ heading: () => heading() }], directives: [Tooltip] });
+
+      context.clear();
+      heading.set('second');
+      await flush();
+
+      expect(element.isConnected).toBe(false);
+      expect(element.destroyed).toHaveBeenCalledOnce();
+      expect(lastTooltip().destroyed).toHaveBeenCalledOnce();
+      expect(element.heading()).toBe('first');
+    });
+  });
+
+  describe('content', () => {
+    it('appends the nodes to the element once its directives are applied', () => {
+      const text = document.createTextNode('text');
+      const span = document.createElement('span');
+      const { element } = _createComponent(owner, Card, { target: document.body, directives: [Tooltip], content: [text, span] });
+
+      expect([...element.childNodes]).toEqual([text, span]);
+      expect(lastTooltip().children).toBe(0);
+    });
+
+    it('appends the nodes of a fragment', () => {
+      const fragment = document.createDocumentFragment();
+      const first = document.createElement('b');
+      const second = document.createElement('i');
+      fragment.append(first, second);
+
+      const { element } = _createComponent(owner, Card, { target: document.body, content: [fragment] });
+
+      expect([...element.childNodes]).toEqual([first, second]);
+    });
+
+    it('keeps the nodes in the element when the component is destroyed', () => {
+      const span = document.createElement('span');
+      const { element, destroy } = _createComponent(owner, Card, { target: document.body, content: [span] });
+
+      destroy();
+
+      expect(span.parentNode).toBe(element);
+    });
   });
 
   it('types the bindings after the inputs and the events of the component and of each directive', () => {
     const check = () => {
+      const host = null as unknown as InstanceType<typeof CustomElement>;
       // A native event gets the type its map declares, a literal value is kept for an input typed as a union of literals
-      createComponent(Card, { target: document.body, properties: [{ mode: () => 'compact' }], events: [{ click: event => event.clientX }] });
+      host.createComponent(Card, { target: document.body, properties: [{ mode: () => 'compact' }], events: [{ click: event => event.clientX }] });
       // @ts-expect-error a computed signal is not an input
-      createComponent(Card, { target: document.body, properties: [{ double: () => 1 }] });
+      host.createComponent(Card, { target: document.body, properties: [{ double: () => 1 }] });
       // @ts-expect-error the value of an input has its type
-      createComponent(Card, { target: document.body, properties: [{ count: () => 'one' }] });
+      host.createComponent(Card, { target: document.body, properties: [{ count: () => 'one' }] });
       // @ts-expect-error the detail of an event is the value of its output
-      createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
+      host.createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
       // @ts-expect-error an input is not an event
-      createComponent(Card, { target: document.body, events: [{ heading: () => 'x' }] });
+      host.createComponent(Card, { target: document.body, events: [{ heading: () => 'x' }] });
       // @ts-expect-error the value of a directive input has its type
-      createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ text: () => 1 }] }] });
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ text: () => 1 }] }] });
       // @ts-expect-error the detail of a directive event is the value of its output
-      createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ toggled: event => event.detail.toUpperCase() }] }] });
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ toggled: event => event.detail.toUpperCase() }] }] });
     };
 
     expect(check).toBeTypeOf('function');

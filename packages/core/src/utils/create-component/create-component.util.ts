@@ -31,37 +31,26 @@ type Bindings = Pick<RenderElementDirective, 'attributes' | 'events'> & {
 };
 
 /**
- * Creates a component and appends it to the target, binding its inputs and its events and applying directives to it, as a template
- * does for the tag of the component: the inputs are set before the element is mounted, so that its `onInit` reads them, the directives
- * are applied once it is.
+ * Creates a component and appends it to the target, binding its inputs and its events, applying directives to it and appending the
+ * content to it, as a template does for the tag of the component: the inputs are set before the element is mounted, so that its `onInit`
+ * reads them, the directives are applied and the content appended once it is. Implements `createComponent` of `CustomElement` and of
+ * `CustomDirective`.
  *
- * The value of an input is given by a getter, run in an effect: the input follows the signals the getter reads. A group of inputs or of
- * events with a `condition` is bound only while the condition holds, as an `@if` written in the tag: as soon as it doesn't, its inputs go
- * back to their default value and its events are no longer listened to. A directive with a `condition` is applied while the condition
- * holds, and a new instance of it each time the condition holds again.
+ * The context of the component is a child of the context of its owner, so it is cleared along with it; `destroy` clears it earlier,
+ * removing it from the context the owner has at that moment, which is not the one it had at the creation when the owner was not
+ * connected yet. The creation is not tracked by an effect it is called in.
  *
- * The component lives until `destroy` is called on the returned reference: the creation is not tracked by an effect it is called in.
- *
- * @example
- * ```ts
- * const toast = createComponent(ToastComponent, {
- *   target: document.body,
- *   properties: [{ message: () => this.message() }, { condition: () => this.urgent(), level: () => 'error' }],
- *   events: [{ closed: () => toast.destroy() }],
- *   directives: [TooltipDirective]
- * });
- * ```
- *
+ * @param owner - Returns the current context of the component or of the directive creating the component.
  * @param component - The class of the component, decorated with `@WebComponent`.
- * @param options - The target the component is appended to, the groups of its inputs and of its events, and the directives applied to it.
+ * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives applied to it and its content.
  * @returns The element of the component, along with the function destroying it.
  * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
  * a custom directive, or when it is already a host directive of the component.
  */
-export function createComponent<
+export function _createComponent<
   Component extends CustomElement, 
-  const Directives extends readonly CustomDirective[] = []
->(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component> {
+  Directives extends readonly CustomDirective[]
+>(owner: NoArgsFunction<_Context>, component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component> {
   const selector = getSelector(component);
   const bindings = collectBindings(options.properties, options.events);
   const entries = options.directives;
@@ -75,7 +64,12 @@ export function createComponent<
       }
 
       const { attributes, events, conditionalBindings } = collectBindings(entry.properties, entry.events);
-      const directive = { selector: entry.directive, attributes, events, conditionalBindings };
+      const directive = { 
+        selector: entry.directive, 
+        attributes, 
+        events, 
+        conditionalBindings 
+      };
       entry.condition
         ? bindings.conditionalBindings.push({ branches: [{ condition: entry.condition, attributes: [], events: [], conditionalBindings: [], directives: [directive] }] })
         : bindings.directives.push(directive);
@@ -84,13 +78,27 @@ export function createComponent<
 
   // The root of the component's own bindings: it is never a scope of identifiers, only the owner of their cleanup
   const context = new _Context({ createElement: _createElement } as unknown as _Context);
+  // Registered before the render, so that what a render failing halfway leaves is cleared along with the owner
+  owner().addChild(context);
   const { attributes, events, conditionalBindings, directives } = bindings;
-  untracked(() => _renderElement(options.target, context, null, selector, attributes, events, conditionalBindings, directives, [], [], null));
+  const element = untracked(() => {
+    _renderElement(options.target, context, null, selector, attributes, events, conditionalBindings, directives, [], [], null);
+    // The element is the first node tracked by the context, the only one rendered in it
+    const element = context.getNodes()[0] as Component;
+    // Appended once the directives are applied, as a template renders the children of a tag: they are not tracked, so they stay in the element
+    if (options.content?.length) {
+      element.append(...options.content);
+    }
+
+    return element;
+  });
 
   return {
-    // The element is the first node tracked by the context, the only one rendered in it
-    element: context.getNodes()[0] as Component,
-    destroy: () => context.clear()
+    element,
+    destroy: () => {
+      owner().removeChild(context);
+      context.clear();
+    }
   };
 }
 
@@ -103,7 +111,7 @@ export function createComponent<
  * @returns The bindings collected.
  * @throws When an input is bound by more than one group.
  */
-function collectBindings<Component extends CustomElement>(properties: BindingGroup<BindableProperties<NoInfer<Component>>>[] | undefined, events: BindingGroup<BindableEvents<NoInfer<Component>>>[] | undefined): Bindings {
+function collectBindings<Target extends CustomElement | CustomDirective>(properties: BindingGroup<BindableProperties<NoInfer<Target>>>[] | undefined, events: BindingGroup<BindableEvents<NoInfer<Target>>>[] | undefined): Bindings {
   const bindings: Bindings = { attributes: [], events: [], conditionalBindings: [], directives: [] };
   // A group unbinding an input resets it to its default value, even if another group still binds it
   const bound = new Set<string>();

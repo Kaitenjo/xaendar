@@ -1,4 +1,8 @@
 import type { ApiPackage } from '../api.data';
+import { MAIN } from '../../../installation/installation.snippets';
+import { COMPUTED, EQUALS, EXTRACT_SIGNAL_TYPE, INTROSPECTION, SIGNALS_SETUP, SIGNAL_EQUAL, STATE, STATE_WRAPPER, WATCHED_CLOCK, WATCHER_EFFECT } from './signals.snippets';
+import { DEV_MODE } from '../../../signals/advanced/advanced.snippets';
+import { COMPUTED_THIS } from '../../../signals/computed/computed.snippets';
 
 /**
  * The symbols of `@xaendar/signals`.
@@ -15,13 +19,13 @@ export const SIGNALS_API: ApiPackage = {
           name: 'devMode',
           group: 'options',
           signature: 'devMode?: boolean',
-          snippets: ['signals/dev-mode.ts']
+          snippets: [DEV_MODE]
         }
       ],
       usage: [
-        { key: 'entryPoint', snippets: ['installation/main.ts'] },
+        { key: 'entryPoint', snippets: [MAIN] },
         { key: 'missing', snippets: ['installation/missing-signals-error.txt'] },
-        { key: 'specs', snippets: ['api/signals/signals-setup.ts'] }
+        { key: 'specs', snippets: [SIGNALS_SETUP] }
       ],
       guides: ['installation', 'signals/advanced']
     },
@@ -53,8 +57,8 @@ export const SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'equality', snippets: ['api/signals/equals.ts'] },
-        { key: 'source', snippets: ['api/signals/watched-clock.ts'] }
+        { key: 'equality', snippets: [EQUALS] },
+        { key: 'source', snippets: [WATCHED_CLOCK] }
       ],
       guides: ['signals/options', 'signals/overview', 'signals/computed', 'components/inputs']
     },
@@ -80,7 +84,7 @@ export const SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'reusable', snippets: ['api/signals/signal-equal.ts'] }
+        { key: 'reusable', snippets: [SIGNAL_EQUAL] }
       ],
       guides: ['signals/overview', 'signals/options']
     },
@@ -89,7 +93,7 @@ export const SIGNALS_API: ApiPackage = {
       kind: 'type',
       signature: 'type ExtractSignalType<T> = T extends Signal.State<infer U> ? U : never;',
       usage: [
-        { key: 'deriving', snippets: ['api/signals/extract-signal-type.ts'] }
+        { key: 'deriving', snippets: [EXTRACT_SIGNAL_TYPE] }
       ]
     },
     {
@@ -125,8 +129,8 @@ export const SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'direct', snippets: ['api/signals/state.ts'] },
-        { key: 'wrapper', snippets: ['api/signals/state-wrapper.ts'] }
+        { key: 'direct', snippets: [STATE] },
+        { key: 'wrapper', snippets: [STATE_WRAPPER] }
       ],
       guides: ['signals/advanced', 'signals/overview']
     },
@@ -144,7 +148,7 @@ export const SIGNALS_API: ApiPackage = {
           name: 'callback',
           group: 'parameters',
           signature: 'callback: (this: Signal.Computed<T>) => T',
-          snippets: ['signals/computed-this.ts']
+          snippets: [COMPUTED_THIS]
         },
         {
           name: 'options',
@@ -158,7 +162,7 @@ export const SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'direct', snippets: ['api/signals/computed.ts'] }
+        { key: 'direct', snippets: [COMPUTED] }
       ],
       guides: ['signals/computed', 'signals/advanced']
     },
@@ -235,8 +239,8 @@ export const SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'effect', snippets: ['api/signals/watcher-effect.ts'] },
-        { key: 'introspection', snippets: ['api/signals/introspection.ts'] },
+        { key: 'effect', snippets: [WATCHER_EFFECT] },
+        { key: 'introspection', snippets: [INTROSPECTION] },
         { key: 'frozen', snippets: ['api/signals/frozen-errors.txt'] }
       ],
       guides: ['signals/advanced', 'signals/untracked', 'signals/effects']

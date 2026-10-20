@@ -6,6 +6,7 @@
 @import { ExpressionTableComponent } from '../../../examples/templates/expressions/expression-table/expression-table.xd.component.ts'
 @import { ShadowedGlobalsComponent } from '../../../examples/templates/expressions/shadowed-globals/shadowed-globals.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { MODULE_CONSTANT } from './expressions.snippets.ts'
 
 <span @@i18n(key="pages.templates.expressions.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.templates.expressions.title") />
@@ -25,7 +26,7 @@
 
 <h2 @@i18n(key="pages.templates.expressions.whatItCanRead.title") />
 <p @@i18n(key="pages.templates.expressions.whatItCanRead.p1") />
-<docs-code snippet="templates/module-constant.ts" />
+<docs-code snippet="{MODULE_CONSTANT}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.templates.expressions.edgeCases.title") />

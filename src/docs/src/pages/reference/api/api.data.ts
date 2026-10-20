@@ -1,5 +1,6 @@
 import type { PagePath } from '../../../core/routes/routes';
 import { API_REFERENCE_PATH } from '../../../core/routes/routes';
+import type { SourceFile } from '../../../core/sources/source-files.utils';
 import { BUILD_TOOLS_API } from './packages/build-tools.data';
 import { COMMON_API } from './packages/common.data';
 import { CORE_SIGNALS_API } from './packages/core-signals.data';
@@ -35,9 +36,9 @@ export type ApiMember = {
    */
   readonly signature: string;
   /**
-   * The snippets shown below its description, by path relative to `src/snippets`.
+   * The snippets shown below its description: source files exported by a `*.snippets.ts` module, or paths relative to `src/snippets`.
    */
-  readonly snippets?: readonly string[];
+  readonly snippets?: ReadonlyArray<SourceFile | string>;
 };
 
 /**
@@ -49,9 +50,9 @@ export type ApiUsage = {
    */
   readonly key: string;
   /**
-   * The snippets shown below its text, by path relative to `src/snippets`.
+   * The snippets shown below its text: source files exported by a `*.snippets.ts` module, or paths relative to `src/snippets`.
    */
-  readonly snippets?: readonly string[];
+  readonly snippets?: ReadonlyArray<SourceFile | string>;
 };
 
 /**
@@ -152,7 +153,7 @@ export const API: readonly ApiPackage[] = [CORE_API, CORE_SIGNALS_API, SIGNALS_A
 
 /**
  * Names the files of a package: its texts (`src/i18n/api/<lang>/<file>.json`) and its snippets
- * (`src/snippets/api/<file>/`).
+ * (`packages/<file>.snippets.ts`, and the files of `src/snippets/api/<file>/`).
  *
  * @param name - The name of the package.
  * @returns The name without the scope, its slashes replaced by dashes, as in `core-signals`.

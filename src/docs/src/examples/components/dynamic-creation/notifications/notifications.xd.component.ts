@@ -1,4 +1,4 @@
-import { createComponent, CustomElement, Query, WebComponent } from '@xaendar/core';
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import type { ComponentRef } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
@@ -6,7 +6,7 @@ import { NewestDirective } from './newest.directive';
 import { NotificationComponent } from './notification.xd.component';
 
 /**
- * A stack of notifications, each one created in code with createComponent.
+ * A stack of notifications, each one created in code with this.createComponent.
  */
 @WebComponent({
   selector: 'ex-notifications',
@@ -47,15 +47,14 @@ export class NotificationsComponent extends CustomElement {
 
     const id = this._newest() + 1;
     this._newest.set(id);
-    const notification = createComponent(NotificationComponent, {
+    const notification = this.createComponent(NotificationComponent, {
       target: stack,
-      properties: [
-        { message: () => `Notification #${id}` },
-        { condition: () => this.urgent(), level: () => 'urgent' }
-      ],
+      properties: [{ condition: () => this.urgent(), level: () => 'urgent' }],
       // A body in braces: returning the call would make the type of notification depend on itself
       events: [{ dismissed: () => { this._dismiss(notification); } }],
-      directives: [{ directive: NewestDirective, condition: () => this._newest() === id }]
+      directives: [{ directive: NewestDirective, condition: () => this._newest() === id }],
+      // Projected into the slot of the notification
+      content: [document.createTextNode(`Notification #${id}`)]
     });
     this._notifications.add(notification);
     this.open.set(this._notifications.size);
@@ -80,13 +79,9 @@ export class NotificationsComponent extends CustomElement {
   }
 
   /**
-   * Destroys the notifications still open: they are not part of the template, so nothing else would.
+   * Forgets the notifications: they are destroyed along with the stack, which created them.
    */
   public onDestroy(): void {
-    for (const notification of this._notifications) {
-      notification.destroy();
-    }
-
     this._notifications.clear();
     this.open.set(0);
   }

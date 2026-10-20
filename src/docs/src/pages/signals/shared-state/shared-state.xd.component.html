@@ -7,6 +7,7 @@
 @import { CartSummaryComponent } from '../../../examples/signals/shared-state/cart/cart-summary.xd.component.ts'
 @import { SignalMembersComponent } from '../../../examples/signals/shared-state/signal-members/signal-members.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { MEMBERS, STORE } from './shared-state.snippets.ts'
 
 <span @@i18n(key="pages.signals.sharedState.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.sharedState.title") />
@@ -21,7 +22,7 @@
 
 <h3 @@i18n(key="pages.signals.sharedState.aStoreIsA.subtitle1") />
 <p @@i18n(key="pages.signals.sharedState.aStoreIsA.p2") />
-<docs-code snippet="signals/store.ts" />
+<docs-code snippet="{STORE}" />
 
 <h2 @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.title") />
 <p @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.p1") />
@@ -30,7 +31,7 @@
   <ex-signal-members />
 </docs-example>
 <p @@i18n(key="pages.signals.sharedState.exposingSharedSignalsTo.p2") />
-<docs-code snippet="signals/members.ts" />
+<docs-code snippet="{MEMBERS}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.signals.sharedState.edgeCases.title") />

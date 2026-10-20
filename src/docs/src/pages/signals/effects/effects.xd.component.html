@@ -9,13 +9,14 @@
 @import { EffectErrorsComponent } from '../../../examples/signals/effects/errors/errors.xd.component.ts'
 @import { ComponentEffectsComponent } from '../../../examples/signals/effects/component-effects/component-effects.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { EFFECT_API, INFINITE_LOOP } from './effects.snippets.ts'
 
 <span @@i18n(key="pages.signals.effects.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.effects.title") />
 <p @@i18n(key="pages.signals.effects.lead") class="lead" />
 
 <h2 @@i18n(key="pages.signals.effects.creatingAnEffect.title") />
-<docs-code snippet="signals/effect-api.ts" />
+<docs-code snippet="{EFFECT_API}" />
 <p @@i18n(key="pages.signals.effects.creatingAnEffect.p1") />
 
 <h2 @@i18n(key="pages.signals.effects.batching.title") />
@@ -65,7 +66,7 @@
       heading="{translations().pages.signals.effects.edgeCases.callout2.heading}" />
     <docs-callout-item heading="{translations().pages.signals.effects.edgeCases.callout3.heading}">
       <p @@i18n(key="pages.signals.effects.edgeCases.callout3.p1") />
-      <docs-code snippet="signals/infinite-loop.ts" />
+      <docs-code snippet="{INFINITE_LOOP}" />
     </docs-callout-item>
   </docs-callout>
   <docs-callout @@i18n(key="pages.signals.effects.edgeCases.callout5.body") kind="issue"

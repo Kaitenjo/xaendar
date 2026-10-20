@@ -18,7 +18,8 @@ const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 type TestElement = HTMLElement & {
   _context: _Context,
   connectedCallback(): void,
-  effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction
+  effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction,
+  createComponent: CustomElement['createComponent']
 };
 
 /**
@@ -66,6 +67,24 @@ function createWithHooks(hooks: { onInit?: (element: TestElement) => void, after
 
   return { element: document.createElement(name) as unknown as TestElement, context, render };
 }
+
+/**
+ * A component created by the components under test, recording its destruction.
+ */
+const Child = (() => {
+  const klass = class extends CustomElement {
+    public readonly destroyed = vi.fn();
+
+    public onDestroy(): void {
+      this.destroyed();
+    }
+  };
+  Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector: 'x-base-created' } });
+  _defineRender(klass, () => new _Context({} as never));
+  customElements.define('x-base-created', klass);
+
+  return klass;
+})();
 
 describe('CustomElement', () => {
   it('attaches an open shadow root', () => {
@@ -430,6 +449,49 @@ describe('CustomElement', () => {
         expect(onCleanup).toHaveBeenCalledOnce();
         element.remove();
       });
+    });
+  });
+
+  describe('createComponent', () => {
+    it('destroys the component on disconnection, after onDestroy', () => {
+      const onDestroy = vi.fn();
+      const { element } = createWithHooks({ onDestroy });
+      document.body.appendChild(element);
+      const { element: child } = element.createComponent(Child, { target: document.body });
+
+      element.remove();
+
+      expect(child.isConnected).toBe(false);
+      expect(child.destroyed).toHaveBeenCalledOnce();
+      expect(onDestroy.mock.invocationCallOrder[0]).toBeLessThan(child.destroyed.mock.invocationCallOrder[0]);
+    });
+
+    it('can be created in onInit, before the first render, moving to the context of the render', () => {
+      let child: InstanceType<typeof Child> | undefined;
+      const { element, context } = createWithHooks({
+        onInit: element => {
+          child = element.createComponent(Child, { target: document.body }).element;
+        }
+      });
+
+      document.body.appendChild(element);
+      expect(context.getChildren()).toHaveLength(1);
+
+      element.remove();
+      expect(child!.isConnected).toBe(false);
+    });
+
+    it('returns a reference destroying the component ahead of the disconnection', () => {
+      const { element, context } = createWithHooks({});
+      document.body.appendChild(element);
+      const { element: child, destroy } = element.createComponent(Child, { target: document.body });
+
+      destroy();
+      expect(child.isConnected).toBe(false);
+      expect(context.getChildren()).toHaveLength(0);
+
+      element.remove();
+      expect(child.destroyed).toHaveBeenCalledOnce();
     });
   });
 });

@@ -7,6 +7,7 @@
 @import { ForeignElementComponent } from '../../../examples/components/registration/foreign-element/foreign-element.xd.component.ts'
 @import { LazyLoadingComponent } from '../../../examples/components/registration/lazy-loading/lazy-loading.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { COMPONENTS_BOOTSTRAP } from './registration.snippets.ts'
 
 <span @@i18n(key="pages.components.registration.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.registration.title") />
@@ -34,7 +35,7 @@
   </li>
   <li>
     <span @@i18n(key="pages.components.registration.usingAComponentIn.li2") />
-    <docs-code snippet="components/bootstrap.ts" />
+    <docs-code snippet="{COMPONENTS_BOOTSTRAP}" />
   </li>
 </ol>
 <p @@i18n(key="pages.components.registration.usingAComponentIn.p2") />

@@ -230,6 +230,25 @@ export class _Context {
   }
 
   /**
+   * Moves the cleanup functions and the child contexts of this context to another one, leaving this one empty: a staging
+   * context, collecting what is created before the context it belongs to exists, hands them over to it.
+   *
+   * @param context - The context receiving the cleanup functions and the child contexts.
+   */
+  public moveTo(context: _Context): void {
+    if (this._unlistenFns.length) {
+      context.addUnlistener(...this._unlistenFns);
+    }
+
+    for (let i = 0; i < this._children.length; i++) {
+      context.addChild(this._children[i]);
+    }
+
+    this._unlistenFns = [];
+    this._children = [];
+  }
+
+  /**
    * Clear this context by invoking all registered cleanup functions,
    * recursively destroying child contexts, and clearing internal state.
    *

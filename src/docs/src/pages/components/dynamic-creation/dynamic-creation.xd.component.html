@@ -5,6 +5,8 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { NotificationsComponent } from '../../../examples/components/dynamic-creation/notifications/notifications.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from './dynamic-creation.snippets.ts'
+@import { CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS } from '../../reference/api/packages/core.snippets.ts'
 
 <span @@i18n(key="pages.components.dynamicCreation.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.dynamicCreation.title") />
@@ -12,17 +14,21 @@
 
 <h2 @@i18n(key="pages.components.dynamicCreation.creating.title") />
 <p @@i18n(key="pages.components.dynamicCreation.creating.p1") />
-<docs-code snippet="components/create-component.ts" />
+<docs-code snippet="{CREATE_COMPONENT}" />
 <p @@i18n(key="pages.components.dynamicCreation.creating.p2") />
 
 <h2 @@i18n(key="pages.components.dynamicCreation.bindings.title") />
 <p @@i18n(key="pages.components.dynamicCreation.bindings.p1") />
-<docs-code snippet="api/core/create-component-groups.ts" />
+<docs-code snippet="{CREATE_COMPONENT_GROUPS}" />
 <p @@i18n(key="pages.components.dynamicCreation.bindings.p2") />
 
 <h2 @@i18n(key="pages.components.dynamicCreation.directives.title") />
 <p @@i18n(key="pages.components.dynamicCreation.directives.p1") />
-<docs-code snippet="api/core/create-component-directives.ts" />
+<docs-code snippet="{CREATE_COMPONENT_DIRECTIVES}" />
+
+<h2 @@i18n(key="pages.components.dynamicCreation.content.title") />
+<p @@i18n(key="pages.components.dynamicCreation.content.p1") />
+<docs-code snippet="{CREATE_COMPONENT_CONTENT}" />
 
 <h2 @@i18n(key="pages.components.dynamicCreation.destroying.title") />
 <p @@i18n(key="pages.components.dynamicCreation.destroying.p1") />
@@ -76,6 +82,10 @@
       <tr>
         <td @@i18n(key="pages.components.dynamicCreation.summary.td9") />
         <td @@i18n(key="pages.components.dynamicCreation.summary.td10") />
+      </tr>
+      <tr>
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td11") />
+        <td @@i18n(key="pages.components.dynamicCreation.summary.td12") />
       </tr>
     </tbody>
   </table>

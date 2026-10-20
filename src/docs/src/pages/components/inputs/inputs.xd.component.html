@@ -10,13 +10,14 @@
 @import { InitTimingComponent } from '../../../examples/components/inputs/init-timing/init-timing.xd.component.ts'
 @import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from './inputs.snippets.ts'
 
 <span @@i18n(key="pages.components.inputs.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.inputs.title") />
 <p @@i18n(key="pages.components.inputs.lead") class="lead" />
 
 <h2 @@i18n(key="pages.components.inputs.declaringAnInput.title") />
-<docs-code snippet="components/property-options.ts" />
+<docs-code snippet="{PROPERTY_OPTIONS}" />
 <p @@i18n(key="pages.components.inputs.declaringAnInput.p1") />
 <docs-example name="components/inputs/property-basics"
   heading="{translations().pages.components.inputs.declaringAnInput.example1}">
@@ -24,7 +25,7 @@
 </docs-example>
 <p @@i18n(key="pages.components.inputs.declaringAnInput.p2") />
 <p @@i18n(key="pages.components.inputs.declaringAnInput.p3") />
-<docs-code snippet="components/property-type.ts" />
+<docs-code snippet="{PROPERTY_TYPE}" />
 
 <h2 @@i18n(key="pages.components.inputs.staticValuesAndExpressions.title") />
 <p @@i18n(key="pages.components.inputs.staticValuesAndExpressions.p1") />
@@ -71,11 +72,11 @@
       heading="{translations().pages.components.inputs.edgeCases.callout1.heading}" />
     <docs-callout-item heading="{translations().pages.components.inputs.edgeCases.callout2.heading}">
       <p @@i18n(key="pages.components.inputs.edgeCases.callout2.p1") />
-      <docs-code snippet="components/read-only-input.ts" />
+      <docs-code snippet="{READ_ONLY_INPUT}" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.components.inputs.edgeCases.callout3.heading}">
       <p @@i18n(key="pages.components.inputs.edgeCases.callout3.p1") />
-      <docs-code snippet="components/transform-type.ts" />
+      <docs-code snippet="{TRANSFORM_TYPE}" />
     </docs-callout-item>
     <docs-callout-item @@i18n(key="pages.components.inputs.edgeCases.callout5.body")
       heading="{translations().pages.components.inputs.edgeCases.callout5.heading}" />

@@ -1,4 +1,5 @@
 import type { ApiPackage } from '../api.data';
+import { ENTRIES, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_VALID_CUSTOM_ELEMENT_NAME, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, VALUES } from './common.snippets';
 
 /**
  * The symbols of `@xaendar/common`.
@@ -23,38 +24,38 @@ export const COMMON_API: ApiPackage = {
         { name: 'push', group: 'methods', signature: 'push(element: T): number' },
         { name: 'pop', group: 'methods', signature: 'pop(): T | undefined' }
       ],
-      usage: [{ key: 'pushingAndPopping', snippets: ['api/common/stack.ts'] }]
+      usage: [{ key: 'pushingAndPopping', snippets: [STACK] }]
     },
     {
       name: 'toPascalCase',
       kind: 'function',
       signature: 'function toPascalCase(str: string): string',
-      usage: [{ key: 'converting', snippets: ['api/common/to-pascal-case.ts'] }]
+      usage: [{ key: 'converting', snippets: [TO_PASCAL_CASE] }]
     },
     {
       name: 'toKebabCase',
       kind: 'function',
       signature: 'function toKebabCase(str: string): string',
-      usage: [{ key: 'converting', snippets: ['api/common/to-kebab-case.ts'] }]
+      usage: [{ key: 'converting', snippets: [TO_KEBAB_CASE] }]
     },
     {
       name: 'indent',
       kind: 'function',
       signature: `function indent(lines: string): string;
 function indent(lines: string[]): string[];`,
-      usage: [{ key: 'indenting', snippets: ['api/common/indent.ts'] }]
+      usage: [{ key: 'indenting', snippets: [INDENT] }]
     },
     {
       name: 'isNonEmpty',
       kind: 'function',
       signature: 'function isNonEmpty<Obj extends object>(object: Obj): object is NonEmptyObject<Obj>',
-      usage: [{ key: 'narrowing', snippets: ['api/common/is-non-empty.ts'] }]
+      usage: [{ key: 'narrowing', snippets: [IS_NON_EMPTY] }]
     },
     {
       name: 'isEmpty',
       kind: 'function',
       signature: 'function isEmpty<Obj extends object>(object: Obj): boolean',
-      usage: [{ key: 'whatCounts', snippets: ['api/common/is-empty.ts'] }]
+      usage: [{ key: 'whatCounts', snippets: [IS_EMPTY] }]
     },
     {
       name: 'keys',
@@ -62,7 +63,7 @@ function indent(lines: string[]): string[];`,
       signature: `function keys<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`>(object: Obj): Key[];
 function keys(object: undefined): undefined;
 function keys<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`>(object: Obj | undefined): Key[] | undefined;`,
-      usage: [{ key: 'typedKeys', snippets: ['api/common/keys.ts'] }]
+      usage: [{ key: 'typedKeys', snippets: [KEYS] }]
     },
     {
       name: 'entries',
@@ -70,7 +71,7 @@ function keys<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`
       signature: `function entries<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`, Value extends Obj[keyof Obj] = Obj[keyof Obj]>(object: Obj): [Key, Value][];
 function entries(object: undefined): undefined;
 function entries<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>}\`, Value extends Obj[keyof Obj] = Obj[keyof Obj]>(object: Obj | undefined): [Key, Value][] | undefined;`,
-      usage: [{ key: 'typedPairs', snippets: ['api/common/entries.ts'] }]
+      usage: [{ key: 'typedPairs', snippets: [ENTRIES] }]
     },
     {
       name: 'values',
@@ -78,19 +79,19 @@ function entries<Obj extends object, Key extends \`\${Exclude<keyof Obj, symbol>
       signature: `function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key] = Obj[Key]>(object: Obj): Value[];
 function values(object: undefined): undefined;
 function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key] = Obj[Key]>(object: Obj | undefined): Value[] | undefined;`,
-      usage: [{ key: 'typedValues', snippets: ['api/common/values.ts'] }]
+      usage: [{ key: 'typedValues', snippets: [VALUES] }]
     },
     {
       name: 'removeItem',
       kind: 'function',
       signature: 'function removeItem<T>(array: T[], item: T): boolean',
-      usage: [{ key: 'removing', snippets: ['api/common/remove-item.ts'] }]
+      usage: [{ key: 'removing', snippets: [REMOVE_ITEM] }]
     },
     {
       name: 'slice',
       kind: 'function',
       signature: 'function slice(value: string, start?: number, end?: number): string',
-      usage: [{ key: 'keepingAPart', snippets: ['api/common/slice.ts'] }]
+      usage: [{ key: 'keepingAPart', snippets: [SLICE] }]
     },
     {
       name: 'isValidCustomElementName',
@@ -105,14 +106,14 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
           snippets: ['api/common/is-valid-custom-element-name-errors.txt']
         }
       ],
-      usage: [{ key: 'checking', snippets: ['api/common/is-valid-custom-element-name.ts'] }],
+      usage: [{ key: 'checking', snippets: [IS_VALID_CUSTOM_ELEMENT_NAME] }],
       guides: ['components/registration']
     },
     {
       name: 'matchesCustomElementPattern',
       kind: 'function',
       signature: 'function matchesCustomElementPattern(tagName: string, patterns: readonly string[]): boolean',
-      usage: [{ key: 'otherLibraries', snippets: ['api/common/matches-custom-element-pattern.ts'] }],
+      usage: [{ key: 'otherLibraries', snippets: [MATCHES_CUSTOM_ELEMENT_PATTERN] }],
       guides: ['components/registration']
     }
   ]

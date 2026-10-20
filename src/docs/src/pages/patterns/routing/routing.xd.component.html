@@ -4,6 +4,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { MiniRouterComponent } from '../../../examples/patterns/routing/mini-router/mini-router.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { HASH_ROUTER } from './routing.snippets.ts'
 
 <span @@i18n(key="pages.patterns.routing.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.routing.title") />
@@ -19,7 +20,7 @@
 
 <h2 @@i18n(key="pages.patterns.routing.readingTheUrl.title") />
 <p @@i18n(key="pages.patterns.routing.readingTheUrl.p1") />
-<docs-code snippet="patterns/hash-router.ts" />
+<docs-code snippet="{HASH_ROUTER}" />
 <p @@i18n(key="pages.patterns.routing.readingTheUrl.p2") />
 
 <section class="edge-cases">

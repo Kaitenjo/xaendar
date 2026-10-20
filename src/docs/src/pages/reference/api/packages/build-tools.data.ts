@@ -1,4 +1,7 @@
 import type { ApiPackage } from '../api.data';
+import { INSTALLATION_VITE_CONFIG } from '../../../installation/installation.snippets';
+import { BUILD_TOOLS_VITE_CONFIG } from './build-tools.snippets';
+import { CSS_MINIFY } from '../../../tools/build/build.snippets';
 
 /**
  * The symbols of `@xaendar/build-tools`.
@@ -15,14 +18,14 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'customElements',
           group: 'options',
           signature: 'customElements?: readonly string[]',
-          snippets: ['api/build-tools/vite.config.ts', 'components/not-imported-error.txt', 'api/build-tools/imported-and-declared-error.txt']
+          snippets: [BUILD_TOOLS_VITE_CONFIG, 'components/not-imported-error.txt', 'api/build-tools/imported-and-declared-error.txt']
         }
       ],
       usage: [
-        { key: 'configuration', snippets: ['installation/vite.config.ts', 'api/build-tools/plugin-order-error.txt'] },
+        { key: 'configuration', snippets: [INSTALLATION_VITE_CONFIG, 'api/build-tools/plugin-order-error.txt'] },
         { key: 'cli', snippets: ['api/build-tools/xaendar.json'] },
         { key: 'errors', snippets: ['tools/plugin-errors.txt'] },
-        { key: 'styles', snippets: ['tools/css-minify.ts', 'components/scss-error.txt'] }
+        { key: 'styles', snippets: [CSS_MINIFY, 'components/scss-error.txt'] }
       ],
       guides: ['tools/build', 'installation', 'tools/cli', 'components/registration']
     },

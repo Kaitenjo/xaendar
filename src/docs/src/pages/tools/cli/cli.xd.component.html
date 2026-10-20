@@ -2,6 +2,7 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { GENERATED_COMPONENT } from './cli.snippets.ts'
 
 <span @@i18n(key="pages.tools.cli.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.tools.cli.title") />
@@ -25,7 +26,7 @@
 <h2 @@i18n(key="pages.tools.cli.xdComponent.title") />
 <docs-code snippet="tools/component-command.sh" />
 <p @@i18n(key="pages.tools.cli.xdComponent.p1") />
-<docs-code snippet="tools/generated-component.ts" />
+<docs-code snippet="{GENERATED_COMPONENT}" />
 <p @@i18n(key="pages.tools.cli.xdComponent.p2") />
 
 <section class="edge-cases">

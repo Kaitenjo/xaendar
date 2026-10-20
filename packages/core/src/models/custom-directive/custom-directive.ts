@@ -1,9 +1,13 @@
-import { NoArgsVoidFunction } from '@xaendar/types';
+import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import type { ComponentRef } from '../../types/create-component/component-ref.type';
+import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { _Context } from '../../utils/context/context.util';
+import { _createComponent } from '../../utils/create-component/create-component.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
+import type { CustomElement } from '../custom-element/custom-element';
 
 /**
  * Base class for custom directives: behaviors applied to an existing HTML element
@@ -70,20 +74,24 @@ export abstract class CustomDirective<T extends Element = Element> {
   }
 
   /**
+   * Optional lifecycle hook, invoked when the template runtime starts the directive,
+   * once its inputs have been bound.
+   */
+  public onInit?(): void;
+
+  /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
    * Invokes `onInit`, if declared, then binds the attributes, the classes and the events of the element declared by
    * `@HostProperty` and `@HostEvent`.
    *
-   * @param context - The context of the element the directive is applied to: the effects created
-   *   via {@link effect} are registered on it, so they are disposed when it is cleared.
+   * @param context - The context of the element the directive is applied to: the effects created via {@link effect}
+   *   and the components created via {@link createComponent} are registered on it, so they are disposed when it is cleared.
    */
   public [DIRECTIVE_CONNECT](context: _Context): void {
-    // The effects created before the connection wait in the staging context: they move to the one of the element
-    const unlistenFns = this._context.getUnlistenFns();
+    // The effects and the components created before the connection wait in the staging context: they move to the one of the element
+    const staging = this._context;
     this._context = context;
-    if (unlistenFns.length) {
-      context.addUnlistener(...unlistenFns);
-    }
+    staging.moveTo(context);
     this.onInit?.();
     _bindHost(this, this._element, context);
   }
@@ -96,18 +104,6 @@ export abstract class CustomDirective<T extends Element = Element> {
   public [DIRECTIVE_DISCONNECT](): void {
     this.onDestroy?.();
   }
-
-  /**
-   * Optional lifecycle hook, invoked when the template runtime starts the directive,
-   * once its inputs have been bound.
-   */
-  public onInit?(): void;
-
-  /**
-   * Optional lifecycle hook, invoked when the context of the directive is destroyed,
-   * before the effects created via {@link effect} are disposed.
-   */
-  public onDestroy?(): void;
 
   /**
    * Creates a signal effect bound to the lifecycle of this directive:
@@ -128,6 +124,43 @@ export abstract class CustomDirective<T extends Element = Element> {
       this._context.removeUnlistener(stop);
       stop();
     };
+  }
+
+  /**
+   * Creates a component bound to the lifecycle of this directive and appends it to the target, binding its inputs and its
+   * events, applying directives to it and appending the content to it, as a template does for the tag of the component:
+   * the inputs are set before the element is mounted, so that its `onInit` reads them, the directives are applied and the
+   * content appended once it is.
+   *
+   * The value of an input is given by a getter, run in an effect: the input follows the signals the getter reads. A group of
+   * inputs or of events with a `condition` is bound only while the condition holds, as an `@if` written in the tag: as soon as
+   * it doesn't, its inputs go back to their default value and its events are no longer listened to. A directive with a
+   * `condition` is applied while the condition holds, and a new instance of it each time the condition holds again.
+   *
+   * The component is destroyed when this directive is disconnected, right after the effects created via {@link effect}, or
+   * earlier by `destroy` of the returned reference. It can be created at any time: in the constructor, in a field initializer,
+   * or in `onInit`. The creation is not tracked by an effect it is called in.
+   *
+   * @example
+   * ```ts
+   * public onInit(): void {
+   *   this.createComponent(TooltipComponent, {
+   *     target: document.body,
+   *     properties: [{ text: () => this.text() }],
+   *     content: [this.element.cloneNode(true)]
+   *   });
+   * }
+   * ```
+   *
+   * @param component - The class of the component, decorated with `@WebComponent`.
+   * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives
+   *   applied to it and its content.
+   * @returns The element of the component, along with the function destroying it ahead of the disconnection.
+   * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
+   * a custom directive, or when it is already a host directive of the component.
+   */
+  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component> {
+    return _createComponent(() => this._context, component, options);
   }
 
   /**
@@ -157,4 +190,11 @@ export abstract class CustomDirective<T extends Element = Element> {
       composed: event.composed
     }));
   }
+
+  /**
+   * Optional lifecycle hook, invoked when the context of the directive is destroyed,
+   * before the effects created via {@link effect} are disposed and the components created via
+   * {@link createComponent} are destroyed.
+   */
+  public onDestroy?(): void;
 }

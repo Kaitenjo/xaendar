@@ -6,6 +6,7 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { DirectiveBasicsComponent } from '../../../examples/directives/overview/directive-basics/directive-basics.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { DIRECTIVE_REGISTRATION } from './overview.snippets.ts'
 
 <span @@i18n(key="pages.directives.overview.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.directives.overview.title") />
@@ -84,7 +85,7 @@
 
 <h2 @@i18n(key="pages.directives.overview.declaringAndRegistering.title") />
 <p @@i18n(key="pages.directives.overview.declaringAndRegistering.p1") />
-<docs-code snippet="directives/directive-registration.ts" />
+<docs-code snippet="{DIRECTIVE_REGISTRATION}" />
 <docs-callout @@i18n(key="pages.directives.overview.declaringAndRegistering.callout1.body") kind="tip"
   heading="{translations().pages.directives.overview.declaringAndRegistering.callout1.heading}" />
 

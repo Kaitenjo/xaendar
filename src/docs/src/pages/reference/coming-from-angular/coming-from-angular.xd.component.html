@@ -2,13 +2,14 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { ANGULAR_COMPONENT } from './coming-from-angular.snippets.ts'
 
 <span @@i18n(key="pages.reference.comingFromAngular.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.reference.comingFromAngular.title") />
 <p @@i18n(key="pages.reference.comingFromAngular.lead") class="lead" />
 
 <h2 @@i18n(key="pages.reference.comingFromAngular.theSameComponent.title") />
-<docs-code snippet="reference/angular-component.ts" />
+<docs-code snippet="{ANGULAR_COMPONENT}" />
 
 <h2 @@i18n(key="pages.reference.comingFromAngular.correspondences.title") />
 <div class="table-wrap">

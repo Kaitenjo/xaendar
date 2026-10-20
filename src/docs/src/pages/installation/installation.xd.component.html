@@ -3,6 +3,7 @@
 @import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { I18nDirective } from '../../directives/i18n.directive.ts'
+@import { INSTALLATION_BOOTSTRAP, INSTALLATION_VITE_CONFIG, MAIN, MY_APP_ROOT_XD_COMPONENT } from './installation.snippets.ts'
 
 <span @@i18n(key="pages.installation.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.installation.title") />
@@ -17,10 +18,10 @@
 <docs-code snippet="installation/index.html" />
 <p @@i18n(key="pages.installation.createAProjectWith.p3") />
 <h3 @@i18n(key="pages.installation.createAProjectWith.subtitle2") />
-<docs-code snippet="installation/main.ts" />
+<docs-code snippet="{MAIN}" />
 <p @@i18n(key="pages.installation.createAProjectWith.p4") />
 <h3 @@i18n(key="pages.installation.createAProjectWith.subtitle3") />
-<docs-code snippet="installation/bootstrap.ts" />
+<docs-code snippet="{INSTALLATION_BOOTSTRAP}" />
 <p @@i18n(key="pages.installation.createAProjectWith.p5") />
 
 <h2 @@i18n(key="pages.installation.addXaendarToA.title") />
@@ -31,7 +32,7 @@
   </li>
   <li>
     <span @@i18n(key="pages.installation.addXaendarToA.li2") />
-    <docs-code snippet="installation/vite.config.ts" />
+    <docs-code snippet="{INSTALLATION_VITE_CONFIG}" />
   </li>
   <li>
     <span @@i18n(key="pages.installation.addXaendarToA.li3") />
@@ -42,7 +43,7 @@
 
 <h2 @@i18n(key="pages.installation.yourFirstComponent.title") />
 <p @@i18n(key="pages.installation.yourFirstComponent.p1") />
-<docs-code snippet="installation/my-app-root.xd.component.ts" />
+<docs-code snippet="{MY_APP_ROOT_XD_COMPONENT}" />
 <p @@i18n(key="pages.installation.yourFirstComponent.p2") />
 
 <section class="edge-cases">

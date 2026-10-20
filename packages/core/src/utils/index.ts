@@ -1,6 +1,5 @@
 export * from './class-binding/class-binding.util';
 export * from './context/context.util';
-export * from './create-component/create-component.util';
 export * from './directive-registry/directive-registry.util';
 export * from './for/for.util';
 export * from './if/if.util';

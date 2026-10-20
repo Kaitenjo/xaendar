@@ -1,4 +1,14 @@
 import type { ApiPackage } from '../api.data';
+import { ATTACH_SHADOW, NON_LITERAL_OPTIONS, WEB_COMPONENT_OPTIONS } from '../../../components/anatomy/anatomy.snippets';
+import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from '../../../components/dynamic-creation/dynamic-creation.snippets';
+import { MANUAL_SUBCLASS } from '../../../components/inheritance/inheritance.snippets';
+import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
+import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from '../../../components/lifecycle/lifecycle.snippets';
+import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from '../../../components/outputs/outputs.snippets';
+import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
+import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
+import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
+import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_EVENT, HOST_PROPERTY, HOST_PROPERTY_VALUES, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -33,12 +43,12 @@ export const CORE_API: ApiPackage = {
           name: 'hostDirectives',
           group: 'options',
           signature: 'hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>',
-          snippets: ['directives/host-directive.ts']
+          snippets: [HOST_DIRECTIVE]
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/web-component-options.ts'] },
-        { key: 'literals', snippets: ['components/non-literal-options.ts', 'components/non-literal-options-error.txt'] },
+        { key: 'declaring', snippets: [WEB_COMPONENT_OPTIONS] },
+        { key: 'literals', snippets: [NON_LITERAL_OPTIONS, 'components/non-literal-options-error.txt'] },
         { key: 'registration', snippets: ['components/duplicate-selector-error.txt'] }
       ],
       guides: ['components/anatomy', 'components/registration', 'components/styling', 'directives/custom']
@@ -56,8 +66,8 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['api/core/directive-kinds.ts', 'directives/directive-syntax.html'] },
-        { key: 'importing', snippets: ['directives/directive-registration.ts', 'directives/not-imported-error.txt'] },
+        { key: 'declaring', snippets: [DIRECTIVE_KINDS, 'directives/directive-syntax.html'] },
+        { key: 'importing', snippets: [DIRECTIVE_REGISTRATION, 'directives/not-imported-error.txt'] },
         { key: 'prefix', snippets: ['directives/wrong-kind-error.txt', 'directives/missing-registration-error.txt'] }
       ],
       guides: ['directives/overview', 'directives/custom', 'directives/structural']
@@ -77,7 +87,7 @@ export const CORE_API: ApiPackage = {
           name: 'value',
           group: 'parameters',
           signature: 'value?: ActualValue',
-          snippets: ['components/property-type.ts']
+          snippets: [PROPERTY_TYPE]
         },
         {
           name: 'alias',
@@ -88,7 +98,7 @@ export const CORE_API: ApiPackage = {
           name: 'transform',
           group: 'options',
           signature: 'transform?: (value: IncomingValue) => ActualValue',
-          snippets: ['components/transform-type.ts']
+          snippets: [TRANSFORM_TYPE]
         },
         {
           name: 'equals',
@@ -107,9 +117,9 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/property-options.ts'] },
+        { key: 'declaring', snippets: [PROPERTY_OPTIONS] },
         { key: 'binding', snippets: ['components/static-number-error.txt'] },
-        { key: 'reading', snippets: ['components/read-only-input.ts'] }
+        { key: 'reading', snippets: [READ_ONLY_INPUT] }
       ],
       guides: ['components/inputs', 'templates/binding', 'signals/options', 'directives/custom']
     },
@@ -127,7 +137,7 @@ export const CORE_API: ApiPackage = {
           name: 'cancelable',
           group: 'options',
           signature: 'cancelable?: boolean',
-          snippets: ['api/core/cancelable-event.ts']
+          snippets: [CANCELABLE_EVENT]
         },
         {
           name: 'composed',
@@ -136,8 +146,8 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/event-declaration.ts'] },
-        { key: 'names', snippets: ['components/unknown-event-error.txt', 'components/member-name-clash.ts'] }
+        { key: 'declaring', snippets: [EVENT_DECLARATION] },
+        { key: 'names', snippets: ['components/unknown-event-error.txt', MEMBER_NAME_CLASH] }
       ],
       guides: ['components/outputs', 'templates/events', 'directives/custom']
     },
@@ -150,7 +160,7 @@ export const CORE_API: ApiPackage = {
           name: 'Query.required',
           group: 'variants',
           signature: 'Query.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>',
-          snippets: ['components/query-required.ts']
+          snippets: [QUERY_REQUIRED]
         },
         {
           name: 'Query.all',
@@ -202,7 +212,7 @@ export const CORE_API: ApiPackage = {
           name: 'read',
           group: 'options',
           signature: 'read?: QueryRead',
-          snippets: ['api/core/query-read.ts']
+          snippets: [QUERY_READ]
         },
         {
           name: 'slots',
@@ -216,9 +226,9 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/query-decorators.ts'] },
-        { key: 'timing', snippets: ['api/core/query-timing.ts'] },
-        { key: 'content', snippets: ['api/core/query-content.ts', 'api/core/query-content-options.ts'] },
+        { key: 'declaring', snippets: [QUERY_DECORATORS] },
+        { key: 'timing', snippets: [QUERY_TIMING] },
+        { key: 'content', snippets: [QUERY_CONTENT, QUERY_CONTENT_OPTIONS] },
         { key: 'state' }
       ],
       guides: ['components/queries', 'components/content-queries', 'components/content-projection', 'components/dom-apis', 'templates/element-refs']
@@ -235,11 +245,11 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['api/core/host-property.ts'] },
-        { key: 'values', snippets: ['api/core/host-property-values.ts'] },
+        { key: 'declaring', snippets: [HOST_PROPERTY] },
+        { key: 'values', snippets: [HOST_PROPERTY_VALUES] },
         { key: 'timing' },
         { key: 'conflicts' },
-        { key: 'directives', snippets: ['api/core/host-bindings-directive.ts'] },
+        { key: 'directives', snippets: [HOST_BINDINGS_DIRECTIVE] },
         { key: 'errors', snippets: ['api/core/host-bindings-errors.txt', 'api/core/host-bindings-structural-error.txt'] }
       ],
       guides: ['components/host-bindings', 'components/styling', 'directives/custom']
@@ -271,10 +281,10 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['api/core/host-event.ts'] },
+        { key: 'declaring', snippets: [HOST_EVENT] },
         { key: 'reach' },
         { key: 'timing' },
-        { key: 'directives', snippets: ['api/core/host-bindings-directive.ts'] },
+        { key: 'directives', snippets: [HOST_BINDINGS_DIRECTIVE] },
         { key: 'errors', snippets: ['api/core/host-bindings-errors.txt', 'api/core/host-bindings-structural-error.txt'] }
       ],
       guides: ['components/host-bindings', 'components/outputs', 'templates/events', 'directives/custom']
@@ -282,13 +292,13 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomElement',
       kind: 'class',
-      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  onDestroy?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n}',
+      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'hostDirectives',
           group: 'properties',
           signature: 'readonly hostDirectives: HostDirectives',
-          snippets: ['directives/host-directive.ts']
+          snippets: [HOST_DIRECTIVE]
         },
         {
           name: 'onInit',
@@ -309,20 +319,26 @@ export const CORE_API: ApiPackage = {
           name: 'effect',
           group: 'methods',
           signature: 'effect(fn: () => void, options?: EffectOptions): () => void'
+        },
+        {
+          name: 'createComponent',
+          group: 'methods',
+          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>',
+          snippets: [CREATE_COMPONENT]
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/lifecycle-hooks.ts', 'components/lifecycle-order.txt'] },
-        { key: 'callbacks', snippets: ['components/connected-callback.ts', 'components/attach-shadow.ts'] },
-        { key: 'decorated', snippets: ['components/manual-subclass.ts'] },
-        { key: 'names', snippets: ['components/member-name-clash.ts'] }
+        { key: 'declaring', snippets: [LIFECYCLE_HOOKS, 'components/lifecycle-order.txt'] },
+        { key: 'callbacks', snippets: [CONNECTED_CALLBACK, ATTACH_SHADOW] },
+        { key: 'decorated', snippets: [MANUAL_SUBCLASS] },
+        { key: 'names', snippets: [MEMBER_NAME_CLASH] }
       ],
-      guides: ['components/anatomy', 'components/lifecycle', 'components/dom-apis', 'components/inheritance', 'signals/effects']
+      guides: ['components/anatomy', 'components/lifecycle', 'components/dom-apis', 'components/inheritance', 'components/dynamic-creation', 'signals/effects']
     },
     {
       name: 'CustomDirective',
       kind: 'class',
-      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  onDestroy?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  dispatchEvent(event: CustomEvent): boolean;\n}',
+      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>;\n  dispatchEvent(event: CustomEvent): boolean;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'element',
@@ -333,7 +349,7 @@ export const CORE_API: ApiPackage = {
           name: 'onInit',
           group: 'methods',
           signature: 'onInit?(): void',
-          snippets: ['directives/constructor-access.ts']
+          snippets: [CONSTRUCTOR_ACCESS]
         },
         {
           name: 'onDestroy',
@@ -346,16 +362,22 @@ export const CORE_API: ApiPackage = {
           signature: 'effect(fn: () => void, options?: EffectOptions): () => void'
         },
         {
+          name: 'createComponent',
+          group: 'methods',
+          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>',
+          snippets: [DIRECTIVE_CREATE_COMPONENT]
+        },
+        {
           name: 'dispatchEvent',
           group: 'methods',
           signature: 'dispatchEvent(event: CustomEvent): boolean'
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['api/core/custom-directive.ts', 'api/core/custom-directive-usage.html'] },
+        { key: 'declaring', snippets: [CUSTOM_DIRECTIVE, 'api/core/custom-directive-usage.html'] },
         { key: 'conditional', snippets: ['directives/conditional-directive-syntax.html'] }
       ],
-      guides: ['directives/custom', 'directives/overview', 'directives/conditional']
+      guides: ['directives/custom', 'directives/overview', 'directives/conditional', 'components/dynamic-creation']
     },
     {
       name: 'StructuralDirective',
@@ -369,7 +391,7 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['api/core/structural-directive.ts', 'api/core/structural-directive-usage.html'] },
+        { key: 'declaring', snippets: [STRUCTURAL_DIRECTIVE, 'api/core/structural-directive-usage.html'] },
         { key: 'limits', snippets: ['directives/structural-errors.txt'] }
       ],
       guides: ['directives/structural', 'directives/conditional', 'directives/overview']
@@ -383,11 +405,11 @@ export const CORE_API: ApiPackage = {
           name: 'emit',
           group: 'methods',
           signature: 'emit: (...args: Value extends void ? [options?: EventOptions] : [value: Value, options?: EventOptions]) => void',
-          snippets: ['api/core/output-emit.ts']
+          snippets: [OUTPUT_EMIT]
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/event-declaration.ts'] }
+        { key: 'declaring', snippets: [EVENT_DECLARATION] }
       ],
       guides: ['components/outputs', 'directives/custom']
     },
@@ -413,7 +435,7 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'emission', snippets: ['components/event-declaration.ts'] }
+        { key: 'emission', snippets: [EVENT_DECLARATION] }
       ],
       guides: ['components/outputs']
     },
@@ -480,7 +502,7 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'exposing', snippets: ['directives/host-directive.ts', 'directives/host-directive-usage.html'] },
+        { key: 'exposing', snippets: [HOST_DIRECTIVE, 'directives/host-directive-usage.html'] },
         { key: 'errors', snippets: ['api/core/host-directive-errors.txt'] }
       ],
       guides: ['directives/custom']
@@ -502,7 +524,7 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'forms', snippets: ['api/core/host-directive-members.ts', 'api/core/host-directive-members-usage.html'] }
+        { key: 'forms', snippets: [HOST_DIRECTIVE_MEMBERS, 'api/core/host-directive-members-usage.html'] }
       ],
       guides: ['directives/custom']
     },
@@ -518,74 +540,46 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'template', snippets: ['directives/host-directive.ts'] }
+        { key: 'template', snippets: [HOST_DIRECTIVE] }
       ],
       guides: ['directives/custom']
     },
     {
-      name: 'createComponent',
-      kind: 'function',
-      signature: 'function createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component>',
+      name: 'CreateComponentOptions',
+      kind: 'type',
+      signature: 'type CreateComponentOptions<Component, Directives extends readonly CustomDirective[] = CustomDirective[]> = {\n  target: Element;\n  properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>;\n  events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>;\n  directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } };\n  content?: Node[];\n};',
       members: [
         {
-          name: 'component',
-          group: 'parameters',
-          signature: 'component: Constructor<Component>'
-        },
-        {
           name: 'target',
-          group: 'options',
+          group: 'properties',
           signature: 'target: Element'
         },
         {
           name: 'properties',
-          group: 'options',
+          group: 'properties',
           signature: 'properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>',
-          snippets: ['api/core/create-component-groups.ts']
+          snippets: [CREATE_COMPONENT_GROUPS]
         },
         {
           name: 'events',
-          group: 'options',
+          group: 'properties',
           signature: 'events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>'
         },
         {
           name: 'directives',
-          group: 'options',
-          signature: 'directives?: Array<Constructor<CustomDirective> | { directive: Constructor<CustomDirective>; condition?: () => boolean; properties?: …; events?: … }>',
-          snippets: ['api/core/create-component-directives.ts']
+          group: 'properties',
+          signature: 'directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } }',
+          snippets: [CREATE_COMPONENT_DIRECTIVES]
+        },
+        {
+          name: 'content',
+          group: 'properties',
+          signature: 'content?: Node[]',
+          snippets: [CREATE_COMPONENT_CONTENT]
         }
       ],
       usage: [
-        { key: 'creating', snippets: ['components/create-component.ts'] },
         { key: 'errors', snippets: ['api/core/create-component-errors.txt'] }
-      ],
-      guides: ['components/dynamic-creation']
-    },
-    {
-      name: 'CreateComponentOptions',
-      kind: 'type',
-      signature: 'type CreateComponentOptions<Component, Directives extends readonly CustomDirective[] = CustomDirective[]> = {\n  target: Element;\n  properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>;\n  events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>;\n  directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } };\n};',
-      members: [
-        {
-          name: 'target',
-          group: 'properties',
-          signature: 'target: Element'
-        },
-        {
-          name: 'properties',
-          group: 'properties',
-          signature: 'properties?: Array<{ [input: string]: () => unknown; condition?: () => boolean }>'
-        },
-        {
-          name: 'events',
-          group: 'properties',
-          signature: 'events?: Array<{ [event: string]: (event: Event) => unknown; condition?: () => boolean }>'
-        },
-        {
-          name: 'directives',
-          group: 'properties',
-          signature: 'directives?: { [Index in keyof Directives]: Constructor<Directives[Index]> | { directive: Constructor<Directives[Index]>; condition?: () => boolean; properties?: …; events?: … } }'
-        }
       ],
       guides: ['components/dynamic-creation']
     },

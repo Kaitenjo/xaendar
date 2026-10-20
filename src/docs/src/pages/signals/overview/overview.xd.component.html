@@ -8,6 +8,8 @@
 @import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
 @import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { TYPES } from '../options/options.snippets.ts'
+@import { SIGNAL_API } from './overview.snippets.ts'
 
 <span @@i18n(key="pages.signals.overview.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.signals.overview.title") />
@@ -15,7 +17,7 @@
 
 <h2 @@i18n(key="pages.signals.overview.creatingAndReadingA.title") />
 <p @@i18n(key="pages.signals.overview.creatingAndReadingA.p1") />
-<docs-code snippet="signals/signal-api.ts" />
+<docs-code snippet="{SIGNAL_API}" />
 <docs-example name="signals/overview/counter"
   heading="{translations().pages.signals.overview.creatingAndReadingA.example1}">
   <ex-signal-counter />
@@ -42,7 +44,7 @@
 </docs-example>
 
 <h2 @@i18n(key="pages.signals.overview.types.title") />
-<docs-code snippet="signals/types.ts" />
+<docs-code snippet="{TYPES}" />
 <p @@i18n(key="pages.signals.overview.types.p1") />
 
 <section class="edge-cases">

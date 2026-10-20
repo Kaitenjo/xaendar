@@ -8,6 +8,7 @@
 @import { ResizeObserverComponent } from '../../../examples/components/dom-apis/resize-observer/resize-observer.xd.component.ts'
 @import { ThirdPartyComponent } from '../../../examples/components/dom-apis/third-party/third-party.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { WINDOW_LISTENER } from './dom-apis.snippets.ts'
 
 <span @@i18n(key="pages.components.domApis.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.components.domApis.title") />
@@ -36,7 +37,7 @@
   <ex-resize-observer />
 </docs-example>
 <p @@i18n(key="pages.components.domApis.observers.p2") />
-<docs-code snippet="components/window-listener.ts" />
+<docs-code snippet="{WINDOW_LISTENER}" />
 
 <h2 @@i18n(key="pages.components.domApis.customElementsFromOther.title") />
 <p @@i18n(key="pages.components.domApis.customElementsFromOther.p1") />

@@ -5,6 +5,7 @@
 @import { UserLoaderComponent } from '../../../examples/patterns/async-data/user-loader/user-loader.xd.component.ts'
 @import { RaceComponent } from '../../../examples/patterns/async-data/race/race.xd.component.ts'
 @import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { LOAD_ON_INPUT } from './async-data.snippets.ts'
 
 <span @@i18n(key="pages.patterns.asyncData.eyebrow") class="eyebrow" />
 <h1 @@i18n(key="pages.patterns.asyncData.title") />
@@ -27,7 +28,7 @@
 
 <h2 @@i18n(key="pages.patterns.asyncData.loadingWhenAnInput.title") />
 <p @@i18n(key="pages.patterns.asyncData.loadingWhenAnInput.p1") />
-<docs-code snippet="patterns/load-on-input.ts" />
+<docs-code snippet="{LOAD_ON_INPUT}" />
 
 <section class="edge-cases">
   <h2 @@i18n(key="pages.patterns.asyncData.edgeCases.title") />

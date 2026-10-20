@@ -8,9 +8,9 @@ import type { SourceFile } from '../../core/sources/source-files.utils';
 /**
  * A highlighted block of code, with a copy button.
  *
- * The code is either passed directly (`code` and `lang`) or read from `src/snippets`
- * (`snippet`). An `error` shows the output of the compiler below the code, for snippets
- * that do not compile on purpose.
+ * The code is either passed directly (`code` and `lang`) or given as a snippet (`snippet`): a `SourceFile`
+ * exported by the `*.snippets.ts` module of a page, or the path of a file read from `src/snippets`. An `error`
+ * shows the output of the compiler below the code, for snippets that do not compile on purpose.
  */
 @WebComponent({
   selector: 'docs-code',
@@ -30,10 +30,11 @@ export class DocsCodeComponent extends CustomElement {
   @Property<InputSignal<CodeLang>>('ts', { alias: 'lang' })
   public accessor language!: InputSignal<CodeLang>;
   /**
-   * The path of a snippet in `src/snippets`, whose content and language replace `code` and `lang`.
+   * The snippet whose content and language replace `code` and `lang`, and whose name is shown when `filename` is empty:
+   * a source file, or the path of a file in `src/snippets`, loaded when a page shows it.
    */
-  @Property('')
-  public accessor snippet!: InputSignal<string>;
+  @Property<InputSignal<SourceFile | string>>('')
+  public accessor snippet!: InputSignal<SourceFile | string>;
   /**
    * The file name shown above the code. Snippets show their own by default.
    */
@@ -88,12 +89,12 @@ export class DocsCodeComponent extends CustomElement {
   private _resetTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
-   * Loads the snippet whenever its key changes: its content is fetched only when a page shows it.
+   * Loads the snippet whenever its path changes: its content is fetched only when a page shows it.
    */
   public onInit(): void {
     this.effect(() => {
       const key = this.snippet();
-      if (key) {
+      if (typeof key === 'string' && key) {
         untracked(() => this._load(key));
       }
     });
@@ -132,6 +133,10 @@ export class DocsCodeComponent extends CustomElement {
    */
   private _computeSource(): SourceFile {
     const key = this.snippet();
+    if (typeof key !== 'string') {
+      return key;
+    }
+
     if (key) {
       const loaded = this.loaded();
       // Until the content arrives the snippet shows its name and language, so the frame does not change when it does

@@ -1,7 +1,7 @@
 properties: [{ count: () => 1 }, { condition: () => this.open(), count: () => 2 }]
 Error: Property "count" is bound by more than one group
 
-createComponent(PlainElement, { target })
+this.createComponent(PlainElement, { target })
 Error: PlainElement does not seem to be decorated with @WebComponent
 
 directives: [VisibleDirective]

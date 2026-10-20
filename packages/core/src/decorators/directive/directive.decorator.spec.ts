@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { Constructor } from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';

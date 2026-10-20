@@ -1,4 +1,12 @@
 import type { ApiPackage } from '../api.data';
+import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
+import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
+import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_SLOT_OPTIONS, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
+import { QUERY_READ } from './core.snippets';
+import { COMPUTED_THIS } from '../../../signals/computed/computed.snippets';
+import { INFINITE_LOOP } from '../../../signals/effects/effects.snippets';
+import { SIGNAL_API } from '../../../signals/overview/overview.snippets';
+import { MEMBERS, STORE } from '../../../signals/shared-state/shared-state.snippets';
 
 /**
  * The symbols of `@xaendar/core/signals`.
@@ -20,13 +28,13 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'equals',
           group: 'options',
           signature: 'equals?: SignalEqual<T>',
-          snippets: ['api/core-signals/signal-equals.ts']
+          snippets: [SIGNAL_EQUALS]
         },
         {
           name: 'watched',
           group: 'options',
           signature: 'watched?: (this: Signal.State<T> | Signal.Computed<T>) => void',
-          snippets: ['api/core-signals/signal-watched.ts']
+          snippets: [SIGNAL_WATCHED]
         },
         {
           name: 'unwatched',
@@ -35,9 +43,9 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'readingAndWriting', snippets: ['signals/signal-api.ts'] },
-        { key: 'identity', snippets: ['api/core-signals/signal-identity.ts'] },
-        { key: 'inAComponent', snippets: ['api/core-signals/signal-component.ts', 'api/core-signals/signal-component.html'] }
+        { key: 'readingAndWriting', snippets: [SIGNAL_API] },
+        { key: 'identity', snippets: [SIGNAL_IDENTITY] },
+        { key: 'inAComponent', snippets: [SIGNAL_COMPONENT, 'api/core-signals/signal-component.html'] }
       ],
       guides: ['essentials/signals', 'signals/overview', 'signals/options', 'signals/shared-state']
     },
@@ -50,17 +58,17 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'value',
           group: 'parameters',
           signature: 'value: (this: Signal.Computed<Value>) => Value',
-          snippets: ['signals/computed-this.ts']
+          snippets: [COMPUTED_THIS]
         },
         {
           name: 'equals',
           group: 'options',
           signature: 'equals?: SignalEqual<Value>',
-          snippets: ['api/core-signals/computed-equals.ts']
+          snippets: [COMPUTED_EQUALS]
         }
       ],
       usage: [
-        { key: 'inAClass', snippets: ['api/core-signals/computed-member.ts'] },
+        { key: 'inAClass', snippets: [COMPUTED_MEMBER] },
         { key: 'errors' }
       ],
       guides: ['essentials/signals', 'signals/computed', 'signals/shared-state']
@@ -89,14 +97,14 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'onCleanup',
           group: 'options',
           signature: 'onCleanup?: () => void',
-          snippets: ['api/core-signals/effect-cleanup.ts']
+          snippets: [EFFECT_CLEANUP]
         }
       ],
       usage: [
-        { key: 'batching', snippets: ['api/core-signals/effect-batching.ts'] },
-        { key: 'components', snippets: ['api/core-signals/effect-component.ts'] },
+        { key: 'batching', snippets: [EFFECT_BATCHING] },
+        { key: 'components', snippets: [EFFECT_COMPONENT] },
         { key: 'errors' },
-        { key: 'loops', snippets: ['signals/infinite-loop.ts'] }
+        { key: 'loops', snippets: [INFINITE_LOOP] }
       ],
       guides: ['essentials/signals', 'signals/effects', 'components/lifecycle']
     },
@@ -112,8 +120,8 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'currentValue', snippets: ['api/core-signals/untracked-read.ts'] },
-        { key: 'callingCode', snippets: ['api/core-signals/untracked-call.ts'] },
+        { key: 'currentValue', snippets: [UNTRACKED_READ] },
+        { key: 'callingCode', snippets: [UNTRACKED_CALL] },
         { key: 'update' },
         { key: 'polyfill', snippets: ['installation/missing-signals-error.txt'] }
       ],
@@ -144,7 +152,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'annotating', snippets: ['signals/members.ts'] }
+        { key: 'annotating', snippets: [MEMBERS] }
       ],
       guides: ['signals/overview', 'signals/shared-state']
     },
@@ -162,7 +170,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'readOnlyViews', snippets: ['signals/store.ts'] }
+        { key: 'readOnlyViews', snippets: [STORE] }
       ],
       guides: ['signals/computed', 'signals/shared-state']
     },
@@ -180,9 +188,9 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/property-options.ts'] },
-        { key: 'narrowerTypes', snippets: ['components/property-type.ts'] },
-        { key: 'readOnly', snippets: ['components/read-only-input.ts', 'api/core-signals/input-local-copy.ts'] }
+        { key: 'declaring', snippets: [PROPERTY_OPTIONS] },
+        { key: 'narrowerTypes', snippets: [PROPERTY_TYPE] },
+        { key: 'readOnly', snippets: [READ_ONLY_INPUT, INPUT_LOCAL_COPY] }
       ],
       guides: ['components/inputs']
     },
@@ -200,9 +208,9 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: ['components/query-decorators.ts'] },
-        { key: 'whenToRead', snippets: ['api/core-signals/query-signal-read.ts'] },
-        { key: 'required', snippets: ['components/query-required.ts'] }
+        { key: 'declaring', snippets: [QUERY_DECORATORS] },
+        { key: 'whenToRead', snippets: [QUERY_SIGNAL_READ] },
+        { key: 'required', snippets: [QUERY_REQUIRED] }
       ],
       guides: ['components/queries', 'components/content-queries']
     },
@@ -244,7 +252,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'transform',
           group: 'properties',
           signature: 'transform?: (value: IncomingValue) => ActualValue',
-          snippets: ['components/transform-type.ts']
+          snippets: [TRANSFORM_TYPE]
         },
         {
           name: 'equals',
@@ -263,7 +271,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'passing', snippets: ['components/property-options.ts'] }
+        { key: 'passing', snippets: [PROPERTY_OPTIONS] }
       ],
       guides: ['components/inputs', 'signals/options']
     },
@@ -281,7 +289,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'class',
           group: 'variants',
           signature: 'Constructor<HTMLElement>',
-          snippets: ['api/core-signals/query-target-native.ts']
+          snippets: [QUERY_TARGET_NATIVE]
         },
         {
           name: 'directive',
@@ -290,7 +298,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'kinds', snippets: ['components/query-decorators.ts'] }
+        { key: 'kinds', snippets: [QUERY_DECORATORS] }
       ],
       guides: ['components/queries', 'components/content-queries', 'directives/custom']
     },
@@ -300,7 +308,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
       signature: `type QueryElement<Target extends QueryTarget, ElementType extends HTMLElement> =
   Target extends string ? ElementType : InstanceType<Exclude<Target, string>>`,
       usage: [
-        { key: 'resolving', snippets: ['api/core-signals/query-element.ts'] }
+        { key: 'resolving', snippets: [QUERY_ELEMENT] }
       ],
       guides: ['components/queries', 'components/content-queries']
     },
@@ -327,7 +335,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'choosing', snippets: ['api/core-signals/query-slot-options.ts'] }
+        { key: 'choosing', snippets: [QUERY_SLOT_OPTIONS] }
       ],
       guides: ['components/content-queries', 'components/content-projection']
     },
@@ -345,7 +353,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'reading', snippets: ['api/core/query-read.ts'] }
+        { key: 'reading', snippets: [QUERY_READ] }
       ],
       guides: ['components/queries']
     },

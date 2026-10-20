@@ -44,7 +44,7 @@ describe('NotificationsComponent', () => {
     await flush();
     const notifications = notificationsOf(element);
 
-    expect(notifications.map(notification => notification.message())).toEqual(['Notification #1', 'Notification #2']);
+    expect(notifications.map(notification => notification.textContent)).toEqual(['Notification #1', 'Notification #2']);
     expect(notifications.map(notification => notification.classList.contains('newest'))).toEqual([false, true]);
     expect(element.open()).toBe(2);
   });
@@ -73,11 +73,11 @@ describe('NotificationsComponent', () => {
     notificationsOf(element)[1].dismiss();
     await flush();
 
-    expect(notificationsOf(element).map(notification => notification.message())).toEqual(['Notification #1']);
+    expect(notificationsOf(element).map(notification => notification.textContent)).toEqual(['Notification #1']);
     expect(element.open()).toBe(1);
   });
 
-  it('destroys the notifications still open when it is destroyed', async () => {
+  it('destroys the notifications still open along with it', async () => {
     const element = mount();
     await flush();
     element.add();

@@ -5,11 +5,11 @@
   "license": "ISC",
   "type": "module",
   "scripts": {
-    "build:projects": "npm run build-projects --prefix schematics",
     "build:claude-plugin": "npm run build:schematics && npm run build-claude-plugin --prefix schematics",
+    "build:docs": "npm run build --prefix src/docs",
+    "build:projects": "npm run build-projects --prefix schematics",
     "build:schematics": "npm run build --prefix schematics",
     "build:schematics:watch": "npm run build:watch --prefix schematics",
-    "build:src": "npm run build --prefix src/docs",
     "build:watch:extension": "npm run build:watch:extension --prefix schematics",
     "check:dependencies": "npm run check-dependencies --prefix schematics",
     "deploy": "npm run build:schematics && npm run check:dependencies && npm run test && npm run typecheck:projects && npm run update:version && npm run build:projects && npm run pack:projects && npm run publish:projects && npm i",
