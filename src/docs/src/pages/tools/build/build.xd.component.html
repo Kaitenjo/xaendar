@@ -2,52 +2,75 @@
 @import { lang as currentLang } from '../../../core/router/router.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { INSTALLATION_VITE_CONFIG } from '../../installation/installation.snippets.ts'
 @import { CSS_MINIFY, INJECTED_CODE } from './build.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.tools.build.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.tools.build.title") />
-<p @@i18n(key="pages.tools.build.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.build.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.build.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.build.lead") class="lead" />
 
-<h2 @@i18n(key="pages.tools.build.configuration.title") />
+<h2>
+  { t(translations(), 'pages.tools.build.configuration.title') }
+</h2>
 <docs-code snippet="{INSTALLATION_VITE_CONFIG}" />
-<p @@i18n(key="pages.tools.build.configuration.p1") />
-<p @@i18n(key="pages.tools.build.configuration.p2") />
+<p @@htmlTranslation(key="pages.tools.build.configuration.p1") />
+<p @@htmlTranslation(key="pages.tools.build.configuration.p2") />
 
-<h2 @@i18n(key="pages.tools.build.whatThePluginDoes.title") />
+<h2>
+  { t(translations(), 'pages.tools.build.whatThePluginDoes.title') }
+</h2>
 <docs-code snippet="components/build-pipeline.txt" />
-<p @@i18n(key="pages.tools.build.whatThePluginDoes.p1") />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p1") />
 <docs-code snippet="{INJECTED_CODE}" />
 <docs-code snippet="tools/file-naming.txt" />
-<p @@i18n(key="pages.tools.build.whatThePluginDoes.p2") />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p2") />
 <docs-code snippet="tools/style-module.js" />
-<p @@i18n(key="pages.tools.build.whatThePluginDoes.p3") />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p3") />
 <docs-code snippet="{CSS_MINIFY}" />
 
-<h2 @@i18n(key="pages.tools.build.errors.title") />
-<p @@i18n(key="pages.tools.build.errors.p1") />
+<h2>
+  { t(translations(), 'pages.tools.build.errors.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.build.errors.p1") />
 <docs-code snippet="tools/plugin-errors.txt" />
-<p @@i18n(key="pages.tools.build.errors.p2") />
+<p @@htmlTranslation(key="pages.tools.build.errors.p2") />
 
-<h2 @@i18n(key="pages.tools.build.devServer.title") />
-<p @@i18n(key="pages.tools.build.devServer.p1") />
+<h2>
+  { t(translations(), 'pages.tools.build.devServer.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.tools.build.devServer.p1') }
+</p>
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.tools.build.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.tools.build.edgeCases.callout4.body") kind="edge"
+  <h2>
+    { t(translations(), 'pages.tools.build.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.build.edgeCases.callout4.body") kind="edge"
     heading="{translations().pages.tools.build.edgeCases.callout4.heading}" />
-  <docs-callout @@i18n(key="pages.tools.build.edgeCases.callout5.body") kind="unsupported"
+  <docs-callout @@htmlTranslation(key="pages.tools.build.edgeCases.callout5.body") kind="unsupported"
     heading="{translations().pages.tools.build.edgeCases.callout5.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.tools.build.summary.title") />
+<h2>
+  { t(translations(), 'pages.tools.build.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.tools.build.summary.th1") />
-        <th @@i18n(key="pages.tools.build.summary.th2") />
+        <th>
+          { t(translations(), 'pages.tools.build.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.build.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -57,26 +80,34 @@
             <code>xaendarPlugin()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.tools.build.summary.td1") />
+        <td @@htmlTranslation(key="pages.tools.build.summary.td1") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.summary.td2") />
-        <td @@i18n(key="pages.tools.build.summary.td3") />
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td2') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td3") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.summary.td4") />
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td4') }
+        </td>
         <td>
           <code>virtual:xaendar-template:…</code>,
           <code>virtual:xaendar-style?…</code>
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.summary.td5") />
-        <td @@i18n(key="pages.tools.build.summary.td6") />
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.build.summary.td7") />
-        <td @@i18n(key="pages.tools.build.summary.td8") />
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td8") />
       </tr>
     </tbody>
   </table>

@@ -4,22 +4,35 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from './lifecycle.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.lifecycle.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.lifecycle.title") />
-<p @@i18n(key="pages.components.lifecycle.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.lifecycle.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.lifecycle.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.lifecycle.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.lifecycle.theHooks.title") />
+<h2>
+  { t(translations(), 'pages.components.lifecycle.theHooks.title') }
+</h2>
 <docs-code snippet="{LIFECYCLE_HOOKS}" />
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.lifecycle.theHooks.th1") />
-        <th @@i18n(key="pages.components.lifecycle.theHooks.th2") />
-        <th @@i18n(key="pages.components.lifecycle.theHooks.th3") />
+        <th>
+          { t(translations(), 'pages.components.lifecycle.theHooks.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.lifecycle.theHooks.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.lifecycle.theHooks.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -27,61 +40,85 @@
         <td>
           <code>constructor</code>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td1") />
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td2") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td1') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>onInit()</code>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td3") />
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td4") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.lifecycle.theHooks.td4") />
       </tr>
       <tr>
         <td>
           <code>afterRender()</code>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td5") />
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td6") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td5') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td6') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>onDestroy()</code>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td7") />
-        <td @@i18n(key="pages.components.lifecycle.theHooks.td8") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.theHooks.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.lifecycle.theHooks.td8") />
       </tr>
     </tbody>
   </table>
 </div>
-<p @@i18n(key="pages.components.lifecycle.theHooks.p1") />
+<p @@htmlTranslation(key="pages.components.lifecycle.theHooks.p1") />
 <docs-code snippet="components/lifecycle-order.txt" />
 
-<h2 @@i18n(key="pages.components.lifecycle.parentsAndChildren.title") />
-<p @@i18n(key="pages.components.lifecycle.parentsAndChildren.p1") />
+<h2>
+  { t(translations(), 'pages.components.lifecycle.parentsAndChildren.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.lifecycle.parentsAndChildren.p1") />
 <docs-example name="components/lifecycle/hook-order"
   heading="{translations().pages.components.lifecycle.parentsAndChildren.example1}">
   <ex-hook-order />
 </docs-example>
-<p @@i18n(key="pages.components.lifecycle.parentsAndChildren.p2") />
+<p @@htmlTranslation(key="pages.components.lifecycle.parentsAndChildren.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.lifecycle.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.lifecycle.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge" heading="{translations().pages.components.lifecycle.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.components.lifecycle.edgeCases.callout2.p1") />
+    <p>
+      { t(translations(), 'pages.components.lifecycle.edgeCases.callout2.p1') }
+    </p>
     <docs-code snippet="{CONNECTED_CALLBACK}" />
   </docs-callout>
-  <docs-callout @@i18n(key="pages.components.lifecycle.edgeCases.callout4.body") kind="note"
+  <docs-callout @@htmlTranslation(key="pages.components.lifecycle.edgeCases.callout4.body") kind="note"
     heading="{translations().pages.components.lifecycle.edgeCases.callout4.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.components.lifecycle.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.lifecycle.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.lifecycle.summary.th1") />
-        <th @@i18n(key="pages.components.lifecycle.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.lifecycle.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.lifecycle.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -91,7 +128,9 @@
             <code>onInit()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.summary.td1") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -99,7 +138,9 @@
             <code>afterRender()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.summary.td2") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -107,7 +148,9 @@
             <code>onDestroy()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.summary.td3") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.summary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -115,7 +158,9 @@
             <code>this.effect(fn, options?)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.lifecycle.summary.td4") />
+        <td>
+          { t(translations(), 'pages.components.lifecycle.summary.td4') }
+        </td>
       </tr>
     </tbody>
   </table>

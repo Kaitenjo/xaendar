@@ -1,6 +1,5 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
 @import { lang as currentLang } from '../../../core/router/router.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { RatingComponent } from '../../../examples/components/anatomy/rating/rating.xd.component.ts'
 @import { ShadowInspectorComponent } from '../../../examples/components/anatomy/shadow-inspector/shadow-inspector.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -8,35 +7,53 @@
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { ATTACH_SHADOW, GENERIC_COMPONENT, NON_LITERAL_OPTIONS, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.anatomy.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.anatomy.title") />
-<p @@i18n(key="pages.components.anatomy.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.anatomy.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.anatomy.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.anatomy.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.anatomy.threeFiles.title") />
+<h2>
+  { t(translations(), 'pages.components.anatomy.threeFiles.title') }
+</h2>
 <docs-code snippet="components/anatomy-files.txt" />
-<p @@i18n(key="pages.components.anatomy.threeFiles.p1") />
+<p @@htmlTranslation(key="pages.components.anatomy.threeFiles.p1") />
 <docs-example name="components/anatomy/rating" heading="{translations().pages.components.anatomy.threeFiles.example1}">
   <ex-rating />
 </docs-example>
-<p @@i18n(key="pages.components.anatomy.threeFiles.p2") />
+<p>
+  { t(translations(), 'pages.components.anatomy.threeFiles.p2') }
+</p>
 <ul>
-  <li @@i18n(key="pages.components.anatomy.threeFiles.li1") />
-  <li @@i18n(key="pages.components.anatomy.threeFiles.li2") />
-  <li @@i18n(key="pages.components.anatomy.threeFiles.li3") />
-  <li @@i18n(key="pages.components.anatomy.threeFiles.li4") />
+  <li @@htmlTranslation(key="pages.components.anatomy.threeFiles.li1") />
+  <li @@htmlTranslation(key="pages.components.anatomy.threeFiles.li2") />
+  <li @@htmlTranslation(key="pages.components.anatomy.threeFiles.li3") />
+  <li @@htmlTranslation(key="pages.components.anatomy.threeFiles.li4") />
 </ul>
-<p @@i18n(key="pages.components.anatomy.threeFiles.p3") />
+<p @@htmlTranslation(key="pages.components.anatomy.threeFiles.p3") />
 
-<h2 @@i18n(key="pages.components.anatomy.theDecorator.title") />
+<h2>
+  { t(translations(), 'pages.components.anatomy.theDecorator.title') }
+</h2>
 <docs-code snippet="{WEB_COMPONENT_OPTIONS}" />
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.anatomy.theDecorator.th1") />
-        <th @@i18n(key="pages.components.anatomy.theDecorator.th2") />
-        <th @@i18n(key="pages.components.anatomy.theDecorator.th3") />
+        <th>
+          { t(translations(), 'pages.components.anatomy.theDecorator.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.anatomy.theDecorator.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.anatomy.theDecorator.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -44,77 +61,99 @@
         <td>
           <code>selector</code>
         </td>
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td1") />
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td2") />
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td2") />
       </tr>
       <tr>
         <td>
           <code>templateUrl</code>
         </td>
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td3") />
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td4") />
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td3') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td4') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>styleUrl</code>
         </td>
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td5") />
-        <td @@i18n(key="pages.components.anatomy.theDecorator.td6") />
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td6") />
       </tr>
     </tbody>
   </table>
 </div>
-<p @@i18n(key="pages.components.anatomy.theDecorator.p1") />
+<p @@htmlTranslation(key="pages.components.anatomy.theDecorator.p1") />
 <docs-code snippet="components/build-pipeline.txt" />
 
-<h2 @@i18n(key="pages.components.anatomy.theBaseClassAnd.title") />
-<p @@i18n(key="pages.components.anatomy.theBaseClassAnd.p1") />
+<h2>
+  { t(translations(), 'pages.components.anatomy.theBaseClassAnd.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.anatomy.theBaseClassAnd.p1") />
 <docs-example name="components/anatomy/shadow-inspector"
   heading="{translations().pages.components.anatomy.theBaseClassAnd.example1}">
   <ex-shadow-inspector />
 </docs-example>
-<p @@i18n(key="pages.components.anatomy.theBaseClassAnd.p2") />
+<p @@htmlTranslation(key="pages.components.anatomy.theBaseClassAnd.p2") />
 
-<h2 @@i18n(key="pages.components.anatomy.generics.title") />
-<p @@i18n(key="pages.components.anatomy.generics.p1") />
+<h2>
+  { t(translations(), 'pages.components.anatomy.generics.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.anatomy.generics.p1") />
 <docs-code snippet="{GENERIC_COMPONENT}" />
 <docs-code snippet="components/generic-component-usage.html" />
-<p @@i18n(key="pages.components.anatomy.generics.p2") />
+<p @@htmlTranslation(key="pages.components.anatomy.generics.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.anatomy.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.anatomy.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout1.heading}">
-      <p @@i18n(key="pages.components.anatomy.edgeCases.callout1.p1") />
+      <p @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout1.p1") />
       <docs-code snippet="{NON_LITERAL_OPTIONS}" />
       <docs-code snippet="components/non-literal-options-error.txt" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.components.anatomy.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout2.p1") />
       <docs-code snippet="components/missing-template-error.txt" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.components.anatomy.edgeCases.callout3.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout3.body")
       heading="{translations().pages.components.anatomy.edgeCases.callout3.heading}" />
     <docs-callout-item heading="{translations().pages.components.anatomy.edgeCases.callout4.heading}">
-      <p @@i18n(key="pages.components.anatomy.edgeCases.callout4.p1") />
+      <p @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout4.p1") />
       <docs-code snippet="components/private-member-error.txt" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.components.anatomy.edgeCases.callout5.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout5.body")
       heading="{translations().pages.components.anatomy.edgeCases.callout5.heading}" />
   </docs-callout>
   <docs-callout kind="unsupported" heading="{translations().pages.components.anatomy.edgeCases.callout6.heading}">
-    <p @@i18n(key="pages.components.anatomy.edgeCases.callout6.p1") />
+    <p>
+      { t(translations(), 'pages.components.anatomy.edgeCases.callout6.p1') }
+    </p>
     <docs-code snippet="{ATTACH_SHADOW}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.anatomy.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.anatomy.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.anatomy.summary.th1") />
-        <th @@i18n(key="pages.components.anatomy.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.anatomy.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.anatomy.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -124,7 +163,9 @@
             <code>{ '@WebComponent({ selector, templateUrl, styleUrl? })' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.summary.td1") />
+        <td>
+          { t(translations(), 'pages.components.anatomy.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -132,17 +173,19 @@
             <code>CustomElement</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.summary.td2") />
+        <td @@htmlTranslation(key="pages.components.anatomy.summary.td2") />
       </tr>
       <tr>
         <td>
           <code>this.shadowRoot</code>
         </td>
-        <td @@i18n(key="pages.components.anatomy.summary.td3") />
+        <td>
+          { t(translations(), 'pages.components.anatomy.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.anatomy.summary.td4") />
-        <td @@i18n(key="pages.components.anatomy.summary.td5") />
+        <td @@htmlTranslation(key="pages.components.anatomy.summary.td4") />
+        <td @@htmlTranslation(key="pages.components.anatomy.summary.td5") />
       </tr>
       <tr>
         <td>
@@ -156,7 +199,7 @@
             <code>onDestroy()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.anatomy.summary.td6") />
+        <td @@htmlTranslation(key="pages.components.anatomy.summary.td6") />
       </tr>
     </tbody>
   </table>

@@ -5,58 +5,91 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { SharedBaseComponent } from '../../../examples/components/inheritance/shared-base/shared-base.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { MANUAL_SUBCLASS, SUBCLASS_TEMPLATE } from './inheritance.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.inheritance.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.inheritance.title") />
-<p @@i18n(key="pages.components.inheritance.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.inheritance.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.inheritance.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.components.inheritance.lead') }
+</p>
 
-<h2 @@i18n(key="pages.components.inheritance.aBaseClassFor.title") />
-<p @@i18n(key="pages.components.inheritance.aBaseClassFor.p1") />
+<h2>
+  { t(translations(), 'pages.components.inheritance.aBaseClassFor.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.inheritance.aBaseClassFor.p1") />
 <docs-example name="components/inheritance/shared-base"
   heading="{translations().pages.components.inheritance.aBaseClassFor.example1}">
   <ex-shared-base />
 </docs-example>
-<p @@i18n(key="pages.components.inheritance.aBaseClassFor.p2") />
-<p @@i18n(key="pages.components.inheritance.aBaseClassFor.p3") />
+<p @@htmlTranslation(key="pages.components.inheritance.aBaseClassFor.p2") />
+<p @@htmlTranslation(key="pages.components.inheritance.aBaseClassFor.p3") />
 
-<h2 @@i18n(key="pages.components.inheritance.extendingAComponent.title") />
-<p @@i18n(key="pages.components.inheritance.extendingAComponent.p1") />
+<h2>
+  { t(translations(), 'pages.components.inheritance.extendingAComponent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.inheritance.extendingAComponent.p1") />
 <docs-code snippet="{SUBCLASS_TEMPLATE}" />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.inheritance.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.inheritance.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.components.inheritance.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.components.inheritance.edgeCases.callout3.p1") />
+      <p @@htmlTranslation(key="pages.components.inheritance.edgeCases.callout3.p1") />
       <docs-code snippet="{MANUAL_SUBCLASS}" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.components.inheritance.edgeCases.callout4.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.inheritance.edgeCases.callout4.body")
       heading="{translations().pages.components.inheritance.edgeCases.callout4.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.inheritance.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.inheritance.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.inheritance.summary.th1") />
-        <th @@i18n(key="pages.components.inheritance.summary.th2") />
-        <th @@i18n(key="pages.components.inheritance.summary.th3") />
+        <th>
+          { t(translations(), 'pages.components.inheritance.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.inheritance.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.inheritance.summary.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.components.inheritance.summary.td1") />
-        <td @@i18n(key="pages.components.inheritance.summary.td2") />
-        <td @@i18n(key="pages.components.inheritance.summary.td3") />
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td1') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td2') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.inheritance.summary.td4") />
-        <td @@i18n(key="pages.components.inheritance.summary.td5") />
-        <td @@i18n(key="pages.components.inheritance.summary.td6") />
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td5') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td6') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -64,8 +97,12 @@
             <code>{ '@Property' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.inheritance.summary.td7") />
-        <td @@i18n(key="pages.components.inheritance.summary.td8") />
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td7') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td8') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -73,12 +110,20 @@
             <code>{ '@Event' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.inheritance.summary.td9") />
-        <td @@i18n(key="pages.components.inheritance.summary.td10") />
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td9') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td10') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.inheritance.summary.td11") />
-        <td @@i18n(key="pages.components.inheritance.summary.td12") />
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td11') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.inheritance.summary.td12') }
+        </td>
         <td>—</td>
       </tr>
     </tbody>

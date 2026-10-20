@@ -7,73 +7,101 @@
 @import { SignalCounterComponent } from '../../../examples/signals/overview/counter/counter.xd.component.ts'
 @import { SignalIdentityComponent } from '../../../examples/signals/overview/identity/identity.xd.component.ts'
 @import { SignalCustomEqualsComponent } from '../../../examples/signals/overview/custom-equals/custom-equals.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { TYPES } from '../options/options.snippets.ts'
 @import { SIGNAL_API } from './overview.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.signals.overview.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.signals.overview.title") />
-<p @@i18n(key="pages.signals.overview.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.signals.overview.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.signals.overview.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.signals.overview.lead') }
+</p>
 
-<h2 @@i18n(key="pages.signals.overview.creatingAndReadingA.title") />
-<p @@i18n(key="pages.signals.overview.creatingAndReadingA.p1") />
+<h2>
+  { t(translations(), 'pages.signals.overview.creatingAndReadingA.title') }
+</h2>
+<p @@htmlTranslation(key="pages.signals.overview.creatingAndReadingA.p1") />
 <docs-code snippet="{SIGNAL_API}" />
 <docs-example name="signals/overview/counter"
   heading="{translations().pages.signals.overview.creatingAndReadingA.example1}">
   <ex-signal-counter />
 </docs-example>
 
-<h2 @@i18n(key="pages.signals.overview.writing.title") />
+<h2>
+  { t(translations(), 'pages.signals.overview.writing.title') }
+</h2>
 <ul>
-  <li @@i18n(key="pages.signals.overview.writing.li1") />
-  <li @@i18n(key="pages.signals.overview.writing.li2") />
+  <li @@htmlTranslation(key="pages.signals.overview.writing.li1") />
+  <li @@htmlTranslation(key="pages.signals.overview.writing.li2") />
 </ul>
-<p @@i18n(key="pages.signals.overview.writing.p1") />
+<p @@htmlTranslation(key="pages.signals.overview.writing.p1") />
 
-<h2 @@i18n(key="pages.signals.overview.equality.title") />
-<p @@i18n(key="pages.signals.overview.equality.p1") />
+<h2>
+  { t(translations(), 'pages.signals.overview.equality.title') }
+</h2>
+<p @@htmlTranslation(key="pages.signals.overview.equality.p1") />
 <docs-example name="signals/overview/identity" kind="edge"
   heading="{translations().pages.signals.overview.equality.example1}">
   <ex-signal-identity />
 </docs-example>
-<p @@i18n(key="pages.signals.overview.equality.p2") />
-<h3 @@i18n(key="pages.signals.overview.equality.subtitle1") />
-<p @@i18n(key="pages.signals.overview.equality.p3") />
+<p @@htmlTranslation(key="pages.signals.overview.equality.p2") />
+<h3>
+  { t(translations(), 'pages.signals.overview.equality.subtitle1') }
+</h3>
+<p @@htmlTranslation(key="pages.signals.overview.equality.p3") />
 <docs-example name="signals/overview/custom-equals" heading="{translations().pages.signals.overview.equality.example2}">
   <ex-signal-custom-equals />
 </docs-example>
 
-<h2 @@i18n(key="pages.signals.overview.types.title") />
+<h2>
+  { t(translations(), 'pages.signals.overview.types.title') }
+</h2>
 <docs-code snippet="{TYPES}" />
-<p @@i18n(key="pages.signals.overview.types.p1") />
+<p @@htmlTranslation(key="pages.signals.overview.types.p1") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.signals.overview.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.signals.overview.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.signals.overview.edgeCases.callout1.body")
       heading="{translations().pages.signals.overview.edgeCases.callout1.heading}" />
-    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.signals.overview.edgeCases.callout2.body")
       heading="{translations().pages.signals.overview.edgeCases.callout2.heading}" />
-    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout3.body")
+    <docs-callout-item @@htmlTranslation(key="pages.signals.overview.edgeCases.callout3.body")
       heading="{translations().pages.signals.overview.edgeCases.callout3.heading}" />
-    <docs-callout-item @@i18n(key="pages.signals.overview.edgeCases.callout4.body")
-      heading="{translations().pages.signals.overview.edgeCases.callout4.heading}" />
+    <docs-callout-item heading="{translations().pages.signals.overview.edgeCases.callout4.heading}">
+      { t(translations(), 'pages.signals.overview.edgeCases.callout4.body') }
+    </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.signals.overview.summary.title") />
+<h2>
+  { t(translations(), 'pages.signals.overview.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.signals.overview.summary.th1") />
-        <th @@i18n(key="pages.signals.overview.summary.th2") />
+        <th>
+          { t(translations(), 'pages.signals.overview.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.signals.overview.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.signals.overview.summary.td1") />
-        <td @@i18n(key="pages.signals.overview.summary.td2") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td1") />
+        <td>
+          { t(translations(), 'pages.signals.overview.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -84,11 +112,15 @@
             <code>sig.get()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.signals.overview.summary.td3") />
+        <td>
+          { t(translations(), 'pages.signals.overview.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.overview.summary.td4") />
-        <td @@i18n(key="pages.signals.overview.summary.td5") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td4") />
+        <td>
+          { t(translations(), 'pages.signals.overview.summary.td5') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -96,15 +128,15 @@
             <code>sig.update(fn)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.signals.overview.summary.td6") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.overview.summary.td7") />
-        <td @@i18n(key="pages.signals.overview.summary.td8") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td7") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td8") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.signals.overview.summary.td9") />
-        <td @@i18n(key="pages.signals.overview.summary.td10") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td9") />
+        <td @@htmlTranslation(key="pages.signals.overview.summary.td10") />
       </tr>
     </tbody>
   </table>

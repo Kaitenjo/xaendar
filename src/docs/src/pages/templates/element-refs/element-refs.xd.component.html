@@ -6,63 +6,86 @@
 @import { SearchFieldComponent } from '../../../examples/templates/element-refs/search-field/search-field.xd.component.ts'
 @import { NativeDialogComponent } from '../../../examples/templates/element-refs/native-dialog/native-dialog.xd.component.ts'
 @import { RowNotesComponent } from '../../../examples/templates/element-refs/row-notes/row-notes.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.elementRefs.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.elementRefs.title") />
-<p @@i18n(key="pages.templates.elementRefs.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.elementRefs.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.elementRefs.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.elementRefs.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.elementRefs.naming.title") />
+<h2>
+  { t(translations(), 'pages.templates.elementRefs.naming.title') }
+</h2>
 <docs-code snippet="templates/element-ref-syntax.html" />
 <docs-example name="templates/element-refs/search-field"
   heading="{translations().pages.templates.elementRefs.naming.example1}">
   <ex-search-field />
 </docs-example>
-<p @@i18n(key="pages.templates.elementRefs.naming.p1") />
-<p @@i18n(key="pages.templates.elementRefs.naming.p2") />
-<p @@i18n(key="pages.templates.elementRefs.naming.p3") />
+<p @@htmlTranslation(key="pages.templates.elementRefs.naming.p1") />
+<p @@htmlTranslation(key="pages.templates.elementRefs.naming.p2") />
+<p @@htmlTranslation(key="pages.templates.elementRefs.naming.p3") />
 
-<h2 @@i18n(key="pages.templates.elementRefs.types.title") />
-<p @@i18n(key="pages.templates.elementRefs.types.p1") />
+<h2>
+  { t(translations(), 'pages.templates.elementRefs.types.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.elementRefs.types.p1") />
 <docs-example name="templates/element-refs/native-dialog"
   heading="{translations().pages.templates.elementRefs.types.example1}">
   <ex-native-dialog />
 </docs-example>
-<p @@i18n(key="pages.templates.elementRefs.types.p2") />
+<p @@htmlTranslation(key="pages.templates.elementRefs.types.p2") />
 
-<h2 @@i18n(key="pages.templates.elementRefs.scope.title") />
-<p @@i18n(key="pages.templates.elementRefs.scope.p1") />
+<h2>
+  { t(translations(), 'pages.templates.elementRefs.scope.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.elementRefs.scope.p1") />
 <docs-code snippet="templates/element-ref-scopes.html" />
-<p @@i18n(key="pages.templates.elementRefs.scope.p2") />
+<p>
+  { t(translations(), 'pages.templates.elementRefs.scope.p2') }
+</p>
 <docs-example name="templates/element-refs/row-notes"
   heading="{translations().pages.templates.elementRefs.scope.example1}">
   <ex-row-notes />
 </docs-example>
-<p @@i18n(key="pages.templates.elementRefs.scope.p3") />
-<p @@i18n(key="pages.templates.elementRefs.scope.p4") />
+<p @@htmlTranslation(key="pages.templates.elementRefs.scope.p3") />
+<p>
+  { t(translations(), 'pages.templates.elementRefs.scope.p4') }
+</p>
 <docs-code snippet="templates/element-ref-errors.txt" />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.elementRefs.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.elementRefs.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.templates.elementRefs.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.elementRefs.edgeCases.callout1.body")
       heading="{translations().pages.templates.elementRefs.edgeCases.callout1.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.elementRefs.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.elementRefs.edgeCases.callout2.body")
       heading="{translations().pages.templates.elementRefs.edgeCases.callout2.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.elementRefs.edgeCases.callout3.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.elementRefs.edgeCases.callout3.body")
       heading="{translations().pages.templates.elementRefs.edgeCases.callout3.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.elementRefs.edgeCases.callout4.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.elementRefs.edgeCases.callout4.body")
       heading="{translations().pages.templates.elementRefs.edgeCases.callout4.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.templates.elementRefs.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.elementRefs.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.elementRefs.summary.th1") />
-        <th @@i18n(key="pages.templates.elementRefs.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.elementRefs.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.elementRefs.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -70,25 +93,33 @@
         <td>
           <code>&lt;input #name /&gt;</code>
         </td>
-        <td @@i18n(key="pages.templates.elementRefs.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.elementRefs.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>(event)="name.method()"</code>
         </td>
-        <td @@i18n(key="pages.templates.elementRefs.summary.td2") />
+        <td>
+          { t(translations(), 'pages.templates.elementRefs.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>(event)="method(name, name.value)"</code>
         </td>
-        <td @@i18n(key="pages.templates.elementRefs.summary.td3") />
+        <td>
+          { t(translations(), 'pages.templates.elementRefs.summary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ '{ name.property }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.elementRefs.summary.td4") />
+        <td>
+          { t(translations(), 'pages.templates.elementRefs.summary.td4') }
+        </td>
       </tr>
     </tbody>
   </table>

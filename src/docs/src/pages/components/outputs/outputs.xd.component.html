@@ -9,76 +9,95 @@
 @import { EmitOnMountComponent } from '../../../examples/components/outputs/emit-on-mount/emit-on-mount.xd.component.ts'
 @import { DetailAsOptionsComponent } from '../../../examples/components/outputs/detail-as-options/detail-as-options.xd.component.ts'
 @import { CancelableComponent } from '../../../examples/components/outputs/cancelable/cancelable.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from './outputs.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.outputs.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.outputs.title") />
-<p @@i18n(key="pages.components.outputs.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.outputs.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.outputs.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.outputs.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.outputs.declaringAndEmitting.title") />
+<h2>
+  { t(translations(), 'pages.components.outputs.declaringAndEmitting.title') }
+</h2>
 <docs-code snippet="{EVENT_DECLARATION}" />
-<p @@i18n(key="pages.components.outputs.declaringAndEmitting.p1") />
+<p @@htmlTranslation(key="pages.components.outputs.declaringAndEmitting.p1") />
 
-<h2 @@i18n(key="pages.components.outputs.listeningInTheParent.title") />
-<p @@i18n(key="pages.components.outputs.listeningInTheParent.p1") />
+<h2>
+  { t(translations(), 'pages.components.outputs.listeningInTheParent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.outputs.listeningInTheParent.p1") />
 <docs-example name="components/outputs/emit-detail"
   heading="{translations().pages.components.outputs.listeningInTheParent.example1}">
   <ex-emit-detail />
 </docs-example>
-<p @@i18n(key="pages.components.outputs.listeningInTheParent.p2") />
+<p @@htmlTranslation(key="pages.components.outputs.listeningInTheParent.p2") />
 
-<h2 @@i18n(key="pages.components.outputs.eventOptions.title") />
-<p @@i18n(key="pages.components.outputs.eventOptions.p1") />
+<h2>
+  { t(translations(), 'pages.components.outputs.eventOptions.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.outputs.eventOptions.p1") />
 <docs-example name="components/outputs/event-options"
   heading="{translations().pages.components.outputs.eventOptions.example1}">
   <ex-event-options />
 </docs-example>
-<p @@i18n(key="pages.components.outputs.eventOptions.p2") />
-<p @@i18n(key="pages.components.outputs.eventOptions.p3") />
+<p @@htmlTranslation(key="pages.components.outputs.eventOptions.p2") />
+<p @@htmlTranslation(key="pages.components.outputs.eventOptions.p3") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.outputs.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.outputs.edgeCases.title') }
+  </h2>
   <docs-example name="components/outputs/emit-on-mount"
     heading="{translations().pages.components.outputs.edgeCases.example1}" kind="edge">
     <ex-emit-on-mount />
   </docs-example>
-  <p @@i18n(key="pages.components.outputs.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.components.outputs.edgeCases.p1") />
   <docs-example name="components/outputs/detail-as-options"
     heading="{translations().pages.components.outputs.edgeCases.example2}" kind="edge">
     <ex-detail-as-options />
   </docs-example>
-  <p @@i18n(key="pages.components.outputs.edgeCases.p2") />
+  <p @@htmlTranslation(key="pages.components.outputs.edgeCases.p2") />
   <docs-example name="components/outputs/cancelable"
     heading="{translations().pages.components.outputs.edgeCases.example3}" kind="edge">
     <ex-cancelable />
   </docs-example>
-  <p @@i18n(key="pages.components.outputs.edgeCases.p3") />
+  <p @@htmlTranslation(key="pages.components.outputs.edgeCases.p3") />
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.components.outputs.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.components.outputs.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.components.outputs.edgeCases.callout2.p1") />
       <docs-code snippet="components/unknown-event-error.txt" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.components.outputs.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.components.outputs.edgeCases.callout3.p1") />
+      <p @@htmlTranslation(key="pages.components.outputs.edgeCases.callout3.p1") />
       <docs-code snippet="components/native-element-event-error.txt" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.components.outputs.edgeCases.callout4.p1")
+    <docs-callout-item @@htmlTranslation(key="pages.components.outputs.edgeCases.callout4.p1")
       heading="{translations().pages.components.outputs.edgeCases.callout4.heading}" />
     <docs-callout-item heading="{translations().pages.components.outputs.edgeCases.callout6.heading}">
-      <p @@i18n(key="pages.components.outputs.edgeCases.callout6.p1") />
+      <p @@htmlTranslation(key="pages.components.outputs.edgeCases.callout6.p1") />
       <docs-code snippet="{MEMBER_NAME_CLASH}" />
     </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.outputs.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.outputs.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.outputs.summary.th1") />
-        <th @@i18n(key="pages.components.outputs.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.outputs.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.outputs.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -88,7 +107,7 @@
             <code>{ '@Event(options?)' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.outputs.summary.td1") />
+        <td @@htmlTranslation(key="pages.components.outputs.summary.td1") />
       </tr>
       <tr>
         <td>
@@ -96,7 +115,7 @@
             <code>{ 'Output<T>' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.outputs.summary.td2") />
+        <td @@htmlTranslation(key="pages.components.outputs.summary.td2") />
       </tr>
       <tr>
         <td>
@@ -104,7 +123,9 @@
             <code>emit(detail, options?)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.outputs.summary.td3") />
+        <td>
+          { t(translations(), 'pages.components.outputs.summary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -112,11 +133,11 @@
             <code>emit(options?)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.outputs.summary.td4") />
+        <td @@htmlTranslation(key="pages.components.outputs.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.outputs.summary.td5") />
-        <td @@i18n(key="pages.components.outputs.summary.td6") />
+        <td @@htmlTranslation(key="pages.components.outputs.summary.td5") />
+        <td @@htmlTranslation(key="pages.components.outputs.summary.td6") />
       </tr>
     </tbody>
   </table>

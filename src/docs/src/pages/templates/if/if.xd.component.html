@@ -5,45 +5,68 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { IfElseChainComponent } from '../../../examples/templates/if/if-else-chain/if-else-chain.xd.component.ts'
 @import { BranchStateComponent } from '../../../examples/templates/if/branch-state/branch-state.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.if.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.if.title") />
-<p @@i18n(key="pages.templates.if.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.if.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.if.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.if.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.if.branches.title") />
+<h2>
+  { t(translations(), 'pages.templates.if.branches.title') }
+</h2>
 <docs-code snippet="templates/if-syntax.html" />
 <docs-example name="templates/if/if-else-chain" heading="{translations().pages.templates.if.branches.example1}">
   <ex-if-else-chain />
 </docs-example>
-<p @@i18n(key="pages.templates.if.branches.p1") />
+<p>
+  { t(translations(), 'pages.templates.if.branches.p1') }
+</p>
 
-<h2 @@i18n(key="pages.templates.if.whenABranchIs.title") />
-<p @@i18n(key="pages.templates.if.whenABranchIs.p1") />
+<h2>
+  { t(translations(), 'pages.templates.if.whenABranchIs.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.templates.if.whenABranchIs.p1') }
+</p>
 <docs-example name="templates/if/branch-state" heading="{translations().pages.templates.if.whenABranchIs.example1}">
   <ex-branch-state />
 </docs-example>
-<p @@i18n(key="pages.templates.if.whenABranchIs.p2") />
+<p>
+  { t(translations(), 'pages.templates.if.whenABranchIs.p2') }
+</p>
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.if.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.if.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.templates.if.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.templates.if.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.templates.if.edgeCases.callout2.p1") />
       <docs-code snippet="templates/if-errors.txt" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.templates.if.edgeCases.callout3.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.if.edgeCases.callout3.body")
       heading="{translations().pages.templates.if.edgeCases.callout3.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.templates.if.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.if.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.if.summary.th1") />
-        <th @@i18n(key="pages.templates.if.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.if.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.if.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -51,19 +74,25 @@
         <td>
           <code>{ '@if (condition) { … }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.if.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.if.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ '@else if (condition) { … }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.if.summary.td2") />
+        <td>
+          { t(translations(), 'pages.templates.if.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ '@else { … }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.if.summary.td3") />
+        <td>
+          { t(translations(), 'pages.templates.if.summary.td3') }
+        </td>
       </tr>
     </tbody>
   </table>

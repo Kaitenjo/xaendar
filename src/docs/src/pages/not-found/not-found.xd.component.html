@@ -1,6 +1,12 @@
-@import { I18nDirective } from '../../directives/i18n.directive.ts'
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { translate as t } from '../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
 
 <span class="eyebrow">404</span>
-<h1 @@i18n(key="pages.notFound.title") />
-<p @@i18n(key="pages.notFound.lead") class="lead" />
-<div @@i18n(key="pages.notFound.div1") class="actions" />
+<h1>
+  { t(translations(), 'pages.notFound.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.notFound.lead') }
+</p>
+<div @@htmlTranslation(key="pages.notFound.div1") class="actions" />

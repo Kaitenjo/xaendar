@@ -1,28 +1,37 @@
 @import { translations } from '../../core/i18n/i18n.ts'
 @import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
 @import { CounterComponent } from '../../examples/home/counter/counter.xd.component.ts'
-@import { I18nDirective } from '../../directives/i18n.directive.ts'
+@import { translate as t } from '../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
 
 <section class="hero">
-  <span @@i18n(key="pages.home.eyebrow") class="eyebrow" />
-  <h1 @@i18n(key="pages.home.title") />
-  <p @@i18n(key="pages.home.lead") class="lead" />
-  <div @@i18n(key="pages.home.div1") class="actions" />
+  <span class="eyebrow">
+    { t(translations(), 'pages.home.eyebrow') }
+  </span>
+  <h1 @@htmlTranslation(key="pages.home.title") />
+  <p class="lead">
+    { t(translations(), 'pages.home.lead') }
+  </p>
+  <div @@htmlTranslation(key="pages.home.div1") class="actions" />
 </section>
 
 <docs-example name="home/counter" heading="{translations().pages.home.example1}">
   <ex-home-counter />
 </docs-example>
 
-<h2 @@i18n(key="pages.home.whyXaendar.title") />
+<h2>
+  { t(translations(), 'pages.home.whyXaendar.title') }
+</h2>
 <div class="cards">
-  <div @@i18n(key="pages.home.whyXaendar.div1") class="card" />
-  <div @@i18n(key="pages.home.whyXaendar.div2") class="card" />
-  <div @@i18n(key="pages.home.whyXaendar.div3") class="card" />
-  <div @@i18n(key="pages.home.whyXaendar.div4") class="card" />
-  <div @@i18n(key="pages.home.whyXaendar.div5") class="card" />
-  <div @@i18n(key="pages.home.whyXaendar.div6") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div1") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div2") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div3") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div4") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div5") class="card" />
+  <div @@htmlTranslation(key="pages.home.whyXaendar.div6") class="card" />
 </div>
 
-<h2 @@i18n(key="pages.home.exploreTheDocumentation.title") />
-<div @@i18n(key="pages.home.exploreTheDocumentation.div1") class="cards" />
+<h2>
+  { t(translations(), 'pages.home.exploreTheDocumentation.title') }
+</h2>
+<div @@htmlTranslation(key="pages.home.exploreTheDocumentation.div1") class="cards" />

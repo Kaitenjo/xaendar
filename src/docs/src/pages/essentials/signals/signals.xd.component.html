@@ -2,61 +2,94 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { TemperatureComponent } from '../../../examples/essentials/signals/temperature/temperature.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.essentials.signals.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.essentials.signals.title") />
-<p @@i18n(key="pages.essentials.signals.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.essentials.signals.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.essentials.signals.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.essentials.signals.lead') }
+</p>
 
-<h2 @@i18n(key="pages.essentials.signals.threePrimitives.title") />
+<h2>
+  { t(translations(), 'pages.essentials.signals.threePrimitives.title') }
+</h2>
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th @@i18n(key="pages.essentials.signals.threePrimitives.th1") />
-        <th @@i18n(key="pages.essentials.signals.threePrimitives.th2") />
-        <th @@i18n(key="pages.essentials.signals.threePrimitives.th3") />
+        <th>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td1") />
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td2") />
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td3") />
+        <td @@htmlTranslation(key="pages.essentials.signals.threePrimitives.td1") />
+        <td @@htmlTranslation(key="pages.essentials.signals.threePrimitives.td2") />
+        <td>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.td3') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>computed(fn)</code>
         </td>
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td4") />
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td5") />
+        <td>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.td5') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>effect(fn)</code>
         </td>
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td6") />
-        <td @@i18n(key="pages.essentials.signals.threePrimitives.td7") />
+        <td>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.td6') }
+        </td>
+        <td>
+          { t(translations(), 'pages.essentials.signals.threePrimitives.td7') }
+        </td>
       </tr>
     </tbody>
   </table>
 </div>
-<p @@i18n(key="pages.essentials.signals.threePrimitives.p1") />
+<p @@htmlTranslation(key="pages.essentials.signals.threePrimitives.p1") />
 
 <docs-example name="essentials/signals/temperature"
   heading="{translations().pages.essentials.signals.threePrimitives.example1}">
   <ex-temperature />
 </docs-example>
 
-<h2 @@i18n(key="pages.essentials.signals.readingAndWriting.title") />
-<p @@i18n(key="pages.essentials.signals.readingAndWriting.p1") />
-<docs-callout @@i18n(key="pages.essentials.signals.readingAndWriting.callout1.body") kind="warning" />
+<h2>
+  { t(translations(), 'pages.essentials.signals.readingAndWriting.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.signals.readingAndWriting.p1") />
+<docs-callout @@htmlTranslation(key="pages.essentials.signals.readingAndWriting.callout1.body") kind="warning" />
 
-<h2 @@i18n(key="pages.essentials.signals.signalsInTemplates.title") />
-<p @@i18n(key="pages.essentials.signals.signalsInTemplates.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.signals.signalsInTemplates.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.signals.signalsInTemplates.p1") />
 
-<h2 @@i18n(key="pages.essentials.signals.effectsOfAComponent.title") />
-<p @@i18n(key="pages.essentials.signals.effectsOfAComponent.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.signals.effectsOfAComponent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.signals.effectsOfAComponent.p1") />
 
-<h2 @@i18n(key="pages.essentials.signals.next.title") />
-<p @@i18n(key="pages.essentials.signals.next.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.signals.next.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.signals.next.p1") />

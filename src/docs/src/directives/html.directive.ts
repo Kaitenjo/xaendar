@@ -4,7 +4,7 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Renders a text of the documentation already read in the current language, as the content of its element.
  *
- * Like `@@i18n`, for the texts that do not come from the messages of the site: the texts of the API
+ * Like `@@htmlTranslation`, for the texts that do not come from the messages of the site: the texts of the API
  * reference, loaded with their page. They are HTML (inline markup such as `<code>` and links) from the files of the
  * site, never from the reader.
  *

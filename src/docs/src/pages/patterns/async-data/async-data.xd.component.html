@@ -4,63 +4,94 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { UserLoaderComponent } from '../../../examples/patterns/async-data/user-loader/user-loader.xd.component.ts'
 @import { RaceComponent } from '../../../examples/patterns/async-data/race/race.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { LOAD_ON_INPUT } from './async-data.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.patterns.asyncData.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.patterns.asyncData.title") />
-<p @@i18n(key="pages.patterns.asyncData.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.patterns.asyncData.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.patterns.asyncData.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.patterns.asyncData.lead') }
+</p>
 
-<h2 @@i18n(key="pages.patterns.asyncData.loadingErrorData.title") />
+<h2>
+  { t(translations(), 'pages.patterns.asyncData.loadingErrorData.title') }
+</h2>
 <docs-example name="patterns/async-data/user-loader"
   heading="{translations().pages.patterns.asyncData.loadingErrorData.example1}">
   <ex-user-loader />
 </docs-example>
-<p @@i18n(key="pages.patterns.asyncData.loadingErrorData.p1") />
-<p @@i18n(key="pages.patterns.asyncData.loadingErrorData.p2") />
+<p @@htmlTranslation(key="pages.patterns.asyncData.loadingErrorData.p1") />
+<p @@htmlTranslation(key="pages.patterns.asyncData.loadingErrorData.p2") />
 
-<h2 @@i18n(key="pages.patterns.asyncData.requestsThatOvertakeEach.title") />
+<h2>
+  { t(translations(), 'pages.patterns.asyncData.requestsThatOvertakeEach.title') }
+</h2>
 <docs-example name="patterns/async-data/race"
   heading="{translations().pages.patterns.asyncData.requestsThatOvertakeEach.example1}">
   <ex-race />
 </docs-example>
-<p @@i18n(key="pages.patterns.asyncData.requestsThatOvertakeEach.p1") />
+<p>
+  { t(translations(), 'pages.patterns.asyncData.requestsThatOvertakeEach.p1') }
+</p>
 
-<h2 @@i18n(key="pages.patterns.asyncData.loadingWhenAnInput.title") />
-<p @@i18n(key="pages.patterns.asyncData.loadingWhenAnInput.p1") />
+<h2>
+  { t(translations(), 'pages.patterns.asyncData.loadingWhenAnInput.title') }
+</h2>
+<p @@htmlTranslation(key="pages.patterns.asyncData.loadingWhenAnInput.p1") />
 <docs-code snippet="{LOAD_ON_INPUT}" />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.patterns.asyncData.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.patterns.asyncData.edgeCases.callout2.body") kind="edge"
+  <h2>
+    { t(translations(), 'pages.patterns.asyncData.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.patterns.asyncData.edgeCases.callout2.body") kind="edge"
     heading="{translations().pages.patterns.asyncData.edgeCases.callout2.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.patterns.asyncData.summary.title") />
+<h2>
+  { t(translations(), 'pages.patterns.asyncData.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.patterns.asyncData.summary.th1") />
-        <th @@i18n(key="pages.patterns.asyncData.summary.th2") />
+        <th>
+          { t(translations(), 'pages.patterns.asyncData.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.patterns.asyncData.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.patterns.asyncData.summary.td1") />
-        <td @@i18n(key="pages.patterns.asyncData.summary.td2") />
+        <td>
+          { t(translations(), 'pages.patterns.asyncData.summary.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.asyncData.summary.td2") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.patterns.asyncData.summary.td3") />
-        <td @@i18n(key="pages.patterns.asyncData.summary.td4") />
+        <td>
+          { t(translations(), 'pages.patterns.asyncData.summary.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.asyncData.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.patterns.asyncData.summary.td5") />
-        <td @@i18n(key="pages.patterns.asyncData.summary.td6") />
+        <td>
+          { t(translations(), 'pages.patterns.asyncData.summary.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.asyncData.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.patterns.asyncData.summary.td7") />
-        <td @@i18n(key="pages.patterns.asyncData.summary.td8") />
+        <td>
+          { t(translations(), 'pages.patterns.asyncData.summary.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.asyncData.summary.td8") />
       </tr>
     </tbody>
   </table>

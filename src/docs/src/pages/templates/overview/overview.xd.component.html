@@ -4,21 +4,34 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { WhitespaceComponent } from '../../../examples/templates/overview/whitespace/whitespace.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.overview.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.overview.title") />
-<p @@i18n(key="pages.templates.overview.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.overview.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.overview.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.overview.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.overview.everythingAtAGlance.title") />
+<h2>
+  { t(translations(), 'pages.templates.overview.everythingAtAGlance.title') }
+</h2>
 <docs-code snippet="templates/template-anatomy.html" />
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.overview.everythingAtAGlance.th1") />
-        <th @@i18n(key="pages.templates.overview.everythingAtAGlance.th2") />
-        <th @@i18n(key="pages.templates.overview.everythingAtAGlance.th3") />
+        <th>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -26,22 +39,28 @@
         <td>
           <code>{ "{ expression }" }</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td1") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td2") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td2") />
       </tr>
       <tr>
         <td>
           <code>{ 'name="{ expression }"' }</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td3") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td4") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td4") />
       </tr>
       <tr>
         <td>
           <code>(event)="method(…)"</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td5") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td6") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td6") />
       </tr>
       <tr>
         <td>
@@ -49,67 +68,103 @@
           <code>{ '@for' }</code>,
           <code>{ '@switch' }</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td7") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td8") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td8") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td9") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td10") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td11") />
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td9") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td10') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td11") />
       </tr>
       <tr>
         <td>
           <code>{ '@import' }</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td12") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td13") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td12') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td13") />
       </tr>
       <tr>
         <td>
           <code>{ '@@name' }</code>,
           <code>*name</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td14") />
-        <td @@i18n(key="pages.templates.overview.everythingAtAGlance.td15") />
+        <td>
+          { t(translations(), 'pages.templates.overview.everythingAtAGlance.td14') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.everythingAtAGlance.td15") />
       </tr>
     </tbody>
   </table>
 </div>
 
-<h2 @@i18n(key="pages.templates.overview.stricterThanHtml.title") />
-<p @@i18n(key="pages.templates.overview.stricterThanHtml.p1") />
+<h2>
+  { t(translations(), 'pages.templates.overview.stricterThanHtml.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.templates.overview.stricterThanHtml.p1') }
+</p>
 <ul>
-  <li @@i18n(key="pages.templates.overview.stricterThanHtml.li1") />
-  <li @@i18n(key="pages.templates.overview.stricterThanHtml.li2") />
-  <li @@i18n(key="pages.templates.overview.stricterThanHtml.li3") />
+  <li @@htmlTranslation(key="pages.templates.overview.stricterThanHtml.li1") />
+  <li>
+    { t(translations(), 'pages.templates.overview.stricterThanHtml.li2') }
+  </li>
+  <li>
+    { t(translations(), 'pages.templates.overview.stricterThanHtml.li3') }
+  </li>
 </ul>
 <docs-code snippet="templates/void-element-error.txt" />
 <docs-code snippet="templates/closing-case-error.txt" />
 <docs-code snippet="templates/quotes-error.txt" />
 
-<h2 @@i18n(key="pages.templates.overview.whitespace.title") />
-<p @@i18n(key="pages.templates.overview.whitespace.p1") />
+<h2>
+  { t(translations(), 'pages.templates.overview.whitespace.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.templates.overview.whitespace.p1') }
+</p>
 <docs-example name="templates/overview/whitespace"
   heading="{translations().pages.templates.overview.whitespace.example1}">
   <ex-whitespace />
 </docs-example>
 <ol>
-  <li @@i18n(key="pages.templates.overview.whitespace.li1") />
-  <li @@i18n(key="pages.templates.overview.whitespace.li2") />
-  <li @@i18n(key="pages.templates.overview.whitespace.li3") />
-  <li @@i18n(key="pages.templates.overview.whitespace.li4") />
-  <li @@i18n(key="pages.templates.overview.whitespace.li5") />
+  <li>
+    { t(translations(), 'pages.templates.overview.whitespace.li1') }
+  </li>
+  <li>
+    { t(translations(), 'pages.templates.overview.whitespace.li2') }
+  </li>
+  <li @@htmlTranslation(key="pages.templates.overview.whitespace.li3") />
+  <li>
+    { t(translations(), 'pages.templates.overview.whitespace.li4') }
+  </li>
+  <li>
+    { t(translations(), 'pages.templates.overview.whitespace.li5') }
+  </li>
 </ol>
 
-<h2 @@i18n(key="pages.templates.overview.specialCharacters.title") />
-<p @@i18n(key="pages.templates.overview.specialCharacters.p1") />
+<h2>
+  { t(translations(), 'pages.templates.overview.specialCharacters.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.overview.specialCharacters.p1") />
 <div class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.overview.specialCharacters.th1") />
-        <th @@i18n(key="pages.templates.overview.specialCharacters.th2") />
-        <th @@i18n(key="pages.templates.overview.specialCharacters.th3") />
+        <th>
+          { t(translations(), 'pages.templates.overview.specialCharacters.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.overview.specialCharacters.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.overview.specialCharacters.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -124,7 +179,9 @@
         <td>&commat;</td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.specialCharacters.td1") />
+        <td>
+          { t(translations(), 'pages.templates.overview.specialCharacters.td1') }
+        </td>
         <td>
           <code>&amp;lbrace;</code>,
           <code>{ "{'{'}" }</code>
@@ -132,7 +189,9 @@
         <td>&lbrace;</td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.specialCharacters.td2") />
+        <td>
+          { t(translations(), 'pages.templates.overview.specialCharacters.td2') }
+        </td>
         <td>
           <code>&amp;rbrace;</code>,
           <code>{ "{'}'}" }</code>
@@ -150,47 +209,61 @@
         <td>&lt;</td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.specialCharacters.td4") />
+        <td>
+          { t(translations(), 'pages.templates.overview.specialCharacters.td4') }
+        </td>
         <td>
           <code>{ "{'{ count() }'}" }</code>
         </td>
-        <td @@i18n(key="pages.templates.overview.specialCharacters.td5") />
+        <td>
+          { t(translations(), 'pages.templates.overview.specialCharacters.td5') }
+        </td>
       </tr>
     </tbody>
   </table>
 </div>
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.overview.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.overview.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.templates.overview.edgeCases.callout1.heading}">
-      <p @@i18n(key="pages.templates.overview.edgeCases.callout1.p1") />
+      <p @@htmlTranslation(key="pages.templates.overview.edgeCases.callout1.p1") />
       <docs-code snippet="templates/at-sign-error.txt" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.templates.overview.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.templates.overview.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.templates.overview.edgeCases.callout2.p1") />
       <docs-code snippet="templates/less-than-error.txt" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.templates.overview.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.templates.overview.edgeCases.callout3.p1") />
+      <p @@htmlTranslation(key="pages.templates.overview.edgeCases.callout3.p1") />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.templates.overview.edgeCases.callout4.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.overview.edgeCases.callout4.body")
       heading="{translations().pages.templates.overview.edgeCases.callout4.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.templates.overview.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.overview.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.overview.summary.th1") />
-        <th @@i18n(key="pages.templates.overview.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.overview.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.overview.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.templates.overview.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.overview.summary.td1') }
+        </td>
         <td>
           <code>{ '<br />' }</code>,
           <code>{ '<input />' }</code>,
@@ -198,15 +271,21 @@
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.summary.td2") />
-        <td @@i18n(key="pages.templates.overview.summary.td3") />
+        <td>
+          { t(translations(), 'pages.templates.overview.summary.td2') }
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.overview.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.summary.td4") />
-        <td @@i18n(key="pages.templates.overview.summary.td5") />
+        <td>
+          { t(translations(), 'pages.templates.overview.summary.td4') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.summary.td5") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.summary.td6") />
+        <td @@htmlTranslation(key="pages.templates.overview.summary.td6") />
         <td>
           <code>&amp;commat;</code>,
           <code>&amp;lbrace;</code>,
@@ -219,8 +298,10 @@
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.overview.summary.td7") />
-        <td @@i18n(key="pages.templates.overview.summary.td8") />
+        <td>
+          { t(translations(), 'pages.templates.overview.summary.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.overview.summary.td8") />
       </tr>
     </tbody>
   </table>

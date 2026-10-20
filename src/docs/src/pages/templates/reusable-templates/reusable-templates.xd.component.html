@@ -7,70 +7,95 @@
 @import { TeamRowsComponent } from '../../../examples/templates/reusable-templates/team-rows/team-rows.xd.component.ts'
 @import { FileTreeComponent } from '../../../examples/templates/reusable-templates/file-tree/file-tree.xd.component.ts'
 @import { StatusBadgesComponent } from '../../../examples/templates/reusable-templates/status-badges/status-badges.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.reusableTemplates.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.reusableTemplates.title") />
-<p @@i18n(key="pages.templates.reusableTemplates.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.reusableTemplates.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.reusableTemplates.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.reusableTemplates.declaring.title") />
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.declaring.title') }
+</h2>
 <docs-code snippet="templates/reusable-template-syntax.html" />
-<p @@i18n(key="pages.templates.reusableTemplates.declaring.p1") />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.declaring.p1") />
 <docs-example name="templates/reusable-templates/price-summary"
   heading="{translations().pages.templates.reusableTemplates.declaring.example1}">
   <ex-price-summary />
 </docs-example>
-<p @@i18n(key="pages.templates.reusableTemplates.declaring.p2") />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.declaring.p2") />
 
-<h2 @@i18n(key="pages.templates.reusableTemplates.parameters.title") />
-<p @@i18n(key="pages.templates.reusableTemplates.parameters.p1") />
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.parameters.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.parameters.p1") />
 <docs-example name="templates/reusable-templates/team-rows"
   heading="{translations().pages.templates.reusableTemplates.parameters.example1}">
   <ex-team-rows />
 </docs-example>
-<p @@i18n(key="pages.templates.reusableTemplates.parameters.p2") />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.parameters.p2") />
 
-<h2 @@i18n(key="pages.templates.reusableTemplates.optionalParameters.title") />
-<p @@i18n(key="pages.templates.reusableTemplates.optionalParameters.p1") />
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.optionalParameters.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.optionalParameters.p1") />
 <docs-code snippet="templates/reusable-template-defaults.html" />
 <docs-example name="templates/reusable-templates/status-badges"
   heading="{translations().pages.templates.reusableTemplates.optionalParameters.example1}">
   <ex-status-badges />
 </docs-example>
-<p @@i18n(key="pages.templates.reusableTemplates.optionalParameters.p2") />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.optionalParameters.p2") />
 
-<h2 @@i18n(key="pages.templates.reusableTemplates.scope.title") />
-<p @@i18n(key="pages.templates.reusableTemplates.scope.p1") />
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.scope.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.scope.p1") />
 <docs-code snippet="templates/reusable-template-scope.html" />
-<p @@i18n(key="pages.templates.reusableTemplates.scope.p2") />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.scope.p2") />
 <docs-example name="templates/reusable-templates/file-tree"
   heading="{translations().pages.templates.reusableTemplates.scope.example1}">
   <ex-file-tree />
 </docs-example>
-<p @@i18n(key="pages.templates.reusableTemplates.scope.p3") />
+<p>
+  { t(translations(), 'pages.templates.reusableTemplates.scope.p3') }
+</p>
 <docs-code snippet="templates/reusable-template-errors.txt" />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.reusableTemplates.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.reusableTemplates.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.reusableTemplates.edgeCases.callout1.body")
       heading="{translations().pages.templates.reusableTemplates.edgeCases.callout1.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.templates.reusableTemplates.edgeCases.callout2.body")
       heading="{translations().pages.templates.reusableTemplates.edgeCases.callout2.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout3.body")
-      heading="{translations().pages.templates.reusableTemplates.edgeCases.callout3.heading}" />
-    <docs-callout-item @@i18n(key="pages.templates.reusableTemplates.edgeCases.callout4.body")
-      heading="{translations().pages.templates.reusableTemplates.edgeCases.callout4.heading}" />
+    <docs-callout-item heading="{translations().pages.templates.reusableTemplates.edgeCases.callout3.heading}">
+      { t(translations(), 'pages.templates.reusableTemplates.edgeCases.callout3.body') }
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.templates.reusableTemplates.edgeCases.callout4.heading}">
+      { t(translations(), 'pages.templates.reusableTemplates.edgeCases.callout4.body') }
+    </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.templates.reusableTemplates.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.reusableTemplates.summary.th1") />
-        <th @@i18n(key="pages.templates.reusableTemplates.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.reusableTemplates.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.reusableTemplates.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -78,7 +103,9 @@
         <td>
           <code>&lt;template name(param: Type)&gt;</code>
         </td>
-        <td @@i18n(key="pages.templates.reusableTemplates.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.reusableTemplates.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -86,19 +113,23 @@
           <code>param: Type = value</code>,
           <code>param = value</code>
         </td>
-        <td @@i18n(key="pages.templates.reusableTemplates.summary.td4") />
+        <td @@htmlTranslation(key="pages.templates.reusableTemplates.summary.td4") />
       </tr>
       <tr>
         <td>
           <code>{ '@render name(argument)' }</code>
         </td>
-        <td @@i18n(key="pages.templates.reusableTemplates.summary.td2") />
+        <td>
+          { t(translations(), 'pages.templates.reusableTemplates.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ '{ param() }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.reusableTemplates.summary.td3") />
+        <td>
+          { t(translations(), 'pages.templates.reusableTemplates.summary.td3') }
+        </td>
       </tr>
     </tbody>
   </table>

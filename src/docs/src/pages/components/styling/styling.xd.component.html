@@ -9,116 +9,163 @@
 @import { PartsAndSlottedComponent } from '../../../examples/components/styling/parts-and-slotted/parts-and-slotted.xd.component.ts'
 @import { DynamicStylesComponent } from '../../../examples/components/styling/dynamic-styles/dynamic-styles.xd.component.ts'
 @import { StyleObjectComponent } from '../../../examples/components/styling/style-object/style-object.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.styling.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.styling.title") />
-<p @@i18n(key="pages.components.styling.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.styling.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.styling.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.components.styling.lead') }
+</p>
 
-<h2 @@i18n(key="pages.components.styling.theComponentStylesheet.title") />
-<p @@i18n(key="pages.components.styling.theComponentStylesheet.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.theComponentStylesheet.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.theComponentStylesheet.p1") />
 <docs-example name="components/styling/encapsulation"
   heading="{translations().pages.components.styling.theComponentStylesheet.example1}">
   <ex-encapsulation />
 </docs-example>
-<p @@i18n(key="pages.components.styling.theComponentStylesheet.p2") />
+<p @@htmlTranslation(key="pages.components.styling.theComponentStylesheet.p2") />
 
-<h2 @@i18n(key="pages.components.styling.stylingTheHost.title") />
-<p @@i18n(key="pages.components.styling.stylingTheHost.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.stylingTheHost.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.stylingTheHost.p1") />
 <docs-example name="components/styling/host-selectors"
   heading="{translations().pages.components.styling.stylingTheHost.example1}">
   <ex-host-selectors />
 </docs-example>
-<p @@i18n(key="pages.components.styling.stylingTheHost.p2") />
+<p @@htmlTranslation(key="pages.components.styling.stylingTheHost.p2") />
 
-<h2 @@i18n(key="pages.components.styling.themingWithCustomProperties.title") />
-<p @@i18n(key="pages.components.styling.themingWithCustomProperties.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.themingWithCustomProperties.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.themingWithCustomProperties.p1") />
 <docs-example name="components/styling/custom-properties"
   heading="{translations().pages.components.styling.themingWithCustomProperties.example1}">
   <ex-custom-properties />
 </docs-example>
 
-<h2 @@i18n(key="pages.components.styling.partsAndProjectedContent.title") />
-<p @@i18n(key="pages.components.styling.partsAndProjectedContent.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.partsAndProjectedContent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.partsAndProjectedContent.p1") />
 <docs-example name="components/styling/parts-and-slotted"
   heading="{translations().pages.components.styling.partsAndProjectedContent.example1}">
   <ex-parts-and-slotted />
 </docs-example>
-<p @@i18n(key="pages.components.styling.partsAndProjectedContent.p2") />
+<p @@htmlTranslation(key="pages.components.styling.partsAndProjectedContent.p2") />
 
-<h2 @@i18n(key="pages.components.styling.dynamicClassesAndStyles.title") />
-<p @@i18n(key="pages.components.styling.dynamicClassesAndStyles.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.dynamicClassesAndStyles.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.dynamicClassesAndStyles.p1") />
 <docs-example name="components/styling/dynamic-styles"
   heading="{translations().pages.components.styling.dynamicClassesAndStyles.example1}">
   <ex-dynamic-styles />
 </docs-example>
 
-<h2 @@i18n(key="pages.components.styling.sassAndLess.title") />
-<p @@i18n(key="pages.components.styling.sassAndLess.p1") />
+<h2>
+  { t(translations(), 'pages.components.styling.sassAndLess.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.sassAndLess.p1") />
 <docs-code snippet="components/sass-use.scss" />
-<p @@i18n(key="pages.components.styling.sassAndLess.p2") />
+<p @@htmlTranslation(key="pages.components.styling.sassAndLess.p2") />
 <docs-code snippet="components/scss-error.txt" />
-<p @@i18n(key="pages.components.styling.sassAndLess.p3") />
+<p @@htmlTranslation(key="pages.components.styling.sassAndLess.p3") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.styling.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.styling.edgeCases.title') }
+  </h2>
   <docs-example name="components/styling/style-object"
     heading="{translations().pages.components.styling.edgeCases.example1}" kind="edge">
     <ex-style-object />
   </docs-example>
-  <p @@i18n(key="pages.components.styling.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.components.styling.edgeCases.p1") />
   <docs-callout kind="unsupported" heading="{translations().pages.components.styling.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.components.styling.edgeCases.callout2.p1") />
+    <p @@htmlTranslation(key="pages.components.styling.edgeCases.callout2.p1") />
     <docs-code snippet="components/styl-error.txt" />
   </docs-callout>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.components.styling.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.components.styling.edgeCases.callout3.p1") />
+      <p @@htmlTranslation(key="pages.components.styling.edgeCases.callout3.p1") />
       <docs-code snippet="components/css-limits.css" />
       <docs-code snippet="components/css-import-warning.txt" />
     </docs-callout-item>
-    <docs-callout-item @@i18n(key="pages.components.styling.edgeCases.callout4.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.styling.edgeCases.callout4.body")
       heading="{translations().pages.components.styling.edgeCases.callout4.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.styling.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.styling.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.styling.summary.th1") />
-        <th @@i18n(key="pages.components.styling.summary.th2") />
-        <th @@i18n(key="pages.components.styling.summary.th3") />
+        <th>
+          { t(translations(), 'pages.components.styling.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.styling.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.styling.summary.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.components.styling.summary.td1") />
-        <td @@i18n(key="pages.components.styling.summary.td2") />
-        <td @@i18n(key="pages.components.styling.summary.td3") />
+        <td @@htmlTranslation(key="pages.components.styling.summary.td1") />
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td2') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.styling.summary.td4") />
-        <td @@i18n(key="pages.components.styling.summary.td5") />
-        <td @@i18n(key="pages.components.styling.summary.td6") />
+        <td @@htmlTranslation(key="pages.components.styling.summary.td4") />
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td5') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td6') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.styling.summary.td7") />
-        <td @@i18n(key="pages.components.styling.summary.td8") />
-        <td @@i18n(key="pages.components.styling.summary.td9") />
+        <td @@htmlTranslation(key="pages.components.styling.summary.td7") />
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td8') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.styling.summary.td9") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.styling.summary.td10") />
-        <td @@i18n(key="pages.components.styling.summary.td11") />
-        <td @@i18n(key="pages.components.styling.summary.td12") />
+        <td @@htmlTranslation(key="pages.components.styling.summary.td10") />
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td11') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td12') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>:defined</code>
         </td>
-        <td @@i18n(key="pages.components.styling.summary.td13") />
-        <td @@i18n(key="pages.components.styling.summary.td14") />
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td13') }
+        </td>
+        <td>
+          { t(translations(), 'pages.components.styling.summary.td14') }
+        </td>
       </tr>
     </tbody>
   </table>

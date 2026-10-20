@@ -5,49 +5,68 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TaskButtonComponent } from '../../../examples/templates/conditional-bindings/task-button/task-button.xd.component.ts'
 @import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.conditionalBindings.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.conditionalBindings.title") />
-<p @@i18n(key="pages.templates.conditionalBindings.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.conditionalBindings.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.conditionalBindings.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.conditionalBindings.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.conditionalBindings.attributesAndListeners.title") />
+<h2>
+  { t(translations(), 'pages.templates.conditionalBindings.attributesAndListeners.title') }
+</h2>
 <docs-code snippet="templates/conditional-binding-syntax.html" />
 <docs-example name="templates/conditional-bindings/task-button"
   heading="{translations().pages.templates.conditionalBindings.attributesAndListeners.example1}">
   <ex-task-button />
 </docs-example>
-<p @@i18n(key="pages.templates.conditionalBindings.attributesAndListeners.p1") />
-<p @@i18n(key="pages.templates.conditionalBindings.attributesAndListeners.p2") />
+<p @@htmlTranslation(key="pages.templates.conditionalBindings.attributesAndListeners.p1") />
+<p @@htmlTranslation(key="pages.templates.conditionalBindings.attributesAndListeners.p2") />
 
-<h2 @@i18n(key="pages.templates.conditionalBindings.inputsOfComponents.title") />
-<p @@i18n(key="pages.templates.conditionalBindings.inputsOfComponents.p1") />
+<h2>
+  { t(translations(), 'pages.templates.conditionalBindings.inputsOfComponents.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.conditionalBindings.inputsOfComponents.p1") />
 <docs-example name="components/inputs/conditional-reset"
   heading="{translations().pages.templates.conditionalBindings.inputsOfComponents.example1}">
   <ex-conditional-reset />
 </docs-example>
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.conditionalBindings.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.conditionalBindings.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.templates.conditionalBindings.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.templates.conditionalBindings.edgeCases.callout2.p1") />
       <docs-code snippet="components/required-branch-error.txt" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.templates.conditionalBindings.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.templates.conditionalBindings.edgeCases.callout3.p1") />
+      <p>
+        { t(translations(), 'pages.templates.conditionalBindings.edgeCases.callout3.p1') }
+      </p>
       <docs-code snippet="templates/bound-twice-error.txt" />
     </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.templates.conditionalBindings.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.conditionalBindings.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.conditionalBindings.summary.th1") />
-        <th @@i18n(key="pages.templates.conditionalBindings.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -55,23 +74,33 @@
         <td>
           <code>{ '@if (condition) { name="value" }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.conditionalBindings.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ '@else { … }' }</code>
         </td>
-        <td @@i18n(key="pages.templates.conditionalBindings.summary.td2") />
+        <td>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ "@switch (value) { @case ('a') { … } }" }</code>
         </td>
-        <td @@i18n(key="pages.templates.conditionalBindings.summary.td3") />
+        <td>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.td3') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.conditionalBindings.summary.td4") />
-        <td @@i18n(key="pages.templates.conditionalBindings.summary.td5") />
+        <td>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.conditionalBindings.summary.td5') }
+        </td>
       </tr>
     </tbody>
   </table>

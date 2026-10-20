@@ -4,58 +4,81 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { TeamCardComponent } from '../../../examples/templates/imports/team-card/team-card.xd.component.ts'
 @import { CartTotalComponent } from '../../../examples/templates/imports/cart-total/cart-total.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.imports.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.imports.title") />
-<p @@i18n(key="pages.templates.imports.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.imports.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.imports.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.imports.lead") class="lead" />
 
-<h2 @@i18n(key="pages.templates.imports.forms.title") />
+<h2>
+  { t(translations(), 'pages.templates.imports.forms.title') }
+</h2>
 <docs-code snippet="templates/import-forms.html" />
 <docs-example name="templates/imports/team-card" heading="{translations().pages.templates.imports.forms.example1}">
   <ex-team-card />
 </docs-example>
-<p @@i18n(key="pages.templates.imports.forms.p1") />
-<p @@i18n(key="pages.templates.imports.forms.p2") />
-<p @@i18n(key="pages.templates.imports.forms.p3") />
+<p @@htmlTranslation(key="pages.templates.imports.forms.p1") />
+<p @@htmlTranslation(key="pages.templates.imports.forms.p2") />
+<p @@htmlTranslation(key="pages.templates.imports.forms.p3") />
 
-<h2 @@i18n(key="pages.templates.imports.values.title") />
+<h2>
+  { t(translations(), 'pages.templates.imports.values.title') }
+</h2>
 <docs-example name="templates/imports/cart-total" heading="{translations().pages.templates.imports.values.example1}">
   <ex-cart-total />
 </docs-example>
-<p @@i18n(key="pages.templates.imports.values.p1") />
-<p @@i18n(key="pages.templates.imports.values.p2") />
-<p @@i18n(key="pages.templates.imports.values.p3") />
+<p @@htmlTranslation(key="pages.templates.imports.values.p1") />
+<p @@htmlTranslation(key="pages.templates.imports.values.p2") />
+<p @@htmlTranslation(key="pages.templates.imports.values.p3") />
 
-<h2 @@i18n(key="pages.templates.imports.whenToImport.title") />
-<p @@i18n(key="pages.templates.imports.whenToImport.p1") />
-<p @@i18n(key="pages.templates.imports.whenToImport.p2") />
-<p @@i18n(key="pages.templates.imports.whenToImport.p3") />
+<h2>
+  { t(translations(), 'pages.templates.imports.whenToImport.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.templates.imports.whenToImport.p1') }
+</p>
+<p @@htmlTranslation(key="pages.templates.imports.whenToImport.p2") />
+<p @@htmlTranslation(key="pages.templates.imports.whenToImport.p3") />
 
-<h2 @@i18n(key="pages.templates.imports.importingIsNotRegistering.title") />
-<p @@i18n(key="pages.templates.imports.importingIsNotRegistering.p1") />
+<h2>
+  { t(translations(), 'pages.templates.imports.importingIsNotRegistering.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.imports.importingIsNotRegistering.p1") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.imports.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.templates.imports.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge" heading="{translations().pages.templates.imports.edgeCases.callout1.heading}">
-    <p @@i18n(key="pages.templates.imports.edgeCases.callout1.p1") />
+    <p @@htmlTranslation(key="pages.templates.imports.edgeCases.callout1.p1") />
     <docs-code snippet="templates/import-errors.txt" />
   </docs-callout>
-  <docs-callout @@i18n(key="pages.templates.imports.edgeCases.callout2.body") kind="unsupported"
+  <docs-callout @@htmlTranslation(key="pages.templates.imports.edgeCases.callout2.body") kind="unsupported"
     heading="{translations().pages.templates.imports.edgeCases.callout2.heading}" />
-  <docs-callout @@i18n(key="pages.templates.imports.edgeCases.callout3.body") kind="issue"
+  <docs-callout @@htmlTranslation(key="pages.templates.imports.edgeCases.callout3.body") kind="issue"
     heading="{translations().pages.templates.imports.edgeCases.callout3.heading}" />
-  <docs-callout @@i18n(key="pages.templates.imports.edgeCases.callout4.body") kind="edge"
+  <docs-callout @@htmlTranslation(key="pages.templates.imports.edgeCases.callout4.body") kind="edge"
     heading="{translations().pages.templates.imports.edgeCases.callout4.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.templates.imports.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.imports.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.imports.summary.th1") />
-        <th @@i18n(key="pages.templates.imports.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.imports.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.imports.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -63,29 +86,39 @@
         <td>
           <code>{ "@import { Card } from './card.xd.component.ts'" }</code>
         </td>
-        <td @@i18n(key="pages.templates.imports.summary.td1") />
+        <td>
+          { t(translations(), 'pages.templates.imports.summary.td1') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ "@import { A, B } from './people.xd.component.ts'" }</code>
         </td>
-        <td @@i18n(key="pages.templates.imports.summary.td2") />
+        <td>
+          { t(translations(), 'pages.templates.imports.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ "@import { formatPrice, Currency } from './format.ts'" }</code>
         </td>
-        <td @@i18n(key="pages.templates.imports.summary.td5") />
+        <td>
+          { t(translations(), 'pages.templates.imports.summary.td5') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ "@import { default as format, * as utils } from './utils.ts'" }</code>
         </td>
-        <td @@i18n(key="pages.templates.imports.summary.td6") />
+        <td>
+          { t(translations(), 'pages.templates.imports.summary.td6') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.imports.summary.td3") />
-        <td @@i18n(key="pages.templates.imports.summary.td4") />
+        <td>
+          { t(translations(), 'pages.templates.imports.summary.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.templates.imports.summary.td4") />
       </tr>
     </tbody>
   </table>

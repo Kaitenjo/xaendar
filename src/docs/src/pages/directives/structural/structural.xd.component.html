@@ -9,68 +9,89 @@
 @import { MediaLayoutComponent } from '../../../examples/directives/structural/media/media-layout.xd.component.ts'
 @import { AdminPanelComponent } from '../../../examples/directives/structural/allowed-user/admin-panel.xd.component.ts'
 @import { LateReadComponent } from '../../../examples/directives/structural/late-read/late-read.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.directives.structural.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.directives.structural.title") />
-<p @@i18n(key="pages.directives.structural.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.structural.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.structural.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.structural.lead") class="lead" />
 
-<h2 @@i18n(key="pages.directives.structural.shouldrender.title") />
+<h2>
+  { t(translations(), 'pages.directives.structural.shouldrender.title') }
+</h2>
 <docs-example name="directives/structural/parity"
   heading="{translations().pages.directives.structural.shouldrender.example1}">
   <ex-parity />
 </docs-example>
-<p @@i18n(key="pages.directives.structural.shouldrender.p1") />
-<p @@i18n(key="pages.directives.structural.shouldrender.p2") />
-<p @@i18n(key="pages.directives.structural.shouldrender.p3") />
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p1") />
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p2") />
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p3") />
 
-<h2 @@i18n(key="pages.directives.structural.inputs.title") />
+<h2>
+  { t(translations(), 'pages.directives.structural.inputs.title') }
+</h2>
 <docs-example name="directives/structural/min-length"
   heading="{translations().pages.directives.structural.inputs.example1}">
   <ex-city-search />
 </docs-example>
-<p @@i18n(key="pages.directives.structural.inputs.p1") />
+<p @@htmlTranslation(key="pages.directives.structural.inputs.p1") />
 
-<h2 @@i18n(key="pages.directives.structural.readingOtherSignals.title") />
-<p @@i18n(key="pages.directives.structural.readingOtherSignals.p1") />
+<h2>
+  { t(translations(), 'pages.directives.structural.readingOtherSignals.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.structural.readingOtherSignals.p1") />
 <docs-example name="directives/structural/media"
   heading="{translations().pages.directives.structural.readingOtherSignals.example1}">
   <ex-media-layout />
 </docs-example>
-<p @@i18n(key="pages.directives.structural.readingOtherSignals.p2") />
+<p @@htmlTranslation(key="pages.directives.structural.readingOtherSignals.p2") />
 
-<h2 @@i18n(key="pages.directives.structural.asynchronousDirectives.title") />
-<p @@i18n(key="pages.directives.structural.asynchronousDirectives.p1") />
+<h2>
+  { t(translations(), 'pages.directives.structural.asynchronousDirectives.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.structural.asynchronousDirectives.p1") />
 <docs-example name="directives/structural/allowed-user"
   heading="{translations().pages.directives.structural.asynchronousDirectives.example1}">
   <ex-admin-panel />
 </docs-example>
-<p @@i18n(key="pages.directives.structural.asynchronousDirectives.p2") />
+<p @@htmlTranslation(key="pages.directives.structural.asynchronousDirectives.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.directives.structural.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.directives.structural.edgeCases.title') }
+  </h2>
   <docs-example name="directives/structural/late-read"
     heading="{translations().pages.directives.structural.edgeCases.example1}" kind="edge">
     <ex-late-read />
   </docs-example>
-  <p @@i18n(key="pages.directives.structural.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.directives.structural.edgeCases.p1") />
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.directives.structural.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.directives.structural.edgeCases.callout1.body")
       heading="{translations().pages.directives.structural.edgeCases.callout1.heading}" />
     <docs-callout-item heading="{translations().pages.directives.structural.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.directives.structural.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.directives.structural.edgeCases.callout2.p1") />
       <docs-code snippet="directives/structural-errors.txt" />
     </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.directives.structural.summary.title") />
+<h2>
+  { t(translations(), 'pages.directives.structural.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.directives.structural.summary.th1") />
-        <th @@i18n(key="pages.directives.structural.summary.th2") />
+        <th>
+          { t(translations(), 'pages.directives.structural.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.structural.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -80,7 +101,7 @@
             <code>shouldRender()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.structural.summary.td1") />
+        <td @@htmlTranslation(key="pages.directives.structural.summary.td1") />
       </tr>
       <tr>
         <td>
@@ -88,17 +109,23 @@
             <code>{ '@Property' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.structural.summary.td2") />
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>*a(…) *b(…)</code>
         </td>
-        <td @@i18n(key="pages.directives.structural.summary.td3") />
+        <td @@htmlTranslation(key="pages.directives.structural.summary.td3") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.directives.structural.summary.td4") />
-        <td @@i18n(key="pages.directives.structural.summary.td5") />
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td5') }
+        </td>
       </tr>
     </tbody>
   </table>

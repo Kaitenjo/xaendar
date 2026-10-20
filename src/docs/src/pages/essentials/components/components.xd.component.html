@@ -2,36 +2,57 @@
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { UserProfileComponent } from '../../../examples/essentials/components/user-profile/user-profile.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.essentials.components.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.essentials.components.title") />
-<p @@i18n(key="pages.essentials.components.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.essentials.components.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.essentials.components.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.essentials.components.lead') }
+</p>
 
-<h2 @@i18n(key="pages.essentials.components.definingAComponent.title") />
-<p @@i18n(key="pages.essentials.components.definingAComponent.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.components.definingAComponent.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.essentials.components.definingAComponent.p1') }
+</p>
 <ul>
-  <li @@i18n(key="pages.essentials.components.definingAComponent.li1") />
-  <li @@i18n(key="pages.essentials.components.definingAComponent.li2") />
-  <li @@i18n(key="pages.essentials.components.definingAComponent.li3") />
-  <li @@i18n(key="pages.essentials.components.definingAComponent.li4") />
+  <li @@htmlTranslation(key="pages.essentials.components.definingAComponent.li1") />
+  <li @@htmlTranslation(key="pages.essentials.components.definingAComponent.li2") />
+  <li @@htmlTranslation(key="pages.essentials.components.definingAComponent.li3") />
+  <li>
+    { t(translations(), 'pages.essentials.components.definingAComponent.li4') }
+  </li>
 </ul>
-<p @@i18n(key="pages.essentials.components.definingAComponent.p2") />
+<p @@htmlTranslation(key="pages.essentials.components.definingAComponent.p2") />
 <docs-example name="essentials/components/user-profile"
   heading="{translations().pages.essentials.components.definingAComponent.example1}">
   <ex-user-profile />
 </docs-example>
 
-<h2 @@i18n(key="pages.essentials.components.inputs.title") />
-<p @@i18n(key="pages.essentials.components.inputs.p1") />
-<p @@i18n(key="pages.essentials.components.inputs.p2") />
+<h2>
+  { t(translations(), 'pages.essentials.components.inputs.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.components.inputs.p1") />
+<p @@htmlTranslation(key="pages.essentials.components.inputs.p2") />
 
-<h2 @@i18n(key="pages.essentials.components.outputs.title") />
-<p @@i18n(key="pages.essentials.components.outputs.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.components.outputs.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.components.outputs.p1") />
 
-<h2 @@i18n(key="pages.essentials.components.usingAComponent.title") />
-<p @@i18n(key="pages.essentials.components.usingAComponent.p1") />
-<docs-callout @@i18n(key="pages.essentials.components.usingAComponent.callout1.body") kind="tip" />
+<h2>
+  { t(translations(), 'pages.essentials.components.usingAComponent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.components.usingAComponent.p1") />
+<docs-callout @@htmlTranslation(key="pages.essentials.components.usingAComponent.callout1.body") kind="tip" />
 
-<h2 @@i18n(key="pages.essentials.components.next.title") />
-<p @@i18n(key="pages.essentials.components.next.p1") />
+<h2>
+  { t(translations(), 'pages.essentials.components.next.title') }
+</h2>
+<p @@htmlTranslation(key="pages.essentials.components.next.p1") />

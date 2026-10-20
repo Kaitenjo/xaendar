@@ -1,11 +1,18 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
 @import { DocsErrorListComponent } from '../../../ui/docs-error-list/docs-error-list.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.reference.errors.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.reference.errors.title") />
-<p @@i18n(key="pages.reference.errors.lead") class="lead" />
-<docs-callout @@i18n(key="pages.reference.errors.callout1.body") kind="tip"
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.errors.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.errors.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.reference.errors.lead') }
+</p>
+<docs-callout @@htmlTranslation(key="pages.reference.errors.callout1.body") kind="tip"
   heading="{translations().pages.reference.errors.callout1.heading}" />
 <docs-error-list />

@@ -1,66 +1,91 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { GENERATED_COMPONENT } from './cli.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.tools.cli.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.tools.cli.title") />
-<p @@i18n(key="pages.tools.cli.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.cli.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.cli.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.cli.lead") class="lead" />
 <docs-code snippet="tools/cli-help.txt" />
 
-<h2 @@i18n(key="pages.tools.cli.xdNew.title") />
+<h2>
+  { t(translations(), 'pages.tools.cli.xdNew.title') }
+</h2>
 <docs-code snippet="tools/new-command.sh" />
-<p @@i18n(key="pages.tools.cli.xdNew.p1") />
-<p @@i18n(key="pages.tools.cli.xdNew.p2") />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p1") />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p2") />
 <docs-code snippet="tools/style-prompt.txt" />
-<p @@i18n(key="pages.tools.cli.xdNew.p3") />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p3") />
 <docs-code snippet="tools/xaendar-json.json" />
 
-<h2 @@i18n(key="pages.tools.cli.xdStartAndXd.title") />
-<p @@i18n(key="pages.tools.cli.xdStartAndXd.p1") />
+<h2>
+  { t(translations(), 'pages.tools.cli.xdStartAndXd.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdStartAndXd.p1") />
 
-<h2 @@i18n(key="pages.tools.cli.xdTest.title") />
-<p @@i18n(key="pages.tools.cli.xdTest.p1") />
+<h2>
+  { t(translations(), 'pages.tools.cli.xdTest.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdTest.p1") />
 
-<h2 @@i18n(key="pages.tools.cli.xdComponent.title") />
+<h2>
+  { t(translations(), 'pages.tools.cli.xdComponent.title') }
+</h2>
 <docs-code snippet="tools/component-command.sh" />
-<p @@i18n(key="pages.tools.cli.xdComponent.p1") />
+<p @@htmlTranslation(key="pages.tools.cli.xdComponent.p1") />
 <docs-code snippet="{GENERATED_COMPONENT}" />
-<p @@i18n(key="pages.tools.cli.xdComponent.p2") />
+<p @@htmlTranslation(key="pages.tools.cli.xdComponent.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.tools.cli.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.tools.cli.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge" heading="{translations().pages.tools.cli.edgeCases.callout2.heading}">
-    <p @@i18n(key="pages.tools.cli.edgeCases.callout2.p1") />
+    <p>
+      { t(translations(), 'pages.tools.cli.edgeCases.callout2.p1') }
+    </p>
     <docs-code snippet="tools/component-name-errors.txt" />
-    <p @@i18n(key="pages.tools.cli.edgeCases.callout2.p2") />
+    <p @@htmlTranslation(key="pages.tools.cli.edgeCases.callout2.p2") />
     <docs-code snippet="tools/project-name-error.txt" />
   </docs-callout>
   <docs-callout kind="issue" heading="{translations().pages.tools.cli.edgeCases.callout5.heading}">
-    <p @@i18n(key="pages.tools.cli.edgeCases.callout5.p1") />
+    <p @@htmlTranslation(key="pages.tools.cli.edgeCases.callout5.p1") />
     <docs-code snippet="tools/published-version-error.txt" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.tools.cli.commandSummary.title") />
+<h2>
+  { t(translations(), 'pages.tools.cli.commandSummary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.tools.cli.commandSummary.th1") />
-        <th @@i18n(key="pages.tools.cli.commandSummary.th2") />
-        <th @@i18n(key="pages.tools.cli.commandSummary.th3") />
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th3') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td1") />
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td1") />
         <td>
           <code>-p, --path</code>,
           <code>-s, --style</code>
         </td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td2") />
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td2") />
       </tr>
       <tr>
         <td>
@@ -68,7 +93,9 @@
           <code>xd s</code>
         </td>
         <td>—</td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td3") />
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -76,7 +103,9 @@
           <code>xd b</code>
         </td>
         <td>—</td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td4") />
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td4') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -84,15 +113,17 @@
           <code>xd t</code>
         </td>
         <td>—</td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td8") />
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td8') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td5") />
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td5") />
         <td>
           <code>-p, --path</code>,
           <code>-f, --force</code>
         </td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td6") />
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td6") />
       </tr>
       <tr>
         <td>
@@ -100,7 +131,9 @@
           <code>xd --help</code>
         </td>
         <td>—</td>
-        <td @@i18n(key="pages.tools.cli.commandSummary.td7") />
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td7') }
+        </td>
       </tr>
     </tbody>
   </table>

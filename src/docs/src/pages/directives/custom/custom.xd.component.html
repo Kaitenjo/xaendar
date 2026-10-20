@@ -9,88 +9,117 @@
 @import { ResizableBoxComponent } from '../../../examples/directives/custom/resize/resizable-box.xd.component.ts'
 @import { BubblesComponent } from '../../../examples/directives/custom/svg-grow/bubbles.xd.component.ts'
 @import { DirectiveTimingComponent } from '../../../examples/directives/custom/directive-timing/directive-timing.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { CONSTRUCTOR_ACCESS, GENERIC_DIRECTIVE, HOST_DIRECTIVE } from './custom.snippets.ts'
 @import { HOST_BINDINGS_DIRECTIVE } from '../../reference/api/packages/core.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.directives.custom.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.directives.custom.title") />
-<p @@i18n(key="pages.directives.custom.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.custom.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.custom.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.custom.lead") class="lead" />
 
-<h2 @@i18n(key="pages.directives.custom.theElementTheInputs.title") />
+<h2>
+  { t(translations(), 'pages.directives.custom.theElementTheInputs.title') }
+</h2>
 <docs-example name="directives/custom/tooltip"
   heading="{translations().pages.directives.custom.theElementTheInputs.example1}">
   <ex-tooltip-demo />
 </docs-example>
-<p @@i18n(key="pages.directives.custom.theElementTheInputs.p1") />
-<p @@i18n(key="pages.directives.custom.theElementTheInputs.p2") />
+<p @@htmlTranslation(key="pages.directives.custom.theElementTheInputs.p1") />
+<p @@htmlTranslation(key="pages.directives.custom.theElementTheInputs.p2") />
 
-<h2 @@i18n(key="pages.directives.custom.outputs.title") />
-<p @@i18n(key="pages.directives.custom.outputs.p1") />
+<h2>
+  { t(translations(), 'pages.directives.custom.outputs.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.custom.outputs.p1") />
 <docs-example name="directives/custom/click-outside"
   heading="{translations().pages.directives.custom.outputs.example1}">
   <ex-dropdown-menu />
 </docs-example>
-<p @@i18n(key="pages.directives.custom.outputs.p2") />
+<p @@htmlTranslation(key="pages.directives.custom.outputs.p2") />
 <docs-example name="directives/custom/resize" heading="{translations().pages.directives.custom.outputs.example2}">
   <ex-resizable-box />
 </docs-example>
-<p @@i18n(key="pages.directives.custom.outputs.p3") />
+<p @@htmlTranslation(key="pages.directives.custom.outputs.p3") />
 <docs-code snippet="directives/native-event-in-directive.html" />
-<p @@i18n(key="pages.directives.custom.outputs.p4") />
+<p>
+  { t(translations(), 'pages.directives.custom.outputs.p4') }
+</p>
 
-<h2 @@i18n(key="pages.directives.custom.hostBindings.title") />
-<p @@i18n(key="pages.directives.custom.hostBindings.p1") />
+<h2>
+  { t(translations(), 'pages.directives.custom.hostBindings.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.custom.hostBindings.p1") />
 <docs-code snippet="{HOST_BINDINGS_DIRECTIVE}" />
-<p @@i18n(key="pages.directives.custom.hostBindings.p2") />
+<p @@htmlTranslation(key="pages.directives.custom.hostBindings.p2") />
 
-<h2 @@i18n(key="pages.directives.custom.svgElements.title") />
-<p @@i18n(key="pages.directives.custom.svgElements.p1") />
+<h2>
+  { t(translations(), 'pages.directives.custom.svgElements.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.custom.svgElements.p1") />
 <docs-example name="directives/custom/svg-grow" heading="{translations().pages.directives.custom.svgElements.example1}">
   <ex-bubbles />
 </docs-example>
 
-<h2 @@i18n(key="pages.directives.custom.generics.title") />
-<p @@i18n(key="pages.directives.custom.generics.p1") />
+<h2>
+  { t(translations(), 'pages.directives.custom.generics.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.custom.generics.p1") />
 <docs-code snippet="{GENERIC_DIRECTIVE}" />
 <docs-code snippet="directives/generic-directive-usage.html" />
-<p @@i18n(key="pages.directives.custom.generics.p2") />
+<p @@htmlTranslation(key="pages.directives.custom.generics.p2") />
 
-<h2 @@i18n(key="pages.directives.custom.hostDirectives.title") />
-<p @@i18n(key="pages.directives.custom.hostDirectives.p1") />
+<h2>
+  { t(translations(), 'pages.directives.custom.hostDirectives.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.custom.hostDirectives.p1") />
 <docs-code snippet="{HOST_DIRECTIVE}" />
-<p @@i18n(key="pages.directives.custom.hostDirectives.p2") />
+<p @@htmlTranslation(key="pages.directives.custom.hostDirectives.p2") />
 <docs-code snippet="directives/host-directive-usage.html" />
-<p @@i18n(key="pages.directives.custom.hostDirectives.p3") />
-<p @@i18n(key="pages.directives.custom.hostDirectives.p4") />
+<p @@htmlTranslation(key="pages.directives.custom.hostDirectives.p3") />
+<p @@htmlTranslation(key="pages.directives.custom.hostDirectives.p4") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.directives.custom.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.directives.custom.edgeCases.title') }
+  </h2>
   <docs-example name="directives/custom/directive-timing"
     heading="{translations().pages.directives.custom.edgeCases.example1}" kind="edge">
     <ex-directive-timing />
   </docs-example>
-  <p @@i18n(key="pages.directives.custom.edgeCases.p1") />
-  <p @@i18n(key="pages.directives.custom.edgeCases.p2") />
+  <p @@htmlTranslation(key="pages.directives.custom.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.directives.custom.edgeCases.p2") />
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout1.heading}">
-      <p @@i18n(key="pages.directives.custom.edgeCases.callout1.p1") />
+      <p @@htmlTranslation(key="pages.directives.custom.edgeCases.callout1.p1") />
       <docs-code snippet="{CONSTRUCTOR_ACCESS}" />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.directives.custom.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.directives.custom.edgeCases.callout2.p1") />
+      <p>
+        { t(translations(), 'pages.directives.custom.edgeCases.callout2.p1') }
+      </p>
       <docs-code snippet="directives/custom-errors.txt" />
     </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.directives.custom.summary.title") />
+<h2>
+  { t(translations(), 'pages.directives.custom.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.directives.custom.summary.th1") />
-        <th @@i18n(key="pages.directives.custom.summary.th2") />
+        <th>
+          { t(translations(), 'pages.directives.custom.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.custom.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -100,7 +129,7 @@
             <code>element</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td1") />
+        <td @@htmlTranslation(key="pages.directives.custom.summary.td1") />
       </tr>
       <tr>
         <td>
@@ -108,7 +137,9 @@
             <code>onInit()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td2") />
+        <td>
+          { t(translations(), 'pages.directives.custom.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -116,7 +147,9 @@
             <code>onDestroy()</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td3") />
+        <td>
+          { t(translations(), 'pages.directives.custom.summary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -124,7 +157,9 @@
             <code>effect(fn, options?)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td4") />
+        <td>
+          { t(translations(), 'pages.directives.custom.summary.td4') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -132,7 +167,9 @@
             <code>dispatchEvent(event)</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td5") />
+        <td>
+          { t(translations(), 'pages.directives.custom.summary.td5') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -143,7 +180,9 @@
             <code>{ '@Event' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td6") />
+        <td>
+          { t(translations(), 'pages.directives.custom.summary.td6') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -154,7 +193,7 @@
             <code>{ '@HostEvent' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.directives.custom.summary.td7") />
+        <td @@htmlTranslation(key="pages.directives.custom.summary.td7") />
       </tr>
     </tbody>
   </table>

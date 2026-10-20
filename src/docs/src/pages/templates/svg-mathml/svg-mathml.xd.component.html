@@ -5,61 +5,80 @@
 @import { SvgChartComponent } from '../../../examples/templates/svg-mathml/svg-chart/svg-chart.xd.component.ts'
 @import { MathmlFormulaComponent } from '../../../examples/templates/svg-mathml/mathml-formula/mathml-formula.xd.component.ts'
 @import { ForeignObjectComponent } from '../../../examples/templates/svg-mathml/foreign-object/foreign-object.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.templates.svgMathml.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.templates.svgMathml.title") />
-<p @@i18n(key="pages.templates.svgMathml.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.svgMathml.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.svgMathml.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.templates.svgMathml.lead') }
+</p>
 
-<h2 @@i18n(key="pages.templates.svgMathml.svg.title") />
+<h2>
+  { t(translations(), 'pages.templates.svgMathml.svg.title') }
+</h2>
 <docs-code snippet="templates/svg-syntax.html" />
 <docs-example name="templates/svg-mathml/svg-chart" heading="{translations().pages.templates.svgMathml.svg.example1}">
   <ex-svg-chart />
 </docs-example>
-<p @@i18n(key="pages.templates.svgMathml.svg.p1") />
+<p @@htmlTranslation(key="pages.templates.svgMathml.svg.p1") />
 <docs-example name="templates/svg-mathml/foreign-object"
   heading="{translations().pages.templates.svgMathml.svg.example2}">
   <ex-foreign-object />
 </docs-example>
-<p @@i18n(key="pages.templates.svgMathml.svg.p2") />
+<p @@htmlTranslation(key="pages.templates.svgMathml.svg.p2") />
 
-<h2 @@i18n(key="pages.templates.svgMathml.mathml.title") />
+<h2>
+  { t(translations(), 'pages.templates.svgMathml.mathml.title') }
+</h2>
 <docs-example name="templates/svg-mathml/mathml-formula"
   heading="{translations().pages.templates.svgMathml.mathml.example1}">
   <ex-mathml-formula />
 </docs-example>
-<p @@i18n(key="pages.templates.svgMathml.mathml.p1") />
+<p @@htmlTranslation(key="pages.templates.svgMathml.mathml.p1") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.templates.svgMathml.edgeCases.title") />
-  <docs-callout @@i18n(key="pages.templates.svgMathml.edgeCases.callout1.body") kind="edge"
+  <h2>
+    { t(translations(), 'pages.templates.svgMathml.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.templates.svgMathml.edgeCases.callout1.body") kind="edge"
     heading="{translations().pages.templates.svgMathml.edgeCases.callout1.heading}" />
 </section>
 
-<h2 @@i18n(key="pages.templates.svgMathml.summary.title") />
+<h2>
+  { t(translations(), 'pages.templates.svgMathml.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.templates.svgMathml.summary.th1") />
-        <th @@i18n(key="pages.templates.svgMathml.summary.th2") />
+        <th>
+          { t(translations(), 'pages.templates.svgMathml.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.svgMathml.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.templates.svgMathml.summary.td1") />
+        <td @@htmlTranslation(key="pages.templates.svgMathml.summary.td1") />
         <td>
           <code>http://www.w3.org/2000/svg</code>
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.svgMathml.summary.td2") />
+        <td @@htmlTranslation(key="pages.templates.svgMathml.summary.td2") />
         <td>
           <code>http://www.w3.org/1998/Math/MathML</code>
         </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.templates.svgMathml.summary.td3") />
+        <td @@htmlTranslation(key="pages.templates.svgMathml.summary.td3") />
         <td>
           <code>http://www.w3.org/1999/xhtml</code>
         </td>

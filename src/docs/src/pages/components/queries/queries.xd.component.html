@@ -7,68 +7,91 @@
 @import { QueryTimingComponent } from '../../../examples/components/queries/query-timing/query-timing.xd.component.ts'
 @import { AttributeChangesComponent } from '../../../examples/components/queries/attribute-changes/attribute-changes.xd.component.ts'
 @import { RefQueryComponent } from '../../../examples/components/queries/ref-query/ref-query.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { QUERY_DECORATORS, QUERY_REQUIRED } from './queries.snippets.ts'
 @import { QUERY_READ } from '../../reference/api/packages/core.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.queries.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.queries.title") />
-<p @@i18n(key="pages.components.queries.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.queries.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.queries.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.queries.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.queries.queryingTheTemplate.title") />
+<h2>
+  { t(translations(), 'pages.components.queries.queryingTheTemplate.title') }
+</h2>
 <docs-code snippet="{QUERY_DECORATORS}" />
-<p @@i18n(key="pages.components.queries.queryingTheTemplate.p1") />
+<p @@htmlTranslation(key="pages.components.queries.queryingTheTemplate.p1") />
 <docs-example name="components/queries/view-query"
   heading="{translations().pages.components.queries.queryingTheTemplate.example1}">
   <ex-view-query />
 </docs-example>
-<p @@i18n(key="pages.components.queries.queryingTheTemplate.p2") />
-<p @@i18n(key="pages.components.queries.queryingTheTemplate.p3") />
+<p @@htmlTranslation(key="pages.components.queries.queryingTheTemplate.p2") />
+<p>
+  { t(translations(), 'pages.components.queries.queryingTheTemplate.p3') }
+</p>
 
-<h2 @@i18n(key="pages.components.queries.refsAndDirectives.title") />
-<p @@i18n(key="pages.components.queries.refsAndDirectives.p1") />
-<p @@i18n(key="pages.components.queries.refsAndDirectives.p2") />
+<h2>
+  { t(translations(), 'pages.components.queries.refsAndDirectives.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.queries.refsAndDirectives.p1") />
+<p @@htmlTranslation(key="pages.components.queries.refsAndDirectives.p2") />
 <docs-example name="components/queries/ref-query"
   heading="{translations().pages.components.queries.refsAndDirectives.example1}">
   <ex-ref-query />
 </docs-example>
-<p @@i18n(key="pages.components.queries.refsAndDirectives.p3") />
-<p @@i18n(key="pages.components.queries.refsAndDirectives.p4") />
+<p @@htmlTranslation(key="pages.components.queries.refsAndDirectives.p3") />
+<p @@htmlTranslation(key="pages.components.queries.refsAndDirectives.p4") />
 <docs-code snippet="{QUERY_READ}" />
 
-<h2 @@i18n(key="pages.components.queries.whenTheResultIs.title") />
-<p @@i18n(key="pages.components.queries.whenTheResultIs.p1") />
+<h2>
+  { t(translations(), 'pages.components.queries.whenTheResultIs.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.queries.whenTheResultIs.p1") />
 <docs-example name="components/queries/query-timing"
   heading="{translations().pages.components.queries.whenTheResultIs.example1}">
   <ex-query-timing />
 </docs-example>
-<p @@i18n(key="pages.components.queries.whenTheResultIs.p2") />
+<p @@htmlTranslation(key="pages.components.queries.whenTheResultIs.p2") />
 
-<h2 @@i18n(key="pages.components.queries.requiredQueries.title") />
-<p @@i18n(key="pages.components.queries.requiredQueries.p1") />
+<h2>
+  { t(translations(), 'pages.components.queries.requiredQueries.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.queries.requiredQueries.p1") />
 <docs-code snippet="{QUERY_REQUIRED}" />
-<p @@i18n(key="pages.components.queries.requiredQueries.p2") />
+<p @@htmlTranslation(key="pages.components.queries.requiredQueries.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.queries.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.queries.edgeCases.title') }
+  </h2>
   <docs-example name="components/queries/attribute-changes"
     heading="{translations().pages.components.queries.edgeCases.example1}" kind="edge">
     <ex-attribute-changes />
   </docs-example>
-  <p @@i18n(key="pages.components.queries.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.components.queries.edgeCases.p1") />
   <docs-callout kind="edge" heading="{translations().pages.components.queries.edgeCases.callout3.heading}">
-    <p @@i18n(key="pages.components.queries.edgeCases.callout3.p1") />
+    <p @@htmlTranslation(key="pages.components.queries.edgeCases.callout3.p1") />
     <docs-code snippet="components/query-undecorated-error.txt" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.queries.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.queries.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.queries.summary.th1") />
-        <th @@i18n(key="pages.components.queries.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.queries.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.queries.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -78,7 +101,7 @@
             <code>{ '@Query(target)' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td1") />
+        <td @@htmlTranslation(key="pages.components.queries.summary.td1") />
       </tr>
       <tr>
         <td>
@@ -86,7 +109,9 @@
             <code>{ '@Query.all(target)' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td2") />
+        <td>
+          { t(translations(), 'pages.components.queries.summary.td2') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -94,7 +119,7 @@
             <code>{ '@Query.required(target)' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td3") />
+        <td @@htmlTranslation(key="pages.components.queries.summary.td3") />
       </tr>
       <tr>
         <td>
@@ -102,7 +127,9 @@
             <code>target</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td4") />
+        <td>
+          { t(translations(), 'pages.components.queries.summary.td4') }
+        </td>
       </tr>
       <tr>
         <td>
@@ -110,7 +137,7 @@
             <code>{ '@Query.ref(name)' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td6") />
+        <td @@htmlTranslation(key="pages.components.queries.summary.td6") />
       </tr>
       <tr>
         <td>
@@ -118,7 +145,7 @@
             <code>{ '{ read }' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td7") />
+        <td @@htmlTranslation(key="pages.components.queries.summary.td7") />
       </tr>
       <tr>
         <td>
@@ -126,7 +153,7 @@
             <code>{ 'QuerySignal<T>' }</code>
           </a>
         </td>
-        <td @@i18n(key="pages.components.queries.summary.td5") />
+        <td @@htmlTranslation(key="pages.components.queries.summary.td5") />
       </tr>
     </tbody>
   </table>

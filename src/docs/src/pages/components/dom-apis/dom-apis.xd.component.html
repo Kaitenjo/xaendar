@@ -7,85 +7,115 @@
 @import { AutoFocusComponent } from '../../../examples/components/dom-apis/auto-focus/auto-focus.xd.component.ts'
 @import { ResizeObserverComponent } from '../../../examples/components/dom-apis/resize-observer/resize-observer.xd.component.ts'
 @import { ThirdPartyComponent } from '../../../examples/components/dom-apis/third-party/third-party.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { WINDOW_LISTENER } from './dom-apis.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.domApis.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.domApis.title") />
-<p @@i18n(key="pages.components.domApis.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.domApis.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.domApis.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.domApis.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.domApis.drawingFromTheState.title") />
-<p @@i18n(key="pages.components.domApis.drawingFromTheState.p1") />
+<h2>
+  { t(translations(), 'pages.components.domApis.drawingFromTheState.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.domApis.drawingFromTheState.p1") />
 <docs-example name="components/dom-apis/canvas-chart"
   heading="{translations().pages.components.domApis.drawingFromTheState.example1}">
   <ex-canvas-chart />
 </docs-example>
-<p @@i18n(key="pages.components.domApis.drawingFromTheState.p2") />
+<p @@htmlTranslation(key="pages.components.domApis.drawingFromTheState.p2") />
 
-<h2 @@i18n(key="pages.components.domApis.reactingToElementsThat.title") />
-<p @@i18n(key="pages.components.domApis.reactingToElementsThat.p1") />
+<h2>
+  { t(translations(), 'pages.components.domApis.reactingToElementsThat.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.domApis.reactingToElementsThat.p1") />
 <docs-example name="components/dom-apis/auto-focus"
   heading="{translations().pages.components.domApis.reactingToElementsThat.example1}">
   <ex-auto-focus />
 </docs-example>
-<p @@i18n(key="pages.components.domApis.reactingToElementsThat.p2") />
+<p @@htmlTranslation(key="pages.components.domApis.reactingToElementsThat.p2") />
 
-<h2 @@i18n(key="pages.components.domApis.observers.title") />
-<p @@i18n(key="pages.components.domApis.observers.p1") />
+<h2>
+  { t(translations(), 'pages.components.domApis.observers.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.domApis.observers.p1") />
 <docs-example name="components/dom-apis/resize-observer"
   heading="{translations().pages.components.domApis.observers.example1}">
   <ex-resize-observer />
 </docs-example>
-<p @@i18n(key="pages.components.domApis.observers.p2") />
+<p @@htmlTranslation(key="pages.components.domApis.observers.p2") />
 <docs-code snippet="{WINDOW_LISTENER}" />
 
-<h2 @@i18n(key="pages.components.domApis.customElementsFromOther.title") />
-<p @@i18n(key="pages.components.domApis.customElementsFromOther.p1") />
+<h2>
+  { t(translations(), 'pages.components.domApis.customElementsFromOther.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.domApis.customElementsFromOther.p1") />
 <docs-example name="components/dom-apis/third-party"
   heading="{translations().pages.components.domApis.customElementsFromOther.example1}">
   <ex-third-party />
 </docs-example>
-<p @@i18n(key="pages.components.domApis.customElementsFromOther.p2") />
+<p @@htmlTranslation(key="pages.components.domApis.customElementsFromOther.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.domApis.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.domApis.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.components.domApis.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.domApis.edgeCases.callout2.body")
       heading="{translations().pages.components.domApis.edgeCases.callout2.heading}" />
-    <docs-callout-item @@i18n(key="pages.components.domApis.edgeCases.callout4.body")
-      heading="{translations().pages.components.domApis.edgeCases.callout4.heading}" />
+    <docs-callout-item heading="{translations().pages.components.domApis.edgeCases.callout4.heading}">
+      { t(translations(), 'pages.components.domApis.edgeCases.callout4.body') }
+    </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.domApis.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.domApis.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.domApis.summary.th1") />
-        <th @@i18n(key="pages.components.domApis.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.domApis.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.domApis.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.components.domApis.summary.td1") />
-        <td @@i18n(key="pages.components.domApis.summary.td2") />
+        <td>
+          { t(translations(), 'pages.components.domApis.summary.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td2") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.domApis.summary.td3") />
-        <td @@i18n(key="pages.components.domApis.summary.td4") />
+        <td>
+          { t(translations(), 'pages.components.domApis.summary.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.domApis.summary.td5") />
-        <td @@i18n(key="pages.components.domApis.summary.td6") />
+        <td>
+          { t(translations(), 'pages.components.domApis.summary.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td6") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.domApis.summary.td7") />
-        <td @@i18n(key="pages.components.domApis.summary.td8") />
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td7") />
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td8") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.domApis.summary.td9") />
-        <td @@i18n(key="pages.components.domApis.summary.td10") />
+        <td>
+          { t(translations(), 'pages.components.domApis.summary.td9') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.domApis.summary.td10") />
       </tr>
     </tbody>
   </table>

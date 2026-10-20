@@ -1,7 +1,13 @@
 @import { DocsIssueListComponent } from '../../../ui/docs-issue-list/docs-issue-list.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.reference.knownIssues.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.reference.knownIssues.title") />
-<p @@i18n(key="pages.reference.knownIssues.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.knownIssues.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.knownIssues.title') }
+</h1>
+<p @@htmlTranslation(key="pages.reference.knownIssues.lead") class="lead" />
 <docs-issue-list />

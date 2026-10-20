@@ -7,58 +7,77 @@
 @import { DynamicSlotComponent } from '../../../examples/components/content-projection/dynamic-slot/dynamic-slot.xd.component.ts'
 @import { ForwardingComponent } from '../../../examples/components/content-projection/forwarding/forwarding.xd.component.ts'
 @import { SlotTimingComponent } from '../../../examples/components/content-projection/slot-timing/slot-timing.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.contentProjection.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.contentProjection.title") />
-<p @@i18n(key="pages.components.contentProjection.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.contentProjection.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.contentProjection.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.contentProjection.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.title") />
-<p @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.p1") />
+<h2>
+  { t(translations(), 'pages.components.contentProjection.defaultSlotNamedSlots.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.contentProjection.defaultSlotNamedSlots.p1") />
 <docs-example name="components/content-projection/card-slots"
   heading="{translations().pages.components.contentProjection.defaultSlotNamedSlots.example1}">
   <ex-card-slots />
 </docs-example>
-<p @@i18n(key="pages.components.contentProjection.defaultSlotNamedSlots.p2") />
+<p @@htmlTranslation(key="pages.components.contentProjection.defaultSlotNamedSlots.p2") />
 
-<h2 @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.title") />
-<p @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.p1") />
+<h2>
+  { t(translations(), 'pages.components.contentProjection.choosingTheSlotAt.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.contentProjection.choosingTheSlotAt.p1") />
 <docs-example name="components/content-projection/dynamic-slot"
   heading="{translations().pages.components.contentProjection.choosingTheSlotAt.example1}">
   <ex-dynamic-slot />
 </docs-example>
-<p @@i18n(key="pages.components.contentProjection.choosingTheSlotAt.p2") />
+<p @@htmlTranslation(key="pages.components.contentProjection.choosingTheSlotAt.p2") />
 
-<h2 @@i18n(key="pages.components.contentProjection.forwardingSlots.title") />
-<p @@i18n(key="pages.components.contentProjection.forwardingSlots.p1") />
+<h2>
+  { t(translations(), 'pages.components.contentProjection.forwardingSlots.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.contentProjection.forwardingSlots.p1") />
 <docs-example name="components/content-projection/forwarding"
   heading="{translations().pages.components.contentProjection.forwardingSlots.example1}">
   <ex-forwarding />
 </docs-example>
-<p @@i18n(key="pages.components.contentProjection.forwardingSlots.p2") />
+<p @@htmlTranslation(key="pages.components.contentProjection.forwardingSlots.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.contentProjection.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.contentProjection.edgeCases.title') }
+  </h2>
   <docs-example name="components/content-projection/slot-timing"
     heading="{translations().pages.components.contentProjection.edgeCases.example1}" kind="edge">
     <ex-slot-timing />
   </docs-example>
-  <p @@i18n(key="pages.components.contentProjection.edgeCases.p1") />
+  <p @@htmlTranslation(key="pages.components.contentProjection.edgeCases.p1") />
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.components.contentProjection.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.contentProjection.edgeCases.callout1.body")
       heading="{translations().pages.components.contentProjection.edgeCases.callout1.heading}" />
-    <docs-callout-item @@i18n(key="pages.components.contentProjection.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.contentProjection.edgeCases.callout2.body")
       heading="{translations().pages.components.contentProjection.edgeCases.callout2.heading}" />
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.contentProjection.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.contentProjection.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.contentProjection.summary.th1") />
-        <th @@i18n(key="pages.components.contentProjection.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.contentProjection.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.contentProjection.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -66,31 +85,37 @@
         <td>
           <code>{ '<slot />' }</code>
         </td>
-        <td @@i18n(key="pages.components.contentProjection.summary.td1") />
+        <td @@htmlTranslation(key="pages.components.contentProjection.summary.td1") />
       </tr>
       <tr>
         <td>
           <code>{ '<slot name="x" />' }</code>
         </td>
-        <td @@i18n(key="pages.components.contentProjection.summary.td2") />
+        <td @@htmlTranslation(key="pages.components.contentProjection.summary.td2") />
       </tr>
       <tr>
         <td>
           <code>{ '<slot>fallback</slot>' }</code>
         </td>
-        <td @@i18n(key="pages.components.contentProjection.summary.td3") />
+        <td>
+          { t(translations(), 'pages.components.contentProjection.summary.td3') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>{ 'slot="{ expr }"' }</code>
         </td>
-        <td @@i18n(key="pages.components.contentProjection.summary.td4") />
+        <td>
+          { t(translations(), 'pages.components.contentProjection.summary.td4') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>(slotchange)</code>
         </td>
-        <td @@i18n(key="pages.components.contentProjection.summary.td5") />
+        <td>
+          { t(translations(), 'pages.components.contentProjection.summary.td5') }
+        </td>
       </tr>
     </tbody>
   </table>

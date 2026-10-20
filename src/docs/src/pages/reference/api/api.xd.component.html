@@ -1,7 +1,14 @@
 @import { DocsApiIndexComponent } from '../../../ui/docs-api-index/docs-api-index.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 
-<span @@i18n(key="pages.reference.api.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.reference.api.title") />
-<p @@i18n(key="pages.reference.api.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.api.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.api.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.reference.api.lead') }
+</p>
 <docs-api-index />

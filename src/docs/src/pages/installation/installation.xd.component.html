@@ -2,66 +2,93 @@
 @import { DocsCodeComponent } from '../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
-@import { I18nDirective } from '../../directives/i18n.directive.ts'
 @import { INSTALLATION_BOOTSTRAP, INSTALLATION_VITE_CONFIG, MAIN, MY_APP_ROOT_XD_COMPONENT } from './installation.snippets.ts'
+@import { translate as t } from '../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.installation.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.installation.title") />
-<p @@i18n(key="pages.installation.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.installation.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.installation.title') }
+</h1>
+<p @@htmlTranslation(key="pages.installation.lead") class="lead" />
 
-<h2 @@i18n(key="pages.installation.createAProjectWith.title") />
+<h2>
+  { t(translations(), 'pages.installation.createAProjectWith.title') }
+</h2>
 <docs-code snippet="installation/new-project.sh" />
-<p @@i18n(key="pages.installation.createAProjectWith.p1") />
+<p @@htmlTranslation(key="pages.installation.createAProjectWith.p1") />
 <docs-code snippet="installation/structure.txt" />
-<p @@i18n(key="pages.installation.createAProjectWith.p2") />
-<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle1") />
+<p>
+  { t(translations(), 'pages.installation.createAProjectWith.p2') }
+</p>
+<h3>
+  { t(translations(), 'pages.installation.createAProjectWith.subtitle1') }
+</h3>
 <docs-code snippet="installation/index.html" />
-<p @@i18n(key="pages.installation.createAProjectWith.p3") />
-<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle2") />
+<p @@htmlTranslation(key="pages.installation.createAProjectWith.p3") />
+<h3>
+  { t(translations(), 'pages.installation.createAProjectWith.subtitle2') }
+</h3>
 <docs-code snippet="{MAIN}" />
-<p @@i18n(key="pages.installation.createAProjectWith.p4") />
-<h3 @@i18n(key="pages.installation.createAProjectWith.subtitle3") />
+<p @@htmlTranslation(key="pages.installation.createAProjectWith.p4") />
+<h3>
+  { t(translations(), 'pages.installation.createAProjectWith.subtitle3') }
+</h3>
 <docs-code snippet="{INSTALLATION_BOOTSTRAP}" />
-<p @@i18n(key="pages.installation.createAProjectWith.p5") />
+<p @@htmlTranslation(key="pages.installation.createAProjectWith.p5") />
 
-<h2 @@i18n(key="pages.installation.addXaendarToA.title") />
+<h2>
+  { t(translations(), 'pages.installation.addXaendarToA.title') }
+</h2>
 <ol class="steps">
   <li>
-    <span @@i18n(key="pages.installation.addXaendarToA.li1") />
+    <span>
+      { t(translations(), 'pages.installation.addXaendarToA.li1') }
+    </span>
     <docs-code snippet="installation/manual-install.sh" />
   </li>
   <li>
-    <span @@i18n(key="pages.installation.addXaendarToA.li2") />
+    <span>
+      { t(translations(), 'pages.installation.addXaendarToA.li2') }
+    </span>
     <docs-code snippet="{INSTALLATION_VITE_CONFIG}" />
   </li>
   <li>
-    <span @@i18n(key="pages.installation.addXaendarToA.li3") />
+    <span @@htmlTranslation(key="pages.installation.addXaendarToA.li3") />
     <docs-code snippet="installation/tsconfig.json" />
   </li>
-  <li @@i18n(key="pages.installation.addXaendarToA.li4") />
+  <li @@htmlTranslation(key="pages.installation.addXaendarToA.li4") />
 </ol>
 
-<h2 @@i18n(key="pages.installation.yourFirstComponent.title") />
-<p @@i18n(key="pages.installation.yourFirstComponent.p1") />
+<h2>
+  { t(translations(), 'pages.installation.yourFirstComponent.title') }
+</h2>
+<p @@htmlTranslation(key="pages.installation.yourFirstComponent.p1") />
 <docs-code snippet="{MY_APP_ROOT_XD_COMPONENT}" />
-<p @@i18n(key="pages.installation.yourFirstComponent.p2") />
+<p @@htmlTranslation(key="pages.installation.yourFirstComponent.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.installation.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.installation.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
     <docs-callout-item heading="{translations().pages.installation.edgeCases.callout1.heading}">
-      <p @@i18n(key="pages.installation.edgeCases.callout1.p1") />
+      <p @@htmlTranslation(key="pages.installation.edgeCases.callout1.p1") />
       <docs-code snippet="installation/missing-signals-error.txt" />
-      <p @@i18n(key="pages.installation.edgeCases.callout1.p2") />
+      <p @@htmlTranslation(key="pages.installation.edgeCases.callout1.p2") />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.installation.edgeCases.callout2.heading}">
-      <p @@i18n(key="pages.installation.edgeCases.callout2.p1") />
+      <p @@htmlTranslation(key="pages.installation.edgeCases.callout2.p1") />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.installation.edgeCases.callout3.heading}">
-      <p @@i18n(key="pages.installation.edgeCases.callout3.p1") />
+      <p @@htmlTranslation(key="pages.installation.edgeCases.callout3.p1") />
     </docs-callout-item>
     <docs-callout-item heading="{translations().pages.installation.edgeCases.callout4.heading}">
-      <p @@i18n(key="pages.installation.edgeCases.callout4.p1") />
+      <p>
+        { t(translations(), 'pages.installation.edgeCases.callout4.p1') }
+      </p>
       <docs-code snippet="installation/plugin-order-error.txt" />
     </docs-callout-item>
   </docs-callout>

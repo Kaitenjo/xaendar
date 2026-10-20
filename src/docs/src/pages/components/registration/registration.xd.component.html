@@ -6,102 +6,138 @@
 @import { DefineRulesComponent } from '../../../examples/components/registration/define-rules/define-rules.xd.component.ts'
 @import { ForeignElementComponent } from '../../../examples/components/registration/foreign-element/foreign-element.xd.component.ts'
 @import { LazyLoadingComponent } from '../../../examples/components/registration/lazy-loading/lazy-loading.xd.component.ts'
-@import { I18nDirective } from '../../../directives/i18n.directive.ts'
 @import { COMPONENTS_BOOTSTRAP } from './registration.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
-<span @@i18n(key="pages.components.registration.eyebrow") class="eyebrow" />
-<h1 @@i18n(key="pages.components.registration.title") />
-<p @@i18n(key="pages.components.registration.lead") class="lead" />
+<span class="eyebrow">
+  { t(translations(), 'pages.components.registration.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.registration.title') }
+</h1>
+<p @@htmlTranslation(key="pages.components.registration.lead") class="lead" />
 
-<h2 @@i18n(key="pages.components.registration.choosingASelector.title") />
-<p @@i18n(key="pages.components.registration.choosingASelector.p1") />
+<h2>
+  { t(translations(), 'pages.components.registration.choosingASelector.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.registration.choosingASelector.p1") />
 <docs-example name="components/registration/define-rules"
   heading="{translations().pages.components.registration.choosingASelector.example1}">
   <ex-define-rules />
 </docs-example>
-<p @@i18n(key="pages.components.registration.choosingASelector.p2") />
+<p>
+  { t(translations(), 'pages.components.registration.choosingASelector.p2') }
+</p>
 <docs-code snippet="components/invalid-selector-error.txt" />
 
-<h2 @@i18n(key="pages.components.registration.oneNameOneClass.title") />
-<p @@i18n(key="pages.components.registration.oneNameOneClass.p1") />
+<h2>
+  { t(translations(), 'pages.components.registration.oneNameOneClass.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.registration.oneNameOneClass.p1") />
 <docs-code snippet="components/duplicate-selector-error.txt" />
 
-<h2 @@i18n(key="pages.components.registration.usingAComponentIn.title") />
-<p @@i18n(key="pages.components.registration.usingAComponentIn.p1") />
+<h2>
+  { t(translations(), 'pages.components.registration.usingAComponentIn.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.components.registration.usingAComponentIn.p1') }
+</p>
 <ol class="steps">
   <li>
-    <span @@i18n(key="pages.components.registration.usingAComponentIn.li1") />
+    <span @@htmlTranslation(key="pages.components.registration.usingAComponentIn.li1") />
     <docs-code snippet="components/import-component.html" />
   </li>
   <li>
-    <span @@i18n(key="pages.components.registration.usingAComponentIn.li2") />
+    <span @@htmlTranslation(key="pages.components.registration.usingAComponentIn.li2") />
     <docs-code snippet="{COMPONENTS_BOOTSTRAP}" />
   </li>
 </ol>
-<p @@i18n(key="pages.components.registration.usingAComponentIn.p2") />
+<p>
+  { t(translations(), 'pages.components.registration.usingAComponentIn.p2') }
+</p>
 <docs-code snippet="components/not-imported-error.txt" />
 
-<h2 @@i18n(key="pages.components.registration.customElementsOfOther.title") />
-<p @@i18n(key="pages.components.registration.customElementsOfOther.p1") />
+<h2>
+  { t(translations(), 'pages.components.registration.customElementsOfOther.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.registration.customElementsOfOther.p1") />
 <docs-code snippet="components/custom-elements-config.json" />
 <docs-example name="components/registration/foreign-element"
   heading="{translations().pages.components.registration.customElementsOfOther.example1}">
   <ex-foreign-element />
 </docs-example>
-<p @@i18n(key="pages.components.registration.customElementsOfOther.p2") />
+<p @@htmlTranslation(key="pages.components.registration.customElementsOfOther.p2") />
 
-<h2 @@i18n(key="pages.components.registration.loadingAComponentOn.title") />
-<p @@i18n(key="pages.components.registration.loadingAComponentOn.p1") />
+<h2>
+  { t(translations(), 'pages.components.registration.loadingAComponentOn.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.registration.loadingAComponentOn.p1") />
 <docs-example name="components/registration/lazy-loading"
   heading="{translations().pages.components.registration.loadingAComponentOn.example1}" kind="edge">
   <ex-lazy-loading />
 </docs-example>
-<p @@i18n(key="pages.components.registration.loadingAComponentOn.p2") />
+<p @@htmlTranslation(key="pages.components.registration.loadingAComponentOn.p2") />
 
 <section class="edge-cases">
-  <h2 @@i18n(key="pages.components.registration.edgeCases.title") />
+  <h2>
+    { t(translations(), 'pages.components.registration.edgeCases.title') }
+  </h2>
   <docs-callout kind="edge">
-    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout1.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.registration.edgeCases.callout1.body")
       heading="{translations().pages.components.registration.edgeCases.callout1.heading}" />
-    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout2.body")
+    <docs-callout-item @@htmlTranslation(key="pages.components.registration.edgeCases.callout2.body")
       heading="{translations().pages.components.registration.edgeCases.callout2.heading}" />
-    <docs-callout-item @@i18n(key="pages.components.registration.edgeCases.callout3.body")
-      heading="{translations().pages.components.registration.edgeCases.callout3.heading}" />
+    <docs-callout-item heading="{translations().pages.components.registration.edgeCases.callout3.heading}">
+      { t(translations(), 'pages.components.registration.edgeCases.callout3.body') }
+    </docs-callout-item>
   </docs-callout>
 </section>
 
-<h2 @@i18n(key="pages.components.registration.summary.title") />
+<h2>
+  { t(translations(), 'pages.components.registration.summary.title') }
+</h2>
 <div class="table-wrap">
   <table class="summary">
     <thead>
       <tr>
-        <th @@i18n(key="pages.components.registration.summary.th1") />
-        <th @@i18n(key="pages.components.registration.summary.th2") />
+        <th>
+          { t(translations(), 'pages.components.registration.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.registration.summary.th2') }
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td @@i18n(key="pages.components.registration.summary.td1") />
-        <td @@i18n(key="pages.components.registration.summary.td2") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td1") />
+        <td>
+          { t(translations(), 'pages.components.registration.summary.td2') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.registration.summary.td3") />
-        <td @@i18n(key="pages.components.registration.summary.td4") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td3") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td4") />
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.registration.summary.td5") />
-        <td @@i18n(key="pages.components.registration.summary.td6") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td5") />
+        <td>
+          { t(translations(), 'pages.components.registration.summary.td6') }
+        </td>
       </tr>
       <tr>
         <td>
           <code>:defined</code>,
           <code>:not(:defined)</code>
         </td>
-        <td @@i18n(key="pages.components.registration.summary.td7") />
+        <td>
+          { t(translations(), 'pages.components.registration.summary.td7') }
+        </td>
       </tr>
       <tr>
-        <td @@i18n(key="pages.components.registration.summary.td8") />
-        <td @@i18n(key="pages.components.registration.summary.td9") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td8") />
+        <td @@htmlTranslation(key="pages.components.registration.summary.td9") />
       </tr>
     </tbody>
   </table>
