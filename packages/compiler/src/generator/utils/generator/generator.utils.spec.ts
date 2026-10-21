@@ -90,6 +90,18 @@ describe('resolveExpression', () => {
     expect(resolve('name', new CompilerContext(new CompilerContext()))).toEqual({ expression: 'name' });
   });
 
+  it('drops the non-null assertion, resolving the value it applies to', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('user');
+    expect(resolve('user()!.name', context)).toEqual({ expression: 'this.user().name', reactive: true });
+    expect(resolve('items!', new CompilerContext())).toEqual({ expression: 'this.items' });
+    expect(resolve('(a! + b!)!')).toEqual({ expression: '(this.a + this.b)' });
+  });
+
+  it('drops the non-null assertion from a subtree without identifiers to resolve', () => {
+    expect(resolve('window.name!.length')).toEqual({ expression: 'window.name.length' });
+  });
+
   it('resolves signal class fields as reactive this-members', () => {
     const context = new CompilerContext();
     context.addSignalClassField('count');

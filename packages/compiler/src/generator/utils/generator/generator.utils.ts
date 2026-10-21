@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { Expression, forEachChild, Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
+import { Expression, forEachChild, Identifier, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/generated-line.type';
@@ -157,8 +157,13 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
     return { ...resolved, expression, segments };
   }
 
-  // No resolvable identifiers in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent, compilerContext)) {
+  // The non-null assertion (`value!`) is TypeScript only: it is dropped, the value it applies to is emitted
+  if (isNonNullExpression(node)) {
+    return emitNode(node.expression, node, compilerContext, options);
+  }
+
+  // No resolvable identifiers nor non-null assertions in this subtree — emit verbatim
+  if (!containsResolvableIdentifier(node, parent, compilerContext) && !containsNonNullExpression(node)) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -251,6 +256,25 @@ function containsResolvableIdentifier(node: Node, parent: Node, compilerContext:
   forEachChild(node, child => {
     if (!found) {
       found = containsResolvableIdentifier(child, node, compilerContext);
+    }
+  });
+
+  return found;
+}
+
+/**
+ * Returns true if the subtree rooted at `node` contains a non-null assertion (`value!`),
+ * which is dropped from the emitted text.
+ *
+ * @param node - The root of the subtree.
+ * @returns Whether the subtree contains a non-null assertion.
+ */
+function containsNonNullExpression(node: Node): boolean {
+  let found = isNonNullExpression(node);
+
+  forEachChild(node, child => {
+    if (!found) {
+      found = containsNonNullExpression(child);
     }
   });
 
