@@ -3,9 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { CompilerOptions, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { toPosixPath } from '../path/path.utils';
 import { collectFileDiagnostics, collectProjectDiagnostics, formatTypeDiagnostics } from './type-check.utils';
+
+// Creating a TypeScript language service is slow when the whole suite runs in parallel
+vi.setConfig({ testTimeout: 60000 });
 
 /**
  * Compiler options resolving the fixtures as a bundler does.

@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ClassDeclaration, CompilerOptions, Decorator, getDecorators, getNameOfDeclaration, Identifier, isCallExpression, isClassDeclaration, isDecorator, isIdentifier, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isShorthandPropertyAssignment, isStringLiteral, isTypeReferenceNode, ModifierLike, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Decorator, EntityName, forEachChild, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierLike, Node, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ClassTypeParameter, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
@@ -521,6 +521,11 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
 
   if (args.length) {
     const options = required ? args[0] : args[1];
+    const incomingType = options && isObjectLiteralExpression(options) ? findTransformIncomingType(decorator, options) : undefined;
+    if (incomingType) {
+      metadata.type = qualifyType(incomingType, sourceFile);
+    }
+
     const aliasNode = options && isObjectLiteralExpression(options) && options?.properties?.find((prop): prop is Omit<PropertyAssignment, 'initializer'> & { initializer: StringLiteral } => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias' && isStringLiteral(prop.initializer));
     if (aliasNode) {
       const initializer = aliasNode.initializer;
@@ -533,6 +538,137 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
   }
 
   return metadata
+}
+
+/**
+ * Finds the type a property with a `transform` accepts from outside: the one the template must bind.
+ *
+ * It is, in order, the second type argument of the decorator (`@Property<InputSignal<number>, string>`), the annotation of
+ * the parameter of the `transform`, or nothing, so that the type of the value of the signal is used.
+ *
+ * @param decorator - The `@Property` decorator.
+ * @param options - The options object literal of the decorator.
+ * @returns The type node of the incoming value, `undefined` if the property has no `transform` or no type is declared for it.
+ */
+function findTransformIncomingType(decorator: PropertyDecorator, options: ObjectLiteralExpression): TypeNode | undefined {
+  const transform = options.properties.find(property => (isPropertyAssignment(property) || isMethodDeclaration(property)) && isIdentifier(property.name) && property.name.text === 'transform');
+  if (!transform) {
+    return undefined;
+  }
+
+  const typeArgument = decorator.expression.typeArguments?.[1];
+  if (typeArgument) {
+    return typeArgument;
+  }
+
+  const callback = isPropertyAssignment(transform) ? transform.initializer : transform;
+  return isArrowFunction(callback) || isFunctionExpression(callback) || isMethodDeclaration(callback) ? callback.parameters[0]?.type : undefined;
+}
+
+/**
+ * Writes a type as a template can reference it from another file: the names it uses, imported or declared in the file of
+ * the property, become `import()` types of the module declaring them.
+ *
+ * @example
+ * // import { Tag } from './tag.type'; transform: (tags: Tag[]) => ...
+ * Tag[] -> import('/src/tag.type').Tag[]
+ *
+ * @param type - The type node, in `sourceFile`.
+ * @param sourceFile - The source file declaring the property.
+ * @returns The text of the type. Names found neither in the imports nor in the declarations of the file (globals, type parameters) stay as written.
+ */
+function qualifyType(type: TypeNode, sourceFile: SourceFile): string {
+  const start = type.getStart(sourceFile);
+  const replacements = new Array<{ start: number, end: number, text: string }>();
+  const visit = (node: Node): void => {
+    if (isTypeReferenceNode(node)) {
+      let name: EntityName = node.typeName;
+      while (isQualifiedName(name)) {
+        name = name.left;
+      }
+
+      const qualifier = findTypeQualifier(name.text, sourceFile);
+      if (qualifier) {
+        // A reference through a namespace import (`ns.Tag`) only needs the namespace replaced
+        const isNamespace = name !== node.typeName;
+        replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
+      }
+    }
+    forEachChild(node, visit);
+  };
+  visit(type);
+
+  let text = type.getText(sourceFile);
+  for (let i = replacements.length - 1; i >= 0; i--) {
+    const { start: from, end, text: replacement } = replacements[i];
+    text = `${text.slice(0, from)}${replacement}${text.slice(end)}`;
+  }
+
+  return text;
+}
+
+/**
+ * Finds the module declaring a type name used in a file: the one it is imported from, or the file itself.
+ *
+ * @param name - The name used by the type.
+ * @param sourceFile - The file using the name.
+ * @returns The module, the name it exports and whether the name is a namespace import, `undefined` if the name is not declared in the file.
+ */
+function findTypeQualifier(name: string, sourceFile: SourceFile): { module: string, name: string, namespace: boolean } | undefined {
+  const statements = sourceFile.statements;
+  for (let i = 0; i < statements.length; i++) {
+    const statement = statements[i];
+    if (isImportDeclaration(statement) && isStringLiteral(statement.moduleSpecifier)) {
+      const module = resolveModuleSpecifier(statement.moduleSpecifier.text, sourceFile.fileName);
+      const clause = statement.importClause;
+      if (clause?.name?.text === name) {
+        return { module, name: 'default', namespace: false };
+      }
+
+      const bindings = clause?.namedBindings;
+      if (bindings && isNamespaceImport(bindings) && bindings.name.text === name) {
+        return { module, name, namespace: true };
+      }
+
+      if (bindings && isNamedImports(bindings)) {
+        const element = bindings.elements.find(({ name: localName }) => localName.text === name);
+        if (element) {
+          return { module, name: (element.propertyName ?? element.name).text, namespace: false };
+        }
+      }
+    } else if ((isInterfaceDeclaration(statement) || isTypeAliasDeclaration(statement) || isClassDeclaration(statement) || isEnumDeclaration(statement)) && statement.name?.text === name) {
+      return { module: sourceFile.fileName.replaceAll('\\', '/').replace(/\.ts$/, ''), name, namespace: false };
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Resolves the specifier of an import, as written in a file, to the path to reference the module from any other file.
+ *
+ * @param specifier - The module specifier: a relative path, a package or an alias, the latter two left untouched.
+ * @param fileName - The file containing the import.
+ * @returns The absolute path of the module, without extension, for a relative specifier.
+ */
+function resolveModuleSpecifier(specifier: string, fileName: string): string {
+  if (!specifier.startsWith('.')) {
+    return specifier;
+  }
+
+  const segments = fileName.replaceAll('\\', '/').split('/');
+  segments.pop();
+  const parts = specifier.split('/');
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (part === '..') {
+      segments.pop();
+    } else if (part !== '.') {
+      segments.push(part);
+    }
+  }
+
+  return segments.join('/').replace(/\.ts$/, '');
 }
 
 /**

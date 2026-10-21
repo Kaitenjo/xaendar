@@ -109,6 +109,59 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       expect(properties?.get('lang')?.type).toBe(propertyType('MyEl', 'lang', 'C:/src/my-el.xd.component'));
     });
 
+    describe('with a transform', () => {
+      const sourceFile = createSourceFile('C:\\src\\my-el.xd.component.ts', `
+        import Def from './def';
+        import * as ns from '../lib/ns';
+        import { Tag as Label } from './tag.type';
+        import { Kind } from '@scope/kinds';
+        import './side-effect';
+        import type { Named } from './named';
+        interface Local {}
+        type Alias = string;
+        class Klass {}
+        enum Mode {}
+        const value = 1;
+        ${component(`
+          @Property(0, { transform: (value: string) => Number(value) }) accessor annotated!: InputSignal<number>;
+          @Property<InputSignal<number>, boolean>(0, { transform: (value: string) => Number(value) }) accessor generic!: InputSignal<number>;
+          @Property(0, { transform: value => Number(value) }) accessor bare!: InputSignal<number>;
+          @Property(0, { transform(value: string[]) { return value.length; }, alias: 'tags' }) accessor method!: InputSignal<number>;
+          @Property(0, { transform: function (value: Label | Local) { return 1; } }) accessor local!: InputSignal<number>;
+          @Property(0, { transform: (value: Def | ns.Item | Array<Unknown>) => 1 }) accessor imports!: InputSignal<number>;
+          @Property(0, { transform: (value: Kind.A | Alias | Klass | Mode | Other) => 1 }) accessor declared!: InputSignal<number>;
+          @Property(0, { transform: Number }) accessor reference!: InputSignal<number>;
+          @Property.required({ transform: (value: string) => Number(value) }) accessor required!: InputSignal<number>;
+        `)}
+      `, ScriptTarget.Latest, true);
+      const properties = async () => (await extractComponentsMetadataFromSourceFile(sourceFile))?.get('MyEl')?.properties;
+      const module = 'C:/src/my-el.xd.component';
+
+      it('exposes the type annotated on the parameter of the transform', async () => {
+        expect((await properties())?.get('annotated')?.type).toBe('string');
+        expect((await properties())?.get('required')?.type).toBe('string');
+      });
+
+      it('prefers the second generic of the decorator', async () => {
+        expect((await properties())?.get('generic')?.type).toBe('boolean');
+      });
+
+      it('falls back on the type of the signal when no type is declared', async () => {
+        expect((await properties())?.get('bare')?.type).toBe(propertyType('MyEl', 'bare', module));
+        expect((await properties())?.get('reference')?.type).toBe(propertyType('MyEl', 'reference', module));
+      });
+
+      it('supports a transform declared as a method, next to an alias', async () => {
+        expect((await properties())?.get('tags')).toMatchObject({ name: 'method', type: 'string[]', alias: 'tags' });
+      });
+
+      it('references the names of the type from the module declaring them', async () => {
+        expect((await properties())?.get('local')?.type).toBe(`import('C:/src/tag.type').Tag | import('${module}').Local`);
+        expect((await properties())?.get('declared')?.type).toBe(`import('@scope/kinds').Kind.A | import('${module}').Alias | import('${module}').Klass | import('${module}').Mode | Other`);
+        expect((await properties())?.get('imports')?.type).toBe('import(\'C:/src/def\').default | import(\'C:/lib/ns\').Item | Array<Unknown>');
+      });
+    });
+
     it('ignores members that are not decorated properties', async () => {
       const metadata = (await extract(component(`
         method() {}

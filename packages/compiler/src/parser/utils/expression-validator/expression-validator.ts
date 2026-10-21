@@ -259,6 +259,8 @@ function isAllowedNode(node: Node): boolean {
     // ---- Internal structural nodes ----
     // Visited during recursion but carry no semantic meaning of their own.
     case SyntaxKind.SyntaxList:
+
+    case SyntaxKind.NonNullExpression:
       return true;
 
     // ---- Disallowed by default ----

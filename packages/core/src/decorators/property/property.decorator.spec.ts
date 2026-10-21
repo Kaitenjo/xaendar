@@ -21,7 +21,7 @@ function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   name: string | symbol = 'label',
   metadata: Metadata = {}
 ): Decorated<ActualValue> {
-  const decorator = Property<InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
+  const decorator = Property<InputSignal<ActualValue>, IncomingValue, ActualValue>(value, options);
   const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ActualValue>;
 }

@@ -90,6 +90,7 @@ export const TRANSFORM_TYPE: SourceFile = {
 public accessor size!: InputSignal<number>;
 
 // In a template: size="21"
-// ✗ Type 'string' does not satisfy the expected type 'number'.
-// The template is checked against InputSignal<number>: the type accepted by transform is not considered.`
+// ✓ The template is checked against the type accepted by transform (string), not against InputSignal<number>.
+// That type is, in order: the second generic of @Property (@Property<InputSignal<number>, string>), the annotation of
+// the parameter of transform, the type of the InputSignal.`
 };

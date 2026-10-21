@@ -87,8 +87,8 @@ function createPropertyDecorator<
  */
 export function Property<
   Value extends InputSignal<ActualValue>,
-  ActualValue = Value extends InputSignal<infer U> ? U : unknown,
-  IncomingValue = ActualValue
+  IncomingValue = Value extends InputSignal<infer U> ? U : unknown,
+  ActualValue = Value extends InputSignal<infer U> ? U : unknown
 >(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
