@@ -38,7 +38,7 @@ export function packageJson(name: string, version: string, style: Style): string
     "@xaendar/cli": "^${version}",
     "happy-dom": "^20.14.6",${preprocessorDependency}
     "typescript": "^6.0.3",
-    "vite": "^8.3.4",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
 }
