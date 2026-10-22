@@ -36,7 +36,7 @@ export function packageJson(name: string, version: string, style: Style): string
     "@babel/plugin-proposal-decorators": "^8.0.2",
     "@vitest/coverage-v8": "^5.0.5",
     "@xaendar/cli": "^${version}",
-    "happy-dom": "^20.14.6",${preprocessorDependency}
+    "happy-dom": "^21.0.4",${preprocessorDependency}
     "typescript": "^6.0.3",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"

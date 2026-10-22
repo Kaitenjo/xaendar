@@ -157,13 +157,13 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
     return { ...resolved, expression, segments };
   }
 
-  // The non-null assertion (`value!`) is TypeScript only: it is dropped, the value it applies to is emitted
-  if (isNonNullExpression(node)) {
+  // The non-null assertion (`value!`) is TypeScript only: unless kept for the type-check code, it is dropped and the value it applies to is emitted
+  if (!options.preserveNonNull && isNonNullExpression(node)) {
     return emitNode(node.expression, node, compilerContext, options);
   }
 
-  // No resolvable identifiers nor non-null assertions in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent, compilerContext) && !containsNonNullExpression(node)) {
+  // No resolvable identifiers nor non-null assertions to drop in this subtree — emit verbatim
+  if (!containsResolvableIdentifier(node, parent, compilerContext) && (options.preserveNonNull || !containsNonNullExpression(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -389,6 +389,7 @@ function getIdentifier(prefix: string, parentNode: string, index: string): strin
 
 function mapDefaultOptions(options?: ResolveExpressionOptions): Required<ResolveExpressionOptions> {
   return {
-    resolver: options?.resolver ?? 'this'
+    resolver: options?.resolver ?? 'this',
+    preserveNonNull: options?.preserveNonNull ?? false
   };
 }

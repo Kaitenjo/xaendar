@@ -102,6 +102,13 @@ describe('resolveExpression', () => {
     expect(resolve('window.name!.length')).toEqual({ expression: 'window.name.length' });
   });
 
+  it('keeps the non-null assertion when asked to', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('user');
+    expect(resolve('user()!.name', context, { preserveNonNull: true })).toEqual({ expression: 'this.user()!.name', reactive: true });
+    expect(resolve('window.name!.length', undefined, { preserveNonNull: true })).toEqual({ expression: 'window.name!.length' });
+  });
+
   it('resolves signal class fields as reactive this-members', () => {
     const context = new CompilerContext();
     context.addSignalClassField('count');

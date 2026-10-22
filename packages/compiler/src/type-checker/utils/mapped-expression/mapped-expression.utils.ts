@@ -17,7 +17,7 @@ import { type LinePart, mappedSegments } from '../line-builder/line-builder.util
  * @param options - The options of the resolution, reading the members of the component through `root` by default.
  * @returns The mapped fragment.
  */
-export function mappedExpression(expression: Expression, context: TypeCheckContext, span: Span, suffix = '', options: ResolveExpressionOptions = { resolver: 'root' }): LinePart {
+export function mappedExpression(expression: Expression, context: TypeCheckContext, span: Span, suffix = '', options: ResolveExpressionOptions = { resolver: 'root', preserveNonNull: true }): LinePart {
   const segments = new Array<LineMapping>();
   const resolved = resolveExpression(expression, context, options, segments).expression;
   return mappedSegments(`${resolved}${suffix}`, span, segments);
