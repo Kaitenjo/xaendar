@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/language-core",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "dts": true
   },
   "dependencies": {
-    "@xaendar/compiler": "1.0.3",
+    "@xaendar/compiler": "1.0.4",
     "typescript": "^6.0.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/build-tools",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -9,9 +9,9 @@
     ".": "./src/public-api.ts"
   },
   "dependencies": {
-    "@xaendar/common": "1.0.3",
-    "@xaendar/compiler": "1.0.3",
-    "@xaendar/language-core": "1.0.3",
+    "@xaendar/common": "1.0.4",
+    "@xaendar/compiler": "1.0.4",
+    "@xaendar/language-core": "1.0.4",
     "lightningcss": "1.33.0",
     "magic-string": "^1.4.3",
     "typescript": "^6.0.3",
