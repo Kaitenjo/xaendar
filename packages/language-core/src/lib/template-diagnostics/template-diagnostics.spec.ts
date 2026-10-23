@@ -485,6 +485,60 @@ describe('getTemplateDiagnostics generic components', () => {
   }, TIMEOUT);
 });
 
+describe('getTemplateDiagnostics narrowed signals', () => {
+  beforeAll(() => {
+    project.write('src/profile.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import type { Signal } from \'@xaendar/core/signals\';',
+      'type User = { name: string, address?: { city: string } };',
+      '@WebComponent({ selector: \'my-profile\', templateUrl: \'./profile.html\' })',
+      'export class Profile extends CustomElement {',
+      '  declare user: Signal<User | null>;',
+      '  declare count: Signal<number | undefined>;',
+      '  rows = [{ label: \'a\' }, null];',
+      '  take(user: Signal<User | null>): void { }',
+      '  pick(name: string): void { }',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  /**
+   * Analyzes a source as the template of `Profile` and returns its diagnostics as the text they are reported on and their message.
+   */
+  const diagnoseProfile = async (source: string) => {
+    const analysis = await analyzeTemplate(project.path('src/profile.html'), source, new Map([[project.path('src/profile.ts'), ['Profile']]]));
+    return getTemplateDiagnostics(analysis).map(({ span, message }) => [source.slice(span.start, span.end), message]);
+  };
+
+  it('leaves out null and undefined from a signal of the component in the branches of the @if calling it, keeping the signal where it is not called', async () => {
+    const source = [
+      '@if (user()) { { user().name } <b (click)="take(user)" (dblclick)="pick(user().name)">{ user().address?.city }</b> }',
+      '@if (user()?.address) { { user().address.city } }',
+      '@if (!user()) { } @else if (count() === undefined) { { user().name } } @else { { count().toFixed() } }',
+      '{ user().name }'
+    ].join('\n');
+
+    // Only the read outside of the @if keeps null
+    expect(await diagnoseProfile(source)).toEqual([
+      ['user().name }', 'Object is possibly \'null\'.']
+    ]);
+  }, TIMEOUT);
+
+  it('narrows the item of a @for, a @let and a template parameter, reporting what the condition does not leave out on the call', async () => {
+    const source = [
+      '@for (row of rows; track $index()) { @if (row()) { { row().label } } }',
+      '@let current = user();',
+      '@if (current()) { { current().name } { current().address.city } }',
+      '<template card(person: { name: string } | null)>@if (person()) { { person().name } }</template>'
+    ].join('\n');
+
+    expect(await diagnoseProfile(source)).toEqual([
+      ['current()', 'Object is possibly \'undefined\'.']
+    ]);
+  }, TIMEOUT);
+});
+
 describe('getTemplateDiagnostics host directives', () => {
   beforeAll(() => {
     project.write('src/field.ts', [

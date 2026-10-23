@@ -7,6 +7,7 @@ import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';
+import { narrowSignals } from '../../utils/signal-narrowing/signal-narrowing.utils';
 
 /**
  * Type-checks an `@if`/`@else if`/`@else` chain using real TypeScript
@@ -20,17 +21,28 @@ import { typeCheckScope } from '../../utils/scope/scope.utils';
  * flat sibling functions could never express.
  *
  * Each branch is a scope of its own, starting with the declarations of the element refs it declares.
+ *
+ * The signals the conditions call are read, in the whole chain, through constants declared before it and holding their
+ * values (see `narrowSignals`), so that TypeScript narrows them as it does a variable.
  */
 export function typeCheckIf(node: IfNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
-  const lines = new Array<Line>();
-  lines.push(line('if (', mappedExpression(node.conditionNode, context, node.span), ') {'));
-  lines.push(...indentLines(typeCheckBranch(node.children, processNode, context)));
-  lines.push(plain('}'));
-
+  const chainContext = new TypeCheckContext(context);
+  const conditions = [node.conditionNode];
   let alt = node.alternate;
   while (alt?.type === ASTNodeType.ElseIf) {
-    lines.push(line('else if (', mappedExpression(alt.conditionNode, context, alt.span), ') {'));
-    lines.push(...indentLines(typeCheckBranch(alt.children, processNode, context)));
+    conditions.push(alt.conditionNode);
+    alt = alt.alternate;
+  }
+
+  const lines = narrowSignals(conditions, `__if${node.span.start}`, context, chainContext);
+  lines.push(line('if (', mappedExpression(node.conditionNode, chainContext, node.span), ') {'));
+  lines.push(...indentLines(typeCheckBranch(node.children, processNode, chainContext)));
+  lines.push(plain('}'));
+
+  alt = node.alternate;
+  while (alt?.type === ASTNodeType.ElseIf) {
+    lines.push(line('else if (', mappedExpression(alt.conditionNode, chainContext, alt.span), ') {'));
+    lines.push(...indentLines(typeCheckBranch(alt.children, processNode, chainContext)));
     lines.push(plain('}'));
 
     alt = alt.alternate;
@@ -38,7 +50,7 @@ export function typeCheckIf(node: IfNode, processNode: ProcessNode, context: Typ
 
   if (alt) {
     lines.push(plain('else {'));
-    lines.push(...indentLines(typeCheckBranch(alt.children, processNode, context)));
+    lines.push(...indentLines(typeCheckBranch(alt.children, processNode, chainContext)));
     lines.push(plain('}'));
   }
 

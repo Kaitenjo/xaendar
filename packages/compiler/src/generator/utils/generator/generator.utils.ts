@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { Expression, forEachChild, Identifier, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
+import { Expression, forEachChild, Identifier, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/generated-line.type';
@@ -143,6 +143,48 @@ function segmentOf(text: string, span: Span | undefined, columnStart = 0): LineM
  */
 
 function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
+  /*
+    A signal an `@if` narrows is read through the constant holding its value, which TypeScript narrows: the call is kept
+    before it, so that the features of the editor still find the signal (`(root.item(), __if12_item)`)
+  */
+  const callee = getSignalCallee(node);
+  const narrowed = callee && needsResolution(callee, node, compilerContext) ? options.narrowedSignal(callee.text) : undefined;
+  const emitted = emitResolvedNode(node, parent, compilerContext, options);
+  if (!narrowed) {
+    return emitted;
+  }
+
+  const expression = `(${emitted.expression}, ${narrowed})`;
+  const segments = shiftSegments(emitted.segments, 1);
+  const span = getTemplateSpan(node);
+  // The whole read is mapped onto the call, e.g. for an error on the value narrowed, the identifier keeps its own mapping
+  if (span) {
+    segments.push({ columnStart: 0, columnEnd: expression.length, original: span });
+  }
+
+  return { ...emitted, expression, segments };
+}
+
+/**
+ * Returns the identifier a call without arguments calls, as an expression reads a signal (`item()`).
+ *
+ * @param node - The node of the expression.
+ * @returns The called identifier, `undefined` if the node is not such a call.
+ */
+export function getSignalCallee(node: Node): Identifier | undefined {
+  return isCallExpression(node) && isIdentifier(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : undefined;
+}
+
+/**
+ * Emits the resolved text for a node, as {@link emitNode} does for a node that is not the call of a narrowed signal.
+ *
+ * @param node - The node to emit.
+ * @param parent - The parent of the node.
+ * @param compilerContext - The active template scope context.
+ * @param options - The options of the resolution.
+ * @returns The emitted text, with its mappings.
+ */
+function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
   const span = getTemplateSpan(node);
 
   // Leaf Identifier that needs resolution
@@ -390,6 +432,7 @@ function getIdentifier(prefix: string, parentNode: string, index: string): strin
 function mapDefaultOptions(options?: ResolveExpressionOptions): Required<ResolveExpressionOptions> {
   return {
     resolver: options?.resolver ?? 'this',
-    preserveNonNull: options?.preserveNonNull ?? false
+    preserveNonNull: options?.preserveNonNull ?? false,
+    narrowedSignal: options?.narrowedSignal ?? (() => undefined)
   };
 }

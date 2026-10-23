@@ -33,6 +33,11 @@ export class TypeCheckContext extends CompilerContext {
    */
   private readonly _instantiations = new Set<number>();
   /**
+   * Signals the conditions of an `@if` chain of this scope call, mapped to the constant holding their value (see
+   * {@link addNarrowedSignal}).
+   */
+  private readonly _narrowedSignals = new Map<string, string>();
+  /**
    * Whether the type-check code reads the declarations of the template helpers, as the one of a template or of a `@let`
    * reading a signal does: kept by the outermost scope, for the whole template.
    */
@@ -137,6 +142,29 @@ export class TypeCheckContext extends CompilerContext {
       this._symbols.push(symbol);
       this.addImportedIdentifier(symbol.local, symbol.local, symbol.reactive ? 'signal' : 'value');
     }
+  }
+
+  /**
+   * Registers a signal called by the conditions of an `@if` chain of this scope, whose value the type-check code holds
+   * in a constant: a call of the signal without arguments reads it through the constant (see `narrowedSignal` of
+   * `resolveExpression`), so that TypeScript narrows its value in the conditions and in the branches of the chain.
+   *
+   * @param name - The name of the signal.
+   * @param value - The name of the constant holding its value.
+   */
+  public addNarrowedSignal(name: string, value: string): void {
+    this._narrowedSignals.set(name, value);
+  }
+
+  /**
+   * Returns the constant holding the value of a signal an `@if` chain narrows (see {@link addNarrowedSignal}), looking
+   * in this scope first and then in the ancestor scopes: a variable of an inner scope named like the signal hides it.
+   *
+   * @param name - The name of the signal.
+   * @returns The name of the constant, `undefined` if no enclosing `@if` chain narrows the signal.
+   */
+  public getNarrowedSignal(name: string): string | undefined {
+    return this.declaresIdentifier(name) ? undefined : this._narrowedSignals.get(name) ?? this.parent?.getNarrowedSignal(name);
   }
 
   /**

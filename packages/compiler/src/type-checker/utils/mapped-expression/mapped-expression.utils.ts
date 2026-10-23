@@ -8,7 +8,8 @@ import { type LinePart, mappedSegments } from '../line-builder/line-builder.util
 
 /**
  * Resolves an expression of the template into a fragment of a type-check line, mapped as a whole onto `span` and,
- * finely, onto the spans of its identifiers and of its pieces copied verbatim (see `resolveExpression`).
+ * finely, onto the spans of its identifiers and of its pieces copied verbatim (see `resolveExpression`). The signals
+ * an enclosing `@if` narrows are read through the constants holding their values (see `narrowSignals`).
  *
  * @param expression - The expression to resolve.
  * @param context - Current type-check scope.
@@ -19,6 +20,6 @@ import { type LinePart, mappedSegments } from '../line-builder/line-builder.util
  */
 export function mappedExpression(expression: Expression, context: TypeCheckContext, span: Span, suffix = '', options: ResolveExpressionOptions = { resolver: 'root', preserveNonNull: true }): LinePart {
   const segments = new Array<LineMapping>();
-  const resolved = resolveExpression(expression, context, options, segments).expression;
+  const resolved = resolveExpression(expression, context, Object.assign({ narrowedSignal: (name: string) => context.getNarrowedSignal(name) }, options), segments).expression;
   return mappedSegments(`${resolved}${suffix}`, span, segments);
 }

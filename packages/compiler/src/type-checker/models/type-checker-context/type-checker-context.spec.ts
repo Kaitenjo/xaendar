@@ -72,6 +72,25 @@ describe('TypeCheckContext', () => {
     expect(nested.getTemplateNamespace('row')).toBe('svg');
   });
 
+  it('returns the constant holding the value of a signal narrowed in this scope or in an ancestor one', () => {
+    const parent = new TypeCheckContext();
+    parent.addNarrowedSignal('user', '__if0_user');
+    const child = new TypeCheckContext(new TypeCheckContext(parent));
+
+    expect(child.getNarrowedSignal('user')).toBe('__if0_user');
+    expect(parent.getNarrowedSignal('user')).toBe('__if0_user');
+    expect(child.getNarrowedSignal('count')).toBeUndefined();
+  });
+
+  it('tells that a signal is not narrowed where a closer scope declares a variable named like it', () => {
+    const parent = new TypeCheckContext();
+    parent.addNarrowedSignal('user', '__if0_user');
+    const loop = new TypeCheckContext(parent);
+    loop.addUnresolvableIdentifier('user', 'signal');
+
+    expect(new TypeCheckContext(loop).getNarrowedSignal('user')).toBeUndefined();
+  });
+
   it('defaults the event map to HTMLElementEventMap', () => {
     expect(new TypeCheckContext().eventMap).toBe('HTMLElementEventMap');
     expect(new TypeCheckContext(new TypeCheckContext()).eventMap).toBe('HTMLElementEventMap');

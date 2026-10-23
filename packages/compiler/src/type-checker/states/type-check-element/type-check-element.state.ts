@@ -735,7 +735,7 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
   for (let i = 0; i < parameters.length; i++) {
     const separator = i ? ', ' : '';
     const argumentSegments = new Array<LineMapping>();
-    const argument = resolveExpression(parameters[i], eventContext, { resolver: 'root', preserveNonNull: true }, argumentSegments).expression;
+    const argument = resolveExpression(parameters[i], eventContext, { resolver: 'root', preserveNonNull: true, narrowedSignal: name => eventContext.getNarrowedSignal(name) }, argumentSegments).expression;
     const column = call.length + separator.length;
 
     for (let j = 0; j < argumentSegments.length; j++) {

@@ -32,6 +32,28 @@ describe('typeCheckIf', () => {
     ]);
   });
 
+  it('reads the signals the conditions call through constants declared before the chain, in its conditions and in its branches', () => {
+    const context = new TypeCheckContext();
+    context.addSignalClassField('user');
+    context.addSignalClassField('count');
+    // The children read the signals as the nodes of the branches do
+    const readSignals: ProcessNode = (_node, branchContext) => [{ text: `${branchContext.getNarrowedSignal('user')} ${branchContext.getNarrowedSignal('count')};` }];
+
+    expect(typeCheckIf(parse('@if (user()) { <b></b> } @else if (count() > 1) { <i></i> } @else { <u></u> }'), readSignals, context).map(l => l.text)).toEqual([
+      'const __if0_user = root.user();',
+      'const __if0_count = root.count();',
+      'if ((root.user(), __if0_user)) {',
+      '  __if0_user __if0_count;',
+      '}',
+      'else if ((root.count(), __if0_count) > 1) {',
+      '  __if0_user __if0_count;',
+      '}',
+      'else {',
+      '  __if0_user __if0_count;',
+      '}'
+    ]);
+  });
+
   it('emits else if and else blocks', () => {
     expect(run('@if (a) { <b></b> } @else if (b) { <i></i> } @else { <u></u> }')).toEqual([
       'if (root.a) {',

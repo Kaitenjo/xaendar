@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/language-server",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -12,13 +12,13 @@
     "build": false
   },
   "dependencies": {
-    "@xaendar/compiler": "1.0.4",
-    "@xaendar/language-core": "1.0.4",
+    "@xaendar/compiler": "1.0.5",
+    "@xaendar/language-core": "1.0.5",
     "typescript": "^6.0.3",
     "fast-glob": "^3.3.3",
     "vscode-languageserver-textdocument": "^1.0.16",
-    "vscode-languageserver": "^10.1.2",
+    "vscode-languageserver": "^11.0.0",
     "vscode-uri": "^3.2.0",
-    "@xaendar/types": "1.0.4"
+    "@xaendar/types": "1.0.5"
   }
 }

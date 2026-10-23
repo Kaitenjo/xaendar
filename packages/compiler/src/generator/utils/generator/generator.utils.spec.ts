@@ -3,7 +3,7 @@ import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/generated-line.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import { getBlockIdentifier, getElementFactory, getElementIdentifier, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
+import { getBlockIdentifier, getElementFactory, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 
 const resolve = (source: string, context = new CompilerContext(), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
 
@@ -52,6 +52,23 @@ describe('resolveExpression', () => {
 
       expect(expression).toBe('({ item: context.get(\'item\') })');
       expect(columns(expression, segments)).toContainEqual(['item: context.get(\'item\')', 2, 6]);
+    });
+
+    it('maps the read of a narrowed signal onto the call, keeping the mappings of the call', () => {
+      const context = new CompilerContext();
+      context.addSignalClassField('user');
+      const segments = new Array<LineMapping>();
+
+      const { expression } = resolveExpression(validateExpression('user().name', 4).node, context, { resolver: 'root', narrowedSignal: () => '__if0_user' }, segments);
+
+      expect(expression).toBe('(root.user(), __if0_user).name');
+      expect(columns(expression, segments)).toEqual([
+        ['user', 4, 8],
+        ['()', 8, 10],
+        ['(root.user(), __if0_user)', 4, 10],
+        ['.', 10, 11],
+        ['name', 11, 15]
+      ]);
     });
 
     it('collects no segment for an expression validated without offset', () => {
@@ -185,6 +202,34 @@ describe('resolveExpression', () => {
 
   it('ignores identifiers with an empty name produced by error recovery', () => {
     expect(resolve('a.').expression).toBe('this.a.');
+  });
+
+  it('reads a narrowed signal called without arguments through its constant, after the call, leaving its other reads untouched', () => {
+    const context = new CompilerContext();
+    context.addSignalClassField('user');
+    context.addSignalClassField('count');
+    const narrowedSignal = (name: string) => name === 'user' ? '__if0_user' : undefined;
+
+    expect(resolve('user()?.name + take(user) + user(1) + user?.() + count()', context, { resolver: 'root', narrowedSignal })).toEqual({
+      expression: '(root.user(), __if0_user)?.name + root.take(root.user) + root.user(1) + root.user?.() + root.count()',
+      reactive: true
+    });
+  });
+
+  it('calls a global named like a narrowed signal', () => {
+    expect(resolve('Date()', new CompilerContext(), { narrowedSignal: () => '__if0_Date' })).toEqual({ expression: 'Date()' });
+  });
+});
+
+describe('getSignalCallee', () => {
+  it('returns the identifier a call without arguments calls, nothing for any other node', () => {
+    const callee = (source: string) => getSignalCallee(validateExpression(source).node)?.text;
+
+    expect(callee('user()')).toBe('user');
+    expect(callee('user')).toBeUndefined();
+    expect(callee('user(1)')).toBeUndefined();
+    expect(callee('user?.()')).toBeUndefined();
+    expect(callee('store.user()')).toBeUndefined();
   });
 });
 
