@@ -9,7 +9,7 @@ import { build as tsupBuild } from 'tsup';
  */
 async function runBuildClaudePlugin(): Promise<void> {
   await tsupBuild({
-    entry: { server: resolve('../packages/language-server/src/lib/server.ts') },
+    entry: { server: resolve('../packages/language-server/src/lib/server/server.ts') },
     outDir: resolve('../plugins/xaendar/server'),
     format: ['cjs'],
     platform: 'node',
