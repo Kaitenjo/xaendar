@@ -21,7 +21,7 @@ npx vitest -t "name of test"                              # run tests matching a
 npm run lint               # eslint .
 npm run lint:fix
 
-npm run build:src          # `xd build` of the documentation site in src/docs (output: src/docs/dist)
+npm run build:docs         # `xd build` of the documentation site in src/docs (output: src/docs/dist)
 npm start                  # `xd start` of the documentation site (Vite dev server on port 4200)
 npm test --prefix src/docs # `xd test`: the docs site's specs (utilities and components), with the Babel + Xaendar plugins in happy-dom
 ```
@@ -33,14 +33,17 @@ The API reference is data-driven: one page component (`pages/reference/api-symbo
 Package-level build/publish is driven from `schematics/` (its own TS project, built with `npm run build:schematics`), not from per-package npm scripts — the individual `packages/*/package.json` files have no scripts of their own:
 
 ```bash
-npm run deploy   # full release pipeline: build schematics → check:dependencies → typecheck:projects →
-                  # update:version → build:projects → pack:projects → publish:projects → npm i
+npm run deploy   # full release pipeline: build schematics → check:extension-token → check:dependencies → test →
+                  # typecheck:projects → update:version → build:projects → pack:projects → publish:projects →
+                  # publish-extension → npm i
 npm run build:projects        # builds each package's dist/@xaendar/<name> via Vite (packages/*/vite.config.ts + root vite-config.ts)
 npm run typecheck:projects    # typechecks each package via its tsconfig.typecheck.json
 npm run check:dependencies    # depcheck across packages
 ```
 
 Each publishable package's `vite.config.ts` just calls the shared `getViteConfig(name, dirName, options)` helper in root `vite-config.ts`: it builds `src/public-api.ts` (plus any declared `secondaryEntryPoints`, e.g. `@xaendar/core`'s `signals` sub-entry) to ESM, bundles `.d.ts` files via `vite-plugin-dts`, rewrites cross-package type imports to `@xaendar/*` specifiers, and generates a trimmed `dist/@xaendar/<name>/package.json` + copies the package `README.md`.
+
+`plugins/xaendar` is the Claude Code plugin for applications written with Xaendar (the `xaendar` skill and its references, the `check`, `test`, `new-component` and `new-directive` skills, the `xaendar-reviewer` agent and the language server bundled by `npm run build:claude-plugin`), listed by `.claude-plugin/marketplace.json`. `.claude/rules/claude-plugin.md` says what to update in it when the framework changes.
 
 ## Architecture
 
