@@ -13,6 +13,5 @@ paths:
 
 - `skills/xaendar/SKILL.md` and the reference involved (`references/api.md`, `errors.md`, `template-syntax.md`, `patterns.md`, `angular.md`: their sources are listed in `plugins/xaendar/README.md`);
 - the skills and the agent relying on it (`skills/check`, `new-component`, `new-directive`, `test`, `agents/xaendar-reviewer.md`);
-- `version` in `plugins/xaendar/.claude-plugin/plugin.json`.
 
 After a change to `packages/language-server`, `language-core` or `compiler`, rebuild the bundled server with `npm run build:claude-plugin`.

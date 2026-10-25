@@ -56,8 +56,9 @@ export class Version {
 }
 
 /**
- * Bumps the version of the root `package.json` and all packages under `../packages/`,
- * according to the specified bump type.
+ * Bumps the version of the root `package.json`, of all packages under `../packages/` and of the Claude Code
+ * plugin (`../plugins/xaendar/.claude-plugin/plugin.json`, and the tag its catalog installs it from), according to the
+ * specified bump type.
  *
  * - `major`: Resets minor and patch to 0, increments major (e.g. 1.2.3 → 2.0.0).
  * - `minor`: Resets patch to 0, increments minor (e.g. 1.2.3 → 1.3.0).
@@ -122,6 +123,20 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
     writeFileSync(packageJsonPath, JSON.stringify({ ...packageJson, version: nextVersion }, null, 2));
     console.log(`✅ ${projectName}: ${prevSub} → ${nextVersion}`);
   }
+
+  const pluginJsonPath = '../plugins/xaendar/.claude-plugin/plugin.json';
+  const pluginJson: { version?: string } = JSON.parse(readFileSync(pluginJsonPath, { encoding: 'utf-8' }));
+  writeFileSync(pluginJsonPath, JSON.stringify({ ...pluginJson, version: nextVersion }, null, 2));
+  console.log(`✅ Claude plugin: ${pluginJson.version ?? 'unknown'} → ${nextVersion}`);
+
+  // The catalog installs the plugin from the tag `release:claude-plugin` creates for this version
+  const marketplaceJsonPath = '../.claude-plugin/marketplace.json';
+  const marketplaceJson: { plugins: Array<{ source: { ref?: string } }> } = JSON.parse(readFileSync(marketplaceJsonPath, { encoding: 'utf-8' }));
+  for (let i = 0; i < marketplaceJson.plugins.length; i++) {
+    marketplaceJson.plugins[i].source.ref = `xaendar--v${nextVersion}`;
+  }
+  writeFileSync(marketplaceJsonPath, JSON.stringify(marketplaceJson, null, 2));
+  console.log(`✅ Claude plugin catalog: ref → xaendar--v${nextVersion}`);
 
   console.log(`\nAll packages updated to version ${nextVersion}\n`);
 }

@@ -15,15 +15,17 @@ Helps Claude Code write applications with Xaendar.
 ## Install
 
 ```text
-/plugin marketplace add <git URL or local path of the xaendar repository>
+/plugin marketplace add https://raw.githubusercontent.com/Kaitenjo/xaendar/main/.claude-plugin/marketplace.json
 /plugin install xaendar@xaendar
 ```
 
+The catalog is the single file `.claude-plugin/marketplace.json`, read from its URL: the repository is not cloned. It installs `plugins/xaendar` from the tag `xaendar--v<version>` (a `git-subdir` source), so the cache holds only the plugin. `npm run update:version` points it to the tag of the new version.
+
 ## Release
 
-1. Bump `version` in `.claude-plugin/plugin.json`, and commit every change of the plugin.
+1. Commit every change of the plugin. Its `version` in `.claude-plugin/plugin.json` follows the one of the repository: `npm run update:version` (run by `npm run deploy`) writes it with the packages.
 2. `npm run release:claude-plugin` from the repository root: it rebuilds the server, validates the manifests, the skills and the agent, stops if the rebuilt server differs from the committed one (commit it, then run it again), and pushes the tag `xaendar--v<version>`.
-3. `git push`: users get the new version with `/plugin marketplace update xaendar`, or automatically when auto-update is on.
+3. `git push`, which publishes the catalog pointing to the new tag: users get the new version with `/plugin marketplace update xaendar`, or automatically when auto-update is on.
 
 ## Language server
 
@@ -43,4 +45,4 @@ The references follow the documentation site:
 | `skills/xaendar/references/patterns.md` | the Patterns section, Using DOM APIs, Creating components in code, Selectors and registration |
 | `skills/xaendar/references/angular.md` | the Coming from Angular page |
 
-Update them, and the skills using what changed, when the framework or the docs change. When the Known issues page lists issues, add them as `skills/xaendar/references/known-issues.md`, linked from `SKILL.md`, the `check` and `test` skills and the reviewer. Bump `version` in `.claude-plugin/plugin.json` at every change.
+Update them, and the skills using what changed, when the framework or the docs change. When the Known issues page lists issues, add them as `skills/xaendar/references/known-issues.md`, linked from `SKILL.md`, the `check` and `test` skills and the reviewer.
