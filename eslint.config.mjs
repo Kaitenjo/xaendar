@@ -11,6 +11,7 @@ export default defineConfig(
       '**/coverage/**',
       '**/output/**',
       'src/docs/src/snippets/**',
+      'plugins/xaendar/server/**',
       '**/.git/**',
       '**/*.config.*',
       'eslint.config.mjs'
