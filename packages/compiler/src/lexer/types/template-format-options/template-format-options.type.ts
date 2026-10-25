@@ -11,7 +11,7 @@ export type TemplateFormatOptions = {
    */
   readonly indentWidth: number;
   /**
-   * The width, in columns, a line should stay within: the opening tags that don't fit are written one item per line.
+   * The width, in columns, a line should stay within: an opening tag that doesn't fit fills each line with its items, one with a conditional binding is written one item per line.
    */
   readonly printWidth: number;
 };
