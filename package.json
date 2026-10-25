@@ -6,8 +6,6 @@
   "type": "module",
   "scripts": {
     "build:claude-plugin": "npm run build:schematics && npm run build-claude-plugin --prefix schematics",
-    "validate:claude-plugin": "claude plugin validate plugins/xaendar && claude plugin validate plugins/xaendar/skills && claude plugin validate plugins/xaendar/agents && claude plugin validate .",
-    "release:claude-plugin": "npm run build:claude-plugin && npm run validate:claude-plugin && git diff --quiet -- plugins/xaendar && claude plugin tag plugins/xaendar --push",
     "build:docs": "npm run build --prefix src/docs",
     "build:projects": "npm run build-projects --prefix schematics",
     "build:schematics": "npm run build --prefix schematics",
@@ -24,13 +22,15 @@
     "pretest": "npm run typecheck:specs",
     "publish:extension": "npm run build:schematics && npm run build:projects && npm run publish-extension --prefix schematics",
     "publish:projects": "npm run publish --prefix schematics",
+    "release:claude-plugin": "npm run build:claude-plugin && npm run validate:claude-plugin && git diff --quiet -- plugins/xaendar && claude plugin tag plugins/xaendar --push",
     "start": "npm start --prefix src/docs",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
     "typecheck:projects": "npm run typecheck-projects --prefix schematics",
     "typecheck:specs": "node schematics/src/typecheck-specs.ts",
-    "update:version": "npm run update-version --prefix schematics"
+    "update:version": "npm run update-version --prefix schematics",
+    "validate:claude-plugin": "claude plugin validate plugins/xaendar && claude plugin validate plugins/xaendar/skills && claude plugin validate plugins/xaendar/agents && claude plugin validate ."
   },
   "dependencies": {
     "@rolldown/plugin-babel": "^0.2.4",
