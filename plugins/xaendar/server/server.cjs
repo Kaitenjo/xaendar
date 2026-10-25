@@ -2293,10 +2293,11 @@ var require_connection = __commonJS({
           } finally {
             if (result instanceof Promise) {
               result.then(() => {
-                inFlight--;
-                triggerMessageQueue();
               }).catch((error) => {
                 logger.error(`Processing message queue failed: ${error.toString()}`);
+              }).finally(() => {
+                inFlight--;
+                triggerMessageQueue();
               });
             } else {
               inFlight--;
@@ -3501,7 +3502,7 @@ var init_main = __esm({
       ColorPresentation2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.label) && (Is.undefined(candidate.textEdit) || TextEdit.is(candidate)) && (Is.undefined(candidate.additionalTextEdits) || Is.typedArray(candidate.additionalTextEdits, TextEdit.is));
+        return Is.objectLiteral(candidate) && Is.string(candidate.label) && (Is.undefined(candidate.textEdit) || TextEdit.is(candidate.textEdit)) && (Is.undefined(candidate.additionalTextEdits) || Is.typedArray(candidate.additionalTextEdits, TextEdit.is));
       }
       ColorPresentation2.is = is;
     })(ColorPresentation || (ColorPresentation = {}));
@@ -3533,7 +3534,7 @@ var init_main = __esm({
       FoldingRange2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.uinteger(candidate.startLine) && Is.uinteger(candidate.startLine) && (Is.undefined(candidate.startCharacter) || Is.uinteger(candidate.startCharacter)) && (Is.undefined(candidate.endCharacter) || Is.uinteger(candidate.endCharacter)) && (Is.undefined(candidate.kind) || Is.string(candidate.kind));
+        return Is.objectLiteral(candidate) && Is.uinteger(candidate.startLine) && Is.uinteger(candidate.endLine) && (Is.undefined(candidate.startCharacter) || Is.uinteger(candidate.startCharacter)) && (Is.undefined(candidate.endCharacter) || Is.uinteger(candidate.endCharacter)) && (Is.undefined(candidate.kind) || Is.string(candidate.kind));
       }
       FoldingRange2.is = is;
     })(FoldingRange || (FoldingRange = {}));
@@ -6592,98 +6593,6 @@ var require_api2 = __commonJS({
   }
 });
 
-// ../node_modules/vscode-languageserver/lib/common/utils/uuid.js
-var require_uuid = __commonJS({
-  "../node_modules/vscode-languageserver/lib/common/utils/uuid.js"(exports2) {
-    "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.empty = void 0;
-    exports2.v4 = v4;
-    exports2.isUUID = isUUID;
-    exports2.parse = parse;
-    exports2.generateUuid = generateUuid;
-    var ValueUUID = class {
-      _value;
-      constructor(_value) {
-        this._value = _value;
-      }
-      asHex() {
-        return this._value;
-      }
-      equals(other) {
-        return this.asHex() === other.asHex();
-      }
-    };
-    var V4UUID = class _V4UUID extends ValueUUID {
-      static _chars = ["0", "1", "2", "3", "4", "5", "6", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
-      static _timeHighBits = ["8", "9", "a", "b"];
-      static _oneOf(array) {
-        return array[Math.floor(array.length * Math.random())];
-      }
-      static _randomHex() {
-        return _V4UUID._oneOf(_V4UUID._chars);
-      }
-      constructor() {
-        super([
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          "-",
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          "-",
-          "4",
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          "-",
-          _V4UUID._oneOf(_V4UUID._timeHighBits),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          "-",
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex(),
-          _V4UUID._randomHex()
-        ].join(""));
-      }
-    };
-    exports2.empty = new ValueUUID("00000000-0000-0000-0000-000000000000");
-    function v4() {
-      return new V4UUID();
-    }
-    var _UUIDPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    function isUUID(value) {
-      return _UUIDPattern.test(value);
-    }
-    function parse(value) {
-      if (!isUUID(value)) {
-        throw new Error("invalid uuid");
-      }
-      return new ValueUUID(value);
-    }
-    function generateUuid() {
-      return v4().asHex();
-    }
-  }
-});
-
 // ../node_modules/vscode-languageserver/lib/common/progress.js
 var require_progress = __commonJS({
   "../node_modules/vscode-languageserver/lib/common/progress.js"(exports2) {
@@ -6693,7 +6602,6 @@ var require_progress = __commonJS({
     exports2.attachWorkDone = attachWorkDone;
     exports2.attachPartialResult = attachPartialResult;
     var vscode_languageserver_protocol_1 = require_api2();
-    var uuid_1 = require_uuid();
     var WorkDoneProgressReporter;
     (function(WorkDoneProgressReporter2) {
       function isNullInstance(reporter) {
@@ -6820,7 +6728,7 @@ var require_progress = __commonJS({
         }
         createWorkDoneProgress() {
           if (this._progressSupported) {
-            const token = (0, uuid_1.generateUuid)();
+            const token = (0, vscode_languageserver_protocol_1.RAL)().crypto.randomUUID();
             return this.connection.sendRequest(vscode_languageserver_protocol_1.WorkDoneProgressCreateRequest.type, { token }).then(() => {
               const result = new WorkDoneProgressServerReporterImpl(this.connection, token);
               return result;
@@ -7879,6 +7787,11 @@ var require_notebook = __commonJS({
               }
             }
           }
+          const removed = [];
+          for (const close of closed) {
+            removed.push(this.getNotebookCell(close));
+            this.notebookCellMap.delete(close);
+          }
           this.updateCellMap(notebookDocument);
           const changeEvent = { notebookDocument };
           if (metadataChanged) {
@@ -7887,10 +7800,6 @@ var require_notebook = __commonJS({
           const added = [];
           for (const open of opened) {
             added.push(this.getNotebookCell(open));
-          }
-          const removed = [];
-          for (const close of closed) {
-            removed.push(this.getNotebookCell(close));
           }
           const textContent = [];
           for (const change2 of text) {
@@ -8069,7 +7978,6 @@ var require_server = __commonJS({
     exports2.createConnection = createConnection2;
     var vscode_languageserver_protocol_1 = require_api2();
     var Is2 = __importStar(require_is());
-    var UUID = __importStar(require_uuid());
     var progress_1 = require_progress();
     var configuration_1 = require_configuration();
     var workspaceFolder_1 = require_workspaceFolder();
@@ -8213,7 +8121,7 @@ var require_server = __commonJS({
         if (this._registered.has(method)) {
           throw new Error(`${method} is already added to this registration`);
         }
-        const id = UUID.generateUuid();
+        const id = (0, vscode_languageserver_protocol_1.RAL)().crypto.randomUUID();
         this._registrations.push({
           id,
           method,
@@ -8307,7 +8215,7 @@ var require_server = __commonJS({
       }
       registerSingle1(unregistration, type, registerOptions) {
         const method = Is2.string(type) ? type : type.method;
-        const id = UUID.generateUuid();
+        const id = (0, vscode_languageserver_protocol_1.RAL)().crypto.randomUUID();
         const params = {
           registrations: [{ id, method, registerOptions: registerOptions || {} }]
         };
@@ -8324,7 +8232,7 @@ var require_server = __commonJS({
       }
       registerSingle2(type, registerOptions) {
         const method = Is2.string(type) ? type : type.method;
-        const id = UUID.generateUuid();
+        const id = (0, vscode_languageserver_protocol_1.RAL)().crypto.randomUUID();
         const params = {
           registrations: [{ id, method, registerOptions: registerOptions || {} }]
         };
@@ -8954,7 +8862,6 @@ var require_files = __commonJS({
       });
     }
     function resolveGlobalNodePath(tracer) {
-      let npmCommand = "npm";
       const env = /* @__PURE__ */ Object.create(null);
       Object.keys(process.env).forEach((key) => env[key] = process.env[key]);
       env["NO_UPDATE_NOTIFIER"] = "true";
@@ -8963,14 +8870,13 @@ var require_files = __commonJS({
         env
       };
       if (isWindows()) {
-        npmCommand = "npm.cmd";
         options.shell = true;
       }
       const handler = () => {
       };
       try {
         process.on("SIGPIPE", handler);
-        const stdout = (0, child_process_1.spawnSync)(npmCommand, ["config", "get", "prefix"], options).stdout;
+        const stdout = (isWindows() ? (0, child_process_1.spawnSync)("npm.cmd config get prefix", options) : (0, child_process_1.spawnSync)("npm", ["config", "get", "prefix"], options)).stdout;
         if (!stdout) {
           if (tracer) {
             tracer(`'npm config get prefix' didn't return a value.`);
@@ -8996,19 +8902,17 @@ var require_files = __commonJS({
       }
     }
     function resolveGlobalYarnPath(tracer) {
-      let yarnCommand = "yarn";
       const options = {
         encoding: "utf8"
       };
       if (isWindows()) {
-        yarnCommand = "yarn.cmd";
         options.shell = true;
       }
       const handler = () => {
       };
       try {
         process.on("SIGPIPE", handler);
-        const results = (0, child_process_1.spawnSync)(yarnCommand, ["global", "dir", "--json"], options);
+        const results = isWindows() ? (0, child_process_1.spawnSync)("yarn.cmd global dir --json", options) : (0, child_process_1.spawnSync)("yarn", ["global", "dir", "--json"], options);
         const stdout = results.stdout;
         if (!stdout) {
           if (tracer) {
@@ -9087,6 +8991,7 @@ var require_ril = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     var util_1 = require("util");
+    var crypto_1 = require("crypto");
     var api_1 = require_api();
     var MessageBuffer = class _MessageBuffer extends api_1.AbstractMessageBuffer {
       static emptyBuffer = Buffer.allocUnsafe(0);
@@ -9110,7 +9015,7 @@ var require_ril = __commonJS({
         if (length === void 0) {
           return buffer instanceof Buffer ? buffer : Buffer.from(buffer);
         } else {
-          return buffer instanceof Buffer ? buffer.slice(0, length) : Buffer.from(buffer, 0, length);
+          return buffer instanceof Buffer ? buffer.slice(0, length) : Buffer.from(buffer.subarray(0, length));
         }
       }
       allocNative(length) {
@@ -9177,6 +9082,9 @@ var require_ril = __commonJS({
       }
     };
     var _ril = Object.freeze({
+      crypto: Object.freeze({
+        randomUUID: () => (0, crypto_1.randomUUID)()
+      }),
       messageBuffer: Object.freeze({
         create: (encoding) => new MessageBuffer(encoding)
       }),
@@ -9327,7 +9235,7 @@ var require_main = __commonJS({
         this.errorCount = 0;
         const eventEmitter = this.process;
         eventEmitter.on("error", (error) => this.fireError(error));
-        eventEmitter.on("close", () => this.fireClose);
+        eventEmitter.on("close", () => this.fireClose());
       }
       write(msg) {
         try {
@@ -9360,7 +9268,7 @@ var require_main = __commonJS({
       constructor(port) {
         super();
         this.onData = new api_1.Emitter();
-        port.on("close", () => this.fireClose);
+        port.on("close", () => this.fireClose());
         port.on("error", (error) => this.fireError(error));
         port.on("message", (message) => {
           this.onData.fire(message);
@@ -9469,6 +9377,9 @@ var require_main = __commonJS({
           resolve5({
             onConnected: () => {
               return connected;
+            },
+            close: () => {
+              server.close();
             }
           });
         });
@@ -9507,6 +9418,9 @@ var require_main = __commonJS({
             port: () => boundPort,
             onConnected: () => {
               return connected;
+            },
+            close: () => {
+              server.close();
             }
           });
         });
@@ -19982,6 +19896,13 @@ var FullTextDocument = class _FullTextDocument {
         const startOffset = this.offsetAt(range.start);
         const endOffset = this.offsetAt(range.end);
         this._content = this._content.substring(0, startOffset) + change.text + this._content.substring(endOffset, this._content.length);
+        const insertedEndOffset = startOffset + change.text.length;
+        const crlfAtStart = this._content.charCodeAt(startOffset - 1) === 13 && this._content.charCodeAt(startOffset) === 10;
+        const crlfAtEnd = this._content.charCodeAt(insertedEndOffset - 1) === 13 && this._content.charCodeAt(insertedEndOffset) === 10;
+        if (crlfAtStart || crlfAtEnd) {
+          this._lineOffsets = void 0;
+          continue;
+        }
         const startLine = Math.max(range.start.line, 0);
         const endLine = Math.max(range.end.line, 0);
         let lineOffsets = this._lineOffsets;
