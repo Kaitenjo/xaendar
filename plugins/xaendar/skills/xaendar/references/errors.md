@@ -79,11 +79,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.
 - **Fix:** Write @render name(arguments), with () when the template has no parameters.
 
-
 ### `[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;`
 
 - **Cause:** A @let without its name or its =, or whose block closes before its ;. The same message is reported as [Parser] when the template ends before the ;, or the value is missing.
 - **Fix:** Write @let name = value; with a ; ending the value.
+
+### `[Lexer] Type arguments cannot be empty`
+
+- **Cause:** Empty type arguments: @@exList<>(…) on a directive, <ex-picker()> on a component.
+- **Fix:** Write the types, or drop the brackets.
+
+### `[Lexer] The type arguments of a directive must be followed by its bindings between parentheses, e.g. @@selector<string>(name="value")`
+
+- **Cause:** Something other than ( after the type arguments of a directive (@@exList<Row>x).
+- **Fix:** Open the bindings right after the type arguments: @@exList<Row>(items="{rows()}").
+
 ## Parser
 
 ### `[Parser] Expected closing tag input while file is over`
@@ -144,7 +154,12 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[Parser] 'let i' is not a valid alias identifier.`
 
 - **Cause:** An alias of @for written with let.
-- **Fix:** Write the alias as i = $index.
+- **Fix:** Write the alias as index = $index.
+
+### `[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()`
+
+- **Cause:** A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.
+- **Fix:** Call the signal: track item(), or track a property of it, as in track item().id.
 
 ### `[Parser] <input> declares more than one element ref (#first, #second): an element has a single name`
 
@@ -158,14 +173,14 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Parser] '2fields' is not a valid name for an element ref: it must be an identifier.`
 
-- **Cause:** An element ref named by something other than an identifier; `'root' is reserved in templates` for root, $event and the names starting with __ or $$.
+- **Cause:** An element ref named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
-
 
 ### `[Parser] '2total' is not a valid name for a @let: it must be an identifier.`
 
 - **Cause:** A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
+
 ### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())`
 
 - **Cause:** A <template> without name(…): a <template> is always the declaration of a template.
@@ -211,10 +226,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A spread argument (...values) in a @render.
 - **Fix:** Pass one argument per parameter.
 
-### `[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()`
+### `[Parser] A type argument cannot be empty`
 
-- **Cause:** A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.
-- **Fix:** Call the signal: track item(), or track a property of it, as in track item().id.
+- **Cause:** An empty type argument between two commas: <Row,, number>.
+- **Fix:** Remove the extra comma, or write the type.
 
 ## TypeChecker
 
@@ -237,31 +252,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A required input not bound.
 - **Fix:** Bind it on the tag.
-
-### `[TypeChecker] Property "name" needs a value: write name="…" or name="{ expression }". An attribute without a value is only valid on a native element.`
-
-- **Cause:** An input of a component or directive written like a boolean attribute (`<x-card name>`).
-- **Fix:** Give it a value: `name="text"` or `name="{ expression }"`. The form without a value is only for the attributes of native elements (`<input disabled>`).
-
-### `[TypeChecker] @@exList declares type arguments, but ListDirective is not generic.`
-
-- **Cause:** Type arguments (`@@exList<Row>(…)`) on a directive whose class has no type parameters.
-- **Fix:** Remove them, or add the type parameters to the class.
-
-### `[TypeChecker] @@exList declares 3 type arguments, but ListDirective has 2 type parameters (Item, Key).`
-
-- **Cause:** More type arguments than the class has type parameters.
-- **Fix:** Pass at most one argument per type parameter, in their order.
-
-### `The type arguments of a directive cannot be empty` / `A type argument of a directive cannot be empty`
-
-- **Cause:** `@@exList<>(…)`, or an empty argument between two commas (`<Row,, number>`).
-- **Fix:** Write the types, or drop the angle brackets.
-
-### `The type arguments of a directive must be followed by its bindings between parentheses`
-
-- **Cause:** Something other than `(` after the type arguments (`@@exList<Row>x`).
-- **Fix:** Open the bindings right after the type arguments: `@@exList<Row>(items="{ rows() }")`.
 
 ### `[TypeChecker] Required property "name" of <x-card> must always be bound: bind it in every branch of its conditional binding, including an @else or @default one, or outside of it.`
 
@@ -323,9 +313,24 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.
 - **Fix:** Use ?. or ??, or a precise type.
 
+### `Module '"<path>"' has no exported member 'Callout'.`
+
+- **Cause:** An @import naming something the module does not export.
+- **Fix:** Import it by its exact exported name; the default export is imported as default as name.
+
+### `'title' is also a member of XCard: import it under another name (… as name), or rename the member.`
+
+- **Cause:** A name the template imports is also a member of the component, inherited ones included: an expression reading it would be ambiguous.
+- **Fix:** Import it under another name: @import { title as heading } from './utils.ts'.
+
+### `[TypeChecker] "root" is reserved in templates: import it under another name (… as name).`
+
+- **Cause:** A symbol imported as root, $event or a name starting with __, which the compiler uses for itself.
+- **Fix:** Import it under another name with as.
+
 ### `[TypeChecker] "field" is read before the element it names is created: only an event handler can read an element ref declared after it`
 
-- **Cause:** An interpolation, a binding, a condition or the iterable of a @for reading an element ref whose element comes after it in its scope.
+- **Cause:** An interpolation, a binding, a condition, the iterable of a @for or an argument of a @render reading an element ref whose element comes after it in its scope.
 - **Fix:** Move the element before the expression, or read the variable from an event handler, which runs once the template is rendered.
 
 ### `[TypeChecker] The track expression of a @for cannot read the element ref "field": it only reads the item of the @for and its implicit variables`
@@ -335,7 +340,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Cannot redeclare block-scoped variable 'field'.`
 
-- **Cause:** Two element refs with the same name in the same scope, or an element ref named like a variable of the enclosing @for.
+- **Cause:** Two element refs or templates with the same name in the same scope, or one named like a variable of the enclosing @for.
 - **Fix:** Rename one of them: a nested scope (a block, the row of a @for) can reuse the name.
 
 ### `[TypeChecker] "row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one`
@@ -346,13 +351,12 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[TypeChecker] Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in`
 
 - **Cause:** A @render inside an <svg> (or a <math>) of a template declared among HTML elements, or the other way round: the content is created in the namespace of the declaration. The build reports it as [Generator] too.
-- **Fix:** Declare the template inside the same namespace as its @render.
+- **Fix:** Declare the template in the namespace of its @render.
 
 ### `[TypeChecker] "field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler`
 
 - **Cause:** The content of a template reads an element ref of an enclosing scope, outside of an event handler, and a @render of the template comes before the element of the ref.
 - **Fix:** Move the @render after the element, or pass the value as an argument.
-
 
 ### `[TypeChecker] "total" is read before its @let: only an event handler can read a @let declared after it`
 
@@ -373,10 +377,31 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A @let whose value reads a signal is a signal, read here without parentheses.
 - **Fix:** Call it: total().toFixed(2).
+
 ### `Expected 2 arguments, but got 1.`
 
-- **Cause:** A @render passing fewer or more arguments than the template declares parameters (reported on the @render, or on the extra arguments).
+- **Cause:** A @render passing fewer or more arguments than the template declares parameters: reported on the @render, or on the extra arguments.
 - **Fix:** Pass one argument per parameter.
+
+### `[TypeChecker] Property "name" needs a value: write name="…" or name="{ expression }". An attribute without a value is only valid on a native element.`
+
+- **Cause:** An input of a component or a directive written like a boolean attribute: <x-card name>.
+- **Fix:** Give it a value: name="text" or name="{expression}". The form without a value is only for the attributes of native elements (<input disabled />).
+
+### `[TypeChecker] @@exList declares type arguments, but ListDirective is not generic.`
+
+- **Cause:** Type arguments (@@exList<Row>(…), <ex-list(Row)>) on a directive or a component whose class has no type parameters.
+- **Fix:** Remove them, or add the type parameters to the class.
+
+### `[TypeChecker] @@exList declares 3 type arguments, but ListDirective has 2 type parameters (Item, Key).`
+
+- **Cause:** More type arguments than the class has type parameters.
+- **Fix:** Pass at most one argument per type parameter, in their order.
+
+### `[TypeChecker] <div> declares type arguments, but only a WebComponent imported in the template can declare them.`
+
+- **Cause:** Type arguments after the name of a native element or of a custom element of another library: <div(Row)>.
+- **Fix:** Remove them: only the tags of imported generic components take type arguments.
 
 ## Build
 
@@ -415,10 +440,20 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A class decorated with @WebComponent in a file that does not follow the component convention, so the plugin does not compile it.
 - **Fix:** Move the class to a file ending with .xd.component.ts.
 
-### `Unsupported stylesheet extension ".scss" for <path>.`
+### `Unsupported stylesheet extension ".styl" for <path>.`
 
-- **Cause:** A styleUrl that is not a .css file.
-- **Fix:** Use plain CSS.
+- **Cause:** A styleUrl that is not a .css, .scss, .sass or .less file, such as a Stylus stylesheet.
+- **Fix:** Use CSS, Sass or Less.
+
+### `The "sass" package is required to compile <path>: install it with "npm i -D sass".`
+
+- **Cause:** A .scss or .sass stylesheet in a project that does not have the sass package; the same holds for a .less stylesheet without the less package. They are optional peer dependencies of @xaendar/build-tools.
+- **Fix:** Install the package named in the message, with npm i -D sass or npm i -D less.
+
+### `Failed to compile style - <path>`
+
+- **Cause:** A stylesheet the plugin could not compile: the next line gives the reason, such as an error of Sass or Less, a missing package or an unsupported extension.
+- **Fix:** Fix what the next line reports, in the stylesheet at the given path or in a file it imports.
 
 ### `Could not find the static block applying the decorators of class "MyAppRootComponent" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`
 
@@ -435,21 +470,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An @import whose path does not resolve: a relative path leading to no file or folder, a package that is not installed, or an alias that tsconfig.json does not declare.
 - **Fix:** Fix the path, install the package, or declare the alias in the paths of tsconfig.json.
 
-### `Module '"<path>"' has no exported member 'Callout'.`
-
-- **Cause:** An @import naming something the module does not export.
-- **Fix:** Import it by its exact exported name; the default export is imported as default as name.
-
-### `'title' is also a member of XCard: import it under another name (… as name), or rename the member.`
-
-- **Cause:** A name the template imports is also a member of the component, inherited ones included: an expression reading it would be ambiguous.
-- **Fix:** Import it under another name: @import { title as heading } from './utils.ts'.
-
-### `[TypeChecker] "root" is reserved in templates: import it under another name (… as name).`
-
-- **Cause:** A symbol imported as root, $event or a name starting with __, which the compiler uses for itself.
-- **Fix:** Import it under another name with as.
-
 ## Runtime
 
 ### `XCard does not seem to have a Render Function`
@@ -465,7 +485,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `Error: No directive registered for selector "exTint"`
 
 - **Cause:** The template imports the directive, but its module was never loaded at runtime.
-- **Fix:** Import the module, for instance with the glob of main.ts.
+- **Fix:** Import the module in the template with @import (not @import lazy), or load it before the template is rendered.
 
 ### `Error: Directive TintDirective registered for selector "exTint" is not a StructuralDirective`
 
@@ -519,19 +539,59 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `@import rules are not allowed here.`
 
-- **Cause:** A browser warning: a component stylesheet is a constructed stylesheet, which drops @import rules.
-- **Fix:** Put every rule in the CSS file of the component.
+- **Cause:** A browser warning: a component stylesheet is a constructed stylesheet, which drops the @import rules of a .css file.
+- **Fix:** Put every rule in the CSS file of the component, or use Sass or Less, whose imports are resolved at build time.
 
 ### `ReferenceError: Element ref "field" is read before the element it names is rendered`
 
 - **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading an element ref whose element is not created yet.
 - **Fix:** Emit the event after the render (afterRender), or read the variable later.
 
-
 ### `ReferenceError: @let "total" is read before its declaration is rendered`
 
 - **Cause:** An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a @let the render has not reached yet.
 - **Fix:** Emit the event after the render (afterRender), or read the @let later.
+
+### `Error: ToastComponent does not seem to be decorated with @WebComponent`
+
+- **Cause:** createComponent, or @Query(Class), given a class that is not decorated with @WebComponent itself: a base class, or a subclass of a component without its own decorator.
+- **Fix:** Pass the decorated class, or decorate the subclass with its own @WebComponent.
+
+### `Error: Property "level" is bound by more than one group`
+
+- **Cause:** createComponent with the same input in two groups of properties: the first group to stop holding would reset it while the other still binds it.
+- **Fix:** Bind it in one group, with a getter choosing the value: { level: () => this.urgent() ? 'urgent' : 'info' }.
+
+### `Error: Directive ParityDirective is not a CustomDirective`
+
+- **Cause:** A structural directive in the directives of createComponent: there is no template to render or not.
+- **Fix:** Pass custom directives only; decide whether to create the component in code.
+
+### `Error: Directive TipDirective is applied more than once on <x-card>: it is already a host directive of the component`
+
+- **Cause:** A template (@@tip) or createComponent applying a directive the component already declares in hostDirectives.
+- **Fix:** Bind the inputs the component exposes for its host directive instead of applying the directive again.
+
+### `Error: XCard declares the host directive TipDirective more than once`
+
+- **Cause:** The same directive listed twice in hostDirectives. Thrown when the element is created.
+- **Fix:** List it once.
+
+### `Error: TipDirective does not declare an input named "text"`
+
+- **Cause:** A name in the properties of a host directive that is not one of its @Property accessors; does not declare an event named "…" is the same for events.
+- **Fix:** Use the name of the accessor of the directive; rename it with { name, alias }.
+
+### `Error: XCard already has an input named "hint", which TipDirective cannot expose`
+
+- **Cause:** An exposed input of a host directive named like an input of the component or of another host directive.
+- **Fix:** Expose it under another name: { name: 'text', alias: 'tipText' }.
+
+### `Error: Invalid symbol for InputSignal set method`
+
+- **Cause:** set called on an InputSignal through a cast: inputs are written only by the bindings of the parent.
+- **Fix:** For a value the component changes too, copy the input into a local signal in an effect, and write the local one.
+
 ## Signals
 
 ### `Circular dependency detected while computing a Computed signal`
@@ -566,7 +626,12 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** xd generate component would overwrite an existing folder.
 - **Fix:** Pick another name, or add --force to replace it.
 
-### `✖  Invalid style option: sass`
+### `✖  Invalid style option: styl. Use one of css, scss, sass, less.`
 
-- **Cause:** xd new accepts css, scss, less and styl.
-- **Fix:** Use css: it is the only extension the plugin compiles.
+- **Cause:** A --style option of xd new that is not one of the formats the plugin compiles.
+- **Fix:** Pass css, scss, sass or less, or leave --style out to choose the format from a list.
+
+### `✖  Invalid style "styl" in <path>: use one of css, scss, sass, less.`
+
+- **Cause:** xd generate component found, in the nearest xaendar.json, a generate.components.style that is not one of the formats the plugin compiles.
+- **Fix:** Set it to css, scss, sass or less, or remove it to get CSS.

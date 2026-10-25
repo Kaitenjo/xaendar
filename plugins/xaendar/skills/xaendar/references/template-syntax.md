@@ -138,7 +138,9 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 }
 ```
 
-- A space is required between the keyword and its parenthesis: `@if (x)`, never `@if(x)`.
+- A space is required between the keyword and its parenthesis: `@if (x)`, never `@if(x)`. There is no `as` on `@if`: read the value again inside the block.
+- `@for` iterates arrays and numbers only: convert a `Set`, a `Map` or a string with `[...value]` in a computed signal. Without `track` the item itself is the key; a negative number renders nothing; there is no `$count` (read the length).
+- `@switch` compares with `===`; `@case` values are literals (no members of the component); `@default` applies only when no case matches, wherever it is written.
 - The `@for` item and context variables `$index`, `$first`, `$last`, `$even`, `$odd` are signals: call them (`item().id`, `$index()`), in `track` too. Aliases are signals too. Each call reads the signal again, so `@if (item().page)` does not narrow `item().page` inside the block: use `?.` or a method.
 - A row reused for a new item with the same key shows the new item and keeps its DOM state (typed text, focus): with `track $index()` that state stays at its position. Track a stable id when rows hold state.
 - Write control-flow blocks on multiple lines, one block per line, with the content indented.
@@ -187,6 +189,7 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 >…</p>
 ```
 
+- The inputs and listeners of a directive go between the parentheses after its selector; without them the parentheses can be left out (`<ex-button @@exSubmit />`). Several directives of both kinds can share an element.
 - A directive whose class has type parameters (`class List<Item, Key = string>`) takes its type arguments right after the selector: `@@exList<Row, number>(items="{ rows() }")`, `*exEach<Row>(…)`. They follow the order of the type parameters. As in a TypeScript call, type parameters are either all given or all inferred: without type arguments they are inferred from the values bound to the inputs (`items="{ rows() }"` gives `Item` the type of the rows), then take their default type (`Key = string`), or `any`; with type arguments nothing is inferred, the ones left out take their default type and leaving out one without a default is an error. The constraint of a type parameter is checked on its argument or on the inferred type. They are only for the type-check, with no effect at runtime. More arguments than type parameters, or arguments on a directive that is not generic, is an error.
 - A component whose class has type parameters (`class Picker<Item, Key = string>`) takes its type arguments between parentheses right after the tag name, with no space: `<ex-picker(Row, number) items="{ rows() }">` (the closing tag stays `</ex-picker>`). They work exactly like the ones of a directive: without them the type parameters are inferred from the values bound to the inputs, with them nothing is inferred and the ones left out take their default type; the constraint is checked on the argument (reported on the type arguments) or on the inferred type (reported on the tag name). Type arguments on a component that is not generic, more than its type parameters, or on a native element or a custom element of another library, are an error.
 - A directive can be applied once per element, and cannot be applied in the template of an element that already declares it as a host directive.
@@ -200,8 +203,10 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 @import { TintDirective } from '../../directives/tint.directive.ts'
 @import { formatPrice, Currency, quantity } from '../cart.ts'
 @import { format as formatDate, default as shout, * as utils } from '../utils.ts'
+@import lazy { ReportComponent } from './report/report.xd.component.ts'
 ```
 
+- The module of the template imports the modules of its `@import`s, which defines the components and directives it uses before it renders. `@import lazy` only type-checks: something else loads the module (`import()`), and the tag must be rendered after `customElements.get(selector)` returns the class, or it receives its bindings as plain attributes. A directive whose module is never loaded throws `No directive registered for selector`.
 - A relative path is resolved against the template (extension optional, a folder means its `index.ts`). Any other path, the name of a package (`@scope/pkg`, through the `exports` of its `package.json`) or an alias of the `paths` of `tsconfig.json`, is resolved as the TypeScript files of the project resolve it; the generated code imports a package by its name, so the bundler shares one instance with the application. The imports come first in the template.
 - The components and directives of a package compiled to JavaScript cannot be imported yet: its `.d.ts` keeps no decorator. Its functions, constants, enums, classes and types can; the components of a package publishing its TypeScript sources, of the same monorepo, or reached through an alias, are imported like local ones.
 - Any export can be imported: functions, constants, enums, classes, module signals, types, interfaces; `default as name` for the default export, `* as name` for the whole module. The expressions read them by their local name, like members: `{ formatPrice(price, Currency.Euro) }`, `@if (value instanceof Shape)`, `(click)="addItem()"`; a type can be a type argument (`<ex-list(Row)>`). Only the names the expressions read are imported at runtime, so a type costs nothing.
@@ -214,16 +219,18 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 ## Expressions
 
 ```
-Allowed      members and methods of the class, literals, arithmetic and comparisons, && || ?? ?: !,
-             typeof, instanceof, ?. and optional calls, indexes, array and object literals, spread, template literals,
-             globals such as Math, JSON and String, the variables of @for, $event in listeners,
-             the functions, constants, enums, classes and signals imported with @import
+Allowed      members and methods of the class, literals, arithmetic and comparisons, && || ?? ?: !, in,
+             typeof, instanceof, ?. and optional calls, the non-null assertion x!, indexes, array and object
+             literals, spread, template literals and tagged templates, globals such as Math, JSON and String,
+             the variables of @for, $event in listeners, the functions, constants, enums, classes and signals
+             imported with @import
 
 Forbidden    assignments, new, arrow and function expressions, this, as, regular expressions,
              the comma operator, more than one expression, private and protected members,
              the names of a module that the template doesn't import
 ```
 
+- An object literal needs parentheses (`{ ({ id: 1 }) }`): without them the interpolation renders nothing.
 - Members used by the template must be `public`. A module constant, function or signal the template reads is imported (`@import { LIMIT } from './limits.ts'`) rather than copied into a member that only aliases it; what is state of the component stays in its class.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 
@@ -234,7 +241,8 @@ Forbidden    assignments, new, arrow and function expressions, this, as, regular
 | `{{ expr }}` | `{ expr }` |
 | `[prop]="…"`, `[(ngModel)]` | `prop="{ … }"` and a listener; a directive writing the property |
 | `(keydown.enter)` | A filter in the method |
-| `@empty`, `@defer` | `@if` around the `@for`; dynamic imports |
+| `@empty` | `@if` on the length around the `@for` |
+| `@defer` | `@import lazy` and a dynamic `import()` |
 | Pipes | Methods (in text) and computed signals |
 | `ng-template` + `ngTemplateOutlet` | `<template name(…)>` + `@render name(…)`, in the same template |
 | `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |
