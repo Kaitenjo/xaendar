@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "build:claude-plugin": "npm run build:schematics && npm run build-claude-plugin --prefix schematics",
+    "validate:claude-plugin": "claude plugin validate plugins/xaendar && claude plugin validate plugins/xaendar/skills && claude plugin validate plugins/xaendar/agents && claude plugin validate .",
+    "release:claude-plugin": "npm run build:claude-plugin && npm run validate:claude-plugin && git diff --quiet -- plugins/xaendar && claude plugin tag plugins/xaendar --push",
     "build:docs": "npm run build --prefix src/docs",
     "build:projects": "npm run build-projects --prefix schematics",
     "build:schematics": "npm run build --prefix schematics",

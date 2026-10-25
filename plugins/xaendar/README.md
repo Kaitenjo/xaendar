@@ -19,6 +19,12 @@ Helps Claude Code write applications with Xaendar.
 /plugin install xaendar@xaendar
 ```
 
+## Release
+
+1. Bump `version` in `.claude-plugin/plugin.json`, and commit every change of the plugin.
+2. `npm run release:claude-plugin` from the repository root: it rebuilds the server, validates the manifests, the skills and the agent, stops if the rebuilt server differs from the committed one (commit it, then run it again), and pushes the tag `xaendar--v<version>`.
+3. `git push`: users get the new version with `/plugin marketplace update xaendar`, or automatically when auto-update is on.
+
 ## Language server
 
 The server is bundled in `server/server.cjs` by `npm run build:claude-plugin` from the repository root. Rebuild it after every change to `packages/language-server`, `language-core` or `compiler`, and commit the result: a marketplace installation gets only what is in git.
