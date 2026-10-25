@@ -13,7 +13,7 @@
         "source": "git-subdir",
         "url": "https://github.com/Kaitenjo/xaendar.git",
         "path": "plugins/xaendar",
-        "ref": "xaendar--v1.0.5"
+        "ref": "xaendar--v1.0.6"
       },
       "description": "Xaendar template language, API, patterns and conventions, xd CLI commands to scaffold, check and test, a component reviewer and the Xaendar language server",
       "category": "development"
