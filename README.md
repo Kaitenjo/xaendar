@@ -4,8 +4,6 @@
 
 Xaendar is a TypeScript framework for building native Web Components. A component is a class plus a template written in an extended HTML5 syntax. The compiler analyses each template statically and wires every element, attribute and text node to the exact signals it reads. There is no virtual DOM and no component re-render: when a signal changes, only the nodes that depend on it are updated.
 
-> **Status:** pre-1.0 (`0.12.0`). The API is still evolving, and breaking changes can land in minor versions.
-
 ## Highlights
 
 - **Real custom elements.** Every component extends `HTMLElement`, renders into its own shadow root and works anywhere: with any other framework, or with none.
