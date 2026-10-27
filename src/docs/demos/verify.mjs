@@ -2,11 +2,12 @@ import { Browser } from 'happy-dom';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /*
   Loads a built demo in a headless DOM and drives it the way a reader would: it checks that the application
-  rendered, that the Xaendar element was upgraded, that a call to its method shows in the component, and that
-  a click on the component shows in the state of the application.
+  rendered, that the Xaendar element was upgraded, that a value assigned to its input property shows in the
+  component, and that a click on the component goes through the state of the application and back into it.
 
   Usage: node src/docs/demos/verify.mjs <name> [...names]
 */
@@ -71,7 +72,7 @@ function within(promise, ms) {
  * @returns The report of the run.
  */
 async function verify(name) {
-  const server = await serve(new URL(`../public/demos/${name}/`, import.meta.url).pathname.slice(1));
+  const server = await serve(fileURLToPath(new URL(`../public/demos/${name}/`, import.meta.url)));
   const browser = new Browser({
     settings: {
       enableJavaScriptEvaluation: true,
@@ -90,9 +91,11 @@ async function verify(name) {
     const quantity = () => picker?.shadowRoot?.querySelector('output')?.textContent ?? null;
     const report = { name, loaded, settled, defined: picker?.constructor?.name !== 'HTMLElement', rendered: quantity() };
 
-    picker?.setValue(5);
+    if (picker) {
+      picker.value = 5;
+    }
     await new Promise(resolve => setTimeout(resolve, 50));
-    report.afterSetValue = quantity();
+    report.afterAssign = quantity();
 
     picker?.shadowRoot?.querySelectorAll('button')[1]?.click();
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -100,7 +103,7 @@ async function verify(name) {
     // the panel, not the whole body: a framework that streams its state in an inline script would drown it
     const panel = document.querySelector('.panel') ?? document.body;
     report.hostText = panel.textContent.replace(/\s+/g, ' ').trim();
-    report.ok = report.defined && report.rendered === '0' && report.afterSetValue === '5'
+    report.ok = report.defined && report.rendered === '0' && report.afterAssign === '5'
       && report.afterClick === '6' && report.hostText.includes('6');
 
     return report;

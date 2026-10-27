@@ -1,14 +1,17 @@
 /**
- * `<ex-qty-picker>` as the applications that embed it see it: a plain element with one extra method. The host
- * never sets a property on it, and listens to its `changed` event to read the quantity back.
+ * `<ex-qty-picker>` as the applications that embed it see it: a plain element whose `value` property sets the
+ * quantity shown. The host listens to its `changed` event to read the quantity the user asked for, and assigns it
+ * back.
  */
 export type QtyPicker = HTMLElement & {
   /**
-   * Sets the quantity shown by the element.
-   *
-   * @param value - The new quantity.
+   * The input of the quantity: reading it returns the signal of the component.
    */
-  setValue(value: number): void;
+  get value(): () => number;
+  /**
+   * Sets the quantity shown by the element.
+   */
+  set value(value: number);
 };
 
 /**

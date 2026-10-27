@@ -1,14 +1,20 @@
-import { createEffect, createSignal } from 'solid-js';
-import type { QtyPicker } from '@xaendar-demo/qty-picker';
+import { createSignal } from 'solid-js';
 import type { JSX } from 'solid-js';
 
 declare module 'solid-js' {
   namespace JSX {
     interface IntrinsicElements {
       /**
-       * The Xaendar element, declared so TSX accepts its tag and types its ref.
+       * The Xaendar element, declared so TSX accepts its tag.
        */
-      'ex-qty-picker': HTMLAttributes<QtyPicker>;
+      'ex-qty-picker': HTMLAttributes<HTMLElement>;
+    }
+
+    interface ExplicitProperties {
+      /**
+       * The input of the Xaendar element, declared so `prop:value` is typed.
+       */
+      value: number;
     }
 
     interface CustomEvents {
@@ -22,23 +28,17 @@ declare module 'solid-js' {
 }
 
 /**
- * Drives the Xaendar element from Solid: it listens to its event with `on:`, and sends the quantity back with
- * its method, from an effect. A `prop:` would overwrite the signal of the component, so the quantity is never
- * written onto the element.
+ * Drives the Xaendar element from Solid: `prop:value` assigns the quantity to its input, and `on:changed` reads
+ * the quantity it proposes back.
  *
  * @returns The panel to render.
  */
 export function App(): JSX.Element {
   const [quantity, setQuantity] = createSignal(0);
-  let picker: QtyPicker | undefined;
-
-  createEffect(() => {
-    picker?.setValue(quantity());
-  });
 
   return (
     <div class="panel">
-      <ex-qty-picker ref={picker} on:changed={event => setQuantity(event.detail)} />
+      <ex-qty-picker prop:value={quantity()} on:changed={event => setQuantity(event.detail)} />
       <p>
         Solid state: <strong>{quantity()}</strong>
       </p>

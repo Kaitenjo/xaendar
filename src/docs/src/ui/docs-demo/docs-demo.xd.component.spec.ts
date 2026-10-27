@@ -67,6 +67,6 @@ describe('DocsDemoComponent', () => {
     element.toggleCode();
     await vi.waitFor(() => expect(element.files().length).toBeGreaterThan(0));
     expect(element.files().map(file => file.name)).toContain('src/App.tsx');
-    expect(element.current().code).toContain('setValue');
+    expect(element.current().code).toContain('onchanged');
   });
 });

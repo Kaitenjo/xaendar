@@ -1,11 +1,9 @@
-import { FASTElement, Observable, html, ref } from '@microsoft/fast-element';
+import { FASTElement, Observable, html } from '@microsoft/fast-element';
 import type { ElementViewTemplate } from '@microsoft/fast-element';
-import type { QtyPicker } from '@xaendar-demo/qty-picker';
 
 /**
- * Drives the Xaendar element from FAST: it listens to its event on the tag itself, and sends the quantity back
- * with its method. The quantity is never bound as a property, since the element only takes it through
- * `setValue`.
+ * Drives the Xaendar element from FAST: `:value` assigns the quantity to its input, and `@changed` reads the
+ * quantity it proposes back, on the tag itself.
  *
  * The template renders in the light DOM (`shadowOptions: null`), so the panel is styled by `demo.css` like the
  * other demos.
@@ -17,11 +15,6 @@ export class FastApp extends FASTElement {
   public declare quantity: number;
 
   /**
-   * The Xaendar element, assigned by the `ref` directive of the template.
-   */
-  public declare picker: QtyPicker;
-
-  /**
    * Starts the application at an empty quantity, the same value the element shows.
    */
   public constructor() {
@@ -30,7 +23,7 @@ export class FastApp extends FASTElement {
   }
 
   /**
-   * Reads the quantity the element reports back.
+   * Reads the quantity the element proposes.
    *
    * @param quantity - The detail of the `changed` event, i.e. the new quantity.
    */
@@ -39,11 +32,10 @@ export class FastApp extends FASTElement {
   }
 
   /**
-   * Adds five to the quantity and pushes it into the element.
+   * Adds five to the quantity: the template assigns it to the element.
    */
   public add(): void {
     this.quantity += 5;
-    this.picker.setValue(this.quantity);
   }
 }
 
@@ -55,7 +47,7 @@ Observable.defineProperty(FastApp.prototype, 'quantity');
 const template: ElementViewTemplate<FastApp> = html<FastApp>`
   <div class="panel">
     <ex-qty-picker
-      ${ref<FastApp>('picker')}
+      :value="${app => app.quantity}"
       @changed="${(app, context) => app.read(context.eventDetail<number>())}"
     ></ex-qty-picker>
     <p>FAST state: <strong>${app => app.quantity}</strong></p>

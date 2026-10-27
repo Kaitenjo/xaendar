@@ -20,7 +20,7 @@ Defines a class extending CustomElement as a custom element, with its compiled t
 @Property<InputSignal<T>, In = T>(defaultValue?, { alias?, transform?: (value: In) => T, equals?, watched?, unwatched? }) accessor name!: InputSignal<T>
 ```
 
-Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template (or by `createComponent`), never by attributes written from outside. `transform` converts every bound value, not the default; templates bind the type it accepts: the second type argument, else the annotation of its parameter, else `T`. `equals` compares the transformed value with the current one (`Object.is` by default). A conditional binding that stops holding resets the input to its default.
+Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template (or by `createComponent`) and by assignments to the property of the element from outside (`element.name = value`, also before the element is defined), never by attributes. `transform` converts every bound or assigned value, not the default; templates bind the type it accepts: the second type argument, else the annotation of its parameter, else `T`. `equals` compares the transformed value with the current one (`Object.is` by default). A conditional binding that stops holding resets the input to its default.
 
 ### Property.required (decorator)
 

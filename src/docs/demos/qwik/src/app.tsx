@@ -1,29 +1,26 @@
 import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import type { JSXOutput, Signal } from '@builder.io/qwik';
-import type { QtyPicker } from '@xaendar-demo/qty-picker';
 
 declare module '@builder.io/qwik' {
   export namespace QwikJSX {
     interface IntrinsicElements {
       /**
-       * The Xaendar element, declared so JSX accepts its tag and types its ref. It takes no attribute and no
-       * property: assigning a property would destroy the signal of the component, so the quantity only ever
-       * travels through `setValue`.
+       * The Xaendar element, declared so JSX accepts its tag, its input and its ref.
        */
-      'ex-qty-picker': { ref?: Signal<QtyPicker | undefined> };
+      'ex-qty-picker': { value?: number, ref?: Signal<HTMLElement | undefined> };
     }
   }
 }
 
 /**
- * Drives the Xaendar element from Qwik: it listens to its event through a ref, and sends the quantity back
- * with its method.
+ * Drives the Xaendar element from Qwik: it assigns `value` as a property, since the element has one, which writes
+ * the input, and listens to the `changed` event through a ref.
  *
  * @returns The panel to render.
  */
 export const App = component$((): JSXOutput => {
   const quantity = useSignal(0);
-  const picker = useSignal<QtyPicker>();
+  const picker = useSignal<HTMLElement>();
 
   /*
     The listener goes on the element itself, since the event does not bubble, and in a visible task, the only
@@ -47,17 +44,11 @@ export const App = component$((): JSXOutput => {
 
   return (
     <div class="panel">
-      <ex-qty-picker ref={picker} />
+      <ex-qty-picker ref={picker} value={quantity.value} />
       <p>
         Qwik state: <strong>{quantity.value}</strong>
       </p>
-      <button
-        type="button"
-        onClick$={() => {
-          quantity.value += 5;
-          picker.value?.setValue(quantity.value);
-        }}
-      >
+      <button type="button" onClick$={() => (quantity.value += 5)}>
         +5 from Qwik
       </button>
     </div>

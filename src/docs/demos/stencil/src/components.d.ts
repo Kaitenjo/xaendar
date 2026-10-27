@@ -7,18 +7,18 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     /**
-     * Drives the Xaendar element from Stencil: it listens to its event on the element itself, and sends the
-     * quantity back with its method. The component is rendered in the light DOM, so the page around it keeps
-     * styling and reading it.
+     * Drives the Xaendar element from Stencil: its JSX assigns `value` as a property, since the element has one, which
+     * writes the input, and turns `onChanged` into a listener of `changed`, on the element itself. The component is
+     * rendered in the light DOM, so the page around it keeps styling and reading it.
      */
     interface DemoApp {
     }
 }
 declare global {
     /**
-     * Drives the Xaendar element from Stencil: it listens to its event on the element itself, and sends the
-     * quantity back with its method. The component is rendered in the light DOM, so the page around it keeps
-     * styling and reading it.
+     * Drives the Xaendar element from Stencil: its JSX assigns `value` as a property, since the element has one, which
+     * writes the input, and turns `onChanged` into a listener of `changed`, on the element itself. The component is
+     * rendered in the light DOM, so the page around it keeps styling and reading it.
      */
     interface HTMLDemoAppElement extends Components.DemoApp, HTMLStencilElement {
     }
@@ -32,9 +32,9 @@ declare global {
 }
 declare namespace LocalJSX {
     /**
-     * Drives the Xaendar element from Stencil: it listens to its event on the element itself, and sends the
-     * quantity back with its method. The component is rendered in the light DOM, so the page around it keeps
-     * styling and reading it.
+     * Drives the Xaendar element from Stencil: its JSX assigns `value` as a property, since the element has one, which
+     * writes the input, and turns `onChanged` into a listener of `changed`, on the element itself. The component is
+     * rendered in the light DOM, so the page around it keeps styling and reading it.
      */
     interface DemoApp {
     }
@@ -47,9 +47,9 @@ declare module "@stencil/core" {
     export namespace JSX {
         interface IntrinsicElements {
             /**
-             * Drives the Xaendar element from Stencil: it listens to its event on the element itself, and sends the
-             * quantity back with its method. The component is rendered in the light DOM, so the page around it keeps
-             * styling and reading it.
+             * Drives the Xaendar element from Stencil: its JSX assigns `value` as a property, since the element has one, which
+             * writes the input, and turns `onChanged` into a listener of `changed`, on the element itself. The component is
+             * rendered in the light DOM, so the page around it keeps styling and reading it.
              */
             "demo-app": LocalJSX.IntrinsicElements["demo-app"] & JSXBase.HTMLAttributes<HTMLDemoAppElement>;
         }

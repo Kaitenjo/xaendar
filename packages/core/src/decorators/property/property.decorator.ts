@@ -6,6 +6,8 @@ import { InputSignal } from '../../signals/types/input-signal.type';
 import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../../types/property-decorator-options.type';
 import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
+import { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
 
 const propertyDecoratorOptionsWithRequiredBrand = Symbol('PropertyDecoratorOptionsWithRequiredBrand');
 type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & {
@@ -20,11 +22,11 @@ function createPropertyDecorator<
 >(
   value?: ActualValue | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue>,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<Class, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<Class, Value>> {
+): Function<Parameters<AccessorDecorator<Class, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<Class, Value, IncomingValue>> {
   return function (
-    _target: ClassAccessorDecoratorValue<Value>,
+    target: ClassAccessorDecoratorValue<Value>,
     context: DecoratorMetadataContext<ClassAccessorDecoratorContext<Class, Value>, WebComponentMetadata>
-  ): PropertyDecoratorReturnType<Class, Value> {
+  ): PropertyDecoratorReturnType<Class, Value, IncomingValue> {
     const propertyKey = context.name;
 
     if (typeof propertyKey === 'symbol') {
@@ -53,13 +55,30 @@ function createPropertyDecorator<
 
     return {
       init(_?: InputSignal<ActualValue>) {
-        return input<ActualValue, IncomingValue>(actualValue, {
+        const signal = input<ActualValue, IncomingValue>(actualValue, {
           equals: actualOptions?.equals,
           watched: actualOptions?.watched,
           unwatched: actualOptions?.unwatched,
           transform: actualOptions?.transform
-        }) as Value;
+        }) as SettableInputSignal<ActualValue, IncomingValue>;
+        /*
+          A value assigned to the element before its upgrade is an own property, which would shadow the accessor:
+          it is removed and written into the input as any later assignment, so the transform applies to it and the
+          default stays the initial value a reset goes back to.
+        */
+        if (Object.hasOwn(this, propertyKey)) {
+          const element = this as unknown as Record<string, IncomingValue>;
+          const preUpgrade = element[propertyKey];
+          delete element[propertyKey];
+          signal.set(preUpgrade, INPUT_SIGNAL_SET_SYMBOL);
+        }
+
+        return signal as Value;
       },
+      set(newValue: IncomingValue) {
+        const signal = target.get.call(this) as SettableInputSignal<ActualValue, IncomingValue>;
+        signal.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
+      }
     };
   };
 }
@@ -92,7 +111,7 @@ export function Property<
 >(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>, IncomingValue>> {
   return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>(value, options);
 }
 
@@ -122,7 +141,7 @@ Property.required = function required<
   IncomingValue = ActualValue
 >(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>>> {
+): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>, IncomingValue>>{
   return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>({
     ...options,
     [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired',

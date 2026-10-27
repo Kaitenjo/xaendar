@@ -534,11 +534,11 @@
           "p1": "Quando la condizione di un binding condizionale smette di valere, l’input torna al suo default, <code>50</code>, non all’ultimo valore legato. Legarlo di nuovo imposta il valore corrente del padre.",
           "callout1": {
             "heading": "Gli attributi scritti dall’esterno vengono ignorati",
-            "body": "Un input non è collegato all’attributo con lo stesso nome: non c’è nessun <code>attributeChangedCallback</code>. Il pulsante del secondo esempio scrive <code>value=\"42\"</code> sul primo componente, e non cambia nulla. Il codice esterno a Xaendar non può impostare un input tramite il DOM: dai al componente un metodo, oppure avvolgilo in un padre Xaendar."
+            "body": "Un input non è collegato all’attributo con lo stesso nome: non c’è nessun <code>attributeChangedCallback</code>. Il pulsante del secondo esempio scrive <code>value=\"42\"</code> sul primo componente, e non cambia nulla. Il codice esterno a Xaendar imposta un input assegnando la proprietà dell’elemento, <code>element.value = 42</code>, che passa dalla <code>transform</code> come un binding: vedi <a href=\"#/it/tools/integrations\">Usare Xaendar con altri framework</a>."
           },
           "callout2": {
             "heading": "Gli input sono in sola lettura dentro il componente",
-            "p1": "<code>InputSignal</code> non ha un <code>set</code> pubblico: lo scrivono solo i binding del padre. Per un valore che cambia anche il componente, copia l’input in un signal locale dentro un effect, e scrivi quello locale."
+            "p1": "<code>InputSignal</code> non ha un <code>set</code> pubblico: lo scrivono solo i binding del padre e le assegnazioni della proprietà dell’elemento da fuori. Per un valore che cambia anche il componente, copia l’input in un signal locale dentro un effect, e scrivi quello locale."
           },
           "callout3": {
             "heading": "transform decide il tipo controllato nei template",
@@ -2852,7 +2852,7 @@
       "integrations": {
         "eyebrow": "Strumenti",
         "title": "Usare Xaendar con altri framework",
-        "lead": "Un componente è un normale custom element: uno shadow root aperto, i figli proiettati nei suoi slot e <code>CustomEvent</code> lanciati su se stesso. Qualsiasi framework può mettere il suo tag in una pagina. Restano due cose da sistemare: dove gira il plugin Vite, e come entrano i dati, visto che un input non è né un attributo né una proprietà. Ogni framework qui sotto esegue un’applicazione vera dentro questa pagina, buildata con la sua toolchain.",
+        "lead": "Un componente è un normale custom element: uno shadow root aperto, i figli proiettati nei suoi slot e <code>CustomEvent</code> lanciati su se stesso. Qualsiasi framework può mettere il suo tag in una pagina. Restano due cose da sistemare: dove gira il plugin Vite, e come entrano i dati, visto che un input si imposta assegnando la proprietà dell’elemento, non con un attributo. Ogni framework qui sotto esegue un’applicazione vera dentro questa pagina, buildata con la sua toolchain.",
         "boundary": {
           "title": "Cosa attraversa il confine",
           "p1": "Tutto quello che chi ospita il componente può farci passa dal DOM, e la tabella qui sotto è l’intero contratto.",
@@ -2863,26 +2863,22 @@
           "td3": "<strong>Output</strong> (<code>@Event</code>)",
           "td4": "<code>element.addEventListener(nome, …)</code>. Il nome è quello dell’accessor, letterale, e il valore passato a <code>emit</code> è il <code>detail</code> dell’evento.",
           "td5": "<strong>Input</strong> (<code>@Property</code>)",
-          "td6": "Niente. Non esiste <code>attributeChangedCallback</code>, e assegnare la proprietà con lo stesso nome rompe l’input.",
+          "td6": "Assegnando la proprietà con il nome dell’accessor, non il suo <code>alias</code>: <code>element.value = 3</code> scrive l’input passando dalla sua <code>transform</code>, come fa un binding, anche prima che l’elemento sia definito. Gli attributi vengono ignorati: non esiste <code>attributeChangedCallback</code>.",
           "td7": "<strong>Metodi</strong>",
           "td8": "I metodi pubblici della classe sono metodi dell’elemento: <code>element.setValue(3)</code> funziona da ovunque.",
           "td9": "<strong>Stili</strong>",
           "td10": "I fogli di stile di chi ospita il componente non entrano nello shadow root; <code>::part</code>, <code>::slotted</code> e le custom property sì. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
-          "p2": "<code>bubbles</code> e <code>composed</code> sono <code>false</code> se l’output non li imposta, quindi il listener deve stare sull’elemento stesso: un listener delegato su un antenato non vede mai l’evento. Tutti i framework qui sotto legano i listener sull’elemento, perciò la loro sintassi dichiarativa funziona. Dai agli output un nome minuscolo, come <code>changed</code>: alcuni di essi abbassano il nome di un listener dichiarativo, e un output in camelCase resterebbe irraggiungibile dai loro template.",
-          "callout1": {
-            "heading": "Una proprietà assegnata da fuori rompe l’input",
-            "body": "L’accessor di un input contiene l’<code>InputSignal</code> stesso, quindi <code>'value' in element</code> è <code>true</code> e l’assegnazione passa senza errori. Sostituisce il signal con il valore grezzo: il componente smette di aggiornarsi, e la lettura successiva al suo interno lancia <code>element.value is not a function</code>. React, Preact, Vue, Svelte e Stencil impostano tutti una proprietà quando l’elemento ce l’ha, perciò nessun loro template può legare un input. Vedi <a href=\"#/it/components/inputs\">Input con @Property</a>."
-          }
+          "p2": "<code>bubbles</code> e <code>composed</code> sono <code>false</code> se l’output non li imposta, quindi il listener deve stare sull’elemento stesso: un listener delegato su un antenato non vede mai l’evento. Tutti i framework qui sotto legano i listener sull’elemento, perciò la loro sintassi dichiarativa funziona. Dai agli output un nome minuscolo, come <code>changed</code>: alcuni di essi abbassano il nome di un listener dichiarativo, e un output in camelCase resterebbe irraggiungibile dai loro template."
         },
         "component": {
           "title": "Un componente pensato per chi lo ospita",
-          "p1": "Un componente usato da un altro framework riceve i dati da un metodo e li restituisce con un output. Il resto non cambia: template, foglio di stile e signal sono i soliti. È il componente che le applicazioni di questa pagina incorporano.",
+          "p1": "Un componente usato da un altro framework riceve i dati dai suoi input, che chi lo ospita assegna come proprietà, e li restituisce con un output. Quello qui sotto è controllato: mostra il <code>value</code> che gli viene assegnato, e un clic non lo cambia ma emette la nuova quantità, che chi lo ospita tiene nel proprio stato e gli riassegna. Il resto non cambia: template, foglio di stile e signal sono i soliti. È il componente che le applicazioni di questa pagina incorporano.",
           "p2": "Lo <code>&lt;slot&gt;</code> è ciò che permette di passare del contenuto da fuori. Le altre vie d’ingresso sono due. Un modulo di signal condiviso: chi ospita il componente lo importa e ci scrive, e ogni componente che lo legge si aggiorna, come in <a href=\"#/it/signals/shared-state\">Condividere lo stato</a>. Oppure un genitore Xaendar: viene montato un solo tag radice, e al suo interno i template legano gli input come al solito."
         },
         "starting": {
           "title": "Avviare Xaendar in un’app che lo ospita",
           "p1": "<code>loadSignals()</code> installa il <code>Signal</code> globale, e deve girare prima che venga valutato qualsiasi modulo che crea un signal: ogni classe di componente, e ogni store. Tienilo in un modulo solo, che carica i componenti con un import dinamico.",
-          "p2": "Importare una classe definisce il suo tag, perché il decoratore <code>@WebComponent</code> chiama <code>customElements.define</code>. Un import di solo tipo viene eliminato da TypeScript e non definisce niente, quindi il modulo va importato per il suo effetto collaterale. Finché la classe non è caricata, il tag resta un elemento sconosciuto, e viene aggiornato quando la definizione arriva: vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.",
+          "p2": "Importare una classe definisce il suo tag, perché il decoratore <code>@WebComponent</code> chiama <code>customElements.define</code>. Un import di solo tipo viene eliminato da TypeScript e non definisce niente, quindi il modulo va importato per il suo effetto collaterale. Finché la classe non è caricata, il tag resta un elemento sconosciuto, e viene aggiornato quando la definizione arriva: vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Una proprietà assegnata nel frattempo arriva all’input al momento dell’aggiornamento, ma molti framework assegnano una proprietà solo se l’elemento ce l’ha già, e altrimenti scrivono un attributo, che l’input ignora: definisci i componenti prima che chi li ospita ne renderizzi i tag, come fanno tutte le applicazioni di questa pagina.",
           "callout1": {
             "heading": "Non esiste il rendering sul server",
             "body": "Un componente non può essere renderizzato su un server, e il suo modulo non può nemmeno essere importato lì: <code>CustomElement</code> estende <code>HTMLElement</code> quando il modulo viene valutato, e <code>@WebComponent</code> chiama <code>customElements.define</code>. Non c’è shadow DOM dichiarativo e non c’è idratazione. Su Next.js, Nuxt, SvelteKit, SolidStart e Qwik City, importa i componenti solo nel browser."
@@ -2900,60 +2896,60 @@
         },
         "frameworks": {
           "title": "Framework per framework",
-          "p1": "Ogni sezione qui sotto esegue lo stesso pannello, come applicazione a sé buildata con la sua toolchain: tiene una quantità, la scrive nel componente con il metodo, e la aggiorna dall’evento. Cambia solo la sintassi di chi ospita. TypeScript non conosce il tag del componente: dichiaralo tra gli elementi intrinseci dell’app ospite, oppure tipizza il riferimento all’elemento, come fanno questi esempi. Apri il codice di una demo per leggerne tutti i file, dall’entry point alla configurazione di build.",
+          "p1": "Ogni sezione qui sotto esegue lo stesso pannello, come applicazione a sé buildata con la sua toolchain: tiene una quantità, la assegna all’input <code>value</code> con il binding di proprietà del framework, e la aggiorna dall’evento <code>changed</code>. Cambia solo la sintassi di chi ospita. TypeScript non conosce il tag del componente: dichiaralo tra gli elementi intrinseci dell’app ospite, come fanno questi esempi, tipizzando l’input con il suo valore, <code>value?: number</code>, e non con l’<code>InputSignal</code> della classe. Apri il codice di una demo per leggerne tutti i file, dall’entry point alla configurazione di build.",
           "angular": {
             "title": "Angular",
-            "p1": "Angular usa la sua toolchain, quindi i componenti arrivano da un bundle a parte. <code>CUSTOM_ELEMENTS_SCHEMA</code> dice al compilatore di accettare un tag che non conosce. <code>(changed)</code> aggiunge il listener sull’elemento, e funziona con qualsiasi nome di evento. La trappola è l’altro binding: <code>[value]</code> imposta la proprietà dell’elemento, e rompe l’input.",
+            "p1": "Angular usa la sua toolchain, quindi i componenti arrivano da un bundle a parte. <code>CUSTOM_ELEMENTS_SCHEMA</code> dice al compilatore di accettare un tag che non conosce. <code>[value]</code> assegna la proprietà dell’elemento, che scrive l’input, e <code>(changed)</code> aggiunge il listener sull’elemento, qualunque sia il nome dell’evento.",
             "example1": "Un’applicazione Angular, buildata con la CLI di Angular"
           },
           "react": {
             "title": "React",
-            "p1": "React usa Vite, quindi i plugin possono stare nella sua configurazione. React 19 imposta una proprietà ogni volta che l’elemento ce l’ha, perciò un input non va mai scritto come prop: il pannello lo scrive con il metodo, dentro un effect, e legge l’output tramite un ref. React trasforma in listener anche una prop che inizia con <code>on</code>, ma il ref è la versione che non può sbagliare le maiuscole del nome.",
+            "p1": "React usa Vite, quindi i plugin possono stare nella sua configurazione. React 19 assegna una prop di un custom element come proprietà quando l’elemento ce l’ha, quindi <code>value={quantity}</code> scrive l’input, e trasforma una prop che inizia con <code>on</code> in un listener del resto del nome, maiuscole comprese: <code>onchanged</code> ascolta <code>changed</code>. Su un elemento non ancora definito scrive invece un attributo, ed è per questo che l’elemento viene definito prima che React renderizzi.",
             "example1": "Un’applicazione React 19, buildata con Vite"
           },
           "vue": {
             "title": "Vue",
-            "p1": "Vue usa Vite. Al suo compilatore va detto che il tag è un custom element, altrimenti cerca un componente con quel nome: <code>vue({ template: { compilerOptions: { isCustomElement: tag =&gt; tag.includes('-') } } })</code> in <code>vite.config.ts</code>. Un listener dichiarativo riconosce solo un nome minuscolo o in kebab-case, come <code>changed</code>, e <code>v-bind</code> imposta una proprietà quando l’elemento ce l’ha: il valore entra con il metodo.",
+            "p1": "Vue usa Vite. Al suo compilatore va detto che il tag è un custom element, altrimenti cerca un componente con quel nome: <code>vue({ template: { compilerOptions: { isCustomElement: tag =&gt; tag.includes('-') } } })</code> in <code>vite.config.ts</code>. <code>:value</code> imposta la proprietà, visto che l’elemento ce l’ha, e scrive l’input; <code>@changed</code> aggiunge il listener: un listener dichiarativo riconosce solo un nome minuscolo o in kebab-case, come <code>changed</code>.",
             "example1": "Un’applicazione Vue 3, buildata con Vite"
           },
           "svelte": {
             "title": "Svelte",
-            "p1": "Svelte usa Vite. Imposta una proprietà quando l’elemento la definisce, quindi il valore entra con il metodo; <code>bind:this</code> dà l’elemento, e <code>onchanged</code> aggiunge il listener (<code>on:changed</code> in Svelte 4). Con SvelteKit, il modulo dei componenti non va importato sul server.",
+            "p1": "Svelte usa Vite. Imposta una proprietà quando l’elemento la definisce, quindi <code>value={quantity}</code> scrive l’input, e <code>onchanged</code> aggiunge il listener (<code>on:changed</code> in Svelte 4). Con SvelteKit, il modulo dei componenti non va importato sul server.",
             "example1": "Un’applicazione Svelte 5, buildata con Vite"
           },
           "lit": {
             "title": "Lit",
-            "p1": "Lit è una libreria di web component, quindi un componente Xaendar è un elemento come gli altri nei suoi template: <code>@changed</code> aggiunge il listener, e <code>.value</code> è il binding da evitare, perché assegna la proprietà. Lit usa Vite, quindi i plugin possono stare nella stessa configurazione.",
+            "p1": "Lit è una libreria di web component, quindi un componente Xaendar è un elemento come gli altri nei suoi template: <code>.value</code> assegna la proprietà, che scrive l’input, mentre <code>value=</code> senza il punto scriverebbe un attributo, che l’input ignora; <code>@changed</code> aggiunge il listener. Lit usa Vite, quindi i plugin possono stare nella stessa configurazione.",
             "example1": "Un’applicazione Lit, buildata con Vite"
           },
           "solid": {
             "title": "Solid",
-            "p1": "Solid usa Vite. Nel suo JSX, <code>on:changed</code> mantiene il nome dell’evento esattamente come è scritto, quindi corrisponde all’output; <code>prop:</code> assegna una proprietà e non va usato su un input.",
+            "p1": "Solid usa Vite. Nel suo JSX, <code>prop:value</code> assegna la proprietà, che scrive l’input, e <code>on:changed</code> mantiene il nome dell’evento esattamente come è scritto, quindi corrisponde all’output. TypeScript li conosce tutti e due dalle interfacce <code>ExplicitProperties</code> e <code>CustomEvents</code> del namespace <code>JSX</code> di Solid.",
             "example1": "Un’applicazione Solid, buildata con Vite"
           },
           "fast": {
             "title": "FAST",
-            "p1": "Anche FAST è una libreria di web component, e usa Vite. Nei suoi template <code>@changed</code> lega il listener, mentre <code>:value</code> assegnerebbe una proprietà, che un input non può ricevere.",
+            "p1": "Anche FAST è una libreria di web component, e usa Vite. Nei suoi template <code>:value</code> assegna la proprietà, che scrive l’input, e <code>@changed</code> lega il listener.",
             "example1": "Un’applicazione FAST Element, buildata con Vite"
           },
           "preact": {
             "title": "Preact",
-            "p1": "Preact usa Vite. Aggiunge un listener per qualsiasi prop che inizia con <code>on</code>, riconoscendo il nome con qualunque combinazione di maiuscole, quindi <code>onchanged</code> arriva all’output. Come React, assegna una proprietà quando l’elemento ce l’ha, perciò il valore entra con il metodo.",
+            "p1": "Preact usa Vite. Come React, assegna una proprietà quando l’elemento ce l’ha, quindi <code>value={quantity}</code> scrive l’input. Aggiunge un listener per qualsiasi prop che inizia con <code>on</code>, riconoscendo il nome con qualunque combinazione di maiuscole, quindi <code>onchanged</code> arriva all’output.",
             "example1": "Un’applicazione Preact, buildata con Vite"
           },
           "qwik": {
             "title": "Qwik",
-            "p1": "Qwik renderizza prima sul server, quindi tutto ciò che riguarda i componenti avviene nel browser: un <code>useVisibleTask$</code> importa il modulo, aspetta i tag e aggiunge il listener; un altro scrive il valore. Qwik usa Vite, ma i moduli dei componenti devono restare fuori dal passaggio sul server, da cui l’import dinamico.",
+            "p1": "Qwik usa Vite. Assegna <code>value</code> come proprietà quando l’elemento ce l’ha, e così scrive l’input. Il listener viene aggiunto sull’elemento stesso, tramite un ref, in un <code>useVisibleTask$</code>: un <code>onChanged$</code> sul tag non riceve l’evento. Con Qwik City, che renderizza prima sul server, importa il modulo dei componenti solo nel browser.",
             "example1": "Un’applicazione Qwik, buildata con Vite"
           },
           "stencil": {
             "title": "Stencil",
-            "p1": "Stencil ha un compilatore suo, quindi i componenti arrivano da un bundle a parte. Nel suo JSX una prop che inizia con <code>on</code> diventa un listener, e tutto il resto viene assegnato come proprietà: un motivo in più perché il valore entri dal metodo.",
+            "p1": "Stencil ha un compilatore suo, quindi i componenti arrivano da un bundle a parte. Nel suo JSX una prop che inizia con <code>on</code> diventa un listener, con la lettera dopo <code>on</code> resa minuscola, quindi <code>onChanged</code> ascolta <code>changed</code>; ogni altra prop viene assegnata come proprietà quando l’elemento ce l’ha, quindi <code>value</code> scrive l’input.",
             "example1": "Un’applicazione Stencil, buildata con il compilatore Stencil"
           },
           "next": {
             "title": "Next.js",
-            "p1": "Next.js usa webpack o Turbopack, quindi i componenti arrivano da un bundle a parte, e le sue pagine vengono renderizzate sul server: il bundle viene importato dentro un effect, e il pannello montato con <code>ssr: false</code>. Vale anche qui tutto quello che è scritto su React.",
+            "p1": "Next.js usa webpack o Turbopack, quindi i componenti arrivano da un bundle a parte, e le sue pagine vengono renderizzate sul server: il bundle viene importato dentro un effect, e il tag viene renderizzato solo quando l’elemento è definito. Vale anche qui tutto quello che è scritto su React.",
             "example1": "Un’applicazione Next.js, esportata come sito statico"
           }
         },
@@ -2961,7 +2957,7 @@
           "title": "Checklist",
           "li1": "Costruisci i componenti: i due plugin nella configurazione dell’app ospite se usa Vite, un progetto a parte altrimenti.",
           "li2": "Chiama <code>loadSignals()</code> per primo, e carica i moduli dei componenti con un import dinamico dopo di esso.",
-          "li3": "Fai entrare i dati con un metodo pubblico, con un modulo di signal condivisi, o con un genitore Xaendar: mai con un attributo, mai con una proprietà.",
+          "li3": "Fai entrare i dati assegnando gli input come proprietà, con il binding di proprietà del framework, oppure con un metodo pubblico, un modulo di signal condivisi o un genitore Xaendar: mai con un attributo.",
           "li4": "Ascolta gli output sull’elemento stesso, con il nome dell’accessor, e dai loro nomi minuscoli.",
           "li5": "Tieni tutto nel browser: il rendering sul server non esiste."
         }

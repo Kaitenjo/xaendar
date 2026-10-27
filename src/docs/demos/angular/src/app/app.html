@@ -1,5 +1,5 @@
 <div class="panel">
-  <ex-qty-picker #picker (changed)="read($event)"></ex-qty-picker>
+  <ex-qty-picker [value]="quantity()" (changed)="read($event)"></ex-qty-picker>
   <p>Angular state: <strong>{{ quantity() }}</strong></p>
   <button type="button" (click)="add()">+5 from Angular</button>
 </div>

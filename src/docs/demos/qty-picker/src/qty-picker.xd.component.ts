@@ -1,11 +1,11 @@
-import { CustomElement, Event, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
+import { CustomElement, Event, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import type { InputSignal } from '@xaendar/core/signals';
 
 /**
- * The Xaendar component every demo application of this page embeds. It is written for a foreign host: it owns
- * its quantity instead of taking it as an input, is changed from outside through a public method, and reports
- * each change with an event on its own element.
+ * The Xaendar component every demo application of this page embeds. It is written for a foreign host and is
+ * controlled: it shows the quantity the host assigns to its `value` property, and a click does not change it but
+ * proposes the new one with an event on its own element, which the host keeps in its state and assigns back.
  */
 @WebComponent({
   selector: 'ex-qty-picker',
@@ -14,32 +14,23 @@ import type { Output } from '@xaendar/core';
 })
 export class QtyPickerComponent extends CustomElement {
   /**
-   * Tells the host the quantity changed, carried by the detail of the event.
+   * Proposes a new quantity to the host, carried by the detail of the event.
    */
   @Event()
   public accessor changed!: Output<number>;
   /**
-   * The quantity shown. It is a plain signal, not an input: a host that is not Xaendar cannot set an input.
+   * The quantity shown. A host that is not Xaendar sets it by assigning the property of the element, which is what
+   * the property bindings of the frameworks do.
    */
-  public readonly value = signal(0);
+  @Property(0)
+  public accessor value!: InputSignal<number>;
 
   /**
-   * Sets the quantity from outside. A public method of the class is a method of the element: this is how an
-   * application written in another framework sends data in.
-   *
-   * @param value - The new quantity, never negative.
-   */
-  public setValue(value: number): void {
-    this.value.set(Math.max(0, value));
-  }
-
-  /**
-   * Changes the quantity by a delta and tells the host.
+   * Proposes the quantity changed by a delta, never negative.
    *
    * @param delta - The change.
    */
   public step(delta: number): void {
-    this.setValue(this.value() + delta);
-    this.changed.emit(this.value());
+    this.changed.emit(Math.max(0, this.value() + delta));
   }
 }

@@ -24,8 +24,8 @@ node demos/build.mjs --check             # report which ones are missing (what p
 node demos/verify.mjs react vue          # only check what is already built
 ```
 
-`verify.mjs` serves a built application over HTTP, loads it in a headless DOM, calls the component's
-`setValue(5)` and clicks its `+` button, and fails unless the quantity and the application's own state follow.
+`verify.mjs` serves a built application over HTTP, loads it in a headless DOM, assigns `value = 5` to the
+component and clicks its `+` button, and fails unless the quantity and the application's own state follow.
 It is what proves the integration still works, so keep it passing rather than adjusting it.
 
 ## What every application does
@@ -33,7 +33,9 @@ It is what proves the integration still works, so keep it passing rather than ad
 The same panel: the `<ex-qty-picker>` element, a line showing the application's own state, and a button that
 adds 5 to that state. The point is the boundary, so each one must respect it:
 
-- never set an input on the element — attributes are ignored and assigning the property destroys the signal;
-  send data in with its public method `setValue(value)`;
-- read data out from the `changed` event on the element itself, which does not bubble;
+- send the quantity in by assigning the `value` property of the element, with the property binding of the
+  framework — attributes are ignored;
+- read the quantity the component proposes from the `changed` event on the element itself, which does not
+  bubble, keep it in the application's state and assign it back: the component is controlled, and a click does
+  not change what it shows on its own;
 - call `defineQtyPicker()` before the tag is rendered, and never on the server.

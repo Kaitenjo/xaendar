@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { defineQtyPicker } from '@xaendar-demo/qty-picker';
-import type { QtyPicker } from '@xaendar-demo/qty-picker';
 import type { ReactElement } from 'react';
 
 /*
@@ -14,15 +13,13 @@ import type { ReactElement } from 'react';
 
 /**
  * Drives the Xaendar element from Next.js. The element is defined in an effect, which never runs on the
- * server, and its tag is rendered only once that definition landed: a tag that is not defined yet would stay
- * an empty unknown element. Data goes in through the `setValue` method of the element and comes back out
- * through its `changed` event — never through a prop, since React 19 would assign a property on the element
- * and silently destroy the signal behind it.
+ * server, and its tag is rendered only once that definition landed: React 19 assigns `value` as a property only
+ * when the element has one, and would write an attribute, which the input ignores, on an element not defined yet.
+ * `onchanged` listens to the `changed` event of the element.
  *
  * @returns The panel to render.
  */
 export function QtyPanel(): ReactElement {
-  const picker = useRef<QtyPicker>(null);
   const [isDefined, setIsDefined] = useState(false);
   const [quantity, setQuantity] = useState(0);
 
@@ -39,24 +36,9 @@ export function QtyPanel(): ReactElement {
     };
   }, []);
 
-  useEffect(() => {
-    const element = picker.current;
-    if (!element) {
-      return;
-    }
-
-    const read = (event: Event) => setQuantity((event as CustomEvent<number>).detail);
-    element.addEventListener('changed', read);
-    return () => element.removeEventListener('changed', read);
-  }, [isDefined]);
-
-  useEffect(() => {
-    picker.current?.setValue(quantity);
-  }, [isDefined, quantity]);
-
   return (
     <div className="panel">
-      {isDefined ? <ex-qty-picker ref={picker} /> : null}
+      {isDefined ? <ex-qty-picker value={quantity} onchanged={event => setQuantity(event.detail)} /> : null}
       <p>
         Next.js state: <strong>{quantity}</strong>
       </p>
