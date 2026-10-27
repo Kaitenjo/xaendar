@@ -138,4 +138,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Build output of the demo applications of the documentation: generated, never pushed.
+# Their sources are in src/docs/demos; `npm run build:demos` produces this folder.
+src/docs/public/demos/
+
+# Angular cache of the demo application
+.angular/
+
 backoffice

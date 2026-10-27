@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "prebuild": "node demos/build.mjs --check",
     "build": "npm run xd build",
+    "build:demos": "node demos/build.mjs",
+    "prestart": "node demos/build.mjs --check",
     "start": "npm run xd start",
     "pretest": "tsc --noEmit -p tsconfig.json",
     "test": "npm run xd test",

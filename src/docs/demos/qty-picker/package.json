@@ -1,0 +1,27 @@
+{
+  "name": "@xaendar-demo/qty-picker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./qty-picker.d.ts",
+  "exports": {
+    ".": {
+      "types": "./qty-picker.d.ts",
+      "import": "./dist/qty-picker.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@xaendar/core": "^1.0.6",
+    "@xaendar/signals": "^1.0.6"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^8.0.2",
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@xaendar/build-tools": "^1.0.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

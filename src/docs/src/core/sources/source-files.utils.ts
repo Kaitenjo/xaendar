@@ -20,8 +20,8 @@ export type SourceFile = {
 
 /**
  * Infers the language of a file from its extension. A `.txt` file named after an error (`…-error.txt`,
- * `…-errors.txt`) shows the output of a failure: its language is `error`. SCSS and Less files are
- * highlighted as CSS.
+ * `…-errors.txt`) shows the output of a failure: its language is `error`. JSX and TSX files are
+ * highlighted as TypeScript, SCSS and Less files as CSS, the single-file components of Vue and Svelte as HTML.
  *
  * @param fileName - The name of the file.
  * @returns The language of the file, `text` when the extension is unknown.
@@ -33,10 +33,14 @@ export function langOf(fileName: string): CodeLang {
   const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
   switch (extension) {
     case 'ts':
+    case 'tsx':
     case 'js':
+    case 'jsx':
     case 'mjs':
       return 'ts';
     case 'html':
+    case 'vue':
+    case 'svelte':
       return 'html';
     case 'css':
     case 'scss':

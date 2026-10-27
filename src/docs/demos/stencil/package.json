@@ -1,0 +1,16 @@
+{
+  "name": "@xaendar-demo/stencil",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "stencil build",
+    "start": "stencil build --dev --watch --serve"
+  },
+  "dependencies": {
+    "@xaendar-demo/qty-picker": "file:../qty-picker"
+  },
+  "devDependencies": {
+    "@stencil/core": "^4.45.2"
+  }
+}

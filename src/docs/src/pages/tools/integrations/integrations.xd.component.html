@@ -1,0 +1,173 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsDemoComponent } from '../../../ui/docs-demo/docs-demo.xd.component.ts'
+@import { INTEGRATIONS_HOST_VITE_CONFIG } from './integrations.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.integrations.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.integrations.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.integrations.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.boundary.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.boundary.p1") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.integrations.boundary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.integrations.boundary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td1") />
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td2") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td3") />
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td4") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td5") />
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td6") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td7") />
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td8") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td9") />
+        <td @@htmlTranslation(key="pages.tools.integrations.boundary.td10") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p @@htmlTranslation(key="pages.tools.integrations.boundary.p2") />
+<docs-callout @@htmlTranslation(key="pages.tools.integrations.boundary.callout1.body") kind="warning"
+  heading="{translations().pages.tools.integrations.boundary.callout1.heading}" />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.component.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.component.p1") />
+<docs-code snippet="{component}" />
+<docs-code snippet="{template}" />
+<p @@htmlTranslation(key="pages.tools.integrations.component.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.starting.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.starting.p1") />
+<docs-code snippet="{entry}" />
+<docs-code snippet="{start}" />
+<p @@htmlTranslation(key="pages.tools.integrations.starting.p2") />
+<docs-callout @@htmlTranslation(key="pages.tools.integrations.starting.callout1.body") kind="unsupported"
+  heading="{translations().pages.tools.integrations.starting.callout1.heading}" />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.sameApp.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.sameApp.p1") />
+<docs-code snippet="{INTEGRATIONS_HOST_VITE_CONFIG}" />
+<p @@htmlTranslation(key="pages.tools.integrations.sameApp.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.separateBundle.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.separateBundle.p1") />
+<docs-code snippet="{config}" />
+<p @@htmlTranslation(key="pages.tools.integrations.separateBundle.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.frameworks.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.p1") />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.angular.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.angular.p1") />
+<docs-demo name="angular" heading="{translations().pages.tools.integrations.frameworks.angular.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.react.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.react.p1") />
+<docs-demo name="react" heading="{translations().pages.tools.integrations.frameworks.react.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.vue.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.vue.p1") />
+<docs-demo name="vue" heading="{translations().pages.tools.integrations.frameworks.vue.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.svelte.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.svelte.p1") />
+<docs-demo name="svelte" heading="{translations().pages.tools.integrations.frameworks.svelte.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.lit.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.lit.p1") />
+<docs-demo name="lit" heading="{translations().pages.tools.integrations.frameworks.lit.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.solid.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.solid.p1") />
+<docs-demo name="solid" heading="{translations().pages.tools.integrations.frameworks.solid.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.fast.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.fast.p1") />
+<docs-demo name="fast" heading="{translations().pages.tools.integrations.frameworks.fast.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.preact.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.preact.p1") />
+<docs-demo name="preact" heading="{translations().pages.tools.integrations.frameworks.preact.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.qwik.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.qwik.p1") />
+<docs-demo name="qwik" heading="{translations().pages.tools.integrations.frameworks.qwik.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.stencil.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.stencil.p1") />
+<docs-demo name="stencil" heading="{translations().pages.tools.integrations.frameworks.stencil.example1}" />
+
+<h3>
+  { t(translations(), 'pages.tools.integrations.frameworks.next.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.integrations.frameworks.next.p1") />
+<docs-demo name="next" heading="{translations().pages.tools.integrations.frameworks.next.example1}" />
+
+<h2>
+  { t(translations(), 'pages.tools.integrations.checklist.title') }
+</h2>
+<ol class="steps">
+  <li @@htmlTranslation(key="pages.tools.integrations.checklist.li1") />
+  <li @@htmlTranslation(key="pages.tools.integrations.checklist.li2") />
+  <li @@htmlTranslation(key="pages.tools.integrations.checklist.li3") />
+  <li @@htmlTranslation(key="pages.tools.integrations.checklist.li4") />
+  <li @@htmlTranslation(key="pages.tools.integrations.checklist.li5") />
+</ol>

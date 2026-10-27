@@ -19,7 +19,8 @@
     "showCode": "Show code",
     "hideCode": "Hide code",
     "edge": "Edge case",
-    "files": "Source files"
+    "files": "Source files",
+    "openInTab": "Open in a tab"
   },
   "code": {
     "copy": "Copy",
@@ -149,6 +150,7 @@
       "patterns/lists": "Lists and CRUD",
       "tools/cli": "CLI",
       "tools/build": "Build and Vite plugin",
+      "tools/integrations": "Integrations",
       "tools/language-service": "Language service and VS Code",
       "reference/api": "API reference",
       "reference/template-syntax": "Template syntax cheat sheet",
@@ -2759,7 +2761,7 @@
         "configuration": {
           "title": "Configuration",
           "p1": "The order matters. Babel compiles the standard decorators first, and the plugin then works on its output: it looks for the static blocks Babel generates in each decorated class, and adds its own registration before them. With the plugins in the wrong order, every component fails with the message shown in <a href=\"#/en/installation\">Installation</a>.",
-          "p2": "The plugin takes one option, <code>customElements</code>: the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates."
+          "p2": "The plugin takes one option, <code>customElements</code>: the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates. An app built with another framework adds the same two plugins: see <a href=\"#/en/tools/integrations\">Integrations</a>."
         },
         "whatThePluginDoes": {
           "title": "What the plugin does",
@@ -2849,6 +2851,123 @@
           "td6": "Creates a component folder, with a stylesheet in the format of <code>xaendar.json</code>.",
           "td7": "Version and help.",
           "td8": "Runs the specs with the Xaendar plugins."
+        }
+      },
+      "integrations": {
+        "eyebrow": "Developer tools",
+        "title": "Using Xaendar with other frameworks",
+        "lead": "A component is a standard custom element: an open shadow root, children projected into its slots, and <code>CustomEvent</code>s dispatched on itself. Any framework can put its tag in a page. Two things need arranging: where the Vite plugin runs, and how data gets in, since an input is neither an attribute nor a property. Every framework below runs a real application in this page, built with its own toolchain.",
+        "boundary": {
+          "title": "What crosses the boundary",
+          "p1": "Everything a host can do with a component goes through the DOM, and the table below is the whole contract.",
+          "th1": "What",
+          "th2": "From outside a Xaendar template",
+          "td1": "<strong>Content</strong>",
+          "td2": "The children of the tag are projected into its <code>&lt;slot&gt;</code> elements, as for any element. See <a href=\"#/en/components/content-projection\">Content projection</a>.",
+          "td3": "<strong>Outputs</strong> (<code>@Event</code>)",
+          "td4": "<code>element.addEventListener(name, …)</code>. The name is the name of the accessor, verbatim, and the value passed to <code>emit</code> is the <code>detail</code> of the event.",
+          "td5": "<strong>Inputs</strong> (<code>@Property</code>)",
+          "td6": "Nothing. There is no <code>attributeChangedCallback</code>, and assigning the property of the same name breaks the input.",
+          "td7": "<strong>Methods</strong>",
+          "td8": "The public methods of the class are methods of the element: <code>element.setValue(3)</code> works from anywhere.",
+          "td9": "<strong>Styles</strong>",
+          "td10": "The stylesheets of the host do not reach inside the shadow root; <code>::part</code>, <code>::slotted</code> and custom properties do. See <a href=\"#/en/components/styling\">Styling</a>.",
+          "p2": "<code>bubbles</code> and <code>composed</code> are <code>false</code> unless the output sets them, so the listener has to be on the element itself: a delegated listener on an ancestor never sees the event. Every framework below binds its listeners on the element, so their declarative syntax works. Give an output a lowercase name, such as <code>changed</code>: some of them lowercase the name of a declarative listener, and a camelCase output would be out of reach from their templates.",
+          "callout1": {
+            "heading": "A property assigned from outside breaks the input",
+            "body": "The accessor of an input holds the <code>InputSignal</code> itself, so <code>'value' in element</code> is <code>true</code> and the assignment goes through without an error. It replaces the signal with the raw value: the component stops updating, and the next read inside it throws <code>element.value is not a function</code>. React, Preact, Vue, Svelte and Stencil all set a property when the element has one, so no template of theirs may bind an input. See <a href=\"#/en/components/inputs\">Inputs with @Property</a>."
+          }
+        },
+        "component": {
+          "title": "A component made for a host",
+          "p1": "A component used from another framework takes its data from a method and gives it back with an output. The rest does not change: template, stylesheet and signals are the usual ones. It is the component the applications of this page embed.",
+          "p2": "The <code>&lt;slot&gt;</code> is what lets the host pass content. There are two other ways in. A module of signals shared with the host: the host imports it and writes to it, and every component reading it updates, as in <a href=\"#/en/signals/shared-state\">Sharing state</a>. Or a Xaendar parent: the host mounts a single root tag, and inside it templates bind inputs as usual."
+        },
+        "starting": {
+          "title": "Starting Xaendar in a host app",
+          "p1": "<code>loadSignals()</code> installs the global <code>Signal</code>, and it has to run before any module creating a signal is evaluated: every component class, and every store. Keep it in one module, which loads the components with a dynamic import.",
+          "p2": "Importing a class defines its tag, because the <code>@WebComponent</code> decorator calls <code>customElements.define</code>. A type-only import is erased by TypeScript and defines nothing, so the module has to be imported for its side effect. Until the class is loaded, the tag stays an unknown element, and it upgrades when the definition arrives: see <a href=\"#/en/components/registration\">Selectors and registration</a>.",
+          "callout1": {
+            "heading": "There is no server rendering",
+            "body": "A component cannot be rendered on a server, and its module cannot even be imported there: <code>CustomElement</code> extends <code>HTMLElement</code> when the module is evaluated, and <code>@WebComponent</code> calls <code>customElements.define</code>. There is no declarative shadow DOM and no hydration. On Next.js, Nuxt, SvelteKit, SolidStart and Qwik City, import the components in the browser only."
+          }
+        },
+        "sameApp": {
+          "title": "Setup 1: the components in the app of the host",
+          "p1": "When the host builds with Vite, the two plugins go in its configuration. The order matters: Babel transpiles the decorators, and <code>xaendarPlugin()</code> works on its output. The <code>id</code> filter keeps Babel on the Xaendar files, since the files of the host do not need the decorators transform.",
+          "p2": "Only the files ending with <code>.xd.component.ts</code> are compiled, so the rest of the app is untouched. The plugin reads <code>tsconfig.json</code> from the folder Vite is started from and type-checks the whole project as <code>tsc --noEmit</code> does, failing the build on errors: the type errors of the host fail it too. See <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
+        },
+        "separateBundle": {
+          "title": "Setup 2: the components as a separate bundle",
+          "p1": "Angular, Next.js and Stencil do not build with Vite, and there is no plugin for webpack, Rollup or esbuild: the components are built on their own, in a project of their own, and the host imports the result. The same setup suits a set of components shared by several apps.",
+          "p2": "The entry calls <code>loadSignals()</code> and then loads the components with a dynamic import, as the app of a host does: a static re-export would be evaluated before <code>loadSignals()</code>. The host declares the bundle among its dependencies and imports it once, in the browser. The components keep being developed in their own project, with <code>xd start</code>. Every application on this page takes this path: it depends on the built bundle and has no Xaendar dependency of its own."
+        },
+        "frameworks": {
+          "title": "Framework by framework",
+          "p1": "Every section below runs the same panel, as a standalone application built with its own toolchain: it keeps a quantity, writes it to the component with the method, and updates it from the event. Only the syntax of the host changes. TypeScript does not know the tag of the component: declare it among the intrinsic elements of the host, or type the reference to the element, as these do. Open the code of a demo to read all of its files, from its entry point to its build configuration.",
+          "angular": {
+            "title": "Angular",
+            "p1": "Angular builds with its own toolchain, so the components come from a separate bundle. <code>CUSTOM_ELEMENTS_SCHEMA</code> tells the compiler to accept a tag it does not know. <code>(changed)</code> adds the listener on the element, and any event name works. The trap is the other binding: <code>[value]</code> sets the property of the element, which breaks the input.",
+            "example1": "An Angular application, built with the Angular CLI"
+          },
+          "react": {
+            "title": "React",
+            "p1": "React builds with Vite, so the plugins can go in its configuration. React 19 sets a property whenever the element has one, so an input must never be written as a prop: the panel writes it with the method, in an effect, and reads the output through a ref. React also turns a prop starting with <code>on</code> into a listener, but the ref is the version that cannot get the casing of the name wrong.",
+            "example1": "A React 19 application, built with Vite"
+          },
+          "vue": {
+            "title": "Vue",
+            "p1": "Vue builds with Vite. Its compiler has to be told that the tag is a custom element, otherwise it looks for a component with that name: <code>vue({ template: { compilerOptions: { isCustomElement: tag =&gt; tag.includes('-') } } })</code> in <code>vite.config.ts</code>. A declarative listener only matches a lowercase or kebab-case name, which <code>changed</code> is, and <code>v-bind</code> sets a property when the element has one, so the value goes in through the method.",
+            "example1": "A Vue 3 application, built with Vite"
+          },
+          "svelte": {
+            "title": "Svelte",
+            "p1": "Svelte builds with Vite. It sets a property when the element defines one, so the value goes in through the method; <code>bind:this</code> gives the element, and <code>onchanged</code> adds the listener (<code>on:changed</code> in Svelte 4). Under SvelteKit, the module of the components must not be imported on the server.",
+            "example1": "A Svelte 5 application, built with Vite"
+          },
+          "lit": {
+            "title": "Lit",
+            "p1": "Lit is a library of web components, so a Xaendar component is one more element in its templates: <code>@changed</code> adds the listener, and <code>.value</code> is the binding to avoid, since it assigns the property. Lit builds with Vite, so the plugins can live in the same configuration.",
+            "example1": "A Lit application, built with Vite"
+          },
+          "solid": {
+            "title": "Solid",
+            "p1": "Solid builds with Vite. In its JSX, <code>on:changed</code> keeps the name of the event exactly as it is written, so it matches the output; <code>prop:</code> assigns a property and must not be used on an input.",
+            "example1": "A Solid application, built with Vite"
+          },
+          "fast": {
+            "title": "FAST",
+            "p1": "FAST is a library of web components as well, and it builds with Vite. In its templates <code>@changed</code> binds the listener, while <code>:value</code> would assign a property, which an input cannot take.",
+            "example1": "A FAST Element application, built with Vite"
+          },
+          "preact": {
+            "title": "Preact",
+            "p1": "Preact builds with Vite. It adds a listener for any prop starting with <code>on</code>, matching the name in every casing, so <code>onchanged</code> reaches the output. Like React, it assigns a property when the element has one, so the value goes in through the method.",
+            "example1": "A Preact application, built with Vite"
+          },
+          "qwik": {
+            "title": "Qwik",
+            "p1": "Qwik renders on the server first, so everything about the components happens in the browser: a <code>useVisibleTask$</code> imports the module, waits for the tags, and adds the listener; another one writes the value. Qwik builds with Vite, but the modules of the components have to stay out of the server pass, hence the dynamic import.",
+            "example1": "A Qwik application, built with Vite"
+          },
+          "stencil": {
+            "title": "Stencil",
+            "p1": "Stencil has a compiler of its own, so the components come from a separate bundle. In its JSX a prop starting with <code>on</code> becomes a listener, and everything else is assigned as a property: one more reason for the value to go in through the method.",
+            "example1": "A Stencil application, built with the Stencil compiler"
+          },
+          "next": {
+            "title": "Next.js",
+            "p1": "Next.js builds with webpack or Turbopack, so the components come from a separate bundle, and its pages render on the server: the bundle is imported inside an effect, and the panel is mounted with <code>ssr: false</code>. Everything written about React holds here too.",
+            "example1": "A Next.js application, exported as a static site"
+          }
+        },
+        "checklist": {
+          "title": "Checklist",
+          "li1": "Build the components: the two plugins in the configuration of the host when it builds with Vite, a project of their own otherwise.",
+          "li2": "Call <code>loadSignals()</code> first, and load the modules of the components with a dynamic import after it.",
+          "li3": "Pass data in with a public method, with a module of shared signals, or with a Xaendar parent: never with an attribute, never with a property.",
+          "li4": "Listen to the outputs on the element itself, under the name of the accessor, and give them lowercase names.",
+          "li5": "Keep everything in the browser: there is no server rendering."
         }
       },
       "languageService": {

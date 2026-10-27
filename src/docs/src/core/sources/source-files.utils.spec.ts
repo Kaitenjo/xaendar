@@ -4,9 +4,13 @@ import { collectFolder, langOf } from './source-files.utils';
 describe('langOf', () => {
   it.each([
     ['a.xd.component.ts', 'ts'],
+    ['App.tsx', 'ts'],
     ['a.js', 'ts'],
+    ['a.jsx', 'ts'],
     ['a.mjs', 'ts'],
     ['a.xd.component.html', 'html'],
+    ['App.vue', 'html'],
+    ['App.svelte', 'html'],
     ['a.CSS', 'css'],
     ['a.scss', 'css'],
     ['a.less', 'css'],

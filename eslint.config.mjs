@@ -11,6 +11,8 @@ export default defineConfig(
       '**/coverage/**',
       '**/output/**',
       'src/docs/src/snippets/**',
+      'src/docs/demos/**',
+      'src/docs/public/demos/**',
       '**/.git/**',
       '**/*.config.*',
       'eslint.config.mjs'

@@ -43,6 +43,7 @@
       }
     },
     "configurationDefaults": {
+      "html.validate.styles": false,
       "editor.tokenColorCustomizations": {
         "textMateRules": [
           {

@@ -1,0 +1,65 @@
+import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
+import type { JSXOutput, Signal } from '@builder.io/qwik';
+import type { QtyPicker } from '@xaendar-demo/qty-picker';
+
+declare module '@builder.io/qwik' {
+  export namespace QwikJSX {
+    interface IntrinsicElements {
+      /**
+       * The Xaendar element, declared so JSX accepts its tag and types its ref. It takes no attribute and no
+       * property: assigning a property would destroy the signal of the component, so the quantity only ever
+       * travels through `setValue`.
+       */
+      'ex-qty-picker': { ref?: Signal<QtyPicker | undefined> };
+    }
+  }
+}
+
+/**
+ * Drives the Xaendar element from Qwik: it listens to its event through a ref, and sends the quantity back
+ * with its method.
+ *
+ * @returns The panel to render.
+ */
+export const App = component$((): JSXOutput => {
+  const quantity = useSignal(0);
+  const picker = useSignal<QtyPicker>();
+
+  /*
+    The listener goes on the element itself, since the event does not bubble, and in a visible task, the only
+    place where the ref already holds the element. `document-ready` keeps it off the intersection observer:
+    the panel is the whole page, and it must listen as soon as it is there.
+  */
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(({ cleanup }) => {
+    const element = picker.value;
+    if (!element) {
+      return;
+    }
+
+    const read = (event: Event) => {
+      quantity.value = (event as CustomEvent<number>).detail;
+    };
+
+    element.addEventListener('changed', read);
+    cleanup(() => element.removeEventListener('changed', read));
+  }, { strategy: 'document-ready' });
+
+  return (
+    <div class="panel">
+      <ex-qty-picker ref={picker} />
+      <p>
+        Qwik state: <strong>{quantity.value}</strong>
+      </p>
+      <button
+        type="button"
+        onClick$={() => {
+          quantity.value += 5;
+          picker.value?.setValue(quantity.value);
+        }}
+      >
+        +5 from Qwik
+      </button>
+    </div>
+  );
+});

@@ -14,6 +14,19 @@ const EXAMPLES = import.meta.glob<string>('../../examples/**/*', { query: '?raw'
 const SNIPPETS = import.meta.glob<string>('../../snippets/**/*', { query: '?raw', import: 'default' });
 
 /**
+ * The loader of the raw source of every demo application, keyed by path. A demo is a standalone project in
+ * `src/docs/demos`, written in another framework: only the files that are worth reading are collected, not its
+ * lock file, its TypeScript configuration or its dependencies.
+ */
+const DEMOS = import.meta.glob<string>([
+  '../../../demos/*/*.{json,ts,js,mjs,html}',
+  '../../../demos/*/src/**/*',
+  '../../../demos/*/app/**/*',
+  '!../../../demos/*/package-lock.json',
+  '!../../../demos/*/tsconfig*.json'
+], { query: '?raw', import: 'default' });
+
+/**
  * Loads the source files of a live example.
  *
  * @param name - The path of the example folder, relative to `src/examples`, e.g. `signals/overview/counter`.
@@ -25,6 +38,27 @@ export async function loadExampleFiles(name: string): Promise<SourceFile[]> {
   const registry: Record<string, string> = {};
   await Promise.all(keys.map(async key => {
     registry[key] = await EXAMPLES[key]();
+  }));
+
+  return collectFolder(registry, folder);
+}
+
+/**
+ * Loads the source files of a demo application.
+ *
+ * @param name - The name of the application, i.e. its folder under `src/docs/demos`.
+ * @returns The files of the application, in display order, `undefined` when the application has none.
+ */
+export async function loadDemoFiles(name: string): Promise<SourceFile[] | undefined> {
+  const folder = `../../../demos/${name}`;
+  const keys = Object.keys(DEMOS).filter(key => key.startsWith(`${folder}/`));
+  if (!keys.length) {
+    return undefined;
+  }
+
+  const registry: Record<string, string> = {};
+  await Promise.all(keys.map(async key => {
+    registry[key] = await DEMOS[key]();
   }));
 
   return collectFolder(registry, folder);

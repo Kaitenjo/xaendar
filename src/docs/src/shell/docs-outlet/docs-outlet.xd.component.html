@@ -58,6 +58,7 @@
 @import lazy { TemplatesTextInterpolationPage } from '../../pages/templates/text-interpolation/text-interpolation.xd.component.ts'
 @import lazy { ToolsBuildPage } from '../../pages/tools/build/build.xd.component.ts'
 @import lazy { ToolsCliPage } from '../../pages/tools/cli/cli.xd.component.ts'
+@import lazy { ToolsIntegrationsPage } from '../../pages/tools/integrations/integrations.xd.component.ts'
 @import lazy { ToolsLanguageServicePage } from '../../pages/tools/language-service/language-service.xd.component.ts'
 @import lazy { TutorialPage } from '../../pages/tutorial/tutorial.xd.component.ts'
 
@@ -238,6 +239,9 @@
   }
   @case ('tools/cli') {
     <page-tools-cli />
+  }
+  @case ('tools/integrations') {
+    <page-tools-integrations />
   }
   @case ('tools/language-service') {
     <page-tools-language-service />

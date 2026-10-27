@@ -30,6 +30,7 @@
     "../../packages/core/src/globals.d.ts"
   ],
   "exclude": [
+    "demos",
     "dist",
     "node_modules",
     "src/snippets/**"
