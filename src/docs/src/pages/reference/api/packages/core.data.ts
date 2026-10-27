@@ -75,7 +75,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'Property',
       kind: 'decorator',
-      signature: 'function Property<Value extends InputSignal<ActualValue>, ActualValue = Value extends InputSignal<infer Type> ? Type : unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue>>',
+      signature: 'function Property<Value extends InputSignal<ActualValue>, IncomingValue = Value extends InputSignal<infer Type> ? Type : unknown, ActualValue = Value extends InputSignal<infer Type> ? Type : unknown>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue>>',
       members: [
         {
           name: 'Property.required',

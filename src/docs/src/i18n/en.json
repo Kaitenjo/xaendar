@@ -220,7 +220,7 @@
           },
           "callout5": {
             "heading": "Member names already taken by HTMLElement",
-            "body": "The class inherits every member of <code>HTMLElement</code>, so a signal named <code>title</code>, an input named <code>lang</code> or an event named <code>remove</code> clashes with it, and TypeScript rejects the class. The build type-checks templates, not classes, so the error only shows in the editor or with <code>tsc</code>. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a> for the fixes."
+            "body": "The class inherits every member of <code>HTMLElement</code>, so a signal named <code>title</code>, an input named <code>lang</code> or an event named <code>remove</code> clashes with it, and TypeScript rejects the class: the editor reports it, and so does <code>xd build</code>, which type-checks the whole project. See the edge cases of <a href=\"#/en/components/outputs\">Outputs</a> for the fixes."
           },
           "callout6": {
             "heading": "Closed shadow roots",
@@ -541,8 +541,8 @@
             "p1": "<code>InputSignal</code> has no public <code>set</code>: only the bindings of the parent write it. For a value that the component changes too, copy the input into a local signal in an effect, and write the local one."
           },
           "callout3": {
-            "heading": "transform does not change the type checked in templates",
-            "p1": "Templates are checked against the type of the <code>InputSignal</code>, not against the parameter of <code>transform</code>: a transform from <code>string</code> to <code>number</code> does not let you write a static number. Use transforms that keep the type, and bind expressions."
+            "heading": "transform decides the type checked in templates",
+            "p1": "With a <code>transform</code>, templates are checked against the type it accepts, not against the type of the <code>InputSignal</code>: the second type argument of <code>@Property</code> (<code>@Property&lt;InputSignal&lt;number&gt;, string&gt;</code>), else the annotation of the parameter of <code>transform</code>, else the type of the signal. A transform from <code>string</code> to <code>number</code> then accepts a static value, <code>size=\"21\"</code>."
           },
           "callout5": {
             "heading": "A component defined after its parent rendered",
@@ -1175,7 +1175,7 @@
         },
         "usingAComponent": {
           "title": "Using a component",
-          "p1": "A template declares the components it uses with <code>@import</code>, so that the compiler can check the bindings against their inputs and outputs. The classes must also be imported by your JavaScript at runtime, so that the custom elements get defined.",
+          "p1": "A template declares the components it uses with <code>@import</code>, so that the compiler can check the bindings against their inputs and outputs. The module of the template imports them too, so the custom elements are defined before the template renders.",
           "callout1": {
             "body": "Components are real custom elements: once defined, <code>&lt;ex-user-badge&gt;</code> works in any HTML page, in another framework, or created with <code>document.createElement()</code>."
           }
@@ -1332,12 +1332,12 @@
           "p2": "Import the modules that use <code>@xaendar/core</code> with <code>await import()</code>, after the call to <code>loadSignals()</code>: the static imports of a module are evaluated before its body, even when they are written after the call."
         },
         "callout2": {
-          "heading": "A component that is never imported renders nothing",
-          "p1": "The <code>@import</code> statement of a template is only read by the compiler, to type-check the bindings. If the class is never imported by your JavaScript, the custom element is never defined: the browser keeps an empty unknown element and reports no error."
+          "heading": "A component that is never loaded renders nothing",
+          "p1": "The module of a template imports the modules of its <code>@import</code> statements, so importing the root component in <code>bootstrap.ts</code> defines every component its templates use. A class that no module imports, as one used only through <code>@import lazy</code> and never loaded, is never defined: the browser keeps an empty unknown element and reports no error."
         },
         "callout3": {
           "heading": "Components must be defined before their parent renders",
-          "p1": "If a parent renders while a child it uses is still undefined, the bindings of the child are set as plain string attributes: once the child is defined, its inputs hold their default values until a bound signal changes again. Import the leaf components first, or append the root element only once every module has been imported, as this site does. See <a href=\"#/en/components/registration\">Selectors and registration</a>."
+          "p1": "If a parent renders while a child it uses is still undefined, as a component imported with <code>@import lazy</code> before its module is loaded, the bindings of the child are set as plain string attributes: once the child is defined, its inputs hold their default values until a bound signal changes again. Render a lazy component only once its module is loaded. See <a href=\"#/en/components/registration\">Selectors and registration</a>."
         },
         "callout4": {
           "heading": "The order of the Vite plugins matters",
@@ -2832,10 +2832,6 @@
             "heading": "Invalid names",
             "p1": "Component names are checked before anything is written.",
             "p2": "The name of a project is checked too, before anything is written: it names the root component, <code>&lt;name&gt;-root</code>."
-          },
-          "callout5": {
-            "heading": "The published packages are older than this documentation",
-            "p1": "The packages published on npm as 0.12.0 predate the API described in this site: their <code>@xaendar/core</code> exports <code>BaseWebComponent</code> instead of <code>CustomElement</code>. A project created by a CLI built from the repository installs them, and its build fails. Until the next release, work inside the repository, as this site does."
           }
         },
         "commandSummary": {
@@ -2975,12 +2971,12 @@
         "title": "Language service and VS Code",
         "lead": "The repository contains a VS Code extension for templates, made of two parts: a grammar for syntax highlighting, and a client starting <code>@xaendar/language-server</code>, which brings the checks of the compiler into the editor while you type.",
         "callout1": {
-          "heading": "Not on the Marketplace",
-          "body": "The repository has no packaging step for the Marketplace: the extension is built from the repository and run in a development window of VS Code. The compiler messages are also available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
+          "heading": "On the Marketplace",
+          "body": "The extension is published on the VS Code Marketplace as <em>Xaendar Language Service</em> (<code>xaendar.language-service</code>): install it from the Extensions view, or with <code>code --install-extension xaendar.language-service</code>. The compiler messages are also available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
         },
         "runningTheExtension": {
           "title": "Running the extension",
-          "p1": "The extension is built from the repository and started in a development window of VS Code.",
+          "p1": "To work on the extension itself, build it from the repository and start it in a development window of VS Code.",
           "p2": "It activates when an HTML or TypeScript file is opened, serves the templates (<code>.xd.component.html</code>) and the component files (<code>.xd.component.ts</code>), and starts the server over IPC. At startup the server indexes the <code>.xd.component.ts</code> files of the workspace, to know which component uses each template."
         },
         "syntaxHighlighting": {
@@ -2995,7 +2991,7 @@
           "li3": "<strong>Hover</strong>: the signature and the JSDoc of components, directives, inputs, outputs and imported symbols.",
           "li4": "<strong>Go to definition</strong>: from the template to the class, the member or the symbol; from the <code>@WebComponent</code> of a component file to its template and its stylesheet.",
           "li5": "<strong>Code actions</strong>: removing an unused import, and organizing the imports (<code>source.organizeImports</code>, Alt+Shift+O): unused ones removed, statements from the same module merged, all of them sorted.",
-          "li6": "<strong>Formatting</strong>: elements and blocks indented as the editor does, and the opening tags longer than <code>xaendar.format.printWidth</code> (120 by default) written one item per line."
+          "li6": "<strong>Formatting</strong>: elements and blocks indented as the editor does; an opening tag longer than <code>xaendar.format.printWidth</code> (120 by default) fills each line with its items, and one holding a conditional binding is written one item per line."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -3021,7 +3017,7 @@
           "td7": "Code actions on imports, formatting",
           "td8": "Available",
           "td9": "Marketplace package",
-          "td10": "Not available"
+          "td10": "Available: xaendar.language-service"
         }
       }
     },
@@ -3063,7 +3059,7 @@
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
       "cause": "An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.",
-      "fix": "Write a space after the keyword, and &amp;commat; or an interpolation such as { '@' } for a literal @."
+      "fix": "Write a space after the keyword, and &commat; or an interpolation such as { '@' } for a literal @."
     },
     "[Lexer] Comment never closed: '<!--' without '-->'": {
       "cause": "An HTML comment opened with <!-- and never closed.",

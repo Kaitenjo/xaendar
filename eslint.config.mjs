@@ -13,6 +13,7 @@ export default defineConfig(
       'src/docs/src/snippets/**',
       'src/docs/demos/**',
       'src/docs/public/demos/**',
+      'plugins/xaendar/server/**',
       '**/.git/**',
       '**/*.config.*',
       'eslint.config.mjs'

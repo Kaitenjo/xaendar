@@ -10,17 +10,17 @@ Every export applications use, by module. Symbols exported only for the compiled
 @WebComponent({ selector: 'x-y', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
-Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet. The options must be string literals; `hostDirectives` an array literal.
+Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet (`.css`, `.scss`, `.sass` or `.less`). The options must be string literals; `hostDirectives` an array literal. The class must be declared in a file ending with `.xd.component.ts`; the decorator is not inherited.
 
 `hostDirectives` lists custom directives applied to every instance of the component, on its own element. An entry is the class of the directive, or an object with the class (`directive`) and the `properties` and `events` of the directive the component exposes, each as `'name'` or as `{ name, alias }`: an exposed input is bound from the templates using the component, an exposed output is dispatched on it. The events not exposed are not dispatched. They belong to the class declaring them: a subclass with its own @WebComponent does not inherit the ones of its parent. Templates cannot name the class, so expose the instance as a member (`public readonly tip = this.hostDirectives.get(Tip)`, a field of the subclass) to use it in the template.
 
 ### Property (decorator)
 
 ```ts
-@Property(defaultValue, { alias?, transform?, equals? }) accessor name!: InputSignal<T>
+@Property<InputSignal<T>, In = T>(defaultValue?, { alias?, transform?: (value: In) => T, equals?, watched?, unwatched? }) accessor name!: InputSignal<T>
 ```
 
-Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template.
+Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template (or by `createComponent`), never by attributes written from outside. `transform` converts every bound value, not the default; templates bind the type it accepts: the second type argument, else the annotation of its parameter, else `T`. `equals` compares the transformed value with the current one (`Object.is` by default). A conditional binding that stops holding resets the input to its default.
 
 ### Property.required (decorator)
 
@@ -125,18 +125,42 @@ Registers a class extending CustomDirective or StructuralDirective under a selec
 ### CustomElement (class)
 
 ```ts
-class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?) }
+class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options): ComponentRef<Class> }
 ```
 
-Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`.
+Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`. `connectedCallback` and `disconnectedCallback` belong to the base class: never declare them. Disconnection runs `onDestroy`, disposes the effects, removes the template and destroys the components created with `createComponent`.
+
+### createComponent (method of CustomElement and CustomDirective)
+
+```ts
+this.createComponent(ToastComponent, { target: Element, properties?: [{ input: () => value, condition?: () => boolean }], events?: [{ output: (event: CustomEvent<T>) => void, click: (event: MouseEvent) => void, condition? }], directives?: [Directive | { directive, condition?, properties?, events? }], content?: Node[] })
+```
+
+Creates a component in code and appends it to `target`, bound as a tag of a template is: the inputs are set before the element is appended (its `onInit` reads them), then the directives are applied and the content appended (projected through its slots; a `DocumentFragment` gives its nodes). Getters and conditions run in effects. A group with a `condition` is bound only while it holds; when it stops, its inputs go back to their defaults and its listeners stop. Throws for a class without `@WebComponent`, an input bound by two groups, a structural directive, or a directive that is already a host directive of the component. The component belongs to its creator: it is destroyed when the creator is disconnected (a directive: stops), after `onDestroy`. Callable from the constructor, a field or `onInit`; the creation is not tracked by an enclosing effect. In a directive, call it from `onInit`. A getter returning a string literal for a union-typed input of a *directive* needs `as const`.
+
+### ComponentRef (type)
+
+```ts
+{ readonly element: Component; destroy(): void }
+```
+
+The result of createComponent: the element, already in the DOM, and the function destroying it earlier (removes the element, unbinds its inputs and events, destroys its directives; the content nodes leave with the element). Calling it again, or after the creator is gone, does nothing. Removing the element with the DOM APIs leaves its bindings alive: call `destroy()`.
+
+### HostDirectives (type)
+
+```ts
+ReadonlyMap<Constructor<CustomDirective>, CustomDirective> & { get<D>(directive: Constructor<D>): D | undefined }
+```
+
+The type of `hostDirectives`: the instances exist with the element, so a field initializer can read them. A template cannot name a class: expose the instance in a public field.
 
 ### CustomDirective (class)
 
 ```ts
-class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?) }
+class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options): ComponentRef<Class>; dispatchEvent(event: CustomEvent): boolean }
 ```
 
-Base class of the directives acting on the element they are applied to.
+Base class of the directives acting on the element they are applied to. `element` is set after the constructor: use it from `onInit`, which runs once the inputs are bound and the element is in the document, before its children are rendered. `onDestroy` runs when the element leaves the template or a conditional branch applying the directive is left (a new instance is created when it is taken again). Outputs are dispatched on the element; `dispatchEvent` returns `false` when a listener canceled a cancelable event.
 
 ### StructuralDirective (class)
 
@@ -144,23 +168,23 @@ Base class of the directives acting on the element they are applied to.
 class X extends StructuralDirective { shouldRender(): boolean | Promise<boolean> }
 ```
 
-Base class of the directives deciding whether the element they are applied to is rendered.
+Base class of the directives deciding whether the element they are applied to is rendered. `shouldRender` runs in an effect: it is evaluated again when a signal read before its first `await` changes, and the element exists while every structural directive on it returns `true`. A pending promise keeps the current state, and only the latest evaluation decides. No element, no outputs, no hooks, no `@HostProperty`/`@HostEvent`, and no conditional inputs.
 
 ### Output (class)
 
 ```ts
-class Output<T = void> { emit(detail?: T, options?: EventOptions): void }
+class Output<T = void> { emit(...args: T extends void ? [options?: EventOptions] : [detail: T, options?: EventOptions]): void }
 ```
 
-The class of an @Event accessor: emit(detail?, options?) dispatches the event. Without a type argument the event carries no detail, and templates cannot read $event.
+The class of an @Event accessor: emit dispatches a CustomEvent named after the accessor on the host element. Without a type argument the event carries no detail: `$event` is a `CustomEvent<null>`.
 
-### EventOptions (type)
+### EventOptions (class)
 
 ```ts
-{ bubbles?: boolean; cancelable?: boolean; composed?: boolean }
+new EventOptions({ bubbles?: boolean, cancelable?: boolean, composed?: boolean })
 ```
 
-The options of an output, given to @Event or to a single emit. At least one key is required.
+The options of an output: a plain object in @Event, an EventOptions instance in a single emit (merged over the ones of the decorator). By default an event neither bubbles nor leaves the shadow root.
 
 ### WebComponentOptions (type)
 
@@ -231,18 +255,18 @@ Runs a function without tracking the signals it reads.
 ### Signal (type)
 
 ```ts
-Signal<T> = Signal.State<T> & { (): T; update(fn: (prev: T) => T): void }
+Signal<T> = { (): T; get(): T; set(value: T): void; update(fn: (prev: T) => T): void }
 ```
 
-The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive.
+The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive. `update` reads the current value untracked. It is a function, not a `Signal.State`: never pass it to `Signal.subtle` APIs or a `Watcher`.
 
 ### Computed (type)
 
 ```ts
-Computed<T> = Signal.Computed<T> & { (): T }
+Computed<T> = { (): T; get(): T }
 ```
 
-The type returned by computed().
+The type returned by computed(). A thrown error is cached like a value until a dependency changes.
 
 ### InputSignal (type)
 
@@ -324,4 +348,30 @@ The classes of the TC39 proposal, installed globally by loadSignals. signal() an
 Watcher, untrack, currentComputed, introspectSources, introspectSinks, hasSources, hasSinks
 ```
 
-The low-level API of the proposal: watchers and introspection.
+The low-level API of the proposal: watchers and introspection. It works on `Signal.State` / `Signal.Computed` nodes only, not on the functions returned by `signal()` and `computed()`.
+
+## `@xaendar/build-tools`
+
+### xaendarPlugin (function)
+
+```ts
+xaendarPlugin({ customElements?: readonly string[] }?): Plugin
+```
+
+The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
+
+```ts
+// vite.config.ts
+import babel from '@rolldown/plugin-babel';
+import { xaendarPlugin } from '@xaendar/build-tools';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [
+    babel({ presets: [{ preset: () => ({ plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]] }), rolldown: { filter: { code: '@' } } }] }),
+    xaendarPlugin({ customElements: ['sl-*'] })
+  ]
+});
+```
+
+It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type-checks the templates with the `tsconfig.json` of the folder Vite is started from, and in a build type-checks the whole project at the end.
