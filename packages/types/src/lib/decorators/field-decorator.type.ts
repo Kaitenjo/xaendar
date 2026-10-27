@@ -13,8 +13,8 @@ import type { DecoratorMetadataContext } from './decorator-metadata-context.type
  * @template Metadata - The shape of the metadata of the class (see {@link DecoratorMetadataContext}).
  */
 export type FieldDecorator<
-  Class extends Object,
-  Field,
+  Class extends object = object,
+  Field = unknown,
   ReturnType = Field,
   Metadata extends object = DecoratorMetadataObject
 > = (field: undefined, context: DecoratorMetadataContext<ClassFieldDecoratorContext<Class, Field>, Metadata>) => ((value: Field) => ReturnType) | void;
