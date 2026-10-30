@@ -120,6 +120,15 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
       }
     }
 
+    // A peer such as @xaendar/core of @xaendar/ssr is pinned too: the application must install the same version of it
+    if (packageJson.peerDependencies) {
+      for (const depName in packageJson.peerDependencies) {
+        if (depName.startsWith('@xaendar')) {
+          packageJson.peerDependencies[depName] = nextVersion;
+        }
+      }
+    }
+
     writeFileSync(packageJsonPath, JSON.stringify({ ...packageJson, version: nextVersion }, null, 2));
     console.log(`✅ ${projectName}: ${prevSub} → ${nextVersion}`);
   }

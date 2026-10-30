@@ -4,6 +4,7 @@ import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-
 import type { XaendarPluginState } from '../../types/plugin.types';
 import type { XaendarPluginOptions } from '../../types/xaendar-plugin-options.type';
 import { createBuildEndHook } from '../build-end/build-end';
+import { createConfigHook } from '../config/config';
 import { createConfigResolvedHook } from '../config-resolved/config-resolved';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createHotUpdateHook } from '../hot-update/hot-update';
@@ -54,6 +55,11 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  * Every tag with a dash used by a template must be a component imported in it, unless it matches one of the
  * `customElements` patterns: those tags belong to other libraries and are used like native elements.
  *
+ * ## Rendering on the server
+ *
+ * With `ssr`, the modules evaluated on the server register templates compiled into HTML (see `@xaendar/ssr`),
+ * and the dev server renders each page it serves with the entry, in place of `<!--xd-ssr-->` in `index.html`.
+ *
  * @param options - The options of the plugin.
  * @returns A Vite {@link Plugin} instance.
  *
@@ -85,19 +91,21 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     customElements: options.customElements ?? [],
     minifyStyles: false,
     isBuild: false,
+    ssr: options.ssr,
     setLogger: value => logger = value,
     logError
   };
 
   return {
     name: 'xaendar',
+    config: createConfigHook(options),
     configResolved: createConfigResolvedHook(state),
     resolveId: createResolveIdHook(),
     load: createLoadHook(state),
     transform: createTransformHook(state),
     buildEnd: createBuildEndHook(state),
     watchChange: createWatchChangeHook(state),
-    hotUpdate: createHotUpdateHook(),
+    hotUpdate: createHotUpdateHook(state),
     configureServer: createConfigureServerHook(state),
   };
 }

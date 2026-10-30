@@ -81,4 +81,13 @@ describe('createBuildEndHook()', () => {
 
     expect(collectProjectDiagnostics).not.toHaveBeenCalled();
   });
+
+  it('does not type-check the build of the server, checked by the one of the browser', () => {
+    const state = { ...createState(true), ssr: { entry: '/src/entry-server.ts' } };
+    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
+
+    createBuildEndHook(state).call(ctx);
+
+    expect(collectProjectDiagnostics).not.toHaveBeenCalled();
+  });
 });

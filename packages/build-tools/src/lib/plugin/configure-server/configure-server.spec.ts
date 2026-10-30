@@ -37,13 +37,19 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   clearTemplateRegistry: vi.fn()
 }));
 
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn()
+}));
+
 import { clearComponentMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
+import { readFile } from 'node:fs/promises';
 import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
 import { clearTemplateRegistry } from '../../registry/template-registry/template-registry';
+import { resolvePosixPath } from '../../utils/path/path.utils';
 import { createConfigureServerHook } from './configure-server';
 import type { MinimalPluginContextWithoutEnvironment, ViteDevServer } from 'vite';
 
@@ -111,5 +117,127 @@ describe('createConfigureServerHook()', () => {
     expect(clearComponentMembersCache).toHaveBeenCalledTimes(1);
     expect(disposeLanguageService).toHaveBeenCalledTimes(1);
     expect(state.setLogger).toHaveBeenLastCalledWith(undefined);
+    expect(state.server).toBeUndefined();
+  });
+
+  it('keeps the dev server, adding no middleware when the plugin does not render on the server', () => {
+    const state = createState();
+    const server = { config: { logger: {} }, httpServer: null } as unknown as ViteDevServer;
+
+    const post = createConfigureServerHook(state).call({} as unknown as MinimalPluginContextWithoutEnvironment, server);
+
+    expect(state.server).toBe(server);
+    expect(post).toBeUndefined();
+  });
+
+  describe('rendering on the server', () => {
+    /**
+     * A request handled by the middleware, with its response.
+     */
+    type Exchange = {
+      response: { statusCode: number, setHeader: ReturnType<typeof vi.fn>, end: ReturnType<typeof vi.fn> },
+      next: ReturnType<typeof vi.fn>
+    };
+
+    /**
+     * Configures a dev server whose entry renders the page with the given function, returning the middleware the plugin adds.
+     */
+    function configure(render: (url: string) => Promise<string>) {
+      const middlewares = new Array<(request: unknown, response: unknown, next: unknown) => Promise<void>>();
+      const server = {
+        config: { logger: {}, root: '/project/src' },
+        httpServer: null,
+        middlewares: { use: vi.fn((middleware: typeof middlewares[number]) => middlewares.push(middleware)) },
+        transformIndexHtml: vi.fn(async (_url: string, html: string) => html.replace('<head>', '<head><script type="module" src="/@vite/client"></script>')),
+        ssrLoadModule: vi.fn(async () => ({ render })),
+        ssrFixStacktrace: vi.fn()
+      };
+      const state = { ...createState(), ssr: { entry: 'entry-server.ts' } };
+      const post = createConfigureServerHook(state).call({} as unknown as MinimalPluginContextWithoutEnvironment, server as unknown as ViteDevServer) as () => void;
+      post();
+
+      /**
+       * Sends a request to the middleware, recording its original URL as the server of Vite does unless told otherwise.
+       */
+      const request = async (method: string, accept: string | undefined, url = '/about', recordsOriginalUrl = true): Promise<Exchange> => {
+        const response = { statusCode: 0, setHeader: vi.fn(), end: vi.fn() };
+        const next = vi.fn();
+        await middlewares[0]({ method, headers: { accept }, originalUrl: recordsOriginalUrl ? url : undefined, url }, response, next);
+        return { response, next };
+      };
+
+      return { server, request };
+    }
+
+    beforeEach(() => {
+      vi.mocked(readFile).mockResolvedValue('<html><head></head><body><!--xd-ssr--></body></html>' as never);
+    });
+
+    it('renders a page asking for HTML with the entry, in place of the outlet of index.html transformed by the plugins', async () => {
+      const { server, request } = configure(async url => `<app-root>${url}</app-root>`);
+
+      const { response, next } = await request('GET', 'text/html,application/xhtml+xml');
+
+      expect(readFile).toHaveBeenCalledWith(resolvePosixPath('/project/src', 'index.html'), 'utf-8');
+      expect(server.ssrLoadModule).toHaveBeenCalledWith(resolvePosixPath('/project/src', 'entry-server.ts'));
+      expect(response.statusCode).toBe(200);
+      expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html');
+      expect(response.end).toHaveBeenCalledWith('<html><head><script type="module" src="/@vite/client"></script></head><body><app-root>/about</app-root></body></html>');
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('renders the URL of the request when no original one is recorded', async () => {
+      const { request } = configure(async url => `<app-root>${url}</app-root>`);
+
+      const { response } = await request('GET', 'text/html', '/team', false);
+
+      expect(response.end).toHaveBeenCalledWith(expect.stringContaining('<app-root>/team</app-root>'));
+    });
+
+    it('keeps as they are the sequences with a dollar in the text of a page', async () => {
+      const page = '<p>$& $\' $` $$</p>';
+      const { request } = configure(async () => page);
+
+      const { response } = await request('GET', 'text/html');
+
+      expect(response.end).toHaveBeenCalledWith(`<html><head><script type="module" src="/@vite/client"></script></head><body>${page}</body></html>`);
+    });
+
+    it('leaves to the next middleware a request not asking for HTML', async () => {
+      const { server, request } = configure(async () => '');
+
+      const post = await request('POST', 'text/html');
+      const json = await request('GET', 'application/json');
+      const none = await request('GET', undefined);
+
+      expect(post.next).toHaveBeenCalledWith();
+      expect(json.next).toHaveBeenCalledWith();
+      expect(none.next).toHaveBeenCalledWith();
+      expect(server.ssrLoadModule).not.toHaveBeenCalled();
+    });
+
+    it('fixes the stack trace of an error of the rendering, handing it to the next middleware', async () => {
+      const error = new Error('render failed');
+      const { server, request } = configure(async () => {
+        throw error;
+      });
+
+      const { response, next } = await request('GET', 'text/html');
+
+      expect(server.ssrFixStacktrace).toHaveBeenCalledWith(error);
+      expect(next).toHaveBeenCalledWith(error);
+      expect(response.end).not.toHaveBeenCalled();
+    });
+
+    it('hands to the next middleware what the rendering throws, with no stack trace to fix when it is not an error', async () => {
+      const { server, request } = configure(async () => {
+        throw 'render failed';
+      });
+
+      const { next } = await request('GET', 'text/html');
+
+      expect(server.ssrFixStacktrace).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith('render failed');
+    });
   });
 });

@@ -114,10 +114,11 @@ beforeEach(() => {
 });
 
 describe('xaendarPlugin()', () => {
-  it('builds a Vite plugin wiring the configResolved, resolveId, load, transform, buildEnd, watchChange, hotUpdate and configureServer hooks', () => {
+  it('builds a Vite plugin wiring the config, configResolved, resolveId, load, transform, buildEnd, watchChange, hotUpdate and configureServer hooks', () => {
     const plugin = xaendarPlugin();
 
     expect(plugin.name).toBe('xaendar');
+    expect(plugin.config).toEqual(expect.any(Function));
     expect(plugin.configResolved).toBe(configResolvedHook);
     expect(plugin.resolveId).toBe(resolveIdHook);
     expect(plugin.load).toBe(loadHook);
@@ -142,6 +143,7 @@ describe('xaendarPlugin()', () => {
     expect(vi.mocked(createConfigureServerHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createConfigResolvedHook).mock.calls[0][0]).toBe(stateArg);
     expect(vi.mocked(createBuildEndHook).mock.calls[0][0]).toBe(stateArg);
+    expect(vi.mocked(createHotUpdateHook).mock.calls[0][0]).toBe(stateArg);
   });
 
   it('stores the patterns of the custom elements of other libraries in the state, none by default', () => {
@@ -150,6 +152,14 @@ describe('xaendarPlugin()', () => {
 
     expect(vi.mocked(createTransformHook).mock.calls[0][0].customElements).toEqual(['sl-*']);
     expect(vi.mocked(createTransformHook).mock.calls[1][0].customElements).toEqual([]);
+  });
+
+  it('stores the rendering on the server in the state, none by default', () => {
+    xaendarPlugin({ ssr: { entry: 'src/entry-server.ts' } });
+    xaendarPlugin();
+
+    expect(vi.mocked(createTransformHook).mock.calls[0][0].ssr).toEqual({ entry: 'src/entry-server.ts' });
+    expect(vi.mocked(createTransformHook).mock.calls[1][0].ssr).toBeUndefined();
   });
 
   it('logs to the console when no logger has been set yet', () => {

@@ -219,6 +219,34 @@ describe('resolveExpression', () => {
   it('calls a global named like a narrowed signal', () => {
     expect(resolve('Date()', new CompilerContext(), { narrowedSignal: () => '__if0_Date' })).toEqual({ expression: 'Date()' });
   });
+
+  describe('browserGlobals', () => {
+    it('reads the globals of the browser through the given object, leaving the ones of ECMAScript as written', () => {
+      expect(resolve('document.title + Math.max(innerWidth, 1) + JSON.stringify(undefined)', new CompilerContext(), { browserGlobals: 'globalThis' }).expression)
+        .toBe('globalThis.document.title + Math.max(globalThis.innerWidth, 1) + JSON.stringify(undefined)');
+    });
+
+    it('keeps the name of a shorthand property, giving it the global', () => {
+      expect(resolve('{ window }', new CompilerContext(), { browserGlobals: 'globalThis' }).expression).toBe('({ window: globalThis.window })');
+    });
+
+    it('resolves a member or a variable of the template named like a global of the browser as without the option', () => {
+      const context = new CompilerContext();
+      context.addShadowingMember('name');
+      context.addSignalClassField('status');
+      const blockContext = new CompilerContext(context);
+      blockContext.addIdentifier('location');
+
+      expect(resolve('name + status() + location', blockContext, { browserGlobals: 'globalThis' })).toEqual({
+        expression: 'this.name + this.status() + context.get(\'location\')',
+        reactive: true
+      });
+    });
+
+    it('leaves the globals of the browser as written without the option', () => {
+      expect(resolve('document.title').expression).toBe('document.title');
+    });
+  });
 });
 
 describe('getSignalCallee', () => {

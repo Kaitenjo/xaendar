@@ -11,5 +11,12 @@ describe('xaendarJson()', () => {
 
     expect(result.name).toBe('my-app');
     expect(result.generate.components.style).toBe('scss');
+    expect(result.ssr).toBeUndefined();
+  });
+
+  it('declares the entry of the rendering on the server and the routes to prerender of a project rendering on the server', () => {
+    const result = JSON.parse(xaendarJson('my-app', 'css', true));
+
+    expect(result.ssr).toEqual({ entry: 'src/entry-server.ts', prerender: ['/'] });
   });
 });

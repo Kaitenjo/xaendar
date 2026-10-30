@@ -1,6 +1,8 @@
 import type { EnvironmentModuleNode, HookHandler, Plugin } from 'vite';
 import { findComponentPathsForDependency } from '../../registry/dependency-registry/dependency-registry';
 import { findComponentPathsForTemplate } from '../../registry/template-registry/template-registry';
+import type { XaendarPluginState } from '../../types/plugin.types';
+import { isServerRendering } from '../../utils/server-rendering/server-rendering.utils';
 
 /**
  * Fully invalidates the components depending on the changed file, and the ones whose template was just created.
@@ -14,10 +16,22 @@ import { findComponentPathsForTemplate } from '../../registry/template-registry/
  * created. The components are added to the HMR update as well, since the changed file might not be part of
  * the module graph at all (e.g. a `.d.ts` file).
  *
+ * The hook runs for each environment, invalidating the modules of its own graph: the ones of the server are evaluated
+ * again by the next page the server renders. A module only the server evaluates, such as its entry, changes no module
+ * of the browser, so the page is reloaded, to be rendered again.
+ *
+ * @param state - The shared plugin state, holding the dev server.
  * @returns The `hotUpdate` hook handler.
  */
-export function createHotUpdateHook(): NonNullable<HookHandler<Plugin['hotUpdate']>> {
+export function createHotUpdateHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['hotUpdate']>> {
   return function hotUpdate({ type, file, modules, timestamp }) {
+    if (modules.length && isServerRendering(state, this)) {
+      const client = state.server!.environments.client;
+      if (!client.moduleGraph.getModulesByFile(file)?.size) {
+        client.hot.send({ type: 'full-reload' });
+      }
+    }
+
     const componentPaths = new Set(findComponentPathsForDependency(file));
     if (type === 'create') {
       const componentsPathsForTemplate = findComponentPathsForTemplate(file)

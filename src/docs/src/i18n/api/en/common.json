@@ -138,5 +138,65 @@
         "body": "<p>A list as <code>customElements</code> declares it: a pattern for a whole library, and the name of a single element.</p>"
       }
     }
+  },
+  "escapeText": {
+    "summary": "Escapes a text written as the content of an element: the parser of HTML reads it back as the same text.",
+    "description": "<p>Replaces <code>&amp;</code>, <code>&lt;</code> and <code>&gt;</code> with their character references. The quotes stay as they are: they end nothing in a text. The rendering on the server escapes the texts and the interpolations of the templates this way.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escaping a text",
+        "body": "<p>The characters that would open a tag or a character reference are replaced.</p>"
+      }
+    }
+  },
+  "escapeAttribute": {
+    "summary": "Escapes the value of an attribute written between double quotes: the parser of HTML reads it back as the same value.",
+    "description": "<p>Replaces <code>&amp;</code>, <code>\"</code>, <code>&lt;</code> and <code>&gt;</code> with their character references, so that the value can neither end the attribute nor open a tag. The rendering on the server escapes the values of the attributes this way.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escaping a value",
+        "body": "<p>A value holding quotes stays inside the attribute.</p>"
+      }
+    }
+  },
+  "escapeRawText": {
+    "summary": "Prepares a text written as the content of an element whose text the parser of HTML does not decode, such as <code>&lt;style&gt;</code> or <code>&lt;script&gt;</code>.",
+    "description": "<p>The parser reads the content of these elements up to their end tag without decoding any character reference, so a text written there cannot be escaped: it is written as it is, except for the sequences that would end the element early, such as <code>&lt;/style</code> in a <code>&lt;style&gt;</code>, whatever their case, whose slash is escaped. A stylesheet or a script reads <code>&lt;\\/style</code> as the same text. See <a href=\"#/en/reference/api/common/isRawTextElement\"><code>isRawTextElement()</code></a>.</p>",
+    "usage": {
+      "rawText": {
+        "title": "Writing a stylesheet",
+        "body": "<p>The CSS is left untouched, except for the end tag.</p>"
+      }
+    }
+  },
+  "isVoidElement": {
+    "summary": "Tells whether an element of the HTML namespace is a void element, whose end tag is never written.",
+    "description": "<p>The void elements of HTML, the obsolete ones included, such as <code>input</code>, <code>br</code> and <code>img</code>, have no content: the parser closes them on its own, and an end tag would be an error. An element of SVG or of MathML is never a void element: check the namespace first.</p>",
+    "usage": {
+      "checking": {
+        "title": "Closing an element",
+        "body": "<p>A serializer writes the end tag of every element but the void ones.</p>"
+      }
+    }
+  },
+  "isRawTextElement": {
+    "summary": "Tells whether the text of an element of the HTML namespace is written as it is.",
+    "description": "<p><code>script</code>, <code>style</code>, <code>noscript</code>, <code>iframe</code>, <code>noembed</code>, <code>noframes</code>, <code>xmp</code> and <code>plaintext</code>: the parser does not decode their content, which the serialization of HTML writes literally. <code>textarea</code> and <code>title</code> are not among them: their character references are decoded. See <a href=\"#/en/reference/api/common/escapeRawText\"><code>escapeRawText()</code></a>.</p>",
+    "usage": {
+      "checking": {
+        "title": "Choosing how to escape",
+        "body": "<p>The text of these elements goes through <code>escapeRawText()</code>, any other one through <code>escapeText()</code>.</p>"
+      }
+    }
+  },
+  "dropsLeadingNewline": {
+    "summary": "Tells whether the parser of HTML drops a line feed right after the start tag of an element of the HTML namespace.",
+    "description": "<p><code>pre</code>, <code>textarea</code> and <code>listing</code>: the parser drops a line feed following their start tag, so a serializer always writes one after it, and a content starting with a line feed keeps it.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing the start tag",
+        "body": "<p>The line feed written after the start tag is the one the parser drops.</p>"
+      }
+    }
   }
 }

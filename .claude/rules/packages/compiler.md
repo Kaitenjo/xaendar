@@ -18,3 +18,5 @@ Entry point: `compile()` in `src/compile/compile.ts`, overloaded on `CompileOpti
 - `baseDir` (+ optional `cache`) → only `TypeCheckResult` (editor tooling);
 - `signals` → only compiled JS (module-level functions; `render` is invoked with the component bound as `this`);
 - both → `{ javascript, typescript }`, computed concurrently.
+
+`public-api.ts` also exports the generator internals `ssr-compiler` builds its server generator on: `resolveTemplateImports`, the compiler context model, `generator.utils` (expression resolution, with the `browserGlobals` option reading the browser globals through `globalThis`), `scope-generation` (`declareScope`, `declareTemplateParameters`), `catch-error-generation`, `element-namespace`, `render-target`, `symbol-imports` and their types. Change them with both generators in mind, and run the specs of `ssr-compiler` too.

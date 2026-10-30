@@ -592,6 +592,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** set called on an InputSignal through a cast: inputs are written only by the bindings of the parent.
 - **Fix:** For a value the component changes too, copy the input into a local signal in an effect, and write the local one.
 
+### `ReferenceError: HTMLElement is not defined`
+
+- **Cause:** On the server, a module of @xaendar/core or of a component evaluated before loadServerDom(): imported statically by the entry, or before the call.
+- **Fix:** Call loadSignals() and loadServerDom() first in the entry of the server, and import @xaendar/ssr and the components afterwards, with import().
+
+### `ReferenceError: document is not defined`
+
+- **Cause:** On the server, the constructor, a field initializer or onInit of a component reading document (or window), or a module reading it when evaluated: the server DOM has no document.
+- **Fix:** Check typeof document first, or move the code to an effect or to afterRender, which only run in the browser.
+
+### `Error: ProductPageComponent is not defined: decorate it with @WebComponent, and install the server DOM with loadServerDom() before importing its module`
+
+- **Cause:** renderToString() received a class the server does not define as a custom element: a class without @WebComponent.
+- **Fix:** Decorate the class with @WebComponent.
+
+### `Error: ProductPageComponent has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment`
+
+- **Cause:** The module of the component was built without the server rendering of the Vite plugin, so it registered no template for the server: the plugin without its ssr option, Vite without the plugin, or a spec run by xd test, which compiles the templates for the browser.
+- **Fix:** Declare ssr in xaendar.json, or pass ssr to xaendarPlugin(). Check the server rendering with xd start or xd prerender, not in a spec.
+
 ## Signals
 
 ### `Circular dependency detected while computing a Computed signal`
@@ -635,3 +655,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** xd generate component found, in the nearest xaendar.json, a generate.components.style that is not one of the formats the plugin compiles.
 - **Fix:** Set it to css, scss, sass or less, or remove it to get CSS.
+
+### `✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server.ts" } in its xaendar.json.`
+
+- **Cause:** xd prerender in a project whose xaendar.json declares no ssr.
+- **Fix:** Declare the entry of the server in the ssr of xaendar.json, as xd new --ssr does.

@@ -13,6 +13,8 @@ const ENTRY_POINTS: Readonly<Record<ApiPackageName, string>> = {
   '@xaendar/core/signals': 'packages/core/src/signals/index.ts',
   '@xaendar/signals': 'packages/signals/src/public-api.ts',
   '@xaendar/build-tools': 'packages/build-tools/src/public-api.ts',
+  '@xaendar/ssr': 'packages/ssr/src/public-api.ts',
+  '@xaendar/ssr/dom': 'packages/ssr/src/dom/index.ts',
   '@xaendar/common': 'packages/common/src/public-api.ts',
   '@xaendar/types': 'packages/types/src/public-api.ts'
 };
@@ -20,7 +22,17 @@ const ENTRY_POINTS: Readonly<Record<ApiPackageName, string>> = {
 /**
  * The exports used only by the compiled templates that are not prefixed with `_`: left out of the reference.
  */
-const INTERNAL_EXPORTS: ReadonlySet<string> = new Set(['mountNode', 'createAnchor', 'RenderFunction', 'RenderDefinition']);
+const INTERNAL_EXPORTS: ReadonlySet<string> = new Set([
+  'mountNode',
+  'createAnchor',
+  'RenderFunction',
+  'RenderDefinition',
+  'RenderConditionalBinding',
+  'RenderElementConditionalBinding',
+  'RenderElementStructuralDirectiveConditionalBinding',
+  'RenderElementAttribute',
+  'RenderElementStructuralDirective'
+]);
 
 /**
  * Finds the root of the repository, walking up from the working directory.

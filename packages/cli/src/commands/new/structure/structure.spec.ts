@@ -69,6 +69,24 @@ describe('buildStructure()', () => {
     expect((packageJsonEntry as { content: string }).content).toContain('"sass": ');
   });
 
+  it('adds the server and the entry rendering a page on the server to a project rendering on the server', () => {
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+
+    const entries = buildStructure({ name: 'my-app', style: 'css', ssr: true });
+    const srcEntry = entries.find((entry) => entry.name === 'src');
+    const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
+    const content = (name: string, list = entries) => (list.find((entry) => entry.name === name) as { content: string }).content;
+
+    expect(entries.map((entry) => entry.name)).toEqual(['package.json', 'xaendar.json', 'vite.config.ts', 'tsconfig.json', 'server.ts', 'src']);
+    expect(children?.map((entry) => entry.name)).toEqual(['index.html', 'main.ts', 'bootstrap.ts', 'my-app-root', 'styles.css', 'entry-server.ts']);
+    expect(content('server.ts')).toContain('const FALLBACK = \'<my-app-root></my-app-root>\';');
+    expect(content('entry-server.ts', children)).toContain('renderToString(MyAppRootComponent)');
+    expect(content('package.json')).toContain('"@xaendar/ssr": "^1.2.3"');
+    expect(content('xaendar.json')).toContain('"entry": "src/entry-server.ts"');
+    expect(content('vite.config.ts')).toContain('../dist/client');
+    expect(content('index.html', children)).toContain('<!--xd-ssr-->');
+  });
+
   it('exits the process when the CLI package.json cannot be read', () => {
     vi.mocked(readFileSync).mockImplementation(() => {
       throw new Error('ENOENT');

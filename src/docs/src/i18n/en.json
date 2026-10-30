@@ -150,6 +150,7 @@
       "patterns/lists": "Lists and CRUD",
       "tools/cli": "CLI",
       "tools/build": "Build and Vite plugin",
+      "tools/ssr": "Server-side rendering",
       "tools/integrations": "Integrations",
       "tools/language-service": "Language service and VS Code",
       "reference/api": "API reference",
@@ -586,6 +587,10 @@
           "p1": "A child component is connected while its parent renders its template, once the parent has bound its inputs and its listeners. So the child runs its whole sequence, from <code>onInit</code> to <code>afterRender</code>, in the middle of the sequence of the parent, already seeing the bound values.",
           "example1": "The hooks of a parent and its child",
           "p2": "Add the parent and read the log from the top: the parent starts, the child runs all its hooks and its effect with the bound label, then the parent finishes. Changing the label re-runs only the effect. Removing the parent calls <code>onDestroy</code> on the parent first, then on the child, and disposes the effect of the child."
+        },
+        "onTheServer": {
+          "title": "On the server",
+          "p1": "A page rendered on the server runs the constructor, <code>onInit</code> and the render of each component there, once, to write its HTML: <code>afterRender</code>, <code>onDestroy</code> and the effects of <code>this.effect()</code> run in the browser only. Code reading <code>document</code> or <code>window</code> belongs in <code>afterRender</code> or in an effect, or checks <code>typeof</code> first. See <a href=\"#/en/tools/ssr\">Server-side rendering</a>."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -1648,8 +1653,10 @@
           "@xaendar/core": "Components, directives, their decorators and their base classes.",
           "@xaendar/core/signals": "The signals of components and directives: signal, computed, effect and untracked, and the types of inputs and queries.",
           "@xaendar/signals": "The global Signal of the TC39 proposal, installed by loadSignals, which the signals of @xaendar/core/signals are built on.",
-          "@xaendar/build-tools": "The Vite plugin compiling templates and stylesheets, and its options.",
-          "@xaendar/common": "Utilities shared by the packages: case conversion, object helpers, custom element names.",
+          "@xaendar/build-tools": "The Vite plugin compiling templates and stylesheets, for the browser and for the server, and its options.",
+          "@xaendar/ssr": "Server-side rendering: renderToString, which renders a component to HTML with declarative shadow roots, and the type of its inputs.",
+          "@xaendar/ssr/dom": "The server DOM, installed by loadServerDom: the HTMLElement and the customElements the modules of the components need in Node.",
+          "@xaendar/common": "Utilities shared by the packages: case conversion, object helpers, custom element names, HTML serialization.",
           "@xaendar/types": "Utility types shared by the packages: constructors, decorators, functions."
         }
       },
@@ -2761,7 +2768,8 @@
         "configuration": {
           "title": "Configuration",
           "p1": "The order matters. Babel compiles the standard decorators first, and the plugin then works on its output: it looks for the static blocks Babel generates in each decorated class, and adds its own registration before them. With the plugins in the wrong order, every component fails with the message shown in <a href=\"#/en/installation\">Installation</a>.",
-          "p2": "The plugin takes one option, <code>customElements</code>: the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates. An app built with another framework adds the same two plugins: see <a href=\"#/en/tools/integrations\">Integrations</a>."
+          "p2": "The option <code>customElements</code> of the plugin holds the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates. An app built with another framework adds the same two plugins: see <a href=\"#/en/tools/integrations\">Integrations</a>.",
+          "p3": "With its option <code>ssr</code>, the plugin renders the pages on the server: the modules evaluated on the server register templates compiled into HTML, and the dev server renders each page with the entry the option names. See <a href=\"#/en/tools/ssr\">Server-side rendering</a>."
         },
         "whatThePluginDoes": {
           "title": "What the plugin does",
@@ -2803,6 +2811,79 @@
           "td8": "<code>.css</code>, <code>.scss</code>, <code>.sass</code>, <code>.less</code> (with the <code>sass</code> or <code>less</code> package); a shared <code>CSSStyleSheet</code> per file; minified in builds"
         }
       },
+      "ssr": {
+        "eyebrow": "Developer tools",
+        "title": "Server-side rendering",
+        "lead": "With server-side rendering, the server writes the HTML of each page, and the browser shows it before any script runs: every component, with its shadow root written as a declarative shadow root (<code>&lt;template shadowrootmode=\"open\"&gt;</code>), and the components it renders. The server renders the first page only: once the scripts load, the application runs in the browser as it does without. <code>@xaendar/ssr</code> renders the components; the CLI and the Vite plugin build and serve them.",
+        "newProject": {
+          "title": "A new project",
+          "p1": "<code>xd new --ssr</code> creates a project rendering its pages on the server. Besides the usual files, it writes the entry of the server, <code>src/entry-server.ts</code>, and the server of the application, <code>server.ts</code>, which uses <code>node:http</code> only. <code>index.html</code> holds <code>&lt;!--xd-ssr--&gt;</code> in place of the root component, the application of the browser is built into <code>dist/client</code>, and <code>package.json</code> gets <code>@xaendar/ssr</code> and the scripts <code>serve</code> and <code>prerender</code>. <code>xaendar.json</code> declares the entry, which turns the rendering on the server on for <code>xd start</code>, <code>xd build</code> and <code>xd prerender</code>:",
+          "p2": "An existing project turns it on the same way: it installs <code>@xaendar/ssr</code>, adds <code>ssr</code> to its <code>xaendar.json</code>, writes the entry, replaces its root component with <code>&lt;!--xd-ssr--&gt;</code> in <code>index.html</code>, and builds the browser into <code>dist/client</code>. <code>entry</code> is relative to the project; <code>outDir</code>, the folder of the build of the server, is <code>dist/server</code> by default."
+        },
+        "entry": {
+          "title": "The entry of the server",
+          "p1": "The entry exports <code>render(url)</code>, which returns the HTML of a page, written in place of <code>&lt;!--xd-ssr--&gt;</code>. It first installs the Signal polyfill, as <code>main.ts</code> does, and the server DOM, with <a href=\"#/en/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a>: Node has no <code>HTMLElement</code> and no <code>customElements</code>, and the modules of <code>@xaendar/core</code> and of the components need them as soon as they are evaluated. That is why it imports them afterwards, with <code>import()</code>: a static import is evaluated before the code of the module, wherever it is written.",
+          "p2": "<a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renders a component and the components it renders. Its second argument sets the inputs of the component, by the name of their property, as code outside Xaendar sets them: the URL picks the component of the page, and the values of its inputs."
+        },
+        "output": {
+          "title": "What the server writes",
+          "p1": "Every component is written as its element, with the attributes and the classes of its <code>@HostProperty</code>, then a <code>&lt;template shadowrootmode=\"open\"&gt;</code> holding its stylesheet, in a <code>&lt;style&gt;</code>, and its template, then the content its parent projects into its slots. The parser of the browser turns the template into the shadow root of the element, so the page shows the components, styled, before their scripts are loaded:",
+          "p2": "A custom element whose class the server does not define is written as an element without shadow root, with its content: a component imported with <code>@import lazy</code>, whose module the template does not import, or an element of another library. The browser renders it once its class is defined. Texts and attributes are escaped, and the content of <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code> is written as it is."
+        },
+        "onTheServer": {
+          "title": "The code of the components on the server",
+          "p1": "On the server, a component runs as in the browser up to its render: its constructor and its field initializers run, its inputs are set, <code>onInit</code> runs and its template is rendered, reading each signal once. The structural directives run too, since they decide what is rendered, and the server waits for the promise an asynchronous one returns: a rejected promise renders nothing.",
+          "p2": "The server writes HTML once, so what reacts, listens or works on the page runs in the browser only: the effects of <code>this.effect()</code>, <code>afterRender</code> and <code>onDestroy</code>, the listeners of the events and of <code>@HostEvent</code>, the custom directives and the host directives, and the queries, which keep their initial value. A component created with <code>createComponent</code> is constructed but not rendered. An element ref is <code>undefined</code> on the server.",
+          "p3": "The server DOM has no <code>document</code> and no <code>window</code>. An expression of a template reads the globals of the browser through <code>globalThis</code>: on the server, one Node lacks, such as <code>window</code>, is <code>undefined</code>, instead of throwing a <code>ReferenceError</code>. The code of a class reading one in its constructor, in a field initializer or in <code>onInit</code> throws instead: it checks <code>typeof</code> first, or moves to an effect, which only runs in the browser.",
+          "p4": "The modules are evaluated once per process: a signal declared at the level of a module, such as a store, is shared by every page the server renders. The state of a request belongs to the components, or to the inputs the entry gives them."
+        },
+        "development": {
+          "title": "Development",
+          "p1": "<code>xd start</code> renders every page on the server: the dev server reads <code>index.html</code>, applies the plugins to it, and writes what <code>render(url)</code> returns in place of <code>&lt;!--xd-ssr--&gt;</code>, loading the entry through the module graph of Vite. A change to a component, to its template or to its stylesheet reloads the page, as without the rendering on the server, and the server renders the new version; a change to a module only the server loads, such as the entry, reloads the page too. An error of the rendering shows in the overlay of Vite, its stack trace pointing to the sources."
+        },
+        "production": {
+          "title": "Production",
+          "p1": "<code>xd build</code> builds the application of the browser into <code>dist/client</code>, as its Vite configuration says, then the entry for the server into <code>dist/server</code>, where the packages stay imports of <code>node_modules</code>: <code>@xaendar/ssr</code> and the components share the same copy of <code>@xaendar/core</code>. The build of the browser alone runs the type check.",
+          "p2": "<code>npm run serve</code> starts <code>server.ts</code>: it serves the files of <code>dist/client</code> as they are, and renders every other request with <code>dist/server/entry-server.js</code>, in place of <code>&lt;!--xd-ssr--&gt;</code> in <code>dist/client/index.html</code>. When the rendering of a page fails, it logs the error and sends the root component without content, which the browser renders: the page works, without the HTML of the server. The file belongs to the project: adapt it, or replace it with the server of your choice."
+        },
+        "prerender": {
+          "title": "Prerendering",
+          "p1": "<code>xd prerender</code> builds the project, then renders each route listed by <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> by default, into the <code>index.html</code> of its folder in <code>dist/client</code>: <code>/</code> into <code>dist/client/index.html</code>, <code>/about</code> into <code>dist/client/about/index.html</code>. A static host then serves the pages already rendered, without a server of the application."
+        },
+        "withoutCli": {
+          "title": "Without the CLI",
+          "p1": "A project driving Vite directly gives the entry to the Vite plugin with its <code>ssr</code> option, relative to the root of Vite or absolute, and builds the server with <code>vite build --ssr</code>. The plugin compiles the templates for the server in the environments of the server of Vite, and sets the application type of Vite to <code>custom</code>, so that the dev server renders the pages: see <a href=\"#/en/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>."
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "The browser renders the components again",
+            "body": "<p>When its script loads, each component attaches its shadow root, which empties the declarative one, and renders its template in the browser, from the state of the browser. The page shows the HTML of the server until then, and the same content afterwards, as long as the server and the browser start from the same state.</p>"
+          },
+          "callout2": {
+            "heading": "Elements the parser moves",
+            "body": "<p>The parser of HTML does not build every tree the DOM accepts: a <code>&lt;div&gt;</code> inside a <code>&lt;p&gt;</code> closes the paragraph, and a <code>&lt;tr&gt;</code> right inside a <code>&lt;table&gt;</code> gets a <code>&lt;tbody&gt;</code> around it. A template nesting elements this way shows another tree in the HTML of the server than the one the browser renders.</p>"
+          },
+          "callout3": {
+            "heading": "Code reading the page",
+            "body": "<p>A constructor, a field initializer or an <code>onInit</code> reading <code>document</code> or <code>window</code> throws a <code>ReferenceError</code> on the server, and the page is not rendered there. So does a module reading them when it is evaluated.</p>"
+          },
+          "callout4": {
+            "heading": "Prerendering and the server of the application",
+            "body": "<p><code>xd prerender</code> writes the page of <code>/</code> in place of <code>dist/client/index.html</code>, which <code>server.ts</code> reads as the template of every page: without <code>&lt;!--xd-ssr--&gt;</code>, it would send that page for every route. Serve a prerendered build with a static host, and run <code>xd build</code> again before <code>npm run serve</code>.</p>"
+          }
+        },
+        "summary": {
+          "title": "Summary",
+          "th1": "API",
+          "th2": "What it does",
+          "td1": "Renders a component to HTML with declarative shadow roots, its inputs set.",
+          "td2": "Installs <code>HTMLElement</code> and <code>customElements</code> in Node, before the modules of Xaendar are evaluated.",
+          "td3": "With <code>ssr</code>, compiles the templates for the server and renders the pages in the dev server.",
+          "td4": "The place of the rendered HTML in <code>index.html</code>.",
+          "td5": "Renders the routes of <code>xaendar.json</code> into HTML files."
+        }
+      },
       "cli": {
         "eyebrow": "Developer tools",
         "title": "CLI",
@@ -2811,11 +2892,17 @@
           "title": "xd new",
           "p1": "The name of the project is used for the folder, for <code>package.json</code>, and for the root component, <code>&lt;name&gt;-root</code>. The generated files are described in <a href=\"#/en/installation\">Installation</a>. The command stops if the folder exists and is not empty.",
           "p2": "Unless <code>--style</code> gives it, the command asks the format of the stylesheets: <code>css</code>, <code>scss</code>, <code>sass</code> (the indented syntax) or <code>less</code>. An invalid <code>--style</code> stops the command before anything is written.",
-          "p3": "The answer is the number or the name of a format; an empty answer picks CSS, and an invalid one asks again. Without an interactive terminal, as in CI, the command uses CSS without asking. The format is the extension of the global stylesheet, <code>src/styles.css</code> or <code>src/styles.scss</code> for example, and of the stylesheets of the components; with SCSS, Sass or Less, <code>package.json</code> also gets <code>sass</code> or <code>less</code> among its <code>devDependencies</code>. <code>xaendar.json</code> records the settings of the project: the format, read by <code>xd generate component</code>, and, in <code>customElements</code>, the tags of other libraries used by the templates (see <a href=\"#/en/components/registration\">Selectors and registration</a>)."
+          "p3": "The answer is the number or the name of a format; an empty answer picks CSS, and an invalid one asks again. Without an interactive terminal, as in CI, the command uses CSS without asking. The format is the extension of the global stylesheet, <code>src/styles.css</code> or <code>src/styles.scss</code> for example, and of the stylesheets of the components; with SCSS, Sass or Less, <code>package.json</code> also gets <code>sass</code> or <code>less</code> among its <code>devDependencies</code>. <code>xaendar.json</code> records the settings of the project: the format, read by <code>xd generate component</code>, and, in <code>customElements</code>, the tags of other libraries used by the templates (see <a href=\"#/en/components/registration\">Selectors and registration</a>).",
+          "p4": "With <code>--ssr</code>, the project renders its pages on the server: the command also writes <code>src/entry-server.ts</code> and <code>server.ts</code>, declares the entry in the <code>ssr</code> of <code>xaendar.json</code>, and adds <code>@xaendar/ssr</code> and the scripts <code>serve</code> and <code>prerender</code> to <code>package.json</code>. See <a href=\"#/en/tools/ssr\">Server-side rendering</a>."
         },
         "xdStartAndXd": {
           "title": "xd start and xd build",
-          "p1": "<code>xd start</code> (or <code>xd s</code>) runs the Vite dev server, <code>xd build</code> (or <code>xd b</code>) a production build. Both read <code>vite.config.ts</code> from the current folder and add two plugins to it: Babel, to compile the decorators, and the Xaendar plugin, to compile templates and styles. The details are in <a href=\"#/en/tools/build\">Build and Vite plugin</a>. Everything else, such as the port, the root folder or the output folder, comes from the Vite configuration."
+          "p1": "<code>xd start</code> (or <code>xd s</code>) runs the Vite dev server, <code>xd build</code> (or <code>xd b</code>) a production build. Both read <code>vite.config.ts</code> from the current folder and add two plugins to it: Babel, to compile the decorators, and the Xaendar plugin, to compile templates and styles. The details are in <a href=\"#/en/tools/build\">Build and Vite plugin</a>. Everything else, such as the port, the root folder or the output folder, comes from the Vite configuration.",
+          "p2": "When <code>xaendar.json</code> declares <code>ssr</code>, the dev server of <code>xd start</code> renders every page on the server, and <code>xd build</code> also builds the entry of the server, into <code>dist/server</code> or the <code>outDir</code> of <code>ssr</code>."
+        },
+        "xdPrerender": {
+          "title": "xd prerender",
+          "p1": "<code>xd prerender</code> (or <code>xd p</code>) runs <code>xd build</code>, then renders each route of the <code>prerender</code> list of the <code>ssr</code> of <code>xaendar.json</code>, <code>/</code> by default, into the <code>index.html</code> of its folder in the build of the browser. In a project without <code>ssr</code>, the command stops. See <a href=\"#/en/tools/ssr\">Server-side rendering</a>."
         },
         "xdTest": {
           "title": "xd test",
@@ -2840,13 +2927,14 @@
           "th2": "Options",
           "th3": "Description",
           "td1": "<code>xd new &lt;name&gt;</code>",
-          "td2": "Creates a project and installs its dependencies; asks the format of the stylesheets without <code>--style</code>.",
+          "td2": "Creates a project and installs its dependencies; asks the format of the stylesheets without <code>--style</code>; with <code>--ssr</code>, the project renders its pages on the server.",
           "td3": "Starts the Vite dev server with the Xaendar plugins.",
           "td4": "Builds the project with the Xaendar plugins.",
           "td5": "<code>xd generate component &lt;name&gt;</code>, <code>xd g c</code>",
           "td6": "Creates a component folder, with a stylesheet in the format of <code>xaendar.json</code>.",
           "td7": "Version and help.",
-          "td8": "Runs the specs with the Xaendar plugins."
+          "td8": "Runs the specs with the Xaendar plugins.",
+          "td9": "Builds the project and renders its routes into HTML files."
         }
       },
       "integrations": {
@@ -3488,6 +3576,26 @@
     "Error: @HostEvent('click') cannot decorate the static method handle": {
       "cause": "A @HostEvent on a static method: the host element belongs to an instance.",
       "fix": "Decorate an instance method."
+    },
+    "ReferenceError: HTMLElement is not defined": {
+      "cause": "On the server, a module of @xaendar/core or of a component evaluated before loadServerDom(): imported statically by the entry, or before the call.",
+      "fix": "Call loadSignals() and loadServerDom() first in the entry of the server, and import @xaendar/ssr and the components afterwards, with import()."
+    },
+    "ReferenceError: document is not defined": {
+      "cause": "On the server, the constructor, a field initializer or onInit of a component reading document, or a module reading it when evaluated: the server DOM has no document.",
+      "fix": "Check typeof document first, or move the code to an effect or to afterRender, which only run in the browser."
+    },
+    "ProductPageComponent is not defined: decorate it with @WebComponent, and install the server DOM with loadServerDom() before importing its module": {
+      "cause": "renderToString() received a class the server does not define as a custom element: a class without @WebComponent.",
+      "fix": "Decorate the class with @WebComponent."
+    },
+    "ProductPageComponent has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment": {
+      "cause": "The module of the component was built without the server rendering of the Vite plugin, so it registered no template for the server: the plugin without its ssr option, or Vite without the plugin.",
+      "fix": "Declare ssr in xaendar.json, or pass ssr to xaendarPlugin()."
+    },
+    "✖  The project does not render on the server: declare \"ssr\": { \"entry\": \"src/entry-server.ts\" } in its xaendar.json.": {
+      "cause": "xd prerender in a project whose xaendar.json declares no ssr.",
+      "fix": "Declare the entry of the server in the ssr of xaendar.json, as xd new --ssr does."
     }
   },
   "issues": {}

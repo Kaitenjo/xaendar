@@ -6,6 +6,8 @@ import { COMMON_API } from './packages/common.data';
 import { CORE_SIGNALS_API } from './packages/core-signals.data';
 import { CORE_API } from './packages/core.data';
 import { SIGNALS_API } from './packages/signals.data';
+import { SSR_DOM_API } from './packages/ssr-dom.data';
+import { SSR_API } from './packages/ssr.data';
 import { TYPES_API } from './packages/types.data';
 
 /**
@@ -89,7 +91,7 @@ export type ApiSymbol = {
  * The documented packages, and the secondary entry points documented as packages of their own.
  */
 export type ApiPackageName = '@xaendar/core' | '@xaendar/core/signals' | '@xaendar/signals' | '@xaendar/build-tools'
-  | '@xaendar/common' | '@xaendar/types';
+  | '@xaendar/ssr' | '@xaendar/ssr/dom' | '@xaendar/common' | '@xaendar/types';
 
 /**
  * A documented package.
@@ -149,7 +151,7 @@ export type ApiPackageTexts = Readonly<Record<string, ApiSymbolTexts>>;
 /**
  * Every documented package, in the order of the API reference.
  */
-export const API: readonly ApiPackage[] = [CORE_API, CORE_SIGNALS_API, SIGNALS_API, BUILD_TOOLS_API, COMMON_API, TYPES_API];
+export const API: readonly ApiPackage[] = [CORE_API, CORE_SIGNALS_API, SIGNALS_API, BUILD_TOOLS_API, SSR_API, SSR_DOM_API, COMMON_API, TYPES_API];
 
 /**
  * Names the files of a package: its texts (`src/i18n/api/<lang>/<file>.json`) and its snippets

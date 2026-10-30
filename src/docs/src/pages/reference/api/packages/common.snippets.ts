@@ -293,3 +293,88 @@ values(unread);                                        // [3, 0, 12], typed numb
 values(unread).reduce((sum, count) => sum + count, 0); // 15
 values(undefined);                                     // undefined`
 };
+
+/**
+ * The snippet `escape-text.ts`, shown by the API reference of common.
+ */
+export const ESCAPE_TEXT: SourceFile = {
+  name: 'escape-text.ts',
+  lang: 'ts',
+  code: `import { escapeText } from '@xaendar/common';
+
+escapeText('Tom & Jerry <3'); // 'Tom &amp; Jerry &lt;3'
+escapeText('"Hi", I said');   // '"Hi", I said': a quote ends nothing in a text`
+};
+
+/**
+ * The snippet `escape-attribute.ts`, shown by the API reference of common.
+ */
+export const ESCAPE_ATTRIBUTE: SourceFile = {
+  name: 'escape-attribute.ts',
+  lang: 'ts',
+  code: `import { escapeAttribute } from '@xaendar/common';
+
+/**
+ * The title of the link, typed by the user.
+ */
+const title = 'Say "hi" & <wave>';
+
+\`<a title="\${escapeAttribute(title)}">\`; // '<a title="Say &quot;hi&quot; &amp; &lt;wave&gt;">'`
+};
+
+/**
+ * The snippet `escape-raw-text.ts`, shown by the API reference of common.
+ */
+export const ESCAPE_RAW_TEXT: SourceFile = {
+  name: 'escape-raw-text.ts',
+  lang: 'ts',
+  code: `import { escapeRawText } from '@xaendar/common';
+
+escapeRawText('a > b { color: red }', 'style'); // unchanged: the parser decodes nothing in a stylesheet
+escapeRawText('x = "</STYLE>"', 'style');        // 'x = "<\\/STYLE>"': no longer ends the element`
+};
+
+/**
+ * The snippet `is-void-element.ts`, shown by the API reference of common.
+ */
+export const IS_VOID_ELEMENT: SourceFile = {
+  name: 'is-void-element.ts',
+  lang: 'ts',
+  code: `import { isVoidElement } from '@xaendar/common';
+
+isVoidElement('input'); // true: <input> has no end tag
+isVoidElement('div');   // false`
+};
+
+/**
+ * The snippet `is-raw-text-element.ts`, shown by the API reference of common.
+ */
+export const IS_RAW_TEXT_ELEMENT: SourceFile = {
+  name: 'is-raw-text-element.ts',
+  lang: 'ts',
+  code: `import { isRawTextElement } from '@xaendar/common';
+
+isRawTextElement('script');   // true
+isRawTextElement('textarea'); // false: the parser decodes its character references`
+};
+
+/**
+ * The snippet `drops-leading-newline.ts`, shown by the API reference of common.
+ */
+export const DROPS_LEADING_NEWLINE: SourceFile = {
+  name: 'drops-leading-newline.ts',
+  lang: 'ts',
+  code: `import { dropsLeadingNewline } from '@xaendar/common';
+
+/**
+ * Writes the start tag of an element, and the line feed the parser drops after it when it drops one.
+ *
+ * @param tagName - The tag name of the element.
+ * @returns The start tag.
+ */
+function writeStartTag(tagName: string): string {
+  return dropsLeadingNewline(tagName) ? \`<\${tagName}>\\n\` : \`<\${tagName}>\`;
+}
+
+writeStartTag('pre'); // '<pre>\\n': a content starting with a line feed keeps it`
+};

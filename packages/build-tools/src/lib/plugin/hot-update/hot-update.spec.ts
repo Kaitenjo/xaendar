@@ -11,12 +11,18 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 import type { EnvironmentModuleNode, HookHandler, HotUpdateOptions, Plugin } from 'vite';
 import { findComponentPathsForDependency } from '../../registry/dependency-registry/dependency-registry';
 import { findComponentPathsForTemplate } from '../../registry/template-registry/template-registry';
+import type { XaendarPluginState } from '../../types/plugin.types';
 import { createHotUpdateHook } from './hot-update';
 
 /**
  * `this` context the `hotUpdate` hook is invoked with.
  */
 type HotUpdateContext = ThisParameterType<NonNullable<HookHandler<Plugin['hotUpdate']>>>;
+
+/**
+ * The state of a plugin rendering in the browser only.
+ */
+const CLIENT_STATE = {} as XaendarPluginState;
 
 /**
  * Path of the file, depended on by components, whose change triggers the hot update.
@@ -71,9 +77,9 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('createHotUpdateHook()', () => {
+describe('createHotUpdateHook(CLIENT_STATE)', () => {
   it('leaves the update untouched when no component depends on the changed file', async () => {
-    const hook = createHotUpdateHook();
+    const hook = createHotUpdateHook(CLIENT_STATE);
     const ctx = createContext({});
 
     vi.mocked(findComponentPathsForDependency).mockReturnValue(undefined);
@@ -91,7 +97,7 @@ describe('createHotUpdateHook()', () => {
     const templatePath = '/src/foo.xd.component.html';
     vi.mocked(findComponentPathsForDependency).mockReturnValue(undefined);
     vi.mocked(findComponentPathsForTemplate).mockReturnValue(new Set(['/src/foo.xd.component.ts']));
-    const hook = createHotUpdateHook();
+    const hook = createHotUpdateHook(CLIENT_STATE);
     const ctx = createContext({ '/src/foo.xd.component.ts': [fooModule] });
 
     const result = await hook.call(ctx, createOptions([], 'create', templatePath));
@@ -104,7 +110,7 @@ describe('createHotUpdateHook()', () => {
   it('leaves the update untouched when the file created is not the template of a component', async () => {
     vi.mocked(findComponentPathsForDependency).mockReturnValue(undefined);
     vi.mocked(findComponentPathsForTemplate).mockReturnValue(undefined);
-    const hook = createHotUpdateHook();
+    const hook = createHotUpdateHook(CLIENT_STATE);
     const ctx = createContext({});
 
     expect(await hook.call(ctx, createOptions([], 'create', '/src/new.ts'))).toBeUndefined();
@@ -113,7 +119,7 @@ describe('createHotUpdateHook()', () => {
 
   it('hard-invalidates the dependent components and adds them to the updated modules', async () => {
     vi.mocked(findComponentPathsForDependency).mockReturnValue(new Set(['/src/foo.xd.component.ts', '/src/bar.xd.component.ts', '/src/unloaded.xd.component.ts']));
-    const hook = createHotUpdateHook();
+    const hook = createHotUpdateHook(CLIENT_STATE);
     const ctx = createContext({
       '/src/foo.xd.component.ts': [fooModule],
       '/src/bar.xd.component.ts': [barModule]
@@ -130,10 +136,69 @@ describe('createHotUpdateHook()', () => {
 
   it('updates the dependent components even when the changed file is not part of the module graph', async () => {
     vi.mocked(findComponentPathsForDependency).mockReturnValue(new Set(['/src/foo.xd.component.ts']));
-    const hook = createHotUpdateHook();
+    const hook = createHotUpdateHook(CLIENT_STATE);
 
     const result = await hook.call(createContext({ '/src/foo.xd.component.ts': [fooModule] }), createOptions([]));
 
     expect(result).toEqual([fooModule]);
+  });
+
+  describe('rendering on the server', () => {
+    /**
+     * Builds the state of a plugin rendering on the server, whose dev server holds the given modules of the browser.
+     */
+    function createServerState(clientModules: Record<string, EnvironmentModuleNode[]>) {
+      const send = vi.fn();
+      const state = {
+        ssr: { entry: '/src/entry-server.ts' },
+        server: {
+          environments: {
+            client: {
+              moduleGraph: { getModulesByFile: vi.fn((file: string) => clientModules[file] ? new Set(clientModules[file]) : undefined) },
+              hot: { send }
+            }
+          }
+        }
+      } as unknown as XaendarPluginState;
+      return { state, send };
+    }
+
+    /**
+     * Builds the context of the hook for an environment of the server, or of the browser.
+     */
+    function createServerContext(consumer = 'server'): HotUpdateContext {
+      const context = createContext({});
+      Object.assign(context.environment, { config: { consumer } });
+      return context;
+    }
+
+    beforeEach(() => {
+      vi.mocked(findComponentPathsForDependency).mockReturnValue(undefined);
+    });
+
+    it('reloads the page when a module only the server evaluates changes', async () => {
+      const { state, send } = createServerState({});
+
+      await createHotUpdateHook(state).call(createServerContext(), createOptions());
+
+      expect(send).toHaveBeenCalledWith({ type: 'full-reload' });
+    });
+
+    it('leaves the reload to the browser for a module it evaluates too', async () => {
+      const { state, send } = createServerState({ [BASE_PATH]: [baseModule] });
+
+      await createHotUpdateHook(state).call(createServerContext(), createOptions());
+
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('does not reload the page for a file the server does not evaluate, nor in the environment of the browser', async () => {
+      const { state, send } = createServerState({});
+
+      await createHotUpdateHook(state).call(createServerContext(), createOptions([]));
+      await createHotUpdateHook(state).call(createServerContext('client'), createOptions());
+
+      expect(send).not.toHaveBeenCalled();
+    });
   });
 });

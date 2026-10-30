@@ -1,0 +1,12 @@
+{
+  "loadServerDom": {
+    "summary": "Installs the server DOM: the globals <code>HTMLElement</code> and <code>customElements</code> the modules of the components need on the server.",
+    "description": "<p>A component extends <code>HTMLElement</code>, and <code>@WebComponent</code> defines it in <code>customElements</code>, as soon as their modules are evaluated: Node has neither. <code>loadServerDom()</code> installs the ones of the server DOM, which hold the attributes, the classes and the shadow root of an element without rendering anything. A global already there, such as the one of a browser or of a DOM emulated by the tests, is kept.</p><p>It must run before the modules of <code>@xaendar/core</code> and of the components are evaluated: the entry of the server calls it right after <code>loadSignals()</code>, and imports them afterwards, with <code>import()</code>. A static import is evaluated before the code of the module, wherever it is written.</p><p>The server DOM has no <code>document</code> and no <code>window</code>: the code of a component reading them in its constructor, in a field initializer or in <code>onInit</code> throws on the server, unless it checks <code>typeof</code> first. A class defined again with the tag and the name of the one defined before replaces it, as the dev server does when a module changes. See <a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a>.</p>",
+    "usage": {
+      "order": {
+        "title": "Before anything else",
+        "body": "<p>In the entry of the server, the polyfill and the server DOM come first, the modules of Xaendar afterwards.</p>"
+      }
+    }
+  }
+}

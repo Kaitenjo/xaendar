@@ -38,7 +38,7 @@ import MagicString from 'magic-string';
 import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
@@ -240,6 +240,31 @@ describe('generateStyleModule()', () => {
   });
 });
 
+describe('generateServerTemplateModule()', () => {
+  it('imports the dependencies of the template first, then exports the render function of the code compiled for the server', () => {
+    const code = generateServerTemplateModule('import { _Context } from \'@xaendar/core\';\nfunction render(out) {}', ['/src/a.xd.component.ts']);
+
+    expect(code).toBe('import "/src/a.xd.component.ts";\nimport { _Context } from \'@xaendar/core\';\nfunction render(out) {}\n\nexport { render };\n');
+  });
+
+  it('imports nothing else for a template without dependencies', () => {
+    expect(generateServerTemplateModule('function render(out) {}')).toBe('function render(out) {}\n\nexport { render };\n');
+  });
+});
+
+describe('generateServerStyleModule()', () => {
+  it('exports the compiled CSS as a string literal', () => {
+    const css = '.a::before { content: "</style>"; }';
+
+    expect(generateServerStyleModule(css)).toBe(`export const css = ${JSON.stringify(css)};\n`);
+  });
+
+  it('exports an undefined text when there is no CSS', () => {
+    expect(generateServerStyleModule(undefined)).toBe('export const css = undefined;\n');
+    expect(generateServerStyleModule('  \n ')).toBe('export const css = undefined;\n');
+  });
+});
+
 describe('injectTemplate()', () => {
   const jsSource = [
     'class Foo extends Base {',
@@ -314,6 +339,22 @@ describe('injectTemplate()', () => {
     const result = inject(jsSource, false, 'Foo');
 
     expect(result.startsWith(`import { render as __Foo_render } from ${JSON.stringify(specifier)};\nclass Foo extends Base {`)).toBe(true);
+  });
+
+  it('registers the modules compiled for the server via _defineServerRender of @xaendar/ssr, importing the text of the stylesheet', () => {
+    const sourceFile = createSourceFile('component.js', jsSource, ScriptTarget.Latest, true, ScriptKind.JS);
+    const s = new MagicString(jsSource);
+
+    injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, styleSpecifier, true);
+    const result = s.toString();
+
+    expect(result.startsWith([
+      'import { _defineServerRender } from \'@xaendar/ssr\';',
+      `import { css as __Foo_css } from ${JSON.stringify(styleSpecifier)};`,
+      `import { render as __Foo_render } from ${JSON.stringify(specifier)};`
+    ].join('\n'))).toBe(true);
+    expect(result).toContain('static { _defineServerRender(this, __Foo_render, __Foo_css); }');
+    expect(result).not.toContain('_defineRender');
   });
 
   it('registers the render function in a static block before the static initializer block', () => {

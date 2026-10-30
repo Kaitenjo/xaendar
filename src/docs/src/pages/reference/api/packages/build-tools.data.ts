@@ -2,6 +2,7 @@ import type { ApiPackage } from '../api.data';
 import { INSTALLATION_VITE_CONFIG } from '../../../installation/installation.snippets';
 import { BUILD_TOOLS_VITE_CONFIG } from './build-tools.snippets';
 import { CSS_MINIFY } from '../../../tools/build/build.snippets';
+import { SSR_VITE_CONFIG } from '../../../tools/ssr/ssr.snippets';
 
 /**
  * The symbols of `@xaendar/build-tools`.
@@ -19,6 +20,12 @@ export const BUILD_TOOLS_API: ApiPackage = {
           group: 'options',
           signature: 'customElements?: readonly string[]',
           snippets: [BUILD_TOOLS_VITE_CONFIG, 'components/not-imported-error.txt', 'api/build-tools/imported-and-declared-error.txt']
+        },
+        {
+          name: 'ssr',
+          group: 'options',
+          signature: 'ssr?: { readonly entry: string }',
+          snippets: [SSR_VITE_CONFIG, 'tools/ssr-xaendar.json']
         }
       ],
       usage: [
@@ -27,7 +34,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
         { key: 'errors', snippets: ['tools/plugin-errors.txt'] },
         { key: 'styles', snippets: [CSS_MINIFY, 'components/scss-error.txt'] }
       ],
-      guides: ['tools/build', 'installation', 'tools/cli', 'components/registration']
+      guides: ['tools/build', 'installation', 'tools/cli', 'components/registration', 'tools/ssr']
     },
     {
       name: 'XaendarPluginOptions',
@@ -35,6 +42,9 @@ export const BUILD_TOOLS_API: ApiPackage = {
       signature: [
         'type XaendarPluginOptions = {',
         '  readonly customElements?: readonly string[];',
+        '  readonly ssr?: {',
+        '    readonly entry: string;',
+        '  };',
         '};'
       ].join('\n'),
       members: [
@@ -42,9 +52,14 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'customElements',
           group: 'options',
           signature: 'readonly customElements?: readonly string[]'
+        },
+        {
+          name: 'ssr',
+          group: 'options',
+          signature: 'readonly ssr?: { readonly entry: string }'
         }
       ],
-      guides: ['tools/build', 'components/registration']
+      guides: ['tools/build', 'components/registration', 'tools/ssr']
     }
   ]
 };

@@ -31,6 +31,7 @@ Check at least the following:
 - `createComponent`: an input in two groups, a structural directive in `directives`, a conditional group expected to keep its last value (it resets to the default), an element removed with the DOM APIs instead of `ref.destroy()` (its bindings stay alive). `document.createElement` + `append` used for a component that needs inputs.
 - Elements moved, removed or reattached with the DOM APIs, and classes added with `classList` to an element whose `class` is bound.
 - `@HostProperty` returning `false` for an ARIA state (it removes the attribute: use `String(value)`).
+- In a project rendering on the server (`ssr` in `xaendar.json`): a constructor, a field initializer or an `onInit` reading `document`, `window` or another API of the page without a `typeof` check (it throws on the server, and the page is not rendered there); the state of a request written into module signals (shared by every request the server renders); elements nested in ways the HTML parser changes (a block element inside `<p>`, a `<tr>` right inside a `<table>`), which give the HTML of the server another tree; an entry of the server importing `@xaendar/ssr` or the components statically, so they are evaluated before `loadServerDom()`.
 
 **Problems the build does not report**
 - `@import` rules in a `.css` component stylesheet (dropped), relative `url()` (resolved against the page), `:root` in a component stylesheet (matches nothing), page styles or resets expected inside a shadow root, and custom elements left `display: inline` by a missing `:host` display.

@@ -1,0 +1,12 @@
+{
+  "name": "my-app",
+  "generate": {
+    "components": {
+      "style": "css"
+    }
+  },
+  "ssr": {
+    "entry": "src/entry-server.ts",
+    "prerender": ["/"]
+  }
+}

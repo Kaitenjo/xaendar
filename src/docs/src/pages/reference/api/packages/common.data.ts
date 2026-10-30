@@ -1,5 +1,5 @@
 import type { ApiPackage } from '../api.data';
-import { ENTRIES, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_VALID_CUSTOM_ELEMENT_NAME, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, VALUES } from './common.snippets';
+import { DROPS_LEADING_NEWLINE, ENTRIES, ESCAPE_ATTRIBUTE, ESCAPE_RAW_TEXT, ESCAPE_TEXT, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_RAW_TEXT_ELEMENT, IS_VALID_CUSTOM_ELEMENT_NAME, IS_VOID_ELEMENT, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, VALUES } from './common.snippets';
 
 /**
  * The symbols of `@xaendar/common`.
@@ -115,6 +115,48 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       signature: 'function matchesCustomElementPattern(tagName: string, patterns: readonly string[]): boolean',
       usage: [{ key: 'otherLibraries', snippets: [MATCHES_CUSTOM_ELEMENT_PATTERN] }],
       guides: ['components/registration']
+    },
+    {
+      name: 'escapeText',
+      kind: 'function',
+      signature: 'function escapeText(value: string): string',
+      usage: [{ key: 'escaping', snippets: [ESCAPE_TEXT] }],
+      guides: ['tools/ssr']
+    },
+    {
+      name: 'escapeAttribute',
+      kind: 'function',
+      signature: 'function escapeAttribute(value: string): string',
+      usage: [{ key: 'escaping', snippets: [ESCAPE_ATTRIBUTE] }],
+      guides: ['tools/ssr']
+    },
+    {
+      name: 'escapeRawText',
+      kind: 'function',
+      signature: 'function escapeRawText(value: string, tagName: string): string',
+      usage: [{ key: 'rawText', snippets: [ESCAPE_RAW_TEXT] }],
+      guides: ['tools/ssr']
+    },
+    {
+      name: 'isVoidElement',
+      kind: 'function',
+      signature: 'function isVoidElement(tagName: string): boolean',
+      usage: [{ key: 'checking', snippets: [IS_VOID_ELEMENT] }],
+      guides: ['tools/ssr']
+    },
+    {
+      name: 'isRawTextElement',
+      kind: 'function',
+      signature: 'function isRawTextElement(tagName: string): boolean',
+      usage: [{ key: 'checking', snippets: [IS_RAW_TEXT_ELEMENT] }],
+      guides: ['tools/ssr']
+    },
+    {
+      name: 'dropsLeadingNewline',
+      kind: 'function',
+      signature: 'function dropsLeadingNewline(tagName: string): boolean',
+      usage: [{ key: 'writing', snippets: [DROPS_LEADING_NEWLINE] }],
+      guides: ['tools/ssr']
     }
   ]
 };

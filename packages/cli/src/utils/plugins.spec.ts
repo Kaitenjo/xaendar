@@ -2,7 +2,7 @@ import babel from '@rolldown/plugin-babel';
 import { xaendarPlugin } from '@xaendar/build-tools';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPlugins } from './plugins';
 
@@ -58,11 +58,18 @@ describe('createPlugins()', () => {
     expect(xaendarPlugin).toHaveBeenCalledWith({ customElements: ['sl-*'] });
   });
 
-  it('passes no custom elements when xaendar.json declares none or is missing', () => {
+  it('passes no custom elements nor rendering on the server when xaendar.json declares none or is missing', () => {
     createPlugins();
     writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app' }));
     createPlugins();
 
-    expect(vi.mocked(xaendarPlugin).mock.calls).toEqual([[{ customElements: [] }], [{ customElements: [] }]]);
+    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, ssr: undefined }], [{ customElements: undefined, ssr: undefined }]]);
+  });
+
+  it('passes the entry of the rendering on the server declared in the xaendar.json, resolved against the project', () => {
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app', ssr: { entry: 'src/entry-server.ts' } }));
+    createPlugins();
+
+    expect(xaendarPlugin).toHaveBeenCalledWith({ customElements: undefined, ssr: { entry: resolve(projectDir, 'src/entry-server.ts') } });
   });
 });

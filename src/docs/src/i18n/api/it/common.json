@@ -138,5 +138,65 @@
         "body": "<p>Una lista come la dichiara <code>customElements</code>: un pattern per un’intera libreria, e il nome di un singolo elemento.</p>"
       }
     }
+  },
+  "escapeText": {
+    "summary": "Escapa un testo scritto come contenuto di un elemento: il parser HTML lo rilegge come lo stesso testo.",
+    "description": "<p>Sostituisce <code>&amp;</code>, <code>&lt;</code> e <code>&gt;</code> con i loro riferimenti a carattere. Le virgolette restano come sono: in un testo non chiudono nulla. Il rendering lato server escapa così i testi e le interpolazioni dei template.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escapare un testo",
+        "body": "<p>Vengono sostituiti i caratteri che aprirebbero un tag o un riferimento a carattere.</p>"
+      }
+    }
+  },
+  "escapeAttribute": {
+    "summary": "Escapa il valore di un attributo scritto tra virgolette doppie: il parser HTML lo rilegge come lo stesso valore.",
+    "description": "<p>Sostituisce <code>&amp;</code>, <code>\"</code>, <code>&lt;</code> e <code>&gt;</code> con i loro riferimenti a carattere, così che il valore non possa né chiudere l’attributo né aprire un tag. Il rendering lato server escapa così i valori degli attributi.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escapare un valore",
+        "body": "<p>Un valore che contiene virgolette resta dentro l’attributo.</p>"
+      }
+    }
+  },
+  "escapeRawText": {
+    "summary": "Prepara un testo scritto come contenuto di un elemento il cui testo il parser HTML non decodifica, come <code>&lt;style&gt;</code> o <code>&lt;script&gt;</code>.",
+    "description": "<p>Il parser legge il contenuto di questi elementi fino al loro tag di chiusura senza decodificare alcun riferimento a carattere, quindi un testo scritto lì non si può escapare: viene scritto così com’è, tranne le sequenze che chiuderebbero l’elemento in anticipo, come <code>&lt;/style</code> in uno <code>&lt;style&gt;</code>, maiuscole o minuscole che siano, di cui viene escapata la barra. Un foglio di stile o uno script legge <code>&lt;\\/style</code> come lo stesso testo. Vedi <a href=\"#/it/reference/api/common/isRawTextElement\"><code>isRawTextElement()</code></a>.</p>",
+    "usage": {
+      "rawText": {
+        "title": "Scrivere un foglio di stile",
+        "body": "<p>Il CSS resta intatto, tranne il tag di chiusura.</p>"
+      }
+    }
+  },
+  "isVoidElement": {
+    "summary": "Indica se un elemento del namespace HTML è un void element, di cui non si scrive mai il tag di chiusura.",
+    "description": "<p>I void element di HTML, compresi quelli obsoleti, come <code>input</code>, <code>br</code> e <code>img</code>, non hanno contenuto: il parser li chiude da solo, e un tag di chiusura sarebbe un errore. Un elemento SVG o MathML non è mai un void element: controlla prima il namespace.</p>",
+    "usage": {
+      "checking": {
+        "title": "Chiudere un elemento",
+        "body": "<p>Un serializzatore scrive il tag di chiusura di ogni elemento tranne i void element.</p>"
+      }
+    }
+  },
+  "isRawTextElement": {
+    "summary": "Indica se il testo di un elemento del namespace HTML viene scritto così com’è.",
+    "description": "<p><code>script</code>, <code>style</code>, <code>noscript</code>, <code>iframe</code>, <code>noembed</code>, <code>noframes</code>, <code>xmp</code> e <code>plaintext</code>: il parser non ne decodifica il contenuto, che la serializzazione di HTML scrive alla lettera. <code>textarea</code> e <code>title</code> non sono tra questi: i loro riferimenti a carattere vengono decodificati. Vedi <a href=\"#/it/reference/api/common/escapeRawText\"><code>escapeRawText()</code></a>.</p>",
+    "usage": {
+      "checking": {
+        "title": "Scegliere come escapare",
+        "body": "<p>Il testo di questi elementi passa per <code>escapeRawText()</code>, ogni altro per <code>escapeText()</code>.</p>"
+      }
+    }
+  },
+  "dropsLeadingNewline": {
+    "summary": "Indica se il parser HTML scarta un a capo subito dopo il tag di apertura di un elemento del namespace HTML.",
+    "description": "<p><code>pre</code>, <code>textarea</code> e <code>listing</code>: il parser scarta un a capo che segue il loro tag di apertura, quindi un serializzatore ne scrive sempre uno dopo, e un contenuto che inizia con un a capo lo mantiene.</p>",
+    "usage": {
+      "writing": {
+        "title": "Scrivere il tag di apertura",
+        "body": "<p>L’a capo scritto dopo il tag di apertura è quello che il parser scarta.</p>"
+      }
+    }
   }
 }

@@ -5,7 +5,7 @@ import { HostProperty } from '../../decorators/host-property/host-property.decor
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { toggleClass } from '../class-toggle/class-toggle.util';
 import { _Context } from '../context/context.util';
-import { _bindHost } from './host-bindings.util';
+import { _applyHostProperties, _bindHost } from './host-bindings.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -148,5 +148,34 @@ describe('_bindHost', () => {
 
     context.clear();
     expect(remove).toHaveBeenCalledWith('click', add.mock.calls[0][1], { capture: true, passive: true });
+  });
+});
+
+describe('_applyHostProperties', () => {
+  it('writes the attributes and toggles the classes once, without binding them, and leaves the events alone', async () => {
+    const label = signal('One');
+    const add = vi.fn();
+    const owner = createOwner({ label, on: true, disabled: false, handle: () => undefined }, { label: 'aria-label', on: 'class.on', disabled: 'disabled' }, { handle: ['click'] });
+    const element = document.createElement('div');
+    element.setAttribute('disabled', '');
+    element.addEventListener = add;
+
+    _applyHostProperties(owner, element);
+    expect(element.getAttribute('aria-label')).toBe('One');
+    expect(element.className).toBe('on');
+    expect(element.hasAttribute('disabled')).toBe(false);
+    expect(add).not.toHaveBeenCalled();
+
+    label.set('Two');
+    await flush();
+    expect(element.getAttribute('aria-label')).toBe('One');
+  });
+
+  it('writes nothing for a class declaring no host property', () => {
+    const element = document.createElement('div');
+
+    _applyHostProperties(new (class extends Owner { })(), element);
+
+    expect(element.attributes).toHaveLength(0);
   });
 });

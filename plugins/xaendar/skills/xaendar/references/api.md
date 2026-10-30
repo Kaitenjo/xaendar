@@ -355,10 +355,10 @@ The low-level API of the proposal: watchers and introspection. It works on `Sign
 ### xaendarPlugin (function)
 
 ```ts
-xaendarPlugin({ customElements?: readonly string[] }?): Plugin
+xaendarPlugin({ customElements?: readonly string[]; ssr?: { entry: string } }?): Plugin
 ```
 
-The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
+The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements` and `ssr` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
 
 ```ts
 // vite.config.ts
@@ -375,3 +375,33 @@ export default defineConfig({
 ```
 
 It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type-checks the templates with the `tsconfig.json` of the folder Vite is started from, and in a build type-checks the whole project at the end.
+
+`ssr: { entry }` renders the pages on the server. The modules evaluated by the server environments of Vite register templates compiled into HTML (no type check there); the dev server renders every page with the `render(url)` exported by `entry` (absolute, or relative to the root of Vite) in place of `<!--xd-ssr-->` in `index.html`, and sets the Vite application type to `custom`. The build of the server is `vite build --ssr <entry>`. The CLI passes the `ssr` of `xaendar.json`, its entry resolved against the project.
+
+## `@xaendar/ssr`
+
+### renderToString (function)
+
+```ts
+renderToString<Component extends CustomElement>(component: Constructor<Component>, inputs?: RenderInputs<Component>): Promise<string>
+```
+
+Renders a component to HTML on the server: its element with the attributes of its `@HostProperty`, a `<template shadowrootmode="open">` holding its stylesheet and its template, and its end tag; the components it renders are written the same way, and a custom element the server does not define (`@import lazy`, other libraries) without shadow root. The component is constructed, `inputs` are assigned to their properties (by property name, not alias; the `transform` applies), `onInit` runs and the template is rendered once. Effects, `afterRender`, `onDestroy`, listeners, `@HostEvent`, custom and host directives and queries do not run; `createComponent` constructs without rendering; element refs are `undefined`. Structural directives run, the asynchronous ones are awaited, and a rejected one renders nothing. The promise rejects when the class is not defined, when its module was not built for the server, or when the code of a component throws.
+
+### RenderInputs (type)
+
+```ts
+RenderInputs<Component> = { [input of Component]?: its value }
+```
+
+The inputs `renderToString` sets, named like the properties declaring them with `@Property`: a wrong name or value fails the type check.
+
+## `@xaendar/ssr/dom`
+
+### loadServerDom (function)
+
+```ts
+loadServerDom(): void
+```
+
+Installs the `HTMLElement` and the `customElements` of the server DOM on `globalThis`, keeping the ones already there. It must run before `@xaendar/core` and the components are evaluated: the entry of the server calls `loadSignals()` and `loadServerDom()`, then loads `@xaendar/ssr` and the components with `import()`. The server DOM has no `document` and no `window`. A class defined again with the tag and the name of the previous one replaces it (module re-evaluated by the dev server).

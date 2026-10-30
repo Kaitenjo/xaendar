@@ -11,6 +11,10 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
   };
 });
 
+vi.mock('@xaendar/ssr-compiler', () => ({
+  compileServer: vi.fn()
+}));
+
 vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
   getMetadata: vi.fn(),
   registerMetadata: vi.fn()
@@ -26,6 +30,7 @@ vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
 });
 
 import { compile, type CompileOptions } from '@xaendar/compiler';
+import { compileServer } from '@xaendar/ssr-compiler';
 import type { PluginContext } from 'rolldown';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getImportOrExtract, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
@@ -143,6 +148,29 @@ describe('createLoadHook()', () => {
 
     expect((result as { code: string }).code).not.toContain('lazy.xd.component');
     expect(ctx.addWatchFile).toHaveBeenCalledWith(lazy);
+  });
+
+  it('compiles the template for the server in an environment of the server, importing the modules the template imports first', async () => {
+    const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
+    const template = '@import { A } from \'./existing.xd.component.ts\'\n<a-b></a-b>';
+    vi.mocked(compileServer).mockResolvedValue('function render(out) {}');
+    const state = { ...createState({ [TEMPLATE_PATH]: template, [existing]: '' }), ssr: { entry: '/src/entry-server.ts' } };
+    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
+
+    const result = await load(state, ctx, TEMPLATE_MODULE_ID);
+
+    expect(compileServer).toHaveBeenCalledWith(template, { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], cache: expect.any(Object) });
+    expect(compile).not.toHaveBeenCalled();
+    expect(result).toEqual({ code: `import ${JSON.stringify(existing)};\nfunction render(out) {}\n\nexport { render };\n`, map: { mappings: '' }, moduleType: 'js' });
+  });
+
+  it('exports the text of the stylesheet in an environment of the server', async () => {
+    const state = { ...createState({ [STYLE_PATH]: '.a { color: red; }' }), ssr: { entry: '/src/entry-server.ts' } };
+    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
+
+    const result = await load(state, ctx, STYLE_MODULE_ID);
+
+    expect(result).toEqual({ code: 'export const css = ".a { color: red; }";\n', map: { mappings: '' }, moduleType: 'js' });
   });
 
   it('raises an error when the template cannot be read', async () => {

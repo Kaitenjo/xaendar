@@ -440,7 +440,7 @@ describe('createTransformHook()', () => {
 
     expect(createStyleModuleSpecifier).not.toHaveBeenCalled();
     expect(registerStyleDependency).not.toHaveBeenCalled();
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined, false);
   });
 
   it('only type-checks the template, leaving the render function to the template module', async () => {
@@ -509,7 +509,23 @@ describe('createTransformHook()', () => {
     expect(registerStyleDependency).toHaveBeenCalledWith(expect.not.stringContaining('\\'), COMPONENT_PATH);
     expect(state.host.readFile).not.toHaveBeenCalledWith(stylePath);
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith(stylePath);
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module');
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module', false);
+  });
+
+  it('injects the modules compiled for the server in an environment of the server, type-checking nothing', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrl: './foo.css' })]]));
+    const state: XaendarPluginState = { ...createState(), ssr: { entry: '/src/entry-server.ts' } };
+    const context = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
+
+    const result = await createTransformHook(state).call(context, 'original code', COMPONENT_PATH, undefined);
+
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module', true);
+    expect(compile).not.toHaveBeenCalled();
+    expect(collectFileDiagnostics).not.toHaveBeenCalled();
+    expect(registerRealFile).not.toHaveBeenCalled();
+    expect(createShim).not.toHaveBeenCalled();
+    expect(result).toEqual(expect.objectContaining({ code: 'original code' }));
   });
 
   it('logs an error and returns null when template compilation throws', async () => {
@@ -621,8 +637,8 @@ describe('createTransformHook()', () => {
 
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectTemplate).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined);
-    expect(injectTemplate).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), expect.any(Map), 'BarComponent', 'template-module', undefined);
+    expect(injectTemplate).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined, false);
+    expect(injectTemplate).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), expect.any(Map), 'BarComponent', 'template-module', undefined, false);
     expect(vi.mocked(injectTemplate).mock.calls[0][2]).toBe(vi.mocked(injectTemplate).mock.calls[1][2]);
     expect(result).toEqual({ code: 'original code', map: expect.anything() });
   });

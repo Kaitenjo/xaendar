@@ -23,11 +23,18 @@
 <docs-code snippet="tools/style-prompt.txt" />
 <p @@htmlTranslation(key="pages.tools.cli.xdNew.p3") />
 <docs-code snippet="tools/xaendar-json.json" />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p4") />
 
 <h2>
   { t(translations(), 'pages.tools.cli.xdStartAndXd.title') }
 </h2>
 <p @@htmlTranslation(key="pages.tools.cli.xdStartAndXd.p1") />
+<p @@htmlTranslation(key="pages.tools.cli.xdStartAndXd.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdPrerender.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdPrerender.p1") />
 
 <h2>
   { t(translations(), 'pages.tools.cli.xdTest.title') }
@@ -79,7 +86,8 @@
         <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td1") />
         <td>
           <code>-p, --path</code>,
-          <code>-s, --style</code>
+          <code>-s, --style</code>,
+          <code>--ssr</code>
         </td>
         <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td2") />
       </tr>
@@ -101,6 +109,16 @@
         <td>—</td>
         <td>
           { t(translations(), 'pages.tools.cli.commandSummary.td4') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>xd prerender</code>,
+          <code>xd p</code>
+        </td>
+        <td>—</td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td9') }
         </td>
       </tr>
       <tr>

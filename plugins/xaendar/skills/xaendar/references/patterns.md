@@ -219,3 +219,32 @@ public async openReport(): Promise<void> {
 ```
 
 The tag is rendered only once the module has defined it: an element rendered before receives its bindings as plain attributes, and keeps its default inputs. `:not(:defined)` styles a tag while it waits.
+
+## Server-side rendering
+
+A project created with `xd new --ssr`, or declaring `"ssr": { "entry": "src/entry-server.ts" }` in `xaendar.json`, renders each page on the server as declarative shadow roots, which the browser shows before the scripts load; the browser then renders the components again, from its own state.
+
+```ts
+// src/entry-server.ts
+import { loadSignals } from '@xaendar/signals';
+import { loadServerDom } from '@xaendar/ssr/dom';
+
+loadSignals();
+loadServerDom();
+
+// Loaded afterwards: a static import would be evaluated before the two calls
+const { renderToString } = await import('@xaendar/ssr');
+const { ProductPageComponent } = await import('./product-page/product-page.xd.component');
+const { MyAppRootComponent } = await import('./my-app-root/my-app-root.xd.component');
+
+export function render(url: string): Promise<string> {
+  const productId = /^\/products\/(\w+)$/.exec(url)?.[1];
+  return productId ? renderToString(ProductPageComponent, { productId }) : renderToString(MyAppRootComponent);
+}
+```
+
+- The constructor, the field initializers and `onInit` run on the server, where `document` and `window` do not exist: check `typeof document !== 'undefined'`, or move the code to `afterRender` or an effect, which run in the browser only. Template expressions read the browser globals through `globalThis`, so there they get `undefined` instead of throwing.
+- Modules are evaluated once per server process: a store is shared by every request. Keep the state of a request in the components, or pass it as inputs from the entry.
+- Start the server and the browser from the same state (read storage, the date or random values in an effect), or the page changes when the scripts load.
+- Nest elements as the HTML parser builds them (no block element inside `<p>`, a `<tbody>` between `<table>` and `<tr>`): the parser closes or adds elements, and the HTML of the server shows another tree.
+- `xd start` renders on the server; `xd build` builds `dist/client`, then the server into `dist/server`; `npm run serve` runs the generated `server.ts`; `xd prerender` writes the routes listed in `"prerender": ["/", "/about"]` as HTML files, replacing `dist/client/index.html` too: serve a prerendered build from a static host.

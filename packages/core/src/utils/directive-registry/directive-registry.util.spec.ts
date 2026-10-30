@@ -29,10 +29,13 @@ describe('directive registry', () => {
     expect(_getDirective('registered')).toBe(FirstDirective);
   });
 
-  it('throws when the same directive is registered again under its selector', () => {
+  it('replaces the directive registered under its selector with a class of the same name, as its module evaluated again defines it', () => {
     _defineDirective('re-registered', FirstDirective);
+    const Reevaluated = class FirstDirective extends CustomDirective { };
 
-    expect(() => _defineDirective('re-registered', FirstDirective)).toThrow('Selector "re-registered" is already used by directive FirstDirective');
+    _defineDirective('re-registered', Reevaluated);
+
+    expect(_getDirective('re-registered')).toBe(Reevaluated);
   });
 
   it('throws when the selector is already used by another directive', () => {

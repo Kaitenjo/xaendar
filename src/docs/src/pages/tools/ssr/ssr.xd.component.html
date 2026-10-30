@@ -1,0 +1,140 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { BROWSER_GLOBALS, ENTRY_SERVER, RENDER_INPUTS, SSR_VITE_CONFIG } from './ssr.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.newProject.title') }
+</h2>
+<docs-code snippet="tools/ssr-new.sh" />
+<p @@htmlTranslation(key="pages.tools.ssr.newProject.p1") />
+<docs-code snippet="tools/ssr-xaendar.json" />
+<p @@htmlTranslation(key="pages.tools.ssr.newProject.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.entry.title') }
+</h2>
+<docs-code snippet="{ENTRY_SERVER}" />
+<p @@htmlTranslation(key="pages.tools.ssr.entry.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.entry.p2") />
+<docs-code snippet="{RENDER_INPUTS}" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.output.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.output.p1") />
+<docs-code snippet="tools/ssr-output.html" />
+<p @@htmlTranslation(key="pages.tools.ssr.output.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.onTheServer.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.onTheServer.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.onTheServer.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.onTheServer.p3") />
+<docs-code snippet="{BROWSER_GLOBALS}" />
+<p @@htmlTranslation(key="pages.tools.ssr.onTheServer.p4") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.development.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.development.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.production.title') }
+</h2>
+<docs-code snippet="tools/ssr-build.txt" />
+<p @@htmlTranslation(key="pages.tools.ssr.production.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.production.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.prerender.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.prerender.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.withoutCli.title') }
+</h2>
+<docs-code snippet="{SSR_VITE_CONFIG}" />
+<p @@htmlTranslation(key="pages.tools.ssr.withoutCli.p1") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.ssr.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.edgeCases.callout1.body") kind="note"
+    heading="{translations().pages.tools.ssr.edgeCases.callout1.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.tools.ssr.edgeCases.callout2.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.edgeCases.callout3.body") kind="edge"
+    heading="{translations().pages.tools.ssr.edgeCases.callout3.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.edgeCases.callout4.body") kind="edge"
+    heading="{translations().pages.tools.ssr.edgeCases.callout4.heading}" />
+</section>
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.ssr.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.ssr.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/ssr/renderToString`}">
+            <code>renderToString()</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.summary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/ssr/dom/loadServerDom`}">
+            <code>loadServerDom()</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.summary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/build-tools/xaendarPlugin`}">
+            <code>xaendarPlugin()</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.summary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>&lt;!--xd-ssr--&gt;</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.summary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd prerender</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.summary.td5") />
+      </tr>
+    </tbody>
+  </table>
+</div>

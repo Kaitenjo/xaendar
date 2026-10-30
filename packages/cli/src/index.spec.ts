@@ -9,6 +9,7 @@ const generateCommandMock = vi.fn();
 const newCommandMock = vi.fn();
 const startCommandMock = vi.fn();
 const buildCommandMock = vi.fn();
+const prerenderCommandMock = vi.fn();
 const testCommandMock = vi.fn();
 const programMock = {
   name: vi.fn().mockReturnThis(),
@@ -34,6 +35,10 @@ vi.mock('./commands/build/build.command', () => ({
   buildCommand: buildCommandMock
 }));
 
+vi.mock('./commands/prerender/prerender.command', () => ({
+  prerenderCommand: prerenderCommandMock
+}));
+
 vi.mock('./commands/start/start.command', () => ({
   startCommand: startCommandMock
 }));
@@ -49,6 +54,7 @@ beforeEach(() => {
   newCommandMock.mockReturnValue('new-command');
   startCommandMock.mockReturnValue('start-command');
   buildCommandMock.mockReturnValue('build-command');
+  prerenderCommandMock.mockReturnValue('prerender-command');
   testCommandMock.mockReturnValue('test-command');
 });
 
@@ -62,7 +68,7 @@ describe('CLI entry point', () => {
     expect(programMock.version).toHaveBeenCalledWith('1.2.3');
   });
 
-  it('registers the generate, new, start, build and test commands', async () => {
+  it('registers the generate, new, start, build, prerender and test commands', async () => {
     await vi.resetModules();
     await import('./index');
 
@@ -70,6 +76,7 @@ describe('CLI entry point', () => {
     expect(programMock.addCommand).toHaveBeenCalledWith('new-command');
     expect(programMock.addCommand).toHaveBeenCalledWith('start-command');
     expect(programMock.addCommand).toHaveBeenCalledWith('build-command');
+    expect(programMock.addCommand).toHaveBeenCalledWith('prerender-command');
     expect(programMock.addCommand).toHaveBeenCalledWith('test-command');
   });
 

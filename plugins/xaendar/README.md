@@ -4,7 +4,7 @@ Helps Claude Code write applications with Xaendar.
 
 | Component | What it does |
 | --- | --- |
-| `xaendar` skill | Loaded automatically on Xaendar code. It covers the project layout, the template language, the component, directive and signal APIs, `createComponent`, the stylesheets, the code conventions, the compiler and runtime errors, the idiomatic patterns (stores, async data, forms, routing, theming, DOM work, lazy loading) and the porting of Angular code. |
+| `xaendar` skill | Loaded automatically on Xaendar code. It covers the project layout, the template language, the component, directive and signal APIs, `createComponent`, the stylesheets, the code conventions, the compiler and runtime errors, the idiomatic patterns (stores, async data, forms, routing, theming, DOM work, lazy loading, server-side rendering) and the porting of Angular code. |
 | `/xaendar:new-component <selector> [folder] [description]` | Scaffolds a component with `xd generate component`, and can implement it, test it and use it in a parent template. |
 | `/xaendar:new-directive <selector> [custom\|structural] [folder] [description]` | Creates a custom or structural directive, and can apply it in a template. |
 | `/xaendar:check [folder]` | Runs `xd build` and reports the template, stylesheet and type errors of the project. |

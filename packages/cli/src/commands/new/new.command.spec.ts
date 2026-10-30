@@ -156,6 +156,14 @@ describe('newCommand()', () => {
     expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'scss' });
   });
 
+  it('scaffolds a project rendering on the server with --ssr', async () => {
+    const command = newCommand();
+
+    await command.parseAsync(['my-app', '--ssr'], { from: 'user' });
+
+    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'css', ssr: true });
+  });
+
   it('writes file entries returned by buildStructure to disk', async () => {
     vi.mocked(buildStructure).mockReturnValue([
       { type: 'file', name: 'package.json', content: '{}' }

@@ -27,4 +27,12 @@ describe('indexHtml()', () => {
 
     expect(result).toContain('<link rel="stylesheet" href="./styles.scss" />');
   });
+
+  it('holds the outlet of the rendering on the server in place of the root custom element of a project rendering on the server', () => {
+    const result = indexHtml('my-app-root', 'css', true);
+
+    expect(result).toContain('<body>\n    <!--xd-ssr-->\n  </body>');
+    expect(result).not.toContain('<my-app-root>');
+    expect(result).toContain('<script type="module" src="./main.ts"></script>');
+  });
 });

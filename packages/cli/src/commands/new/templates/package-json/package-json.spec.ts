@@ -35,6 +35,26 @@ describe('packageJson()', () => {
     expect(result.devDependencies.less).toBeUndefined();
   });
 
+  it('adds nothing of the rendering on the server by default', () => {
+    const result = JSON.parse(packageJson('my-app', '1.2.3', 'css'));
+
+    expect(result.dependencies['@xaendar/ssr']).toBeUndefined();
+    expect(result.scripts.serve).toBeUndefined();
+  });
+
+  it('adds @xaendar/ssr, the types of Node and the scripts serving and prerendering a project rendering on the server, keeping them sorted', () => {
+    const result = JSON.parse(packageJson('my-app', '1.2.3', 'scss', true));
+
+    expect(result.dependencies['@xaendar/ssr']).toBe('^1.2.3');
+    expect(result.devDependencies['@types/node']).toMatch(/^\^\d/);
+    expect(result.scripts.serve).toBe('node server.ts');
+    expect(result.scripts.prerender).toBe('xd prerender');
+    for (const field of ['scripts', 'dependencies', 'devDependencies']) {
+      const names = Object.keys(result[field]);
+      expect(names).toEqual([...names].sort());
+    }
+  });
+
   it.each([['scss', 'sass'], ['sass', 'sass'], ['less', 'less']] as const)('adds the compiler of %s, %s, to the dev dependencies, keeping them sorted', (style, preprocessor) => {
     const result = JSON.parse(packageJson('my-app', '1.2.3', style));
     const names = Object.keys(result.devDependencies);

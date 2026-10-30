@@ -12,6 +12,7 @@
     "@xaendar/common": "1.0.7",
     "@xaendar/compiler": "1.0.7",
     "@xaendar/language-core": "1.0.7",
+    "@xaendar/ssr-compiler": "1.0.7",
     "lightningcss": "1.33.0",
     "magic-string": "^1.4.5",
     "typescript": "^6.0.3",

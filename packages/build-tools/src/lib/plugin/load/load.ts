@@ -1,11 +1,13 @@
-import { compile } from '@xaendar/compiler';
+import { compile, type CompilerCache } from '@xaendar/compiler';
+import { compileServer } from '@xaendar/ssr-compiler';
 import { dirname } from 'node:path';
 import type { HookHandler, Plugin } from 'vite';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import type { XaendarPluginState } from '../../types/plugin.types';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
-import { extractImportedComponentPaths, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
+import { isServerRendering } from '../../utils/server-rendering/server-rendering.utils';
+import { extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
 
@@ -23,27 +25,36 @@ type LoadHook = NonNullable<HookHandler<Plugin['load']>>;
  * Each module is requested (and therefore compiled) only by components that are
  * part of the module graph, and exactly once for every template/signals pair or
  * style file, no matter how many components share it.
+ *
+ * For the rendering on the server (see `isServerRendering`), the same module of an environment of the server exports
+ * the render function writing the HTML of the template, compiled by `@xaendar/ssr-compiler`, and the text of the stylesheet.
  */
 export function createLoadHook(state: XaendarPluginState): LoadHook {
   return async function load(this, id) {
+    const server = isServerRendering(state, this);
     const stylePath = parseStyleModuleId(id);
     if (stylePath !== undefined) {
-      return loadStyleModule(this, stylePath);
+      return loadStyleModule(this, stylePath, server);
     }
 
     const request = parseTemplateModuleId(id);
     if (request) {
-      return loadTemplateModule(this, request);
+      return loadTemplateModule(this, request, server);
     }
-    
+
     return null;
 }
 
 /**
  * Compiles a style file into the module exporting its stylesheet, watching every file the
  * compiled CSS depends on: editing any of them invalidates the module.
+ *
+ * @param context - The context of the hook.
+ * @param stylePath - The path of the style file.
+ * @param server - Whether the module is evaluated on the server, exporting the text of the CSS.
+ * @returns The module.
  */
-async function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string): Promise<ReturnType<LoadHook>> {
+async function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: string, server: boolean): Promise<ReturnType<LoadHook>> {
   let styleResult: StyleCompileResult;
   try {
     styleResult = await compileStyle(stylePath, state.host);
@@ -60,7 +71,7 @@ async function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: 
 
   // See the template module about the empty mappings map.
   return {
-    code: generateStyleModule(styleResult.cssText),
+    code: server ? generateServerStyleModule(styleResult.cssText) : generateStyleModule(styleResult.cssText),
     map: { mappings: '' },
     moduleType: 'js'
   };
@@ -70,9 +81,10 @@ async function loadStyleModule(context: ThisParameterType<LoadHook>, stylePath: 
  * Compiles a template into the module exporting its render function, watching the template and all imported components.
  * @param context The context object providing methods for adding watch files and reporting errors.
  * @param request The template module request containing the template path and signals.
+ * @param server Whether the module is evaluated on the server, exporting the render function writing HTML.
  * @returns A promise resolving to the module representing the compiled template, or an error if compilation fails.
  */
-async function loadTemplateModule(context: ThisParameterType<LoadHook>, request: TemplateModuleRequest): Promise<ReturnType<LoadHook>> {
+async function loadTemplateModule(context: ThisParameterType<LoadHook>, request: TemplateModuleRequest, server: boolean): Promise<ReturnType<LoadHook>> {
    const { templatePath, signals, shadowingMembers } = request;
 
     /*
@@ -109,20 +121,20 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       }
     }
 
+    const cache: CompilerCache = {
+      getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
+      getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
+      set: registerMetadata
+    };
+    // The symbols the template imports are imported by the render code, resolved against the directory of the template
+    const templateDir = dirname(templatePath);
+    const { customElements } = state;
+
     let compiledFunctions: string;
     try {
-      compiledFunctions = await compile(templateSource, {
-        signals,
-        // The symbols the template imports are imported by the render code, resolved against the directory of the template
-        templateDir: dirname(templatePath),
-        shadowingMembers,
-        customElements: state.customElements,
-        cache: {
-          getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
-          getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
-          set: registerMetadata
-        }
-      });
+      compiledFunctions = server
+        ? await compileServer(templateSource, { signals, templateDir, shadowingMembers, customElements, cache })
+        : await compile(templateSource, { signals, templateDir, shadowingMembers, customElements, cache });
     } catch (err) {
       return context.error(`Failed to compile template - ${templatePath}\n${err}`);
     }
@@ -133,8 +145,9 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       shown by DevTools as a fake `.html` file.
       TODO: replace it with a real sourcemap from the generated code back to the template.
     */
+    const dependencies = Array.from(dependencyPaths);
     return {
-      code: generateTemplateModule(compiledFunctions, Array.from(dependencyPaths)),
+      code: server ? generateServerTemplateModule(compiledFunctions, dependencies) : generateTemplateModule(compiledFunctions, dependencies),
       map: { mappings: '' },
       moduleType: 'js'
     };

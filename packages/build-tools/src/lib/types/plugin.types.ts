@@ -1,6 +1,7 @@
 import type { CompilerOptions } from 'typescript';
-import type { Logger } from 'vite';
+import type { Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
+import type { XaendarPluginOptions } from './xaendar-plugin-options.type';
 
 /**
  * Mutable runtime state shared across the Xaendar Vite plugin hooks.
@@ -32,6 +33,14 @@ export type XaendarPluginState = {
    * Set once the Vite config is resolved.
    */
   isBuild: boolean;
+  /**
+   * The rendering on the server, when the plugin is configured with it.
+   */
+  ssr?: XaendarPluginOptions['ssr'];
+  /**
+   * The dev server, set once it is configured: the server rendering reloads its page through it.
+   */
+  server?: ViteDevServer;
   /**
    * Sets the active Vite logger used by hook-level error reporting.
    */

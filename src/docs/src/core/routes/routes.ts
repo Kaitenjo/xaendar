@@ -212,6 +212,7 @@ export const NAV: readonly NavSection[] = [
     items: [
       link(page('tools/cli', 'xd new start build generate')),
       link(page('tools/build', 'vite plugin xaendarPlugin babel hmr')),
+      link(page('tools/ssr', 'server side rendering ssr declarative shadow dom renderToString loadServerDom prerender static site generation node')),
       link(page('tools/integrations', 'angular react vue svelte lit solid fast preact qwik stencil next interop custom elements host')),
       link(page('tools/language-service', 'vscode extension language server diagnostics'))
     ]

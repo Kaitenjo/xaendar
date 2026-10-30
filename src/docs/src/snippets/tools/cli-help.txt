@@ -12,5 +12,6 @@ Commands:
   new [options] <name>  Scaffold a new Xaendar project
   start|s               Start the project
   build|b               Build the project
+  prerender|p           Build the project and render its routes into HTML files
   test|t                Run the tests of the project
   help [command]        display help for command

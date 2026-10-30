@@ -534,6 +534,26 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/let'
   },
   {
+    phase: 'Runtime',
+    message: 'ReferenceError: HTMLElement is not defined',
+    page: 'tools/ssr'
+  },
+  {
+    phase: 'Runtime',
+    message: 'ReferenceError: document is not defined',
+    page: 'tools/ssr'
+  },
+  {
+    phase: 'Runtime',
+    message: 'ProductPageComponent is not defined: decorate it with @WebComponent, and install the server DOM with loadServerDom() before importing its module',
+    page: 'tools/ssr'
+  },
+  {
+    phase: 'Runtime',
+    message: 'ProductPageComponent has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment',
+    page: 'tools/ssr'
+  },
+  {
     phase: 'Signals',
     message: 'Circular dependency detected while computing a Computed signal',
     page: 'signals/computed'
@@ -572,5 +592,10 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'CLI',
     message: '✖  Invalid style "styl" in <path>: use one of css, scss, sass, less.',
     page: 'tools/cli'
+  },
+  {
+    phase: 'CLI',
+    message: '✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server.ts" } in its xaendar.json.',
+    page: 'tools/ssr'
   }
 ];
