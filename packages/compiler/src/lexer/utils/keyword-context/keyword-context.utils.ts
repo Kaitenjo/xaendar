@@ -1,5 +1,5 @@
 import { Lexer } from '../../lexer/lexer';
-import type { KeywordContext } from '../../types/keyword-context/keyword-context.type';
+import type { KeywordContext } from '../../types/keyword-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import type { Token } from '../../types/token.type';

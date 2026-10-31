@@ -20806,6 +20806,7 @@ var GLOBAL_IDENTIFIERS = /* @__PURE__ */ new Set([
   ...Object.keys(import_globals.default.builtin),
   ...Object.getOwnPropertyNames(Object.prototype)
 ]);
+var BROWSER_GLOBAL_IDENTIFIERS = new Set(Object.keys(import_globals.default.browser).filter((name) => !Object.hasOwn(import_globals.default.builtin, name)));
 var ROOT_NODE = "root";
 function resolveExpression(expression, compilerContext, options, segments) {
   const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
@@ -20821,7 +20822,7 @@ function segmentOf(text, span, columnStart = 0) {
 }
 function emitNode(node, parent, compilerContext, options) {
   const callee = getSignalCallee(node);
-  const narrowed = callee && needsResolution(callee, node, compilerContext) ? options.narrowedSignal(callee.text) : void 0;
+  const narrowed = callee && needsResolution(callee, node, compilerContext, options) ? options.narrowedSignal(callee.text) : void 0;
   const emitted = emitResolvedNode(node, parent, compilerContext, options);
   if (!narrowed) {
     return emitted;
@@ -20839,7 +20840,7 @@ function getSignalCallee(node) {
 }
 function emitResolvedNode(node, parent, compilerContext, options) {
   const span = getTemplateSpan(node);
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext)) {
+  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext, options)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, compilerContext, options);
     const expression = (0, import_typescript3.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
@@ -20849,7 +20850,7 @@ function emitResolvedNode(node, parent, compilerContext, options) {
   if (!options.preserveNonNull && (0, import_typescript3.isNonNullExpression)(node)) {
     return emitNode(node.expression, node, compilerContext, options);
   }
-  if (!containsResolvableIdentifier(node, parent, compilerContext) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  if (!containsResolvableIdentifier(node, parent, compilerContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -20892,16 +20893,19 @@ function resolveIdentifier(text, compilerContext, options) {
     imported.used = true;
     return { expression: imported.expression, reactive: imported.kind === "signal" };
   }
+  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !compilerContext.hasShadowingMember(text)) {
+    return { expression: `${options.browserGlobals}.${text}` };
+  }
   return { expression: member };
 }
-function containsResolvableIdentifier(node, parent, compilerContext) {
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext)) {
+function containsResolvableIdentifier(node, parent, compilerContext, options) {
+  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext, options)) {
     return true;
   }
   let found = false;
   (0, import_typescript3.forEachChild)(node, (child) => {
     if (!found) {
-      found = containsResolvableIdentifier(child, node, compilerContext);
+      found = containsResolvableIdentifier(child, node, compilerContext, options);
     }
   });
   return found;
@@ -20915,16 +20919,18 @@ function containsNonNullExpression(node) {
   });
   return found;
 }
-function needsResolution(node, parent, compilerContext) {
+function needsResolution(node, parent, compilerContext, options) {
   const { text } = node;
   const isLocal = compilerContext.hasSignalField(text) || compilerContext.hasShadowingMember(text) || compilerContext.hasUnresolvableIdentifier(text) || compilerContext.hasIdentifier(text) || !!compilerContext.getImportedIdentifier(text);
-  return !((0, import_typescript3.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript3.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal || !text);
+  const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
+  return !((0, import_typescript3.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript3.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
 }
 function mapDefaultOptions(options) {
   return {
     resolver: options?.resolver ?? "this",
     preserveNonNull: options?.preserveNonNull ?? false,
-    narrowedSignal: options?.narrowedSignal ?? (() => void 0)
+    narrowedSignal: options?.narrowedSignal ?? (() => void 0),
+    browserGlobals: options?.browserGlobals ?? ""
   };
 }
 
@@ -25064,6 +25070,25 @@ var ComponentPropertyMetadata = class {
   declaration;
 };
 
+// ../packages/compiler/src/models/component-property-metadata-with-span/component-property-metadata-with-span.model.ts
+var ComponentPropertyMetadataWithSpan = class extends ComponentPropertyMetadata {
+  /**
+   * Creates an instance of ComponentPropertyMetadataWithSpan.
+   * @param span The span information for the property in the source file.
+   * @param sourceFile The source file declaring the property: the class itself, or one of its base classes.
+   * @param name The name of the property.
+   * @param type The type of the property.
+   * @param options Additional options for the property, such as whether it is required or has an alias.
+   */
+  constructor(span, sourceFile, name, type, options) {
+    super(name, type, options);
+    this.span = span;
+    this.sourceFile = sourceFile;
+  }
+  span;
+  sourceFile;
+};
+
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
 var import_typescript10 = require("typescript");
 
@@ -25306,23 +25331,6 @@ function readExposures(expression) {
 }
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
-var ComponentPropertyMetadataWishSpan = class extends ComponentPropertyMetadata {
-  /**
-   * Creates an instance of ComponentPropertyMetadataWishSpan.
-   * @param span The span information for the property in the source file.
-   * @param sourceFile The source file declaring the property: the class itself, or one of its base classes.
-   * @param name The name of the property.
-   * @param type The type of the property.
-   * @param options Additional options for the property, such as whether it is required or has an alias.
-   */
-  constructor(span, sourceFile, name, type, options) {
-    super(name, type, options);
-    this.span = span;
-    this.sourceFile = sourceFile;
-  }
-  span;
-  sourceFile;
-};
 async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptions) {
   const metadatas = /* @__PURE__ */ new Map();
   const declarations = getDecoratedClassDeclarations(sourceFile, "WebComponent");
@@ -25561,7 +25569,7 @@ function isPropertyDecorator(modifier) {
 }
 function extractPropertyMetadata(property, nameNode, name, decorator, required, accessorOwner, sourceFile) {
   const args = decorator.expression.arguments;
-  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
+  const metadata = new ComponentPropertyMetadataWithSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
   if (args.length) {

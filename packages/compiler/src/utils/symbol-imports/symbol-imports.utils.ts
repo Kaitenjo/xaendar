@@ -1,4 +1,4 @@
-import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type';
+import type { SymbolImport } from '../../types/symbol-import.type';
 
 /**
  * The names a template cannot import a symbol as, besides the ones starting with `__`, which the generated code uses:

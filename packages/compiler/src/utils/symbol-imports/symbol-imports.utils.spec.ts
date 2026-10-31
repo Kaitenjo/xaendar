@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type';
+import type { SymbolImport } from '../../types/symbol-import.type';
 import { assertImportableSymbol, getRuntimeAlias, toRuntimeImport, toTypeCheckModuleSpecifier } from './symbol-imports.utils';
 
 /**

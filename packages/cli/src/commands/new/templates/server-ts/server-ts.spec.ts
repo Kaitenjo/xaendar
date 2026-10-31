@@ -18,6 +18,16 @@ describe('serverTs()', () => {
     expect('<body><!--xd-ssr--><footer></footer></body>'.replace('<!--xd-ssr-->', insertPage(page))).toBe(`<body>${page}<footer></footer></body>`);
   });
 
+  it('does not start when the entry built for the server does not export render, naming the file to fix', () => {
+    expect(serverTs('my-app-root')).toContain([
+      'if (!render) {',
+      '  throw new Error(\'dist/server/entry-server.js does not export render(url): export the function rendering a page on the server from src/entry-server.ts\');',
+      '}',
+      '',
+      'const port = Number(process.env.PORT ?? 3000);'
+    ].join('\n'));
+  });
+
   it('falls back to the root component without content, which the browser renders', () => {
     expect(serverTs('my-app-root')).toContain('const FALLBACK = \'<my-app-root></my-app-root>\';');
   });

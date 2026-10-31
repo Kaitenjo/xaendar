@@ -1,5 +1,5 @@
 import { Lexer } from '../../lexer/lexer';
-import type { LexerTolerantResult } from '../../types/lexer-tolerant-result/lexer-tolerant-result.type';
+import type { LexerTolerantResult } from '../../types/lexer-tolerant-result.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { Token } from '../../types/token.type';
 

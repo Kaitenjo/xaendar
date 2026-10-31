@@ -1,5 +1,5 @@
 import { TokenType } from '../token-type.enum';
-import { TokenWithSpan } from '../token.type';
+import type { TokenWithSpan } from '../token-with-span.type';
 
 /**
  * Sentinel token emitted when the lexer reaches the end of the input stream.

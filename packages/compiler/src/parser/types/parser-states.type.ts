@@ -9,18 +9,7 @@ import { SwitchToken } from '../../lexer/types/tokens/switch-token.type'
 import { TagOpenNameToken } from '../../lexer/types/tokens/tag-open-name-token.type'
 import { TextToken } from '../../lexer/types/tokens/text-token.type'
 import { ParserTransitionFunction } from './parser-transition-function.type'
-
-type OmittedKeys = Exclude<TokenType, 
- | TokenType.TEXT
- | TokenType.INTERPOLATION_EXPRESSION
- | TokenType.TAG_OPEN_NAME
- | TokenType.IF
- | TokenType.FOR 
- | TokenType.SWITCH
- | TokenType.IMPORT 
- | TokenType.RENDER
- | TokenType.LET
->
+import type { OmittedKeys } from './omitted-keys.type';
 
 /**
  * Type mapping each TokenType to its corresponding parser transition function, 

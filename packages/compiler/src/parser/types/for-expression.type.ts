@@ -1,6 +1,6 @@
 import { Expression } from 'typescript';
 import type { Span } from '../../types/span.type';
-import { ForImplicitVariables } from './nodes/for-implicit-variables';
+import { ForImplicitVariables } from './nodes/for-implicit-variables.type';
 
 /**
  * Represents the parsed result of an `@for` block expression.

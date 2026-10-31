@@ -3,7 +3,7 @@ import { parseTemplate } from '../../../compile/compile';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import type { TemplateFunctionFactory } from './scope-generation.utils';
+import type { TemplateFunctionFactory } from '../../types/template-function-factory.type';
 import { declareScope, declareTemplateParameters } from './scope-generation.utils';
 
 /**

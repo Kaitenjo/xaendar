@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ServerAttribute, ServerBindings } from '../../types/server-bindings/server-bindings.type';
-import type { ServerOutput } from '../../types/server-output/server-output.type';
+import type { ServerBindings } from '../../types/server-bindings.type';
+import type { ServerAttribute } from '../../types/server-attribute.type';
+import type { ServerOutput } from '../../types/server-output.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

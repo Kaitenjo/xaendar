@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 vi.mock('@xaendar/language-core', () => ({
   getLanguageService: vi.fn()
@@ -12,6 +12,7 @@ vi.mock('../../utils/type-check/type-check.utils', () => ({
 
 import { getLanguageService } from '@xaendar/language-core';
 import type { PluginContext } from 'rolldown';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { collectProjectDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { createBuildEndHook } from './build-end';
 
@@ -31,18 +32,21 @@ function createState(isBuild: boolean): XaendarPluginState {
     compilerOptions: { strict: true },
     projectFileNames: ['/project/src/main.ts'],
     isBuild,
-    logError: vi.fn()
+    logError: vi.fn(),
+    strategies: { client: CLIENT_STRATEGY, server: SERVER_STRATEGY }
   } as unknown as XaendarPluginState;
 }
 
 /**
  * Builds a mocked `buildEnd` hook plugin context, whose `error` throws as Vite's does.
  *
+ * @param consumer - The consumer of the environment, the browser by default.
  * @returns The mocked plugin context.
  */
-function createPluginContext(): PluginContext {
+function createPluginContext(consumer: 'client' | 'server' = 'client'): PluginContext {
   return {
-    error: vi.fn((message: string) => { throw new Error(message); })
+    error: vi.fn((message: string) => { throw new Error(message); }),
+    environment: { config: { consumer } }
   } as unknown as PluginContext;
 }
 
@@ -83,10 +87,7 @@ describe('createBuildEndHook()', () => {
   });
 
   it('does not type-check the build of the server, checked by the one of the browser', () => {
-    const state = { ...createState(true), ssr: { entry: '/src/entry-server.ts' } };
-    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
-
-    createBuildEndHook(state).call(ctx);
+    createBuildEndHook(createState(true)).call(createPluginContext('server'));
 
     expect(collectProjectDiagnostics).not.toHaveBeenCalled();
   });

@@ -9,7 +9,7 @@ import { clearImportRegistry } from '../../registry/import-registry/import-regis
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleRegistry } from '../../registry/style-registry/style-registry';
 import { clearTemplateRegistry } from '../../registry/template-registry/template-registry';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 
 /**
@@ -51,7 +51,7 @@ export function createConfigureServerHook(state: XaendarPluginState): NonNullabl
  * Vite, transformed by the plugins, with the HTML `render(url)` of the entry returns in place of `<!--xd-ssr-->`. The
  * entry is loaded through the server module graph of Vite, so that it and the components it renders follow the changes
  * of their files. A request not asking for HTML is left to the next middleware, and so is an error, once its stack
- * trace points to the sources.
+ * trace points to the sources: an entry not exporting `render` is one.
  *
  * @param server - The dev server.
  * @param entry - The module rendering a page, absolute or relative to the root of Vite.
@@ -68,7 +68,11 @@ async function renderPage(server: ViteDevServer, entry: string, request: Connect
   try {
     const url = request.originalUrl ?? request.url!;
     const template = await server.transformIndexHtml(url, await readFile(resolvePosixPath(server.config.root, 'index.html'), 'utf-8'));
-    const render: (url: string) => string | Promise<string> = (await server.ssrLoadModule(resolvePosixPath(server.config.root, entry))).render;
+    const render: ((url: string) => Promise<string>) | undefined = (await server.ssrLoadModule(resolvePosixPath(server.config.root, entry))).render;
+    if (!render) {
+      throw new Error(`${entry} does not export render(url): export the function rendering a page on the server`);
+    }
+
     const rendered = await render(url);
     // A function, because a `$` in a replacement string is a pattern: the text of a page would change the page
     const html = template.replace(SSR_OUTLET, () => rendered);

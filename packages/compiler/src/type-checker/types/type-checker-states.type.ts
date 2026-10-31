@@ -10,19 +10,7 @@ import { SwitchNode } from '../../parser/types/nodes/switch-node.type'
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type'
 import { TextNode } from '../../parser/types/nodes/text-node.type'
 import { TypeCheckerTransitionFunction } from '../../type-checker/types/type-checker-transition-function.type'
-
-type OmittedKeys = Exclude<ASTNodeType, 
- | ASTNodeType.Text
- | ASTNodeType.Interpolation
- | ASTNodeType.Element
- | ASTNodeType.If
- | ASTNodeType.For
- | ASTNodeType.Switch
- | ASTNodeType.Import
- | ASTNodeType.Template
- | ASTNodeType.Render
- | ASTNodeType.Let
->
+import type { OmittedKeys } from './omitted-keys.type';
 
 /**
  * Maps each supported AST node type to its type checker transition function.

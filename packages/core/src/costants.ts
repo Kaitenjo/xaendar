@@ -56,3 +56,8 @@ export const CONNECTED_HOOKS = Symbol('ConnectedHooks');
  * Key of the internal list of callbacks a `CustomElement` invokes each time it is disconnected.
  */
 export const DISCONNECTED_HOOKS = Symbol('DisconnectedHooks');
+/**
+ * Key of the brand marking the options `Property.required` passes to the decorator it creates, which tells them apart
+ * from a default value (see `Property`).
+ */
+export const PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND = Symbol('PropertyDecoratorOptionsWithRequiredBrand');

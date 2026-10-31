@@ -1,10 +1,10 @@
 import { CompilerContext } from '../../../generator/models/compiler-context/compiler-context.model';
-import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifier.type';
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
-import type { SymbolImport } from '../../../types/imported-symbol/imported-symbol.type';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
+import type { SymbolImport } from '../../../types/symbol-import.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 

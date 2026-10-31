@@ -1,50 +1,23 @@
 import { slice } from '@xaendar/common';
 import { ClassDeclaration, CompilerOptions, Decorator, EntityName, forEachChild, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierLike, Node, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
-import { ClassTypeParameter, ComponentEventMetadata, ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
+import { ComponentMetadata } from '../../types/component-metadata.type';
+import type { ComponentEventMetadata } from '../../types/component-event-metadata.type';
+import type { ClassTypeParameter } from '../../types/class-type-parameter.type';
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
-import { ClassDeclarationWithName, DirectiveDecorator, EventDecorator, PropertyDecorator, WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
+import type { DirectiveDecorator } from '../../types/typescript-decorator-nodes/directive-decorator.type';
+import type { EventDecorator } from '../../types/typescript-decorator-nodes/event-decorator.type';
+import type { PropertyDecorator } from '../../types/typescript-decorator-nodes/property-decorator.type';
+import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
+import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes/class-declaration-with-name.type';
+import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
-import type { MemberDeclaration } from '../../types/member-declaration/member-declaration.type';
+import type { MemberDeclaration } from '../../types/member-declaration.type';
 import { Span } from '../../types/span.type';
 import { addHostDirectiveBindings } from '../host-directives/host-directives.utils';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
-import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
-
-/**
- * Represents a component property with metadata from @Property decorator.
- */
-class ComponentPropertyMetadataWishSpan extends ComponentPropertyMetadata {
-  /**
-   * Creates an instance of ComponentPropertyMetadataWishSpan.
-   * @param span The span information for the property in the source file.
-   * @param sourceFile The source file declaring the property: the class itself, or one of its base classes.
-   * @param name The name of the property.
-   * @param type The type of the property.
-   * @param options Additional options for the property, such as whether it is required or has an alias.
-   */
-  constructor(public span: Span, public sourceFile: SourceFile, name: string, type: string, options?: { required?: boolean, alias?: string }) {
-    super(name, type, options);
-  }
-}
-
-/**
- * The `@Property` and `@Event` accessors of a class collected so far, own and inherited.
- */
-type CollectedBindings = {
-  /**
-   * The properties, keyed by their alias or name.
-   */
-  readonly properties: Map<string, ComponentPropertyMetadataWishSpan>;
-  /**
-   * The events, keyed by name.
-   */
-  readonly events: Map<string, ComponentEventMetadata>;
-};
-
-/**
- * Class decorators identifying the classes metadata are extracted from.
- */
-type ClassDecoratorNode = WebComponentDecorator | DirectiveDecorator;
+import type { ResolvedClass } from '../../types/resolved-class.type';
+import type { CollectedBindings } from '../../types/collected-bindings.type';
+import type { ClassDecoratorNode } from '../../types/class-decorator-node.type';
 
 /**
  * Extracts component metadata from a source file by parsing decorators.
@@ -507,7 +480,7 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
  * @param sourceFile - The source file declaring the accessor.
  * @returns The metadata of the property, with the span of its name or of its alias.
  */
-function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean, accessorOwner: string, sourceFile: SourceFile): ComponentPropertyMetadataWishSpan {
+function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identifier, name: string, decorator: PropertyDecorator, required: boolean, accessorOwner: string, sourceFile: SourceFile): ComponentPropertyMetadataWithSpan {
   // Property decorators are always call expressions (`@Property(...)`, `@Property.required(...)`)
   const args = decorator.expression.arguments;
   /*
@@ -515,7 +488,7 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
     We need to store the span where the propName is present, if an alias is declared
     these values will be overwritten
   */
-  const metadata = new ComponentPropertyMetadataWishSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
+  const metadata = new ComponentPropertyMetadataWithSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
   metadata.required = required;
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
 

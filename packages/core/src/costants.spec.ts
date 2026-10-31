@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIRECTIVE_CONNECT, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_SELECTOR, MATHML_NS, SVG_NS } from './costants';
+import { DIRECTIVE_CONNECT, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_SELECTOR, MATHML_NS, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND, SVG_NS } from './costants';
 
 describe('costants', () => {
   it('exposes the alias-to-attribute metadata key', () => {
@@ -21,5 +21,10 @@ describe('costants', () => {
   it('exposes the directive connect key as a unique symbol', () => {
     expect(typeof DIRECTIVE_CONNECT).toBe('symbol');
     expect(DIRECTIVE_CONNECT.description).toBe('DirectiveConnect');
+  });
+
+  it('exposes the brand of the options of a required property as a unique symbol', () => {
+    expect(typeof PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND).toBe('symbol');
+    expect(PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND.description).toBe('PropertyDecoratorOptionsWithRequiredBrand');
   });
 });

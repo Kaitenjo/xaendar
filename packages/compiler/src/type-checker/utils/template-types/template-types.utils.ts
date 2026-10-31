@@ -1,6 +1,6 @@
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { plain } from '../line-builder/line-builder.utils';
 
 /**

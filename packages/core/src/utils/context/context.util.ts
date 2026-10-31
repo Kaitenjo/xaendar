@@ -1,12 +1,7 @@
 import { removeItem } from '@xaendar/common';
 import { Function, NoArgsVoidFunction } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
-
-/**
- * What declares a variable before it is initialized (see `_Context.declare`): an element ref, initialized once the
- * element it names is rendered, or a `@let`, initialized once the render reaches it.
- */
-export type _DeclarationKind = 'element' | 'let';
+import type { _DeclarationKind } from '../../types/declaration-kind.type';
 
 /**
  * Tracks identifier scope during run time template function execution

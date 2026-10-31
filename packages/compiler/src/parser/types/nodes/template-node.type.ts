@@ -1,5 +1,6 @@
 import type { Span } from '../../../types/span.type';
-import type { ASTNode, ASTNodeWithSpan } from '../ast.type';
+import type { ASTNode } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 import type { TemplateParameterNode } from './template-parameter-node.type';
 import type { TemplateDeclarationNode } from './template-declaration-node.type';

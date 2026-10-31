@@ -2,21 +2,7 @@ import { existsSync } from 'node:fs';
 import { posix } from 'node:path';
 import { type CompilerOptions, ModuleKind, ModuleResolutionKind, resolveModuleName, sys } from 'typescript';
 import { normalizeFileName, resolvePosixPath, toPosixPath } from '../path/path.utils';
-
-/**
- * The module an `@import` path leads to.
- */
-export type ResolvedModule = {
-  /**
-   * The path of the file declaring the module, in posix format: a TypeScript source, or the declarations of a package.
-   */
-  readonly fileName: string;
-  /**
-   * Whether the module belongs to a package: the code generated for the template imports it by the path written in
-   * the `@import`, as the application does, rather than by the path of its declarations.
-   */
-  readonly external: boolean;
-};
+import type { ResolvedModule } from '../../types/resolved-module.type';
 
 /**
  * How the paths that are not relative are resolved when the project has no options: as a bundler does, reading the

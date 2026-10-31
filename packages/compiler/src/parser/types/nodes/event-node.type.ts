@@ -1,7 +1,7 @@
 import { Expression } from 'typescript';
 import { ASTNodeType } from '../node.enum';
 import type { Span } from '../../../types/span.type';
-import { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 
 /**
  * AST node representing a DOM event binding on an element.

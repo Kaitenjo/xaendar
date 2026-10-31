@@ -1,4 +1,4 @@
-import type { ImportInsertion } from '../../types/import-insertion/import-insertion.type';
+import type { ImportInsertion } from '../../types/import-insertion.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { ImportToken } from '../../types/tokens/import-token.type';
 import { IMPORT_STATEMENT_END, lexImportHeader } from '../import-header/import-header.utils';

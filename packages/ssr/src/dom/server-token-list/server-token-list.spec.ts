@@ -3,7 +3,7 @@ import { ServerElement } from '../server-element/server-element';
 
 describe('ServerTokenList', () => {
   it('reads the distinct tokens of the attribute, separated by any ASCII whitespace', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
     element.setAttribute('class', ' a\tb\na  c ');
 
     expect(element.classList.length).toBe(3);
@@ -14,14 +14,14 @@ describe('ServerTokenList', () => {
   });
 
   it('reads no token, and an empty value, when the element does not have the attribute', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
 
     expect(element.classList.length).toBe(0);
     expect(element.classList.value).toBe('');
   });
 
   it('adds the tokens it does not hold at the end, writing the attribute as an ordered set', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
     element.setAttribute('class', 'a  b a');
 
     element.classList.add('c', 'a', 'd');
@@ -30,7 +30,7 @@ describe('ServerTokenList', () => {
   });
 
   it('removes tokens, writing the attribute even when nothing changes, unless the element does not have it', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
     element.classList.remove('a');
     expect(element.hasAttribute('class')).toBe(false);
 
@@ -43,7 +43,7 @@ describe('ServerTokenList', () => {
   });
 
   it('toggles a token, force only adding or only removing it, without writing the attribute when nothing changes', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
 
     expect(element.classList.toggle('a', false)).toBe(false);
     expect(element.hasAttribute('class')).toBe(false);
@@ -56,7 +56,7 @@ describe('ServerTokenList', () => {
   });
 
   it('throws for an empty token or one holding whitespace, as DOMTokenList does', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
 
     expect(() => element.classList.add('')).toThrow(expect.objectContaining({ name: 'SyntaxError' }));
     expect(() => element.classList.toggle('a b')).toThrow(expect.objectContaining({ name: 'InvalidCharacterError' }));

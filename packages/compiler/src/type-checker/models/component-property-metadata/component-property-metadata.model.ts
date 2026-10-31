@@ -1,4 +1,4 @@
-import type { MemberDeclaration } from '../../../types/member-declaration/member-declaration.type';
+import type { MemberDeclaration } from '../../../types/member-declaration.type';
 
 /**
  * Represents a component property with metadata from @Property decorator.

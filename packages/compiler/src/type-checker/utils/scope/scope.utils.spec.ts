@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ASTNodeType } from '../../../parser/types/node.enum';
-import type { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import type { ComponentMetadata } from '../../../types/component-metadata.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
 import { typeCheckElement } from '../../states/type-check-element/type-check-element.state';
 import { typeCheckTextAndInterpolation } from '../../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state';

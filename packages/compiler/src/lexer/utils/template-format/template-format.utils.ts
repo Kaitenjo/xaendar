@@ -1,34 +1,13 @@
-import type { TemplateFormatOptions } from '../../types/template-format-options/template-format-options.type';
-import type { LayoutAtom, LayoutBlock, LayoutBranch, LayoutElement, LayoutItem } from '../../types/template-layout/template-layout.type';
+import type { TemplateFormatOptions } from '../../types/template-format-options.type';
+import type { LayoutAtom } from '../../types/template-layout/layout-atom.type';
+import type { LayoutElement } from '../../types/template-layout/layout-element.type';
+import type { LayoutItem } from '../../types/template-layout/layout-item.type';
+import type { LayoutBlock } from '../../types/template-layout/layout-block.type';
+import type { LayoutBranch } from '../../types/template-layout/layout-branch.type';
 import { findClosing } from '../balanced-text/balanced-text.utils';
 import { formatImportHeader } from '../import-organization/import-organization.utils';
 import { parseTemplateLayout } from '../template-layout/template-layout.utils';
-
-/**
- * The rows a content is written in, as it is built.
- */
-type ContentLayout = {
-  /**
-   * The rows, without their indentation. The first one follows what opens the content, unless {@link leadingBreak}.
-   */
-  readonly rows: string[];
-  /**
-   * Whether the content starts on a new line, after what opens it.
-   */
-  readonly leadingBreak: boolean;
-  /**
-   * Whether what closes the content is on a new line.
-   */
-  readonly trailingBreak: boolean;
-  /**
-   * Whether a line break can be written between what opens the content and the content, without changing the template.
-   */
-  readonly canBreakStart: boolean;
-  /**
-   * Whether a line break can be written between the content and what closes it, without changing the template.
-   */
-  readonly canBreakEnd: boolean;
-};
+import type { ContentLayout } from '../../types/content-layout.type';
 
 /**
  * The rows of a content, as they are written.

@@ -1,11 +1,12 @@
 import { loadTsConfig } from '@xaendar/language-core';
 import type { Logger, Plugin } from 'vite';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import type { XaendarPluginOptions } from '../../types/xaendar-plugin-options.type';
 import { createBuildEndHook } from '../build-end/build-end';
-import { createConfigHook } from '../config/config';
 import { createConfigResolvedHook } from '../config-resolved/config-resolved';
+import { createConfigHook } from '../config/config';
 import { createConfigureServerHook } from '../configure-server/configure-server';
 import { createHotUpdateHook } from '../hot-update/hot-update';
 import { createLoadHook } from '../load/load';
@@ -93,7 +94,11 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     isBuild: false,
     ssr: options.ssr,
     setLogger: value => logger = value,
-    logError
+    logError,
+    strategies: { 
+      client: CLIENT_STRATEGY, 
+      server: options.ssr ? SERVER_STRATEGY : CLIENT_STRATEGY 
+    }
   };
 
   return {

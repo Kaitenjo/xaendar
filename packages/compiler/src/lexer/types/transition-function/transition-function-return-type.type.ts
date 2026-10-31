@@ -1,5 +1,5 @@
 import { LexerState } from '../lexer-state.enum'
-import { TokenWithOptionalSpan } from '../token.type'
+import type { TokenWithOptionalSpan } from '../token-with-optional-span.type';
 
 /**
  * Result returned by a lexer state transition function.

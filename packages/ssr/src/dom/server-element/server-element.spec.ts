@@ -2,15 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { ServerElement } from './server-element';
 
 describe('ServerElement', () => {
-  it('holds its tag name, uppercase as the tag name of an element of the HTML namespace', () => {
-    const element = new ServerElement('my-card');
+  it('reads its tag name from the local name assigned after constructing it, uppercase as the tag name of an element of the HTML namespace', () => {
+    const element = new ServerElement();
+    element.localName = 'my-card';
 
     expect(element.localName).toBe('my-card');
     expect(element.tagName).toBe('MY-CARD');
   });
 
   it('writes the attributes as strings, a new one after the others, an existing one in its place', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
     element.setAttribute('title', 'a');
     element.setAttribute('id', 1 as unknown as string);
     element.setAttribute('title', 'b');
@@ -22,7 +23,7 @@ describe('ServerElement', () => {
   });
 
   it('removes an attribute', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
     element.setAttribute('title', 'a');
 
     element.removeAttribute('title');
@@ -31,7 +32,7 @@ describe('ServerElement', () => {
   });
 
   it('toggles an attribute as Element.toggleAttribute does', () => {
-    const element = new ServerElement('input');
+    const element = new ServerElement();
 
     expect(element.toggleAttribute('disabled', false)).toBe(false);
     expect(element.hasAttribute('disabled')).toBe(false);
@@ -43,7 +44,7 @@ describe('ServerElement', () => {
   });
 
   it('listens to no event and dispatches none', () => {
-    const element = new ServerElement('div');
+    const element = new ServerElement();
 
     expect(element.addEventListener()).toBeUndefined();
     expect(element.removeEventListener()).toBeUndefined();

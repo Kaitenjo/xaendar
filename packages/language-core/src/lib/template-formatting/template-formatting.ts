@@ -1,18 +1,5 @@
-import { formatTemplate, type Span, type TemplateFormatOptions } from '@xaendar/compiler';
-
-/**
- * The change formatting a template makes.
- */
-export type TemplateFormatting = {
-  /**
-   * The span of the template the formatted text replaces: the whole of it.
-   */
-  readonly span: Span;
-  /**
-   * The formatted template.
-   */
-  readonly newText: string;
-};
+import { formatTemplate, type TemplateFormatOptions } from '@xaendar/compiler';
+import type { TemplateFormatting } from '../types/template-formatting.type';
 
 /**
  * Computes how to format a template: its elements and control-flow blocks indented, the opening tags that don't fit the

@@ -7,6 +7,7 @@ vi.mock('node:fs', () => ({
   existsSync: vi.fn()
 }));
 
+import { CLIENT_RENDERING, SERVER_RENDERING } from '../rendering/rendering';
 import { buildStructure } from './structure';
 
 beforeEach(() => {
@@ -18,7 +19,7 @@ describe('buildStructure()', () => {
   it('builds the full project entry tree pinned to the CLI\'s own package.json version', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
-    const entries = buildStructure({ name: 'my-app', style: 'scss' });
+    const entries = buildStructure({ name: 'my-app', style: 'scss', rendering: CLIENT_RENDERING });
 
     expect(entries.map((entry) => entry.name)).toEqual(['package.json', 'xaendar.json', 'vite.config.ts', 'tsconfig.json', 'src']);
 
@@ -33,7 +34,7 @@ describe('buildStructure()', () => {
   it('reads the version from the nearest package.json found walking up from the running module\'s own directory', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
-    buildStructure({ name: 'my-app', style: 'css' });
+    buildStructure({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING });
 
     expect(readFileSync).toHaveBeenCalledWith(resolve(import.meta.dirname, '../../../../package.json'), 'utf8');
   });
@@ -41,7 +42,7 @@ describe('buildStructure()', () => {
   it('derives the root component name by appending "-root" to the project name', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
-    const entries = buildStructure({ name: 'my-app', style: 'css' });
+    const entries = buildStructure({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING });
     const srcEntry = entries.find((entry) => entry.name === 'src');
     const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
 
@@ -57,7 +58,7 @@ describe('buildStructure()', () => {
   it('names the global stylesheet, links it and installs its compiler after the style of the project', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
-    const entries = buildStructure({ name: 'my-app', style: 'sass' });
+    const entries = buildStructure({ name: 'my-app', style: 'sass', rendering: CLIENT_RENDERING });
     const srcEntry = entries.find((entry) => entry.name === 'src');
     const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
     const stylesEntry = children?.find((entry) => entry.name === 'styles.sass');
@@ -72,7 +73,7 @@ describe('buildStructure()', () => {
   it('adds the server and the entry rendering a page on the server to a project rendering on the server', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
 
-    const entries = buildStructure({ name: 'my-app', style: 'css', ssr: true });
+    const entries = buildStructure({ name: 'my-app', style: 'css', rendering: SERVER_RENDERING });
     const srcEntry = entries.find((entry) => entry.name === 'src');
     const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
     const content = (name: string, list = entries) => (list.find((entry) => entry.name === name) as { content: string }).content;
@@ -82,7 +83,7 @@ describe('buildStructure()', () => {
     expect(content('server.ts')).toContain('const FALLBACK = \'<my-app-root></my-app-root>\';');
     expect(content('entry-server.ts', children)).toContain('renderToString(MyAppRootComponent)');
     expect(content('package.json')).toContain('"@xaendar/ssr": "^1.2.3"');
-    expect(content('xaendar.json')).toContain('"entry": "src/entry-server.ts"');
+    expect(content('xaendar.json')).toContain('"entry": "src/entry-server",');
     expect(content('vite.config.ts')).toContain('../dist/client');
     expect(content('index.html', children)).toContain('<!--xd-ssr-->');
   });
@@ -96,7 +97,7 @@ describe('buildStructure()', () => {
       throw new Error('process.exit called');
     });
 
-    expect(() => buildStructure({ name: 'my-app', style: 'css' })).toThrow('process.exit called');
+    expect(() => buildStructure({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING })).toThrow('process.exit called');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error reading Xaendar CLI version:', expect.any(Error));
     expect(exitSpy).toHaveBeenCalledWith(1);
@@ -109,7 +110,7 @@ describe('buildStructure()', () => {
       throw new Error('process.exit called');
     });
 
-    expect(() => buildStructure({ name: 'my-app', style: 'css' })).toThrow('process.exit called');
+    expect(() => buildStructure({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING })).toThrow('process.exit called');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error reading Xaendar CLI version:', 'Unable to determine Xaendar CLI version.');
     expect(exitSpy).toHaveBeenCalledWith(1);
@@ -122,7 +123,7 @@ describe('buildStructure()', () => {
       throw new Error('process.exit called');
     });
 
-    expect(() => buildStructure({ name: 'my-app', style: 'css' })).toThrow('process.exit called');
+    expect(() => buildStructure({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING })).toThrow('process.exit called');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error reading Xaendar CLI version:', new Error('Unable to locate the CLI package.json.'));
     expect(exitSpy).toHaveBeenCalledWith(1);

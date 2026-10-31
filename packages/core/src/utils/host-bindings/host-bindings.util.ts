@@ -57,22 +57,48 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
 }
 
 /**
- * Binds an attribute or a class of the host element to a member of the owner. A member holding a function, such as a
- * signal, is called to get the value.
+ * Writes the attributes and the classes of the host element of a web component or of a custom directive as its
+ * `@HostProperty` declare, once and without binding them: what the server writes on the tag of a component it renders.
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element.
+ */
+export function _applyHostProperties(owner: EventHost, element: Element): void {
+  const metadata = (owner.constructor as unknown as Record<symbol, WebComponentMetadata | undefined>)[Symbol.for('Symbol.metadata')];
+  const properties = metadata?.[INTERNAL_HOST_PROPERTIES];
+  if (properties?.length) {
+    for (let i = 0; i < properties.length; i++) {
+      applyProperty(owner, element, properties[i]);
+    }
+  }
+}
+
+/**
+ * Binds an attribute or a class of the host element to a member of the owner (see {@link applyProperty}).
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element.
  * @param binding - The attribute or the class, and how to read the member.
  * @param context - The context the binding lives in.
  */
-function bindProperty(owner: EventHost, element: Element, { name, isClass, read }: HostPropertyBinding, context: _Context): void {
-  context.addUnlistener(effect(() => {
-    const member = read(owner);
-    const value = typeof member === 'function' ? member() : member;
-    isClass ? toggleClass(element, name, Boolean(value)) : writeAttribute(element, name, value);
-  }));
-
+function bindProperty(owner: EventHost, element: Element, binding: HostPropertyBinding, context: _Context): void {
+  const { name, isClass } = binding;
+  context.addUnlistener(effect(() => applyProperty(owner, element, binding)));
   context.addUnlistener(isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
+}
+
+/**
+ * Writes an attribute or toggles a class of the host element by the value of a member of the owner. A member holding a
+ * function, such as a signal, is called to get the value.
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element.
+ * @param binding - The attribute or the class, and how to read the member.
+ */
+function applyProperty(owner: EventHost, element: Element, { name, isClass, read }: HostPropertyBinding): void {
+  const member = read(owner);
+  const value = typeof member === 'function' ? member() : member;
+  isClass ? toggleClass(element, name, Boolean(value)) : writeAttribute(element, name, value);
 }
 
 /**

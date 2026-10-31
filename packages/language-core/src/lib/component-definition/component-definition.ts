@@ -1,24 +1,11 @@
-import { type ComponentMetadata, extractComponentsMetadataFromSourceFile, type Span } from '@xaendar/compiler';
+import { type ComponentMetadata, extractComponentsMetadataFromSourceFile } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createSourceFile, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral, ScriptTarget, type StringLiteral } from 'typescript';
-import type { TemplateDefinition } from '../template-definition/template-definition';
+import type { TemplateDefinition } from '../types/template-definition.type';
 import { resolvePosixPath } from '../utils/path/path.utils';
 import { findInnermostSpan } from '../utils/template-span/template-span.utils';
-
-/**
- * A part of a `@WebComponent` decorator leading to the files of its component.
- */
-type ComponentTarget = {
-  /**
-   * The span of the part in the component file.
-   */
-  readonly span: Span;
-  /**
-   * The urls, relative to the component file, of the files the part leads to.
-   */
-  readonly urls: ReadonlyArray<ComponentMetadata['styleUrl']>;
-};
+import type { ComponentTarget } from '../types/component-target.type';
 
 /**
  * Finds the files a `@WebComponent` decorator of a component file leads to:

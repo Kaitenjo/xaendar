@@ -8,11 +8,11 @@ vi.mock('vite', () => ({
   resolveConfig: vi.fn()
 }));
 
-vi.mock('../build/build.command', () => ({
+vi.mock('../../utils/build-project/build-project.utils', () => ({
   buildProject: vi.fn()
 }));
 
-import { buildProject } from '../build/build.command';
+import { buildProject } from '../../utils/build-project/build-project.utils';
 import { prerenderCommand } from './prerender.command';
 
 /**
@@ -46,7 +46,7 @@ describe('prerenderCommand()', () => {
   });
 
   it('builds the project and renders each route into the index.html of its folder in the build of the browser', async () => {
-    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server.ts', prerender: ['/', '/team/'] } }));
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server', prerender: ['/', '/team/'] } }));
 
     await prerenderCommand().parseAsync([], { from: 'user' });
 
@@ -57,7 +57,7 @@ describe('prerenderCommand()', () => {
   });
 
   it('renders the root route by default', async () => {
-    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server.ts' } }));
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server' } }));
 
     await prerenderCommand().parseAsync([], { from: 'user' });
 
@@ -66,7 +66,7 @@ describe('prerenderCommand()', () => {
 
   it('keeps as they are the sequences with a dollar in the text of a page', async () => {
     const page = '<p>$& $\' $` $$</p>';
-    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server.ts' } }));
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server' } }));
     writeFileSync(join(projectDir, 'dist', 'client', 'index.html'), '<body><!--xd-ssr--><footer></footer></body>');
     writeFileSync(join(projectDir, 'dist', 'server', 'entry-server.js'), `export function render() { return ${JSON.stringify(page)}; }`);
 
@@ -84,5 +84,18 @@ describe('prerenderCommand()', () => {
     await expect(prerenderCommand().parseAsync([], { from: 'user' })).rejects.toThrow('process.exit called');
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('The project does not render on the server'));
     expect(buildProject).not.toHaveBeenCalled();
+  });
+
+  it('exits when the entry of the server does not export render, writing no page', async () => {
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server' } }));
+    writeFileSync(join(projectDir, 'dist', 'server', 'entry-server.js'), 'export const page = \'<app-root></app-root>\';');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+
+    await expect(prerenderCommand().parseAsync([], { from: 'user' })).rejects.toThrow('process.exit called');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('✖  src/entry-server does not export render(url): export the function rendering a page on the server.');
+    expect(readFileSync(join(projectDir, 'dist', 'client', 'index.html'), 'utf-8')).toBe('<body><!--xd-ssr--></body>');
   });
 });

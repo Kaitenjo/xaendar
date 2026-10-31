@@ -1,25 +1,5 @@
-import type { CustomElement } from '../../models/custom-element/custom-element';
-import type { _Context } from '../context/context.util';
-
-/**
- * Compiler-generated render function of a template, invoked with the
- * component instance bound as `this`.
- */
-export type RenderFunction = (this: CustomElement) => _Context;
-
-/**
- * Rendering information registered for a component class.
- */
-export type RenderDefinition = {
-  /**
-   * Compiler-generated render function of the component template.
-   */
-  readonly render: RenderFunction;
-  /**
-   * Stylesheet adopted by the component shadow root, if the component declares any style.
-   */
-  readonly styleSheet?: CSSStyleSheet;
-};
+import type { RenderFunction } from '../../types/render-function.type';
+import type { RenderDefinition } from '../../types/render-definition.type';
 
 /**
  * Module-private registry mapping each component class to its rendering information.

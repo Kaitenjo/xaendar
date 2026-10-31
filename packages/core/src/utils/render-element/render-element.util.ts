@@ -1,4 +1,4 @@
-import type { AbstractConstructor, Constructor, Dictionary, Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
+import type { Dictionary, Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -11,7 +11,9 @@ import type { SettableInputSignal } from '../../signals/types/settable-input-sig
 import type { Signal as SignalType } from '../../signals/types/signal.type';
 import { untracked } from '../../signals/untracked';
 import type { BindingHost } from '../../types/binding-host.type';
-import type { RenderConditionalBinding, RenderElementConditionalBinding, RenderElementStructuralDirectiveConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { RenderElementStructuralDirectiveConditionalBinding } from '../../types/render-element-structural-directive-conditional-binding.type';
+import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
@@ -19,29 +21,12 @@ import type { RenderElementStructuralDirective } from '../../types/render-elemen
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
 import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
 import { _Context, createAnchor } from '../context/context.util';
-import { _getDirective } from '../directive-registry/directive-registry.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
+import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
+import { _selectBranch } from '../select-branch/select-branch.util';
 import { trackNode } from '../track-node/track-node.util';
-
-/**
- * Renders the children of an element, as the compiler-generated render code does: it receives the element
- * and the context owning it, and returns the context it creates for the children.
- */
-type RenderChildren = Function<[element: Element, parentContext: _Context], _Context>;
-
-/**
- * Collects the flags of the structural directives applied to an element.
- */
-type StructuralCollector = {
-  /**
-   * Registers the flag of a structural directive applied to the element.
-   */
-  add: VoidFunction<[flag: SignalType<boolean | undefined>]>,
-  /**
-   * Unregisters the flag of a structural directive no longer applied to the element.
-   */
-  remove: VoidFunction<[flag: SignalType<boolean | undefined>]>
-};
+import type { RenderChildren } from '../../types/render-children.type';
+import type { StructuralCollector } from '../../types/structural-collector.type';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -221,7 +206,7 @@ function bindConditionalBindings<Bindings extends { conditionalBindings: RenderC
     let current: Bindings | undefined;
 
     context.addUnlistener(effect(() => {
-      const selected = selectBranch(conditionalBinding);
+      const selected = _selectBranch(conditionalBinding);
       untracked(() => {
         /*
           In rare cases when the signals registered in the expression changes but the final value
@@ -249,35 +234,6 @@ function bindConditionalBindings<Bindings extends { conditionalBindings: RenderC
 }
 
 /**
- * Selects the branch of a conditional binding to apply: the first one, in declaration order, whose condition holds.
- * The condition of a `@switch` branch holds when one of its values is strictly equal to the value of the
- * expression, while a branch without condition (`@else`, `@default`) always holds.
- *
- * Expression and condition should be the reactive fields containing a callback with inside one or more signals registered
- * in the effect wrapping the call to this function.
- * 
- * If they are not signals, they will be called just once and never re-run again
- * 
- * The conditions following the one of the selected branch are not evaluated, so the signals they read are not tracked.
- * @param conditionalBinding - The conditional binding to select the branch of.
- * @returns The selected branch, or `undefined` when no condition holds.
- */
-function selectBranch<Bindings extends { conditionalBindings: RenderConditionalBinding<Bindings>[] }>(conditionalBinding: RenderConditionalBinding<Bindings>): Bindings | undefined {
-  /*
-    Expression is defined = Switch Condiitonal Binding
-  */
-  if (conditionalBinding.expression) {
-    const value = conditionalBinding.expression();
-    return conditionalBinding.branches.find(({ condition }) => !condition || condition.some(candidate => candidate === value));
-  }
-
-  /*
-    Otherwise If/ElseIf/Else Conditional Binding  
-  */
-  return conditionalBinding.branches.find(({ condition }) => !condition || condition());
-}
-
-/**
  * Applies a list of directives to an HTML element: each directive is instantiated,
  * its properties are bound and its events listened to on the element, directly or
  * through its conditional bindings, then it is started.
@@ -290,7 +246,7 @@ function selectBranch<Bindings extends { conditionalBindings: RenderConditionalB
 function bindDirectives(element: Element, context: _Context, directives: RenderElementDirective[]): void {
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes, events, conditionalBindings } = directives[i];
-    const Directive = resolveDirective(selector, CustomDirective);
+    const Directive = _resolveDirective(selector, CustomDirective);
     if (element instanceof CustomElement && element.hostDirectives?.has(Directive)) {
       throw new Error(`Directive ${typeof selector === 'string' ? `"${selector}"` : Directive.name} is applied more than once on <${element.localName}>: it is already a host directive of the component`);
     }
@@ -407,7 +363,7 @@ function checkRender(flags: SignalType<Array<SignalType<boolean | undefined>>>):
 function bindStructuralDirectives(context: _Context, structuralDirectives: RenderElementStructuralDirective[], collector: StructuralCollector): void {
   for (let i = 0; i < structuralDirectives.length; i++) {
     const { selector, attributes } = structuralDirectives[i];
-    const Directive = resolveDirective(selector, StructuralDirective);
+    const Directive = _resolveDirective(selector, StructuralDirective);
     const directive = new Directive();
     const flag = signal<boolean | undefined>(undefined);
     let evaluation = 0;
@@ -429,30 +385,6 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: Rende
       collector.remove(flag);
     });
   }
-}
-
-/**
- * Retrieves the directive class registered for a selector, or takes the class given in its place, ensuring it is of the expected kind.
- * @param selector - The selector identifying the directive in templates, or the class of the directive, applied without a selector by `createComponent`.
- * @param kind - The base class the directive is expected to extend.
- * @returns The directive class registered for the selector, or the given class.
- * @throws When no directive is registered for the selector, or when the directive does not extend `kind`.
- */
-function resolveDirective<T extends CustomDirective | StructuralDirective>(selector: string | Constructor<CustomDirective | StructuralDirective>, kind: AbstractConstructor<T>): Constructor<T> {
-  const isSelector = typeof selector === 'string';
-  const Directive = isSelector ? _getDirective(selector) : selector;
-  if (!Directive) {
-    throw new Error(`No directive registered for selector "${selector}"`);
-  }
-
-  const isDirectiveKind = (Directive: Constructor<CustomDirective | StructuralDirective>): Directive is Constructor<T> => Directive.prototype instanceof kind
-  if (!isDirectiveKind(Directive)) {
-    throw new Error(isSelector
-      ? `Directive ${Directive.name} registered for selector "${selector}" is not a ${kind.name}`
-      : `Directive ${Directive.name} is not a ${kind.name}`);
-  }
-
-  return Directive;
 }
 
 /**

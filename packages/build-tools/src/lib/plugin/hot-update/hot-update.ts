@@ -1,8 +1,7 @@
 import type { EnvironmentModuleNode, HookHandler, Plugin } from 'vite';
 import { findComponentPathsForDependency } from '../../registry/dependency-registry/dependency-registry';
 import { findComponentPathsForTemplate } from '../../registry/template-registry/template-registry';
-import type { XaendarPluginState } from '../../types/plugin.types';
-import { isServerRendering } from '../../utils/server-rendering/server-rendering.utils';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 /**
  * Fully invalidates the components depending on the changed file, and the ones whose template was just created.
@@ -17,19 +16,16 @@ import { isServerRendering } from '../../utils/server-rendering/server-rendering
  * the module graph at all (e.g. a `.d.ts` file).
  *
  * The hook runs for each environment, invalidating the modules of its own graph: the ones of the server are evaluated
- * again by the next page the server renders. A module only the server evaluates, such as its entry, changes no module
- * of the browser, so the page is reloaded, to be rendered again.
+ * again by the next page the server renders. A file the environment evaluates is handed to the `hotUpdate` of its
+ * strategy too: the one of the server rendering reloads the page when the browser does not evaluate the file.
  *
  * @param state - The shared plugin state, holding the dev server.
  * @returns The `hotUpdate` hook handler.
  */
 export function createHotUpdateHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['hotUpdate']>> {
   return function hotUpdate({ type, file, modules, timestamp }) {
-    if (modules.length && isServerRendering(state, this)) {
-      const client = state.server!.environments.client;
-      if (!client.moduleGraph.getModulesByFile(file)?.size) {
-        client.hot.send({ type: 'full-reload' });
-      }
+    if (modules.length) {
+      state.strategies[this.environment.config.consumer].hotUpdate?.(file, state.server!);
     }
 
     const componentPaths = new Set(findComponentPathsForDependency(file));

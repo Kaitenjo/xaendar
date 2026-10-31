@@ -2,7 +2,7 @@ import { CR, GREATER_THEN, LF, LPAREN, SLASH, SPACE, TAB } from '../../../costan
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import { MaybeTokenWithSpan } from '../../types/token.type';
+import type { MaybeTokenWithSpan } from '../../types/maybe-token-with-span.type';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';

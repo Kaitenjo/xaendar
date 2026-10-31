@@ -1,4 +1,4 @@
-import type { ForImplicitVariables } from '../../types/nodes/for-implicit-variables';
+import type { ForImplicitVariables } from '../../types/nodes/for-implicit-variables.type';
 import type { ForNode } from '../../types/nodes/for-node.type';
 
 /**

@@ -9,9 +9,10 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
 }));
 
 import type { EnvironmentModuleNode, HookHandler, HotUpdateOptions, Plugin } from 'vite';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { findComponentPathsForDependency } from '../../registry/dependency-registry/dependency-registry';
 import { findComponentPathsForTemplate } from '../../registry/template-registry/template-registry';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { createHotUpdateHook } from './hot-update';
 
 /**
@@ -22,7 +23,7 @@ type HotUpdateContext = ThisParameterType<NonNullable<HookHandler<Plugin['hotUpd
 /**
  * The state of a plugin rendering in the browser only.
  */
-const CLIENT_STATE = {} as XaendarPluginState;
+const CLIENT_STATE = { strategies: { client: CLIENT_STRATEGY, server: CLIENT_STRATEGY } } as XaendarPluginState;
 
 /**
  * Path of the file, depended on by components, whose change triggers the hot update.
@@ -48,11 +49,13 @@ const barModule = { id: '/src/bar.xd.component.ts' } as EnvironmentModuleNode;
  * Builds a mocked `hotUpdate` hook context wired to a `moduleGraph.getModulesByFile` stub.
  *
  * @param modulesByFile - Modules returned by `getModulesByFile`, keyed by file path.
+ * @param consumer - The consumer of the environment, the browser by default.
  * @returns The mocked hook context.
  */
-function createContext(modulesByFile: Record<string, EnvironmentModuleNode[]>): HotUpdateContext {
+function createContext(modulesByFile: Record<string, EnvironmentModuleNode[]>, consumer: 'client' | 'server' = 'client'): HotUpdateContext {
   return {
     environment: {
+      config: { consumer },
       moduleGraph: {
         getModulesByFile: vi.fn((file: string) => modulesByFile[file] ? new Set(modulesByFile[file]) : undefined),
         invalidateModule: vi.fn()
@@ -150,7 +153,7 @@ describe('createHotUpdateHook(CLIENT_STATE)', () => {
     function createServerState(clientModules: Record<string, EnvironmentModuleNode[]>) {
       const send = vi.fn();
       const state = {
-        ssr: { entry: '/src/entry-server.ts' },
+        strategies: { client: CLIENT_STRATEGY, server: SERVER_STRATEGY },
         server: {
           environments: {
             client: {
@@ -163,23 +166,14 @@ describe('createHotUpdateHook(CLIENT_STATE)', () => {
       return { state, send };
     }
 
-    /**
-     * Builds the context of the hook for an environment of the server, or of the browser.
-     */
-    function createServerContext(consumer = 'server'): HotUpdateContext {
-      const context = createContext({});
-      Object.assign(context.environment, { config: { consumer } });
-      return context;
-    }
-
     beforeEach(() => {
       vi.mocked(findComponentPathsForDependency).mockReturnValue(undefined);
     });
 
-    it('reloads the page when a module only the server evaluates changes', async () => {
+    it('reloads the page with the strategy of the server when a module only the server evaluates changes', async () => {
       const { state, send } = createServerState({});
 
-      await createHotUpdateHook(state).call(createServerContext(), createOptions());
+      await createHotUpdateHook(state).call(createContext({}, 'server'), createOptions());
 
       expect(send).toHaveBeenCalledWith({ type: 'full-reload' });
     });
@@ -187,7 +181,7 @@ describe('createHotUpdateHook(CLIENT_STATE)', () => {
     it('leaves the reload to the browser for a module it evaluates too', async () => {
       const { state, send } = createServerState({ [BASE_PATH]: [baseModule] });
 
-      await createHotUpdateHook(state).call(createServerContext(), createOptions());
+      await createHotUpdateHook(state).call(createContext({}, 'server'), createOptions());
 
       expect(send).not.toHaveBeenCalled();
     });
@@ -195,8 +189,8 @@ describe('createHotUpdateHook(CLIENT_STATE)', () => {
     it('does not reload the page for a file the server does not evaluate, nor in the environment of the browser', async () => {
       const { state, send } = createServerState({});
 
-      await createHotUpdateHook(state).call(createServerContext(), createOptions([]));
-      await createHotUpdateHook(state).call(createServerContext('client'), createOptions());
+      await createHotUpdateHook(state).call(createContext({}, 'server'), createOptions([]));
+      await createHotUpdateHook(state).call(createContext({}), createOptions());
 
       expect(send).not.toHaveBeenCalled();
     });

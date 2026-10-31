@@ -470,6 +470,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An @import whose path does not resolve: a relative path leading to no file or folder, a package that is not installed, or an alias that tsconfig.json does not declare.
 - **Fix:** Fix the path, install the package, or declare the alias in the paths of tsconfig.json.
 
+### `Error: <path> does not export render(url): export the function rendering a page on the server`
+
+- **Cause:** The dev server rendering a page with an entry of the server that does not export render: the export removed or renamed.
+- **Fix:** Export from the entry the function render(url), which returns the HTML of the page of a URL.
+
 ## Runtime
 
 ### `XCard does not seem to have a Render Function`
@@ -612,6 +617,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The module of the component was built without the server rendering of the Vite plugin, so it registered no template for the server: the plugin without its ssr option, Vite without the plugin, or a spec run by xd test, which compiles the templates for the browser.
 - **Fix:** Declare ssr in xaendar.json, or pass ssr to xaendarPlugin(). Check the server rendering with xd start or xd prerender, not in a spec.
 
+### `Error: dist/server/entry-server.js does not export render(url): export the function rendering a page on the server from src/entry-server.ts`
+
+- **Cause:** npm run serve with a build whose entry of the server does not export render: the export removed or renamed, and the project built without running xd start or xd prerender, which report it.
+- **Fix:** Export from src/entry-server.ts the function render(url), which returns the HTML of the page of a URL, then build the project again.
+
 ## Signals
 
 ### `Circular dependency detected while computing a Computed signal`
@@ -656,7 +666,17 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** xd generate component found, in the nearest xaendar.json, a generate.components.style that is not one of the formats the plugin compiles.
 - **Fix:** Set it to css, scss, sass or less, or remove it to get CSS.
 
-### `✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server.ts" } in its xaendar.json.`
+### `✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server" } in its xaendar.json.`
 
 - **Cause:** xd prerender in a project whose xaendar.json declares no ssr.
 - **Fix:** Declare the entry of the server in the ssr of xaendar.json, as xd new --ssr does.
+
+### `✖  Invalid ssr entry "src/entry-server.ts" in xaendar.json: write it without extension.`
+
+- **Cause:** xd start, xd build, xd test or xd prerender in a project whose xaendar.json writes the entry of ssr with the extension of its file.
+- **Fix:** Remove the extension: "entry": "src/entry-server".
+
+### `✖  src/entry-server does not export render(url): export the function rendering a page on the server.`
+
+- **Cause:** xd prerender with an entry of the server that does not export render: the export removed or renamed.
+- **Fix:** Export from the entry the function render(url), which returns the HTML of the page of a URL.

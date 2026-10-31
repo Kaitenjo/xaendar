@@ -1,10 +1,10 @@
 import { readFileSync, statSync } from 'node:fs';
 import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, ImportDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
-import type { CachedSourceFile } from './types/cached-source-file.type';
-import type { DeclarationFinder } from './types/declaration-finder.type';
-import type { ResolutionContext } from './types/resolution-context.type';
-import type { ResolvedClass } from './types/resolved-class.type';
-import type { ResolvedDeclaration } from './types/resolved-declaration.type';
+import type { CachedSourceFile } from '../../types/cached-source-file.type';
+import type { DeclarationFinder } from '../../types/declaration-finder.type';
+import type { ResolutionContext } from '../../types/resolution-context.type';
+import type { ResolvedClass } from '../../types/resolved-class.type';
+import type { ResolvedDeclaration } from '../../types/resolved-declaration.type';
 
 /**
  * Module resolution used when the caller doesn't supply the project compiler

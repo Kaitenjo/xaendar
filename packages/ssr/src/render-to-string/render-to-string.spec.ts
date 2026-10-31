@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ServerRenderFunction } from '../utils/server-render-registry/server-render-registry.util';
+import type { ServerRenderFunction } from '../types/server-render-function.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

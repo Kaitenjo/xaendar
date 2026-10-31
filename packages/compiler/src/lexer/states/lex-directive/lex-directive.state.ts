@@ -2,7 +2,7 @@ import { CR, EQUAL_THEN, GREATER_THEN, LESS_THAN, LF, LPAREN, RIGHT_BRACE, RPARE
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import { MaybeTokenWithSpan } from '../../types/token.type';
+import type { MaybeTokenWithSpan } from '../../types/maybe-token-with-span.type';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';

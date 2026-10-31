@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline/promises';
-import { STYLES, type Style } from '../../../utils/style/style';
+import { STYLES } from '../../../utils/style/style';
+import type { Style } from '../../../types/style.type';
 
 /**
  * Labels of the stylesheet formats, in the order of {@link STYLES}.

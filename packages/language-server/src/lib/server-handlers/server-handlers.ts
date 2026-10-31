@@ -5,6 +5,7 @@ import { type CodeAction, CodeActionKind, type CodeActionParams, type Completion
 import { COMPONENT_FILE_SUFFIX, TemplateRegistry } from '../template-registry/template-registry';
 import { Debouncer } from '../utils/debounce/debounce.utils';
 import { fromUri, getDocument, toCompletionItemKind, toRange, toSeverity } from '../utils/lsp/lsp.utils';
+import type { DocumentAnalysis } from '../types/document-analysis.type';
 
 /**
  * Suffix of the templates of the components.
@@ -30,20 +31,6 @@ const DEFAULT_PRINT_WIDTH = 120;
  * The narrowest width accepted for `xaendar.format.printWidth`.
  */
 const MIN_PRINT_WIDTH = 40;
-
-/**
- * The analysis of an open template, together with the version of the document it was made from.
- */
-type DocumentAnalysis = {
-  /**
-   * The version of the document analyzed.
-   */
-  readonly version: number;
-  /**
-   * The analysis.
-   */
-  readonly result: TemplateAnalysisResult;
-};
 
 /**
  * The Xaendar language server: diagnostics, definitions, hovers, semantic tokens and completions for the templates open in
@@ -554,4 +541,3 @@ export class XaendarLanguageServer {
 function isTemplate(document: TextDocument): boolean {
   return document.uri.endsWith(TEMPLATE_SUFFIX);
 }
-

@@ -1,4 +1,4 @@
-import type { ImportPathContext } from '../../types/import-path-context/import-path-context.type';
+import type { ImportPathContext } from '../../types/import-path-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { lexImportHeader } from '../import-header/import-header.utils';
 

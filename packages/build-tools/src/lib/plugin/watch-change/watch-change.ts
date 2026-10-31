@@ -6,7 +6,7 @@ import { clearImportToComponents, clearComponentToImports, findComponentsForImpo
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependency } from '../../registry/style-registry/style-registry';
 import { findComponentPathsForTemplate, removeComponentPath } from '../../registry/template-registry/template-registry';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 /**
  * Vite plugin `watchChange` hook: dispatches deleted files to the handler tearing down the

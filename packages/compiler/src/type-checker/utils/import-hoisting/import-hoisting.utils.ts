@@ -1,4 +1,5 @@
-import type { Line, LineMapping } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
+import type { LineMapping } from '../../types/line-mapping.type';
 import { plain } from '../line-builder/line-builder.utils';
 
 /**

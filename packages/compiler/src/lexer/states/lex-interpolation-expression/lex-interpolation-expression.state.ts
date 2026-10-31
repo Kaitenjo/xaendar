@@ -2,7 +2,7 @@ import { BACKSLASH, DOLLAR, DOUBLE_QUOTE, GRAVE_ACCENT, LEFT_BRACE, RIGHT_BRACE,
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import type { TokenWithOptionalSpan } from '../../types/token.type';
+import type { TokenWithOptionalSpan } from '../../types/token-with-optional-span.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';

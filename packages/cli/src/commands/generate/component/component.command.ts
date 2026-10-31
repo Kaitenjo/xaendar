@@ -2,7 +2,8 @@ import { isValidCustomElementName } from '@xaendar/common';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { toComponentClassName } from '../../../utils/component-class-name/component-class-name.utils';
-import { readProjectStyle, type Style } from '../../../utils/style/style';
+import { readProjectStyle } from '../../../utils/style/style';
+import type { Style } from '../../../types/style.type';
 
 /**
  * Scaffolds a new Xaendar component inside a dedicated folder.

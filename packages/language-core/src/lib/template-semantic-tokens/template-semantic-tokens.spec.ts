@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
 import { getTemplateSemanticTokens, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES } from './template-semantic-tokens';
 
 const TIMEOUT = 60_000;

@@ -23,5 +23,7 @@ paths:
 
 - Name files with the existing suffixes: `*.type.ts`, `*.model.ts`, `*.utils.ts`, `*.decorator.ts`, `*.spec.ts`.
 - One file per folder: `pippo.<suffix>.ts` lives in `pippo/` (named after the part before the first dot), together only with its `pippo.<suffix>.spec.ts`. Nested grouping sub-folders are fine (e.g. `plugin/plugin-utils/plugin.utils.ts`). Exempt: `public-api.ts` and `index.ts` directly under `src/`.
+- Every `type` and `interface` has a `<name>.type.ts` of its own (`ServerShadowRoot` → `server-shadow-root.type.ts`), helper types included, exported and imported with `import type`: never declared in a `*.utils.ts`, `*.model.ts`, `*.state.ts` or any other file. It goes in the nearest `types/` folder, or the one fitting what it describes (`dom/types/` for the server DOM). Specs are exempt.
+- A `*.type.ts` has no spec, so it gets no folder of its own: it sits directly in `types/` (`types/server-output.type.ts`, not `types/server-output/server-output.type.ts`), or in a sub-folder grouping several types (`types/tokens/`).
 - Before adding a spec for a file not yet isolated this way, create its folder and move the file into it.
 - Every new `*.utils.ts`/`*.model.ts` with executable logic needs a Vitest `*.spec.ts`: coverage must stay at 100%.

@@ -2,7 +2,7 @@ import { resolveExpression, ROOT_NODE } from '../../../generator/utils/generator
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';

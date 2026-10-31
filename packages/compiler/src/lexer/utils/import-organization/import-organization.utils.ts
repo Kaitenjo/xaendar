@@ -1,70 +1,14 @@
-import type { ImportInsertion } from '../../types/import-insertion/import-insertion.type';
+import type { ImportInsertion } from '../../types/import-insertion.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { ImportToken } from '../../types/tokens/import-token.type';
 import { IMPORT_STATEMENT_END, lexImportHeader } from '../import-header/import-header.utils';
-
-/**
- * An `@import` statement of the header of a template, read from its source.
- */
-type ImportStatement = {
-  /**
-   * The offset the statement starts at, on its `@import` keyword.
-   */
-  readonly start: number;
-  /**
-   * The offset the statement ends at, after its `;` if it has one.
-   */
-  readonly end: number;
-  /**
-   * The path of the module, as written.
-   */
-  readonly path: string;
-  /**
-   * The specifiers between the braces as written (`A`, `A as B`), the empty ones left by a trailing comma excluded.
-   */
-  readonly specifiers: string[];
-  /**
-   * Whether the statement is `@import lazy`.
-   */
-  readonly lazy: boolean;
-  /**
-   * The quote of the path.
-   */
-  readonly quote: string;
-  /**
-   * The `;` closing the statement, empty if it has none.
-   */
-  readonly semicolon: string;
-  /**
-   * Whether the specifiers are written on several lines.
-   */
-  readonly multiline: boolean;
-  /**
-   * The comments written after the statement, as written with the whitespace before them: the ones up to the next
-   * statement, or the ones on the line of the last statement. Empty when there are none.
-   */
-  comments: string;
-};
+import type { ImportStatement } from '../../types/import-statement.type';
+import type { ImportOrganizationOptions } from '../../types/import-organization-options.type';
 
 /**
  * The comments written on a line after the last `@import` statement, with the spaces before them.
  */
 const SAME_LINE_COMMENTS = /^(?:[ \t]*<!--[\s\S]*?-->)+/;
-
-/**
- * What {@link organizeImports} does besides writing the statements in a regular form.
- */
-export type ImportOrganizationOptions = {
-  /**
-   * The specifiers to remove, written as {@link toImportKey} writes them.
-   */
-  readonly unused?: ReadonlySet<string>;
-  /**
-   * Whether to merge the statements importing from the same module and sort the statements by path and the
-   * specifiers by name, bare module names before relative paths, ignoring the case.
-   */
-  readonly sort?: boolean;
-};
 
 /**
  * Writes the key identifying a specifier of an `@import` statement, to tell {@link organizeImports} the ones to remove.

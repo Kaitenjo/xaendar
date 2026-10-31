@@ -3,10 +3,11 @@ import { NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { ForToken } from '../../../lexer/types/tokens/for-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
-import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
+import { ASTNode } from '../../types/ast.type';
+import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.type';
 import { ForExpression } from '../../types/for-expression.type';
 import { ASTNodeType } from '../../types/node.enum';
-import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables';
+import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables.type';
 import type { Span } from '../../../types/span.type';
 import { ForNode } from '../../types/nodes/for-node.type';
 import { isIdentifier } from 'typescript';
@@ -14,6 +15,7 @@ import { getTemplateSpan, validateExpression } from '../../utils/expression-vali
 import { getForVariables } from '../../utils/for-variables/for-variables.utils';
 import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
+import type { ForSection } from '../../types/for-section.type';
 
 /**
  * Parses a `@for` directive, consuming the FOR token, the CONDITION token,
@@ -41,20 +43,6 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
 
   return { type: ASTNodeType.For, ...expression, children };
 }
-
-/**
- * A section of an `@for` expression, delimited by semicolons.
- */
-type ForSection = {
-  /**
-   * The text of the section, without the `;` separators and the leading spaces.
-   */
-  text: string;
-  /**
-   * The offset of the section in the template.
-   */
-  offset: number;
-};
 
 /**
  * Parses the body of an `@for` block into a structured {@link ForExpression}.

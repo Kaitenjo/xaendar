@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TemplateFormatOptions } from '../../types/template-format-options/template-format-options.type';
+import type { TemplateFormatOptions } from '../../types/template-format-options.type';
 import { formatTemplate } from './template-format.utils';
 
 const options: TemplateFormatOptions = { indent: '  ', indentWidth: 2, printWidth: 60 };

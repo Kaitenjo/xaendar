@@ -2,13 +2,14 @@ import { slice } from '@xaendar/common';
 import { Expression, forEachChild, Identifier, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
-import type { LineMapping } from '../../../type-checker/types/generated-line.type';
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
+import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { Span } from '../../../types/span.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 import { Dictionary } from '@xaendar/types';
 import globals from 'globals';
+import type { EmittedNode } from '../../types/emitted-node.type';
 
 /**
  * Complete set of JavaScript global identifiers up to ES2026.
@@ -30,6 +31,12 @@ export const GLOBAL_IDENTIFIERS = new Set([
   ...Object.keys(globals.builtin),
   ...Object.getOwnPropertyNames(Object.prototype),
 ]);
+
+/**
+ * The global identifiers of the browser that ECMAScript does not define (`window`, `document`, `localStorage`…): the
+ * ones read through the object given as `browserGlobals` (see `ResolveExpressionOptions`).
+ */
+const BROWSER_GLOBAL_IDENTIFIERS: ReadonlySet<string> = new Set(Object.keys(globals.browser).filter(name => !Object.hasOwn(globals.builtin, name)));
 
 export const ROOT_NODE = 'root';
 
@@ -91,24 +98,6 @@ export function resolveExpression(expression: Expression, compilerContext: Compi
 }
 
 /**
- * The text emitted for a node of an expression, with the mappings of its columns to the template.
- */
-type EmittedNode = {
-  /**
-   * The resolved text of the node.
-   */
-  expression: string;
-  /**
-   * Whether the node reads a signal.
-   */
-  reactive?: boolean;
-  /**
-   * The mappings of the columns of `expression` to the spans of the template they come from.
-   */
-  segments: LineMapping[];
-};
-
-/**
  * Moves segments to the right, e.g. those of a child node once its text follows the text emitted before it.
  *
  * @param segments - The segments to move.
@@ -148,7 +137,7 @@ function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, op
     before it, so that the features of the editor still find the signal (`(root.item(), __if12_item)`)
   */
   const callee = getSignalCallee(node);
-  const narrowed = callee && needsResolution(callee, node, compilerContext) ? options.narrowedSignal(callee.text) : undefined;
+  const narrowed = callee && needsResolution(callee, node, compilerContext, options) ? options.narrowedSignal(callee.text) : undefined;
   const emitted = emitResolvedNode(node, parent, compilerContext, options);
   if (!narrowed) {
     return emitted;
@@ -188,7 +177,7 @@ function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerCon
   const span = getTemplateSpan(node);
 
   // Leaf Identifier that needs resolution
-  if (isIdentifier(node) && needsResolution(node, parent, compilerContext)) {
+  if (isIdentifier(node) && needsResolution(node, parent, compilerContext, options)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, compilerContext, options);
 
@@ -205,7 +194,7 @@ function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerCon
   }
 
   // No resolvable identifiers nor non-null assertions to drop in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent, compilerContext) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  if (!containsResolvableIdentifier(node, parent, compilerContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -279,6 +268,11 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
     return { expression: imported.expression, reactive: imported.kind === 'signal' };
   }
 
+  // A global of the browser reaches here only when it is read through `browserGlobals`, unless a member shadows it
+  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !compilerContext.hasShadowingMember(text)) {
+    return { expression: `${options.browserGlobals}.${text}` };
+  }
+
   return { expression: member };
 }
 
@@ -287,9 +281,15 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
  * Identifier that needs context resolution.
  *
  * Short-circuits as soon as one is found to avoid visiting the whole tree.
+ *
+ * @param node - The root of the subtree.
+ * @param parent - The parent of the root.
+ * @param compilerContext - The active template scope context.
+ * @param options - The options of the resolution.
+ * @returns Whether the subtree contains an identifier to resolve.
  */
-function containsResolvableIdentifier(node: Node, parent: Node, compilerContext: CompilerContext): boolean {
-  if (isIdentifier(node) && needsResolution(node, parent, compilerContext)) {
+function containsResolvableIdentifier(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
+  if (isIdentifier(node) && needsResolution(node, parent, compilerContext, options)) {
     return true;
   }
 
@@ -297,7 +297,7 @@ function containsResolvableIdentifier(node: Node, parent: Node, compilerContext:
 
   forEachChild(node, child => {
     if (!found) {
-      found = containsResolvableIdentifier(child, node, compilerContext);
+      found = containsResolvableIdentifier(child, node, compilerContext, options);
     }
   });
 
@@ -329,19 +329,27 @@ function containsNonNullExpression(node: Node): boolean {
  * access expression, and it is not a global/builtin identifier. A local identifier
  * (class member, inherited ones included, or element ref) named like a global
  * shadows it, and so does a name the template imports: the global stays reachable as `window.name` or `globalThis.name`.
+ * A global of the browser is resolved too when the options read it through `browserGlobals`.
+ *
+ * @param node - The identifier.
+ * @param parent - The parent of the identifier.
+ * @param compilerContext - The active template scope context.
+ * @param options - The options of the resolution.
+ * @returns Whether the identifier is resolved.
  */
-function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext): boolean {
+function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
   const { text } = node;
   const isLocal = compilerContext.hasSignalField(text)
     || compilerContext.hasShadowingMember(text)
     || compilerContext.hasUnresolvableIdentifier(text)
     || compilerContext.hasIdentifier(text)
     || !!compilerContext.getImportedIdentifier(text);
+  const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
 
   return !(
     (isPropertyAccessExpression(parent) && parent.name === node)  // obj.prop -> prop should not be resolved
     || (isPropertyAssignment(parent) && parent.name === node) // { key: value } -> key should not be resolved
-    || (GLOBAL_IDENTIFIERS.has(text) && !isLocal) // a local identifier shadows the global one
+    || (GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal) // a local identifier shadows the global one
     || !text
   );
 }
@@ -433,6 +441,7 @@ function mapDefaultOptions(options?: ResolveExpressionOptions): Required<Resolve
   return {
     resolver: options?.resolver ?? 'this',
     preserveNonNull: options?.preserveNonNull ?? false,
-    narrowedSignal: options?.narrowedSignal ?? (() => undefined)
+    narrowedSignal: options?.narrowedSignal ?? (() => undefined),
+    browserGlobals: options?.browserGlobals ?? ''
   };
 }

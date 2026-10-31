@@ -1,4 +1,4 @@
-import { LineMapping } from './generated-line.type';
+import type { LineMapping } from './line-mapping.type';
 
 export type TypeCheckResult = {
   /** 

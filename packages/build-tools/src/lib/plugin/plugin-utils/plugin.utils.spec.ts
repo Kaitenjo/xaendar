@@ -36,6 +36,7 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
 import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, isReactiveExport, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
@@ -283,7 +284,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
     const moduleImports = new Map<string, string>(first ? [] : [['virtual:xaendar-template:/other.html?signals=&lang.js', '__Other_render']]);
-    injectTemplate(s, sourceFile, moduleImports, className, specifier, styleModuleSpecifier);
+    injectTemplate(s, sourceFile, moduleImports, className, specifier, CLIENT_STRATEGY.registration, styleModuleSpecifier);
     return s.toString();
   }
 
@@ -331,7 +332,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
 
-    expect(() => injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, styleSpecifier)).toThrow();
+    expect(() => injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, CLIENT_STRATEGY.registration, styleSpecifier)).toThrow();
     expect(s.toString()).toBe(source);
   });
 
@@ -345,7 +346,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', jsSource, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(jsSource);
 
-    injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, styleSpecifier, true);
+    injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, SERVER_STRATEGY.registration, styleSpecifier);
     const result = s.toString();
 
     expect(result.startsWith([
@@ -481,8 +482,8 @@ describe('injectTemplate()', () => {
       const s = new MagicString(source);
       const moduleImports = new Map<string, string>();
 
-      injectTemplate(s, sourceFile, moduleImports, 'Foo', fooSpecifier, fooStyleSpecifier);
-      injectTemplate(s, sourceFile, moduleImports, 'Bar', barSpecifier, barStyleSpecifier);
+      injectTemplate(s, sourceFile, moduleImports, 'Foo', fooSpecifier, CLIENT_STRATEGY.registration, fooStyleSpecifier);
+      injectTemplate(s, sourceFile, moduleImports, 'Bar', barSpecifier, CLIENT_STRATEGY.registration, barStyleSpecifier);
       return s.toString();
     }
 

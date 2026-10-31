@@ -1,4 +1,4 @@
-import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables';
+import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';

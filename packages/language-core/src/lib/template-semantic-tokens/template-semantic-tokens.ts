@@ -1,7 +1,10 @@
 import { getTemplateSpan, type Span } from '@xaendar/compiler';
 import { forEachChild, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
+import type { TemplateSemanticTokenType } from '../types/template-semantic-token-type.type';
+import type { TemplateSemanticTokenModifier } from '../types/template-semantic-token-modifier.type';
+import type { TemplateSemanticToken } from '../types/template-semantic-token.type';
 
 /**
  * The types of the semantic tokens of a template, in the order of the legend.
@@ -12,34 +15,6 @@ export const TEMPLATE_SEMANTIC_TOKEN_TYPES = ['property', 'event', 'decorator', 
  * The modifiers of the semantic tokens of a template, in the order of the legend.
  */
 export const TEMPLATE_SEMANTIC_TOKEN_MODIFIERS = ['readonly'] as const;
-
-/**
- * The type of a semantic token of a template.
- */
-export type TemplateSemanticTokenType = typeof TEMPLATE_SEMANTIC_TOKEN_TYPES[number];
-
-/**
- * A modifier of a semantic token of a template.
- */
-export type TemplateSemanticTokenModifier = typeof TEMPLATE_SEMANTIC_TOKEN_MODIFIERS[number];
-
-/**
- * A part of a template colored by what it is rather than by how it is written.
- */
-export type TemplateSemanticToken = {
-  /**
-   * The span of the part.
-   */
-  readonly span: Span;
-  /**
-   * What the part is.
-   */
-  readonly type: TemplateSemanticTokenType;
-  /**
-   * The modifiers of the part.
-   */
-  readonly modifiers: readonly TemplateSemanticTokenModifier[];
-};
 
 /**
  * Collects the semantic tokens of a template, sorted by position:
@@ -119,4 +94,3 @@ function collectVariableReads(node: Node, parent: Node, variables: ReadonlySet<s
 
   forEachChild(node, child => collectVariableReads(child, node, variables, collect));
 }
-

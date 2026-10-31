@@ -1,11 +1,7 @@
 import { Span } from '../../../types/span.type.js';
-import { Line, LineMapping } from '../../types/generated-line.type.js';
-
-/**
- * A fragment of a line: a static string, or a text mapped onto the span of the template it comes from,
- * optionally together with finer mappings of its parts.
- */
-export type LinePart = string | { text: string; span: Span; segments?: readonly LineMapping[] };
+import type { Line } from '../../types/line.type.js';
+import type { LineMapping } from '../../types/line-mapping.type.js';
+import type { LinePart } from '../../types/line-part.type';
 
 /**
  * Marks a text fragment as originating from a span in the template source.

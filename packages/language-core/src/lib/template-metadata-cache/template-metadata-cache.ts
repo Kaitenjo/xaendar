@@ -4,20 +4,7 @@ import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
 import { resolveModule, resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
-
-/**
- * The metadata extracted from a file, together with the text they were extracted from.
- */
-type MetadataEntry = {
-  /**
-   * The text of the file the metadata were extracted from.
-   */
-  readonly text: string;
-  /**
-   * The metadata of the components and directives declared in the file, keyed by class name.
-   */
-  readonly metadatas: ReadonlyMap<string, ComponentOrDirectiveMetadata>;
-};
+import type { MetadataEntry } from '../types/metadata-entry.type';
 
 /**
  * What a file declaring a component or a directive contains: the decorator, whose presence tells it from the files that

@@ -1,7 +1,9 @@
 import { createSourceFile, type Diagnostic, DiagnosticCategory, type LanguageService, ScriptTarget } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { analyzeTemplate, type TemplateAnalysisResult } from '../template-analysis/template-analysis';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { analyzeTemplate } from '../template-analysis/template-analysis';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
 import { getTemplateDiagnostics } from './template-diagnostics';
 
 const TIMEOUT = 60_000;

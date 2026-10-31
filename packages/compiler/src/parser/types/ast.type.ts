@@ -1,5 +1,3 @@
-import { Span } from '../../types/span.type';
-import { ASTNodeType } from './node.enum';
 import { CaseNode } from './nodes/case-node.type';
 import { ElementNode } from './nodes/element-node.type';
 import { ElseIfNode } from './nodes/else-if-node.type';
@@ -31,24 +29,4 @@ export type ASTNode =
   | TemplateNode
   | RenderNode
   | LetNode;
-
-export type ASTNodeWithOptionalSpan =
-| MaybeASTNodeWithSpan<ElementNode>
-| MaybeASTNodeWithSpan<TextNode>
-| MaybeASTNodeWithSpan<InterpolationNode>
-| MaybeASTNodeWithSpan<IfNode>
-| MaybeASTNodeWithSpan<ElseIfNode>
-| MaybeASTNodeWithSpan<ElseNode>
-| MaybeASTNodeWithSpan<ForNode>
-| MaybeASTNodeWithSpan<SwitchNode>
-| MaybeASTNodeWithSpan<CaseNode>
-| MaybeASTNodeWithSpan<ImportNode>
-| MaybeASTNodeWithSpan<TemplateNode>
-| MaybeASTNodeWithSpan<RenderNode>
-| MaybeASTNodeWithSpan<LetNode>;
-
-export type ASTNodeWithSpan<T extends { type: ASTNodeType }> = T & {
-  span: Span
-} 
-
-export type MaybeASTNodeWithSpan<T extends { type: ASTNodeType, span: Span }> = Omit<T, 'span'> & Partial<Pick<T, 'span'>>;
+ 

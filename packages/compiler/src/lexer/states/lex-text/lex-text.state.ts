@@ -5,7 +5,8 @@ import { LexerState } from '../../types/lexer-state.enum.js';
 import { TokenType } from '../../types/token-type.enum.js';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type.js';
-import { Token, TokenWithOptionalSpan } from '../../types/token.type.js';
+import { Token } from '../../types/token.type.js';
+import type { TokenWithOptionalSpan } from '../../types/token-with-optional-span.type.js';
 
 /**
  * Consumes plain text content, accumulating characters until a structural boundary

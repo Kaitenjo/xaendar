@@ -41,6 +41,7 @@ vi.mock('../watch-change/watch-change', () => ({
 }));
 
 import { loadTsConfig } from '@xaendar/language-core';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import { createBuildEndHook } from '../build-end/build-end';
 import { createConfigResolvedHook } from '../config-resolved/config-resolved';
@@ -160,6 +161,17 @@ describe('xaendarPlugin()', () => {
 
     expect(vi.mocked(createTransformHook).mock.calls[0][0].ssr).toEqual({ entry: 'src/entry-server.ts' });
     expect(vi.mocked(createTransformHook).mock.calls[1][0].ssr).toBeUndefined();
+  });
+
+  it('gives the server the strategy of the server rendering only with ssr, the browser always its own', () => {
+    xaendarPlugin({ ssr: { entry: 'src/entry-server.ts' } });
+    xaendarPlugin();
+
+    const [rendering, browserOnly] = vi.mocked(createTransformHook).mock.calls.map(call => call[0].strategies);
+    expect(rendering.client).toBe(CLIENT_STRATEGY);
+    expect(rendering.server).toBe(SERVER_STRATEGY);
+    expect(browserOnly.client).toBe(CLIENT_STRATEGY);
+    expect(browserOnly.server).toBe(CLIENT_STRATEGY);
   });
 
   it('logs to the console when no logger has been set yet', () => {

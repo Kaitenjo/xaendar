@@ -1,49 +1,11 @@
 import { CompilerOptions, Expression, isArrayLiteralExpression, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isShorthandPropertyAssignment, isStringLiteralLike, ObjectLiteralExpression, SourceFile } from 'typescript';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
-import { ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
-import { WebComponentDecorator } from '../../types/typescript-decorator-nodes.type';
+import { ComponentMetadata } from '../../types/component-metadata.type';
+import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
 import { resolveClassReference } from '../resolve-declaration/resolve-declaration.utils';
-import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
-
-/**
- * A property or an event of a host directive exposed on its component: the name in the directive and the name it is exposed with.
- */
-type Exposure = {
-  /**
-   * The name of the property (or its alias, when the directive declares one) or of the event in the directive.
-   */
-  name: string,
-  /**
-   * The name it is exposed with on the component.
-   */
-  alias: string
-};
-
-/**
- * A host directive declared in the `hostDirectives` of a `@WebComponent`, as written in the decorator.
- */
-type HostDirectiveDeclaration = {
-  /**
-   * The expression naming the class of the directive.
-   */
-  directive: Expression,
-  /**
-   * The inputs the component exposes, when the declaration lists them as an array literal.
-   */
-  properties?: Exposure[],
-  /**
-   * The events the component exposes, when the declaration lists them as an array literal.
-   */
-  events?: Exposure[]
-};
-
-/**
- * Extracts the properties and the events of a directive, inherited ones included.
- *
- * @param directive - The class of the directive, with the file declaring it.
- * @returns The properties, keyed by their alias or name, and the events, keyed by name; `undefined` when the class can't be read.
- */
-type ExtractBindings = (directive: ResolvedClass) => Pick<ComponentMetadata, 'properties' | 'events'> | undefined;
+import type { Exposure } from '../../types/exposure.type';
+import type { HostDirectiveDeclaration } from '../../types/host-directive-declaration.type';
+import type { ExtractBindings } from '../../types/extract-bindings.type';
 
 /**
  * Adds to the metadata of a component the inputs and the events its host directives expose: they are bound from the templates

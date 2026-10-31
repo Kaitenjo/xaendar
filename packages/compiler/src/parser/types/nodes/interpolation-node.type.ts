@@ -1,6 +1,6 @@
 import { Expression } from 'typescript';
 import { ASTNodeType } from '../node.enum';
-import { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 
 /**
  * AST node representing an inline interpolation binding `{ expression }` or `` {`literal`} ``.

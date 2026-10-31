@@ -1,22 +1,10 @@
-import { resolveShimPosition, type Span } from '@xaendar/compiler';
+import { resolveShimPosition } from '@xaendar/compiler';
 import { displayPartsToString, type QuickInfo } from 'typescript';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
-import { type DefinitionTarget, findDefinitionTarget } from '../template-definition/template-definition';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import { findDefinitionTarget } from '../template-definition/template-definition';
+import type { DefinitionTarget } from '../types/definition-target.type';
 import { toTemplateSpan } from '../utils/template-span/template-span.utils';
-
-/**
- * What the editor shows when the cursor rests on a part of a template.
- */
-export type TemplateHover = {
-  /**
-   * The text to show, in markdown: the signature in a code block, then the JSDoc.
-   */
-  readonly contents: string;
-  /**
-   * The span of the template the text refers to, e.g. the whole tag name of a component.
-   */
-  readonly span: Span;
-};
+import type { TemplateHover } from '../types/template-hover.type';
 
 /**
  * Finds what to show on the part of a template at an offset:

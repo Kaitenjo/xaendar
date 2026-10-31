@@ -3,7 +3,7 @@ import { Parser } from '../parser/parser/parser';
 import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
 import type { CompilerCache } from '../types/compiler-cache.type';
-import type { ImportedSymbol } from '../types/imported-symbol/imported-symbol.type';
+import type { ImportedSymbol } from '../types/imported-symbol.type';
 import { TemplateError } from '../models/template-error/template-error.model';
 import { compile, parseTemplate, typeCheckTemplate, typeCheckTemplateTolerant } from './compile';
 

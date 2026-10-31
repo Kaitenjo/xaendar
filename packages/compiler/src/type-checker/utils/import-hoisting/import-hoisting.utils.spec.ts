@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { hoistImportTypes } from './import-hoisting.utils';
 
 const span = { start: 0, end: 1 };

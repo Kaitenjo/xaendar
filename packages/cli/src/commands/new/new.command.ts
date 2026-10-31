@@ -3,17 +3,21 @@ import { Command } from 'commander';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path/win32';
 import { generateComponent } from '../generate/component/component.command';
-import { buildStructure, Entry } from './structure/structure';
+import { buildStructure } from './structure/structure';
+import type { Entry } from './types/entry.type';
 import { execSync } from 'node:child_process';
-import { isStyle, STYLES, type Style } from '../../utils/style/style';
+import { isStyle, STYLES } from '../../utils/style/style';
+import type { Style } from '../../types/style.type';
 import { promptStyle } from './prompt-style/prompt-style';
+import { CLIENT_RENDERING, SERVER_RENDERING } from './rendering/rendering';
 
 /**
  * Creates and returns the `new` command.
  *
  * Scaffolds a new Xaendar project by generating the base directory structure
  * and initial component files. The stylesheet format is asked on the terminal
- * when `--style` is not given.
+ * when `--style` is not given. With `--ssr`, the project renders its pages on
+ * the server, with a server of its own and the entry rendering a page.
  *
  * @returns The configured `new` {@link Command} instance ready to be
  *   added to the root program.
@@ -24,7 +28,8 @@ export function newCommand(): Command {
     .argument('<name>', 'Name of the project to create')
     .option('-p, --path <path>', 'Custom path for the generated project (default: current directory)')
     .option('-s, --style <style>', `Stylesheet format of the components (${STYLES.join(', ')})`)
-    .action(async (name: string, options: { path?: string, style?: string }) => {
+    .option('--ssr', 'Render the pages on the server, with Declarative Shadow DOM')
+    .action(async (name: string, options: { path?: string, style?: string, ssr?: boolean }) => {
       const workingDirectory = options.path || process.cwd();
       const projectDirectory = resolve(workingDirectory, name);
 
@@ -35,7 +40,7 @@ export function newCommand(): Command {
 
       const style = await resolveStyle(options.style);
       checkAndCreateProjectDirectory(projectDirectory);
-      createFiles(buildStructure({ name, style }), projectDirectory, style);
+      createFiles(buildStructure({ name, style, rendering: options.ssr ? SERVER_RENDERING : CLIENT_RENDERING }), projectDirectory, style);
       execSync('npm i', { stdio: 'inherit', cwd: projectDirectory });
     });
 }

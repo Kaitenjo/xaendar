@@ -1,6 +1,6 @@
 export * from './beautify.type';
 export * from './constructors';
-export * from './contains-char';
+export * from './contains-char.type';
 export * from './decorators';
 export * from './dictionary.type';
 export * from './functions';

@@ -1,8 +1,4 @@
 import type { NoArgsFunction } from '@xaendar/types'
-import type { RenderElementAttribute } from './render-element-attribute.type'
-import type { RenderElementDirective } from './render-element-directive.type'
-import type { RenderElementEvent } from './render-element-event.type'
-import type { RenderElementStructuralDirective } from './render-element-structural-directive.type'
 
 /**
  * Describes a conditional binding: a list of mutually exclusive branches, each one holding
@@ -43,42 +39,3 @@ export type RenderConditionalBinding<Bindings extends { conditionalBindings: Ren
    */
   expression: NoArgsFunction<unknown>
 }
-
-/**
- * Describes a single conditional binding to be attached to a rendered element.
- */
-export type RenderElementConditionalBinding = RenderConditionalBinding<{
-  /**
-   * The list of attributes to be applied to the element while the branch is selected.
-   */
-  attributes: RenderElementAttribute[],
-  /**
-   * The list of event listeners to be attached to the element while the branch is selected.
-   */
-  events: RenderElementEvent[],
-  /**
-   * The list of nested conditional bindings to be attached to the element while the branch is selected.
-   */
-  conditionalBindings: RenderElementConditionalBinding[],
-  /**
-   * The list of directives to be applied to the element while the branch is selected.
-   */
-  directives: RenderElementDirective[]
-}>
-
-/**
- * Describes a single conditional binding applying structural directives to a rendered element only while one of its branches is selected.
- *
- * Unlike the other bindings of the element, it lives as long as the place the element is rendered in, not as long as the element:
- * the element is created and destroyed according to the structural directives it applies.
- */
-export type RenderElementStructuralDirectiveConditionalBinding = RenderConditionalBinding<{
-  /**
-   * The list of structural directives deciding whether the element is rendered while the branch is selected.
-   */
-  structuralDirectives: RenderElementStructuralDirective[],
-  /**
-   * The list of nested conditional bindings applying structural directives while the branch is selected.
-   */
-  conditionalBindings: RenderElementStructuralDirectiveConditionalBinding[]
-}>

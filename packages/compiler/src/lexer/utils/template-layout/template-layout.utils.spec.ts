@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LayoutAtom } from '../../types/template-layout/template-layout.type';
+import type { LayoutAtom } from '../../types/template-layout/layout-atom.type';
 import { parseTemplateLayout } from './template-layout.utils';
 
 /**

@@ -2,17 +2,8 @@ import { Function, NoArgsFunction } from '@xaendar/types';
 import { effect, signal, untracked } from '../../signals';
 import { IterationVariablesHandle } from '../../types/iteration-variables.type';
 import { _Context, createAnchor } from '../context/context.util';
-
-/**
- * Computes the key of an item, receiving the item, its index and the implicit variables derived from them as functions
- * reading them, like the signals of the body read them.
- */
-type TrackExpression = Function<[item: NoArgsFunction<unknown>, index: NoArgsFunction<number>, first: NoArgsFunction<boolean>, last: NoArgsFunction<boolean>, even: NoArgsFunction<boolean>, odd: NoArgsFunction<boolean>], string | number>;
-
-type ForEntry = {
-  context: _Context;
-  update?: (newIndex: number, items: unknown[]) => void;
-};
+import type { TrackExpression } from '../../types/track-expression.type';
+import type { ForEntry } from '../../types/for-entry.type';
 
 /**
  * Reactively iterates over a list of items. Items are matched across re-runs

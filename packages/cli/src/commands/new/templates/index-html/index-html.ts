@@ -1,4 +1,5 @@
-import type { Style } from '../../../../utils/style/style';
+import type { Style } from '../../../../types/style.type';
+import type { ProjectRendering } from '../../types/project-rendering.type';
 
 /**
  * Generates the content of the project root `index.html`.
@@ -9,12 +10,16 @@ import type { Style } from '../../../../utils/style/style';
  * which Vite resolves during both dev and build. The global stylesheet is
  * linked too: Vite compiles it when it is a preprocessed format.
  *
+ * The rendering of the project gives the body: a project rendering its pages on the server has `<!--xd-ssr-->` in
+ * place of the root custom element, which the server replaces with the root component it renders.
+ *
  * @param name - The project name, used to derive the root custom element
  *   selector (e.g. `my-app` → `<my-app-root>`).
  * @param style - The stylesheet format of the project, the extension of the global stylesheet.
+ * @param rendering - Where the project renders its pages.
  * @returns The formatted HTML string.
  */
-export function indexHtml(name: string, style: Style): string {
+export function indexHtml(name: string, style: Style, rendering: Pick<ProjectRendering, 'body'>): string {
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -25,7 +30,7 @@ export function indexHtml(name: string, style: Style): string {
     <script type="module" src="./main.ts"></script>
   </head>
   <body>
-    <${name}></${name}>
+    ${rendering.body(name)}
   </body>
 </html>`;
 }

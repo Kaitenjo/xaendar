@@ -2818,7 +2818,7 @@
         "newProject": {
           "title": "Un nuovo progetto",
           "p1": "<code>xd new --ssr</code> crea un progetto che renderizza le sue pagine sul server. Oltre ai soliti file, scrive l’entry del server, <code>src/entry-server.ts</code>, e il server dell’applicazione, <code>server.ts</code>, che usa solo <code>node:http</code>. <code>index.html</code> contiene <code>&lt;!--xd-ssr--&gt;</code> al posto del componente radice, l’applicazione del browser viene compilata in <code>dist/client</code>, e <code>package.json</code> riceve <code>@xaendar/ssr</code> e gli script <code>serve</code> e <code>prerender</code>. <code>xaendar.json</code> dichiara l’entry, che attiva il rendering lato server per <code>xd start</code>, <code>xd build</code> e <code>xd prerender</code>:",
-          "p2": "Un progetto esistente lo attiva allo stesso modo: installa <code>@xaendar/ssr</code>, aggiunge <code>ssr</code> al suo <code>xaendar.json</code>, scrive l’entry, sostituisce il suo componente radice con <code>&lt;!--xd-ssr--&gt;</code> in <code>index.html</code>, e compila il browser in <code>dist/client</code>. <code>entry</code> è relativo al progetto; <code>outDir</code>, la cartella della build del server, è <code>dist/server</code> per default."
+          "p2": "Un progetto esistente lo attiva allo stesso modo: installa <code>@xaendar/ssr</code>, aggiunge <code>ssr</code> al suo <code>xaendar.json</code>, scrive l’entry, sostituisce il suo componente radice con <code>&lt;!--xd-ssr--&gt;</code> in <code>index.html</code>, e compila il browser in <code>dist/client</code>. <code>entry</code> è relativo al progetto e si scrive senza estensione (<code>src/entry-server</code>): con l’estensione, i comandi si fermano con un errore; <code>outDir</code>, la cartella della build del server, è <code>dist/server</code> per default."
         },
         "entry": {
           "title": "L’entry del server",
@@ -3349,6 +3349,10 @@
       "cause": "Un @import il cui percorso non si risolve: un percorso relativo che non porta a nessun file o cartella, un pacchetto non installato, o un alias che il tsconfig.json non dichiara.",
       "fix": "Correggi il percorso, installa il pacchetto, o dichiara l’alias nei paths del tsconfig.json."
     },
+    "<path> does not export render(url): export the function rendering a page on the server": {
+      "cause": "Il dev server renderizza una pagina con un’entry del server che non esporta render: l’export è stato tolto o rinominato.",
+      "fix": "Esporta dall’entry la funzione render(url), che restituisce l’HTML della pagina di un URL."
+    },
     "Module '\"<path>\"' has no exported member 'Callout'.": {
       "cause": "Un @import che nomina qualcosa che il modulo non esporta.",
       "fix": "Importalo con il nome esatto con cui è esportato; l’export di default si importa come default as nome."
@@ -3593,9 +3597,21 @@
       "cause": "Il modulo del componente è stato compilato senza il rendering lato server del plugin Vite, quindi non ha registrato alcun template per il server: il plugin senza la sua opzione ssr, o Vite senza il plugin.",
       "fix": "Dichiara ssr in xaendar.json, o passa ssr a xaendarPlugin()."
     },
-    "✖  The project does not render on the server: declare \"ssr\": { \"entry\": \"src/entry-server.ts\" } in its xaendar.json.": {
+    "dist/server/entry-server.js does not export render(url): export the function rendering a page on the server from src/entry-server.ts": {
+      "cause": "npm run serve con una build la cui entry del server non esporta render: l’export è stato tolto o rinominato, e il progetto è stato compilato senza passare da xd start o xd prerender, che lo segnalano.",
+      "fix": "Esporta da src/entry-server.ts la funzione render(url), che restituisce l’HTML della pagina di un URL, poi ricompila il progetto."
+    },
+    "✖  The project does not render on the server: declare \"ssr\": { \"entry\": \"src/entry-server\" } in its xaendar.json.": {
       "cause": "xd prerender in un progetto il cui xaendar.json non dichiara ssr.",
       "fix": "Dichiara l’entry del server nello ssr di xaendar.json, come fa xd new --ssr."
+    },
+    "✖  Invalid ssr entry \"src/entry-server.ts\" in xaendar.json: write it without extension.": {
+      "cause": "xd start, xd build, xd test o xd prerender in un progetto il cui xaendar.json scrive l’entry di ssr con l’estensione del suo file.",
+      "fix": "Togli l’estensione: \"entry\": \"src/entry-server\"."
+    },
+    "✖  src/entry-server does not export render(url): export the function rendering a page on the server.": {
+      "cause": "xd prerender con un’entry del server che non esporta render: l’export è stato tolto o rinominato.",
+      "fix": "Esporta dall’entry la funzione render(url), che restituisce l’HTML della pagina di un URL."
     }
   },
   "issues": {}

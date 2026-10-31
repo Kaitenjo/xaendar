@@ -1,5 +1,3 @@
-import { Span } from '../../types/span.type';
-import { TokenType } from './token-type.enum';
 import { AttributeToken } from './tokens/attribute-token.type';
 import { AttributeValueToken } from './tokens/attribute-value-token.type';
 import { BlockCloseToken } from './tokens/block-close-token.type';
@@ -71,44 +69,3 @@ export type Token =
   | LetToken
   | LetDeclarationToken
   | EOFToken;
-
-export type TokenWithOptionalSpan = 
-  | MaybeTokenWithSpan<TagOpenNameToken>
-  | MaybeTokenWithSpan<TagSelfCloseToken>
-  | MaybeTokenWithSpan<TagCloseToken>
-  | MaybeTokenWithSpan<TagCloseNameToken>
-  | MaybeTokenWithSpan<AttributeToken>
-  | MaybeTokenWithSpan<AttributeValueToken>
-  | MaybeTokenWithSpan<EventToken>
-  | MaybeTokenWithSpan<EventHandlerToken>
-  | MaybeTokenWithSpan<EventParAmeterToken>
-  | MaybeTokenWithSpan<TextToken>
-  | MaybeTokenWithSpan<InterpolationExpressionToken>
-  | MaybeTokenWithSpan<IfToken>
-  | MaybeTokenWithSpan<ElseIfToken>
-  | MaybeTokenWithSpan<ElseToken>
-  | MaybeTokenWithSpan<ForToken>
-  | MaybeTokenWithSpan<SwitchToken>
-  | MaybeTokenWithSpan<CaseToken>
-  | MaybeTokenWithSpan<DefaultToken>
-  | MaybeTokenWithSpan<ConditionToken>
-  | MaybeTokenWithSpan<BlockOpenToken>
-  | MaybeTokenWithSpan<BlockCloseToken>
-  | MaybeTokenWithSpan<ImportToken>
-  | MaybeTokenWithSpan<ImportPathToken>
-  | MaybeTokenWithSpan<DirectiveToken>
-  | MaybeTokenWithSpan<DirectiveCloseToken>
-  | MaybeTokenWithSpan<StructuralDirectiveToken>
-  | MaybeTokenWithSpan<ElementRefToken>
-  | MaybeTokenWithSpan<TemplateDeclarationToken>
-  | MaybeTokenWithSpan<RenderToken>
-  | MaybeTokenWithSpan<RenderCallToken>
-  | MaybeTokenWithSpan<LetToken>
-  | MaybeTokenWithSpan<LetDeclarationToken>;
-
-export type TokenWithSpan<T extends { type: TokenType }> = T & {
-  span: Span
-}
-
-export type MaybeTokenWithSpan<T extends { type: TokenType, span: Span }> = Omit<T, 'span'> & Partial<Pick<T, 'span'>>;
-

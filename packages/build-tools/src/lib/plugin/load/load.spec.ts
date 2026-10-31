@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 
 vi.mock('@xaendar/compiler', async (importOriginal) => {
@@ -32,6 +32,7 @@ vi.mock('../plugin-utils/plugin.utils', async (importOriginal) => {
 import { compile, type CompileOptions } from '@xaendar/compiler';
 import { compileServer } from '@xaendar/ssr-compiler';
 import type { PluginContext } from 'rolldown';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { createStyleModuleSpecifier, createTemplateModuleSpecifier, getImportOrExtract, getMetadataOrExtract } from '../plugin-utils/plugin.utils';
 import { createLoadHook } from './load';
@@ -58,16 +59,21 @@ function createState(files: Record<string, string>): XaendarPluginState {
     minifyStyles: false,
     isBuild: false,
     setLogger: vi.fn(),
-    logError: vi.fn()
+    logError: vi.fn(),
+    strategies: { client: CLIENT_STRATEGY, server: SERVER_STRATEGY }
   };
 }
 
-function createPluginContext(): PluginContext {
+/**
+ * Builds the context of the hook for an environment of the browser, or of the server.
+ */
+function createPluginContext(consumer: 'client' | 'server' = 'client'): PluginContext {
   return {
     addWatchFile: vi.fn(),
     error: vi.fn((message: string) => {
       throw new Error(message);
-    })
+    }),
+    environment: { config: { consumer } }
   } as unknown as PluginContext;
 }
 
@@ -150,25 +156,20 @@ describe('createLoadHook()', () => {
     expect(ctx.addWatchFile).toHaveBeenCalledWith(lazy);
   });
 
-  it('compiles the template for the server in an environment of the server, importing the modules the template imports first', async () => {
+  it('compiles the template with the strategy of the server in an environment of the server, importing the modules the template imports first', async () => {
     const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
     const template = '@import { A } from \'./existing.xd.component.ts\'\n<a-b></a-b>';
     vi.mocked(compileServer).mockResolvedValue('function render(out) {}');
-    const state = { ...createState({ [TEMPLATE_PATH]: template, [existing]: '' }), ssr: { entry: '/src/entry-server.ts' } };
-    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
 
-    const result = await load(state, ctx, TEMPLATE_MODULE_ID);
+    const result = await load(createState({ [TEMPLATE_PATH]: template, [existing]: '' }), createPluginContext('server'), TEMPLATE_MODULE_ID);
 
     expect(compileServer).toHaveBeenCalledWith(template, { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], cache: expect.any(Object) });
     expect(compile).not.toHaveBeenCalled();
     expect(result).toEqual({ code: `import ${JSON.stringify(existing)};\nfunction render(out) {}\n\nexport { render };\n`, map: { mappings: '' }, moduleType: 'js' });
   });
 
-  it('exports the text of the stylesheet in an environment of the server', async () => {
-    const state = { ...createState({ [STYLE_PATH]: '.a { color: red; }' }), ssr: { entry: '/src/entry-server.ts' } };
-    const ctx = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
-
-    const result = await load(state, ctx, STYLE_MODULE_ID);
+  it('exports the text of the stylesheet with the strategy of the server in an environment of the server', async () => {
+    const result = await load(createState({ [STYLE_PATH]: '.a { color: red; }' }), createPluginContext('server'), STYLE_MODULE_ID);
 
     expect(result).toEqual({ code: 'export const css = ".a { color: red; }";\n', map: { mappings: '' }, moduleType: 'js' });
   });

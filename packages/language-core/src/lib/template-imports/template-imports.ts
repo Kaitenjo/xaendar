@@ -1,24 +1,7 @@
-import { ASTNodeType, type ComponentOrDirectiveMetadata, type ImportInsertion, type ImportNode, type ImportSpecifier, organizeImports, resolveShimPosition, type Span, type SymbolImport, toImportKey } from '@xaendar/compiler';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
+import { ASTNodeType, type ComponentOrDirectiveMetadata, type ImportInsertion, type ImportNode, type ImportSpecifier, organizeImports, resolveShimPosition, type SymbolImport, toImportKey } from '@xaendar/compiler';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
-
-/**
- * A symbol an `@import` statement of a template imports and the template never uses.
- */
-export type UnusedImport = {
-  /**
-   * The span of the specifier in the template: `Name`, or `Name as Alias`.
-   */
-  readonly span: Span;
-  /**
-   * The name the symbol is known by in the template.
-   */
-  readonly name: string;
-  /**
-   * The key of the specifier, to remove it (see {@link removeTemplateImport}).
-   */
-  readonly key: string;
-};
+import type { UnusedImport } from '../types/unused-import.type';
 
 /**
  * Finds the symbols a template imports and never uses:

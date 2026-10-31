@@ -1,6 +1,6 @@
 import { CompilerContext, parseTemplate, type ElementNode } from '@xaendar/compiler';
 import { describe, expect, it, vi } from 'vitest';
-import type { GenerateChildren } from '../../types/server-transition-function/server-transition-function.type';
+import type { GenerateChildren } from '../../types/generate-children.type';
 import { toStatements } from '../../utils/server-code/server-code.utils';
 import { generateServerElement } from './generate-server-element.state';
 

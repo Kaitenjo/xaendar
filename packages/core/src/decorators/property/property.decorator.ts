@@ -1,18 +1,15 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
 import type { BindingHost } from '../../types/binding-host.type';
 import { input } from '../../signals/input/input';
 import { InputSignal } from '../../signals/types/input-signal.type';
-import { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired, } from '../../types/property-decorator-options.type';
+import { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
+import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
 import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
-
-const propertyDecoratorOptionsWithRequiredBrand = Symbol('PropertyDecoratorOptionsWithRequiredBrand');
-type PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue> & {
-  [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired'
-};
+import type { PropertyDecoratorOptionsWithRequiredBrandType } from '../../types/property/property-decorator-options-with-required-brand-type.type';
 
 function createPropertyDecorator<
   Class extends BindingHost,
@@ -20,7 +17,7 @@ function createPropertyDecorator<
   ActualValue = unknown,
   IncomingValue = ActualValue
 >(
-  value?: ActualValue | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue>,
+  value?: ActualValue | PropertyDecoratorOptionsWithRequiredBrandType<ActualValue, IncomingValue>,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
 ): Function<Parameters<AccessorDecorator<Class, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<Class, Value, IncomingValue>> {
   return function (
@@ -34,8 +31,8 @@ function createPropertyDecorator<
     }
 
     let actualValue: ActualValue | undefined;
-    let actualOptions: PropertyDecoratorOptions<ActualValue, IncomingValue> | undefined | PropertyDecoratoprOptionsWithRequiredBrandType<ActualValue, IncomingValue> | undefined;
-    if (!value || typeof value !== 'object' || !(propertyDecoratorOptionsWithRequiredBrand in value)) {
+    let actualOptions: PropertyDecoratorOptions<ActualValue, IncomingValue> | undefined | PropertyDecoratorOptionsWithRequiredBrandType<ActualValue, IncomingValue> | undefined;
+    if (!value || typeof value !== 'object' || !(PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND in value)) {
       actualValue = value;
       actualOptions = options;
     } else {
@@ -144,7 +141,7 @@ Property.required = function required<
 ): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue>, IncomingValue>>{
   return createPropertyDecorator<BindingHost, InputSignal<ActualValue>, ActualValue, IncomingValue>({
     ...options,
-    [propertyDecoratorOptionsWithRequiredBrand]: 'PropertyDecoratorOptionsWithRequired',
+    [PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND]: 'PropertyDecoratorOptionsWithRequired',
     required: true,
   });
 };

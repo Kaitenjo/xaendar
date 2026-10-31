@@ -30,8 +30,9 @@ import { lexElementRef } from '../states/lex-element-ref/lex-element-ref.state';
 import { lexText } from '../states/lex-text/lex-text.state';
 import { endOfFile, LexerCursor } from '../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../types/lexer-state.enum';
-import type { LexerTolerantResult } from '../types/lexer-tolerant-result/lexer-tolerant-result.type';
-import { Token, TokenWithOptionalSpan } from '../types/token.type';
+import type { LexerTolerantResult } from '../types/lexer-tolerant-result.type';
+import { Token } from '../types/token.type';
+import type { TokenWithOptionalSpan } from '../types/token-with-optional-span.type';
 import { LexerTransitionFunction } from '../types/transition-function/transition-function.type';
 
 /**

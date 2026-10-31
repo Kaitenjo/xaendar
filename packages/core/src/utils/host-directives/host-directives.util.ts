@@ -8,20 +8,7 @@ import type { HostDirectiveMember } from '../../types/web-component/host-directi
 import type { HostDirectiveOptions } from '../../types/web-component/host-directive-options.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
-
-/**
- * A name an input or an event of a host directive is exposed with on its component.
- */
-type Exposure = {
-  /**
-   * The name of the input or of the event in the directive.
-   */
-  name: string,
-  /**
-   * The name it is exposed with on the component.
-   */
-  alias: string
-};
+import type { Exposure } from '../../types/web-component/exposure.type';
 
 /**
  * Creates the host directives of a component, the ones its `@WebComponent` declares: each directive is instantiated

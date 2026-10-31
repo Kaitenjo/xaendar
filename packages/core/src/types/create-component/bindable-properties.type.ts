@@ -1,5 +1,5 @@
-import type { NoArgsFunction } from '@xaendar/types';
-import type { InputSignal } from '../../signals/types/input-signal.type';
+import type { InputName } from './input-name.type';
+import type { InputGetter } from './input-getter.type';
 
 /**
  * The inputs of a component or of a directive bound by `createComponent`, each one with the getter of its value. The getter
@@ -14,19 +14,3 @@ import type { InputSignal } from '../../signals/types/input-signal.type';
 export type BindableProperties<Target> = {
   [Name in keyof Target as InputName<Target, Name>]?: InputGetter<Target[Name]>
 };
-
-/**
- * The name of a member when it is an input, `never` otherwise. `condition` is never one, since it is the key giving the
- * condition of a group of bindings.
- *
- * @template Target - The component or the directive declaring the member.
- * @template Name - The name of the member.
- */
-type InputName<Target, Name extends keyof Target> = Name extends 'condition' ? never : Target[Name] extends InputSignal ? Name : never;
-
-/**
- * The getter of the value of an input.
- *
- * @template Input - The signal of the input.
- */
-type InputGetter<Input> = Input extends InputSignal<infer Value> ? NoArgsFunction<Value> : never;

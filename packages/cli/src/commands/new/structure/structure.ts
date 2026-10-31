@@ -9,63 +9,8 @@ import { tsconfigJson } from '../templates/tsconfig-json/tsconfig-json';
 import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
 import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
 import { styles } from '../templates/styles/styles';
-import type { Style } from '../../../utils/style/style';
-
-/**
- * The context required to resolve all file contents when scaffolding
- * a new Xaendar project.
- */
-export type ProjectContext = {
-  /** 
-   * The project name as provided by the user (e.g. `my-app`).
-   */
-  name: string;
-  /** 
-   * The stylesheet format chosen for the project.
-   */
-  style: Style;
-};
-
-/**
- * A fully resolved entry ready to be written to disk —
- * all content functions have already been called.
- */
-export type Entry = {
-  /** 
-   * Discriminant tag identifying this entry as a file. 
-   */
-  type: 'file';
-  /** 
-   * The file name, including extension (e.g. `package.json`). 
-   */
-  name: string;
-  /** 
-   * File contents to write to disk. 
-   */
-  content: string;
-} | {
-  /** 
-   * Discriminant tag identifying this entry as a directory. 
-   */
-  type: 'directory';
-  /** 
-   * The file name, including extension (e.g. `package.json`). 
-   */
-  name: string;
-  /** 
-   * Nested entries to create inside this directory. 
-   */
-  children?: Entry[];
-} | {
-  /** 
-   * Discriminant tag instructing the scaffolder to invoke the `generate component` command. 
-   */
-  type: 'generateComponent';
-  /** 
-   * Name of the component to generate. 
-   */
-  name: string;
-};
+import type { ProjectContext } from '../types/project-context.type';
+import type { Entry } from '../types/entry.type';
 
 /**
  * Reads the current Xaendar version from the CLI's own `package.json`.
@@ -126,65 +71,82 @@ function findCliPackageJsonPath(): string {
  * so that the scaffolder receives plain strings and never has to know
  * which parameters each file needs.
  *
+ * The rendering of the project is handed to the templates depending on it, and adds its own files: a project rendering
+ * its pages on the server also gets its server, `server.ts`, and the module rendering a page, `src/entry-server.ts`.
+ *
  * @param context - The project context collected from the `new` command options.
  * @returns An ordered array of {@link Entry} values ready to be
  *   written to disk by the scaffolder.
  */
 export function buildStructure(context: ProjectContext): Entry[] {
   const version = readCliVersion();
-  const name = context.name;
+  const { name, style, rendering } = context;
   const componentName = `${name}-root`;
 
-  return [
+  const entries: Entry[] = [
     {
       type: 'file',
       name: 'package.json',
-      content: packageJson(name, version, context.style),
+      content: packageJson(name, version, style, rendering),
     },
     {
       type: 'file',
       name: 'xaendar.json',
-      content: xaendarJson(name, context.style),
+      content: xaendarJson(name, style, rendering),
     },
     {
       type: 'file',
       name: 'vite.config.ts',
-      content: viteConfigTs(),
+      content: viteConfigTs(rendering),
     },
     {
       type: 'file',
       name: 'tsconfig.json',
       content: tsconfigJson(),
-    },
-    {
-      type: 'directory',
-      name: 'src',
-      children: [
-        {
-          type: 'file',
-          name: 'index.html',
-          content: indexHtml(componentName, context.style),
-        },
-        {
-          type: 'file',
-          name: 'main.ts',
-          content: mainTs(),
-        },
-        {
-          type: 'file',
-          name: 'bootstrap.ts',
-          content: bootstrapTs(componentName),
-        },
-        {
-          type: 'generateComponent',
-          name: componentName,
-        },
-        {
-          type: 'file',
-          name: `styles.${context.style}`,
-          content: styles(context.style)
-        }
-      ]
     }
   ];
+  
+  const sources: Entry[] = [
+    {
+      type: 'file',
+      name: 'index.html',
+      content: indexHtml(componentName, style, rendering),
+    },
+    {
+      type: 'file',
+      name: 'main.ts',
+      content: mainTs(),
+    },
+    {
+      type: 'file',
+      name: 'bootstrap.ts',
+      content: bootstrapTs(componentName),
+    },
+    {
+      type: 'generateComponent',
+      name: componentName,
+    },
+    {
+      type: 'file',
+      name: `styles.${style}`,
+      content: styles(style)
+    }
+  ];
+
+  const rootFiles = rendering.rootFiles?.(componentName);
+  if (rootFiles?.length) {
+    for (let i = 0; i < rootFiles.length; i++) {
+      entries.push(rootFiles[i]);
+    }
+  }
+
+  const sourceFiles = rendering.sourceFiles?.(componentName);
+  if (sourceFiles?.length) {
+    for (let i = 0; i < sourceFiles.length; i++) {
+      sources.push(sourceFiles[i]);
+    }
+  }
+
+  entries.push({ type: 'directory', name: 'src', children: sources });
+  return entries;
 }

@@ -1,9 +1,15 @@
+import type { ProjectRendering } from '../../types/project-rendering.type';
+
 /**
  * Generates the content of the project `vite.config.ts`.
  *
+ * The application of the browser is built into the folder of the rendering of the project: `dist/client` for a project
+ * rendering its pages on the server, next to the build of the server, in `dist/server`.
+ *
+ * @param rendering - Where the project renders its pages.
  * @returns The formatted TypeScript source string.
  */
-export function viteConfigTs(): string {
+export function viteConfigTs(rendering: Pick<ProjectRendering, 'outDir'>): string {
   return `import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -11,7 +17,7 @@ export default defineConfig({
   publicDir: '../public',
   build: {
     emptyOutDir: true,
-    outDir: '../dist'
+    outDir: '${rendering.outDir}'
   },
   server: {
     open: true,

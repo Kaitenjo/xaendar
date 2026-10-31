@@ -1,5 +1,5 @@
 import { TokenType } from '../token-type.enum';
-import { TokenWithSpan } from '../token.type';
+import type { TokenWithSpan } from '../token-with-span.type';
 
 /**
  * Token emitted when the lexer encounters the opening `{` of a flow-control block body.

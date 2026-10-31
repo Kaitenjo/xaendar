@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn()
@@ -79,6 +79,10 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
   createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
   extractImportedComponentPaths: vi.fn(),
+  generateServerStyleModule: vi.fn(),
+  generateServerTemplateModule: vi.fn(),
+  generateStyleModule: vi.fn(),
+  generateTemplateModule: vi.fn(),
   getImportOrExtract: vi.fn(),
   getMetadataOrExtract: vi.fn(),
   injectTemplate: vi.fn()
@@ -88,6 +92,7 @@ import { isValidCustomElementName } from '@xaendar/common';
 import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, findWebComponentErrors } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
+import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -154,20 +159,23 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     minifyStyles: false,
     isBuild: false,
     setLogger: vi.fn(),
-    logError: vi.fn()
+    logError: vi.fn(),
+    strategies: { client: CLIENT_STRATEGY, server: SERVER_STRATEGY }
   };
 }
 
 /**
  * Builds a mocked `transform` hook plugin context (`warn`/`addWatchFile`/`error`, which throws as Vite's does).
  *
+ * @param consumer - The consumer of the environment, the browser by default.
  * @returns The mocked plugin context.
  */
-function createPluginContext(): TransformPluginContext {
+function createPluginContext(consumer: 'client' | 'server' = 'client'): TransformPluginContext {
   return {
     warn: vi.fn(),
     addWatchFile: vi.fn(),
-    error: vi.fn((message: string) => { throw new Error(message); })
+    error: vi.fn((message: string) => { throw new Error(message); }),
+    environment: { config: { consumer } }
   } as unknown as TransformPluginContext;
 }
 
@@ -440,7 +448,7 @@ describe('createTransformHook()', () => {
 
     expect(createStyleModuleSpecifier).not.toHaveBeenCalled();
     expect(registerStyleDependency).not.toHaveBeenCalled();
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined, false);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, undefined);
   });
 
   it('only type-checks the template, leaving the render function to the template module', async () => {
@@ -509,18 +517,16 @@ describe('createTransformHook()', () => {
     expect(registerStyleDependency).toHaveBeenCalledWith(expect.not.stringContaining('\\'), COMPONENT_PATH);
     expect(state.host.readFile).not.toHaveBeenCalledWith(stylePath);
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith(stylePath);
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module', false);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, 'style-module');
   });
 
-  it('injects the modules compiled for the server in an environment of the server, type-checking nothing', async () => {
+  it('injects the modules compiled for the server with the strategy of the server, type-checking nothing', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrl: './foo.css' })]]));
-    const state: XaendarPluginState = { ...createState(), ssr: { entry: '/src/entry-server.ts' } };
-    const context = Object.assign(createPluginContext(), { environment: { config: { consumer: 'server' } } });
 
-    const result = await createTransformHook(state).call(context, 'original code', COMPONENT_PATH, undefined);
+    const result = await createTransformHook(createState()).call(createPluginContext('server'), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', 'style-module', true);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', SERVER_STRATEGY.registration, 'style-module');
     expect(compile).not.toHaveBeenCalled();
     expect(collectFileDiagnostics).not.toHaveBeenCalled();
     expect(registerRealFile).not.toHaveBeenCalled();
@@ -637,8 +643,8 @@ describe('createTransformHook()', () => {
 
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectTemplate).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', undefined, false);
-    expect(injectTemplate).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), expect.any(Map), 'BarComponent', 'template-module', undefined, false);
+    expect(injectTemplate).toHaveBeenNthCalledWith(1, expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, undefined);
+    expect(injectTemplate).toHaveBeenNthCalledWith(2, expect.anything(), expect.anything(), expect.any(Map), 'BarComponent', 'template-module', CLIENT_STRATEGY.registration, undefined);
     expect(vi.mocked(injectTemplate).mock.calls[0][2]).toBe(vi.mocked(injectTemplate).mock.calls[1][2]);
     expect(result).toEqual({ code: 'original code', map: expect.anything() });
   });

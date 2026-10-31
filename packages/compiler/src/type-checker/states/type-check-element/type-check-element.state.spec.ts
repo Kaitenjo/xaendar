@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
-import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { isCustomElementTag, typeCheckElement } from './type-check-element.state';
 

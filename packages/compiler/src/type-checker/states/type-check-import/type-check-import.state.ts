@@ -1,7 +1,7 @@
 import type { ImportNode } from '../../../parser/types/nodes/import-node.type';
 import { assertImportableSymbol, toTypeCheckModuleSpecifier } from '../../../utils/symbol-imports/symbol-imports.utils';
 import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped } from '../../utils/line-builder/line-builder.utils';
 

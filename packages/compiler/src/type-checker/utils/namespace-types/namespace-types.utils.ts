@@ -1,4 +1,4 @@
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 
 /**

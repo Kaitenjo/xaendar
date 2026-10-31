@@ -1,36 +1,13 @@
-import { type ComponentOrDirectiveMetadata, type MemberDeclaration, resolveShimPosition, type Span } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, resolveShimPosition, type Span } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import type { CompilerOptions } from 'typescript';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
 import { findInnermostSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
-
-/**
- * Where a symbol used in a template is defined: a span of a file, or of the template itself.
- */
-export type TemplateDefinition = MemberDeclaration & {
-  /**
-   * The whole span the definition was requested from, when the part is longer than the word under the cursor,
-   * e.g. a tag name with dashes or the path of an `@import`.
-   */
-  readonly origin?: Span;
-};
-
-/**
- * A part of a template whose definition is known without asking TypeScript, e.g. the tag name of a component.
- */
-export type DefinitionTarget = {
-  /**
-   * The span of the part in the template.
-   */
-  readonly span: Span;
-  /**
-   * The definitions of the part.
-   */
-  readonly definitions: readonly TemplateDefinition[];
-};
+import type { TemplateDefinition } from '../types/template-definition.type';
+import type { DefinitionTarget } from '../types/definition-target.type';
 
 /**
  * Finds the definitions of the symbol at an offset of a template:

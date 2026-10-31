@@ -13,7 +13,7 @@ import { clearComponentToImports, registerImport } from '../../registry/import-r
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, registerStyleDependency } from '../../registry/style-registry/style-registry';
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
@@ -33,12 +33,17 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
  * type errors is not served, and its errors reach the terminal and the overlay of Vite. In a build, the
  * whole program is checked by the `buildEnd` hook.
  *
+ * The strategy of the environment (see `XaendarPluginState['strategies']`) gives the registration and whether anything
+ * is type-checked: for the rendering on the server, a component registers its modules compiled for the server via
+ * `_defineServerRender`, and nothing is type-checked, since the environment of the browser checks the same files.
+ *
  * @param state - The shared plugin state (compiler host, project compiler options/file names, logger).
  * @returns The `transform` hook handler.
  */
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
-    if (!state.isBuild && TS_FILE_RE.test(componentPath)) {
+    const strategy = state.strategies[this.environment.config.consumer];
+    if (!state.isBuild && strategy.typeCheck && TS_FILE_RE.test(componentPath)) {
       const diagnostics = collectFileDiagnostics(getLanguageService(state.compilerOptions, state.projectFileNames), componentPath);
       if (diagnostics.length) {
         this.error(`[TypeChecker] Type check failed\n${formatTypeDiagnostics(diagnostics)}`);
@@ -160,7 +165,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       let componentMembers: ComponentMembers;
-      let typecheckBody: TypeCheckResult;
+      let typecheckBody: TypeCheckResult | undefined;
 
       try {
         componentMembers = extractComponentMembers(tsSource, metadata.typescriptNodes.klass, state.compilerOptions);
@@ -168,17 +173,19 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
           Only the type-check is performed here, as it depends on the component class.
           The render function is compiled once per template in its own module (see the load hook).
         */
-        typecheckBody = await compile(templateSource, {
-          baseDir: dirname(templatePath),
-          shadowingMembers: componentMembers.shadowingMembers,
-          reactiveMembers: componentMembers.reactiveMembers,
-          customElements: state.customElements,
-          cache: {
-            getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
-            getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
-            set: registerMetadata
-          }
-        });
+        if (strategy.typeCheck) {
+          typecheckBody = await compile(templateSource, {
+            baseDir: dirname(templatePath),
+            shadowingMembers: componentMembers.shadowingMembers,
+            reactiveMembers: componentMembers.reactiveMembers,
+            customElements: state.customElements,
+            cache: {
+              getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
+              getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
+              set: registerMetadata
+            }
+          });
+        }
       } catch (err) {
         state.logError(err, `Failed to compile template - ${templatePath}`);
         return fail();
@@ -196,10 +203,15 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       try {
-        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, componentMembers.reactiveMembers, componentMembers.shadowingMembers), styleModuleSpecifier);
+        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, componentMembers.reactiveMembers, componentMembers.shadowingMembers), strategy.registration, styleModuleSpecifier);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return fail();
+      }
+
+      // The environment of the server leaves the type-check to the one of the browser, which checks the same component
+      if (!typecheckBody) {
+        continue;
       }
 
       registerRealFile(componentPath);

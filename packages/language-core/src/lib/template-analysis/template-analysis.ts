@@ -1,6 +1,6 @@
-import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, type ImportSpecifier, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, type TypeCheckResult, typeCheckTemplateTolerant } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, typeCheckTemplateTolerant } from '@xaendar/compiler';
 import { dirname, resolve } from 'node:path';
-import { type CompilerOptions, createSourceFile, isClassDeclaration, type LanguageService, type Program, type ScriptElementKind, ScriptTarget } from 'typescript';
+import { type CompilerOptions, createSourceFile, isClassDeclaration, type Program, ScriptTarget } from 'typescript';
 import { getProjectLanguageService, type ProjectLanguageService, readDocument } from '../language-service/language-service';
 import { TemplateMetadataCache } from '../template-metadata-cache/template-metadata-cache';
 import { findTsConfigPath, loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
@@ -10,133 +10,11 @@ import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
 import { readCustomElements } from '../utils/xaendar-config/xaendar-config.utils';
-
-/**
- * A symbol imported by a template through an `@import` statement.
- */
-export type TemplateImport = {
-  /**
-   * The `@import` statement.
-   */
-  readonly node: ImportNode;
-  /**
-   * The specifier importing the symbol.
-   */
-  readonly specifier: ImportSpecifier;
-  /**
-   * The metadata of the imported component or directive.
-   */
-  readonly metadata: ComponentOrDirectiveMetadata;
-};
-
-/**
- * A component or directive a template could import.
- */
-export type ImportCandidate = {
-  /**
-   * The path of the file declaring it.
-   */
-  readonly fileName: string;
-  /**
-   * Its metadata.
-   */
-  readonly metadata: ComponentOrDirectiveMetadata;
-};
-
-/**
- * An export of a module a template can import.
- */
-export type ExportCandidate = {
-  /**
-   * The path of the file of the module.
-   */
-  readonly fileName: string;
-  /**
-   * The name the module exports it as, `default` for its default export.
-   */
-  readonly name: string;
-  /**
-   * What it declares (see `getSymbolKind`).
-   */
-  readonly kind: ScriptElementKind;
-};
-
-/**
- * The result of the analysis of a template that could be parsed (see {@link analyzeTemplate}), whose `errors`
- * may not be empty.
- */
-export type TemplateAnalysis = {
-  /**
-   * The path of the template.
-   */
-  readonly templatePath: string;
-  /**
-   * The source of the template analyzed.
-   */
-  readonly source: string;
-  /**
-   * The top-level nodes of the template.
-   */
-  readonly ast: readonly ASTNode[];
-  /**
-   * The components and directives imported by the template.
-   */
-  readonly imports: readonly TemplateImport[];
-  /**
-   * The metadata of the components and directives imported by the template.
-   */
-  readonly metadatas: readonly ComponentOrDirectiveMetadata[];
-  /**
-   * The other symbols imported by the template: functions, constants, enums, classes, types, namespaces.
-   */
-  readonly symbols: readonly SymbolImport[];
-  /**
-   * The errors of the template that don't prevent the analysis: the modules and symbols of the `@import` statements
-   * that cannot be resolved, and the nodes failing type-checking, which the type-check body leaves out. A
-   * `TemplateError` when the error points to a part of the template.
-   */
-  readonly errors: readonly Error[];
-  /**
-   * The type-check body generated from the template, with the table mapping it to the template.
-   */
-  readonly typeCheck: TypeCheckResult;
-  /**
-   * The path of the shim wrapping the type-check body.
-   */
-  readonly shimPath: string;
-  /**
-   * The line of the shim the type-check body starts at.
-   */
-  readonly bodyLineOffset: number;
-  /**
-   * The LanguageService of the project the template belongs to, which sees the shim.
-   */
-  readonly languageService: LanguageService;
-  /**
-   * The paths of the files whose change may change the analysis: the files of the components using the template,
-   * of the components and directives it imports, and of their base classes.
-   */
-  readonly dependencies: ReadonlySet<string>;
-};
-
-/**
- * The result of an analysis of a template, successful or not.
- */
-export type TemplateAnalysisResult = {
-  /**
-   * The analysis of the template: the current one, or the last successful one when the template cannot be compiled
-   * (e.g. while the user is typing), so that the navigation keeps working. `undefined` if the template never compiled.
-   */
-  readonly analysis: TemplateAnalysis | undefined;
-  /**
-   * The error preventing the template from being compiled, if any.
-   */
-  readonly error: Error | undefined;
-  /**
-   * The top-level nodes of the template when it could be parsed, even if it failed type-checking afterwards.
-   */
-  readonly ast: readonly ASTNode[] | undefined;
-};
+import type { TemplateImport } from '../types/template-import.type';
+import type { ImportCandidate } from '../types/import-candidate.type';
+import type { ExportCandidate } from '../types/export-candidate.type';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
 
 /**
  * The last successful analysis of each template, keyed by its normalized path.

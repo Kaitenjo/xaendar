@@ -1,7 +1,8 @@
 import { NoArgsFunction } from '@xaendar/types';
 import { Token } from '../../lexer/types/token.type';
 import { ParserCursor } from '../models/parser-cursor/parser-cursor.model';
-import { ASTNode, ASTNodeWithOptionalSpan } from './ast.type';
+import { ASTNode } from './ast.type';
+import type { ASTNodeWithOptionalSpan } from './ast-node-with-optional-span.type';
 
 /**
  * The signature of a parser transition function.

@@ -1,5 +1,5 @@
 import type { Expression } from 'typescript';
-import type { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 import type { ConditionalBindingBranchNode } from './conditional-binding-branch-node.type';
 

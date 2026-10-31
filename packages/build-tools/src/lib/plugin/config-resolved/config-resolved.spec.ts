@@ -1,6 +1,6 @@
 import type { MinimalPluginContextWithoutEnvironment, ResolvedConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { createConfigResolvedHook } from './config-resolved';
 
 function resolveState(command: 'build' | 'serve', cssMinify: ResolvedConfig['build']['cssMinify']): XaendarPluginState {

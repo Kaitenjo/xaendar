@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
@@ -57,7 +57,8 @@ function createState(): XaendarPluginState {
     minifyStyles: false,
     isBuild: false,
     setLogger: vi.fn(),
-    logError: vi.fn()
+    logError: vi.fn(),
+    strategies: {} as XaendarPluginState['strategies']
   };
 }
 

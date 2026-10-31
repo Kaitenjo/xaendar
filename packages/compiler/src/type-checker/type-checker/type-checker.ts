@@ -1,7 +1,7 @@
 import type { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type.js';
-import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type.js';
+import type { SymbolImport } from '../../types/symbol-import.type.js';
 import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { TypeCheckContext } from '../models/type-checker-context/type-checker-context.js';
 import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
@@ -13,9 +13,10 @@ import { typeCheckRender } from '../states/type-check-render/type-check-render.s
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
 import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
-import type { Line, LineMapping } from '../types/generated-line.type.js';
+import type { Line } from '../types/line.type.js';
+import type { LineMapping } from '../types/line-mapping.type.js';
 import type { TypeCheckResult } from '../types/type-checker-result.type.js';
-import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result/type-checker-tolerant-result.type.js';
+import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result.type.js';
 import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
 import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils.js';
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';

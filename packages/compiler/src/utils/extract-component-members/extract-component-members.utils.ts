@@ -1,14 +1,14 @@
 import { ClassElement, EntityName, Expression, FunctionDeclaration, Identifier, Node, PropertyDeclaration, SourceFile, Statement, ModifierFlags, SyntaxKind, TypeNode, VariableDeclaration, forEachChild, getCombinedModifierFlags, isArrowFunction, isCallExpression, isFunctionDeclaration, isFunctionExpression, isGetAccessorDeclaration, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isMethodDeclaration, isNamespaceImport, isPropertyAccessExpression, isPropertyDeclaration, isQualifiedName, isStringLiteralLike, isTypeReferenceNode, isVariableStatement } from 'typescript';
 import { GLOBAL_IDENTIFIERS } from '../../generator/utils/generator/generator.utils';
-import type { ComponentMembers } from '../../types/component-members/component-members.type';
-import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
+import type { ComponentMembers } from '../../types/component-members.type';
+import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes/class-declaration-with-name.type';
 import { DEFAULT_COMPILER_OPTIONS, clearSourceFileCache, isExportedAs, resolveBaseClass, resolveModuleExport, resolveReference } from '../resolve-declaration/resolve-declaration.utils';
-import type { DeclarationFinder } from '../resolve-declaration/types/declaration-finder.type';
-import type { ResolutionContext } from '../resolve-declaration/types/resolution-context.type';
-import type { ResolvedClass } from '../resolve-declaration/types/resolved-class.type';
-import type { ResolvedDeclaration } from '../resolve-declaration/types/resolved-declaration.type';
-import type { MemberReads } from './types/member-reads.type';
-import type { SignalImportBindings } from './types/signal-import-bindings.type';
+import type { DeclarationFinder } from '../../types/declaration-finder.type';
+import type { ResolutionContext } from '../../types/resolution-context.type';
+import type { ResolvedClass } from '../../types/resolved-class.type';
+import type { ResolvedDeclaration } from '../../types/resolved-declaration.type';
+import type { MemberReads } from '../../types/member-reads.type';
+import type { SignalImportBindings } from '../../types/signal-import-bindings.type';
 
 /**
  * Module specifiers exporting the signal functions and types a class member

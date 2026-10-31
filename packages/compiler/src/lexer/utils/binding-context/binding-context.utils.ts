@@ -1,5 +1,5 @@
 import { Lexer } from '../../lexer/lexer';
-import type { BindingContext } from '../../types/binding-context/binding-context.type';
+import type { BindingContext } from '../../types/binding-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';

@@ -1,11 +1,10 @@
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
-import { effect } from '../../signals/effect/effect';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
+import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _Context } from '../../utils/context/context.util';
-import { _createComponent } from '../../utils/create-component/create-component.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import type { CustomElement } from '../custom-element/custom-element';
 
@@ -117,7 +116,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    *   already disposed: when it is called a second time, or after the disconnection.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
-    const stop = effect(fn, options);
+    const stop = _getComponentRuntime().effect(fn, options);
     this._context.addUnlistener(stop);
 
     return () => {
@@ -160,7 +159,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    * a custom directive, or when it is already a host directive of the component.
    */
   public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<NoInfer<Component>, Directives>): ComponentRef<Component> {
-    return _createComponent(() => this._context, component, options);
+    return _getComponentRuntime().createComponent(() => this._context, component, options);
   }
 
   /**

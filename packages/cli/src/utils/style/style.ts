@@ -1,15 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import type { Style } from '../../types/style.type';
 
 /**
  * The stylesheet formats a project can use, which are also the extensions of its stylesheets.
  */
 export const STYLES = ['css', 'scss', 'sass', 'less'] as const;
-
-/**
- * A stylesheet format a project can use.
- */
-export type Style = (typeof STYLES)[number];
 
 /**
  * The package compiling each preprocessed format, with the version installed in a new project.

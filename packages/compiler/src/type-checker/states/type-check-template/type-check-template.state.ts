@@ -2,9 +2,10 @@ import type { TemplateNode } from '../../../parser/types/nodes/template-node.typ
 import type { TemplateParameterNode } from '../../../parser/types/nodes/template-parameter-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
-import { indentLines, line, type LinePart, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
+import type { LinePart } from '../../types/line-part.type';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';
 import { DEFAULT, getContentFunction, OPTIONAL, PARAMETER } from '../../utils/template-types/template-types.utils';

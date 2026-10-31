@@ -1,4 +1,4 @@
-import type { Style } from '../../../../utils/style/style';
+import type { Style } from '../../../../types/style.type';
 
 /**
  * Generates the content of the project's global stylesheet, `styles.<style>`.

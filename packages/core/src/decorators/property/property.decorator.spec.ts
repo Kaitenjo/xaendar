@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
 import type { InputSignal } from '../../signals/types/input-signal.type';
-import type { PropertyDecoratorOptions, PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options.type';
+import type { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
+import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

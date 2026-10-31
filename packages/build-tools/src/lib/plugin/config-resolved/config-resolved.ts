@@ -1,5 +1,5 @@
 import type { HookHandler, Plugin } from 'vite';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 /**
  * Vite plugin `configResolved` hook: records whether the plugin runs in a build, and whether the compiled

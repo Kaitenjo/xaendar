@@ -1,6 +1,6 @@
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';

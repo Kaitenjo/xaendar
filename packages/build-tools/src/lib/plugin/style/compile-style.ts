@@ -1,7 +1,7 @@
 import { extname } from 'node:path';
 import type { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
-import type { StyleCompiler } from '../../types/style-compiler.interface';
+import type { StyleCompiler } from '../../types/style-compiler.type';
 import { compileLess } from './less/less.utils';
 import { compileSass } from './sass/sass.utils';
 

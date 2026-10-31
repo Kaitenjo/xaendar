@@ -2,7 +2,8 @@ import { NoArgsFunction } from '@xaendar/types';
 import { decodeHTML } from 'entities';
 import { TextToken } from '../../../lexer/types/tokens/text-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
-import { ASTNode, MaybeASTNodeWithSpan } from '../../types/ast.type';
+import { ASTNode } from '../../types/ast.type';
+import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.type';
 import { ASTNodeType } from '../../types/node.enum';
 import { TextNode } from '../../types/nodes/text-node.type';
 

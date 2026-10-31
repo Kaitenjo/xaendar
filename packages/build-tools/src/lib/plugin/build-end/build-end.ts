@@ -1,7 +1,6 @@
 import { getLanguageService } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
-import type { XaendarPluginState } from '../../types/plugin.types';
-import { isServerRendering } from '../../utils/server-rendering/server-rendering.utils';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { collectProjectDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 
 /**
@@ -15,7 +14,7 @@ import { collectProjectDiagnostics, formatTypeDiagnostics } from '../../utils/ty
  */
 export function createBuildEndHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['buildEnd']>> {
   return function buildEnd(this, error) {
-    if (!state.isBuild || error || isServerRendering(state, this)) {
+    if (!state.isBuild || error || !state.strategies[this.environment.config.consumer].typeCheck) {
       return;
     }
 

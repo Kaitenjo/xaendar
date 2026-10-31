@@ -1,7 +1,7 @@
-import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables';
+import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import type { Span } from '../../../types/span.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';

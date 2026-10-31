@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
 import { getComponentDefinition } from './component-definition';
 
 const component = [

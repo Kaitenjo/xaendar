@@ -67,9 +67,9 @@ describe('createPlugins()', () => {
   });
 
   it('passes the entry of the rendering on the server declared in the xaendar.json, resolved against the project', () => {
-    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app', ssr: { entry: 'src/entry-server.ts' } }));
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app', ssr: { entry: 'src/entry-server' } }));
     createPlugins();
 
-    expect(xaendarPlugin).toHaveBeenCalledWith({ customElements: undefined, ssr: { entry: resolve(projectDir, 'src/entry-server.ts') } });
+    expect(xaendarPlugin).toHaveBeenCalledWith({ customElements: undefined, ssr: { entry: resolve(projectDir, 'src/entry-server') } });
   });
 });

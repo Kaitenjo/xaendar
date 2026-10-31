@@ -1,32 +1,10 @@
-import type { VoidFunction } from '@xaendar/types';
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import type { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { ConditionalBindingBranchNode } from '../../types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../types/nodes/conditional-binding-node.type';
-import type { ElementNode } from '../../types/nodes/element-node.type';
-import type { LetNode } from '../../types/nodes/let-node.type';
-import type { TemplateNode } from '../../types/nodes/template-node.type';
-import type { ElementRefNode } from '../../types/nodes/element-ref-node.type';
-
-/**
- * Callbacks invoked by {@link visitScopeDeclarations} for the names a scope of a template declares. Every callback is optional.
- */
-export type ScopeDeclarationVisitor = {
-  /**
-   * Invoked for every element of the scope naming itself with an element ref, with the namespace it is created in.
-   */
-  readonly ref?: VoidFunction<[element: ElementNode, ref: ElementRefNode, namespace: ElementNamespace]>;
-  /**
-   * Invoked for every template the scope declares, with the namespace its content is created in.
-   */
-  readonly template?: VoidFunction<[template: TemplateNode, namespace: ElementNamespace]>;
-  /**
-   * Invoked for every `@let` of the scope.
-   */
-  readonly let?: VoidFunction<[node: LetNode]>;
-};
+import type { ScopeDeclarationVisitor } from '../../types/scope-declaration-visitor.type';
 
 /**
  * Visits the names a scope of a template declares, in the order they are written, which are visible in the whole of it,

@@ -1,24 +1,8 @@
-import { Function, NoArgsFunction } from '@xaendar/types';
+import { Function } from '@xaendar/types';
 import { effect, untracked } from '../../signals';
 import { _Context, createAnchor } from '../context/context.util';
-
-/**
- * Represents a single branch of a conditional structure (`if` / `else if` / `else`).
- *
- * @property condition - Function that evaluates the branch condition and returns a boolean.
- *   If absent, the branch is always considered valid (represents the `else` branch).
- * @property block - Function that, when executed, applies the branch's side effects and
- *   returns the list of cleanup (unwatch) functions generated within it.
- */
-type Block = {
-  condition?: NoArgsFunction<boolean>,
-  block: Function<[HTMLElement, _Context, Node | null], _Context>
-};
-
-type State = {
-  activeBranch: number | null;
-  context: _Context
-}
+import type { Block } from '../../types/if/block.type';
+import type { State } from '../../types/if/state.type';
 
 /**
  * Creates a reactive conditional structure from a list of branches.

@@ -1,5 +1,5 @@
 import { TokenType } from '../token-type.enum';
-import { TokenWithSpan } from '../token.type';
+import type { TokenWithSpan } from '../token-with-span.type';
 
 /**
  * Token emitted when the lexer consumes the call of a template after `@render`, e.g. `row(item(), index())` in

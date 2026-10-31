@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { CompilerOptions, createSourceFile, forEachChild, isClassDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ComponentMembers } from '../../types/component-members/component-members.type';
-import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes.type';
+import type { ComponentMembers } from '../../types/component-members.type';
+import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes/class-declaration-with-name.type';
 import { clearComponentMembersCache, extractComponentMembers, isReactiveExport } from './extract-component-members.utils';
 
 vi.mock('node:fs', async (importOriginal) => {

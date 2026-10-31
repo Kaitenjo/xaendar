@@ -10,6 +10,7 @@ import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, regist
 import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
+import type { RenderRegistration } from '../../types/render-registration.type';
 
 /**
  * The declaration files, whose classes keep no decorator: a package compiled to JavaScript declares no component nor
@@ -151,6 +152,30 @@ export function generateTemplateModule(compiledFunctions: string, dependencyPath
 }
 
 /**
+ * Wraps the output of the server compiler, which imports the runtime helpers it relies on, into the ES module exporting
+ * its `render` entry point, as {@link generateTemplateModule} does for the browser: the modules the template imports are
+ * imported first, so that the components it renders are defined on the server too.
+ *
+ * @param compiledFunctions - The output of the server compiler.
+ * @param dependencyPaths - The absolute paths of the modules imported by the template.
+ * @returns The source code of the template module.
+ */
+export function generateServerTemplateModule(compiledFunctions: string, dependencyPaths: readonly string[] = []): string {
+  // Filled by index: a push would append after the slots allocated, which join as empty lines
+  const end = dependencyPaths.length;
+  const lines = new Array<string>(end + 4);
+  for (let i = 0; i < end; i++) {
+    lines[i] = `import ${JSON.stringify(dependencyPaths[i])};`;
+  }
+
+  lines[end] = compiledFunctions;
+  lines[end + 1] = '';
+  lines[end + 2] = 'export { render };';
+  lines[end + 3] = '';
+  return lines.join('\n');
+}
+
+/**
  * Builds the import specifier of the module exporting the compiled stylesheet of a style file.
  *
  * The stylesheet only depends on the style file, so every component using it, in the same file
@@ -207,6 +232,18 @@ export function generateStyleModule(cssText: string | undefined): string {
 }
 
 /**
+ * Wraps the compiled CSS of a style file into the ES module evaluated on the server, exporting its text as `css`: the
+ * server writes it in a `<style>` of the shadow root of the component. A style file with no actual rules exports an
+ * `undefined` text, so no `<style>` is written.
+ *
+ * @param cssText - The compiled CSS.
+ * @returns The source code of the style module.
+ */
+export function generateServerStyleModule(cssText: string | undefined): string {
+  return `export const css = ${cssText?.trim().length ? JSON.stringify(cssText) : 'undefined'};\n`;
+}
+
+/**
  * Wires a component to its compiled template into the shared `MagicString`
  * wrapping the whole transpiled component file, applying the three required
  * mutations — template and style module imports, render function registration,
@@ -228,7 +265,7 @@ export function generateStyleModule(cssText: string | undefined): string {
  * into a single accurate sourcemap instead of each edit invalidating the
  * next one's line/column bookkeeping.
  *
- * @param s - The `MagicString` wrapping the whole component file, shared
+ * @param code - The `MagicString` wrapping the whole component file, shared
  *   across every component declared in it.
  * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source,
  *   shared across every component declared in it.
@@ -241,10 +278,12 @@ export function generateStyleModule(cssText: string | undefined): string {
  *   (see {@link createTemplateModuleSpecifier}).
  * @param styleModuleSpecifier - The import specifier of the compiled style module
  *   (see {@link createStyleModuleSpecifier}), if the component has a stylesheet.
+ * @param server - Whether the file is evaluated on the server: its modules then export the code rendering the
+ *   template into HTML and the text of the stylesheet, registered via `_defineServerRender` of `@xaendar/ssr`.
  * @throws When no class named `className` is found, or none of them has the static block applying
  *   its decorators — meaning the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectTemplate(s: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, styleModuleSpecifier?: string): void {
+export function injectTemplate(code: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, registration: RenderRegistration, styleModuleSpecifier?: string): void {
   const classes = findClassesByName(sourceFile, className);
   if (!classes?.length) {
     throw `Could not find class "${className}" in the transpiled output.`;
@@ -256,12 +295,13 @@ export function injectTemplate(s: MagicString, sourceFile: SourceFile, moduleImp
     throw `Could not find the static block applying the decorators of class "${className}" in the transpiled output. Make sure @rolldown/plugin-babel with @babel/plugin-proposal-decorators runs before xaendarPlugin() in your Vite config.`;
   }
 
+  const { define, module, styleExport } = registration;
   const first = moduleImports.size === 0;
-  const renderName = insertModuleImport(s, moduleImports, 'render', `__${className}_render`, templateModuleSpecifier);
-  const styleSheetName = styleModuleSpecifier && insertModuleImport(s, moduleImports, 'sheet', `__${className}_sheet`, styleModuleSpecifier);
-  insertRenderRegistration(s, sourceFile, registrationBlock, renderName, styleSheetName);
+  const renderName = insertModuleImport(code, moduleImports, 'render', `__${className}_render`, templateModuleSpecifier);
+  const styleName = styleModuleSpecifier && insertModuleImport(code, moduleImports, styleExport, `__${className}_${styleExport}`, styleModuleSpecifier);
+  insertRenderRegistration(code, sourceFile, registrationBlock, define, renderName, styleName);
   if (first) {
-    insertRequiredImports(s);
+    insertRequiredImports(code, define, module);
   }
 }
 
@@ -497,28 +537,31 @@ function insertModuleImport(s: MagicString, moduleImports: Map<string, string>, 
 }
 
 /**
- * Inserts the static block registering the render function and the stylesheet of the component
- * via `_defineRender`, right before `registrationBlock`.
+ * Inserts the static block registering the render function and the stylesheet of the component, right before
+ * `registrationBlock`.
  *
  * @param s - The `MagicString` wrapping the whole component file.
  * @param sourceFile - The AST of the file's ORIGINAL (pre-injection) source.
  * @param registrationBlock - The static block the registration is inserted before.
+ * @param define - The runtime function registering them, `_defineRender` or `_defineServerRender`.
  * @param renderName - The local binding of the render function.
- * @param styleSheetName - The local binding of the stylesheet, if the component has one.
+ * @param styleName - The local binding of the stylesheet, if the component has one.
  */
-function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, renderName: string, styleSheetName?: string): void {
-  const args = `this, ${renderName}${styleSheetName ? `, ${styleSheetName}` : ''}`;
+function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, define: string, renderName: string, styleName?: string): void {
+  const args = `this, ${renderName}${styleName ? `, ${styleName}` : ''}`;
 
-  s.appendLeft(registrationBlock.getStart(sourceFile), `static { _defineRender(${args}); }\n\n  `);
+  s.appendLeft(registrationBlock.getStart(sourceFile), `static { ${define}(${args}); }\n\n  `);
 }
 
 /**
- * Imports the runtime helpers needed by the injected code, once per file.
+ * Imports the runtime function registering the render function, once per file.
  *
  * @param s - The `MagicString` wrapping the whole component file.
+ * @param define - The runtime function.
+ * @param module - The package exporting it.
  */
-function insertRequiredImports(s: MagicString): void {
-  s.prepend('import { _defineRender } from \'@xaendar/core\';\n');
+function insertRequiredImports(s: MagicString, define: string, module: string): void {
+  s.prepend(`import { ${define} } from '${module}';\n`);
 }
 
 /**

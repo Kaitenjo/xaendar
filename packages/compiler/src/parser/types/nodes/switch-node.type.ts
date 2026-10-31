@@ -1,5 +1,5 @@
 import { Expression } from 'typescript';
-import { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import { ASTNodeType } from '../node.enum';
 import { CaseNode } from './case-node.type';
 

@@ -1,4 +1,4 @@
-import type { ElementNamespace } from '../../types/element-namespace/element-namespace.type';
+import type { ElementNamespace } from '../../types/element-namespace.type';
 import type { Span } from '../../types/span.type';
 
 /**

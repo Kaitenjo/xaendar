@@ -2,7 +2,7 @@ import { CR, EQUAL_THEN, GREATER_THEN, LF, LPAREN, SLASH, SPACE, TAB } from '../
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import type { MaybeTokenWithSpan } from '../../types/token.type';
+import type { MaybeTokenWithSpan } from '../../types/maybe-token-with-span.type';
 import type { TemplateDeclarationToken } from '../../types/tokens/template-declaration-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';

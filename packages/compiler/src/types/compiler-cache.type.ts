@@ -1,6 +1,6 @@
 import type { Function, VoidFunction } from '@xaendar/types';
 import type { ComponentOrDirectiveMetadata } from './component-or-directive-metadata.type';
-import type { ImportedSymbol } from './imported-symbol/imported-symbol.type';
+import type { ImportedSymbol } from './imported-symbol.type';
 
 export type CompilerCache = {
   /**

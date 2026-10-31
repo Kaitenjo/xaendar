@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
-import type { LineMapping } from '../../../type-checker/types/generated-line.type';
+import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { getBlockIdentifier, getElementFactory, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 

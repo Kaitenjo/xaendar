@@ -1,8 +1,9 @@
 import { CLOSERS } from '../../../costants/closers.costant';
 import { Lexer } from '../../lexer/lexer';
-import type { ExpressionContext } from '../../types/expression-context/expression-context.type';
+import type { ExpressionContext } from '../../types/expression-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { ScanState } from '../../types/scan-state.type';
 
 /**
  * The part of an identifier written right before an offset.
@@ -19,21 +20,6 @@ const PLACEHOLDER = '__xaendarCompletion__';
  * The character opening each construct closed by a parenthesis, a bracket or a brace.
  */
 const OPENERS: Readonly<Record<string, string>> = { ')': '(', ']': '[', '}': '{' };
-
-/**
- * The state of a scan of an expression.
- */
-type ScanState = {
-  /**
-   * The constructs open at the scanned character, innermost last: parentheses, brackets, braces (`{` or `${`) and
-   * template literals.
-   */
-  readonly nesting: string[];
-  /**
-   * The quote of the string literal the scanned character is in, if any.
-   */
-  quote: string | undefined;
-};
 
 /**
  * Tells where an expression is being written at an offset of a template, by lexing the template up to it, and closes

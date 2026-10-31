@@ -1,8 +1,7 @@
 import babel from '@rolldown/plugin-babel';
-import { xaendarPlugin } from '@xaendar/build-tools';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { xaendarPlugin, type XaendarPluginOptions } from '@xaendar/build-tools';
 import type { PluginOption } from 'vite';
+import { readXaendarConfig, resolveSsrPaths } from './xaendar-config/xaendar-config.utils';
 
 /**
  * Creates the bundler plugins used by the CLI: Babel (to transpile decorators) followed by the Xaendar compiler
@@ -31,22 +30,22 @@ export function createPlugins(): PluginOption[] {
         }
       ]
     }),
-    xaendarPlugin({ customElements: readCustomElements() })
+    xaendarPlugin(readPluginOptions())
   ];
 }
 
 /**
- * Reads the patterns of the custom elements of other libraries (`"customElements": ["sl-*"]`) from the
- * `xaendar.json` of the project in the working directory.
+ * Reads the options of the Xaendar plugin from the `xaendar.json` of the project in the working directory: the
+ * patterns of the custom elements of other libraries (`"customElements": ["sl-*"]`), and the entry of the rendering on
+ * the server, resolved against the project, when the project renders its pages there.
  *
- * @returns The patterns, none when the file or the field is missing.
+ * @returns The options, without patterns nor rendering on the server when the file or the fields are missing.
  */
-function readCustomElements(): readonly string[] {
-  const path = resolve(process.cwd(), 'xaendar.json');
-  if (!existsSync(path)) {
-    return [];
-  }
-
-  const { customElements }: { customElements?: string[] } = JSON.parse(readFileSync(path, 'utf-8'));
-  return customElements ?? [];
+function readPluginOptions(): XaendarPluginOptions {
+  const config = readXaendarConfig();
+  const ssr = config?.ssr && { entry: resolveSsrPaths(config.ssr).entry };
+  return { 
+    customElements: config?.customElements, 
+    ssr 
+  };
 }

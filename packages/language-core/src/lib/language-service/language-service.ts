@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs';
 import { CompilerOptions, createDocumentRegistry, createLanguageService, getDefaultLibFilePath, LanguageService, LanguageServiceHost, ScriptSnapshot, sys } from 'typescript';
 import { normalizeFileName } from '../utils/path/path.utils';
+import type { VirtualFileEntry } from '../types/virtual-file-entry.type';
 
 /**
  * language-service.ts
@@ -23,20 +24,6 @@ import { normalizeFileName } from '../utils/path/path.utils';
  * The documents open in an editor are shared by every instance (see `setDocumentOverlay`):
  * their unsaved text is read in place of the file on disk.
  */
-
-/**
- * A generated TS shim, with the version the LanguageService uses to tell when to re-check it.
- */
-type VirtualFileEntry = {
-  /**
-   * The source of the shim.
-   */
-  content: string;
-  /**
-   * The version of the shim, bumped whenever its content changes.
-   */
-  version: number;
-};
 
 /**
  * The unsaved text of the documents open in an editor, keyed by their normalized path (see `normalizeFileName`).

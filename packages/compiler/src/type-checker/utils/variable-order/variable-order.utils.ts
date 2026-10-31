@@ -9,95 +9,16 @@ import type { ElseIfNode } from '../../../parser/types/nodes/else-if-node.type';
 import type { ElseNode } from '../../../parser/types/nodes/else-node.type';
 import type { ForNode } from '../../../parser/types/nodes/for-node.type';
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
-import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getForVariables } from '../../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { Span } from '../../../types/span.type';
-
-/**
- * A part of the template whose nodes are rendered together: the template itself, or the content of a template
- * (`<template name(…)>`), rendered by each `@render` calling it.
- */
-type Level = TemplateNode | null;
-
-/**
- * A name a scope of the template declares.
- */
-type Declaration = {
-  /**
-   * When the name can be read: the position of the element an element ref names, which is created when the
-   * render reaches it, the end of a `@let`, initialized when the render reaches it, or `null` for a name the scope
-   * declares as soon as it is created (the item of a `@for` and its implicit variables, the parameters of a template, a
-   * template).
-   */
-  readonly position: number | null;
-  /**
-   * The part of the template declaring the name.
-   */
-  readonly level: Level;
-  /**
-   * The template the name declares, if it declares one.
-   */
-  readonly template?: TemplateNode;
-  /**
-   * The `@let` declaring the name, if a `@let` declares it.
-   */
-  readonly let?: LetNode;
-};
-
-/**
- * The names a scope of a template declares.
- */
-type ScopeNames = Map<string, Declaration>;
-
-/**
- * A `@render`, with the part of the template it is written in.
- */
-type RenderSite = {
-  /**
-   * The template it renders.
-   */
-  readonly template: TemplateNode;
-  /**
-   * The `@render`.
-   */
-  readonly node: RenderNode;
-  /**
-   * The part of the template it is written in.
-   */
-  readonly level: Level;
-};
-
-/**
- * The state of the check of a template.
- */
-type OrderCheck = {
-  /**
-   * The names of the scopes enclosing the part being checked, the innermost last.
-   */
-  readonly scopes: ScopeNames[];
-  /**
-   * The part of the template being checked.
-   */
-  level: Level;
-  /**
-   * For each template, the element refs and the `@let` declared outside of it that its content, or a template it
-   * renders, reads as soon as it is rendered, mapped to their names: whether they exist depends on where the template is
-   * rendered.
-   */
-  readonly freeReads: Map<Level, Map<Declaration, string>>;
-  /**
-   * The `@render`s of the template.
-   */
-  readonly renders: RenderSite[];
-  /**
-   * The errors found so far, `undefined` while there are none.
-   */
-  errors?: Error[];
-};
+import type { Level } from '../../types/variable-order/level.type';
+import type { Declaration } from '../../types/variable-order/declaration.type';
+import type { ScopeNames } from '../../types/variable-order/scope-names.type';
+import type { OrderCheck } from '../../types/variable-order/order-check.type';
 
 /**
  * Checks that the element refs are read when their element exists, and the `@let` once they are initialized. A

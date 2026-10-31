@@ -1,9 +1,11 @@
 import { ASTNodeType } from '@xaendar/compiler';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
-import { getTemplateDefinition, type TemplateDefinition } from './template-definition';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
+import { getTemplateDefinition } from './template-definition';
+import type { TemplateDefinition } from '../types/template-definition.type';
 import type { LanguageService } from 'typescript';
 
 const TIMEOUT = 60_000;

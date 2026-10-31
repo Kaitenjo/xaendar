@@ -1,5 +1,5 @@
 import { Span } from '../../../types/span.type.js';
-import type { LineMapping } from '../../types/generated-line.type.js';
+import type { LineMapping } from '../../types/line-mapping.type.js';
 import type { TemplatePosition } from '../../types/template-position.type.js';
 import { TypeCheckResult } from '../../types/type-checker-result.type.js';
 

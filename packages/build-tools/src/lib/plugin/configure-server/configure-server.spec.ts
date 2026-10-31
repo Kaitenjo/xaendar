@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { XaendarPluginState } from '../../types/plugin.types';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
@@ -67,7 +67,8 @@ function createState(): XaendarPluginState {
     minifyStyles: false,
     isBuild: false,
     setLogger: vi.fn(),
-    logError: vi.fn()
+    logError: vi.fn(),
+    strategies: {} as XaendarPluginState['strategies']
   };
 }
 
@@ -142,7 +143,7 @@ describe('createConfigureServerHook()', () => {
     /**
      * Configures a dev server whose entry renders the page with the given function, returning the middleware the plugin adds.
      */
-    function configure(render: (url: string) => Promise<string>) {
+    function configure(render: ((url: string) => Promise<string>) | undefined) {
       const middlewares = new Array<(request: unknown, response: unknown, next: unknown) => Promise<void>>();
       const server = {
         config: { logger: {}, root: '/project/src' },
@@ -224,6 +225,17 @@ describe('createConfigureServerHook()', () => {
 
       const { response, next } = await request('GET', 'text/html');
 
+      expect(server.ssrFixStacktrace).toHaveBeenCalledWith(error);
+      expect(next).toHaveBeenCalledWith(error);
+      expect(response.end).not.toHaveBeenCalled();
+    });
+
+    it('hands to the next middleware an error naming the entry when it does not export render', async () => {
+      const { server, request } = configure(undefined);
+
+      const { response, next } = await request('GET', 'text/html');
+
+      const error = expect.objectContaining({ message: 'entry-server.ts does not export render(url): export the function rendering a page on the server' });
       expect(server.ssrFixStacktrace).toHaveBeenCalledWith(error);
       expect(next).toHaveBeenCalledWith(error);
       expect(response.end).not.toHaveBeenCalled();

@@ -384,6 +384,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/imports'
   },
   {
+    phase: 'Build',
+    message: '<path> does not export render(url): export the function rendering a page on the server',
+    page: 'tools/ssr'
+  },
+  {
     phase: 'TypeChecker',
     message: 'Module \'"<path>"\' has no exported member \'Callout\'.',
     page: 'templates/imports'
@@ -554,6 +559,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'tools/ssr'
   },
   {
+    phase: 'Runtime',
+    message: 'dist/server/entry-server.js does not export render(url): export the function rendering a page on the server from src/entry-server.ts',
+    page: 'tools/ssr'
+  },
+  {
     phase: 'Signals',
     message: 'Circular dependency detected while computing a Computed signal',
     page: 'signals/computed'
@@ -595,7 +605,17 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'CLI',
-    message: '✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server.ts" } in its xaendar.json.',
+    message: '✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server" } in its xaendar.json.',
+    page: 'tools/ssr'
+  },
+  {
+    phase: 'CLI',
+    message: '✖  Invalid ssr entry "src/entry-server.ts" in xaendar.json: write it without extension.',
+    page: 'tools/ssr'
+  },
+  {
+    phase: 'CLI',
+    message: '✖  src/entry-server does not export render(url): export the function rendering a page on the server.',
     page: 'tools/ssr'
   }
 ];

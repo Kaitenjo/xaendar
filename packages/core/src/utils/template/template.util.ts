@@ -1,29 +1,10 @@
-import type { Function, NoArgsFunction } from '@xaendar/types';
+import type { NoArgsFunction } from '@xaendar/types';
 import { computed } from '../../signals/computed/computed';
 import type { Computed } from '../../signals/types/computed.type';
 import { untracked } from '../../signals/untracked';
 import type { _Context } from '../context/context.util';
-
-/**
- * Renders an instance of a template, as the compiler-generated render code does: it receives the element the instance
- * is rendered into, the context of the scope declaring the template, the node the instance is rendered before and the
- * signals of the parameters, and returns the context it creates for the instance.
- */
-type RenderTemplate = Function<[parentNode: Element, declarationContext: _Context, referenceNode: Comment | null, params: Computed<unknown>[]], _Context>;
-
-/**
- * A template declared in a template, e.g. `<template row(item: Item)>`, as the scope declaring it holds it.
- */
-export type _Template = {
-  /**
-   * The context of the scope declaring the template: the content of the template reads the names visible there.
-   */
-  readonly context: _Context;
-  /**
-   * Renders an instance of the template.
-   */
-  readonly render: RenderTemplate;
-};
+import type { RenderTemplate } from '../../types/render-template.type';
+import type { _Template } from '../../types/template.type';
 
 /**
  * Creates the value of a template, which the scope declaring it holds under its name.

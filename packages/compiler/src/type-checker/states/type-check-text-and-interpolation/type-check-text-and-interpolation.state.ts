@@ -2,7 +2,7 @@ import { ASTNodeType } from '../../../parser/types/node.enum';
 import { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { TextNode } from '../../../parser/types/nodes/text-node.type';
 import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';

@@ -1,4 +1,4 @@
-import type { ElementNamespace } from '../../types/element-namespace/element-namespace.type';
+import type { ElementNamespace } from '../../types/element-namespace.type';
 
 /**
  * Returns the namespace an element is created in, exactly like the generated render code creates it: an `<svg>` and a

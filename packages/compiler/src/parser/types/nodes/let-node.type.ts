@@ -1,6 +1,6 @@
 import type { Expression } from 'typescript';
 import type { Span } from '../../../types/span.type';
-import type { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 
 /**

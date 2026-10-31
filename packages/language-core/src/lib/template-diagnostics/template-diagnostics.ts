@@ -1,35 +1,11 @@
 import { type ASTNode, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
-import type { TemplateAnalysis, TemplateAnalysisResult } from '../template-analysis/template-analysis';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { findUnusedImports } from '../template-imports/template-imports';
 import { getImportConflictDiagnostics } from '../utils/import-conflicts/import-conflicts.utils';
 import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
-
-/**
- * A problem found in a template, located in the template itself.
- */
-export type TemplateDiagnostic = {
-  /**
-   * The span of the template the problem refers to.
-   */
-  readonly span: Span;
-  /**
-   * The description of the problem.
-   */
-  readonly message: string;
-  /**
-   * The severity of the problem.
-   */
-  readonly category: DiagnosticCategory;
-  /**
-   * The TypeScript error code, for the problems found by type-checking the template.
-   */
-  readonly code?: number;
-  /**
-   * Set for what the template doesn't need (an import it never uses): the editor shows it faded, not as a problem.
-   */
-  readonly unnecessary?: true;
-};
+import type { TemplateDiagnostic } from '../types/template-diagnostic.type';
 
 /**
  * Collects the problems of a template: the error preventing it from being analyzed, reported on its span, or

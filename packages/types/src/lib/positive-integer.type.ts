@@ -1,4 +1,4 @@
-import { ContainsChar } from './contains-char';
+import { ContainsChar } from './contains-char.type';
 
 /**
  * Resolves to `Value` when it is a positive integer, or `never` otherwise.

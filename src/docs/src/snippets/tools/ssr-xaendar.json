@@ -6,7 +6,7 @@
     }
   },
   "ssr": {
-    "entry": "src/entry-server.ts",
+    "entry": "src/entry-server",
     "prerender": ["/"]
   }
 }

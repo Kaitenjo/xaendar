@@ -1,12 +1,11 @@
 import { indent } from '@xaendar/common';
 import { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
-import type { LetNode } from '../../parser/types/nodes/let-node.type.js';
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type.js';
-import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils.js';
+import { isStructuralElement } from '../../parser/utils/scope-declarations/scope-declarations.utils.js';
 import { CompilerCache } from '../../types/compiler-cache.type.js';
-import type { ElementNamespace } from '../../types/element-namespace/element-namespace.type.js';
-import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type.js';
+import type { ElementNamespace } from '../../types/element-namespace.type.js';
+import type { SymbolImport } from '../../types/symbol-import.type.js';
 import { catchErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { assertImportableSymbol, getRuntimeAlias, toRuntimeImport } from '../../utils/symbol-imports/symbol-imports.utils.js';
 import { CompilerContext } from '../models/compiler-context/compiler-context.model.js';
@@ -19,9 +18,10 @@ import { generateSwitch } from '../states/generate-switch/generate-switch.state.
 import { generateTextAndInterpolation } from '../states/generate-text-and-interpolation/generate-text-and-interpolation.state.js';
 import { skipGeneration } from '../states/skip-generation/skip-generation.state.js';
 import { GeneratorStates } from '../types/generator-states.type.js';
-import type { GeneratorFunctionToProcess } from '../types/generator-function-to-process/generator-function-to-process.type.js';
+import type { GeneratorFunctionToProcess } from '../types/generator-function-to-process.type.js';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type.js';
-import { getElementFactory, resolveExpression, ROOT_NODE } from '../utils/generator/generator.utils.js';
+import { getElementFactory, ROOT_NODE } from '../utils/generator/generator.utils.js';
+import { declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
 
 /**
  * The Generator class is responsible for generating code from an abstract syntax tree (AST) representation of the input source code. 
@@ -104,7 +104,7 @@ export class Generator {
         ])
       ]
 
-      const rootDeclarations = declareScope(this._ast, compilerContext);
+      const rootDeclarations = declareScope(this._ast, compilerContext, toTemplateFunction);
       if (rootDeclarations) {
         processFunctions(rootDeclarations.functionsToProcess);
         generatedCode.push(...indent(rootDeclarations.code));
@@ -140,7 +140,7 @@ export class Generator {
           A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
           declaring its element refs, its templates and its @let
         */
-        const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context) : undefined;
+        const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context, toTemplateFunction) : undefined;
         if (declarations) {
           processFunctions(declarations.functionsToProcess);
           generatedCode.push(...indent(declarations.code));
@@ -194,59 +194,10 @@ export class Generator {
 }
 
 /**
- * Declares the element refs, the templates and the `@let` of a scope: registers them in its compiler context, so
- * that every expression and every `@render` of the scope reads them, the ones written before their declaration too, and
- * writes the code declaring them in its runtime context:
- * - an element ref is declared uninitialized, and the element it names initializes it once rendered;
- * - a template is initialized with the function rendering its content (see {@link toTemplateFunction}), together with
- *   the runtime context of the scope, which its content reads names from;
- * - a `@let` is declared uninitialized, and initialized once the render reaches it (see `generateLet`): it is a signal
- *   when its value reads one. The `@let` are registered after the other names, in the order they are written, so that
- *   the value of one tells whether it reads the signal of another one written before it.
- *
- * @param nodes - The nodes of the scope.
- * @param compilerContext - The compiler context of the scope.
- * @returns The code declaring the names, and the functions rendering the content of the templates, `undefined` if the
- *   scope declares none.
- */
-function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContext): Required<GeneratorTransitionFunctionReturnType> | undefined {
-  let declarations: Required<GeneratorTransitionFunctionReturnType> | undefined;
-  const add = (line: string): Required<GeneratorTransitionFunctionReturnType> => {
-    declarations ??= { code: [], functionsToProcess: new Map() };
-    declarations.code.push(line);
-    return declarations;
-  };
-
-  const lets = new Array<LetNode>();
-  visitScopeDeclarations(nodes, compilerContext.namespace, {
-    let: node => lets.push(node),
-    ref: (_element, { name }) => {
-      compilerContext.addIdentifier(name, 'value');
-      add(`context.declare('${name}');`);
-    },
-    template: (template, namespace) => {
-      const { name } = template.declaration;
-      const key = `template_${name}_${template.span.start}`;
-      compilerContext.addIdentifier(name, 'value');
-      compilerContext.addTemplate(name, namespace);
-      add(`context.addIdentifier('${name}', _template(context, ${key}.bind(this)));`).functionsToProcess.set(key, toTemplateFunction(template, key, namespace, compilerContext));
-    }
-  });
-
-  for (let i = 0; i < lets.length; i++) {
-    const { name, value } = lets[i];
-    compilerContext.addIdentifier(name, resolveExpression(value, compilerContext).reactive ? 'signal' : 'value');
-    add(`context.declare('${name}', 'let');`);
-  }
-
-  return declarations;
-}
-
-/**
  * Describes the function rendering an instance of a template: it creates the scope of the instance, whose parent is the
  * runtime context of the scope declaring the template, so that its content reads the names visible where the template
- * is declared, and not where it is rendered. The parameters are signals, read like the item of a `@for`: the one of
- * a parameter whose argument is left out holds its default value, or `undefined`.
+ * is declared, and not where it is rendered. The parameters are signals, read like the item of a `@for` (see
+ * `declareTemplateParameters`).
  *
  * @param template - The template.
  * @param key - The name of the function.
@@ -259,24 +210,7 @@ function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContex
  */
 function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, compilerContext: CompilerContext): GeneratorFunctionToProcess {
   const context = new CompilerContext(compilerContext, namespace);
-  const precode = [`context.createElement = ${getElementFactory(namespace)};`];
-  const { parameters } = template;
-  for (let i = 0; i < parameters.length; i++) {
-    context.addIdentifier(parameters[i].name, 'signal');
-  }
-
-  // An argument the @render may leave out takes the default value of its parameter, which reads the parameters before it
-  for (let i = 0; i < parameters.length; i++) {
-    const { name, optional, initializer } = parameters[i];
-    let param = `params[${i}]`;
-    if (initializer) {
-      param = `_parameter(params, ${i}, () => ${resolveExpression(initializer, context).expression})`;
-    } else if (optional) {
-      param = `_parameter(params, ${i})`;
-    }
-
-    precode.push(`context.addIdentifier('${name}', ${param});`);
-  }
+  const precode = [`context.createElement = ${getElementFactory(namespace)};`, ...declareTemplateParameters(template, context)];
 
   return {
     fn: { node: template, parentNode: key, context, precode: precode.join('\n  '), anchor: 'anchor' },

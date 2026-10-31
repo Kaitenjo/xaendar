@@ -1,4 +1,4 @@
-import type { CompileOptions } from '../compile-options.type';
+import type { CompileOptions } from '../types/compile-options.type';
 import { Generator } from '../generator/generator/generator';
 import { Lexer } from '../lexer/lexer/lexer';
 import { Parser } from '../parser/parser/parser';
@@ -7,10 +7,10 @@ import { ASTNodeType } from '../parser/types/node.enum';
 import { ImportNode } from '../parser/types/nodes/import-node.type';
 import { TypeChecker } from '../type-checker/type-checker/type-checker';
 import type { TypeCheckResult } from '../type-checker/types/type-checker-result.type';
-import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result/type-checker-tolerant-result.type';
+import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result.type';
 import type { CompilerCache } from '../types/compiler-cache.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
-import type { SymbolImport } from '../types/imported-symbol/imported-symbol.type';
+import type { SymbolImport } from '../types/symbol-import.type';
 
 /**
  * Compiles a template string into a Javascript render function body.
@@ -114,14 +114,15 @@ export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[],
 
 /**
  * Resolves what the `@import` statements of a template import: the metadata of the components and of the directives,
- * and the other symbols (functions, constants, enums, classes, types, namespaces).
+ * and the other symbols (functions, constants, enums, classes, types, namespaces). Exported for the generators of
+ * other packages, which read the symbols the same way.
  * @param importNodes - The `@import` nodes of the template.
  * @param baseDir - Absolute path used to resolve relative import paths for `@import` nodes.
  * @param cache - The cache resolving the imports.
  * @returns The metadata of the components and directives, and the symbols, in the order they are imported.
  * @throws If a module can't be resolved.
  */
-async function resolveTemplateImports(importNodes: ImportNode[], baseDir: string, cache: CompilerCache): Promise<{ metadatas: ComponentOrDirectiveMetadata[], symbols: SymbolImport[] }> {
+export async function resolveTemplateImports(importNodes: ImportNode[], baseDir: string, cache: CompilerCache): Promise<{ metadatas: ComponentOrDirectiveMetadata[], symbols: SymbolImport[] }> {
   const resolutions = new Array<Promise<SymbolImport | ComponentOrDirectiveMetadata>>();
 
   for (let i = 0; i < importNodes.length; i++) {

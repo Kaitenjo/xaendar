@@ -5,8 +5,8 @@ import { ASTNode } from '../../parser/types/ast.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import type { TemplateError } from '../../models/template-error/template-error.model';
 import type { ImportNode } from '../../parser/types/nodes/import-node.type';
-import { ComponentMetadata } from '../../types/component-metadata/component-metadata.type';
-import type { SymbolImport } from '../../types/imported-symbol/imported-symbol.type';
+import { ComponentMetadata } from '../../types/component-metadata.type';
+import type { SymbolImport } from '../../types/symbol-import.type';
 import { TypeChecker } from './type-checker';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();

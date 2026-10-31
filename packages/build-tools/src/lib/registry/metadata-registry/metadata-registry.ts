@@ -1,5 +1,5 @@
 import { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
-import { MetadataEntry } from '../../types/metadata-entry';
+import { MetadataEntry } from '../../types/metadata-entry.type';
 import type { SelectorOwner } from '../../types/selector-owner.type';
 
 /**

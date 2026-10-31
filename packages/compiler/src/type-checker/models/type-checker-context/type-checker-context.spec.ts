@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ComponentMetadata } from '../../../types/component-metadata/component-metadata.type';
+import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { TypeCheckContext } from './type-checker-context';
 

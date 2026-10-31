@@ -1,5 +1,5 @@
 import type { Span } from '../../../types/span.type';
-import { ASTNodeWithSpan } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import { ASTNodeType } from '../node.enum';
 import { InterpolationNode } from './interpolation-node.type';
 

@@ -1,14 +1,14 @@
 import type { ASTNode } from '../../../parser/types/ast.type';
-import type { IdentifierKind } from '../../../generator/models/compiler-context/compiler-context.model';
+import type { IdentifierKind } from '../../../generator/types/identifier-kind.type';
 import { resolveExpression, ROOT_NODE } from '../../../generator/utils/generator/generator.utils';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped, plain } from '../line-builder/line-builder.utils';
 import { getElementType } from '../namespace-types/namespace-types.utils';

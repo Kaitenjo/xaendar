@@ -1,7 +1,7 @@
 import { type Expression, forEachChild, type Node } from 'typescript';
 import { getSignalCallee, resolveExpression, ROOT_NODE } from '../../../generator/utils/generator/generator.utils';
 import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
-import type { Line } from '../../types/generated-line.type';
+import type { Line } from '../../types/line.type';
 import { plain } from '../line-builder/line-builder.utils';
 
 /**

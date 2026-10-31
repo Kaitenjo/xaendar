@@ -1,6 +1,6 @@
 import { ASTNode } from '../../parser/types/ast.type';
 import { TypeCheckContext } from '../models/type-checker-context/type-checker-context';
-import { Line } from './generated-line.type';
+import type { Line } from './line.type';
 
 /**
  * Recursively processes a single AST node into type-checkable TypeScript

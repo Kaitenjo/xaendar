@@ -55,8 +55,4 @@ describe('ServerCustomElementRegistry', () => {
     await expect(waiting).resolves.toBe(Card);
     await expect(registry.whenDefined('my-card')).resolves.toBe(Card);
   });
-
-  it('upgrades nothing', () => {
-    expect(new ServerCustomElementRegistry().upgrade()).toBeUndefined();
-  });
 });

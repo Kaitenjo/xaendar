@@ -1,32 +1,8 @@
 import { matchesCustomElementPattern } from '@xaendar/common';
 import type { CompilerCache } from '../../../types/compiler-cache.type';
-import type { ElementNamespace } from '../../../types/element-namespace/element-namespace.type';
-
-/**
- * Whether a declared identifier holds a plain value or a signal.
- * Used by `resolveExpression`/`resolveIdentifier` to decide, at compile
- * time, whether generated access code needs a trailing `()` to unwrap the
- * signal — no runtime type detection is ever needed.
- */
-export type IdentifierKind = 'value' | 'signal';
-
-/**
- * A name a template imports from a module (see `SymbolImport`), as an expression reads it.
- */
-export type ImportedIdentifier = {
-  /**
-   * The expression replacing the name: the alias the module is imported as in the generated code.
-   */
-  expression: string;
-  /**
-   * Whether reading the name can read a signal.
-   */
-  kind: IdentifierKind;
-  /**
-   * Whether an expression has read the name, i.e. whether the generated code must import it.
-   */
-  used: boolean;
-};
+import type { ElementNamespace } from '../../../types/element-namespace.type';
+import type { IdentifierKind } from '../../types/identifier-kind.type';
+import type { ImportedIdentifier } from '../../types/imported-identifier.type';
 
 /**
  * Tracks identifier scope during render code generation.

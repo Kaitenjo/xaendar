@@ -222,7 +222,7 @@ The tag is rendered only once the module has defined it: an element rendered bef
 
 ## Server-side rendering
 
-A project created with `xd new --ssr`, or declaring `"ssr": { "entry": "src/entry-server.ts" }` in `xaendar.json`, renders each page on the server as declarative shadow roots, which the browser shows before the scripts load; the browser then renders the components again, from its own state.
+A project created with `xd new --ssr`, or declaring `"ssr": { "entry": "src/entry-server" }` in `xaendar.json` (without extension), renders each page on the server as declarative shadow roots, which the browser shows before the scripts load; the browser then renders the components again, from its own state.
 
 ```ts
 // src/entry-server.ts

@@ -29,6 +29,7 @@ vi.mock('./prompt-style/prompt-style', () => ({
 import { generateComponent } from '../generate/component/component.command';
 import { newCommand } from './new.command';
 import { promptStyle } from './prompt-style/prompt-style';
+import { CLIENT_RENDERING, SERVER_RENDERING } from './rendering/rendering';
 import { buildStructure } from './structure/structure';
 
 beforeEach(() => {
@@ -134,7 +135,7 @@ describe('newCommand()', () => {
     await command.parseAsync(['my-app'], { from: 'user' });
 
     expect(promptStyle).toHaveBeenCalled();
-    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'sass' });
+    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'sass', rendering: CLIENT_RENDERING });
   });
 
   it('defaults to css, without asking, when no style option is given and the terminal is not interactive', async () => {
@@ -143,7 +144,7 @@ describe('newCommand()', () => {
     await command.parseAsync(['my-app'], { from: 'user' });
 
     expect(promptStyle).not.toHaveBeenCalled();
-    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'css' });
+    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'css', rendering: CLIENT_RENDERING });
   });
 
   it('accepts a valid non-default style option, without asking', async () => {
@@ -153,7 +154,7 @@ describe('newCommand()', () => {
     await command.parseAsync(['my-app', '--style', 'scss'], { from: 'user' });
 
     expect(promptStyle).not.toHaveBeenCalled();
-    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'scss' });
+    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'scss', rendering: CLIENT_RENDERING });
   });
 
   it('scaffolds a project rendering on the server with --ssr', async () => {
@@ -161,7 +162,7 @@ describe('newCommand()', () => {
 
     await command.parseAsync(['my-app', '--ssr'], { from: 'user' });
 
-    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'css', ssr: true });
+    expect(buildStructure).toHaveBeenCalledWith({ name: 'my-app', style: 'css', rendering: SERVER_RENDERING });
   });
 
   it('writes file entries returned by buildStructure to disk', async () => {

@@ -1,6 +1,7 @@
 import { TemplateError } from '@xaendar/compiler';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
 import { normalizeFileName } from '../utils/path/path.utils';
 import { analyzeCompletionTemplate, analyzeTemplate, invalidateTemplateMetadata, removeTemplateAnalysis, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports } from './template-analysis';
 

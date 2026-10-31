@@ -1,4 +1,4 @@
-import type { ImportContext } from '../../types/import-context/import-context.type';
+import type { ImportContext } from '../../types/import-context.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { ImportToken } from '../../types/tokens/import-token.type';
 import { lexImportHeader } from '../import-header/import-header.utils';

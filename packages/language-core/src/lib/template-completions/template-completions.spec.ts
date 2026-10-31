@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysis } from '../template-analysis/template-analysis';
-import { createFixtureProject, type FixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
 import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;

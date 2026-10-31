@@ -1,0 +1,18 @@
+{
+  "name": "@xaendar/ssr",
+  "version": "1.0.7",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library rendering Xaendar components to HTML with Declarative Shadow DOM on the server",
+  "xaendar": {
+    "target": "browser"
+  },
+  "dependencies": {
+    "@xaendar/common": "1.0.7",
+    "@xaendar/types": "1.0.7"
+  },
+  "peerDependencies": {
+    "@xaendar/core": "1.0.7"
+  }
+}

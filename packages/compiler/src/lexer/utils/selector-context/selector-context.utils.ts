@@ -1,4 +1,4 @@
-import type { SelectorContext } from '../../types/selector-context/selector-context.type';
+import type { SelectorContext } from '../../types/selector-context.type';
 import { Lexer } from '../../lexer/lexer';
 import { LexerState } from '../../types/lexer-state.enum';
 
