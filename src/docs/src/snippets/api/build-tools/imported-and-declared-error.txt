@@ -1,0 +1,4 @@
+# customElements: ['ex-*'], and the template imports RatingComponent, whose selector is ex-rating
+Xaendar: Failed to compile template - /src/review/review.xd.component.html
+[TypeChecker] ex-rating is both imported as a WebComponent and declared in customElements
+----> <ex-rating />

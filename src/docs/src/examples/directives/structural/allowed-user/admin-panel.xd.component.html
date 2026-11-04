@@ -1,0 +1,16 @@
+@import { AllowedUserDirective } from './allowed-user.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { checks } from './permissions.ts'
+
+<div class="controls">
+  <ex-button (click)="login('admin')">Admin</ex-button>
+  <ex-button (click)="login('guest')">Guest</ex-button>
+  <ex-button (click)="race()">Guest, then admin after 300ms</ex-button>
+  <span>User: { user() }</span>
+</div>
+<p *exAllowedUser(user="{user()}") class="panel">🔑 Admin panel</p>
+<ol class="log">
+  @for (line of checks(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

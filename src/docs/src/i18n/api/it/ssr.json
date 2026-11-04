@@ -1,0 +1,43 @@
+{
+  "renderToString": {
+    "summary": "Renderizza un componente in HTML sul server, scrivendone lo shadow root come shadow root dichiarativo, che il browser mostra prima che giri qualsiasi script.",
+    "description": "<p>Il componente gira come nel browser fino al suo render: viene costruito, gli input dati vengono impostati assegnando le loro proprietà, come li imposta il codice esterno a Xaendar, poi gira <code>onInit</code> e viene renderizzato il template, leggendo ogni signal una volta. I componenti che renderizza vengono renderizzati allo stesso modo. La promise si risolve con l’HTML dell’elemento del componente: il suo tag, con gli attributi e le classi che dichiarano i suoi <a href=\"#/it/reference/api/core/HostProperty\"><code>@HostProperty</code></a>, un <code>&lt;template shadowrootmode=\"open\"&gt;</code> con il suo foglio di stile, in uno <code>&lt;style&gt;</code>, e il suo template, poi il tag di chiusura. Uno script dopo l’elemento, l’event contract, registra ciò che fa l’utente finché non arriva il runtime, che lo ripete.</p><p>Il server scrive l’HTML una volta, quindi ciò che reagisce o ascolta nel browser non gira: gli effect di <code>this.effect()</code>, <code>afterRender</code> e <code>onDestroy</code>, i listener degli eventi e di <code>@HostEvent</code>, le direttive custom e le host directive, e le query, che mantengono il valore iniziale. Un componente creato con <code>createComponent</code> viene costruito, non renderizzato. Le direttive strutturali girano, perché decidono cosa viene renderizzato, e la promise di una asincrona viene attesa: una rifiutata non renderizza nulla.</p><p>Un’espressione di un template legge le globali del browser attraverso <code>globalThis</code>: sul server, una che Node non ha, come <code>window</code>, è <code>undefined</code>, invece di lanciare un <code>ReferenceError</code>. Un element ref è <code>undefined</code> sul server. Un custom element la cui classe il server non definisce, come uno importato con <code>@import lazy</code>, viene scritto senza shadow root: il browser lo renderizza quando la sua classe viene definita.</p><p>Dei commenti segnano al browser le parti dinamiche dell’HTML: le interpolazioni, i blocchi di <code>@if</code>, <code>@switch</code> e <code>@for</code>, con gli item di quest’ultimo, e gli elementi a cui sono applicate direttive strutturali. Gli input vengono scritti come JSON nell’attributo <code>data-xd-inputs</code> dell’elemento, da cui il browser li imposta prima che il componente renderizzi, e il transfer state di <code>options</code> in uno <code>&lt;script type=\"application/json\" data-xd-state&gt;</code> che lo segue.</p><p>Il server DOM va installato con <a href=\"#/it/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a> prima che vengano valutati i moduli di <code>@xaendar/core</code> e dei componenti, e i componenti vanno compilati per il server dal plugin di Vite, con la sua opzione <code>ssr</code>.</p>",
+    "members": {
+      "component": "<p>La classe del componente, decorata con <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: il selettore con cui è definita è il tag dell’HTML.</p>",
+      "inputs": "<p>Gli input da impostare, ognuno con il suo valore, per nome della sua proprietà, non per il suo <code>alias</code>, come li collega <code>createComponent</code>, con valori al posto dei getter. Ogni valore passa per il <code>transform</code> del suo input. Il default è nessuno: ogni input resta al suo valore di default. Vedi <a href=\"#/it/reference/api/ssr/RenderInputs\"><code>RenderInputs</code></a>.</p>",
+      "options": "<p>Il transfer state della pagina: vedi <a href=\"#/it/reference/api/ssr/RenderOptions\"><code>RenderOptions</code></a>. Per default nessuno.</p>"
+    },
+    "usage": {
+      "entry": {
+        "title": "Nell’entry del server",
+        "body": "<p>L’entry installa per primi il polyfill dei Signal e il DOM del server, poi carica su richiesta <code>@xaendar/ssr</code> e i componenti, ed esporta la funzione che il server chiama per ogni pagina. <code>xd new --ssr</code> la genera.</p>"
+      },
+      "output": {
+        "title": "Cosa restituisce",
+        "body": "<p>L’elemento del componente, con i suoi attributi host e il suo shadow root dichiarativo, e, al suo interno, i componenti che renderizza, ognuno con il suo. L’HTML è una sola riga: qui è divisa per leggerla.</p>"
+      },
+      "errors": {
+        "title": "Errori",
+        "body": "<p>La promise viene rifiutata quando il componente non è definito, quando non ha un template compilato per il server, quando un input o un valore del transfer state non si può scrivere nell’HTML, come una funzione, e quando il codice di un componente lancia mentre viene renderizzato, come un costruttore che legge <code>document</code>. Il server dell’applicazione generato da <code>xd new --ssr</code> invia allora il componente radice senza contenuto, che il browser renderizza. Vedi l’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a>.</p>"
+      }
+    }
+  },
+  "RenderInputs": {
+    "summary": "Il tipo degli input che <code>renderToString</code> imposta sul componente che renderizza.",
+    "description": "<p>Un oggetto con una proprietà opzionale per ogni input del componente, che si chiama come la proprietà che lo dichiara con <a href=\"#/it/reference/api/core/Property\"><code>@Property</code></a> e ne contiene il valore: gli input che collega <code>createComponent</code>, con valori al posto dei getter. Un membro che non è un input non è una sua proprietà.</p>",
+    "usage": {
+      "typing": {
+        "title": "Il controllo degli input",
+        "body": "<p>TypeScript controlla nomi e valori rispetto agli input della classe: un nome sbagliato, o un valore di un altro tipo, fa fallire il type check.</p>"
+      }
+    }
+  },
+  "RenderOptions": {
+    "summary": "Le opzioni di <code>renderToString</code>: il transfer state della pagina e il nonce della risposta.",
+    "description": "<p>Il terzo argomento di <a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a>. Il transfer state porta i dati che l’entry ha recuperato per renderizzare la pagina, così che il browser parta da loro senza recuperarli di nuovo. Il nonce fa girare l’event contract sotto una <code>Content-Security-Policy</code> rigida.</p>",
+    "members": {
+      "nonce": "<p>Il nonce della <code>Content-Security-Policy</code> della risposta, scritto sullo script dell’event contract, che una policy rigida bloccherebbe come ogni script inline. Deve essere nuovo per ogni risposta, lo stesso dell’header. Per default nessuno.</p>",
+      "state": "<p>Un valore per ogni chiave, scritto come JSON in uno <code>&lt;script type=\"application/json\" data-xd-state&gt;</code> dopo l’elemento del componente. I componenti leggono un valore con <a href=\"#/it/reference/api/core/getTransferState\"><code>getTransferState(key)</code></a>, sul server mentre la pagina viene renderizzata e nel browser dalla pagina. Il JSON porta anche <code>undefined</code>, <code>NaN</code>, <code>±Infinity</code>, un <code>bigint</code>, una <code>Date</code>, una <code>Map</code> e un <code>Set</code>; una funzione, un’istanza di un’altra classe o un oggetto che contiene se stesso rifiutano la promise. Per default nessuno: non viene scritto nulla.</p>"
+    }
+  }
+}

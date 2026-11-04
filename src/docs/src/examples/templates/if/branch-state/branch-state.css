@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+input {
+  font: inherit;
+}
+
+label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+p {
+  margin: 0;
+}

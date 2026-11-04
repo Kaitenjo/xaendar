@@ -1,0 +1,24 @@
+:host {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  /* Custom properties are inherited through the shadow root: the theme of the page reaches the card */
+  background: var(--card-bg, #ffffff);
+  color: var(--card-text, #191b26);
+  border: 1px solid var(--card-border, #e2e4ee);
+}
+
+h4 {
+  margin: 0 0 0.4rem;
+}
+
+button {
+  margin-top: 0.6rem;
+  font: inherit;
+  padding: 0.3rem 0.8rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent, #5b45e8);
+  color: #ffffff;
+  cursor: pointer;
+}

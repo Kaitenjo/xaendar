@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.typecheck.json",
+  "exclude": [
+    "**/vite-config.ts",
+    "**/vite.config.ts",
+    "**/vitest-config.ts",
+    "**/vitest.config.ts",
+    "dist"
+  ]
+}

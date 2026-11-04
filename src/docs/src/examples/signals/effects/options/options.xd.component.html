@@ -1,0 +1,15 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  @if (running()) {
+    <ex-button (click)="increment()">count++</ex-button>
+    <ex-button (click)="dispose()">Dispose</ex-button>
+  } @else {
+    <ex-button (click)="start()">Create the effect</ex-button>
+  }
+</div>
+<ol>
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

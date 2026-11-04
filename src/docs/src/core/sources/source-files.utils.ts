@@ -1,0 +1,111 @@
+import type { CodeLang } from '../highlight/highlight';
+
+/**
+ * A source file shown in the documentation.
+ */
+export type SourceFile = {
+  /**
+   * The path of the file, relative to the folder it was collected from.
+   */
+  readonly name: string;
+  /**
+   * The language of the file, used to highlight it.
+   */
+  readonly lang: CodeLang;
+  /**
+   * The content of the file.
+   */
+  readonly code: string;
+};
+
+/**
+ * Infers the language of a file from its extension. A `.txt` file named after an error (`…-error.txt`,
+ * `…-errors.txt`) shows the output of a failure: its language is `error`. JSX and TSX files are
+ * highlighted as TypeScript, SCSS and Less files as CSS, the single-file components of Vue and Svelte as HTML.
+ *
+ * @param fileName - The name of the file.
+ * @returns The language of the file, `text` when the extension is unknown.
+ */
+export function langOf(fileName: string): CodeLang {
+  if (/errors?\.txt$/i.test(fileName)) {
+    return 'error';
+  }
+  const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
+  switch (extension) {
+    case 'ts':
+    case 'tsx':
+    case 'js':
+    case 'jsx':
+    case 'mjs':
+      return 'ts';
+    case 'html':
+    case 'vue':
+    case 'svelte':
+      return 'html';
+    case 'css':
+    case 'scss':
+    case 'less':
+      return 'css';
+    case 'json':
+      return 'json';
+    case 'sh':
+      return 'bash';
+    default:
+      return 'text';
+  }
+}
+
+/**
+ * Ranks a file within its component: class, then template, then style, then anything else.
+ *
+ * @param fileName - The name of the file.
+ * @returns The rank of the file, lower first.
+ */
+function rankOf(fileName: string): number {
+  if (fileName.endsWith('.xd.component.ts')) {
+    return 0;
+  }
+  if (fileName.endsWith('.html')) {
+    return 1;
+  }
+  if (fileName.endsWith('.css')) {
+    return 2;
+  }
+  return 3;
+}
+
+/**
+ * Collects the files of a folder out of a registry of raw files, as produced by an
+ * `import.meta.glob` with the `?raw` query.
+ *
+ * Files are grouped by their base name (the part before the first dot): the group named after
+ * the folder comes first, the others follow in alphabetical order. Within a group, the class
+ * comes first, then the template, the style and anything else.
+ *
+ * @param registry - The raw files, keyed by path.
+ * @param folder - The path of the folder, as used in the keys of the registry, without a trailing slash.
+ * @returns The files of the folder and its sub folders, specs excluded.
+ */
+export function collectFolder(registry: Readonly<Record<string, string>>, folder: string): SourceFile[] {
+  const prefix = `${folder}/`;
+  const main = folder.slice(folder.lastIndexOf('/') + 1);
+  const baseOf = (name: string) => {
+    const fileName = name.slice(name.lastIndexOf('/') + 1);
+    return fileName.slice(0, fileName.indexOf('.'));
+  };
+
+  return Object.keys(registry)
+    .filter(key => key.startsWith(prefix) && !key.endsWith('.spec.ts'))
+    .map(key => {
+      const name = key.slice(prefix.length);
+      return { name, lang: langOf(name), code: registry[key] ?? '' };
+    })
+    .sort((left, right) => {
+      const baseA = baseOf(left.name);
+      const baseB = baseOf(right.name);
+      if (baseA !== baseB) {
+        return baseA === main ? -1 : baseB === main ? 1 : baseA.localeCompare(baseB);
+      }
+      return rankOf(left.name) - rankOf(right.name) || left.name.localeCompare(right.name);
+    });
+}

@@ -1,0 +1,18 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="defineNew()">A new name</ex-button>
+  <ex-button (click)="define('nohyphen')">nohyphen</ex-button>
+  <ex-button (click)="define('Ex-Upper')">Ex-Upper</ex-button>
+  <ex-button (click)="define('font-face')">font-face</ex-button>
+  <ex-button (click)="define('ex-define-rules')">ex-define-rules</ex-button>
+  <ex-button (click)="defineClassAgain()">The same class again</ex-button>
+</div>
+<ul>
+  @for (attempt of attempts(); track attempt().id) {
+    <li>
+      <code>customElements.{ attempt().call }</code>
+      <br />→ { attempt().outcome }
+    </li>
+  }
+</ul>

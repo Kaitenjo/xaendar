@@ -1,0 +1,5 @@
+<p>Write to info@example.com</p>
+
+Xaendar: Failed to compile template - /src/contact/contact.xd.component.html
+[Lexer] [Ln 1, Col 22] - Unknown flow-control keyword
+ ---> @e

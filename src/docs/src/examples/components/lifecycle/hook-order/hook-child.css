@@ -1,0 +1,6 @@
+:host {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, #6750a4 15%, transparent);
+}

@@ -1,0 +1,23 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+}
+
+:host(:not(:first-child)) {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 3px solid color-mix(in srgb, var(--tone) 25%, transparent);
+  border-radius: 1px;
+}
+
+.heading {
+  margin-bottom: 0.3rem;
+  color: var(--xd-text);
+  font-size: 1.1rem;
+  font-weight: 600;
+}

@@ -1,0 +1,8 @@
+@import { NotifyButtonComponent } from './notify-button/notify-button.xd.component.ts'
+
+<!-- The server writes the paragraph, the browser replaces it with the button while the component hydrates -->
+@client {
+  <app-notify-button />
+} @placeholder {
+  <p>Loading the notifications…</p>
+}

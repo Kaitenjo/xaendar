@@ -1,0 +1,21 @@
+@import { IsEvenDirective } from '../../structural/parity/is-even.directive.ts'
+@import { PositiveDirective } from '../../structural/parity/positive.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="change(-1)">−1</ex-button>
+  <ex-button (click)="change(1)">+1</ex-button>
+  <label>
+    <input type="checkbox" (change)="toggle()" />
+    Only positive
+  </label>
+  <strong>value = { value() }</strong>
+</div>
+<p
+  @if (onlyPositive()) {
+    *exPositive(value="{value()}")
+  }
+  *exIsEven(value="{value()}")
+>
+  { value() } passes.
+</p>

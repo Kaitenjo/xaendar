@@ -1,0 +1,21 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggle()">
+  @if (visible()) {
+    Hide the clock
+  } @else {
+    Show the clock
+  }
+</ex-button>
+@if (visible()) {
+  <p class="clock">{ now() }</p>
+} @else {
+  <p class="clock off">--:--:--</p>
+}
+<p>
+  watched ran
+  <strong>{ calls().watched }</strong>
+  times, unwatched ran
+  <strong>{ calls().unwatched }</strong>
+  times
+</p>

@@ -1,0 +1,116 @@
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.templateSyntax.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.templateSyntax.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.reference.templateSyntax.lead') }
+</p>
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.text.title') }
+</h2>
+<docs-code snippet="reference/cheat-text.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.text.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.bindingsAndEvents.title') }
+</h2>
+<docs-code snippet="reference/cheat-bindings.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.bindingsAndEvents.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.controlFlow.title') }
+</h2>
+<docs-code snippet="reference/cheat-control-flow.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.controlFlow.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.templates.title') }
+</h2>
+<docs-code snippet="reference/cheat-templates.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.templates.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.let.title') }
+</h2>
+<docs-code snippet="reference/cheat-let.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.let.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.conditionalBindings.title') }
+</h2>
+<docs-code snippet="reference/cheat-conditional.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.conditionalBindings.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.directives.title') }
+</h2>
+<docs-code snippet="reference/cheat-directives.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.directives.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.imports.title') }
+</h2>
+<docs-code snippet="reference/cheat-imports.html" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.imports.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.expressions.title') }
+</h2>
+<docs-code snippet="reference/cheat-expressions.txt" />
+<p @@htmlTranslation(key="pages.reference.templateSyntax.expressions.p1") />
+
+<h2>
+  { t(translations(), 'pages.reference.templateSyntax.whatDoesNotExist.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.reference.templateSyntax.whatDoesNotExist.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.reference.templateSyntax.whatDoesNotExist.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>[prop]="…"</code>,
+          <code>[(ngModel)]</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.templateSyntax.whatDoesNotExist.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>(keydown.enter)</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.templateSyntax.whatDoesNotExist.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@empty' }</code>,
+          <code>{ '@defer' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.templateSyntax.whatDoesNotExist.td3") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.reference.templateSyntax.whatDoesNotExist.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.reference.templateSyntax.whatDoesNotExist.td5') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

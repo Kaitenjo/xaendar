@@ -1,0 +1,17 @@
+<!-- index.html: runs before the first paint, so the page never shows the wrong theme -->
+<script>
+  var theme;
+  try {
+    theme = localStorage.getItem('theme');
+  } catch (error) {
+    theme = null;
+  }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.dataset.theme = theme;
+</script>
+<style>
+  :root[data-theme='light'] { --bg: #ffffff; --text: #191b26; }
+  :root[data-theme='dark'] { --bg: #0f1018; --text: #e8e9f2; }
+</style>

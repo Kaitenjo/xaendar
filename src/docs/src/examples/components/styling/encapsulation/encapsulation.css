@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+/* Matches the paragraph of this template only */
+.title {
+  padding-left: 0.6rem;
+  border-left: 3px solid #d32f2f;
+}
+
+/* Inherited properties set on the child host do reach its content */
+ex-encapsulated {
+  color: #00796b;
+  font-style: italic;
+}

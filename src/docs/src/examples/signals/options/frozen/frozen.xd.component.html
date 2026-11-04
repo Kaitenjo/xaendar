@@ -1,0 +1,12 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+@if (visible()) {
+  <p>Template reads: { watchedSignal() }</p>
+} @else {
+  <ex-button (click)="show()">Start watching the signal</ex-button>
+}
+<ul>
+  @for (outcome of outcomes(); track outcome()) {
+    <li>{ outcome() }</li>
+  }
+</ul>

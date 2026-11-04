@@ -1,0 +1,14 @@
+<button (click)="field.focus()">Focus</button>   <!-- ✓ a handler runs once the template is rendered -->
+<p>{ field.value }</p>                           <!-- ✗ read before its element is created -->
+<label>
+  Name <input #field />                          <!-- visible in the whole scope, outside the <label> too -->
+</label>
+
+@if (editing()) {
+  <input #draft />                               <!-- visible inside the @if only -->
+}
+
+@for (task of tasks(); track task().id) {
+  <input #note />                                <!-- one for every row -->
+  <button (click)="save(task(), note.value)">Save</button>
+}

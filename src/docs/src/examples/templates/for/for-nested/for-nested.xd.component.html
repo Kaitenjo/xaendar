@@ -1,0 +1,13 @@
+<div class="table-wrap">
+  <table>
+    <tbody>
+      @for (row of factors; track row(); rowIndex = $index) {
+        <tr>
+          @for (column of factors; track column()) {
+            <td title="{`row ${rowIndex()}, column ${$index()}`}">{ row() * column() }</td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

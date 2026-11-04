@@ -1,0 +1,28 @@
+:host {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stars {
+  display: flex;
+}
+
+.star {
+  padding: 0 0.1rem;
+  border: none;
+  background: none;
+  color: color-mix(in srgb, currentColor 25%, transparent);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.star--on {
+  color: #f5a524;
+}
+
+.label {
+  margin: 0;
+  font-size: 0.9rem;
+}

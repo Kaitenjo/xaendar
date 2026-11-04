@@ -1,0 +1,4 @@
+Xaendar: Failed to compile template - /src/team/team.xd.component.html
+[TypeChecker] ex-greeting-card is missing the following required properties:
+ ● name
+----> <ex-greeting-card />

@@ -1,0 +1,100 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { OrderStatusComponent } from '../../../examples/templates/switch/order-status/order-status.xd.component.ts'
+@import { DefaultFirstComponent } from '../../../examples/templates/switch/default-first/default-first.xd.component.ts'
+@import { SwitchEvaluationsComponent } from '../../../examples/templates/switch/switch-evaluations/switch-evaluations.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.switch.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.switch.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.switch.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.templates.switch.cases.title') }
+</h2>
+<docs-code snippet="templates/switch-syntax.html" />
+<docs-example name="templates/switch/order-status" heading="{translations().pages.templates.switch.cases.example1}">
+  <ex-order-status />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.switch.cases.p1") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.templates.switch.edgeCases.title') }
+  </h2>
+  <docs-example name="templates/switch/default-first"
+    heading="{translations().pages.templates.switch.edgeCases.example1}" kind="edge">
+    <ex-default-first />
+  </docs-example>
+  <p @@htmlTranslation(key="pages.templates.switch.edgeCases.p1") />
+  <docs-example name="templates/switch/switch-evaluations"
+    heading="{translations().pages.templates.switch.edgeCases.example2}" kind="edge">
+    <ex-switch-evaluations />
+  </docs-example>
+  <p>
+    { t(translations(), 'pages.templates.switch.edgeCases.p2') }
+  </p>
+  <docs-callout kind="edge" heading="{translations().pages.templates.switch.edgeCases.callout1.heading}">
+    <p>
+      { t(translations(), 'pages.templates.switch.edgeCases.callout1.p1') }
+    </p>
+    <docs-code snippet="templates/switch-case-member.txt" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.templates.switch.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.templates.switch.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.switch.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '@switch (value) { … }' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.switch.summary.td1') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ "@case ('a') { … }" }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.switch.summary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ "@case ('a') @case ('b') { … }" }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.switch.summary.td3') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@default { … }' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.switch.summary.td4') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

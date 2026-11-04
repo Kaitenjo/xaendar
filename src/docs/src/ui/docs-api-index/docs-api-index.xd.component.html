@@ -1,0 +1,40 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { DocsApiKindComponent } from '../docs-api-kind/docs-api-kind.xd.component.ts'
+
+<div class="toolbar">
+  <input type="search" placeholder="{translations().reference.filter}" aria-label="{translations().reference.filter}"
+    (input)="search($event)" />
+  <select aria-label="{translations().reference.kind}" (change)="pickKind($event)">
+    <option value="">{ translations().reference.all }</option>
+    @for (option of kinds; track option()) {
+      <option value="{option()}">{ translations().reference.kinds[option()] }</option>
+    }
+  </select>
+</div>
+<ul class="legend">
+  @for (option of kinds; track option()) {
+    <li>
+      <docs-api-kind kind="{option()}" labelled="{true}" />
+    </li>
+  }
+</ul>
+@if (packages().length) {
+  @for (apiPackage of packages(); track apiPackage().name) {
+    <section class="package">
+      <h2 class="package-name">{ apiPackage().name }</h2>
+      <p class="package-text">{ translations().pages.reference.api.packages[apiPackage().name] }</p>
+      <ul class="symbols">
+        @for (symbol of apiPackage().symbols; track symbol().name) {
+          <li>
+            <a class="symbol" href="{symbol().href}">
+              <docs-api-kind kind="{symbol().kind}" />
+              <span class="symbol-name">{ symbol().name }</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+} @else {
+  <p class="empty">{ translations().reference.noResults }</p>
+}

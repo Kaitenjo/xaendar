@@ -1,0 +1,11 @@
+hostDirectives: [TooltipDirective, TooltipDirective]
+Error: FieldComponent declares the host directive TooltipDirective more than once
+
+hostDirectives: [{ directive: TooltipDirective, properties: ['label'] }]
+Error: TooltipDirective does not declare an input named "label"
+
+hostDirectives: [{ directive: TooltipDirective, events: ['opened'] }]
+Error: TooltipDirective does not declare an event named "opened"
+
+hostDirectives: [{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'value' }] }]   (value is an input of FieldComponent)
+Error: FieldComponent already has an input named "value", which TooltipDirective cannot expose

@@ -1,0 +1,5 @@
+$ xd new MyApp
+Tag <MyApp-root> is not a valid custom element name. Custom element names must:
+…
+
+# The root component would be named MyApp-root: nothing is written. Use a lowercase name, such as my-app.

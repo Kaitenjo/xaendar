@@ -1,0 +1,11 @@
+build time    rating.xd.component.ts ──► Xaendar plugin
+                ├─► reads selector, templateUrl and styleUrl from @WebComponent (string literals only)
+                ├─► compiles rating.xd.component.html into a render function
+                ├─► type-checks the template against RatingComponent
+                ├─► turns rating.css into a CSSStyleSheet, shared by every component using that file
+                └─► registers render function and stylesheet for the class
+
+run time      import of the module    ──► @WebComponent: customElements.define('ex-rating', RatingComponent)
+              <ex-rating> created     ──► constructor: open shadow root, still empty
+              <ex-rating> connected   ──► stylesheet adopted ──► onInit ──► render ──► afterRender
+              <ex-rating> removed     ──► onDestroy ──► effects disposed, shadow root emptied

@@ -1,0 +1,23 @@
+@import { log } from './hook-order.log.ts'
+@import { HookParentComponent } from './hook-parent.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="toggle()">
+    @if (shown()) {
+      Remove the parent
+    } @else {
+      Add the parent
+    }
+  </ex-button>
+  <ex-button (click)="rename()">Change the label: { label() }</ex-button>
+  <ex-button (click)="clear()">Clear the log</ex-button>
+</div>
+@if (shown()) {
+  <ex-hook-parent label="{label()}" />
+}
+<ol class="log">
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

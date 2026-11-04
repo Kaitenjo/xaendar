@@ -1,0 +1,13 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="add()">Add an item</ex-button>
+<ul>
+  @for (item of items(); track item()) {
+    <li class="item">Item { item() }</li>
+  }
+</ul>
+<ol class="log">
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

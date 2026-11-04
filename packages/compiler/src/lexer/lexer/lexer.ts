@@ -1,0 +1,283 @@
+import { slice, Stack } from '@xaendar/common';
+import { Dictionary } from '@xaendar/types';
+import { CR, LF, SPACE } from '../../costants/chars.constant';
+import { TemplateError } from '../../models/template-error/template-error.model';
+import { Span } from '../../types/span.type';
+import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-value.state';
+import { lexAttribute } from '../states/lex-attribute/lex-attribute.state';
+import { lexCaseFlowControlCondition } from '../states/lex-case-flow-control-condition/lex-case-flow-control-condition.state';
+import { lexDirectiveBody } from '../states/lex-directive-body/lex-directive-body.state';
+import { lexDirective, lexStructuralDirective } from '../states/lex-directive/lex-directive.state';
+import { lexDefaultFlowControlCondition } from '../states/lex-default-flow-control-condition/lex-default-flow-control-condition.state';
+import { lexConditionalBindingBody } from '../states/lex-conditional-binding-body/lex-conditional-binding-body.state';
+import { lexEventHandler } from '../states/lex-event-handler/lex-event-handler.state';
+import { lexEventParameter } from '../states/lex-event-parameter/lex-event-parameter.state';
+import { lexEvent } from '../states/lex-event/lex-event.state';
+import { lexFlowControl } from '../states/lex-flow-control/lex-flow-control';
+import { lexFlowControlBlock } from '../states/lex-flow-control-block/lex-flow-control-block.state';
+import { lexImportPath } from '../states/lex-import-path/lex-import-path.state';
+import { lexImport } from '../states/lex-import/lex-import.state';
+import { lexInterpolationExpression } from '../states/lex-interpolation-expression/lex-interpolation-expression.state';
+import { lexInterpolation } from '../states/lex-interpolation/lex-interpolation.state';
+import { lexLet } from '../states/lex-let/lex-let.state';
+import { lexTagBody } from '../states/lex-tag-body/lex-tag-body.state';
+import { lexTagClose } from '../states/lex-tag-close/lex-tag-close.state';
+import { lexTagOpenEnd } from '../states/lex-tag-open-end/lex-tag-open-end.state';
+import { lexTagOpenName } from '../states/lex-tag-open-name/lex-tag-open-name.state';
+import { lexTemplateDeclaration } from '../states/lex-template-declaration/lex-template-declaration.state';
+import { lexRender } from '../states/lex-render/lex-render.state';
+import { lexElementRef } from '../states/lex-element-ref/lex-element-ref.state';
+import { lexText } from '../states/lex-text/lex-text.state';
+import { endOfFile, LexerCursor } from '../types/lexer-cursor/lexer-cursor.model';
+import { LexerState } from '../types/lexer-state.enum';
+import type { LexerTolerantResult } from '../types/lexer-tolerant-result.type';
+import { Token } from '../types/token.type';
+import type { TokenWithOptionalSpan } from '../types/token-with-optional-span.type';
+import { LexerTransitionFunction } from '../types/transition-function/transition-function.type';
+
+/**
+ * Utility class that emulates a cursor navigating through a template string.
+ *
+ * The cursor keeps track of the current character, its absolute position
+ * within the text, and its logical position expressed as row and column.
+ * This is useful when parsing or analyzing template content character by character.
+ */
+export class Lexer {
+  /**
+   * Cursor for navigating the input character stream.
+   */
+  private readonly _cursor: LexerCursor;
+  /**
+   * Current lexer state.
+   */
+  private _state = LexerState.TEXT;
+  /**
+   * State stack used to support nested states (e.g. interpolations).
+   */
+  private _stack = new Stack<LexerState>;
+  /**
+   * Accumulated list of tokens emitted during tokenization.
+   */
+  private readonly _tokens = new Array<Token>;
+  /**
+   * Maps each lexer state to its corresponding transition function.
+   */
+  private readonly _states: Dictionary<LexerState, LexerTransitionFunction> = {
+    [LexerState.TEXT]: lexText,
+    [LexerState.TAG_OPEN_NAME]: lexTagOpenName,
+    [LexerState.TAG_BODY]: lexTagBody,
+    [LexerState.TAG_OPEN_END]: lexTagOpenEnd,
+    [LexerState.TAG_CLOSE]: lexTagClose,
+    [LexerState.ATTRIBUTE]: lexAttribute,
+    [LexerState.ATTRIBUTE_VALUE]: lexAttributeValue,
+    [LexerState.EVENT]: lexEvent,
+    [LexerState.EVENT_HANDLER]: lexEventHandler,
+    [LexerState.EVENT_PARAMETER]: lexEventParameter,
+    [LexerState.FLOW_CONTROL]: lexFlowControl,
+    [LexerState.FLOW_CONTROL_CONDITION]: lexDefaultFlowControlCondition,
+    [LexerState.CASE_FLOW_CONTROL_CONDITION]: lexCaseFlowControlCondition,
+    [LexerState.FLOW_CONTROL_BLOCK]: lexFlowControlBlock,
+    [LexerState.INTERPOLATION]: lexInterpolation,
+    [LexerState.INTERPOLATION_EXPRESSION]: lexInterpolationExpression,
+    [LexerState.IMPORT]: lexImport,
+    [LexerState.IMPORT_PATH]: lexImportPath,
+    [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody,
+    [LexerState.DIRECTIVE]: lexDirective,
+    [LexerState.DIRECTIVE_BODY]: lexDirectiveBody,
+    [LexerState.STRUCTURAL_DIRECTIVE]: lexStructuralDirective,
+    [LexerState.ELEMENT_REF]: lexElementRef,
+    [LexerState.TEMPLATE_DECLARATION]: lexTemplateDeclaration,
+    [LexerState.RENDER]: lexRender,
+    [LexerState.LET]: lexLet
+  }
+
+  /**
+   * The state the lexer is in: once the input is tokenized, the one it ended in, e.g. the attribute whose name the
+   * input stops in the middle of.
+   *
+   * @returns The current state.
+   */
+  public get state(): LexerState {
+    return this._state;
+  }
+
+  /**
+   * The states opening the current one, from the outermost: e.g. the directive whose bindings hold the current state.
+   *
+   * @returns The opening states.
+   */
+  public get history(): readonly LexerState[] {
+    return this._stack.values;
+  }
+
+  /**
+   * Creates a new Lexer instance for the given template content.
+   *
+   * @param _input - The full template text to tokenise.
+   */
+  constructor(private readonly _input: string) {
+    this._cursor = new LexerCursor(this._input);
+  }
+
+  /**
+   * Runs the lexer over the input string and returns the full token array.
+   * Drives the state machine until EOF is reached, or until a token is emitted that ends the part of the input to lex.
+   *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
+   * @returns Array of all tokens produced from the input.
+   * @throws A `TemplateError` pointing to the part of the input that cannot be tokenized.
+   */
+  public tokenize(isLast?: (token: Token) => boolean): Token[] {
+    const error = this._tokenize(isLast);
+    if (error) {
+      throw error;
+    }
+
+    return this._tokens;
+  }
+
+  /**
+   * Runs the lexer like {@link tokenize}, but an error doesn't throw: it stops the tokenization, and is returned together
+   * with the tokens emitted before it and the state the lexer ended in, so that the part of a template that cannot be
+   * tokenized as a whole (e.g. while the user is typing) can still be read.
+   *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
+   * @returns The tokens emitted, the state the lexer ended in and the error that stopped it, if any.
+   */
+  public tokenizeTolerant(isLast?: (token: Token) => boolean): LexerTolerantResult {
+    const error = this._tokenize(isLast);
+    const result: LexerTolerantResult = { tokens: this._tokens, state: this._state };
+    if (error) {
+      result.error = error;
+    }
+
+    return result;
+  }
+
+  /**
+   * Drives the state machine until EOF is reached, until a token is emitted that ends the part of the input to lex, or
+   * until a state fails.
+   *
+   * @param isLast - Tells whether a token is the last one to lex: the input after the state that emitted it is not lexed.
+   * @returns The error of the state that failed, pointing to the part of the input it was reading, `undefined` if none failed.
+   */
+  private _tokenize(isLast?: (token: Token) => boolean): TemplateError | undefined {
+    let eof = false;
+    const cursor = this._cursor;
+    let stateStartIndex = -1;
+
+    while (!eof) {
+      try {
+        stateStartIndex = cursor.currentChar.index + 1;
+        const transitionFunction = this._states[this._state];
+        const { state, tokens, popState, pushState } = transitionFunction!(cursor, {
+          history: this._stack.values,
+          tokens: [...this._tokens],
+        });
+
+        if (tokens?.length) {
+          const stateEndIndex = cursor.currentChar.index + 1;
+          this._tokens.push(...this._withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
+        }
+
+        if (pushState) {
+          this._stack.push(this._state);
+        }
+
+        if (popState) {
+          this._stack.pop();
+        }
+
+        this._state = state;
+        if (tokens?.length && isLast?.(this._tokens[this._tokens.length - 1])) {
+          eof = true;
+        }
+      } catch (err) {
+        const isError = err instanceof Error;
+        if (isError && err.cause === endOfFile) {
+          eof = true;
+        } else {
+          const neighbourhood = 15;
+          let startInterval = stateStartIndex;
+          let i = stateStartIndex;  
+          let stop = false;
+
+          /*
+            We assure that the first word of neighbourhood
+            to be printed fully and not cut
+
+            When we find a space we are sure the word is ended
+          */
+          while (!stop && i > 0) {
+            const charCode = this._input.charCodeAt(i); 
+            if (charCode === LF || charCode === CR || (startInterval - i > neighbourhood && charCode === SPACE)) {
+              // + 1 to ignore the LF, CR or SPACE in the interval to be printed
+              startInterval = i + 1;
+              stop = true;
+            } else {
+              i--;
+            } 
+          }
+
+          const currentIndex = cursor.currentChar.index;
+          /*
+            To print successfully the character that throw the expection we need to add 1 to the stateEndIndex
+
+            If state throw when reading the first character currentIndex and stateStartIndex are equal
+            Just in this case we need to add an extra 1 (and we obtain + 2)
+          */
+          const stateEndIndex = currentIndex <= stateStartIndex ? currentIndex + 2 : currentIndex + 1;
+          let endInterval = stateEndIndex
+          i = endInterval;
+          stop = false;
+
+          /*
+            We assure that the last word of neighbourhood
+            to be printed fully and not cut
+
+            When we find a space or the row is finished we are sure the word is ended
+          */
+          while (!stop && i < this._input.length) {
+            const charCode = this._input.charCodeAt(i); 
+            if (charCode === LF || charCode === CR || (i - endInterval > neighbourhood && charCode === SPACE)) {
+              // - 1 to ignore the LF, CR or SPACE in the interval to be printed
+              endInterval = i - 1;
+              stop = true;
+            } else {
+              i++;
+            } 
+          }
+          
+          const previousNeighbourhood = slice(this._input, startInterval, stateStartIndex).replace(/^\s+/, '');
+          const underlinedError = `\x1b[4m${slice(this._input, stateStartIndex, stateEndIndex)}\x1b[0m`;
+          const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
+          const message = isError ? err.message : `${err}`;
+          return new TemplateError(
+            `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
+            { start: stateStartIndex, end: stateEndIndex },
+            message
+          );
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Ensures every emitted token has a source span.
+   *
+   * States can provide a more accurate `token.span` (e.g. Event Parameter and Import States)
+   * otherwise the lexer falls back to the full state-consumption range.
+   *
+   * @param tokens - The tokens emitted by a state.
+   * @param fallbackSpan - The range of the input the state consumed, for the tokens without a span of their own.
+   * @returns The tokens, each one with its span.
+   */
+  private _withTokenSpans(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): Token[] {
+    return tokens.map<Token>(token => ({
+      ...token,
+      span: token.span ?? fallbackSpan
+    }));
+  }
+}

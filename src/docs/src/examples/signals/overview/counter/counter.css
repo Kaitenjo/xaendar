@@ -1,0 +1,16 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+output {
+  min-width: 3ch;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+ex-button {
+  font-family: ui-monospace, monospace;
+}

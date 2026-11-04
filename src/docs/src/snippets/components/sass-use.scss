@@ -1,0 +1,20 @@
+/* src/styles/_tokens.scss */
+$accent: #f59e0b;
+$muted: #d1d5db;
+$gap: 4px;
+
+/* src/rating/rating.scss */
+@use '../styles/tokens';
+
+:host {
+  display: inline-flex;
+  gap: tokens.$gap;
+}
+
+.star {
+  color: tokens.$muted;
+
+  &.filled {
+    color: tokens.$accent;
+  }
+}

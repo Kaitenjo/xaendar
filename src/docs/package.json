@@ -1,0 +1,25 @@
+{
+  "name": "docs",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "prebuild": "node demos/build.mjs --check",
+    "build": "npm run xd build",
+    "build:demos": "node demos/build.mjs",
+    "prestart": "node demos/build.mjs --check",
+    "start": "npm run xd start",
+    "prerender": "xd prerender", 
+    "serve": "tsx --tsconfig ../../tsconfig.json server.ts",
+    "pretest": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run xd test",
+    "xd": "tsx --tsconfig ../../tsconfig.json ../../packages/cli/src/index.ts"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^8.0.2",
+    "@vitest/coverage-v8": "^5.1.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,57 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../../shared/submit/submit.directive.ts'
+
+<form (submit)="add($event)">
+  <input name="name" placeholder="New item" autocomplete="off" />
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
+  <ex-button (click)="insertRandom()">Insert at random</ex-button>
+</form>
+<div class="tools">
+  <input type="search" placeholder="Filter" (input)="setFilter($event)" />
+  <label>
+    <input type="checkbox" (change)="toggleSort()" />
+    Sort by name
+  </label>
+</div>
+@if (visible().length > 0) {
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of visible(); track item().id) {
+          <tr>
+            <td>{ item().id }</td>
+            <td>{ item().name }</td>
+            <td class="quantity">
+              <ex-button (click)="changeQuantity(item(), -1)">−</ex-button>
+              <span>{ item().quantity() }</span>
+              <ex-button (click)="changeQuantity(item(), 1)">+</ex-button>
+            </td>
+            <td>
+              <ex-button class="remove" (click)="removeItem(item())">Remove</ex-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td />
+          <td>Total</td>
+          <td class="quantity">
+            <span>{ total() }</span>
+          </td>
+          <td />
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+} @else {
+  <p class="empty">No items match.</p>
+}

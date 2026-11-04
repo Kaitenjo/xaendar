@@ -1,0 +1,9 @@
+{
+  "name": "my-app",
+  "customElements": ["sl-*", "vanilla-stars"],
+  "generate": {
+    "components": {
+      "style": "css"
+    }
+  }
+}

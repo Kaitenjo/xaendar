@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.advice {
+  margin: 0.6rem 0 0;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}

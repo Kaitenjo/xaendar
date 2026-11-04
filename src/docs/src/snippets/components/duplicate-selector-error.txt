@@ -1,0 +1,5 @@
+Xaendar: Selector "ex-rating" of component "StarsComponent" - /src/stars/stars.xd.component.ts is already used by
+component "RatingComponent" - /src/rating/rating.xd.component.ts. Custom element names must be unique.
+
+Uncaught NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "ex-rating" has already
+been used with this registry

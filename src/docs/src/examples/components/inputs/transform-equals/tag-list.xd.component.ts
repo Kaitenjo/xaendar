@@ -1,0 +1,37 @@
+import { CustomElement, Property, WebComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+import type { InputSignal } from '@xaendar/core/signals';
+
+/**
+ * Shows a list of tags, normalized on the way in.
+ */
+@WebComponent({
+  selector: 'ex-tag-list',
+  styleUrl: './tag-list.css',
+  templateUrl: './tag-list.xd.component.html'
+})
+export class TagListComponent extends CustomElement {
+  /**
+   * The tags. Every incoming list is trimmed, lowercased and cleared of empty tags, then compared with the current
+   * one: an equal list does not notify the readers of the input.
+   */
+  @Property(new Array<string>, {
+    transform: (tags: string[]) => tags.map(tag => tag.trim().toLowerCase()).filter(tag => tag !== ''),
+    equals: (left: string[], right: string[]) => left.join() === right.join()
+  })
+  public accessor tags!: InputSignal<string[]>;
+  /**
+   * How many times the readers of the input were notified.
+   */
+  public readonly notifications = signal(0);
+
+  /**
+   * Counts the notifications. The first run reads the value bound by the parent.
+   */
+  public onInit(): void {
+    this.effect(() => {
+      this.tags();
+      this.notifications.update(count => count + 1);
+    });
+  }
+}

@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+p {
+  margin: 0;
+}

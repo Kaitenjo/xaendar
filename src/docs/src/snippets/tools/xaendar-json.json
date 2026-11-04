@@ -1,0 +1,8 @@
+{
+  "name": "my-app",
+  "generate": {
+    "components": {
+      "style": "css"
+    }
+  }
+}

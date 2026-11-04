@@ -1,0 +1,50 @@
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+import type { QuerySignal } from '@xaendar/core/signals';
+
+/**
+ * Measures a resizable box with a ResizeObserver, and adapts its content to the width.
+ */
+@WebComponent({
+  selector: 'ex-resize-observer',
+  styleUrl: './resize-observer.css',
+  templateUrl: './resize-observer.xd.component.html'
+})
+export class ResizeObserverComponent extends CustomElement {
+  /**
+   * The box to measure.
+   */
+  @Query('.box')
+  public accessor box!: QuerySignal<HTMLElement | null>;
+  /**
+   * The width of the box, in pixels.
+   */
+  public readonly width = signal(0);
+  /**
+   * The observer, created by the first render in the browser, the server having no `ResizeObserver`, and connected to
+   * the box of each render.
+   */
+  private _observer: ResizeObserver | undefined;
+
+  /**
+   * Starts observing the box, which exists only once the template is rendered.
+   */
+  public afterRender(): void {
+    const box = this.box();
+    if (box) {
+      this._observer ??= new ResizeObserver(([entry]) => {
+        if (entry) {
+          this.width.set(Math.round(entry.contentRect.width));
+        }
+      });
+      this._observer.observe(box);
+    }
+  }
+
+  /**
+   * Stops observing: the box is about to be removed.
+   */
+  public onDestroy(): void {
+    this._observer?.disconnect();
+  }
+}

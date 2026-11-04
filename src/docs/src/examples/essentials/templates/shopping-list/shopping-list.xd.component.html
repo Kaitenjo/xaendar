@@ -1,0 +1,32 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../../shared/submit/submit.directive.ts'
+
+<form (submit)="add($event)">
+  <input name="item" placeholder="Add an item" autocomplete="off" />
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
+</form>
+@if (items().length) {
+  <ul>
+    <!-- Items are tracked by identity: a replaced item is rendered again -->
+    @for (item of items(); track item()) {
+      <li [class.done]="{item().done}">
+        <label>
+          <input
+            @if (item().done) {
+              checked
+            }
+            type="checkbox"
+            (change)="toggle(item().id)"
+          />
+          { item().name }
+        </label>
+      </li>
+    }
+  </ul>
+  <p>
+    { remaining() } of { items().length } left ·
+    <ex-button (click)="clear()">Clear</ex-button>
+  </p>
+} @else {
+  <p>The list is empty: add something!</p>
+}

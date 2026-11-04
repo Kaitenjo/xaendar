@@ -1,0 +1,7 @@
+$ xd new my-app
+? Which stylesheet format would you like to use?
+  1) CSS
+  2) SCSS
+  3) Sass (indented syntax)
+  4) Less
+Choose [1]: 2

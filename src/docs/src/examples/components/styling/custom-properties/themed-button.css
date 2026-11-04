@@ -1,0 +1,14 @@
+:host {
+  display: inline-block;
+}
+
+button {
+  padding: 0.45rem 1.1rem;
+  border: none;
+  border-radius: var(--radius, 6px);
+  background: var(--accent, #555);
+  color: #fff;
+  /* The host inherits the font, but a button does not inherit it unless told to */
+  font: inherit;
+  cursor: pointer;
+}

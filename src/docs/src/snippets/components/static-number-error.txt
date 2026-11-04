@@ -1,0 +1,3 @@
+Xaendar: [TypeChecker] Failed to compile template - /src/tasks/tasks.xd.component.html
+[Ln 3, Col 19] - Type 'string' does not satisfy the expected type 'number'.
+ ---> max="8"

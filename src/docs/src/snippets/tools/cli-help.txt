@@ -1,0 +1,17 @@
+$ xd --help
+Usage: xd [options] [command]
+
+Xaendar CLI
+
+Options:
+  -V, --version         output the version number
+  -h, --help            display help for command
+
+Commands:
+  generate|g            Generate Xaendar building blocks
+  new [options] <name>  Scaffold a new Xaendar project
+  start|s               Start the project
+  build|b               Build the project
+  prerender|p           Build the project and render its routes into HTML files
+  test|t                Run the tests of the project
+  help [command]        display help for command

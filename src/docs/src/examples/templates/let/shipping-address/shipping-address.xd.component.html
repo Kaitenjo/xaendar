@@ -1,0 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+@let address = user().address;
+@let country = defaults.country;
+<p class="name">{ user().name }</p>
+<p>{ address().street }</p>
+<p>{ address().zip } { address().city }, { country }</p>
+<ex-button (click)="move()">move()</ex-button>

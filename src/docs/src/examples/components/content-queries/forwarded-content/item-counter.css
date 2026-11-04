@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+ul {
+  margin: 0 0 0.4rem;
+}
+
+p {
+  margin: 0;
+  font-size: 0.85rem;
+}

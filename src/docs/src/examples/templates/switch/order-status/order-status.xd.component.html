@@ -1,0 +1,24 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  @for (option of statuses; track option()) {
+    <ex-button class="option" [class.option--active]="{option() === status()}" (click)="choose(option())">
+      { option() }
+    </ex-button>
+  }
+</div>
+@switch (status()) {
+  @case ('pending')
+  @case ('paid') {
+    <p>📦 We are preparing your order.</p>
+  }
+  @case ('shipped') {
+    <p>🚚 Your order is on its way.</p>
+  }
+  @case ('delivered') {
+    <p>✅ Delivered. Enjoy!</p>
+  }
+  @default {
+    <p>❓ Unknown status: please contact us.</p>
+  }
+}

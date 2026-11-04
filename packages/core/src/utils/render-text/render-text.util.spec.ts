@@ -1,0 +1,118 @@
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from 'vitest';
+
+await vi.hoisted(async () => {
+  const { loadSignals } = await import('@xaendar/signals');
+  loadSignals();
+});
+
+const { _Context } = await import('../context/context.util');
+const { _renderLiteralText, _renderText } = await import('./render-text.util');
+const { signal } = await import('../../signals');
+
+const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
+
+function createRoot() {
+  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
+}
+
+describe('_renderText', () => {
+  it('renders the initial text', () => {
+    const parent = document.createElement('div');
+    _renderText(parent, createRoot(), () => 'hello', null);
+    expect(parent.textContent).toBe('hello');
+  });
+
+  it('keeps the text in sync with the signals it reads', async () => {
+    const parent = document.createElement('div');
+    const name = signal('a');
+    _renderText(parent, createRoot(), () => `hi ${name()}`, null);
+
+    name.set('b');
+    await flush();
+
+    expect(parent.textContent).toBe('hi b');
+  });
+
+  it('renders null and undefined as an empty text, as textContent does, and any other value as its string', async () => {
+    const parent = document.createElement('div');
+    const value = signal<unknown>(null);
+    _renderText(parent, createRoot(), () => value(), null);
+    const node = parent.firstChild as Text;
+
+    expect(node.data).toBe('');
+
+    value.set(0);
+    await flush();
+    expect(node.data).toBe('0');
+
+    value.set(undefined);
+    await flush();
+    expect(node.data).toBe('');
+    expect(parent.firstChild).toBe(node);
+  });
+
+  it('stops updating and removes the node when the context is destroyed', async () => {
+    const parent = document.createElement('div');
+    const context = createRoot();
+    const name = signal('a');
+    _renderText(parent, context, () => name(), null);
+
+    context.clear();
+    name.set('b');
+    await flush();
+
+    expect(parent.textContent).toBe('');
+  });
+
+  it('inserts the text before the reference node', () => {
+    const parent = document.createElement('div');
+    const anchor = document.createComment('anchor');
+    parent.appendChild(anchor);
+
+    _renderText(parent, createRoot(), () => 'x', anchor);
+
+    expect(anchor.previousSibling?.textContent).toBe('x');
+  });
+});
+
+describe('_renderLiteralText', () => {
+  it('renders a static text node', () => {
+    const parent = document.createElement('div');
+    _renderLiteralText(parent, createRoot(), 'static', null);
+    expect(parent.textContent).toBe('static');
+  });
+
+  it('removes the node when the context is destroyed', () => {
+    const parent = document.createElement('div');
+    const context = createRoot();
+    _renderLiteralText(parent, context, 'static', null);
+
+    context.clear();
+
+    expect(parent.textContent).toBe('');
+  });
+
+  it('inserts the text before the reference node', () => {
+    const parent = document.createElement('div');
+    const anchor = document.createComment('anchor');
+    parent.appendChild(anchor);
+
+    _renderLiteralText(parent, createRoot(), 'x', anchor);
+
+    expect(anchor.previousSibling?.textContent).toBe('x');
+  });
+
+  it('writes the literal only into a node adopted holding another text, such as other line endings', () => {
+    const lineFeed = String.fromCharCode(10);
+    const carriageReturn = String.fromCharCode(13);
+    const parent = document.createElement('div');
+    const adopted = parent.appendChild(document.createTextNode(`line${lineFeed}`));
+    const context = createRoot();
+    context.nodeStrategy = { ...context.nodeStrategy, text: () => adopted };
+
+    _renderLiteralText(parent, context, `line${carriageReturn}${lineFeed}`, null);
+
+    expect(adopted.data).toBe(`line${carriageReturn}${lineFeed}`);
+  });
+});

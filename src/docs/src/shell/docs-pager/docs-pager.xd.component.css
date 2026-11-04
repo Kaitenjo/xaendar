@@ -1,0 +1,64 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--xd-border);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius);
+  color: var(--xd-text);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--xd-accent);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: var(--xd-focus);
+}
+
+.card--next {
+  grid-column: 2;
+  text-align: right;
+}
+
+.card__label {
+  color: var(--xd-text-muted);
+  font-size: 0.78rem;
+}
+
+.card__title {
+  color: var(--xd-accent);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .pager {
+    grid-template-columns: 1fr;
+  }
+
+  .card--next {
+    grid-column: 1;
+  }
+}

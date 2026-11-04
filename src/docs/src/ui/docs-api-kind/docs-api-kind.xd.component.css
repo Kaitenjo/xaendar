@@ -1,0 +1,54 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.kind {
+  --tone: var(--tok-kw);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.kind--decorator {
+  --tone: var(--tok-dec);
+}
+
+.kind--class {
+  --tone: var(--tok-type);
+}
+
+.kind--function {
+  --tone: var(--tok-fn);
+}
+
+.kind--global {
+  --tone: var(--tok-dir);
+}
+
+.initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+  font: 700 0.7rem/1 var(--xd-font-mono);
+}
+
+.label {
+  color: var(--tone);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

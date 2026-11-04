@@ -1,0 +1,9 @@
+@HostProperty('role') in a class extending StructuralDirective
+error TS1240: Unable to resolve signature of property decorator when called as an expression.
+
+@HostEvent('click') in a class extending StructuralDirective
+error TS1241: Unable to resolve signature of method decorator when called as an expression.
+
+@HostEvent('click') on a method taking two parameters
+error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.

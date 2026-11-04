@@ -1,0 +1,31 @@
+@import { ButtonComponent } from '../../shared/button/button.xd.component.ts'
+@import { SubmitDirective } from '../../shared/submit/submit.directive.ts'
+
+<h3>My todos</h3>
+<form (submit)="add($event)">
+  <input name="title" placeholder="What needs to be done?" autocomplete="off" />
+  <ex-button @@exSubmit variant="primary">Add</ex-button>
+</form>
+@if (todos().length) {
+  <ul>
+    <!-- Tracked by identity: toggling replaces the todo, so its row is rendered again -->
+    @for (todo of todos(); track todo().id) {
+      <li>
+        <label [class.done]="{todo().done}">
+          <input
+            @if (todo().done) {
+              checked
+            }
+            type="checkbox"
+            (change)="toggle(todo().id)"
+          />
+          { todo().title }
+        </label>
+        <ex-button (click)="removeTodo(todo().id)">✕</ex-button>
+      </li>
+    }
+  </ul>
+  <p>{ remaining() } of { todos().length } left</p>
+} @else {
+  <p>Nothing to do. Enjoy!</p>
+}

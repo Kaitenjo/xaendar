@@ -1,0 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="start()">Create the effect</ex-button>
+<ex-button (click)="incrementTwice()">count += 1, twice</ex-button>
+<ol>
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

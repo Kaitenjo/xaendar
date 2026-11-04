@@ -1,0 +1,58 @@
+import type { NoArgsFunction } from '@xaendar/types';
+import { computed } from '../../signals/computed/computed';
+import type { Computed } from '../../signals/types/computed.type';
+import { untracked } from '../../signals/untracked';
+import type { _Context } from '../context/context.util';
+import type { RenderTemplate } from '../../types/render-template.type';
+import type { _Template } from '../../types/template.type';
+
+/**
+ * Creates the value of a template, which the scope declaring it holds under its name.
+ *
+ * @param context - The context of the scope declaring the template.
+ * @param render - The function rendering an instance of the template.
+ * @returns The template.
+ */
+export function _template(context: _Context, render: RenderTemplate): _Template {
+  return { context, render };
+}
+
+/**
+ * Returns the signal of a parameter of an instance of a template: the one of its argument, or, when the `@render` leaves
+ * the argument out, the one of its default value, `undefined` for an optional parameter. An argument passed as
+ * `undefined` is not left out: the parameter holds `undefined`.
+ *
+ * @param params - The signals of the arguments the `@render` passes, in the order of the parameters.
+ * @param index - The position of the parameter.
+ * @param initializer - Computes the default value of the parameter, reading the parameters before it in the context of
+ *   the instance; omitted for an optional parameter.
+ * @returns The signal of the parameter.
+ */
+export function _parameter(params: Computed<unknown>[], index: number, initializer?: NoArgsFunction<unknown>): Computed<unknown> {
+  return index < params.length ? params[index] : computed(initializer ?? (() => undefined));
+}
+
+/**
+ * Renders an instance of a template, e.g. for `@render row(item())`.
+ *
+ * Each argument becomes the signal of its parameter: the instance is rendered once, and only the nodes reading a
+ * parameter are updated when its argument changes. The context of the instance is a child of the context of the scope
+ * declaring the template, so its content reads the names visible there, but it is owned by the context rendering it:
+ * it is destroyed with it, and its nodes move with it (e.g. with the row of a `@for`). Its nodes are got with the
+ * strategy of the context rendering it: in the hydration of a component, the ones the server rendered there are adopted.
+ *
+ * @param parentNode - The element the instance is rendered into.
+ * @param parentContext - The context rendering the instance, which owns it.
+ * @param referenceNode - The node the instance is rendered before, `null` to append it to `parentNode`.
+ * @param template - The template.
+ * @param args - The functions computing the arguments, one for each parameter.
+ * @param separated - Whether the server wrote `<!---->` before the instance, as it does after a text.
+ */
+export function _renderTemplate(parentNode: Element, parentContext: _Context, referenceNode: Comment | null, template: _Template, args: NoArgsFunction<unknown>[], separated = false): void {
+  const { nodeStrategy } = parentContext;
+  nodeStrategy.separator(parentNode, separated);
+  const params = args.map(arg => computed(arg));
+  // The signals read while rendering the instance are not dependencies of the code rendering it
+  const context = untracked(() => template.render(parentNode, template.context, referenceNode, params, nodeStrategy));
+  parentContext.addChild(context);
+}

@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+input {
+  width: 100%;
+}
+
+.track {
+  height: 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  transition: width 0.15s, background 0.3s;
+}
+
+.bar--low {
+  background: #d32f2f;
+}
+
+.bar--half {
+  background: #f5a524;
+}
+
+.bar--done {
+  background: #2e7d32;
+}
+
+.label {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.label--done {
+  font-weight: 700;
+}

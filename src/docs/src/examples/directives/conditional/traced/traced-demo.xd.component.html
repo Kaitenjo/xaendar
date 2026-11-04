@@ -1,0 +1,30 @@
+@import { trace, TracedDirective } from './trace.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="toggleApplied()">{ applied() ? 'Remove' : 'Apply' } the directive</ex-button>
+  <ex-button (click)="toggleColorOrBackgroundColor()">Make it { background() ? 'background' : 'color' }</ex-button>
+</div>
+<p
+  @if (applied()) {
+    @@exTraced(color="#fde68a")
+  }
+>
+  The directive is applied by a condition.
+</p>
+<p
+  @@exTraced(
+    @if (background()) {
+      backgroundColor="#bfdbfe"
+    } @else {
+      color="#fbcec1"
+    }
+  )
+>
+  Different inputs can be bound by a condition
+</p>
+<ol class="log">
+  @for (line of trace(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

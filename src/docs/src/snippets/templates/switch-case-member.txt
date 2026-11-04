@@ -1,0 +1,6 @@
+@switch (status()) {
+  @case (firstStatus) { … }            <!-- ✗ a member of the component -->
+}
+
+Xaendar: [TypeChecker] Failed to compile template - /src/order/order.xd.component.html
+Cannot find name 'firstStatus'.

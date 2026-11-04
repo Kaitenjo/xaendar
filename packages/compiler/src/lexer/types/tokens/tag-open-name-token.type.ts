@@ -1,0 +1,16 @@
+import { TokenType } from '../token-type.enum';
+import type { TokenWithSpan } from '../token-with-span.type';
+
+/**
+ * Token emitted when the lexer consumes an opening tag name, e.g. `div` in `<div`.
+ */
+export type TagOpenNameToken = TokenWithSpan<{
+  /**
+   * Discriminant identifying this token as an opening tag name.
+   */
+  type: TokenType.TAG_OPEN_NAME;
+  /**
+   * The tag name, then the text of its type arguments (`string, number` in `<my-list(string, number)`) if it declares them.
+   */
+  parts: [tagName: string, typeArguments?: string];
+}>

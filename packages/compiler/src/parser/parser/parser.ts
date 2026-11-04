@@ -1,0 +1,155 @@
+import { slice } from '@xaendar/common';
+import { TokenType } from '../../lexer/types/token-type.enum.js';
+import { Token } from '../../lexer/types/token.type.js';
+import { isImportSeparator } from '../../lexer/utils/import-header/import-header.utils.js';
+import { TemplateError } from '../../models/template-error/template-error.model.js';
+import { isSpan } from '../../utils/span/span.utils.js';
+import { ParserCursor } from '../models/parser-cursor/parser-cursor.model.js';
+import { parseElement } from '../states/parse-element/parse-element.state.js';
+import { parseForControlFlow } from '../states/parse-for/parse-for.state.js';
+import { parseClient, parseOrphanPlaceholder } from '../states/parse-client/parse-client.state.js';
+import { parseHydrate } from '../states/parse-hydrate/parse-hydrate.state.js';
+import { parseIfControlFlow } from '../states/parse-if/parse-if.state.js';
+import { parseImport } from '../states/parse-import/parse-import.state.js';
+import { parseInterpolation } from '../states/parse-interpolation/parse-interpolation.state.js';
+import { parseLet } from '../states/parse-let/parse-let.state.js';
+import { parseRender } from '../states/parse-render/parse-render.state.js';
+import { parseSwitchControlFlow } from '../states/parse-switch/parse-switch.state.js';
+import { parseText } from '../states/parse-text/parse-text.state.js';
+import { ASTNode } from '../types/ast.type.js';
+import { ASTNodeType } from '../types/node.enum.js';
+import { ParserStates } from '../types/parser-states.type.js';
+
+/**
+ * Parser class that transforms a stream of tokens (from the Lexer)
+ * into an Abstract Syntax Tree (AST) representing the template structure.
+ *
+ * Responsibilities:
+ * - Parse text nodes, elements, attributes, events, and interpolations
+ * - Maintain cursor state for sequential token consumption
+ * - Detect tag boundaries and nested structures
+ *
+ * The parser assumes that the token stream is syntactically valid according
+ * to the Lexer rules. Parsing errors are thrown as exceptions.
+ */
+export class Parser {
+  /**
+   * Internal cursor for navigating tokens
+   */
+  private readonly _cursor: ParserCursor;
+  /**
+   * Mapping of token types to their corresponding parser transition functions, 
+   * which handle the logic for parsing each token type into AST nodes.
+   */
+  private readonly _states: ParserStates = {
+    [TokenType.TEXT]: parseText,
+    [TokenType.INTERPOLATION_EXPRESSION]: parseInterpolation,
+    [TokenType.TAG_OPEN_NAME]: parseElement,
+    [TokenType.IF]: parseIfControlFlow,
+    [TokenType.FOR]: parseForControlFlow,
+    [TokenType.SWITCH]: parseSwitchControlFlow,
+    [TokenType.HYDRATE]: parseHydrate,
+    [TokenType.CLIENT]: parseClient,
+    [TokenType.PLACEHOLDER]: parseOrphanPlaceholder,
+    [TokenType.IMPORT]: parseImport,
+    [TokenType.RENDER]: parseRender,
+    [TokenType.LET]: parseLet
+  }
+  /**
+   * In rare situations, parse node could be called recursively.
+   * 
+   */
+  private thrown = false;
+  /**
+   * Whether only `@import` statements have been parsed so far: they are valid only at the beginning of the template.
+   */
+  private _isHeader = true;
+  /**
+   * How many nodes enclose the one being parsed: `0` for a top-level node.
+   */
+  private _depth = 0;
+
+  /**
+   * Creates a new Parser instance.
+   *
+   * @param input - The full source text to operate on.
+   * @param tokens - Array of tokens produced by the Lexer.
+   */
+  constructor(
+    private readonly _input: string,
+    tokens: Token[]
+  ) {
+    this._cursor = new ParserCursor(this._input, tokens);
+  }
+
+  /**
+   * Entry point for parsing the token stream into AST nodes.
+   *
+   * @returns Array of top-level AST nodes.
+   */
+  public parse(): ASTNode[] {
+    const nodes = new Array<ASTNode>;
+
+    while (this._cursor.peek().type !== TokenType.EOF) {
+      const parseNode = this.parseNode();
+      if (parseNode) {
+        nodes.push(parseNode);
+        this._isHeader = this._isHeader && (parseNode.type === ASTNodeType.Import || parseNode.type === ASTNodeType.Text && isImportSeparator(parseNode.value));
+      }
+    }
+
+    return nodes;
+  }
+
+  /**
+   * Parses the next AST node based on the current token.
+   *
+   * @returns The parsed AST node, or `undefined` for EOF.
+   * @throws When no transition function is registered for the current token type.
+   */
+  private parseNode(): ASTNode | undefined {
+    const token = this._cursor.peek();
+    if (token.type === TokenType.EOF) {
+      return undefined;
+    }
+
+    const startOffset = token.span.start;
+    
+    try {
+      const state = this._states[token.type];
+
+      if (!state) {
+        throw `No transition function for token of type ${TokenType[token.type]}`;
+      }
+
+      if (token.type === TokenType.IMPORT && (!this._isHeader || this._depth > 0)) {
+        throw 'An @import statement must be at the beginning of the template, before any other content';
+      }
+
+      this._depth++;
+      const node = state(this._cursor, this.parseNode.bind(this), token as never);
+      this._depth--;
+      const currentToken = this._cursor.getCurrentToken().value;
+      const endOffset = 'span' in currentToken ? currentToken.span.end : token.span.end;
+
+      return {
+        ...node,
+        span: node.span ?? {
+          start: startOffset,
+          end: endOffset,
+        },
+      };
+    } catch (err) {
+      if (this.thrown) {
+        throw err;
+      }
+      this.thrown = true;
+      const message = err instanceof Error ? err.message : `${err}`;
+      const currentToken = this._cursor.peek();
+      const stateEndIndex = currentToken.type !== TokenType.EOF ? currentToken.span.end : this._input.length;
+      // An error raised with its own span (e.g. an invalid expression, a duplicated attribute) points to it
+      const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
+      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
+    }
+  }
+}

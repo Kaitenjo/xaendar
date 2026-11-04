@@ -1,0 +1,17 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+@if (visible()) {
+  <p class="name">{ fullName() }</p>
+} @else {
+  <p class="name hidden">Nobody reads fullName now</p>
+}
+<p>
+  fullName was evaluated
+  <strong>{ shownEvaluations() }</strong>
+  times
+</p>
+<div>
+  <ex-button (click)="rename()">Change last name</ex-button>
+  <ex-button (click)="toggle()">Show / hide</ex-button>
+  <ex-button (click)="readThrice()">Read it 3 times</ex-button>
+</div>

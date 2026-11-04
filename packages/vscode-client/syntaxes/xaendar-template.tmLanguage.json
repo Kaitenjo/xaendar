@@ -1,0 +1,321 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Xaendar Template",
+  "scopeName": "xaendar.template.injection",
+  "injectionSelector": "L:text.html -comment -meta.import.xaendar -meta.directive.xaendar -meta.embedded.expression.xaendar",
+  "patterns": [
+    { "include": "#import" },
+    { "include": "#custom-tag-open" },
+    { "include": "#custom-tag-close" },
+    { "include": "#event" },
+    { "include": "#directive" },
+    { "include": "#element-ref" },
+    { "include": "#template-declaration" },
+    { "include": "#hydrate" },
+    { "include": "#control-flow" },
+    { "include": "#control-flow-bare" },
+    { "include": "#render" },
+    { "include": "#let" },
+    { "include": "#interpolation" },
+    { "include": "#block-close" }
+  ],
+  "repository": {
+    "import": {
+      "begin": "(@import)\\b",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" }
+      },
+      "end": "(?<=['\"])\\s*(;)?",
+      "endCaptures": {
+        "1": { "name": "punctuation.terminator.statement.xaendar" }
+      },
+      "name": "meta.import.xaendar",
+      "patterns": [
+        { "match": "\\b(?:from|as|default|lazy)\\b", "name": "keyword.control.xaendar" },
+        { "match": "\\*", "name": "keyword.operator.wildcard.xaendar" },
+        { "match": "[{}]", "name": "punctuation.definition.block.xaendar" },
+        { "match": ",", "name": "punctuation.separator.comma.xaendar" },
+        { "match": "(['\"])[^'\"]*\\1", "name": "string.quoted.xaendar" },
+        { "match": "[A-Za-z_$][\\w$]*", "name": "meta.import.specifier.xaendar" }
+      ]
+    },
+    "custom-tag-open": {
+      "begin": "(<)([a-z][.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*-[\\-.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*)(?:(\\()((?:[^()]|\\((?:[^()]|\\([^()]*\\))*\\))*)(\\)))?(?=\\s|/?>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.custom.xaendar" },
+        "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
+        "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
+        "5": { "name": "punctuation.definition.typeparameters.end.xaendar" }
+      },
+      "end": "/?>",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "name": "meta.tag.custom.start.html",
+      "patterns": [
+        { "include": "text.html.basic#attribute" }
+      ]
+    },
+    "custom-tag-close": {
+      "match": "(</)([a-z][.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*-[\\-.0-9_a-z\\x{B7}\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{203F}-\\x{2040}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\x{10000}-\\x{EFFFF}]*)\\s*(>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.custom.xaendar" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "name": "meta.tag.custom.end.html"
+    },
+    "event": {
+      "begin": "(\\()([\\w$.:-]+)(\\))\\s*(=)\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.event.begin.xaendar" },
+        "2": { "name": "entity.name.function.event.xaendar" },
+        "3": { "name": "punctuation.definition.event.end.xaendar" },
+        "4": { "name": "punctuation.separator.key-value.html" },
+        "5": { "name": "string.quoted.double.html punctuation.definition.string.begin.html" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "string.quoted.double.html punctuation.definition.string.end.html" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "directive": {
+      "patterns": [
+        {
+          "begin": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(?:(<)((?:=>|[^<>=]|=(?!>)|<(?:=>|[^<>=]|=(?!>)|<[^<>]*>)*>)*)(>))?(\\()",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.directive.xaendar" },
+            "2": { "name": "keyword.control.directive.xaendar" },
+            "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
+            "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
+            "5": { "name": "punctuation.definition.typeparameters.end.xaendar" },
+            "6": { "name": "punctuation.section.directive.begin.xaendar" }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": { "name": "punctuation.section.directive.end.xaendar" }
+          },
+          "name": "meta.directive.xaendar",
+          "patterns": [
+            { "include": "#event" },
+            { "include": "#control-flow" },
+            { "include": "#control-flow-bare" },
+            { "include": "#block-close" },
+            { "include": "#directive-attribute" }
+          ]
+        },
+        {
+          "match": "(?<![\\w$)\\]])(@@|\\*)([A-Za-z_$][\\w$-]*)(?:(<)((?:=>|[^<>=]|=(?!>)|<(?:=>|[^<>=]|=(?!>)|<[^<>]*>)*>)*)(>))?",
+          "captures": {
+            "1": { "name": "keyword.control.directive.xaendar" },
+            "2": { "name": "keyword.control.directive.xaendar" },
+            "3": { "name": "punctuation.definition.typeparameters.begin.xaendar" },
+            "4": { "name": "meta.type.parameters.xaendar", "patterns": [{ "include": "source.ts#type" }] },
+            "5": { "name": "punctuation.definition.typeparameters.end.xaendar" }
+          },
+          "name": "meta.directive.xaendar"
+        }
+      ]
+    },
+    "element-ref": {
+      "match": "(?<=\\s)(#)([A-Za-z_$][\\w$]*)(?=[\\s/>])",
+      "captures": {
+        "1": { "name": "punctuation.definition.element-ref.xaendar" },
+        "2": { "name": "variable.other.constant.xaendar" }
+      }
+    },
+    "template-declaration": {
+      "patterns": [
+        {
+          "begin": "(?<=<template)\\s+([A-Za-z_$][\\w$]*)(\\()",
+          "beginCaptures": {
+            "1": { "name": "entity.name.function.xaendar" },
+            "2": { "name": "punctuation.definition.parameters.begin.xaendar" }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.parameters.end.xaendar" }
+          },
+          "name": "meta.parameters.xaendar",
+          "patterns": [
+            {
+              "match": "(?:(?<=[(,])|^)\\s*([A-Za-z_$][\\w$]*)(?=\\s*\\??\\s*[:=])",
+              "captures": {
+                "1": { "name": "variable.parameter.xaendar" }
+              }
+            },
+            { "match": "\\?(?=\\s*:)", "name": "keyword.operator.optional.xaendar" },
+            { "match": ":", "name": "punctuation.separator.type.xaendar" },
+            {
+              "begin": "=(?!>)",
+              "beginCaptures": {
+                "0": { "name": "keyword.operator.assignment.xaendar" }
+              },
+              "end": "(?=[,)])",
+              "name": "meta.parameter.default.xaendar",
+              "patterns": [{ "include": "#expression" }]
+            },
+            { "match": ",", "name": "punctuation.separator.parameter.xaendar" },
+            { "include": "source.ts#type" }
+          ]
+        }
+      ]
+    },
+    "directive-attribute": {
+      "patterns": [
+        { "match": "[^\\s\"'<>/=(){}@*]+", "name": "entity.other.attribute-name.html" },
+        { "match": "=", "name": "punctuation.separator.key-value.html" },
+        {
+          "begin": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.html" }
+          },
+          "name": "string.quoted.double.html",
+          "patterns": [
+            { "include": "#interpolation" }
+          ]
+        }
+      ]
+    },
+    "control-flow": {
+      "begin": "(@(?:if|else\\s+if|for|switch|case))\\s*(\\()",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "punctuation.section.condition.begin.xaendar" }
+      },
+      "end": "(\\))\\s*(\\{)?",
+      "endCaptures": {
+        "1": { "name": "punctuation.section.condition.end.xaendar" },
+        "2": { "name": "punctuation.section.block.begin.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "match": "\\b(?:of|track)\\b", "name": "keyword.control.xaendar" },
+        { "match": ";", "name": "punctuation.separator.xaendar" },
+        { "include": "#expression" }
+      ]
+    },
+    "hydrate": {
+      "begin": "(@hydrate)\\s*(\\()",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "punctuation.section.condition.begin.xaendar" }
+      },
+      "end": "(\\))\\s*(\\{)?",
+      "endCaptures": {
+        "1": { "name": "punctuation.section.condition.end.xaendar" },
+        "2": { "name": "punctuation.section.block.begin.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "match": "\\b(?:load|idle|visible|interaction|never|when)\\b", "name": "keyword.control.xaendar" },
+        { "match": ",", "name": "punctuation.separator.xaendar" },
+        { "include": "#expression" }
+      ]
+    },
+    "render": {
+      "begin": "(@render)\\s+([A-Za-z_$][\\w$]*)(\\()",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "entity.name.function.xaendar" },
+        "3": { "name": "punctuation.definition.arguments.begin.xaendar" }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.arguments.end.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "let": {
+      "begin": "(@let)\\s+([A-Za-z_$][\\w$]*)\\s*(=)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "variable.other.constant.xaendar" },
+        "3": { "name": "keyword.operator.assignment.xaendar" }
+      },
+      "end": ";",
+      "endCaptures": {
+        "0": { "name": "punctuation.terminator.statement.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "control-flow-bare": {
+      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder))\\b\\s*(\\{)?",
+      "captures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "punctuation.section.block.begin.xaendar" }
+      }
+    },
+    "block-close": {
+      "match": "\\}",
+      "name": "punctuation.section.block.end.xaendar"
+    },
+    "interpolation": {
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.xaendar" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.xaendar" }
+      },
+      "contentName": "meta.embedded.expression.xaendar",
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "expression": {
+      "patterns": [
+        { "include": "#variable-language" },
+        { "include": "#parens" },
+        { "include": "#braces" },
+        { "include": "source.ts#expression" }
+      ]
+    },
+    "parens": {
+      "begin": "\\(",
+      "beginCaptures": {
+        "0": { "name": "meta.brace.round.ts" }
+      },
+      "end": "\\)",
+      "endCaptures": {
+        "0": { "name": "meta.brace.round.ts" }
+      },
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "braces": {
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.block.ts" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.block.ts" }
+      },
+      "patterns": [
+        { "include": "#expression" }
+      ]
+    },
+    "variable-language": {
+      "match": "\\$(?:event|index|first|last|even|odd)\\b",
+      "name": "variable.language.xaendar"
+    }
+  }
+}

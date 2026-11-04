@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0.75rem 0 0.4rem;
+}
+
+.log {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

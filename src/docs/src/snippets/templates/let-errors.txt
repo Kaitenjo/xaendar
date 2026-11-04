@@ -1,0 +1,7 @@
+<p>{ total() }</p> @let total = price();        "total" is read before its @let: only an event handler can read a @let declared after it
+@let total = total + 1;                          "total" is read before its @let: only an event handler can read a @let declared after it
+@let total = 1; @let total = 2;                  Cannot redeclare block-scoped variable 'total'.
+@let total = price(); { total.toFixed(2) }       Property 'toFixed' does not exist on type 'Computed<number>'.
+@for (item of items(); track total) { }          The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables
+@let root = 1;                                   'root' is reserved in templates: give the @let another name.
+@let total = price()                             @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;

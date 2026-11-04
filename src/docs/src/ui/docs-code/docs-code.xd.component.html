@@ -1,0 +1,32 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { HighlightDirective } from '../../directives/highlight.directive.ts'
+
+<div class="{classes()}">
+  @if (caption() || verdict()) {
+    <div class="head">
+      <span class="file">{ caption() }</span>
+      @switch (verdict()) {
+        @case ('bad') {
+          <span class="verdict verdict--bad">✗ { translations().code.bad }</span>
+        }
+        @case ('good') {
+          <span class="verdict verdict--good">✓ { translations().code.good }</span>
+        }
+      }
+    </div>
+  }
+  <button class="copy" type="button" (click)="copy()">
+    @if (copied()) {
+      { translations().code.copied }
+    } @else {
+      { translations().code.copy }
+    }
+  </button>
+  <pre class="pre"><code class="code" @@highlight(code="{ text() }" lang="{ source().lang }") /></pre>
+  @if (error()) {
+    <div class="error">
+      <div class="error__label">{ translations().code.error }</div>
+      <pre class="error__text">{ error() }</pre>
+    </div>
+  }
+</div>

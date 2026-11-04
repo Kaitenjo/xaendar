@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.add {
+  margin-bottom: 0.6rem;
+  font: inherit;
+  cursor: pointer;
+}

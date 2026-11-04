@@ -1,0 +1,13 @@
+@import { ButtonComponent } from '../../shared/button/button.xd.component.ts'
+
+<label [class.done]="{todo().done}">
+  <input
+    @if (todo().done) {
+      checked
+    }
+    type="checkbox"
+    (change)="toggle()"
+  />
+  { todo().title }
+</label>
+<ex-button (click)="delete()">✕</ex-button>

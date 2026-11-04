@@ -1,0 +1,7 @@
+ Virtual DOM frameworks                     Xaendar
+ ──────────────────────────────────         ──────────────────────────────────
+ state changes                              signal changes
+   → the component render runs again          → the bindings reading it run
+   → a new virtual tree is built              → each one writes its own node
+   → it is diffed with the previous one
+   → the differences are applied

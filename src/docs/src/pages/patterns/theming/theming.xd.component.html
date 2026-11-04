@@ -1,0 +1,96 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { ThemePreviewComponent } from '../../../examples/patterns/theming/theme-preview/theme-preview.xd.component.ts'
+@import { THEME_STORE } from './theming.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.patterns.theming.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.patterns.theming.title') }
+</h1>
+<p @@htmlTranslation(key="pages.patterns.theming.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.patterns.theming.tokensAndParts.title') }
+</h2>
+<docs-example name="patterns/theming/theme-preview"
+  heading="{translations().pages.patterns.theming.tokensAndParts.example1}">
+  <ex-theme-preview />
+</docs-example>
+<p @@htmlTranslation(key="pages.patterns.theming.tokensAndParts.p1") />
+<p @@htmlTranslation(key="pages.patterns.theming.tokensAndParts.p2") />
+
+<h2>
+  { t(translations(), 'pages.patterns.theming.aThemeForThe.title') }
+</h2>
+<p @@htmlTranslation(key="pages.patterns.theming.aThemeForThe.p1") />
+<docs-code snippet="{THEME_STORE}" />
+<p @@htmlTranslation(key="pages.patterns.theming.aThemeForThe.p2") />
+<docs-code snippet="patterns/no-flash.html" />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.patterns.theming.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.patterns.theming.edgeCases.callout1.heading}">
+      <p @@htmlTranslation(key="pages.patterns.theming.edgeCases.callout1.p1") />
+      <docs-code snippet="patterns/root-in-component.css" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.patterns.theming.edgeCases.callout2.heading}">
+      { t(translations(), 'pages.patterns.theming.edgeCases.callout2.body') }
+    </docs-callout-item>
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.patterns.theming.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.patterns.theming.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.patterns.theming.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.patterns.theming.summary.td1") />
+        <td>
+          { t(translations(), 'pages.patterns.theming.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.patterns.theming.summary.td3") />
+        <td>
+          { t(translations(), 'pages.patterns.theming.summary.td4') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'data-theme="{ theme() }"' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.patterns.theming.summary.td5') }
+        </td>
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.patterns.theming.summary.td6") />
+        <td>
+          { t(translations(), 'pages.patterns.theming.summary.td7') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

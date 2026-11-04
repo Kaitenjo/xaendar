@@ -1,0 +1,8 @@
+# Reading or writing a signal inside notify, watched or unwatched
+Error: Cannot get value while signals are frozen
+Error: Cannot get value of a Computed signal while the global state is frozen
+Error: Cannot set value while signals are frozen
+
+# Changing what a watcher watches inside them
+Error: Cannot watch signals while frozen
+Error: Cannot unwatch signals while frozen

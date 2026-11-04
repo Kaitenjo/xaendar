@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+input {
+  font: inherit;
+  width: min(100%, 22rem);
+}
+
+ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}

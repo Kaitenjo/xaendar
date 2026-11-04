@@ -1,0 +1,67 @@
+import type { TypeCheckResult } from '@xaendar/compiler';
+import { basename, extname } from 'node:path';
+import { type ProjectLanguageService, upsertVirtualFile } from '../../language-service/language-service';
+
+/**
+ * Builds the type-check shim source for a component and upserts it into the
+ * language service's virtual filesystem so the LanguageServiceHost picks it up.
+ *
+ * @param componentData - Map from each involved component file's absolute
+ *   path to the exported class names it declares.
+ * @param typecheckBody - The compiler's `TypeCheckResult` whose `text` supplies
+ *   the fictitious-TS type-check body to wrap.
+ * @param project - The language service of the project the shim belongs to, the default one if not given.
+ * @param name - The name of the shim, written in its suffix (`.__typecheck__.ts` by default): a template can have
+ *   several shims, e.g. one for its current version and one for the version a completion is asked on.
+ * @returns The shim's full source, its path, the line offset at which the
+ *   type-check body starts, and the collected class names.
+ */
+export function createShim(componentData: ReadonlyMap<string, readonly string[]>, typecheckBody: TypeCheckResult, project?: ProjectLanguageService, name = 'typecheck'): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
+  const entries = Array.from(componentData.entries());
+  const shimPath = `${entries[0][0]}.__${name}__.ts`;
+  const shim = buildTypecheckShim(entries, shimPath, typecheckBody.text);
+  project ? project.upsertVirtualFile(shimPath, shim.code) : upsertVirtualFile(shimPath, shim.code);
+  return shim;
+}
+
+/**
+ * Wraps the compiler's fictitious type-check body with the import of the
+ * real component class and the `declare const root` binding, so the shim
+ * type-checks the DSL expressions against the actual class members.
+ *
+ * The shim is generated as a sibling of the real component file (same
+ * directory, `.__typecheck__.ts` suffix) so that the relative import below
+ * resolves correctly via the LanguageServiceHost's standard module
+ * resolution against the real filesystem.
+ *
+ * @param classNames - Name of the exported component class, as extracted
+ *   from the transpiled source.
+ * @param componentFilePath - Absolute path of the real component files.
+ * @param body - The fictitious-TS type-check body produced by the compiler
+ *   (the `function typeCheck() {...}` blocks and friends).
+ * @returns The full shim source, ready to be passed to `updateVirtualFile`.
+ */
+function buildTypecheckShim(componentData: [string, readonly string[]][], shimPath: string, body: string): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
+  const prefixLinesLength = componentData.length + 4;
+  const prefixLines = new Array<string>(prefixLinesLength).fill(''); 
+  const classNames = new Array<string>();
+
+  for (let i = 0; i < componentData.length; i++) {
+    const [path, classes] = componentData[i];
+    classNames.push(...classes);
+    prefixLines[i] = `import { ${classes.join(', ')} } from './${basename(path, extname(path))}';`
+  }
+  prefixLines[prefixLinesLength - 4] = 'import { Signal } from \'@xaendar/core/signals\'';
+  /*
+    A generic class cannot be named without its type arguments: its instance type is read from its constructor, where
+    each type parameter is its constraint (`unknown` without one), so the template of a generic component compiles
+  */
+  prefixLines[prefixLinesLength - 2] = `declare const root: ${classNames.map(className => `InstanceType<typeof ${className}>`).join(' & ')};`
+
+  return {
+    code: [...prefixLines, body].join('\n'),
+    bodyLineOffset: prefixLinesLength,
+    path: shimPath,
+    classNames
+  };
+}

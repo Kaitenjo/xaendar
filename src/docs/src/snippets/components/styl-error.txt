@@ -1,0 +1,2 @@
+Failed to compile style - /src/rating/rating.styl
+Error: Unsupported stylesheet extension ".styl" for /src/rating/rating.styl.

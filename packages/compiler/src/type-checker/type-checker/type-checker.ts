@@ -1,0 +1,255 @@
+import type { ASTNode } from '../../parser/types/ast.type.js';
+import { ASTNodeType } from '../../parser/types/node.enum.js';
+import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type.js';
+import type { SymbolImport } from '../../types/symbol-import.type.js';
+import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
+import { TypeCheckContext } from '../models/type-checker-context/type-checker-context.js';
+import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
+import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
+import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';
+import { typeCheckImport } from '../states/type-check-import/type-check-import.state.js';
+import { typeCheckLet } from '../states/type-check-let/type-check-let.state.js';
+import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
+import { typeCheckClient } from '../states/type-check-client/type-check-client.state.js';
+import { typeCheckHydrate } from '../states/type-check-hydrate/type-check-hydrate.state.js';
+import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
+import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
+import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
+import type { Line } from '../types/line.type.js';
+import type { LineMapping } from '../types/line-mapping.type.js';
+import type { TypeCheckResult } from '../types/type-checker-result.type.js';
+import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result.type.js';
+import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
+import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils.js';
+import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
+import { typeCheckScope } from '../utils/scope/scope.utils.js';
+import { getTemplateHelpers } from '../utils/template-types/template-types.utils.js';
+import { checkHydrateContent } from '../utils/hydrate-content/hydrate-content.utils.js';
+import { checkServerBlocks } from '../utils/server-blocks/server-blocks.utils.js';
+import { checkVariableOrder } from '../utils/variable-order/variable-order.utils.js';
+
+/**
+ * Generates a single, flat TypeScript function body ("shim") from a
+ * template AST, meant only to be fed to the TS compiler / LanguageService
+ * for diagnostics — it is never executed and never emitted as real output.
+ *
+ * This deliberately does NOT mirror the JS code generator's structure:
+ *
+ * - No variable is declared per HTML element. Element identifiers exist in
+ *   the JS output purely so runtime code can create/reference the actual
+ *   DOM node; an expression only references the elements a template
+ *   variable names (`#name`), which are declared at the start of the block
+ *   of their scope, typed with the type of the element. A template
+ *   (`<template name(…)>`) is declared there too, its content is an arrow
+ *   function taking its parameters, and a `@render` calls it. A `@let` is
+ *   declared there too, typed with the constant its value is checked in.
+ * - No control-flow block gets its own function. In the JS output, each
+ *   `@if`/`@for`/`@switch` becomes a separate function because it needs
+ *   its own runtime closure over the `Context` chain. The type checker has
+ *   no runtime at all, so real, nested TypeScript blocks — `if`, `for`,
+ *   `switch` — give correct scoping and (as a bonus) real control-flow
+ *   narrowing, for free, with no synthetic machinery.
+ *
+ * Every AST node turns directly into TypeScript lines, recursively, inside
+ * one single `typeCheck()` function.
+ */
+export class TypeChecker {
+  /**
+   * Shared mutable state threaded through all state functions during a single `generate()` call.
+   */
+  private readonly _context = new TypeCheckContext();
+  /**
+   * Maps each `ASTNodeType` to the state function responsible for emitting its type-check lines.
+   */
+  private readonly _states: TypeCheckerStates = {
+    [ASTNodeType.Text]: typeCheckTextAndInterpolation,
+    [ASTNodeType.Interpolation]: typeCheckTextAndInterpolation,
+    [ASTNodeType.Element]: typeCheckElement,
+    [ASTNodeType.If]: typeCheckIf,
+    [ASTNodeType.For]: typeCheckFor,
+    [ASTNodeType.Switch]: typeCheckSwitch,
+    [ASTNodeType.Hydrate]: typeCheckHydrate,
+    [ASTNodeType.Client]: typeCheckClient,
+    [ASTNodeType.Import]: typeCheckImport,
+    [ASTNodeType.Template]: typeCheckTemplate,
+    [ASTNodeType.Render]: typeCheckRender,
+    [ASTNodeType.Let]: typeCheckLet
+  };
+  /**
+   * The errors of the nodes that failed type-checking during a `generateTolerant()` call; `undefined` while a node
+   * failing must stop the type-check, i.e. during a `generate()` call.
+   */
+  private _errors: Error[] | undefined;
+
+  /**
+   * @param _input - Raw template source string, used only to slice diagnostic spans into error messages.
+   * @param _ast   - Parsed AST produced by the `Parser` for this template.
+   */
+  constructor(
+    private _input: string,
+    private _ast: ASTNode[],
+  ) { }
+
+  /**
+   * Generates the full `function typeCheck() { ... }` shim body for the
+   * component's template.
+   *
+   * `$event` is not declared at the top of the shim: every event binding passing it
+   * to its handler gets its own block declaring it, as `CustomEvent<payload type>` for a component or directive
+   * `@Event` carrying a payload, and through the event map of the element for a native event, e.g.
+   * `HTMLElementEventMap['click']` or, inside an `<svg>`, `SVGElementEventMap['click']`.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
+   * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
+   * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
+   * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
+   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+   * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
+   * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
+   */
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean): Promise<TypeCheckResult> {
+    try {
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr);
+    } catch (err) {
+      throw catchErrorWithPrefix('TypeChecker', this._input, err);
+    }
+  }
+
+  /**
+   * Generates the shim like {@link generate}, but a node failing type-checking does not stop it: the error is
+   * collected and the shim leaves out the node, so that the other nodes are checked too, e.g. to report every
+   * use of a selector that is not imported. The children of an element failing are checked anyway.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
+   * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
+   * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
+   * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
+   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+   * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
+   * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
+   */
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean): Promise<TypeCheckTolerantResult> {
+    const errors = new Array<Error>();
+    this._errors = errors;
+    try {
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr), errors };
+    } catch (err) {
+      throw catchErrorWithPrefix('TypeChecker', this._input, err);
+    } finally {
+      this._errors = undefined;
+    }
+  }
+
+  /**
+   * Generates the shim, stopping at the first node failing unless the errors are being collected.
+   *
+   * @param metadatas - Metadata of the components and directives imported in the template.
+   * @param shadowingMembers - Class members named like a global identifier.
+   * @param customElements - Patterns of the tag names of the custom elements of other libraries.
+   * @param symbols - The symbols the template imports from modules.
+   * @param reactiveMembers - Class members that can read a signal.
+   * @param ssr - Whether the project renders on the server, `undefined` when it is not known.
+   * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
+   * @throws The error of the first node failing, when the errors are not being collected.
+   */
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[], ssr: boolean | undefined): TypeCheckResult {
+    this._context.addImport(...metadatas);
+    this._context.addSymbolImport(...symbols);
+    for (let i = 0; i < shadowingMembers.length; i++) {
+      this._context.addShadowingMember(shadowingMembers[i]);
+    }
+    this._context.addCustomElementPatterns(...customElements);
+    // The signals the members read decide only whether a @let is a signal: the expressions read every member through root
+    for (let i = 0; i < reactiveMembers.length; i++) {
+      this._context.addSignalClassField(reactiveMembers[i]);
+    }
+
+    // The element refs read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
+    this._report(checkVariableOrder(this._ast));
+    // A @hydrate whose trigger has no element to watch, which would silently wait for the browser to be idle
+    this._report(checkHydrateContent(this._ast));
+    // A @hydrate or a @client in a project without the HTML of the server, which they say what to do with
+    if (ssr === false) {
+      this._report(checkServerBlocks(this._ast));
+    }
+
+    // The declarations importing the symbols of the template are written at the top level, before the function
+    const imports = this._ast.filter(node => node.type === ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
+    // The template is the outermost scope: the element refs it declares come first in the function
+    const { declarations, lines: body } = typeCheckScope(this._ast.filter(node => node.type !== ASTNodeType.Import), this._context, this._processNode);
+
+    // The types and the functions the type-check code of the templates and of the @let is written with are declared once, before the function
+    const prelude = this._context.usesTemplateHelpers ? imports.concat(getTemplateHelpers()) : imports;
+    // The modules the types of the bindings reference are imported once, before the function
+    const lines = hoistImportTypes(prelude.concat(plain('function typeCheck() {'), indentLines(declarations.concat(body)), plain('}')));
+
+    return {
+      text: lines.map(line => line.text).join('\n'),
+      mappingTable: this.buildMappingTable(lines)
+    };
+  }
+
+  /**
+   * Reports the errors of a check of the whole template.
+   *
+   * @param errors - The errors, if any.
+   * @throws The first one, when the errors are not being collected.
+   */
+  private _report(errors: Error[] | undefined): void {
+    if (errors?.length) {
+      if (!this._errors) {
+        throw errors[0];
+      }
+
+      for (let i = 0; i < errors.length; i++) {
+        this._errors.push(formatErrorWithPrefix('TypeChecker', this._input, errors[i]));
+      }
+    }
+  }
+
+  /**
+   * Builds a mapping table that correlates each generated line to its original source span.
+   * @param lines - Array of lines generated for the type-checking shim.
+   * @returns A mapping table correlating generated lines to their original source spans.
+   */
+  private buildMappingTable(lines: Line[]): TypeCheckResult['mappingTable'] {
+    const table = new Map<number, readonly LineMapping[]>();
+    for (let i = 0; i < lines.length; i++) {
+      const { mappings } = lines[i];
+      if (mappings) {
+        table.set(i, mappings)
+      };
+    }
+    return table;
+  }
+
+  /**
+   * Dispatches a single AST node to its state function, passing itself
+   * back down as `processNode` so state functions can recurse into their
+   * own children inline.
+   *
+   * While the errors are being collected, a node failing is recorded and generates no lines, but for the
+   * children of an element, which are checked on their own.
+   */
+  private _processNode = (node: ASTNode, context: TypeCheckContext): Line[] => {
+    const state = this._states[node.type];
+
+    if (!state) {
+      throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span })
+    }
+
+    if (!this._errors) {
+      return state(node as never, this._processNode, context);
+    }
+
+    try {
+      return state(node as never, this._processNode, context);
+    } catch (err) {
+      this._errors.push(formatErrorWithPrefix('TypeChecker', this._input, err));
+      // The state of an element fails on its own bindings before it reaches the children, which have not been checked
+      return node.type === ASTNodeType.Element ? node.children.flatMap(child => this._processNode(child, context)) : [];
+    }
+  };
+}

@@ -1,0 +1,15 @@
+@import { CounterBadgeComponent } from './counter-badge.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <input type="text" value="Templates" aria-label="New item" />
+  <ex-button (click)="add()">Add</ex-button>
+  <ex-button (click)="focusField()">Focus the field</ex-button>
+  <ex-counter-badge />
+</div>
+<ul>
+  @for (item of items(); track item()) {
+    <li class="row">{ item() }</li>
+  }
+</ul>
+<p>Found by the query: { rows().length } rows: { found() }</p>

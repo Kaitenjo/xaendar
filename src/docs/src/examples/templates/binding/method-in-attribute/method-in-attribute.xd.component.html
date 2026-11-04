@@ -1,0 +1,17 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { level } from './level.store.ts'
+
+<ex-button (click)="raise()">Raise the level: { level() }</ex-button>
+<p>
+  <meter min="0" max="100" value="{percentOf()}" />
+  a method reading the signal: percentOf()
+</p>
+<p>
+  <meter min="0" max="100" value="{percentFromHelper()}" />
+  a method calling a function: percentFromHelper()
+</p>
+<p>
+  <meter min="0" max="100" value="{percent()}" />
+  a computed signal: percent()
+</p>
+<p class="text">In the text, every expression is reactive: { percentFromHelper() }%</p>

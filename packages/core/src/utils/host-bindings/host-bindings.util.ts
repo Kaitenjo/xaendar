@@ -1,0 +1,126 @@
+import { INTERNAL_HOST_EVENTS, INTERNAL_HOST_PROPERTIES } from '../../costants';
+import { effect } from '../../signals/effect/effect';
+import type { EventHost } from '../../types/event/event-host.type';
+import type { HostPropertyBinding } from '../../types/host/host-property-binding.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { toggleClass, untoggleClass, updateAttribute } from '../class-toggle/class-toggle.util';
+import type { _Context } from '../context/context.util';
+
+/**
+ * Adds a binding or a listener to the metadata of the class being decorated. The metadata of a subclass inherits from
+ * the one of its parent class: the list of the parent is copied into the metadata of the class, so the bindings of the
+ * parent stay and the ones of the class do not reach the parent.
+ *
+ * @param metadata - The metadata of the class being decorated, holding the list under `key`.
+ * @param key - The key of the list.
+ * @param entry - The binding or the listener to add.
+ */
+export function _addHostMetadata<Key extends typeof INTERNAL_HOST_PROPERTIES | typeof INTERNAL_HOST_EVENTS, Entry>(metadata: { [K in Key]?: NoInfer<Entry>[] }, key: Key, entry: Entry): void {
+  let entries = metadata[key];
+  if (!entries || !Object.hasOwn(metadata, key)) {
+    entries = entries ? entries.slice() : new Array<Entry>();
+    metadata[key] = entries;
+  }
+
+  entries.push(entry);
+}
+
+/**
+ * Binds the host element of a web component or of a custom directive as its `@HostProperty` and `@HostEvent` declare:
+ * each attribute and class is written inside an effect, so it is written again only when it reads a signal, and each
+ * listener is added to the element. When the context is cleared the effects are disposed, the attributes removed, the
+ * classes taken away and the listeners removed.
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element: the component itself, or the element the directive is applied to.
+ * @param context - The context the bindings live in.
+ */
+export function _bindHost(owner: EventHost, element: Element, context: _Context): void {
+  const metadata = (owner.constructor as unknown as Record<symbol, WebComponentMetadata | undefined>)[Symbol.for('Symbol.metadata')];
+
+  const properties = metadata?.[INTERNAL_HOST_PROPERTIES];
+  if (properties?.length) {
+    for (let i = 0; i < properties.length; i++) {
+      bindProperty(owner, element, properties[i], context);
+    }
+  }
+
+  const events = metadata?.[INTERNAL_HOST_EVENTS];
+  if (events?.length) {
+    for (let i = 0; i < events.length; i++) {
+      const { name, options, read } = events[i];
+      const listener = (event: Event) => read(owner).call(owner, event);
+      element.addEventListener(name, listener, options);
+      context.addUnlistener(() => element.removeEventListener(name, listener, options));
+    }
+  }
+}
+
+/**
+ * Writes the attributes and the classes of the host element of a web component or of a custom directive as its
+ * `@HostProperty` declare, once and without binding them: what the server writes on the tag of a component it renders.
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element.
+ */
+export function _applyHostProperties(owner: EventHost, element: Element): void {
+  const metadata = (owner.constructor as unknown as Record<symbol, WebComponentMetadata | undefined>)[Symbol.for('Symbol.metadata')];
+  const properties = metadata?.[INTERNAL_HOST_PROPERTIES];
+  if (properties?.length) {
+    for (let i = 0; i < properties.length; i++) {
+      applyProperty(owner, element, properties[i]);
+    }
+  }
+}
+
+/**
+ * Binds an attribute or a class of the host element to a member of the owner (see {@link applyProperty}).
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element.
+ * @param binding - The attribute or the class, and how to read the member.
+ * @param context - The context the binding lives in.
+ */
+function bindProperty(owner: EventHost, element: Element, binding: HostPropertyBinding, context: _Context): void {
+  const { name, isClass } = binding;
+  context.addUnlistener(effect(() => applyProperty(owner, element, binding)));
+  context.addUnlistener(isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
+}
+
+/**
+ * Writes an attribute or toggles a class of the host element by the value of a member of the owner. A member holding a
+ * function, such as a signal, is called to get the value.
+ *
+ * @param owner - The web component or the custom directive.
+ * @param element - Its host element.
+ * @param binding - The attribute or the class, and how to read the member.
+ */
+function applyProperty(owner: EventHost, element: Element, { name, isClass, read }: HostPropertyBinding): void {
+  const member = read(owner);
+  const value = typeof member === 'function' ? member() : member;
+  isClass ? toggleClass(element, name, Boolean(value)) : writeAttribute(element, name, value);
+}
+
+/**
+ * Writes an attribute of the host element: `null`, `undefined` and `false` remove it, `true` writes it empty, any
+ * other value is written as a string. The attribute is written only when it differs from the one the element holds,
+ * as an element adopted from the HTML of the server does, and writing `class` keeps the classes toggled by class bindings.
+ *
+ * @param element - The host element.
+ * @param name - The name of the attribute.
+ * @param value - The value.
+ */
+function writeAttribute(element: Element, name: string, value: unknown): void {
+  switch (value) {
+    case null:
+    case undefined:
+    case false:
+      updateAttribute(element, name, null);
+      break;
+    case true:
+      updateAttribute(element, name, '');
+      break;
+    default:
+      updateAttribute(element, name, String(value));
+  }
+}

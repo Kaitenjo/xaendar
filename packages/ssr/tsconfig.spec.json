@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.typecheck.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ]
+  },
+  "exclude": [
+    "**/vite-config.ts",
+    "**/vite.config.ts",
+    "**/vitest-config.ts",
+    "**/vitest.config.ts",
+    "dist"
+  ]
+}

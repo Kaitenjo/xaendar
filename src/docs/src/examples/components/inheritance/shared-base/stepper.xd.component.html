@@ -1,0 +1,13 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button
+  @if (atZero()) {
+    disabled
+  }
+  aria-label="Less"
+  (click)="decrement()"
+>
+  −
+</ex-button>
+<output>{ count() }</output>
+<ex-button aria-label="More" (click)="increment()">+</ex-button>

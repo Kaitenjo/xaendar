@@ -1,0 +1,217 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { ANGULAR_COMPONENT } from './coming-from-angular.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.comingFromAngular.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.comingFromAngular.title') }
+</h1>
+<p @@htmlTranslation(key="pages.reference.comingFromAngular.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.reference.comingFromAngular.theSameComponent.title') }
+</h2>
+<docs-code snippet="{ANGULAR_COMPONENT}" />
+
+<h2>
+  { t(translations(), 'pages.reference.comingFromAngular.correspondences.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '@Component' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>input()</code>,
+          <code>{ '@Input' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>input.required()</code>
+        </td>
+        <td>
+          <code>{ '@Property.required()' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>output()</code>,
+          <code>{ '@Output' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>host</code>,
+          <code>{ '@HostBinding' }</code>,
+          <code>{ '@HostListener' }</code>
+        </td>
+        <td>
+          <code>{ '@HostProperty' }</code>,
+          <code>{ '@HostEvent' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>signal</code>,
+          <code>computed</code>,
+          <code>effect</code>,
+          <code>untracked</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>viewChild</code>,
+          <code>viewChild.required</code>,
+          <code>viewChildren</code>
+        </td>
+        <td>
+          <code>{ '@Query' }</code>,
+          <code>{ '@Query.required' }</code>,
+          <code>{ '@Query.all' }</code>,
+          <code>{ '@Query.ref' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>contentChild</code>,
+          <code>contentChild.required</code>,
+          <code>contentChildren</code>
+        </td>
+        <td>
+          <code>{ '@Query.content' }</code>,
+          <code>{ '@Query.content.required' }</code>,
+          <code>{ '@Query.content.all' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '<ng-content select>' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>ngOnInit</code>,
+          <code>ngAfterViewInit</code>,
+          <code>ngOnDestroy</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td6") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td8") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.td9') }
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td10") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '{{ expr }}' }</code>
+        </td>
+        <td>
+          <code>{ '{ expr }' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>[attr]="expr"</code>
+        </td>
+        <td>
+          <code>{ 'attr="{ expr }"' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>[class.x]</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td21") />
+      </tr>
+      <tr>
+        <td>
+          <code>[style.x]</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td11") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td12") />
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td13") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td14") />
+        <td>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.td15') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.td16') }
+        </td>
+        <td>
+          { t(translations(), 'pages.reference.comingFromAngular.correspondences.td17') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>styleUrls</code>,
+          <code>:host</code>,
+          <code>::ng-deep</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td18") />
+      </tr>
+      <tr>
+        <td>
+          <code>&lt;ng-template&gt;</code>,
+          <code>ngTemplateOutlet</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td19") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@let' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.reference.comingFromAngular.correspondences.td20") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>
+  { t(translations(), 'pages.reference.comingFromAngular.whatWorksDifferently.title') }
+</h2>
+<ul>
+  <li @@htmlTranslation(key="pages.reference.comingFromAngular.whatWorksDifferently.li2") />
+  <li @@htmlTranslation(key="pages.reference.comingFromAngular.whatWorksDifferently.li3") />
+  <li @@htmlTranslation(key="pages.reference.comingFromAngular.whatWorksDifferently.li4") />
+</ul>
+
+<docs-callout @@htmlTranslation(key="pages.reference.comingFromAngular.whatWorksDifferently.callout1.body") kind="unsupported"
+  heading="{translations().pages.reference.comingFromAngular.whatWorksDifferently.callout1.heading}" />

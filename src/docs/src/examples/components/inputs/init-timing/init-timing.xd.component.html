@@ -1,0 +1,23 @@
+@import { GreetingCardComponent } from './greeting-card.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { log } from './init-timing.log.ts'
+
+<div class="controls">
+  <ex-button (click)="toggle()">
+    @if (mounted()) {
+      Remove the card
+    } @else {
+      Add the card
+    }
+  </ex-button>
+  <ex-button (click)="rename()">Rename</ex-button>
+  <ex-button (click)="clear()">Clear the log</ex-button>
+</div>
+@if (mounted()) {
+  <ex-greeting-card name="{name()}" />
+}
+<ol>
+  @for (line of log(); track line().id) {
+    <li>{ line().text }</li>
+  }
+</ol>

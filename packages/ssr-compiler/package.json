@@ -1,0 +1,16 @@
+{
+  "name": "@xaendar/ssr-compiler",
+  "version": "1.1.2",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library for transpiling Xaendar Templates into JavaScript code rendering them to HTML on the server",
+  "xaendar": {
+    "target": "node"
+  },
+  "dependencies": {
+    "@xaendar/common": "1.1.2",
+    "@xaendar/compiler": "1.1.2",
+    "@xaendar/types": "1.1.2"
+  }
+}

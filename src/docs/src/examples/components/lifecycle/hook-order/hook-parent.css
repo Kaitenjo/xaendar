@@ -1,0 +1,11 @@
+:host {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 6px;
+}
+
+p {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+}

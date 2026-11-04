@@ -1,0 +1,132 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { ParityComponent } from '../../../examples/directives/structural/parity/parity.xd.component.ts'
+@import { CitySearchComponent } from '../../../examples/directives/structural/min-length/city-search.xd.component.ts'
+@import { MediaLayoutComponent } from '../../../examples/directives/structural/media/media-layout.xd.component.ts'
+@import { AdminPanelComponent } from '../../../examples/directives/structural/allowed-user/admin-panel.xd.component.ts'
+@import { LateReadComponent } from '../../../examples/directives/structural/late-read/late-read.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.structural.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.structural.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.structural.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.directives.structural.shouldrender.title') }
+</h2>
+<docs-example name="directives/structural/parity"
+  heading="{translations().pages.directives.structural.shouldrender.example1}">
+  <ex-parity />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p1") />
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p2") />
+<p @@htmlTranslation(key="pages.directives.structural.shouldrender.p3") />
+
+<h2>
+  { t(translations(), 'pages.directives.structural.inputs.title') }
+</h2>
+<docs-example name="directives/structural/min-length"
+  heading="{translations().pages.directives.structural.inputs.example1}">
+  <ex-city-search />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.structural.inputs.p1") />
+
+<h2>
+  { t(translations(), 'pages.directives.structural.readingOtherSignals.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.structural.readingOtherSignals.p1") />
+<docs-example name="directives/structural/media"
+  heading="{translations().pages.directives.structural.readingOtherSignals.example1}">
+  <ex-media-layout />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.structural.readingOtherSignals.p2") />
+
+<h2>
+  { t(translations(), 'pages.directives.structural.asynchronousDirectives.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.structural.asynchronousDirectives.p1") />
+<docs-example name="directives/structural/allowed-user"
+  heading="{translations().pages.directives.structural.asynchronousDirectives.example1}">
+  <ex-admin-panel />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.structural.asynchronousDirectives.p2") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.directives.structural.edgeCases.title') }
+  </h2>
+  <docs-example name="directives/structural/late-read"
+    heading="{translations().pages.directives.structural.edgeCases.example1}" kind="edge">
+    <ex-late-read />
+  </docs-example>
+  <p @@htmlTranslation(key="pages.directives.structural.edgeCases.p1") />
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.directives.structural.edgeCases.callout1.body")
+      heading="{translations().pages.directives.structural.edgeCases.callout1.heading}" />
+    <docs-callout-item heading="{translations().pages.directives.structural.edgeCases.callout2.heading}">
+      <p @@htmlTranslation(key="pages.directives.structural.edgeCases.callout2.p1") />
+      <docs-code snippet="directives/structural-errors.txt" />
+    </docs-callout-item>
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.directives.structural.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.directives.structural.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.structural.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/StructuralDirective`}">
+            <code>shouldRender()</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.directives.structural.summary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/Property`}">
+            <code>{ '@Property' }</code>
+          </a>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>*a(…) *b(…)</code>
+        </td>
+        <td @@htmlTranslation(key="pages.directives.structural.summary.td3") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td4') }
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.structural.summary.td5') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,7 @@
+@import { CanEditDirective } from './can-edit.directive.ts'
+@import { VisibleWhenDirective } from './visible-when.directive.ts'
+
+<!-- Rendered while every structural directive returns true, whatever their order -->
+<button *exVisibleWhen(condition="{editing()}") *exCanEdit(documentId="{documentId()}") type="button" (click)="save()">
+  Save
+</button>

@@ -1,0 +1,60 @@
+@import { back, canGoBack, path, route } from './router.ts'
+@import { UserPageComponent } from './user-page.xd.component.ts'
+@import { USERS } from './users.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<nav>
+  <ex-button
+    @if (!canGoBack()) {
+      disabled
+    }
+    (click)="back()"
+  >
+    ← Back
+  </ex-button>
+  <a
+    @if (route().name === 'home') {
+      aria-current="page"
+    }
+    href="/"
+    (click)="follow($event)"
+  >
+    Home
+  </a>
+  <a
+    @if (route().name === 'users' || route().name === 'user') {
+      aria-current="page"
+    }
+    href="/users"
+    (click)="follow($event)"
+  >
+    Users
+  </a>
+  <a href="/nowhere" (click)="follow($event)">A broken link</a>
+  <code>{ path() }</code>
+</nav>
+<section>
+  @switch (route().name) {
+    @case ('home') {
+      <h3>Home</h3>
+      <p>Pick a section above.</p>
+    }
+    @case ('users') {
+      <h3>Users</h3>
+      <ul>
+        @for (user of USERS; track user().id) {
+          <li>
+            <a href="{`/users/${user().id}`}" (click)="follow($event)">{ user().name }</a>
+          </li>
+        }
+      </ul>
+    }
+    @case ('user') {
+      <ex-user-page user="{route().params['id'] ?? ''}" />
+    }
+    @default {
+      <h3>Not found</h3>
+      <p>Nothing lives at { path() }.</p>
+    }
+  }
+</section>

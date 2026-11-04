@@ -1,0 +1,58 @@
+import { CustomElement, WebComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+
+/**
+ * Owns a quantity and passes it down to a picker, which asks for changes with events.
+ */
+@WebComponent({
+  selector: 'ex-emit-detail',
+  styleUrl: './emit-detail.css',
+  templateUrl: './emit-detail.xd.component.html'
+})
+export class EmitDetailComponent extends CustomElement {
+  /**
+   * The quantity. This component owns it: the picker only shows it.
+   */
+  public readonly quantity = signal(2);
+  /**
+   * The highest quantity this component accepts.
+   */
+  public readonly limit = 5;
+  /**
+   * The events received, latest first.
+   */
+  public readonly received = signal<Array<{ id: number; text: string }>>([]);
+  /**
+   * The identifier of the next line of the log.
+   */
+  private _nextId = 0;
+
+  /**
+   * Accepts the quantity asked by the picker, within the limit.
+   *
+   * @param event - The valueChange event: the asked quantity is its detail.
+   */
+  public setQuantity(event: CustomEvent<number>): void {
+    this._record(`valueChange, detail ${event.detail}`);
+    if (event.detail <= this.limit) {
+      this.quantity.set(event.detail);
+    }
+  }
+
+  /**
+   * Resets the quantity. The cleared event carries no detail: its $event has a null detail.
+   */
+  public clear(): void {
+    this._record('cleared, no detail');
+    this.quantity.set(0);
+  }
+
+  /**
+   * Adds a line to the log, keeping the last five.
+   *
+   * @param text - The line.
+   */
+  private _record(text: string): void {
+    this.received.update(lines => [{ id: this._nextId++, text }, ...lines].slice(0, 5));
+  }
+}

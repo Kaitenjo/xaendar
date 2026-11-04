@@ -1,0 +1,876 @@
+// @vitest-environment happy-dom
+import { loadSignals } from '@xaendar/signals';
+import type { AccessorDecorator, Constructor } from '@xaendar/types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { CustomElement } from '../../models/custom-element/custom-element';
+import { effect } from '../../signals/effect/effect';
+import type { QuerySignal } from '../../signals/types/query-signal.type';
+import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
+import { _Context } from '../../utils/context/context.util';
+import { _setElementRef } from '../../utils/element-refs/element-refs.util';
+import { _defineRender } from '../../utils/render-registry/render-registry.util';
+import { WebComponent } from '../web-component/web-component.decorator';
+import { Query, query, queryAll, queryRef, queryRefAll, queryRefRequired, queryRequired, querySlot, querySlotAll, querySlotRequired } from './query.decorator';
+
+loadSignals();
+
+const flush = () => new Promise<void>(resolve => setTimeout(resolve));
+
+let counter = 0;
+
+afterEach(() => document.body.replaceChildren());
+
+/**
+ * Creates an element, not yet connected to the document, whose render does not touch its Shadow DOM:
+ * the queries created on it start observing the Shadow DOM once it is connected.
+ */
+function create(): CustomElement {
+  const klass = class extends CustomElement { };
+  _defineRender(klass, () => new _Context({} as never));
+  const name = `x-query-decorator-${counter++}`;
+  customElements.define(name, klass);
+  return document.createElement(name) as CustomElement;
+}
+
+/**
+ * Registers a web component through the `WebComponent` decorator, reproducing the class metadata
+ * the runtime attaches to the decorated class and running the initializers the decorator adds, with an empty render
+ * so its instances can be connected.
+ */
+function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
+  const selector = `x-query-target-${counter++}`;
+  const klass = class extends base { };
+  _defineRender(klass, () => new _Context({} as never));
+  const metadata = {};
+  const addInitializer = (initializer: (this: Constructor<CustomElement>) => void) => initializer.call(klass);
+  WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata, addInitializer } as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+  Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: metadata });
+  return { klass, selector };
+}
+
+function item(): HTMLElement {
+  const element = document.createElement('div');
+  element.setAttribute('item', '');
+  return element;
+}
+
+/**
+ * A custom directive the queries look for.
+ */
+class Tooltip extends CustomDirective { }
+
+/**
+ * Creates an element a template applies a new {@link Tooltip} to.
+ */
+function withTooltip(): { element: HTMLElement, tooltip: Tooltip } {
+  const element = document.createElement('span');
+  const tooltip = new Tooltip();
+  _addAppliedDirective(element, tooltip);
+  return { element, tooltip };
+}
+
+/**
+ * Creates an element named by the given element ref.
+ */
+function named(name: string): HTMLInputElement {
+  const element = document.createElement('input');
+  _setElementRef(element, name);
+  return element;
+}
+
+/**
+ * Applies the decorator the way the runtime does and returns the signal created by its initializer.
+ */
+function init<Value>(decorator: AccessorDecorator<CustomElement, QuerySignal<Value>>, element: CustomElement): QuerySignal<Value> {
+  const decorated = decorator({} as never, {} as never);
+  return decorated!.init!.call(element, undefined as never) as QuerySignal<Value>;
+}
+
+describe('query', () => {
+  it('is null before any change of the Shadow DOM', () => {
+    expect(query(create(), '[item]')()).toBeNull();
+  });
+
+  it('holds the first element having the attribute', async () => {
+    const element = create();
+    const signal = query(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+
+    element.shadowRoot!.append(document.createElement('span'), first, item());
+    await flush();
+
+    expect(signal()).toBe(first);
+  });
+
+  it('goes back to null when the element is removed', async () => {
+    const element = create();
+    const signal = query(element, '[item]');
+    document.body.appendChild(element);
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    target.remove();
+    await flush();
+
+    expect(signal()).toBeNull();
+  });
+
+  it('does not notify when the element did not change', async () => {
+    const element = create();
+    const signal = query(element, '[item]');
+    document.body.appendChild(element);
+    element.shadowRoot!.append(item());
+    await flush();
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    element.shadowRoot!.append(document.createElement('span'));
+    await flush();
+
+    expect(spy).not.toHaveBeenCalled();
+    dispose();
+  });
+
+  it('holds the first element with the tag name when the target is a tag name', async () => {
+    const element = create();
+    const signal = query(element, 'section');
+    document.body.appendChild(element);
+    const target = document.createElement('section');
+
+    element.shadowRoot!.append(document.createElement('span'), target, document.createElement('section'));
+    await flush();
+
+    expect(signal()).toBe(target);
+  });
+
+  it('holds the first element matching a compound CSS selector', async () => {
+    const element = create();
+    const signal = query(element, 'ul > li.active');
+    document.body.appendChild(element);
+    const list = document.createElement('ul');
+    const inactive = document.createElement('li');
+    const active = document.createElement('li');
+    active.className = 'active';
+    list.append(inactive, active);
+
+    element.shadowRoot!.append(list);
+    await flush();
+
+    expect(signal()).toBe(active);
+  });
+
+  it('holds the first instance of the component when the target is a class', async () => {
+    const element = create();
+    const { klass, selector } = defineComponent();
+    const signal = query(element, klass);
+    document.body.appendChild(element);
+    const first = document.createElement(selector);
+
+    element.shadowRoot!.append(document.createElement('span'), first, document.createElement(selector));
+    await flush();
+
+    expect(signal()).toBe(first);
+    expect(first).toBeInstanceOf(klass);
+  });
+
+  it('ignores the elements of other components when the target is a class', async () => {
+    const element = create();
+    const { klass } = defineComponent();
+    const other = defineComponent();
+    const signal = query(element, klass);
+    document.body.appendChild(element);
+
+    element.shadowRoot!.append(document.createElement(other.selector));
+    await flush();
+
+    expect(signal()).toBeNull();
+  });
+
+  it('throws when the class is not a registered web component', () => {
+    class Plain extends CustomElement { }
+
+    expect(() => query(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
+  });
+
+  it('holds the first instance of the directive when the target is a directive', async () => {
+    const element = create();
+    const signal = query(element, Tooltip);
+    document.body.appendChild(element);
+    const first = withTooltip();
+
+    element.shadowRoot!.append(item(), first.element, withTooltip().element);
+    await flush();
+
+    expect(signal()).toBe(first.tooltip);
+  });
+});
+
+describe('queryRef', () => {
+  it('holds the first element named by the ref, null when there is none', async () => {
+    const element = create();
+    const signal = queryRef<HTMLInputElement>(element, 'field');
+    document.body.appendChild(element);
+    expect(signal()).toBeNull();
+    const field = named('field');
+
+    element.shadowRoot!.append(named('other'), field, named('field'));
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('throws when required and no element is named by the ref', async () => {
+    const element = create();
+    const signal = queryRefRequired(element, 'field');
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element is named by the required ref '#field' of <${element.localName}>`);
+
+    const field = named('field');
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('holds all the elements named by the ref, in document order', async () => {
+    const element = create();
+    const signal = queryRefAll(element, 'note');
+    document.body.appendChild(element);
+    const [first, second] = [named('note'), named('note')];
+
+    element.shadowRoot!.append(first, named('other'), second);
+    await flush();
+
+    expect(signal()).toEqual([first, second]);
+  });
+});
+
+describe('queryRequired', () => {
+  it('throws when read before the element is connected', () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+    expect(() => signal.get()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+  });
+
+  it('holds the first element having the attribute', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+
+    element.shadowRoot!.append(document.createElement('span'), first, item());
+    await flush();
+
+    expect(signal()).toBe(first);
+    expect(signal.get()).toBe(first);
+  });
+
+  it('throws again when the element is removed', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    target.remove();
+    await flush();
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+  });
+
+  it('notifies when the element appears', async () => {
+    const element = create();
+    const signal = queryRequired(element, '[item]');
+    document.body.appendChild(element);
+    const spy = vi.fn();
+    const dispose = effect(() => {
+      try {
+        spy(signal());
+      } catch {
+        spy(null);
+      }
+    });
+    spy.mockClear();
+
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    expect(spy).toHaveBeenCalledExactlyOnceWith(target);
+    dispose();
+  });
+
+  it('names the class of the directive in the error when the target is a directive', () => {
+    const element = create();
+    const signal = queryRequired(element, Tooltip);
+
+    expect(() => signal()).toThrow(`No element matches the required query 'Tooltip' of <${element.localName}>`);
+  });
+
+  it('names the selector of the component in the error when the target is a class', () => {
+    const element = create();
+    const { klass, selector } = defineComponent();
+
+    expect(() => queryRequired(element, klass)()).toThrow(`No element matches the required query '${selector}' of <${element.localName}>`);
+  });
+
+  it('throws when the class is not a registered web component', () => {
+    class Plain extends CustomElement { }
+
+    expect(() => queryRequired(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
+  });
+});
+
+describe('queryAll', () => {
+  it('is empty before any change of the Shadow DOM', () => {
+    expect(queryAll(create(), '[item]')()).toEqual([]);
+  });
+
+  it('holds all the elements having the attribute, in document order', async () => {
+    const element = create();
+    const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+    const second = item();
+    const nested = item();
+    const wrapper = document.createElement('section');
+    wrapper.append(nested);
+
+    element.shadowRoot!.append(first, document.createElement('span'), wrapper, second);
+    await flush();
+
+    expect(signal()).toEqual([first, nested, second]);
+  });
+
+  it('updates when an element is removed', async () => {
+    const element = create();
+    const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+    const second = item();
+    element.shadowRoot!.append(first, second);
+    await flush();
+
+    first.remove();
+    await flush();
+
+    expect(signal()).toEqual([second]);
+  });
+
+  it('notifies when the set of elements changes', async () => {
+    const element = create();
+    const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    element.shadowRoot!.append(item());
+    await flush();
+
+    expect(spy).toHaveBeenCalledOnce();
+    dispose();
+  });
+
+  it('notifies when the elements change but their count does not', async () => {
+    const element = create();
+    const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
+    const first = item();
+    element.shadowRoot!.append(first);
+    await flush();
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    first.remove();
+    element.shadowRoot!.append(item());
+    await flush();
+
+    expect(spy).toHaveBeenCalledOnce();
+    dispose();
+  });
+
+  it('does not notify when the elements did not change', async () => {
+    const element = create();
+    const signal = queryAll(element, '[item]');
+    document.body.appendChild(element);
+    element.shadowRoot!.append(item());
+    await flush();
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    element.shadowRoot!.append(document.createElement('span'));
+    await flush();
+
+    expect(spy).not.toHaveBeenCalled();
+    dispose();
+  });
+
+  it('holds all the elements with the tag name or class when the target is a CSS selector', async () => {
+    const element = create();
+    const tags = queryAll(element, 'section');
+    const classes = queryAll(element, '.card');
+    document.body.appendChild(element);
+    const first = document.createElement('section');
+    const second = document.createElement('div');
+    second.className = 'card';
+
+    element.shadowRoot!.append(first, second);
+    await flush();
+
+    expect(tags()).toEqual([first]);
+    expect(classes()).toEqual([second]);
+  });
+
+  it('holds all the instances of the directive when the target is a directive, in the order of their elements', async () => {
+    const element = create();
+    const signal = queryAll(element, Tooltip);
+    document.body.appendChild(element);
+    const [first, second] = [withTooltip(), withTooltip()];
+
+    element.shadowRoot!.append(first.element, item(), second.element);
+    await flush();
+
+    expect(signal()).toEqual([first.tooltip, second.tooltip]);
+  });
+
+  it('holds all the instances of the component when the target is a class', async () => {
+    const element = create();
+    const { klass, selector } = defineComponent();
+    const other = defineComponent();
+    const signal = queryAll(element, klass);
+    document.body.appendChild(element);
+    const first = document.createElement(selector);
+    const second = document.createElement(selector);
+
+    element.shadowRoot!.append(first, document.createElement(other.selector), second);
+    await flush();
+
+    expect(signal()).toEqual([first, second]);
+  });
+
+  it('throws when the class is not a registered web component', () => {
+    class Plain extends CustomElement { }
+
+    expect(() => queryAll(create(), Plain)).toThrow('Plain does not seem to be decorated with @WebComponent');
+  });
+});
+
+describe('Query decorator', () => {
+  it('creates a signal holding the first element having the attribute', async () => {
+    const element = create();
+    const signal = init(Query('[item]'), element);
+    document.body.appendChild(element);
+    expect(signal()).toBeNull();
+
+    const target = item();
+    element.shadowRoot!.append(target, item());
+    await flush();
+
+    expect(signal()).toBe(target);
+  });
+
+  it('creates a signal holding the first instance of the component', async () => {
+    const element = create();
+    const { klass, selector } = defineComponent();
+    const signal = init(Query(klass), element);
+    document.body.appendChild(element);
+
+    const target = document.createElement(selector);
+    element.shadowRoot!.append(target);
+    await flush();
+
+    expect(signal()).toBe(target);
+  });
+
+  describe('required', () => {
+    it('creates a signal holding the first element having the attribute, throwing when there is none', async () => {
+      const element = create();
+      const signal = init(Query.required('[item]'), element);
+      document.body.appendChild(element);
+      expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
+
+      const target = item();
+      element.shadowRoot!.append(target, item());
+      await flush();
+
+      expect(signal()).toBe(target);
+    });
+
+    it('creates a signal holding the first instance of the component', async () => {
+      const element = create();
+      const { klass, selector } = defineComponent();
+      const signal = init(Query.required(klass), element);
+      document.body.appendChild(element);
+
+      const target = document.createElement(selector);
+      element.shadowRoot!.append(target);
+      await flush();
+
+      expect(signal()).toBe(target);
+    });
+  });
+
+  describe('all', () => {
+    it('creates a signal holding all the elements having the attribute', async () => {
+      const element = create();
+      const signal = init(Query.all('[item]'), element);
+      document.body.appendChild(element);
+      expect(signal()).toEqual([]);
+
+      const first = item();
+      const second = item();
+      element.shadowRoot!.append(first, second);
+      await flush();
+
+      expect(signal()).toEqual([first, second]);
+    });
+
+    it('creates a signal holding all the instances of the component', async () => {
+      const element = create();
+      const { klass, selector } = defineComponent();
+      const signal = init(Query.all(klass), element);
+      document.body.appendChild(element);
+
+      const first = document.createElement(selector);
+      const second = document.createElement(selector);
+      element.shadowRoot!.append(first, second);
+      await flush();
+
+      expect(signal()).toEqual([first, second]);
+    });
+  });
+});
+
+/**
+ * Creates an element, not yet connected to the document, whose render adds a default slot and a slot named `a`
+ * to its Shadow DOM, with the given children in its light DOM.
+ */
+function withSlots(...children: Element[]): CustomElement {
+  const klass = class extends CustomElement { };
+  _defineRender(klass, function (this: CustomElement) {
+    const named = document.createElement('slot');
+    named.name = 'a';
+    this.shadowRoot!.append(document.createElement('slot'), named);
+    return new _Context({} as never);
+  });
+  const name = `x-query-decorator-${counter++}`;
+  customElements.define(name, klass);
+  const element = document.createElement(name) as CustomElement;
+  element.append(...children);
+  return element;
+}
+
+describe('querySlot', () => {
+  it('holds the first projected element matching the target', () => {
+    const { klass, selector } = defineComponent();
+    const first = document.createElement(selector);
+    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
+    const signal = querySlot(element, klass);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(first);
+  });
+
+  it('is null when no projected element matches the target', () => {
+    const element = withSlots(document.createElement('span'));
+    const signal = querySlot(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBeNull();
+  });
+
+  it('applies the given options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = querySlot(element, '[item]', { slots: 'a' });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+});
+
+describe('querySlotRequired', () => {
+  it('holds the first projected element matching the target', () => {
+    const { klass, selector } = defineComponent();
+    const first = document.createElement(selector);
+    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
+    const signal = querySlotRequired(element, klass);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(first);
+    expect(signal.get()).toBe(first);
+  });
+
+  it('throws when read before the element is connected', () => {
+    const element = withSlots(item());
+    const signal = querySlotRequired(element, '[item]');
+
+    expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+  });
+
+  it('throws when no projected element matches the target', () => {
+    const element = withSlots(document.createElement('span'));
+    const signal = querySlotRequired(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+  });
+
+  it('applies the given options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = querySlotRequired(element, '[item]', { slots: 'a' });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+});
+
+describe('querySlotAll', () => {
+  it('holds all the projected elements matching the target', () => {
+    const [first, second] = [item(), item()];
+    const element = withSlots(first, document.createElement('span'), second);
+    const signal = querySlotAll(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(signal()).toEqual([first, second]);
+  });
+
+  it('applies the given options', () => {
+    const unassigned = item();
+    unassigned.slot = 'b';
+    const element = withSlots(item(), unassigned);
+    const signal = querySlotAll(element, '[item]', { lightDom: true });
+
+    document.body.appendChild(element);
+
+    expect(signal()).toEqual([element.firstElementChild, unassigned]);
+  });
+
+  it('does not notify when the elements did not change', async () => {
+    const element = withSlots(item());
+    const signal = querySlotAll(element, '[item]');
+    document.body.appendChild(element);
+    const spy = vi.fn();
+    const dispose = effect(() => spy(signal()));
+    spy.mockClear();
+
+    element.append(document.createElement('span'));
+    await flush();
+
+    expect(spy).not.toHaveBeenCalled();
+    dispose();
+  });
+});
+
+describe('Query.ref decorator', () => {
+  it('creates a signal holding the first element named by the ref', async () => {
+    const element = create();
+    const signal = init(Query.ref('field'), element);
+    document.body.appendChild(element);
+    const field = named('field');
+
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(field);
+  });
+
+  it('creates a signal holding the element named by the ref, throwing when there is none', () => {
+    const element = create();
+    const signal = init(Query.ref.required('field'), element);
+
+    expect(() => signal()).toThrow('No element is named by the required ref \'#field\'');
+  });
+
+  it('creates a signal holding all the elements named by the ref', async () => {
+    const element = create();
+    const signal = init(Query.ref.all('note'), element);
+    document.body.appendChild(element);
+    const [first, second] = [named('note'), named('note')];
+
+    element.shadowRoot!.append(first, second);
+    await flush();
+
+    expect(signal()).toEqual([first, second]);
+  });
+});
+
+describe('read option', () => {
+  /**
+   * A custom directive the queries read from the elements.
+   */
+  class Mark extends CustomDirective { }
+
+  it('holds the directive applied to the first element the selector finds that has it', async () => {
+    const element = create();
+    const signal = init(Query('[item]', { read: Mark }), element);
+    document.body.appendChild(element);
+    const marked = item();
+    const mark = new Mark();
+    _addAppliedDirective(marked, mark);
+
+    element.shadowRoot!.append(item(), marked);
+    await flush();
+
+    expect(signal()).toBe(mark);
+  });
+
+  it('holds the element a directive is applied to', async () => {
+    const element = create();
+    const signal = init(Query(Tooltip, { read: 'element' }), element);
+    document.body.appendChild(element);
+    const { element: withIt } = withTooltip();
+
+    element.shadowRoot!.append(item(), withIt);
+    await flush();
+
+    expect(signal()).toBe(withIt);
+  });
+
+  it('names what is read in the error of a required query', () => {
+    const element = create();
+    const signal = init(Query.required('[item]', { read: Mark }), element);
+
+    expect(() => signal()).toThrow(`No element matches the required query '[item], read: Mark' of <${element.localName}>`);
+  });
+
+  it('holds the directive applied to the element named by a ref, throwing when required and there is none', async () => {
+    const element = create();
+    const signal = init(Query.ref('field', { read: Tooltip }), element);
+    const required = init(Query.ref.required('field', { read: Tooltip }), element);
+    document.body.appendChild(element);
+    expect(() => required()).toThrow(`No element is named by the required ref '#field, read: Tooltip' of <${element.localName}>`);
+    const field = named('field');
+    const tooltip = new Tooltip();
+    _addAppliedDirective(field, tooltip);
+
+    element.shadowRoot!.append(field);
+    await flush();
+
+    expect(signal()).toBe(tooltip);
+    expect(required()).toBe(tooltip);
+  });
+
+  it('holds the directive applied to the first projected element, among the options of the slots', () => {
+    const { element: projected, tooltip } = withTooltip();
+    projected.slot = 'a';
+    const element = withSlots(withTooltip().element, projected);
+    const signal = init(Query.content('span', { slots: 'a', read: Tooltip }), element);
+    const required = init(Query.content.required(Tooltip, { slots: 'a', read: 'element' }), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(tooltip);
+    expect(required()).toBe(projected);
+  });
+});
+
+describe('Query.content decorator', () => {
+  it('creates a signal holding the instances of a directive applied to the projected elements', () => {
+    const [first, second] = [withTooltip(), withTooltip()];
+    const wrapper = document.createElement('div');
+    wrapper.append(second.element);
+    const element = withSlots(first.element, wrapper);
+    const firstSignal = init(Query.content(Tooltip), element);
+    const allSignal = init(Query.content.all(Tooltip), element);
+
+    document.body.appendChild(element);
+
+    expect(firstSignal()).toBe(first.tooltip);
+    expect(allSignal()).toEqual([first.tooltip, second.tooltip]);
+  });
+
+  it('names the class of the directive in the error of a required content query', () => {
+    const element = withSlots();
+    const signal = init(Query.content.required(Tooltip), element);
+    document.body.appendChild(element);
+
+    expect(() => signal()).toThrow(`No element matches the required content query 'Tooltip' of <${element.localName}>`);
+  });
+
+  it('creates a signal holding the first projected element matching the target', () => {
+    const target = item();
+    const element = withSlots(target, item());
+    const signal = init(Query.content('[item]'), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(target);
+  });
+
+  it('forwards the options', () => {
+    const inA = item();
+    inA.slot = 'a';
+    const element = withSlots(item(), inA);
+    const signal = init(Query.content('[item]', { slots: 'a' }), element);
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(inA);
+  });
+
+  describe('required', () => {
+    it('creates a signal holding the first projected element matching the target', () => {
+      const target = item();
+      const element = withSlots(target, item());
+      const signal = init(Query.content.required('[item]'), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toBe(target);
+    });
+
+    it('forwards the options, throwing when no element matches', () => {
+      const element = withSlots(item());
+      const signal = init(Query.content.required('[item]', { slots: 'a' }), element);
+
+      document.body.appendChild(element);
+
+      expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
+    });
+  });
+
+  describe('all', () => {
+    it('creates a signal holding all the projected elements matching the target', () => {
+      const [first, second] = [item(), item()];
+      const element = withSlots(first, second);
+      const signal = init(Query.content.all('[item]'), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toEqual([first, second]);
+    });
+
+    it('forwards the options', () => {
+      const inA = item();
+      inA.slot = 'a';
+      const element = withSlots(item(), inA);
+      const signal = init(Query.content.all('[item]', { slots: 'a' }), element);
+
+      document.body.appendChild(element);
+
+      expect(signal()).toEqual([inA]);
+    });
+  });
+});

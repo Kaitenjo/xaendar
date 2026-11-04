@@ -1,0 +1,12 @@
+<label>
+  <input type="checkbox" (change)="toggleHighlighted()" />
+  highlighted
+</label>
+<label>
+  <input type="checkbox" (change)="toggleCompact()" />
+  compact
+</label>
+<button type="button" (click)="switchTone()">tone: { tone() }</button>
+<p class="{`card ${tone()}`}" [class.highlighted]="{highlighted()}" [class.compact]="{compact()}">
+  Ticket #42
+</p>

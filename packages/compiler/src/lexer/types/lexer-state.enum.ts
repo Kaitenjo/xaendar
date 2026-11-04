@@ -1,0 +1,116 @@
+/**
+ * Represents the set of states the lexer can be in while processing template input.
+ */
+export enum LexerState {
+  /**
+   * Consuming plain text content between tags or at the top level.
+   */
+  TEXT = 'text',
+  /**
+   * Consuming the opening tag name after `<`.
+   */
+  TAG_OPEN_NAME = 'tag-open-name',
+  /**
+   * Inside an open tag body, scanning for attributes, events, or the closing `>`.
+   */
+  TAG_BODY  = 'tag-body',
+  /**
+   * Processing the end of an open tag: `>` or `/>`.
+   */
+  TAG_OPEN_END = 'tag-open-end',
+  /**
+   * Consuming a closing tag `</tagName>`.
+   */
+  TAG_CLOSE = 'tag-close',
+  /**
+   * Consuming an HTML attribute name and its optional value.
+   */
+  ATTRIBUTE = 'attribute',
+  /**
+   * Consuming a DOM event binding starting with `(`.
+   */
+  EVENT = 'event',
+  /**
+   * Consuming the handler name of a DOM event binding after `=`.
+   */
+  EVENT_HANDLER = 'event-handler',
+  /**
+   * Consuming a DOM event parameter
+   */
+  EVENT_PARAMETER = 'parameter',
+  /**
+   * Dispatching a flow-control keyword (@if, @for, @switch, etc.), declared either
+   * in the template content or, as a conditional binding, among the bindings of a tag.
+   */
+  FLOW_CONTROL = 'flow-control',
+  /**
+   * Consuming the condition expression `(...)` of a flow-control directive.
+   */
+  FLOW_CONTROL_CONDITION = 'flow-control-condition',
+  /**
+   * Consuming the condition expression `(...)` of a @case directive.
+   * This is needed to correctly handle special consecutives @case 
+   */
+  CASE_FLOW_CONTROL_CONDITION = 'case-flow-control-condition',
+  /**
+   * Consuming the opening `{` of a flow-control block body.
+   */
+  FLOW_CONTROL_BLOCK = 'flow-control-block',
+  /**
+   * Consuming an attribute literal value
+   */
+  ATTRIBUTE_VALUE = 'attribute-value',
+  /**
+   * Opening an interpolation after `{`.
+   */
+  INTERPOLATION = 'interpolation',
+  /**
+   * Consuming a JavaScript expression inside `{ }`.
+   */
+  INTERPOLATION_EXPRESSION = 'interpolation-expression',
+  /**
+   * Consuming an import statement `@import { X, Y, ... }
+   */
+  IMPORT = 'import',
+  /**
+   * Consuming the path of an import statement after `@import`.
+   */
+  IMPORT_PATH = 'import-path',
+  /**
+   * Consuming the bindings declared in a block of a conditional binding, between `{` and `}`,
+   * e.g. `title="x"` in `<div @if (condition) { title="x" } />`.
+   */
+  CONDITIONAL_BINDING_BODY = 'conditional-binding-body',
+  /**
+   * Consuming a directive starting with `@@`.
+   */
+  DIRECTIVE = 'directive',
+  /**
+   * Consuming the bindings of a directive declared between `@@selector(` and `)`.
+   */
+  DIRECTIVE_BODY = 'directive-body',
+  /**
+   * Consuming a structural directive starting with `*`. Its bindings, declared between `*selector(` and `)`,
+   * are consumed by the DIRECTIVE_BODY state.
+   */
+  STRUCTURAL_DIRECTIVE = 'structural-directive',
+  /**
+   * Consuming an element ref starting with `#`.
+   */
+  ELEMENT_REF = 'element-ref',
+  /**
+   * Consuming the declaration of a template on a `<template>`, its name and its parameters, e.g. `row(item: Item)` in
+   * `<template row(item: Item)>`.
+   */
+  TEMPLATE_DECLARATION = 'template-declaration',
+  /**
+   * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item())` in
+   * `@render row(item())`.
+   */
+  RENDER = 'render',
+  /**
+   * Consuming the declaration after `@let`: its name and its value up to the `;` ending it, e.g.
+   * `total = price() * quantity();` in `@let total = price() * quantity();`.
+   */
+  LET = 'let'
+}

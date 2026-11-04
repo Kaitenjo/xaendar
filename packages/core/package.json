@@ -1,0 +1,16 @@
+{
+  "name": "@xaendar/core",
+  "version": "1.1.2",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "description": "A library containing core utils such as webcomponent base classes and theming support",
+  "xaendar": {
+    "target": "browser"
+  },
+  "dependencies": {
+    "@xaendar/common": "1.1.2",
+    "@xaendar/signals": "1.1.2",
+    "@xaendar/types": "1.1.2"
+  }
+}

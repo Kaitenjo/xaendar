@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build-projects": "node dist/build-projects.js",
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "build:watch:extension": "node dist/build-extension.js",
+    "build-claude-plugin": "node dist/build-claude-plugin.js",
+    "check-dependencies": "node dist/check-dependencies.js",
+    "pack": "node dist/pack-projects.js",
+    "publish": "node dist/publish.js",
+    "publish-extension": "node dist/publish-extension.js",
+    "typecheck-projects": "node dist/typecheck-projects.js",
+    "update-version": "node dist/update-version.js --bump=patch"
+  }
+}

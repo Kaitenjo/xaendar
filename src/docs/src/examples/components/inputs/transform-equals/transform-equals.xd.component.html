@@ -1,0 +1,12 @@
+@import { TagListComponent } from './tag-list.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="sendSame()">Send the same tags</ex-button>
+  <ex-button (click)="sendOther()">Send other tags</ex-button>
+</div>
+<p>
+  Bound:
+  <code>{ rawText() }</code>
+</p>
+<ex-tag-list tags="{raw()}" />

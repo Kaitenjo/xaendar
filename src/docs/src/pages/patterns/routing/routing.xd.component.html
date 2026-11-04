@@ -1,0 +1,95 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { MiniRouterComponent } from '../../../examples/patterns/routing/mini-router/mini-router.xd.component.ts'
+@import { HASH_ROUTER } from './routing.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.patterns.routing.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.patterns.routing.title') }
+</h1>
+<p @@htmlTranslation(key="pages.patterns.routing.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.patterns.routing.aRouterInA.title') }
+</h2>
+<docs-example name="patterns/routing/mini-router" heading="{translations().pages.patterns.routing.aRouterInA.example1}">
+  <ex-mini-router />
+</docs-example>
+<p @@htmlTranslation(key="pages.patterns.routing.aRouterInA.p1") />
+<p @@htmlTranslation(key="pages.patterns.routing.aRouterInA.p2") />
+<p>
+  { t(translations(), 'pages.patterns.routing.aRouterInA.p3') }
+</p>
+
+<h2>
+  { t(translations(), 'pages.patterns.routing.readingTheUrl.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.patterns.routing.readingTheUrl.p1') }
+</p>
+<docs-code snippet="{HASH_ROUTER}" />
+<p @@htmlTranslation(key="pages.patterns.routing.readingTheUrl.p2") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.patterns.routing.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.patterns.routing.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.patterns.routing.edgeCases.callout1.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.patterns.routing.edgeCases.callout2.body") kind="tip"
+    heading="{translations().pages.patterns.routing.edgeCases.callout2.heading}" />
+</section>
+
+<h2>
+  { t(translations(), 'pages.patterns.routing.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.patterns.routing.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.patterns.routing.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.routing.summary.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.routing.summary.td2") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.routing.summary.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.routing.summary.td4") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.routing.summary.td5') }
+        </td>
+        <td>
+          <code>{ '@switch (route().name)' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.routing.summary.td6') }
+        </td>
+        <td>
+          { t(translations(), 'pages.patterns.routing.summary.td7') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

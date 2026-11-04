@@ -1,0 +1,77 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--xd-sidenav-width) minmax(0, 1fr);
+}
+
+.nav {
+  position: sticky;
+  top: var(--xd-topbar-height);
+  height: calc(100vh - var(--xd-topbar-height));
+  border-right: 1px solid var(--xd-border);
+  background: var(--xd-bg-soft);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.main {
+  min-width: 0;
+}
+
+.content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2.5rem 2.5rem 4rem;
+}
+
+.scrim {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav {
+    position: fixed;
+    left: 0;
+    z-index: 25;
+    width: min(var(--xd-sidenav-width), 85vw);
+    box-shadow: var(--xd-shadow);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+  }
+
+  .nav--open {
+    transform: none;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: var(--xd-topbar-height) 0 0;
+    z-index: 20;
+    background: rgba(10, 12, 20, 0.45);
+  }
+
+  .content {
+    padding: 1.75rem 1rem 3rem;
+  }
+}

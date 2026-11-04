@@ -1,0 +1,113 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { EventArgumentsComponent } from '../../../examples/templates/events/event-arguments/event-arguments.xd.component.ts'
+@import { KeyFilterComponent } from '../../../examples/templates/events/key-filter/key-filter.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.events.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.events.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.events.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.templates.events.callingAMethod.title') }
+</h2>
+<docs-code snippet="templates/event-forms.html" />
+<docs-example name="templates/events/event-arguments"
+  heading="{translations().pages.templates.events.callingAMethod.example1}">
+  <ex-event-arguments />
+</docs-example>
+<p>
+  { t(translations(), 'pages.templates.events.callingAMethod.p1') }
+</p>
+<ul>
+  <li @@htmlTranslation(key="pages.templates.events.callingAMethod.li1") />
+  <li @@htmlTranslation(key="pages.templates.events.callingAMethod.li2") />
+  <li @@htmlTranslation(key="pages.templates.events.callingAMethod.li3") />
+  <li @@htmlTranslation(key="pages.templates.events.callingAMethod.li5") />
+  <li @@htmlTranslation(key="pages.templates.events.callingAMethod.li4") />
+</ul>
+<p @@htmlTranslation(key="pages.templates.events.callingAMethod.p2") />
+
+<h2>
+  { t(translations(), 'pages.templates.events.whatAHandlerCannot.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.templates.events.whatAHandlerCannot.p1') }
+</p>
+<docs-code snippet="templates/event-argument-errors.txt" />
+<p>
+  { t(translations(), 'pages.templates.events.whatAHandlerCannot.p2') }
+</p>
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.templates.events.edgeCases.title') }
+  </h2>
+  <docs-example name="templates/events/key-filter" heading="{translations().pages.templates.events.edgeCases.example1}"
+    kind="edge">
+    <ex-key-filter />
+  </docs-example>
+  <p @@htmlTranslation(key="pages.templates.events.edgeCases.p1") />
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.templates.events.edgeCases.callout2.body")
+      heading="{translations().pages.templates.events.edgeCases.callout2.heading}" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.templates.events.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.templates.events.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.events.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>(event)="method()"</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.events.summary.td1') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>(event)="method($event, $event.key)"</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.events.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>(event)="method('a', item.id, aSignal, count() + 1, format(name()))"</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.events.summary.td3') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@if (condition) { (event)="method()" }' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.events.summary.td4") />
+      </tr>
+    </tbody>
+  </table>
+</div>

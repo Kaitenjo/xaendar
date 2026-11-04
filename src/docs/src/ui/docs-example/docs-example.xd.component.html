@@ -1,0 +1,34 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../docs-code/docs-code.xd.component.ts'
+
+<figure class="example" [class.example--edge]="{kind() === 'edge'}">
+  <figcaption class="head">
+    @if (kind() === 'edge') {
+      <span class="badge">{ translations().example.edge }</span>
+    }
+    <span class="heading">{ heading() }</span>
+    <button class="toggle" type="button" (click)="toggleCode()">
+      @if (open()) {
+        { translations().example.hideCode }
+      } @else {
+        { translations().example.showCode }
+      }
+    </button>
+  </figcaption>
+  <div class="stage">
+    <slot />
+  </div>
+  @if (open()) {
+    <div class="source">
+      <div class="tabs" role="tablist" aria-label="{translations().example.files}">
+        @for (file of files(); track file().name) {
+          <button class="tab" [class.tab--active]="{file().name === current().name}" type="button" role="tab"
+            (click)="select(file().name)">
+            { file().name }
+          </button>
+        }
+      </div>
+      <docs-code code="{current().code}" lang="{current().lang}" bare="{true}" />
+    </div>
+  }
+</figure>
