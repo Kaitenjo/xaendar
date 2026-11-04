@@ -1,0 +1,27 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from './transfer-state.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.transferState.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.transferState.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.transferState.lead") class="lead" />
+<p @@htmlTranslation(key="pages.tools.ssr.transferState.p2") />
+<docs-code snippet="{TRANSFER_STATE_ENTRY}" />
+<p @@htmlTranslation(key="pages.tools.ssr.transferState.p3") />
+<docs-code snippet="{TRANSFER_STATE_COMPONENT}" />
+<p @@htmlTranslation(key="pages.tools.ssr.transferState.p4") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.ssr.transferState.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.transferState.edgeCases.callout1.body") kind="note"
+    heading="{translations().pages.tools.ssr.transferState.edgeCases.callout1.heading}" />
+</section>

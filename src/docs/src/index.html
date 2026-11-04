@@ -1,12 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Xaendar: Web Components built declaratively, with fine-grained, compile-time reactivity." />
     <title>Xaendar — Docs</title>
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <script type="module" href="./theme.ts"></script>
+    <script>
+      // Before the first paint, and blocking it: the dark theme of the HTML, as the server renders it, or the one the
+      // reader chose. A module script would run after the page is shown.
+      try {
+        if (localStorage.getItem('xaendar-docs-theme') === 'light') {
+          document.documentElement.dataset.theme = 'light';
+        }
+      } catch {
+        // Storage blocked: the dark theme stays
+      }
+    </script>
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./main.ts"></script>
   </head>

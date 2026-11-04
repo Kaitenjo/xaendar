@@ -8,7 +8,8 @@ import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from '../../../components/output
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
-import { HYDRATE_COMPONENT, TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/ssr.snippets';
+import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
+import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
 import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_EVENT, HOST_PROPERTY, HOST_PROPERTY_VALUES, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
@@ -58,7 +59,7 @@ export const CORE_API: ApiPackage = {
         { key: 'literals', snippets: [NON_LITERAL_OPTIONS, 'components/non-literal-options-error.txt'] },
         { key: 'registration', snippets: ['components/duplicate-selector-error.txt'] }
       ],
-      guides: ['components/anatomy', 'components/registration', 'components/styling', 'directives/custom', 'tools/ssr']
+      guides: ['components/anatomy', 'components/registration', 'components/styling', 'directives/custom', 'tools/ssr/overview', 'tools/ssr/progressive-hydration', 'tools/ssr/client-only']
     },
     {
       name: 'Directive',
@@ -500,7 +501,7 @@ export const CORE_API: ApiPackage = {
           signature: 'static?: false'
         }
       ],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/progressive-hydration', 'tools/ssr/client-only', 'tools/ssr/static-components']
     },
     {
       name: 'DirectiveOptions',
@@ -651,7 +652,7 @@ export const CORE_API: ApiPackage = {
         { key: 'reading', snippets: [TRANSFER_STATE_COMPONENT] },
         { key: 'giving', snippets: [TRANSFER_STATE_ENTRY] }
       ],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/transfer-state']
     }
   ]
 };

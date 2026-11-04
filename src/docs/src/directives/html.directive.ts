@@ -23,10 +23,21 @@ export class HtmlDirective extends CustomDirective<HTMLElement> {
 
   /**
    * Starts rendering the text: the properties already hold their bound values here.
+   * On the server, where the effects do not run, the text is written once, into the HTML of the page; in the browser the
+   * effect writes it, and again at each change.
    */
   public onInit(): void {
-    this.effect(() => {
-      this.element.innerHTML = this.content();
-    });
+    if (typeof window === 'undefined') {
+      this._render();
+    }
+
+    this.effect(() => this._render());
+  }
+
+  /**
+   * Writes the text into the element.
+   */
+  private _render(): void {
+    this.element.innerHTML = this.content();
   }
 }

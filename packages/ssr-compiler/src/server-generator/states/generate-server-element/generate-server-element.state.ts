@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, indent, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { ASTNodeType, CompilerContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { ASTNodeType, CompilerContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -13,16 +13,19 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
  * Generates the code writing an element: its start tag, its children and its end tag.
  *
  * A native element with only static and expression attributes, the most common case, is written as HTML, the values of
- * its expressions escaped when it is rendered. An element toggling classes or with conditional bindings writes its start
- * tag through `_ssrStartTag`, which applies the bindings as the client applies them, and a component through
+ * its expressions escaped when it is rendered. An element toggling classes, with conditional bindings or applying custom
+ * directives writes its start tag through `_ssrStartTag`, which applies the bindings and the directives as the client
+ * applies them, and a component through
  * `_ssrComponent`, which renders it, `_ssrIsland` for an interactive one a static template renders, or
  * `_ssrClientComponent` for one rendering only in the browser, whose class may not be there. The children of the element are written in the same function, since they are not
  * a scope of their own, except for the content of an element a structural directive is applied to: that element is
  * written by the function `_ssrStructural` calls when every structural directive allows it, and its content by a function
  * of its own, named like the one of the client.
  *
- * The events and the custom directives are left out: the server writes HTML, the client listens and applies them. The
- * names of the events are registered for the event contract of the page, and an element listening to `submit` is marked
+ * The events are left out: the server writes HTML, the client listens to them. The custom directives of a native
+ * element, its own and the ones of its conditional bindings, are applied by `_ssrStartTag` without their events: their
+ * `onInit` runs, their effects do not. The ones of a component are left out, the client applies them. The names of the
+ * events are registered for the event contract of the page, and an element listening to `submit` is marked
  * by an attribute, the one thing the contract has to know of an element: it must prevent the submission before the
  * runtime is there.
  * An element ref is `undefined` on the server, initialized when the render reaches the element, as on the client.
@@ -75,7 +78,10 @@ function writeElement(node: ElementNode, compilerContext: CompilerContext, child
   const { tagName, attributes, classBindings, ref } = node;
   const isHtml = getElementNamespace(tagName, compilerContext.namespace) === 'html';
   const isComponent = isValidCustomElementName(tagName, false) && !compilerContext.isForeignElement(tagName);
-  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, compilerContext, isEmptyBranch, (branch, condition) => mapBranch(branch, condition, compilerContext));
+  // Only a native element applies its custom directives on the server
+  const withDirectives = !isComponent;
+  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, compilerContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, withDirectives, compilerContext));
+  const directives = withDirectives ? mapDirectives(node.directives, compilerContext) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
     pieces.push({ statement: `context.set('${ref.name}', undefined);` });
@@ -83,7 +89,7 @@ function writeElement(node: ElementNode, compilerContext: CompilerContext, child
 
   registerEvents(node, compilerContext);
 
-  if (isComponent || classBindings.length || conditionalBindings.length) {
+  if (isComponent || classBindings.length || conditionalBindings.length || directives?.length) {
     const descriptors = mapAttributes(attributes, compilerContext);
     appendSubmitMark(descriptors, node);
     appendClassBindings(descriptors, classBindings, compilerContext);
@@ -91,6 +97,8 @@ function writeElement(node: ElementNode, compilerContext: CompilerContext, child
     const clientComponent = isComponent ? compilerContext.getClientComponent(tagName) : undefined;
     if (clientComponent) {
       args.push([toClientOptions(clientComponent, compilerContext)]);
+    } else if (directives?.length) {
+      args.push(toArrayLiteral(directives));
     }
 
     pieces.push({ statement: toCall(getStartTagWriter(tagName, isComponent, compilerContext), `out, context, '${tagName}'`, args) });
@@ -293,21 +301,26 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
 }
 
 /**
- * Maps a branch of a conditional binding to the descriptor of the attributes and of the classes it applies, and of its
- * nested conditional bindings.
+ * Maps a branch of a conditional binding to the descriptor of the attributes and of the classes it applies, of the
+ * custom directives it applies, if any and if the element applies them, and of its nested conditional bindings.
  *
  * @param branch - The branch node.
  * @param condition - The lines declaring the condition of the branch.
+ * @param withDirectives - Whether the element applies its custom directives on the server.
  * @param compilerContext - The compiler context of the branch.
  * @returns The lines of the descriptor.
  */
-function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext): string[] {
+function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], withDirectives: boolean, compilerContext: CompilerContext): string[] {
   const attributes = mapAttributes(branch.attributes, compilerContext);
   appendSubmitMark(attributes, branch);
   appendClassBindings(attributes, branch.classBindings, compilerContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, compilerContext, isEmptyBranch, (nested, nestedCondition) => mapBranch(nested, nestedCondition, compilerContext));
+  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, compilerContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, withDirectives, compilerContext));
+  const lines = condition.concat(toProperty('attributes', attributes, ','));
+  if (withDirectives && branch.directives.length) {
+    lines.push(...toProperty('directives', mapDirectives(branch.directives, compilerContext), ','));
+  }
 
-  return ['{', ...indent(condition.concat(toProperty('attributes', attributes, ','), toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
+  return ['{', ...indent(lines.concat(toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
 }
 
 /**
@@ -324,6 +337,24 @@ function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: st
   const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, compilerContext, nested => !appliesStructuralDirectives(nested), (nested, nestedCondition) => mapStructuralBranch(nested, nestedCondition, compilerContext));
 
   return ['{', ...indent(condition.concat(toProperty('structuralDirectives', structuralDirectives, ','), toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
+}
+
+/**
+ * Maps custom directive nodes to the descriptors `_ssrStartTag` applies: the selector and the properties. Their events
+ * and their conditional bindings are left out, as the events of the element: the server listens to nothing.
+ *
+ * @param directives - The custom directive nodes.
+ * @param compilerContext - The compiler context of the directives.
+ * @returns The lines of the descriptors, one per directive.
+ */
+function mapDirectives(directives: DirectiveNode[], compilerContext: CompilerContext): string[] {
+  const lines = new Array<string>();
+  for (let i = 0; i < directives.length; i++) {
+    const { selector, attributes } = directives[i];
+    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, compilerContext), ''))), '},');
+  }
+
+  return lines;
 }
 
 /**
@@ -344,15 +375,17 @@ function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[]
 }
 
 /**
- * Tells whether a branch of a conditional binding writes nothing on the server: no attribute, no class and no mark of
- * `submit`, neither directly nor through its nested conditional bindings. Its other events and its directives are left out.
+ * Tells whether a branch of a conditional binding writes nothing on the server: no attribute, no class, no mark of
+ * `submit` and no custom directive, when the element applies them, neither directly nor through its nested conditional
+ * bindings. Its other events are left out.
  *
  * @param branch - The branch node.
+ * @param withDirectives - Whether the element applies its custom directives on the server.
  * @returns `true` when the branch writes nothing.
  */
-function isEmptyBranch(branch: ConditionalBindingBranchNode): boolean {
-  const { attributes, classBindings, conditionalBindings } = branch;
-  return !attributes.length && !classBindings.length && !listensToSubmit(branch) && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
+function isEmptyBranch(branch: ConditionalBindingBranchNode, withDirectives: boolean): boolean {
+  const { attributes, classBindings, directives, conditionalBindings } = branch;
+  return !attributes.length && !classBindings.length && !listensToSubmit(branch) && !(withDirectives && directives.length) && conditionalBindings.every(({ branches }) => branches.every(nested => isEmptyBranch(nested, withDirectives)));
 }
 
 /**

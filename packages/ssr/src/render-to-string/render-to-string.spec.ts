@@ -12,7 +12,7 @@ const core = await import('@xaendar/core');
 const ssr = await import('@xaendar/ssr');
 const { signal } = await import('@xaendar/core/signals');
 const { compileServer } = await import('@xaendar/ssr-compiler');
-const { CustomElement, HostProperty, Property, StructuralDirective, _defineDirective, _getComponentRuntime, getTransferState } = core;
+const { CustomDirective, CustomElement, HostProperty, Property, StructuralDirective, _defineDirective, _getComponentRuntime, getTransferState } = core;
 const { _defineServerRender } = ssr;
 
 /**
@@ -182,6 +182,58 @@ describe('renderToString', () => {
       `<!--${markers.client}--><!--/${markers.client}-->`,
       `<!--${markers.client}--> f <!--/${markers.client}-->`
     ].join(''));
+  });
+
+  it('applies the custom directives of a native element, the ones of its selected branches included: onInit and @HostProperty run, the effects do not, the content assigned to innerHTML follows the start tag', async () => {
+    const directiveEffect = vi.fn();
+    const fillMetadata: DecoratorMetadataObject = {};
+    (HostProperty('class.filled') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'filled', static: false, metadata: fillMetadata, access: { get: (owner: { filled: boolean }) => owner.filled } });
+
+    /**
+     * A directive filling its element with the HTML of its input, on the server only.
+     */
+    class FillDirective extends CustomDirective {
+      public content = (Property('') as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'content', metadata: fillMetadata }).init.call(this);
+      public filled = true;
+
+      constructor() {
+        super();
+        this.effect(directiveEffect);
+      }
+
+      public onInit(): void {
+        if (typeof window === 'undefined') {
+          this.element.innerHTML = this.content();
+        }
+      }
+    }
+    Object.defineProperty(FillDirective, Symbol.for('Symbol.metadata'), { value: fillMetadata });
+    _defineDirective('fill', FillDirective);
+
+    /**
+     * A directive marking its element with an attribute.
+     */
+    class MarkDirective extends CustomDirective {
+      public onInit(): void {
+        this.element.setAttribute('data-mark', '');
+      }
+    }
+    _defineDirective('mark', MarkDirective);
+
+    /**
+     * A component applying the directives.
+     */
+    class FilledElement extends CustomElement {
+      public html = '<b>a &amp; b</b>';
+      public on = true;
+    }
+    customElements.define('filled-card', FilledElement);
+    _defineServerRender(FilledElement, await compile('<p @@fill(content="{ html }")></p><span @if (on) { @@mark }>x</span><i @if (!on) { @@mark }>y</i>'));
+
+    const html = await renderToString(FilledElement);
+
+    expect(html).toBe('<filled-card><template shadowrootmode="open"><p class="filled"><b>a &amp; b</b></p><span data-mark="">x</span><i>y</i></template></filled-card>');
+    expect(directiveEffect).not.toHaveBeenCalled();
   });
 
   describe('the interactive components a static template renders', () => {

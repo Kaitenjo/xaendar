@@ -222,7 +222,7 @@ An element rendered before the module defines it shows nothing until then: the b
 
 ## Server-side rendering
 
-A project created with `xd new --ssr`, or declaring `"ssr": { "entry": "src/entry-server" }` in `xaendar.json` (without extension), renders each page on the server as declarative shadow roots, which the browser shows before the scripts load; then each component hydrates: it adopts the nodes of the server instead of creating them, and binds its effects, listeners and directives to them.
+A project created with `xd new --ssr`, or declaring `"ssr": { "entry": "src/entry-server" }` in `xaendar.json` (without extension), renders each page on the server as declarative shadow roots, which the browser shows before the scripts load; then each component hydrates: it adopts the nodes of the server instead of creating them, and binds its effects, listeners and directives to them. On the server the effects never run, while the custom directives of a native element do up to `onInit` (properties, `onInit`, `@HostProperty`): a directive filling its element with `innerHTML` writes it in `onInit` only when `typeof window === 'undefined'`, so the server writes the content into the HTML, and keeps the assignment in its effect for the browser, where it runs once.
 
 ```ts
 // src/entry-server.ts

@@ -1,0 +1,21 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { HYDRATE_COMPONENT } from './progressive-hydration.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.lead") class="lead" />
+<docs-code snippet="{HYDRATE_COMPONENT}" />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p3") />
+<docs-code snippet="tools/ssr-hydrate.html" />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p4") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p5") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p6") />
+<docs-code snippet="tools/ssr-hydrate-never.html" />

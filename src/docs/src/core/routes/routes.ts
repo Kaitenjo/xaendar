@@ -212,7 +212,15 @@ export const NAV: readonly NavSection[] = [
     items: [
       link(page('tools/cli', 'xd new start build generate')),
       link(page('tools/build', 'vite plugin xaendarPlugin babel hmr')),
-      link(page('tools/ssr', 'server side rendering ssr declarative shadow dom renderToString loadServerDom prerender static site generation node staticComponents multi page')),
+      group('ssr', [
+        page('tools/ssr/overview', 'server side rendering ssr declarative shadow dom renderToString loadServerDom entry-server node'),
+        page('tools/ssr/transfer-state', 'transfer state getTransferState data-xd-state data-xd-inputs inputs json'),
+        page('tools/ssr/hydration', 'hydration adopt mismatch warning event contract replay content security policy nonce'),
+        page('tools/ssr/progressive-hydration', 'hydrate trigger idle visible interaction never when lazy deferred islands'),
+        page('tools/ssr/client-only', 'client placeholder render false browser only window'),
+        page('tools/ssr/static-components', 'static staticComponents bundle multi page static-report islands'),
+        page('tools/ssr/deployment', 'build production prerender static site generation serve vite dev server')
+      ]),
       link(page('tools/integrations', 'angular react vue svelte lit solid fast preact qwik stencil next interop custom elements host')),
       link(page('tools/language-service', 'vscode extension language server diagnostics'))
     ]

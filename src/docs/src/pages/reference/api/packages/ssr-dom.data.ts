@@ -1,5 +1,5 @@
 import type { ApiPackage } from '../api.data';
-import { ENTRY_SERVER } from '../../../tools/ssr/ssr.snippets';
+import { ENTRY_SERVER } from '../../../tools/ssr/overview/overview.snippets';
 
 /**
  * The symbols of `@xaendar/ssr/dom`.
@@ -14,7 +14,7 @@ export const SSR_DOM_API: ApiPackage = {
       usage: [
         { key: 'order', snippets: [ENTRY_SERVER] }
       ],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     }
   ]
 };

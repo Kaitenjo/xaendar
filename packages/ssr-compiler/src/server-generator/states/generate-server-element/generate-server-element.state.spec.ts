@@ -75,7 +75,7 @@ describe('generateServerElement', () => {
       '<div',
       '  @if (on()) { title="x" @if (inner) { id="y" } } @else if (other) { [class.on]="{ 1 }" } @else { title="z" }',
       '  @switch (mode()) { @case (\'a\') @case (\'b\') { lang="x" } @default { lang="y" } }',
-      '  @if (events) { (click)="f()" @@tooltip }',
+      '  @if (events) { (click)="f()" }',
       '></div>'
     ].join(' '));
 
@@ -138,6 +138,73 @@ describe('generateServerElement', () => {
       '  },',
       ']);',
       'out.push(\'</div>\');'
+    ]);
+  });
+
+  it('writes the start tag of a native element applying custom directives through _ssrStartTag, with their properties and without their events', () => {
+    expect(generate('<p title="t" @@tip(text="a" level="{ on() }" (shown)="f()") @@mark>x</p>').code).toEqual([
+      '_ssrStartTag(out, context, \'p\', [',
+      '  { name: \'title\', value: \'t\', setter: _setProperty },',
+      '], [], [',
+      '  {',
+      '    selector: \'tip\',',
+      '    attributes: [',
+      '      { name: \'text\', value: \'a\', setter: _setProperty },',
+      '      { name: \'level\', value: () => this.on(), setter: _setExpressionProperty },',
+      '    ]',
+      '  },',
+      '  {',
+      '    selector: \'mark\',',
+      '    attributes: []',
+      '  },',
+      ']);',
+      'out.push(\'{children of p0}</p>\');'
+    ]);
+  });
+
+  it('describes the custom directives of the conditional bindings of a native element, nested ones included', () => {
+    expect(generate('<p @if (on()) { @@tip @if (inner) { @@mark } }></p>').code).toEqual([
+      '_ssrStartTag(out, context, \'p\', [], [',
+      '  {',
+      '    branches: [',
+      '      {',
+      '        condition: () => this.on(),',
+      '        attributes: [],',
+      '        directives: [',
+      '          {',
+      '            selector: \'tip\',',
+      '            attributes: []',
+      '          },',
+      '        ],',
+      '        conditionalBindings: [',
+      '          {',
+      '            branches: [',
+      '              {',
+      '                condition: () => this.inner,',
+      '                attributes: [],',
+      '                directives: [',
+      '                  {',
+      '                    selector: \'mark\',',
+      '                    attributes: []',
+      '                  },',
+      '                ],',
+      '                conditionalBindings: []',
+      '              },',
+      '            ]',
+      '          },',
+      '        ]',
+      '      },',
+      '    ]',
+      '  },',
+      ']);',
+      'out.push(\'</p>\');'
+    ]);
+  });
+
+  it('leaves out the custom directives of a component, its own and the ones of its conditional bindings', () => {
+    expect(generate('<user-card @@tip @if (on()) { @@mark }></user-card>').code).toEqual([
+      '_ssrComponent(out, context, \'user-card\', [], []);',
+      'out.push(\'</user-card>\');'
     ]);
   });
 

@@ -59,7 +59,13 @@
 @import lazy { ToolsCliPage } from '../../pages/tools/cli/cli.xd.component.ts'
 @import lazy { ToolsIntegrationsPage } from '../../pages/tools/integrations/integrations.xd.component.ts'
 @import lazy { ToolsLanguageServicePage } from '../../pages/tools/language-service/language-service.xd.component.ts'
-@import lazy { ToolsSsrPage } from '../../pages/tools/ssr/ssr.xd.component.ts'
+@import lazy { ToolsSsrOverviewPage } from '../../pages/tools/ssr/overview/overview.xd.component.ts'
+@import lazy { ToolsSsrTransferStatePage } from '../../pages/tools/ssr/transfer-state/transfer-state.xd.component.ts'
+@import lazy { ToolsSsrHydrationPage } from '../../pages/tools/ssr/hydration/hydration.xd.component.ts'
+@import lazy { ToolsSsrProgressiveHydrationPage } from '../../pages/tools/ssr/progressive-hydration/progressive-hydration.xd.component.ts'
+@import lazy { ToolsSsrClientOnlyPage } from '../../pages/tools/ssr/client-only/client-only.xd.component.ts'
+@import lazy { ToolsSsrStaticComponentsPage } from '../../pages/tools/ssr/static-components/static-components.xd.component.ts'
+@import lazy { ToolsSsrDeploymentPage } from '../../pages/tools/ssr/deployment/deployment.xd.component.ts'
 @import lazy { TutorialPage } from '../../pages/tutorial/tutorial.xd.component.ts'
 
 @switch (page()) {
@@ -237,8 +243,26 @@
   @case ('tools/cli') {
     <page-tools-cli />
   }
-  @case ('tools/ssr') {
-    <page-tools-ssr />
+  @case ('tools/ssr/overview') {
+    <page-tools-ssr-overview />
+  }
+  @case ('tools/ssr/transfer-state') {
+    <page-tools-ssr-transfer-state />
+  }
+  @case ('tools/ssr/hydration') {
+    <page-tools-ssr-hydration />
+  }
+  @case ('tools/ssr/progressive-hydration') {
+    <page-tools-ssr-progressive-hydration />
+  }
+  @case ('tools/ssr/client-only') {
+    <page-tools-ssr-client-only />
+  }
+  @case ('tools/ssr/static-components') {
+    <page-tools-ssr-static-components />
+  }
+  @case ('tools/ssr/deployment') {
+    <page-tools-ssr-deployment />
   }
   @case ('tools/integrations') {
     <page-tools-integrations />

@@ -121,49 +121,49 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       kind: 'function',
       signature: 'function escapeText(value: string): string',
       usage: [{ key: 'escaping', snippets: [ESCAPE_TEXT] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'escapeAttribute',
       kind: 'function',
       signature: 'function escapeAttribute(value: string): string',
       usage: [{ key: 'escaping', snippets: [ESCAPE_ATTRIBUTE] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'escapeRawText',
       kind: 'function',
       signature: 'function escapeRawText(value: string, tagName: string): string',
       usage: [{ key: 'rawText', snippets: [ESCAPE_RAW_TEXT] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'isVoidElement',
       kind: 'function',
       signature: 'function isVoidElement(tagName: string): boolean',
       usage: [{ key: 'checking', snippets: [IS_VOID_ELEMENT] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'isRawTextElement',
       kind: 'function',
       signature: 'function isRawTextElement(tagName: string): boolean',
       usage: [{ key: 'checking', snippets: [IS_RAW_TEXT_ELEMENT] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'dropsLeadingNewline',
       kind: 'function',
       signature: 'function dropsLeadingNewline(tagName: string): boolean',
       usage: [{ key: 'writing', snippets: [DROPS_LEADING_NEWLINE] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     },
     {
       name: 'toSameOriginPath',
       kind: 'function',
       signature: 'function toSameOriginPath(url: string): string',
       usage: [{ key: 'serving', snippets: [TO_SAME_ORIGIN_PATH] }],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview']
     }
   ]
 };

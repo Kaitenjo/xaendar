@@ -1,0 +1,21 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { CLIENT_ONLY_COMPONENT } from './client-only.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.clientOnly.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.clientOnly.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.lead") class="lead" />
+<docs-code snippet="tools/ssr-client.html" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p3") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p4") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p5") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p6") />
+<docs-code snippet="{CLIENT_ONLY_COMPONENT}" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p7") />

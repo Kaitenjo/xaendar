@@ -1,9 +1,10 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, _selectBranch, _setExpressionClass, _stringifyState, type _Context, type CustomElement, type RenderConditionalBinding, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionClass, _stringifyState, CustomDirective, type _Context, type CustomElement, type RenderConditionalBinding, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
 import type { ServerBindings } from '../../types/server-bindings.type';
+import type { ServerDirective } from '../../types/server-directive.type';
 import type { ServerAttribute } from '../../types/server-attribute.type';
 import type { ServerOutput } from '../../types/server-output.type';
 import { _getServerRender } from '../server-render-registry/server-render-registry.util';
@@ -13,18 +14,40 @@ import type { ServerRuntime } from '../../types/server-runtime.type';
 /**
  * Writes the start tag of an element with its bindings, applied as the client applies them: the attributes and the
  * classes in order, through the setters of the client, then the ones of the branches the conditional bindings select.
+ * Then the custom directives are applied, the ones of the element first, then the ones of the selected branches: each
+ * one is constructed, its properties are set, `onInit` runs and the attributes and the classes of its `@HostProperty`
+ * are written. Its effects do not run, its events are not listened to and `onDestroy` never runs: the browser applies
+ * it again. The content a directive assigns to `innerHTML` is written right after the start tag, as it is: the
+ * children of the template follow it, so an element whose content a directive assigns has none.
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
  * @param tagName - The tag name of the element.
  * @param attributes - The attributes and the classes of the element.
  * @param conditionalBindings - The conditional bindings of the element.
+ * @param directives - The custom directives of the element, if any.
+ * @throws When no custom directive is registered for the selector of a directive.
  */
-export function _ssrStartTag(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[]): void {
+export function _ssrStartTag(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], directives?: ServerDirective[]): void {
   const element = new ServerElement();
   element.localName = tagName;
-  applyBindings(element as unknown as Element, context, attributes, conditionalBindings);
+  // The directives of the selected branches, applied once every binding of the element is, as the client does
+  const branchDirectives = conditionalBindings.length ? new Array<ServerDirective[]>() : undefined;
+  applyBindings(element as unknown as Element, context, attributes, conditionalBindings, undefined, branchDirectives);
+  if (directives?.length) {
+    applyDirectives(element, context, directives);
+  }
+
+  if (branchDirectives?.length) {
+    for (let i = 0; i < branchDirectives.length; i++) {
+      applyDirectives(element, context, branchDirectives[i]);
+    }
+  }
+
   out.push(writeStartTag(tagName, element as unknown as Element));
+  if (element.innerHTML !== undefined) {
+    out.push(element.innerHTML);
+  }
 }
 
 /**
@@ -248,8 +271,9 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
  * @param conditionalBindings - The conditional bindings.
  * @param inputs - Collects the values bound to the inputs of a component, as written in the template, by the name of
  *   their property, if they are needed.
+ * @param directives - Collects the custom directives of the selected branches, if they are applied.
  */
-function applyBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], inputs?: Dictionary<string, unknown>): void {
+function applyBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], inputs?: Dictionary<string, unknown>, directives?: ServerDirective[][]): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter } = attributes[i];
     setter(context, element, name, value);
@@ -262,8 +286,37 @@ function applyBindings(element: Element, context: _Context, attributes: ServerAt
   for (let i = 0; i < conditionalBindings.length; i++) {
     const branch = _selectBranch(conditionalBindings[i]);
     if (branch) {
-      applyBindings(element, context, branch.attributes, branch.conditionalBindings, inputs);
+      applyBindings(element, context, branch.attributes, branch.conditionalBindings, inputs, directives);
+      if (directives && branch.directives?.length) {
+        directives.push(branch.directives);
+      }
     }
+  }
+}
+
+/**
+ * Applies custom directives to an element, as the client does once its bindings are applied (see {@link _ssrStartTag}):
+ * each one is constructed and given the element, its properties are set, then `onInit` runs and the attributes and the
+ * classes of its `@HostProperty` are written.
+ *
+ * @param element - The element.
+ * @param context - The runtime context of the element.
+ * @param directives - The directives.
+ * @throws When no custom directive is registered for the selector of a directive.
+ */
+function applyDirectives(element: ServerElement, context: _Context, directives: ServerDirective[]): void {
+  for (let i = 0; i < directives.length; i++) {
+    const { selector, attributes } = directives[i];
+    const Directive = _resolveDirective(selector, CustomDirective);
+    const directive = new Directive();
+    directive[_SET_DIRECTIVE_ELEMENT] = element as unknown as Element;
+    for (let j = 0; j < attributes.length; j++) {
+      const { name, value, setter } = attributes[j];
+      setter(context, directive, name, value);
+    }
+
+    directive.onInit?.();
+    _applyHostProperties(directive, element as unknown as Element);
   }
 }
 

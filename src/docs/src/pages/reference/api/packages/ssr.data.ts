@@ -1,5 +1,7 @@
 import type { ApiPackage } from '../api.data';
-import { CSP_NONCE, ENTRY_SERVER, RENDER_INPUTS, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/ssr.snippets';
+import { CSP_NONCE } from '../../../tools/ssr/hydration/hydration.snippets';
+import { ENTRY_SERVER, RENDER_INPUTS } from '../../../tools/ssr/overview/overview.snippets';
+import { TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
 
 /**
  * The symbols of `@xaendar/ssr`.
@@ -35,7 +37,7 @@ export const SSR_API: ApiPackage = {
         { key: 'output', snippets: ['tools/ssr-output.html'] },
         { key: 'errors' }
       ],
-      guides: ['tools/ssr', 'components/lifecycle']
+      guides: ['tools/ssr/overview', 'tools/ssr/transfer-state', 'tools/ssr/hydration', 'components/lifecycle']
     },
     {
       name: 'RenderInputs',
@@ -48,7 +50,7 @@ export const SSR_API: ApiPackage = {
       usage: [
         { key: 'typing', snippets: [RENDER_INPUTS] }
       ],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/overview', 'tools/ssr/transfer-state']
     },
     {
       name: 'RenderOptions',
@@ -68,7 +70,7 @@ export const SSR_API: ApiPackage = {
           snippets: [CSP_NONCE]
         }
       ],
-      guides: ['tools/ssr']
+      guides: ['tools/ssr/transfer-state', 'tools/ssr/hydration']
     }
   ]
 };

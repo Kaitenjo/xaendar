@@ -29,10 +29,21 @@ export class HighlightDirective extends CustomDirective<HTMLElement> {
 
   /**
    * Starts rendering the code: the properties already hold their bound values here.
+   * On the server, where the effects do not run, the code is written once, into the HTML of the page; in the browser the
+   * effect writes it, and again at each change.
    */
   public onInit(): void {
-    this.effect(() => {
-      this.element.innerHTML = highlight(this.code(), this.lang());
-    });
+    if (typeof window === 'undefined') {
+      this._render();
+    }
+
+    this.effect(() => this._render());
+  }
+
+  /**
+   * Writes the code into the element.
+   */
+  private _render(): void {
+    this.element.innerHTML = highlight(this.code(), this.lang());
   }
 }

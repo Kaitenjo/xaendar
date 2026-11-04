@@ -1,0 +1,73 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { STATIC_OPT_OUT } from './static-components.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.staticComponents.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.staticComponents.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.lead") class="lead" />
+<docs-code snippet="tools/ssr-static-components.json" />
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p3") />
+<ul>
+  <li @@htmlTranslation(key="pages.tools.ssr.staticComponents.li1") />
+  <li @@htmlTranslation(key="pages.tools.ssr.staticComponents.li2") />
+  <li @@htmlTranslation(key="pages.tools.ssr.staticComponents.li3") />
+  <li @@htmlTranslation(key="pages.tools.ssr.staticComponents.li4") />
+</ul>
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p4") />
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p5") />
+<docs-code snippet="{STATIC_OPT_OUT}" />
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p6") />
+<docs-code snippet="tools/ssr-static-report.txt" />
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.p7") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.staticComponents.choosing.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.p1") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.ssr.staticComponents.choosing.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.ssr.staticComponents.choosing.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.ssr.staticComponents.choosing.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r1c1") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r1c2") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r1c3") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r2c1") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r2c2") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r2c3") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r3c1") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r3c2") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r3c3") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r4c1") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r4c2") />
+        <td @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.r4c3") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p @@htmlTranslation(key="pages.tools.ssr.staticComponents.choosing.p2") />

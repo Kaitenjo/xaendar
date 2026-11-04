@@ -85,7 +85,8 @@
       "components": "Componenti",
       "templates": "Template",
       "directives": "Direttive",
-      "patterns": "Pattern"
+      "patterns": "Pattern",
+      "ssr": "Rendering lato server"
     },
     "pages": {
       "overview": "Cos’è Xaendar?",
@@ -141,7 +142,13 @@
       "patterns/lists": "Liste e CRUD",
       "tools/cli": "CLI",
       "tools/build": "Build e plugin Vite",
-      "tools/ssr": "Rendering lato server",
+      "tools/ssr/overview": "Panoramica",
+      "tools/ssr/transfer-state": "Transfer state",
+      "tools/ssr/hydration": "Hydration",
+      "tools/ssr/progressive-hydration": "Hydration progressiva",
+      "tools/ssr/client-only": "Rendering solo nel browser",
+      "tools/ssr/static-components": "Componenti statici",
+      "tools/ssr/deployment": "Build e deploy",
       "tools/integrations": "Integrazioni",
       "tools/language-service": "Language service e VS Code",
       "reference/api": "Riferimento API",
@@ -580,7 +587,7 @@
         },
         "onTheServer": {
           "title": "Sul server",
-          "p1": "Una pagina renderizzata sul server esegue lì il costruttore, <code>onInit</code> e il render di ogni componente, una volta, per scriverne l’HTML: <code>afterRender</code>, <code>onDestroy</code> e gli effect di <code>this.effect()</code> girano solo nel browser. Il codice che legge <code>document</code> o <code>window</code> va in <code>afterRender</code> o in un effect, o controlla prima <code>typeof</code>. Vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>."
+          "p1": "Una pagina renderizzata sul server esegue lì il costruttore, <code>onInit</code> e il render di ogni componente, una volta, per scriverne l’HTML: <code>afterRender</code>, <code>onDestroy</code> e gli effect di <code>this.effect()</code> girano solo nel browser. Il codice che legge <code>document</code> o <code>window</code> va in <code>afterRender</code> o in un effect, o controlla prima <code>typeof</code>. Vedi <a href=\"#/it/tools/ssr/overview\">Rendering lato server</a>."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -1717,7 +1724,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a> e <a href=\"#/it/templates/switch\">@switch</a>, e <a href=\"#/it/tools/ssr\">Rendering lato server</a> per <code>@hydrate</code>."
+          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a> e <a href=\"#/it/templates/switch\">@switch</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
         },
         "templates": {
           "title": "Template e @render",
@@ -2754,7 +2761,7 @@
           "title": "Configurazione",
           "p1": "L’ordine conta. Babel compila prima i decoratori standard, e il plugin lavora poi sul suo output: cerca i blocchi statici che Babel genera in ogni classe decorata, e aggiunge la sua registrazione prima di essi. Con i plugin nell’ordine sbagliato, ogni componente fallisce con il messaggio mostrato in <a href=\"#/it/installation\">Installazione</a>.",
           "p2": "L’opzione <code>customElements</code> del plugin contiene i pattern dei tag dei custom element di altre librerie, come <code>['sl-*']</code>, che i template usano come elementi nativi, senza importarli. La CLI passa la lista dichiarata in <code>xaendar.json</code>. Vedi <a href=\"#/it/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> e <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Legge <code>tsconfig.json</code> dalla cartella da cui viene avviato Vite, e ne usa le opzioni del compilatore, comprese quelle strict, per il type check dei template. Un’app costruita con un altro framework aggiunge gli stessi due plugin: vedi <a href=\"#/it/tools/integrations\">Integrazioni</a>.",
-          "p3": "Con la sua opzione <code>ssr</code>, il plugin renderizza le pagine sul server: i moduli valutati sul server registrano template compilati in HTML, e il dev server renderizza ogni pagina con l’entry che l’opzione indica. Vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>."
+          "p3": "Con la sua opzione <code>ssr</code>, il plugin renderizza le pagine sul server: i moduli valutati sul server registrano template compilati in HTML, e il dev server renderizza ogni pagina con l’entry che l’opzione indica. Vedi <a href=\"#/it/tools/ssr/deployment\">Rendering lato server</a>."
         },
         "whatThePluginDoes": {
           "title": "Cosa fa il plugin",
@@ -2797,51 +2804,113 @@
         }
       },
       "ssr": {
-        "eyebrow": "Strumenti",
-        "title": "Rendering lato server",
-        "lead": "Con il rendering lato server, il server scrive l’HTML di ogni pagina, e il browser lo mostra prima che giri qualsiasi script: ogni componente, con il suo shadow root scritto come shadow root dichiarativo (<code>&lt;template shadowrootmode=\"open\"&gt;</code>), e i componenti che renderizza. Il server renderizza solo la prima pagina: caricati gli script, i componenti adottano i nodi del server, invece di renderizzarli di nuovo, e l’applicazione gira nel browser come senza. <code>@xaendar/ssr</code> renderizza i componenti; la CLI e il plugin Vite li compilano e li servono.",
-        "newProject": {
-          "title": "Un nuovo progetto",
-          "p1": "<code>xd new --ssr</code> crea un progetto che renderizza le sue pagine sul server. Oltre ai soliti file, scrive l’entry del server, <code>src/entry-server.ts</code>, e il server dell’applicazione, <code>server.ts</code>, che usa solo <code>node:http</code> e <code>@xaendar/common</code>. <code>index.html</code> contiene <code>&lt;!--xd-ssr--&gt;</code> al posto del componente radice, l’applicazione del browser viene compilata in <code>dist/client</code>, e <code>package.json</code> riceve <code>@xaendar/ssr</code>, <code>@xaendar/common</code> e gli script <code>serve</code> e <code>prerender</code>. <code>xaendar.json</code> dichiara l’entry, che attiva il rendering lato server per <code>xd start</code>, <code>xd build</code> e <code>xd prerender</code>:",
-          "p2": "Un progetto esistente lo attiva allo stesso modo: installa <code>@xaendar/ssr</code>, aggiunge <code>ssr</code> al suo <code>xaendar.json</code>, scrive l’entry, sostituisce il suo componente radice con <code>&lt;!--xd-ssr--&gt;</code> in <code>index.html</code>, e compila il browser in <code>dist/client</code>. <code>entry</code> è relativo al progetto e si scrive senza estensione (<code>src/entry-server</code>): con l’estensione, i comandi si fermano con un errore; <code>outDir</code>, la cartella della build del server, è <code>dist/server</code> per default; <code>staticComponents</code>, <code>false</code> per default, fa cercare alla build i componenti statici, descritti più avanti."
+        "overview": {
+          "eyebrow": "Rendering lato server",
+          "title": "Rendering lato server",
+          "lead": "Con il rendering lato server, il server scrive l’HTML di ogni pagina, e il browser lo mostra prima che giri qualsiasi script: ogni componente, con il suo shadow root scritto come shadow root dichiarativo (<code>&lt;template shadowrootmode=\"open\"&gt;</code>), e i componenti che renderizza. Il server renderizza solo la prima pagina: caricati gli script, i componenti adottano i nodi del server, invece di renderizzarli di nuovo, e l’applicazione gira nel browser come senza. <code>@xaendar/ssr</code> renderizza i componenti; la CLI e il plugin Vite li compilano e li servono.",
+          "newProject": {
+            "title": "Un nuovo progetto",
+            "p1": "<code>xd new --ssr</code> crea un progetto che renderizza le sue pagine sul server. Oltre ai soliti file, scrive l’entry del server, <code>src/entry-server.ts</code>, e il server dell’applicazione, <code>server.ts</code>, che usa solo <code>node:http</code> e <code>@xaendar/common</code>. <code>index.html</code> contiene <code>&lt;!--xd-ssr--&gt;</code> al posto del componente radice, l’applicazione del browser viene compilata in <code>dist/client</code>, e <code>package.json</code> riceve <code>@xaendar/ssr</code>, <code>@xaendar/common</code> e gli script <code>serve</code> e <code>prerender</code>. <code>xaendar.json</code> dichiara l’entry, che attiva il rendering lato server per <code>xd start</code>, <code>xd build</code> e <code>xd prerender</code>:",
+            "p2": "Un progetto esistente lo attiva allo stesso modo: installa <code>@xaendar/ssr</code>, aggiunge <code>ssr</code> al suo <code>xaendar.json</code>, scrive l’entry, sostituisce il suo componente radice con <code>&lt;!--xd-ssr--&gt;</code> in <code>index.html</code>, e compila il browser in <code>dist/client</code>. <code>entry</code> è relativo al progetto e si scrive senza estensione (<code>src/entry-server</code>): con l’estensione, i comandi si fermano con un errore; <code>outDir</code>, la cartella della build del server, è <code>dist/server</code> per default; <code>staticComponents</code>, <code>false</code> per default, fa cercare alla build i <a href=\"#/it/tools/ssr/static-components\">componenti statici</a>."
+          },
+          "entry": {
+            "title": "L’entry del server",
+            "p1": "L’entry esporta <code>render(url)</code>, che restituisce l’HTML di una pagina, scritto al posto di <code>&lt;!--xd-ssr--&gt;</code>. Prima installa il polyfill dei Signal, come fa <code>main.ts</code>, e il DOM del server, con <a href=\"#/it/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a>: Node non ha <code>HTMLElement</code> né <code>customElements</code>, e i moduli di <code>@xaendar/core</code> e dei componenti ne hanno bisogno appena vengono valutati. Per questo li importa dopo, con <code>import()</code>: un import statico viene valutato prima del codice del modulo, ovunque sia scritto.",
+            "p2": "<a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renderizza un componente e i componenti che renderizza. Il secondo argomento imposta gli input del componente, per nome della loro proprietà, come li imposta il codice esterno a Xaendar: l’URL sceglie il componente della pagina e i valori dei suoi input. Il browser imposta gli stessi input prima che il componente renderizzi, come spiega <a href=\"#/it/tools/ssr/transfer-state\">Transfer state</a>. <code>url</code> è il percorso della richiesta con la sua query string, che inizia con una sola barra (<code>/products/42?ref=mail</code>), lo stesso in <code>xd start</code>, in <code>server.ts</code> e in <code>xd prerender</code>: lo leggono con <a href=\"#/it/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>, così che, risolto rispetto a qualsiasi base, resti sull’origine della base, anche per una richiesta di <code>//evil.com/x</code>."
+          },
+          "output": {
+            "title": "Cosa scrive il server",
+            "p1": "Ogni componente viene scritto come il suo elemento, con gli attributi e le classi dei suoi <code>@HostProperty</code>, poi un <code>&lt;template shadowrootmode=\"open\"&gt;</code> con il suo foglio di stile, in uno <code>&lt;style&gt;</code>, e il suo template, poi il contenuto che il padre proietta nei suoi slot. Il parser del browser trasforma il template nello shadow root dell’elemento, quindi la pagina mostra i componenti, con i loro stili, prima che i loro script vengano caricati:",
+            "p2": "Un custom element la cui classe il server non definisce viene scritto come elemento senza shadow root, con il suo contenuto: un componente importato con <code>@import lazy</code>, il cui modulo il template non importa, o un elemento di un’altra libreria. Il browser lo renderizza quando la sua classe viene definita. Testi e attributi vengono escapati, e il contenuto di <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code> viene scritto così com’è.",
+            "p3": "L’HTML contiene anche dei commenti che segnano al browser le sue parti dinamiche, con cui il browser ne adotta i nodi: <code>&lt;!----&gt;</code> prima di ogni interpolazione e tra due testi che il parser unirebbe in uno, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> intorno al blocco di un <code>@if</code>, con l’indice del suo ramo, e lo stesso per i blocchi di <code>@switch</code>, per <code>@for</code>, con ogni item aperto dalla chiave che dà il suo <code>track</code>, e per gli elementi a cui sono applicate direttive strutturali. Nessun commento viene scritto dentro <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code>, il cui contenuto il parser legge come testo."
+          },
+          "onTheServer": {
+            "title": "Il codice dei componenti sul server",
+            "p1": "Sul server, un componente gira come nel browser fino al suo render: girano il suo costruttore e gli inizializzatori dei suoi campi, vengono impostati i suoi input, gira <code>onInit</code> e viene renderizzato il suo template, leggendo ogni signal una volta. Girano anche le direttive strutturali, perché decidono cosa viene renderizzato, e il server attende la promise che ne restituisce una asincrona: una promise rifiutata non renderizza nulla.",
+            "p2": "Il server scrive l’HTML una volta sola, quindi ciò che reagisce, ascolta o lavora sulla pagina gira solo nel browser: gli effect di <code>this.effect()</code>, <code>afterRender</code> e <code>onDestroy</code>, i listener degli eventi e di <code>@HostEvent</code>, le direttive custom e le host directive, e le query, che restano al loro valore iniziale. Un componente creato con <code>createComponent</code> viene costruito ma non renderizzato. Un element ref sul server vale <code>undefined</code>.",
+            "p3": "Il DOM del server non ha <code>document</code> né <code>window</code>. Un’espressione di un template legge i globali del browser da <code>globalThis</code>: sul server, uno che manca a Node, come <code>window</code>, vale <code>undefined</code>, invece di lanciare un <code>ReferenceError</code>, e la build lo segnala. Il codice di una classe che ne legge uno nel costruttore, in un inizializzatore di campo o in <code>onInit</code> lancia invece un errore: controlla prima <code>typeof</code>, o si sposta in un effect, che gira solo nel browser.",
+            "p4": "I moduli vengono valutati una volta per processo: un signal dichiarato a livello di modulo, come uno store, è condiviso da tutte le pagine che il server renderizza. Lo stato di una richiesta appartiene ai componenti, agli input che l’entry dà loro, o al transfer state, che appartiene alla pagina che si sta renderizzando."
+          },
+          "edgeCases": {
+            "title": "Casi limite",
+            "callout1": {
+              "heading": "Codice che legge la pagina",
+              "body": "<p>Un costruttore, un inizializzatore di campo o un <code>onInit</code> che legge <code>document</code> o <code>window</code> lancia un <code>ReferenceError</code> sul server, e la pagina non viene renderizzata lì. Lo stesso fa un modulo che li legge quando viene valutato.</p>"
+            },
+            "callout2": {
+              "heading": "I commenti nell’HTML",
+              "body": "<p>I commenti che il server scrive segnano al browser le parti dinamiche della pagina. Un passaggio che rimuove i commenti dell’HTML, come un minifier o una CDN che ottimizza le pagine, rimuove anche loro: mantienili.</p>"
+            },
+            "callout3": {
+              "heading": "Moduli importati per ciò che fanno",
+              "body": "<p>Un componente si definisce quando il suo modulo viene valutato, quindi i template importano i moduli dei loro componenti solo per questo, e così fa un <code>@hydrate</code>. Un <code>package.json</code> che dichiara <code>\"sideEffects\": false</code> permette al bundler di eliminare questi import, e i componenti non vengono mai definiti. I progetti di <code>xd new</code> non lo dichiarano: lascialo così.</p>"
+            }
+          },
+          "summary": {
+            "title": "Riepilogo",
+            "th1": "API",
+            "th2": "Cosa fa",
+            "td1": "Renderizza un componente in HTML con shadow root dichiarativi, impostandone gli input.",
+            "td2": "Installa <code>HTMLElement</code> e <code>customElements</code> in Node, prima che i moduli di Xaendar vengano valutati.",
+            "td3": "Con <code>ssr</code>, compila i template per il server e renderizza le pagine nel dev server.",
+            "td4": "Il posto dell’HTML renderizzato in <code>index.html</code>.",
+            "td5": "Renderizza le route di <code>xaendar.json</code> in file HTML.",
+            "td6": "Legge un valore del transfer state, sul server e nel browser.",
+            "td7": "Fa attendere un trigger a un componente renderizzato sul server prima di idratarsi, registrando nel frattempo gli eventi.",
+            "td8": "Idrata una parte di un template quando scatta un trigger, caricando allora i moduli dei suoi componenti; una pagina renderizzata nel browser la renderizza subito.",
+            "td9": "Lascia una parte di un template fuori dal rendering sul server: il browser la crea mentre il componente si idrata, al posto del suo <code>@placeholder</code>.",
+            "td10": "Tiene un componente nel bundle del browser, dove la build lo troverebbe statico.",
+            "td11": "Renderizza un intero componente solo nel browser: il server scrive il suo elemento vuoto e non carica il suo modulo per i template che lo renderizzano.",
+            "td12": "Registra gli eventi dell’utente finché non arriva il runtime, scritto da <code>renderToString()</code> dopo la radice della pagina."
+          }
         },
-        "entry": {
-          "title": "L’entry del server",
-          "p1": "L’entry esporta <code>render(url)</code>, che restituisce l’HTML di una pagina, scritto al posto di <code>&lt;!--xd-ssr--&gt;</code>. Prima installa il polyfill dei Signal, come fa <code>main.ts</code>, e il DOM del server, con <a href=\"#/it/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a>: Node non ha <code>HTMLElement</code> né <code>customElements</code>, e i moduli di <code>@xaendar/core</code> e dei componenti ne hanno bisogno appena vengono valutati. Per questo li importa dopo, con <code>import()</code>: un import statico viene valutato prima del codice del modulo, ovunque sia scritto.",
-          "p2": "<a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renderizza un componente e i componenti che renderizza. Il secondo argomento imposta gli input del componente, per nome della loro proprietà, come li imposta il codice esterno a Xaendar: l’URL sceglie il componente della pagina e i valori dei suoi input. Il browser imposta gli stessi input prima che il componente renderizzi, come spiega la sezione seguente. <code>url</code> è il percorso della richiesta con la sua query string, che inizia con una sola barra (<code>/products/42?ref=mail</code>), lo stesso in <code>xd start</code>, in <code>server.ts</code> e in <code>xd prerender</code>: lo leggono con <a href=\"#/it/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>, così che, risolto rispetto a qualsiasi base, resti sull’origine della base, anche per una richiesta di <code>//evil.com/x</code>."
-        },
-        "state": {
+        "transferState": {
+          "eyebrow": "Rendering lato server",
           "title": "Partire dallo stato del server",
-          "p1": "Il browser renderizza di nuovo i componenti quando arrivano i loro script, e deve partire dagli stessi dati, altrimenti la pagina cambia. Gli input dati a <code>renderToString()</code> vengono scritti come JSON nell’attributo <code>data-xd-inputs</code> dell’elemento del componente, e il browser li imposta, assegnando le loro proprietà, prima che il componente renderizzi, poi rimuove l’attributo: nessun template imposta gli input della radice di una pagina.",
+          "lead": "Il browser renderizza di nuovo i componenti quando arrivano i loro script, e deve partire dagli stessi dati, altrimenti la pagina cambia. Gli input dati a <code>renderToString()</code> vengono scritti come JSON nell’attributo <code>data-xd-inputs</code> dell’elemento del componente, e il browser li imposta, assegnando le loro proprietà, prima che il componente renderizzi, poi rimuove l’attributo: nessun template imposta gli input della radice di una pagina.",
           "p2": "I dati che l’entry recupera vanno nel transfer state, lo <code>state</code> del terzo argomento: un valore per ogni chiave, scritto come JSON in uno <code>&lt;script type=\"application/json\" data-xd-state&gt;</code> dopo l’elemento. Il server non aspetta una richiesta che un componente avvia mentre renderizza, quindi l’entry recupera prima i dati:",
           "p3": "<a href=\"#/it/reference/api/core/getTransferState\"><code>getTransferState(key)</code></a> legge un valore con lo stesso codice sui due lati: sul server, quello della pagina che si sta renderizzando, perché il transfer state appartiene alla richiesta e non a un modulo; nel browser, quello scritto nella pagina. Quando non c’è, come per una pagina raggiunta con una navigazione nel browser, il componente carica i dati come farebbe senza il server:",
-          "p4": "Entrambi portano i valori che il JSON contiene, più <code>undefined</code>, <code>NaN</code>, <code>±Infinity</code>, un <code>bigint</code>, una <code>Date</code>, una <code>Map</code> e un <code>Set</code>. Una funzione, un’istanza di un’altra classe o un oggetto che contiene se stesso non si possono scrivere nell’HTML: <code>renderToString()</code> rifiuta la promise, indicando dove si trova, ad esempio <code>inputs.product.onSave</code>. Passa i dati da cui si costruisce e costruiscilo nel componente, che gira sui due lati."
-        },
-        "output": {
-          "title": "Cosa scrive il server",
-          "p1": "Ogni componente viene scritto come il suo elemento, con gli attributi e le classi dei suoi <code>@HostProperty</code>, poi un <code>&lt;template shadowrootmode=\"open\"&gt;</code> con il suo foglio di stile, in uno <code>&lt;style&gt;</code>, e il suo template, poi il contenuto che il padre proietta nei suoi slot. Il parser del browser trasforma il template nello shadow root dell’elemento, quindi la pagina mostra i componenti, con i loro stili, prima che i loro script vengano caricati:",
-          "p2": "Un custom element la cui classe il server non definisce viene scritto come elemento senza shadow root, con il suo contenuto: un componente importato con <code>@import lazy</code>, il cui modulo il template non importa, o un elemento di un’altra libreria. Il browser lo renderizza quando la sua classe viene definita. Testi e attributi vengono escapati, e il contenuto di <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code> viene scritto così com’è.",
-          "p3": "L’HTML contiene anche dei commenti che segnano al browser le sue parti dinamiche, con cui il browser ne adotta i nodi: <code>&lt;!----&gt;</code> prima di ogni interpolazione e tra due testi che il parser unirebbe in uno, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> intorno al blocco di un <code>@if</code>, con l’indice del suo ramo, e lo stesso per i blocchi di <code>@switch</code>, per <code>@for</code>, con ogni item aperto dalla chiave che dà il suo <code>track</code>, e per gli elementi a cui sono applicate direttive strutturali. Nessun commento viene scritto dentro <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code>, il cui contenuto il parser legge come testo."
+          "p4": "Entrambi portano i valori che il JSON contiene, più <code>undefined</code>, <code>NaN</code>, <code>±Infinity</code>, un <code>bigint</code>, una <code>Date</code>, una <code>Map</code> e un <code>Set</code>. Una funzione, un’istanza di un’altra classe o un oggetto che contiene se stesso non si possono scrivere nell’HTML: <code>renderToString()</code> rifiuta la promise, indicando dove si trova, ad esempio <code>inputs.product.onSave</code>. Passa i dati da cui si costruisce e costruiscilo nel componente, che gira sui due lati.",
+          "edgeCases": {
+            "title": "Casi limite",
+            "callout1": {
+              "heading": "Server e browser partono dallo stesso stato",
+              "body": "<p>Un blocco che il browser renderizza diversamente dal server viene renderizzato di nuovo quando il componente si idrata, con un warning. Leggi lo storage, la data o valori casuali in un effect, che gira solo nel browser, e dai al browser i dati della pagina con il transfer state: ogni nodo viene adottato.</p>"
+            }
+          }
         },
         "hydration": {
+          "eyebrow": "Rendering lato server",
           "title": "Hydration",
-          "p1": "Quando lo script di un componente viene caricato, il componente tiene il suo shadow root dichiarativo, invece di collegarne uno nuovo, e lo idrata: il suo template gira come in una pagina renderizzata nel browser, ma ogni elemento, testo e blocco prende il nodo che il server ha renderizzato al suo posto. I marcatori che legge vengono rimossi, tranne quelli che chiudono un blocco, che ne diventano l’ancora, quindi la pagina contiene i nodi che contiene una pagina renderizzata nel browser. Listener, effect, binding e direttive vengono legati a questi nodi: nulla viene creato di nuovo, e un signal che cambia dopo li aggiorna come sempre. Il primo run di un effect scrive solo ciò che differisce dall’HTML del server, e lo <code>&lt;style&gt;</code> del server lascia il posto al foglio di stile che il componente adotta.",
-          "p2": "Un componente che il server ha renderizzato dentro lo shadow root di un altro lo aspetta: il padre adotta il suo elemento e ne imposta gli input, poi il componente si idrata, nel punto in cui una pagina renderizzata nel browser lo inserisce, o quando scatta il trigger che dichiara, come spiega la sezione seguente. La radice della pagina si idrata appena la sua classe è definita, con gli input di <code>data-xd-inputs</code>. Un componente la cui classe il browser definisce più tardi si idrata una volta definita: fino ad allora, come in una pagina renderizzata nel browser, gli input che il padre imposta restano nelle proprietà del suo elemento, che i suoi input leggono quando la classe viene definita.",
-          "p3": "Il browser renderizza dal proprio stato. Un blocco che renderizza diversamente da come ha fatto il server, un altro ramo di un <code>@if</code> o di uno <code>@switch</code>, altre chiavi in un <code>@for</code>, un altro esito di una direttiva strutturale, viene svuotato e renderizzato di nuovo, con un warning nella console; il resto della pagina resta adottato. Lo stesso vale per un elemento che l’HTML non contiene dove il template lo renderizza, come uno che il parser ha spostato, e ciò che il server ha renderizzato lì viene rimosso. Un’hydration che aspetta un trigger non dà warning, come spiega la sezione seguente. Una direttiva strutturale il cui esito è asincrono tiene l’elemento del server finché la sua promise non si risolve.",
-          "p4": "Un campo che l’utente modifica prima che gli script vengano caricati mantiene il suo valore: un template scrive <code>value</code> e <code>checked</code> come attributi, che impostano il valore iniziale di un campo, e li scrive solo dove differiscono. Una direttiva che scrive da sé la proprietà <code>value</code> salta la sua prima scrittura quando il <code>value</code> del campo differisce dal suo <code>defaultValue</code>: l’utente lo ha cambiato."
+          "lead": "Quando lo script di un componente viene caricato, il componente tiene il suo shadow root dichiarativo, invece di collegarne uno nuovo, e lo idrata: il suo template gira come in una pagina renderizzata nel browser, ma ogni elemento, testo e blocco prende il nodo che il server ha renderizzato al suo posto. I marcatori che legge vengono rimossi, tranne quelli che chiudono un blocco, che ne diventano l’ancora, quindi la pagina contiene i nodi che contiene una pagina renderizzata nel browser. Listener, effect, binding e direttive vengono legati a questi nodi: nulla viene creato di nuovo, e un signal che cambia dopo li aggiorna come sempre. Il primo run di un effect scrive solo ciò che differisce dall’HTML del server, e lo <code>&lt;style&gt;</code> del server lascia il posto al foglio di stile che il componente adotta.",
+          "p2": "Un componente che il server ha renderizzato dentro lo shadow root di un altro lo aspetta: il padre adotta il suo elemento e ne imposta gli input, poi il componente si idrata, nel punto in cui una pagina renderizzata nel browser lo inserisce, o quando scatta il trigger che dichiara, come spiega <a href=\"#/it/tools/ssr/progressive-hydration\">Hydration progressiva</a>. La radice della pagina si idrata appena la sua classe è definita, con gli input di <code>data-xd-inputs</code>. Un componente la cui classe il browser definisce più tardi si idrata una volta definita: fino ad allora, come in una pagina renderizzata nel browser, gli input che il padre imposta restano nelle proprietà del suo elemento, che i suoi input leggono quando la classe viene definita.",
+          "p3": "Il browser renderizza dal proprio stato. Un blocco che renderizza diversamente da come ha fatto il server, un altro ramo di un <code>@if</code> o di uno <code>@switch</code>, altre chiavi in un <code>@for</code>, un altro esito di una direttiva strutturale, viene svuotato e renderizzato di nuovo, con un warning nella console; il resto della pagina resta adottato. Lo stesso vale per un elemento che l’HTML non contiene dove il template lo renderizza, come uno che il parser ha spostato, e ciò che il server ha renderizzato lì viene rimosso. Un’hydration che aspetta un trigger non dà warning, come spiega <a href=\"#/it/tools/ssr/progressive-hydration\">Hydration progressiva</a>. Una direttiva strutturale il cui esito è asincrono tiene l’elemento del server finché la sua promise non si risolve.",
+          "p4": "Un campo che l’utente modifica prima che gli script vengano caricati mantiene il suo valore: un template scrive <code>value</code> e <code>checked</code> come attributi, che impostano il valore iniziale di un campo, e li scrive solo dove differiscono. Una direttiva che scrive da sé la proprietà <code>value</code> salta la sua prima scrittura quando il <code>value</code> del campo differisce dal suo <code>defaultValue</code>: l’utente lo ha cambiato.",
+          "eventReplay": {
+            "title": "Eventi prima dell’hydration",
+            "p1": "La pagina è visibile, e cliccabile, prima che i suoi script girino. Perché ciò che l’utente fa in quel tempo non vada perso, <code>renderToString()</code> scrive subito dopo la radice della pagina un piccolo script, l’event contract. Non ha bisogno di alcun runtime, e gira prima dei bundle, che sono moduli: registra gli eventi finché non arriva il runtime, che lo ferma. Quando i componenti che contengono i loro target sono idratati, gli eventi vengono inviati di nuovo, nell’ordine in cui sono avvenuti, con l’azione predefinita annullata, perché il browser l’ha già eseguita. Un evento su un nodo che non esiste più viene scartato, e uno su un componente ancora in attesa resta finché quello non si idrata. I valori dei campi non passano da qui: restano nel DOM, e l’hydration li conserva.",
+            "p2": "Il contract registra gli stessi eventi di un componente in attesa di un trigger, più ogni altro evento che i template e <code>@HostEvent</code> della pagina ascoltano, qualunque sia il target: ripetere un evento su un nodo senza listener non fa nulla. Ascolta sul documento e su ogni shadow root della pagina, perché <code>change</code> e <code>submit</code> non sono <code>composed</code> e dall’interno di una shadow root non arriverebbero mai al documento.",
+            "p3": "Anche il trigger <code>interaction</code> usa questi eventi: il click arrivato prima degli script conta, e idrata il contenuto appena c’è il runtime, senza un secondo click. Dei trigger non viene scritto nulla nell’HTML, perché prima che arrivi il runtime non si può idratare nulla.",
+            "p4": "Un invio non può aspettare, perché il browser lascerebbe la pagina. Il contract lo blocca per un form che è, o sta dentro, un elemento con <code>(submit)</code> nel suo template, marcato dal server con <code>data-xd-submit</code>, e l’evento viene ripetuto; ogni altro form viene inviato normalmente.",
+            "p5": "Il contract è uno script inline, che una <code>Content-Security-Policy</code> rigida blocca. L’opzione <code>nonce</code> di <code>renderToString()</code> vi scrive il nonce della risposta. Il <code>server.ts</code> generato non imposta alcuna policy: un server che ne imposta una crea un nuovo nonce per ogni risposta, e lo passa a <code>render</code> insieme all’URL.",
+            "p6": "Una pagina prerenderizzata non ha una risposta per cui creare un nonce, perché lo stesso file serve ogni richiesta: consenti lo script nella policy dell’host statico con il suo hash, calcolato sul file, che cambia quando cambiano gli eventi della pagina. Senza nessuna di queste, la pagina funziona, e perde gli eventi prima dell’hydration."
+          },
+          "edgeCases": {
+            "title": "Casi limite",
+            "callout1": {
+              "heading": "Elementi che il parser sposta",
+              "body": "<p>Il parser HTML non costruisce ogni albero che il DOM accetta: un <code>&lt;div&gt;</code> dentro un <code>&lt;p&gt;</code> chiude il paragrafo, e un <code>&lt;tr&gt;</code> direttamente dentro una <code>&lt;table&gt;</code> viene racchiuso in un <code>&lt;tbody&gt;</code>. Un template che annida elementi così mostra nell’HTML del server un albero diverso da quello che renderizza il browser. Un componente statico che il browser deve creare in questo modo resta vuoto, perché lì non ha una classe.</p>"
+            },
+            "callout2": {
+              "heading": "Cosa non può fare l’event contract",
+              "body": "<p>L’azione predefinita di un evento avviene prima che arrivi il runtime: un link il cui <code>(click)</code> chiama <code>preventDefault()</code> viene seguito, e un <code>submit</code> ascoltato solo con <code>@HostEvent</code> o da una direttiva lascia la pagina, perché nessuno dei due è su un elemento che il server può marcare. Il contract tiene i primi 256 eventi, il che copre la pagina che non carica mai il runtime, perché fatta solo di componenti statici.</p>"
+            }
+          }
         },
-        "eventReplay": {
-          "title": "Eventi prima dell’hydration",
-          "p1": "La pagina è visibile, e cliccabile, prima che i suoi script girino. Perché ciò che l’utente fa in quel tempo non vada perso, <code>renderToString()</code> scrive subito dopo la radice della pagina un piccolo script, l’event contract. Non ha bisogno di alcun runtime, e gira prima dei bundle, che sono moduli: registra gli eventi finché non arriva il runtime, che lo ferma. Quando i componenti che contengono i loro target sono idratati, gli eventi vengono inviati di nuovo, nell’ordine in cui sono avvenuti, con l’azione predefinita annullata, perché il browser l’ha già eseguita. Un evento su un nodo che non esiste più viene scartato, e uno su un componente ancora in attesa resta finché quello non si idrata. I valori dei campi non passano da qui: restano nel DOM, e l’hydration li conserva.",
-          "p2": "Il contract registra gli stessi eventi di un componente in attesa di un trigger, più ogni altro evento che i template e <code>@HostEvent</code> della pagina ascoltano, qualunque sia il target: ripetere un evento su un nodo senza listener non fa nulla. Ascolta sul documento e su ogni shadow root della pagina, perché <code>change</code> e <code>submit</code> non sono <code>composed</code> e dall’interno di una shadow root non arriverebbero mai al documento.",
-          "p3": "Anche il trigger <code>interaction</code> usa questi eventi: il click arrivato prima degli script conta, e idrata il contenuto appena c’è il runtime, senza un secondo click. Dei trigger non viene scritto nulla nell’HTML, perché prima che arrivi il runtime non si può idratare nulla.",
-          "p4": "Un invio non può aspettare, perché il browser lascerebbe la pagina. Il contract lo blocca per un form che è, o sta dentro, un elemento con <code>(submit)</code> nel suo template, marcato dal server con <code>data-xd-submit</code>, e l’evento viene ripetuto; ogni altro form viene inviato normalmente.",
-          "p5": "Il contract è uno script inline, che una <code>Content-Security-Policy</code> rigida blocca. L’opzione <code>nonce</code> di <code>renderToString()</code> vi scrive il nonce della risposta. Il <code>server.ts</code> generato non imposta alcuna policy: un server che ne imposta una crea un nuovo nonce per ogni risposta, e lo passa a <code>render</code> insieme all’URL.",
-          "p6": "Una pagina prerenderizzata non ha una risposta per cui creare un nonce, perché lo stesso file serve ogni richiesta: consenti lo script nella policy dell’host statico con il suo hash, calcolato sul file, che cambia quando cambiano gli eventi della pagina. Senza nessuna di queste, la pagina funziona, e perde gli eventi prima dell’hydration."
-        },
-        "progressive": {
+        "progressiveHydration": {
+          "eyebrow": "Rendering lato server",
           "title": "Idratare più tardi",
-          "p1": "Per default un componente si idrata appena può. L’opzione <code>ssr.hydrate</code> di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a> lo fa attendere un trigger: <code>idle</code> finché il browser non è inattivo, <code>visible</code> finché l’elemento non entra nel viewport, <code>interaction</code> fino al primo evento sull’elemento; <code>load</code>, il default, non attende. Il server scrive il trigger nell’attributo <code>data-xd-hydrate</code> dell’elemento, e il browser lo arma quando l’elemento viene adottato: la radice della pagina appena la sua classe è definita, ogni altro componente quando si idrata il componente che lo renderizza. In una pagina renderizzata nel browser l’opzione non fa nulla: il componente viene renderizzato subito.",
+          "lead": "Per default un componente si idrata appena può. L’opzione <code>ssr.hydrate</code> di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a> lo fa attendere un trigger: <code>idle</code> finché il browser non è inattivo, <code>visible</code> finché l’elemento non entra nel viewport, <code>interaction</code> fino al primo evento sull’elemento; <code>load</code>, il default, non attende. Il server scrive il trigger nell’attributo <code>data-xd-hydrate</code> dell’elemento, e il browser lo arma quando l’elemento viene adottato: la radice della pagina appena la sua classe è definita, ogni altro componente quando si idrata il componente che lo renderizza. In una pagina renderizzata nel browser l’opzione non fa nulla: il componente viene renderizzato subito.",
           "p2": "Finché il trigger non scatta, l’elemento mostra l’HTML del server, e gli eventi su di esso e nel suo shadow root vengono registrati: <code>click</code>, <code>dblclick</code>, <code>input</code>, <code>change</code>, <code>submit</code>, <code>keydown</code>, <code>keyup</code>, <code>focusin</code> e <code>focusout</code> vengono fermati, e un <code>submit</code> viene impedito, perché lascerebbe la pagina. Una volta idratato il componente, vengono inviati di nuovo, in ordine, ai nodi che avevano raggiunto, con l’azione predefinita impedita, perché il browser l’ha già eseguita: il clic che ha risvegliato un componente raggiunge il listener del suo bottone. Lo stato può cambiare mentre il componente aspetta, come fanno i suoi input: quando il trigger scatta, le parti che differiscono dall’HTML del server vengono renderizzate di nuovo, senza warning, anche nei componenti che renderizza.",
           "p3": "Un template decide per una sua parte con un blocco <code>@hydrate</code>. I suoi trigger si scrivono tra parentesi, separati da virgole: quelli dell’opzione, e <code>when</code> seguito da un’espressione, che scatta quando l’espressione è vera; il primo che scatta idrata il contenuto. I componenti che il contenuto renderizza si idratano con esso, qualunque cosa dichiari la loro opzione: decide prima un <code>@hydrate</code>, poi l’opzione del componente, poi <code>load</code>.",
           "p4": "I moduli dei componenti che solo il contenuto di un <code>@hydrate</code> renderizza vengono caricati quando scatta un trigger: la build li lascia fuori dagli import del template, e il bundler li mette in chunk propri. Un componente che il template renderizza anche altrove viene caricato con il template.",
@@ -2849,8 +2918,9 @@
           "p6": "Il trigger <code>never</code> lascia per sempre l’HTML del server com’è, scritto <code>@hydrate (never)</code> o <code>ssr: { hydrate: 'never' }</code>, e sempre da solo, perché qualsiasi altro trigger idraterebbe il contenuto. Sul contenuto non gira alcun codice e nessun evento viene registrato, quindi i suoi link e i suoi form funzionano come in qualsiasi pagina. I moduli dei componenti che solo un <code>@hydrate (never)</code> renderizza non vengono mai richiesti, quindi un componente renderizzato solo lì non costa nulla al browser. Con l’opzione, il codice del componente resta nel bundle, e un <code>@hydrate</code> che contiene l’elemento idrata quell’istanza: il template vince sempre sul decoratore, che vale per tutte le istanze. In entrambe le forme, ciò che il browser crea viene renderizzato normalmente: una pagina renderizzata nel browser, o un blocco che lo stato renderizza di nuovo. Il template che contiene un <code>@hydrate (never)</code> è interattivo, come con ogni <code>@hydrate</code>."
         },
         "clientOnly": {
+          "eyebrow": "Rendering lato server",
           "title": "Contenuto che solo il browser renderizza",
-          "p1": "Una parte di un template può dipendere da ciò che esiste solo nel browser, come un pulsante mostrato solo quando la pagina può inviare notifiche. Un blocco <code>@client</code> resta fuori dal rendering sul server, e il browser ne crea il contenuto. Un blocco <code>@placeholder</code> subito dopo, facoltativo, contiene ciò che il server renderizza al suo posto.",
+          "lead": "Una parte di un template può dipendere da ciò che esiste solo nel browser, come un pulsante mostrato solo quando la pagina può inviare notifiche. Un blocco <code>@client</code> resta fuori dal rendering sul server, e il browser ne crea il contenuto. Un blocco <code>@placeholder</code> subito dopo, facoltativo, contiene ciò che il server renderizza al suo posto.",
           "p2": "Il server scrive solo i commenti che marcano il blocco e, tra di essi, il placeholder. Il browser crea il contenuto mentre il componente si idrata, al posto del placeholder e senza warning, quindi <code>afterRender</code> e le query lo trovano. Nel contenuto di un <code>@hydrate</code>, o in un componente con un trigger <code>hydrate</code>, il placeholder resta finché quel trigger non scatta. In una pagina renderizzata nel browser il blocco è come se non ci fosse: il contenuto si renderizza subito, e il placeholder mai.",
           "p3": "Il contenuto è uno scope a sé, e si carica con il template: attendere un modulo non è il compito di un <code>@client</code>. Sul server, il template non importa i moduli dei componenti e delle direttive che solo il contenuto renderizza, quindi un modulo che legge <code>document</code> quando viene valutato non ferma la pagina. Altro codice che importa quel modulo lo carica comunque sul server, e deve gestire da sé i globali che legge.",
           "p4": "Il browser rimuove il placeholder senza eseguirne il codice: un listener al suo interno è un errore di compilazione, perché non verrebbe mai chiamato.",
@@ -2858,9 +2928,10 @@
           "p6": "Per renderizzare un intero componente solo nel browser, ovunque venga usato, dichiara <code>ssr: { render: false }</code>:",
           "p7": "Il server non esegue alcun codice del componente: scrive il suo elemento, vuoto a parte gli attributi e il light DOM che gli dà il template, e lascia il modulo fuori dai template che lo importano, così una libreria che legge <code>window</code> quando viene importata non blocca la pagina. Altro codice che importa quel modulo lo carica comunque sul server. Il browser renderizza il componente mentre si idrata quello che lo contiene, dopo averne impostato gli input; in un template statico, da solo a partire da <code>data-xd-inputs</code>. Un trigger <code>hydrate</code> accanto all’opzione ritarda questo render, mentre <code>never</code> non è ammesso, perché l’elemento resterebbe vuoto. Il decoratore non ha un placeholder: per mostrare qualcosa nel frattempo, scrivi il tag in un <code>@client</code> con il suo <code>@placeholder</code>. Il plugin legge l’opzione dal codice sorgente: <code>ssr</code> deve essere un oggetto letterale, <code>render</code> il letterale <code>false</code>, e un <code>hydrate</code> accanto a esso una stringa letterale."
         },
-        "static": {
+        "staticComponents": {
+          "eyebrow": "Rendering lato server",
           "title": "Componenti statici",
-          "p1": "Un componente che non ha nulla da fare nel browser non ha bisogno lì del suo codice: la pagina mostra comunque il suo HTML. <code>xd build</code> e <code>xd prerender</code> possono trovare questi componenti e lasciarli fuori dal bundle del browser: restano l’HTML del server, e i loro elementi non vengono mai definiti. La ricerca è spenta per default: la accende <code>staticComponents</code> nello <code>ssr</code> di <code>xaendar.json</code>. Il dev server non la esegue mai, così una modifica raggiunge solo i moduli che tocca.",
+          "lead": "Un componente che non ha nulla da fare nel browser non ha bisogno lì del suo codice: la pagina mostra comunque il suo HTML. <code>xd build</code> e <code>xd prerender</code> possono trovare questi componenti e lasciarli fuori dal bundle del browser: restano l’HTML del server, e i loro elementi non vengono mai definiti. La ricerca è spenta per default: la accende <code>staticComponents</code> nello <code>ssr</code> di <code>xaendar.json</code>. Il dev server non la esegue mai, così una modifica raggiunge solo i moduli che tocca.",
           "p2": "La ricerca rende in un’applicazione multi-pagina, dove il server renderizza ogni pagina e un link ne carica un’altra: la pagina è la radice dell’HTML del server, che il browser idrata senza mai crearla, quindi il suo contenuto resta HTML e solo i componenti interattivi al suo interno caricano il loro codice. In un’applicazione a pagina singola non trova quasi nulla: il router crea le pagine nel browser, quindi loro e ogni componente che renderizzano hanno bisogno lì del loro codice, e possono restare statiche solo le parti della shell fuori dal router. Xaendar nasce per i Web Components e, tra le applicazioni, prima di tutto per quelle a pagina singola: per questo la ricerca resta spenta finché un progetto non la chiede.",
           "p3": "Un componente è statico quando la build riesce a dimostrare che non fa nulla nel browser. Ciò che la build non riesce a leggere conta come logica, perché tenere un componente nel bundle è sempre corretto:",
           "li1": "<strong>Nella classe</strong>, o nelle classi da cui eredita: <code>@Event</code>, <code>@Query</code>, <code>@HostEvent</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, un costruttore che esegue codice, un <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, la lettura di un globale che ha solo il browser o di un signal di un modulo, e un campo inizializzato da una funzione dell’applicazione, il cui codice può avviare qualsiasi cosa. Gli input, <code>computed</code>, <code>@HostProperty</code> e i metodi chiamati dal template non contano.",
@@ -2870,99 +2941,56 @@
           "p4": "Un componente statico può renderizzare componenti interattivi. Nel browser nessuno li adotta, quindi il server scrive gli input che riceve nel loro attributo <code>data-xd-inputs</code>, e si idratano da soli, ognuno quando scatta il suo trigger. Questi valori arrivano nell’HTML, come gli input di <code>renderToString()</code>: non passare ciò che la pagina non deve mostrare. Un componente statico che passa a uno interattivo un input il cui tipo dichiarato non si può scrivere, come una funzione, un’istanza di una classe, <code>any</code> o <code>unknown</code>, diventa interattivo. Tra due componenti statici si può passare qualsiasi valore, perché resta sul server.",
           "p5": "Alcune cose sfuggono alla build: uno script che chiama un metodo dell’elemento, oppure <code>customElements.whenDefined()</code> e <code>:defined</code> in un foglio di stile, che aspettano una definizione che non arriva mai. <code>ssr: { static: false }</code> tiene un componente del genere nel bundle, e lo stesso fanno <code>ssr: { hydrate }</code> e <code>ssr: { render: false }</code>, perché chiedono qualcosa al browser. <code>true</code> non è un valore: solo la build lascia fuori un componente.",
           "p6": "Con la ricerca accesa, <code>xd build</code> elenca i componenti statici. Con <code>--static-report</code>, dice anche cosa tiene ciascuno degli altri nel bundle; con la ricerca spenta, dice che non c’è nulla da riportare.",
-          "p7": "Il modulo di un componente statico diventa gli import dei componenti che renderizza, così quelli interattivi vengono caricati. La radice ne fa parte se <code>bootstrap.ts</code> la importa per i suoi effetti, come lo scrive <code>xd new</code>: <code>import './app/app.xd.component';</code>. Con un import che legge la sua classe, resta nel bundle, e con lei ogni componente che renderizza. In una pagina fatta solo di componenti statici, <code>@xaendar/core</code> non viene caricato."
-        },
-        "choosing": {
-          "title": "Scegliere dove gira un componente",
-          "p1": "Queste opzioni rispondono a tre domande separate: chi renderizza un componente, se il browser lo idrata, e se il suo codice arriva al browser.",
-          "th1": "Cosa vuoi",
-          "th2": "Per una parte di un template",
-          "th3": "Per un componente",
-          "r1c1": "Lo renderizza il server, lo idrata il browser",
-          "r1c2": "Il default; <code>@hydrate (trigger)</code> per attendere",
-          "r1c3": "Il default; <code>ssr: { hydrate }</code> per attendere",
-          "r2c1": "Lo renderizza il server, il suo codice non arriva al browser",
-          "r2c2": "<code>@hydrate (never)</code>, per i componenti renderizzati solo lì",
-          "r2c3": "Lo trova la build con <code>staticComponents</code>; <code>ssr: { static: false }</code> lo vieta",
-          "r3c1": "Lo renderizza solo il browser",
-          "r3c2": "<code>@client</code>, con un <code>@placeholder</code> facoltativo",
-          "r3c3": "<code>ssr: { render: false }</code>",
-          "r4c1": "Lo renderizza il server, il browser non lo idrata mai",
-          "r4c2": "<code>@hydrate (never)</code>",
-          "r4c3": "<code>ssr: { hydrate: 'never' }</code>",
-          "p2": "Un bundle contiene classi, non istanze: il codice di un componente ne esce solo quando nulla nella pagina ha bisogno di quella classe. Un singolo elemento può restare semplice HTML con <code>@hydrate (never)</code> anche se la sua classe è nel bundle per gli altri."
-        },
-        "onTheServer": {
-          "title": "Il codice dei componenti sul server",
-          "p1": "Sul server, un componente gira come nel browser fino al suo render: girano il suo costruttore e gli inizializzatori dei suoi campi, vengono impostati i suoi input, gira <code>onInit</code> e viene renderizzato il suo template, leggendo ogni signal una volta. Girano anche le direttive strutturali, perché decidono cosa viene renderizzato, e il server attende la promise che ne restituisce una asincrona: una promise rifiutata non renderizza nulla.",
-          "p2": "Il server scrive l’HTML una volta sola, quindi ciò che reagisce, ascolta o lavora sulla pagina gira solo nel browser: gli effect di <code>this.effect()</code>, <code>afterRender</code> e <code>onDestroy</code>, i listener degli eventi e di <code>@HostEvent</code>, le direttive custom e le host directive, e le query, che restano al loro valore iniziale. Un componente creato con <code>createComponent</code> viene costruito ma non renderizzato. Un element ref sul server vale <code>undefined</code>.",
-          "p3": "Il DOM del server non ha <code>document</code> né <code>window</code>. Un’espressione di un template legge i globali del browser da <code>globalThis</code>: sul server, uno che manca a Node, come <code>window</code>, vale <code>undefined</code>, invece di lanciare un <code>ReferenceError</code>, e la build lo segnala. Il codice di una classe che ne legge uno nel costruttore, in un inizializzatore di campo o in <code>onInit</code> lancia invece un errore: controlla prima <code>typeof</code>, o si sposta in un effect, che gira solo nel browser.",
-          "p4": "I moduli vengono valutati una volta per processo: un signal dichiarato a livello di modulo, come uno store, è condiviso da tutte le pagine che il server renderizza. Lo stato di una richiesta appartiene ai componenti, agli input che l’entry dà loro, o al transfer state, che appartiene alla pagina che si sta renderizzando."
-        },
-        "development": {
-          "title": "Sviluppo",
-          "p1": "<code>xd start</code> renderizza ogni pagina sul server: il dev server legge <code>index.html</code>, gli applica i plugin, e scrive ciò che restituisce <code>render(url)</code> al posto di <code>&lt;!--xd-ssr--&gt;</code>, caricando l’entry dal grafo dei moduli di Vite. Una modifica a un componente, al suo template o al suo foglio di stile ricarica la pagina, come senza il rendering lato server, e il server renderizza la nuova versione; anche una modifica a un modulo che solo il server carica, come l’entry, ricarica la pagina. Un errore del rendering compare nell’overlay di Vite, con lo stack trace che punta ai sorgenti."
-        },
-        "production": {
-          "title": "Produzione",
-          "p1": "<code>xd build</code> compila l’applicazione del browser in <code>dist/client</code>, come dice la sua configurazione di Vite, poi l’entry per il server in <code>dist/server</code>, dove i pacchetti restano import di <code>node_modules</code>: <code>@xaendar/ssr</code> e i componenti condividono la stessa copia di <code>@xaendar/core</code>. Solo la build del browser esegue il type check.",
-          "p2": "<code>npm run serve</code> avvia <code>server.ts</code>: serve i file di <code>dist/client</code> così come sono, e renderizza ogni altra richiesta con <code>dist/server/entry-server.js</code>, al posto di <code>&lt;!--xd-ssr--&gt;</code> in <code>dist/client/index.html</code>. Quando il rendering di una pagina fallisce, registra l’errore e invia il componente radice senza contenuto, che il browser renderizza: la pagina funziona, senza l’HTML del server. Il file fa parte del progetto: adattalo, o sostituiscilo con il server che preferisci."
-        },
-        "prerender": {
-          "title": "Prerendering",
-          "p1": "<code>xd prerender</code> compila il progetto, poi renderizza ogni route elencata da <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella in <code>dist/client</code>: <code>/</code> in <code>dist/client/index.html</code>, <code>/about</code> in <code>dist/client/about/index.html</code>. Un hosting statico serve allora le pagine già renderizzate, senza un server dell’applicazione."
-        },
-        "withoutCli": {
-          "title": "Senza la CLI",
-          "p1": "Un progetto che usa Vite direttamente passa l’entry al plugin Vite con la sua opzione <code>ssr</code>, relativa alla radice di Vite o assoluta, e compila il server con <code>vite build --ssr</code>. Il plugin compila i template per il server negli ambienti server di Vite, e imposta il tipo di applicazione di Vite a <code>custom</code>, così che il dev server renderizzi le pagine: vedi <a href=\"#/it/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>."
-        },
-        "edgeCases": {
-          "title": "Casi limite",
-          "callout1": {
-            "heading": "Server e browser partono dallo stesso stato",
-            "body": "<p>Un blocco che il browser renderizza diversamente dal server viene renderizzato di nuovo quando il componente si idrata, con un warning. Leggi lo storage, la data o valori casuali in un effect, che gira solo nel browser, e dai al browser i dati della pagina con il transfer state: ogni nodo viene adottato.</p>"
-          },
-          "callout2": {
-            "heading": "Elementi che il parser sposta",
-            "body": "<p>Il parser HTML non costruisce ogni albero che il DOM accetta: un <code>&lt;div&gt;</code> dentro un <code>&lt;p&gt;</code> chiude il paragrafo, e un <code>&lt;tr&gt;</code> direttamente dentro una <code>&lt;table&gt;</code> viene racchiuso in un <code>&lt;tbody&gt;</code>. Un template che annida elementi così mostra nell’HTML del server un albero diverso da quello che renderizza il browser. Un componente statico che il browser deve creare in questo modo resta vuoto, perché lì non ha una classe.</p>"
-          },
-          "callout3": {
-            "heading": "Codice che legge la pagina",
-            "body": "<p>Un costruttore, un inizializzatore di campo o un <code>onInit</code> che legge <code>document</code> o <code>window</code> lancia un <code>ReferenceError</code> sul server, e la pagina non viene renderizzata lì. Lo stesso fa un modulo che li legge quando viene valutato.</p>"
-          },
-          "callout4": {
-            "heading": "Prerendering e server dell’applicazione",
-            "body": "<p><code>xd prerender</code> scrive la pagina di <code>/</code> al posto di <code>dist/client/index.html</code>, che <code>server.ts</code> legge come template di ogni pagina: senza <code>&lt;!--xd-ssr--&gt;</code>, invierebbe quella pagina per ogni route. Servi una build prerenderizzata con un hosting statico, ed esegui di nuovo <code>xd build</code> prima di <code>npm run serve</code>.</p>"
-          },
-          "callout5": {
-            "heading": "I commenti nell’HTML",
-            "body": "<p>I commenti che il server scrive segnano al browser le parti dinamiche della pagina. Un passaggio che rimuove i commenti dell’HTML, come un minifier o una CDN che ottimizza le pagine, rimuove anche loro: mantienili.</p>"
-          },
-          "callout6": {
-            "heading": "Moduli importati per ciò che fanno",
-            "body": "<p>Un componente si definisce quando il suo modulo viene valutato, quindi i template importano i moduli dei loro componenti solo per questo, e così fa un <code>@hydrate</code>. Un <code>package.json</code> che dichiara <code>\"sideEffects\": false</code> permette al bundler di eliminare questi import, e i componenti non vengono mai definiti. I progetti di <code>xd new</code> non lo dichiarano: lascialo così.</p>"
-          },
-          "callout7": {
-            "heading": "Cosa non può fare l’event contract",
-            "body": "<p>L’azione predefinita di un evento avviene prima che arrivi il runtime: un link il cui <code>(click)</code> chiama <code>preventDefault()</code> viene seguito, e un <code>submit</code> ascoltato solo con <code>@HostEvent</code> o da una direttiva lascia la pagina, perché nessuno dei due è su un elemento che il server può marcare. Il contract tiene i primi 256 eventi, il che copre la pagina che non carica mai il runtime, perché fatta solo di componenti statici.</p>"
+          "p7": "Il modulo di un componente statico diventa gli import dei componenti che renderizza, così quelli interattivi vengono caricati. La radice ne fa parte se <code>bootstrap.ts</code> la importa per i suoi effetti, come lo scrive <code>xd new</code>: <code>import './app/app.xd.component';</code>. Con un import che legge la sua classe, resta nel bundle, e con lei ogni componente che renderizza. In una pagina fatta solo di componenti statici, <code>@xaendar/core</code> non viene caricato.",
+          "choosing": {
+            "title": "Scegliere dove gira un componente",
+            "p1": "Queste opzioni rispondono a tre domande separate: chi renderizza un componente, se il browser lo idrata, e se il suo codice arriva al browser.",
+            "th1": "Cosa vuoi",
+            "th2": "Per una parte di un template",
+            "th3": "Per un componente",
+            "r1c1": "Lo renderizza il server, lo idrata il browser",
+            "r1c2": "Il default; <code>@hydrate (trigger)</code> per attendere",
+            "r1c3": "Il default; <code>ssr: { hydrate }</code> per attendere",
+            "r2c1": "Lo renderizza il server, il suo codice non arriva al browser",
+            "r2c2": "<code>@hydrate (never)</code>, per i componenti renderizzati solo lì",
+            "r2c3": "Lo trova la build con <code>staticComponents</code>; <code>ssr: { static: false }</code> lo vieta",
+            "r3c1": "Lo renderizza solo il browser",
+            "r3c2": "<code>@client</code>, con un <code>@placeholder</code> facoltativo",
+            "r3c3": "<code>ssr: { render: false }</code>",
+            "r4c1": "Lo renderizza il server, il browser non lo idrata mai",
+            "r4c2": "<code>@hydrate (never)</code>",
+            "r4c3": "<code>ssr: { hydrate: 'never' }</code>",
+            "p2": "Un bundle contiene classi, non istanze: il codice di un componente ne esce solo quando nulla nella pagina ha bisogno di quella classe. Un singolo elemento può restare semplice HTML con <code>@hydrate (never)</code> anche se la sua classe è nel bundle per gli altri."
           }
         },
-        "summary": {
-          "title": "Riepilogo",
-          "th1": "API",
-          "th2": "Cosa fa",
-          "td1": "Renderizza un componente in HTML con shadow root dichiarativi, impostandone gli input.",
-          "td2": "Installa <code>HTMLElement</code> e <code>customElements</code> in Node, prima che i moduli di Xaendar vengano valutati.",
-          "td3": "Con <code>ssr</code>, compila i template per il server e renderizza le pagine nel dev server.",
-          "td4": "Il posto dell’HTML renderizzato in <code>index.html</code>.",
-          "td5": "Renderizza le route di <code>xaendar.json</code> in file HTML.",
-          "td6": "Legge un valore del transfer state, sul server e nel browser.",
-          "td7": "Fa attendere un trigger a un componente renderizzato sul server prima di idratarsi, registrando nel frattempo gli eventi.",
-          "td8": "Idrata una parte di un template quando scatta un trigger, caricando allora i moduli dei suoi componenti; una pagina renderizzata nel browser la renderizza subito.",
-          "td9": "Lascia una parte di un template fuori dal rendering sul server: il browser la crea mentre il componente si idrata, al posto del suo <code>@placeholder</code>.",
-          "td10": "Tiene un componente nel bundle del browser, dove la build lo troverebbe statico.",
-          "td11": "Renderizza un intero componente solo nel browser: il server scrive il suo elemento vuoto e non carica il suo modulo per i template che lo renderizzano.",
-          "td12": "Registra gli eventi dell’utente finché non arriva il runtime, scritto da <code>renderToString()</code> dopo la radice della pagina."
+        "deployment": {
+          "eyebrow": "Rendering lato server",
+          "title": "Build e deploy",
+          "lead": "Un progetto che renderizza sul server usa gli stessi comandi di ogni altro: <code>xd start</code> renderizza ogni pagina sul server mentre sviluppi, <code>xd build</code> compila l’applicazione del browser e l’entry del server, e <code>xd prerender</code> scrive le pagine in file HTML, per un hosting che serve solo file statici.",
+          "development": {
+            "title": "Sviluppo",
+            "p1": "<code>xd start</code> renderizza ogni pagina sul server: il dev server legge <code>index.html</code>, gli applica i plugin, e scrive ciò che restituisce <code>render(url)</code> al posto di <code>&lt;!--xd-ssr--&gt;</code>, caricando l’entry dal grafo dei moduli di Vite. Una modifica a un componente, al suo template o al suo foglio di stile ricarica la pagina, come senza il rendering lato server, e il server renderizza la nuova versione; anche una modifica a un modulo che solo il server carica, come l’entry, ricarica la pagina. Un errore del rendering compare nell’overlay di Vite, con lo stack trace che punta ai sorgenti."
+          },
+          "production": {
+            "title": "Produzione",
+            "p1": "<code>xd build</code> compila l’applicazione del browser in <code>dist/client</code>, come dice la sua configurazione di Vite, poi l’entry per il server in <code>dist/server</code>, dove i pacchetti restano import di <code>node_modules</code>: <code>@xaendar/ssr</code> e i componenti condividono la stessa copia di <code>@xaendar/core</code>. Solo la build del browser esegue il type check.",
+            "p2": "<code>npm run serve</code> avvia <code>server.ts</code>: serve i file di <code>dist/client</code> così come sono, e renderizza ogni altra richiesta con <code>dist/server/entry-server.js</code>, al posto di <code>&lt;!--xd-ssr--&gt;</code> in <code>dist/client/index.html</code>. Quando il rendering di una pagina fallisce, registra l’errore e invia il componente radice senza contenuto, che il browser renderizza: la pagina funziona, senza l’HTML del server. Il file fa parte del progetto: adattalo, o sostituiscilo con il server che preferisci."
+          },
+          "prerender": {
+            "title": "Prerendering",
+            "p1": "<code>xd prerender</code> compila il progetto, poi renderizza ogni route elencata da <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella in <code>dist/client</code>: <code>/</code> in <code>dist/client/index.html</code>, <code>/about</code> in <code>dist/client/about/index.html</code>. Un hosting statico serve allora le pagine già renderizzate, senza un server dell’applicazione."
+          },
+          "withoutCli": {
+            "title": "Senza la CLI",
+            "p1": "Un progetto che usa Vite direttamente passa l’entry al plugin Vite con la sua opzione <code>ssr</code>, relativa alla radice di Vite o assoluta, e compila il server con <code>vite build --ssr</code>. Il plugin compila i template per il server negli ambienti server di Vite, e imposta il tipo di applicazione di Vite a <code>custom</code>, così che il dev server renderizzi le pagine: vedi <a href=\"#/it/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>."
+          },
+          "edgeCases": {
+            "title": "Casi limite",
+            "callout1": {
+              "heading": "Prerendering e server dell’applicazione",
+              "body": "<p><code>xd prerender</code> scrive la pagina di <code>/</code> al posto di <code>dist/client/index.html</code>, che <code>server.ts</code> legge come template di ogni pagina: senza <code>&lt;!--xd-ssr--&gt;</code>, invierebbe quella pagina per ogni route. Servi una build prerenderizzata con un hosting statico, ed esegui di nuovo <code>xd build</code> prima di <code>npm run serve</code>.</p>"
+            }
+          }
         }
       },
       "cli": {
@@ -2974,16 +3002,16 @@
           "p1": "Il nome del progetto viene usato per la cartella, per <code>package.json</code> e per il componente radice, <code>&lt;nome&gt;-root</code>. I file generati sono descritti in <a href=\"#/it/installation\">Installazione</a>. Il comando si ferma se la cartella esiste e non è vuota.",
           "p2": "Se <code>--style</code> non lo indica, il comando chiede il formato dei fogli di stile: <code>css</code>, <code>scss</code>, <code>sass</code> (la sintassi indentata) o <code>less</code>. Un <code>--style</code> non valido ferma il comando prima di scrivere qualsiasi file.",
           "p3": "Come risposta vale il numero o il nome di un formato; una risposta vuota sceglie CSS, e una non valida fa ripetere la domanda. Senza un terminale interattivo, come in CI, il comando usa CSS senza chiedere. Il formato è l’estensione del foglio di stile globale, per esempio <code>src/styles.css</code> o <code>src/styles.scss</code>, e dei fogli di stile dei componenti; con SCSS, Sass o Less, <code>package.json</code> riceve anche <code>sass</code> o <code>less</code> tra le sue <code>devDependencies</code>. <code>xaendar.json</code> registra le impostazioni del progetto: il formato, letto da <code>xd generate component</code>, e, in <code>customElements</code>, i tag di altre librerie usati dai template (vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>).",
-          "p4": "Con <code>--ssr</code>, il progetto renderizza le sue pagine sul server: il comando scrive anche <code>src/entry-server.ts</code> e <code>server.ts</code>, dichiara l’entry nello <code>ssr</code> di <code>xaendar.json</code>, e aggiunge <code>@xaendar/ssr</code> e gli script <code>serve</code> e <code>prerender</code> a <code>package.json</code>. Vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>."
+          "p4": "Con <code>--ssr</code>, il progetto renderizza le sue pagine sul server: il comando scrive anche <code>src/entry-server.ts</code> e <code>server.ts</code>, dichiara l’entry nello <code>ssr</code> di <code>xaendar.json</code>, e aggiunge <code>@xaendar/ssr</code> e gli script <code>serve</code> e <code>prerender</code> a <code>package.json</code>. Vedi <a href=\"#/it/tools/ssr/overview\">Rendering lato server</a>."
         },
         "xdStartAndXd": {
           "title": "xd start e xd build",
           "p1": "<code>xd start</code> (o <code>xd s</code>) avvia il dev server di Vite, <code>xd build</code> (o <code>xd b</code>) una build di produzione. Entrambi leggono <code>vite.config.ts</code> dalla cartella corrente e vi aggiungono due plugin: Babel, per compilare i decoratori, e il plugin Xaendar, per compilare template e stili. I dettagli sono in <a href=\"#/it/tools/build\">Build e plugin Vite</a>. Tutto il resto, come la porta, la cartella radice o quella di output, viene dalla configurazione di Vite.",
-          "p2": "Quando <code>xaendar.json</code> dichiara <code>ssr</code>, il dev server di <code>xd start</code> renderizza ogni pagina sul server, e <code>xd build</code> compila anche l’entry del server, in <code>dist/server</code> o nell’<code>outDir</code> di <code>ssr</code>. Con <code>staticComponents</code> in <code>ssr</code>, lascia i componenti statici fuori dal bundle del browser, e con <code>--static-report</code> dice cosa tiene lì ciascuno degli altri (vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>)."
+          "p2": "Quando <code>xaendar.json</code> dichiara <code>ssr</code>, il dev server di <code>xd start</code> renderizza ogni pagina sul server, e <code>xd build</code> compila anche l’entry del server, in <code>dist/server</code> o nell’<code>outDir</code> di <code>ssr</code>. Con <code>staticComponents</code> in <code>ssr</code>, lascia i componenti statici fuori dal bundle del browser, e con <code>--static-report</code> dice cosa tiene lì ciascuno degli altri (vedi <a href=\"#/it/tools/ssr/static-components\">Rendering lato server</a>)."
         },
         "xdPrerender": {
           "title": "xd prerender",
-          "p1": "<code>xd prerender</code> (o <code>xd p</code>) esegue <code>xd build</code>, poi renderizza ogni route della lista <code>prerender</code> dello <code>ssr</code> di <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella nella build del browser. In un progetto senza <code>ssr</code>, il comando si ferma. Vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>."
+          "p1": "<code>xd prerender</code> (o <code>xd p</code>) esegue <code>xd build</code>, poi renderizza ogni route della lista <code>prerender</code> dello <code>ssr</code> di <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella nella build del browser. In un progetto senza <code>ssr</code>, il comando si ferma. Vedi <a href=\"#/it/tools/ssr/deployment\">Rendering lato server</a>."
         },
         "xdTest": {
           "title": "xd test",
@@ -3050,7 +3078,7 @@
           "p2": "Importare una classe definisce il suo tag, perché il decoratore <code>@WebComponent</code> chiama <code>customElements.define</code>. Un import di solo tipo viene eliminato da TypeScript e non definisce niente, quindi il modulo va importato per il suo effetto collaterale. Finché la classe non è caricata, il tag resta un elemento sconosciuto, e viene aggiornato quando la definizione arriva: vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Una proprietà assegnata nel frattempo arriva all’input al momento dell’aggiornamento, ma molti framework assegnano una proprietà solo se l’elemento ce l’ha già, e altrimenti scrivono un attributo, che l’input ignora: definisci i componenti prima che chi li ospita ne renderizzi i tag, come fanno tutte le applicazioni di questa pagina.",
           "callout1": {
             "heading": "Il server dell’app ospite non renderizza i componenti",
-            "body": "<code>@xaendar/ssr</code> renderizza un’intera applicazione Xaendar, non i componenti dentro le pagine di un altro framework: il server dell’app ospite scrive il loro tag così com’è, e il browser li renderizza quando la loro classe viene definita. Il loro modulo non può nemmeno essere importato lì: <code>CustomElement</code> estende <code>HTMLElement</code> quando il modulo viene valutato, e <code>@WebComponent</code> chiama <code>customElements.define</code>. Su Next.js, Nuxt, SvelteKit, SolidStart e Qwik City, importa i componenti solo nel browser. Per renderizzare sul server un’applicazione Xaendar, vedi <a href=\"#/it/tools/ssr\">Rendering lato server</a>."
+            "body": "<code>@xaendar/ssr</code> renderizza un’intera applicazione Xaendar, non i componenti dentro le pagine di un altro framework: il server dell’app ospite scrive il loro tag così com’è, e il browser li renderizza quando la loro classe viene definita. Il loro modulo non può nemmeno essere importato lì: <code>CustomElement</code> estende <code>HTMLElement</code> quando il modulo viene valutato, e <code>@WebComponent</code> chiama <code>customElements.define</code>. Su Next.js, Nuxt, SvelteKit, SolidStart e Qwik City, importa i componenti solo nel browser. Per renderizzare sul server un’applicazione Xaendar, vedi <a href=\"#/it/tools/ssr/overview\">Rendering lato server</a>."
           }
         },
         "sameApp": {

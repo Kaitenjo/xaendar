@@ -1,0 +1,45 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { SSR_VITE_CONFIG } from './deployment.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.deployment.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.deployment.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.deployment.development.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.development.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.deployment.production.title') }
+</h2>
+<docs-code snippet="tools/ssr-build.txt" />
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.production.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.production.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.deployment.prerender.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.prerender.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.deployment.withoutCli.title') }
+</h2>
+<docs-code snippet="{SSR_VITE_CONFIG}" />
+<p @@htmlTranslation(key="pages.tools.ssr.deployment.withoutCli.p1") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.ssr.deployment.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.deployment.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.tools.ssr.deployment.edgeCases.callout1.heading}" />
+</section>

@@ -2,7 +2,7 @@ import type { ApiPackage } from '../api.data';
 import { INSTALLATION_VITE_CONFIG } from '../../../installation/installation.snippets';
 import { BUILD_TOOLS_VITE_CONFIG } from './build-tools.snippets';
 import { CSS_MINIFY } from '../../../tools/build/build.snippets';
-import { SSR_VITE_CONFIG } from '../../../tools/ssr/ssr.snippets';
+import { SSR_VITE_CONFIG } from '../../../tools/ssr/deployment/deployment.snippets';
 
 /**
  * The symbols of `@xaendar/build-tools`.
@@ -40,7 +40,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
         { key: 'errors', snippets: ['tools/plugin-errors.txt'] },
         { key: 'styles', snippets: [CSS_MINIFY, 'components/scss-error.txt'] }
       ],
-      guides: ['tools/build', 'installation', 'tools/cli', 'components/registration', 'tools/ssr']
+      guides: ['tools/build', 'installation', 'tools/cli', 'components/registration', 'tools/ssr/deployment']
     },
     {
       name: 'XaendarPluginOptions',
@@ -72,7 +72,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
           signature: 'readonly staticReport?: boolean'
         }
       ],
-      guides: ['tools/build', 'components/registration', 'tools/ssr']
+      guides: ['tools/build', 'components/registration', 'tools/ssr/static-components']
     }
   ]
 };

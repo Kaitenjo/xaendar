@@ -22,8 +22,11 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * The component runs as in the browser up to its render: it is constructed, its inputs are set by assigning their
  * properties, as code outside Xaendar sets them, then `onInit` runs and its template is rendered, reading each signal
  * once. Its effects, the ones of `this.effect()`, do not run, a component it creates with `createComponent` is not
- * rendered, its events are not listened to and its custom directives are not applied: the browser does it all. The
- * structural directives run, since they decide what is rendered, and the asynchronous ones are awaited. An expression
+ * rendered, its events are not listened to and the custom directives of its components are not applied: the browser
+ * does it all. The custom directives of a native element are applied up to `onInit`: their properties are set,
+ * `onInit` runs and their `@HostProperty` are written, and the content one assigns to `innerHTML` is written as the
+ * content of the element. The structural directives run, since they decide what is rendered, and the asynchronous ones
+ * are awaited. An expression
  * reading a global of the browser reads it through `globalThis`, `undefined` on the server.
  *
  * Comments mark the dynamic parts of the HTML for the browser: the interpolations, the blocks of `@if`, `@switch` and

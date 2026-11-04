@@ -241,37 +241,37 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Parser',
     message: '[Parser] @hydrate needs a trigger: load, idle, visible, interaction, never, or when followed by an expression',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Parser',
     message: '[Parser] Unknown @hydrate trigger "hover": use load, idle, visible, interaction, never, or when followed by an expression',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Parser',
     message: '[Parser] The trigger "idle" is declared twice',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Parser',
     message: '[Parser] The trigger "never" stands alone: any other trigger would hydrate the content',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Parser',
     message: '[Parser] @placeholder must follow the block of a @client',
-    page: 'tools/ssr'
+    page: 'tools/ssr/client-only'
   },
   {
     phase: 'Parser',
     message: '[Parser] (click) never runs: the server renders a @placeholder, and the browser replaces it without running its code',
-    page: 'tools/ssr'
+    page: 'tools/ssr/client-only'
   },
   {
     phase: 'Build',
     message: '\'document\' exists only in the browser: on the server it is undefined. Read it in a @client block, or check it with typeof.',
-    page: 'tools/ssr'
+    page: 'tools/ssr/client-only'
   },
   {
     phase: 'TypeChecker',
@@ -371,12 +371,12 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'TypeChecker',
     message: '[TypeChecker] The trigger "visible" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'TypeChecker',
     message: '[TypeChecker] @client is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block',
-    page: 'tools/ssr'
+    page: 'tools/ssr/client-only'
   },
   {
     phase: 'Build',
@@ -401,17 +401,17 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Build',
     message: 'The ssr option of XCard must be an object literal - <path>',
-    page: 'tools/ssr'
+    page: 'tools/ssr/static-components'
   },
   {
     phase: 'Build',
     message: 'The ssr.render option of XCard must be the literal false - <path>',
-    page: 'tools/ssr'
+    page: 'tools/ssr/client-only'
   },
   {
     phase: 'Build',
     message: 'The ssr.hydrate option of XCard must be a string literal next to ssr.render - <path>',
-    page: 'tools/ssr'
+    page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Build',
@@ -451,7 +451,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Build',
     message: '<path> does not export render(url): export the function rendering a page on the server',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'TypeChecker',
@@ -606,42 +606,42 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Runtime',
     message: 'ReferenceError: HTMLElement is not defined',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'Runtime',
     message: 'ReferenceError: document is not defined',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'Runtime',
     message: 'ProductPageComponent is not defined: decorate it with @WebComponent, and install the server DOM with loadServerDom() before importing its module',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'Runtime',
     message: 'ProductPageComponent has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'Runtime',
     message: 'dist/server/entry-server.js does not export render(url): export the function rendering a page on the server from src/entry-server.ts',
-    page: 'tools/ssr'
+    page: 'tools/ssr/deployment'
   },
   {
     phase: 'Runtime',
     message: 'inputs.product.onSave is a function, which cannot be written into the HTML: pass the data it is built from, and build it in the component',
-    page: 'tools/ssr'
+    page: 'tools/ssr/transfer-state'
   },
   {
     phase: 'Runtime',
     message: 'inputs.price is an instance of Money, which cannot be written into the HTML: pass a plain object, an array, a Date, a Map or a Set',
-    page: 'tools/ssr'
+    page: 'tools/ssr/transfer-state'
   },
   {
     phase: 'Runtime',
     message: 'inputs.category contains itself, which cannot be written into the HTML',
-    page: 'tools/ssr'
+    page: 'tools/ssr/transfer-state'
   },
   {
     phase: 'Signals',
@@ -686,16 +686,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'CLI',
     message: '✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server" } in its xaendar.json.',
-    page: 'tools/ssr'
+    page: 'tools/ssr/deployment'
   },
   {
     phase: 'CLI',
     message: '✖  Invalid ssr entry "src/entry-server.ts" in xaendar.json: write it without extension.',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   },
   {
     phase: 'CLI',
     message: '✖  src/entry-server does not export render(url): export the function rendering a page on the server.',
-    page: 'tools/ssr'
+    page: 'tools/ssr/overview'
   }
 ];

@@ -16,7 +16,7 @@ const { signal } = await import('@xaendar/core/signals');
 const { compile } = await import('@xaendar/compiler');
 type CompilerCache = import('@xaendar/compiler').CompilerCache;
 const { compileServer } = await import('@xaendar/ssr-compiler');
-const { CustomElement, Property, StructuralDirective, _defineDirective, _defineRender } = core;
+const { CustomDirective, CustomElement, Property, StructuralDirective, _defineDirective, _defineRender } = core;
 const { renderToString, _defineServerRender } = ssr;
 
 type Component = InstanceType<typeof CustomElement>;
@@ -317,6 +317,52 @@ describe('hydration', () => {
 
     expect(host.shadowRoot!.querySelector('style')).toBeNull();
     expect(host.shadowRoot!.adoptedStyleSheets).toHaveLength(1);
+  });
+
+  it('adopts an element whose content a custom directive assigned on the server, the directive assigning it in the browser only in its effect', async () => {
+    const assigned = new Array<string>();
+
+    /**
+     * A directive filling its element with the HTML of its input: in `onInit` on the server, in an effect in the browser.
+     */
+    class HydratedFillDirective extends CustomDirective {
+      public content = (Property('') as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'content', metadata: {} }).init.call(this);
+
+      public onInit(): void {
+        if (onServer) {
+          this.element.innerHTML = this.content();
+        }
+
+        this.effect(() => {
+          assigned.push(this.content());
+          this.element.innerHTML = this.content();
+        });
+      }
+    }
+    _defineDirective('hydratedFill', HydratedFillDirective);
+
+    /**
+     * A card whose paragraph the directive fills.
+     */
+    class Card extends CustomElement {
+      public html = '<b>bold</b> text';
+    }
+    const card = await register('card', Card, () => '<p @@hydratedFill(content="{ html }")></p><footer>end</footer>');
+    const host = load(await renderToString(card.Server));
+    const root = host.shadowRoot!;
+    const paragraph = root.querySelector('p')!;
+    const footer = root.querySelector('footer');
+
+    expect(paragraph.innerHTML).toBe('<b>bold</b> text');
+
+    onServer = false;
+    card.define();
+
+    expect(root.querySelector('p')).toBe(paragraph);
+    expect(root.querySelector('footer')).toBe(footer);
+    expect(paragraph.innerHTML).toBe('<b>bold</b> text');
+    expect(assigned).toEqual(['<b>bold</b> text']);
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it('renders again a block the server rendered with another branch, with a warning, adopting the rest', async () => {

@@ -1,0 +1,38 @@
+@import { translations } from '../../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { CSP_NONCE } from './hydration.snippets.ts'
+@import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.ssr.hydration.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.ssr.hydration.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.lead") class="lead" />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.p3") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.p4") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.hydration.eventReplay.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p3") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p4") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p5") />
+<docs-code snippet="{CSP_NONCE}" />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p6") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.ssr.hydration.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.hydration.edgeCases.callout1.body") kind="edge"
+    heading="{translations().pages.tools.ssr.hydration.edgeCases.callout1.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.tools.ssr.hydration.edgeCases.callout2.body") kind="edge"
+    heading="{translations().pages.tools.ssr.hydration.edgeCases.callout2.heading}" />
+</section>
