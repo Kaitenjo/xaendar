@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/ssr-compiler",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -9,8 +9,8 @@
     "target": "node"
   },
   "dependencies": {
-    "@xaendar/common": "1.1.2",
-    "@xaendar/compiler": "1.1.2",
-    "@xaendar/types": "1.1.2"
+    "@xaendar/common": "1.1.3",
+    "@xaendar/compiler": "1.1.3",
+    "@xaendar/types": "1.1.3"
   }
 }
