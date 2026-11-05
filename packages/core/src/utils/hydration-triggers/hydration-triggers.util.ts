@@ -1,6 +1,6 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _EVENT_CONTRACT_KEY, _HYDRATE_ATTRIBUTE, _RECORDED_EVENTS, WAITS_FOR_HYDRATION } from '../../costants';
-import type { _ContractEvent, _EventContract } from '../../types/event-contract.type';
+import type { _ContractEvent } from '../../types/event-contract.type';
 import type { HydrateTrigger } from '../../types/hydrate-trigger.type';
 import type { RecordedEvents } from '../../types/recorded-events.type';
 
@@ -39,6 +39,7 @@ export function armTriggers(triggers: readonly HydrateTrigger[], elements: reado
     }
     disarms.length = 0;
   };
+
   const once = () => {
     disarm();
     fire();
@@ -224,11 +225,9 @@ function replayReadyEvents(): void {
   const events = contractEvents!;
   const waiting = new Array<_ContractEvent>();
   for (let i = 0; i < events.length; i++) {
-    if (events[i].path.some(waitsForHydration)) {
-      waiting.push(events[i]);
-    } else {
-      replayEvent(events[i]);
-    }
+    events[i].path.some(waitsForHydration)
+      ? waiting.push(events[i])
+      : replayEvent(events[i]);
   }
 
   contractEvents = waiting;
@@ -252,10 +251,9 @@ function waitsForHydration(node: EventTarget): boolean {
  * @returns The events, `undefined` when there is none.
  */
 function takeContractEvents(targets?: readonly EventTarget[]): _ContractEvent[] | undefined {
-  const page = globalThis as unknown as Partial<Record<typeof _EVENT_CONTRACT_KEY, _EventContract>>;
-  const contract = page[_EVENT_CONTRACT_KEY];
+  const contract = window[_EVENT_CONTRACT_KEY];
   if (contract) {
-    delete page[_EVENT_CONTRACT_KEY];
+    delete window[_EVENT_CONTRACT_KEY];
     for (let i = 0; i < contract.stops.length; i++) {
       contract.stops[i]();
     }

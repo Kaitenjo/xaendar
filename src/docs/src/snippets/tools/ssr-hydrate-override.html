@@ -1,0 +1,6 @@
+@import { ReviewsComponent } from './reviews/reviews.xd.component.ts'
+
+<!-- ReviewsComponent declares ssr: { hydrate: 'visible' }: this instance, at the top of the page, does not wait -->
+@hydrate (load) {
+  <app-reviews product="{product().id}" />
+}

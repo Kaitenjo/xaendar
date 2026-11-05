@@ -1,7 +1,7 @@
 @import { translations } from '../../../../core/i18n/i18n.ts'
 @import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { CSP_NONCE } from './hydration.snippets.ts'
+@import { CSP_NONCE, GREETING } from './hydration.snippets.ts'
 @import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
 
@@ -12,20 +12,38 @@
   { t(translations(), 'pages.tools.ssr.hydration.title') }
 </h1>
 <p @@htmlTranslation(key="pages.tools.ssr.hydration.lead") class="lead" />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.p2") />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.p3") />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.p4") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.order") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.hydration.mismatch.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.mismatch.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.mismatch.p2") />
+<docs-code snippet="{GREETING}" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.hydration.fields.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.fields.p1") />
 
 <h2>
   { t(translations(), 'pages.tools.ssr.hydration.eventReplay.title') }
 </h2>
 <p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p1") />
 <p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p2") />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p3") />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p4") />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p5") />
+
+<h3>
+  { t(translations(), 'pages.tools.ssr.hydration.eventReplay.submit.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.submit.p1") />
+<docs-code snippet="tools/ssr-submit.html" />
+
+<h3>
+  { t(translations(), 'pages.tools.ssr.hydration.eventReplay.csp.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.csp.p1") />
 <docs-code snippet="{CSP_NONCE}" />
-<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.p6") />
+<p @@htmlTranslation(key="pages.tools.ssr.hydration.eventReplay.csp.p2") />
 
 <section class="edge-cases">
   <h2>

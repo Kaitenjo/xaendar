@@ -1,0 +1,18 @@
+@import { StoreMapComponent } from './store-map/store-map.xd.component.ts'
+
+<!-- The placeholder is the element visible watches: as large as the map, so that the page does not jump -->
+@hydrate (visible) {
+  @client {
+    <app-store-map />
+  } @placeholder {
+    <div class="map-skeleton" />
+  }
+}
+
+<!-- Or an element next to the @client -->
+@hydrate (visible) {
+  <h2>Our stores</h2>
+  @client {
+    <app-store-map />
+  }
+}

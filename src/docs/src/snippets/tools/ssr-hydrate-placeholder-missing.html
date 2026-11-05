@@ -1,0 +1,8 @@
+@import { StoreMapComponent } from './store-map/store-map.xd.component.ts'
+
+<!-- The server renders nothing in the block: visible has no element to watch -->
+@hydrate (visible) {
+  @client {
+    <app-store-map />
+  }
+}

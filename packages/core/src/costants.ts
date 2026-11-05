@@ -110,10 +110,11 @@ export const _CLIENT_ATTRIBUTE = 'data-xd-client';
  */
 export const _SUBMIT_ATTRIBUTE = 'data-xd-submit';
 /**
- * The name of the property of `window` holding the event contract, the script `renderToString` writes into the page (see
- * `_EventContract`).
+ * The key of the property of `window` holding the event contract, the script `renderToString` writes into the page (see
+ * `_EventContract`). It is a symbol of the global registry, which no other property can clash with: the script, whose
+ * text reads nothing outside of it, gets the same symbol from `Symbol.for` and its description.
  */
-export const _EVENT_CONTRACT_KEY = '__xdEvents';
+export const _EVENT_CONTRACT_KEY: unique symbol = Symbol.for('xaendar.eventContract');
 /**
  * The events recorded on content rendered on the server waiting for its hydration, whether it has a listener for them or
  * not: they are what fires the `interaction` trigger, which a block without listeners needs too.

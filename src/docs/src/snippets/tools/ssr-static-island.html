@@ -1,0 +1,9 @@
+@import { LikeButtonComponent } from './like-button/like-button.xd.component.ts'
+
+<!-- article-page only shows its inputs: static, its code stays on the server -->
+<article>
+  <h1>{ heading() }</h1>
+  <p>{ summary() }</p>
+  <!-- like-button listens to (click): interactive, it keeps its code -->
+  <app-like-button articleId="{articleId()}" />
+</article>

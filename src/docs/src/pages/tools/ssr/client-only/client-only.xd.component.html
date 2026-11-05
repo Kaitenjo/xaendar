@@ -1,6 +1,6 @@
 @import { translations } from '../../../../core/i18n/i18n.ts'
 @import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
-@import { CLIENT_ONLY_COMPONENT } from './client-only.snippets.ts'
+@import { CLIENT_ONLY_COMPONENT, PLACEHOLDER_LISTENER_ERROR } from './client-only.snippets.ts'
 @import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
 
@@ -11,11 +11,40 @@
   { t(translations(), 'pages.tools.ssr.clientOnly.title') }
 </h1>
 <p @@htmlTranslation(key="pages.tools.ssr.clientOnly.lead") class="lead" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.when") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.clientOnly.placeholder.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.placeholder.p1") />
 <docs-code snippet="tools/ssr-client.html" />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p2") />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p3") />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p4") />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p5") />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p6") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.placeholder.p2") />
+<docs-code snippet="tools/ssr-client-bare.html" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.placeholder.p3") />
+<docs-code snippet="tools/ssr-client-listener.html" error="{PLACEHOLDER_LISTENER_ERROR}" verdict="bad" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.placeholder.p4") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.clientOnly.globals.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.globals.p1") />
+<docs-code snippet="tools/ssr-client-globals.html" />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.globals.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.clientOnly.modules.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.modules.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.clientOnly.renderFalse.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.renderFalse.p1") />
 <docs-code snippet="{CLIENT_ONLY_COMPONENT}" />
-<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.p7") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.renderFalse.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.renderFalse.p3") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.clientOnly.withoutSsr.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.clientOnly.withoutSsr.p1") />

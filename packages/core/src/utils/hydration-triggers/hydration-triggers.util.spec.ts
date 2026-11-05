@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
-import type { _EventContract } from '../../types/event-contract.type';
 import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, waitedForTrigger } from './hydration-triggers.util';
 
 /**
@@ -238,9 +237,8 @@ describe('deferElementHydration', () => {
     const recordClick = (element: Element) => {
       const stop = vi.fn();
       const path = [element, element.parentNode!, document, window];
-      const page = globalThis as unknown as Record<string, _EventContract>;
-      const { events } = page[_EVENT_CONTRACT_KEY] ??= { events: [], stops: [stop] };
-      events.push({ event: new MouseEvent('click', { bubbles: true, composed: true }), target: element, path });
+      window[_EVENT_CONTRACT_KEY] ??= { events: [], stops: [stop] };
+      window[_EVENT_CONTRACT_KEY].events.push({ event: new MouseEvent('click', { bubbles: true, composed: true }), target: element, path });
       return stop;
     };
 

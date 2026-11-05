@@ -25,14 +25,13 @@ const EVENTS_LIMIT = 256;
  * - More than one root of the page in a document share the contract, the first one creating it.
  *
  * @param root - The element of the root of the page, whose shadow roots the parser has already attached.
- * @param key - The name of the property of `window` holding the contract.
+ * @param key - The key of the property of `window` holding the contract.
  * @param names - The events to record.
  * @param submitAttribute - The attribute marking what listens to `submit`.
  * @param limit - The most events to keep.
  */
-export function eventContract(root: Element, key: string, names: readonly string[], submitAttribute: string, limit: number): void {
-  const page = window as unknown as Record<string, _EventContract | undefined>;
-  const contract = page[key] ??= { events: [], stops: [] };
+export function eventContract(root: Element, key: typeof _EVENT_CONTRACT_KEY, names: readonly string[], submitAttribute: string, limit: number): void {
+  const contract = window[key] ??= { events: [], stops: [] };
   const record = (event: Event) => {
     const { events } = contract;
     const path = event.composedPath();
@@ -92,7 +91,9 @@ export function _writeEventContract(names: ReadonlySet<string>, nonce?: string):
     events.add(name);
   }
 
-  const args = JSON.stringify([_EVENT_CONTRACT_KEY, Array.from(events), _SUBMIT_ATTRIBUTE, EVENTS_LIMIT]).slice(1, -1).replaceAll('<', '\\u003c');
+  // A symbol has no JSON form: the script gets the key from the registry, by its description
+  const key = `Symbol.for(${JSON.stringify(_EVENT_CONTRACT_KEY.description)})`;
+  const args = JSON.stringify([Array.from(events), _SUBMIT_ATTRIBUTE, EVENTS_LIMIT]).slice(1, -1).replaceAll('<', '\\u003c');
   const nonceAttribute = nonce ? ` nonce="${escapeAttribute(nonce)}"` : '';
-  return `<script${nonceAttribute}>(${eventContract.toString()})(document.currentScript.previousElementSibling,${args})</script>`;
+  return `<script${nonceAttribute}>(${eventContract.toString()})(document.currentScript.previousElementSibling,${key},${args})</script>`;
 }

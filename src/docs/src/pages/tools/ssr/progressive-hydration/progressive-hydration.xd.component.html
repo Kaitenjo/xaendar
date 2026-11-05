@@ -1,6 +1,6 @@
 @import { translations } from '../../../../core/i18n/i18n.ts'
 @import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
-@import { HYDRATE_COMPONENT } from './progressive-hydration.snippets.ts'
+@import { HYDRATE_COMPONENT, PLACEHOLDER_ERROR } from './progressive-hydration.snippets.ts'
 @import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
 
@@ -11,11 +11,137 @@
   { t(translations(), 'pages.tools.ssr.progressiveHydration.title') }
 </h1>
 <p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.lead") class="lead" />
-<docs-code snippet="{HYDRATE_COMPONENT}" />
-<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p2") />
-<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p3") />
-<docs-code snippet="tools/ssr-hydrate.html" />
-<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p4") />
-<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p5") />
-<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.p6") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.when") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.p1") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>load</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.load.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.load.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>idle</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.idle.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.idle.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>visible</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.visible.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.visible.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>interaction</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>when</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.when.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.when.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>never</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.never.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.never.use") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>
+  <code>load</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.load.p1") />
+<docs-code snippet="tools/ssr-hydrate-load.html" />
+
+<h3>
+  <code>idle</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.idle.p1") />
+<docs-code snippet="tools/ssr-hydrate-idle.html" />
+
+<h3>
+  <code>visible</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.visible.p1") />
+<docs-code snippet="tools/ssr-hydrate-visible.html" />
+
+<h3>
+  <code>interaction</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.p1") />
+<docs-code snippet="tools/ssr-hydrate-interaction.html" />
+
+<h3>
+  <code>when</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.when.p1") />
+<docs-code snippet="tools/ssr-hydrate-when.html" />
+
+<h3>
+  <code>never</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.never.p1") />
 <docs-code snippet="tools/ssr-hydrate-never.html" />
+
+<h3>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.combined.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.combined.p1") />
+<docs-code snippet="tools/ssr-hydrate.html" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.placeholder.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.placeholder.p1") />
+<docs-code snippet="tools/ssr-hydrate-placeholder-missing.html" error="{PLACEHOLDER_ERROR}" verdict="bad" />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.placeholder.p2") />
+<docs-code snippet="tools/ssr-hydrate-placeholder.html" verdict="good" />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.placeholder.p3") />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.component.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.component.p1") />
+<docs-code snippet="{HYDRATE_COMPONENT}" />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.component.p2") />
+<docs-code snippet="tools/ssr-hydrate-override.html" />
+
+<h2>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.meanwhile.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.meanwhile.p1") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.meanwhile.p2") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.meanwhile.p3") />
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.meanwhile.p4") />

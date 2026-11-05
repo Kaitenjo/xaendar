@@ -92,3 +92,40 @@ export class ThemeToggleComponent extends CustomElement {
   }
 }`
 };
+
+/**
+ * The snippet of a custom directive the server applies, shown by the page tools/ssr/overview.
+ */
+export const SERVER_DIRECTIVE: SourceFile = {
+  name: 'sr-label.directive.ts',
+  lang: 'ts',
+  code: `import { CustomDirective, Directive, HostProperty, Property } from '@xaendar/core';
+import type { InputSignal } from '@xaendar/core/signals';
+
+/**
+ * Gives an element the label screen readers announce. Applied to a native element, it runs on the server too:
+ * aria-label is already in the HTML of the page.
+ */
+@Directive({
+  selector: 'srLabel'
+})
+export class SrLabelDirective extends CustomDirective<HTMLElement> {
+  /**
+   * The text to announce.
+   */
+  @Property('')
+  public accessor text!: InputSignal<string>;
+
+  /**
+   * The label of the element: written by the server, kept up to date by the browser.
+   *
+   * @returns The text to announce.
+   */
+  @HostProperty('aria-label')
+  public get label(): string {
+    return this.text();
+  }
+}
+
+// In a template: <button @@srLabel(text="Close the cart")>✕</button>`
+};

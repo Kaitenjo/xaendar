@@ -17,3 +17,9 @@ export const HYDRATE_COMPONENT: SourceFile = {
 })
 export class ReviewsComponent extends CustomElement { }`
 };
+
+/**
+ * The error of a @hydrate whose trigger has no element to watch, shown by the page tools/ssr/progressive-hydration.
+ */
+export const PLACEHOLDER_ERROR = `[TypeChecker] The trigger "visible" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client
+----> visible`;

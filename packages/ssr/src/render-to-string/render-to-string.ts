@@ -81,7 +81,7 @@ export async function renderToString<Component extends CustomElement>(component:
     if (clientOnly) {
       _writeClientRoot(out, tagName, component, serializedInputs);
     } else {
-      _renderComponent(out, tagName, component, definition!, element => {
+      _renderComponent<Component>(out, tagName, component, definition!, element => {
         if (inputs) {
           const _entries = entries(inputs);
           for (let i = 0; i < _entries.length; i++) {

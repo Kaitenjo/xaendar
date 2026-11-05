@@ -1,0 +1,6 @@
+@import { ReviewsComponent } from './reviews/reviews.xd.component.ts'
+
+<!-- Below the fold: the code of the reviews is loaded when they enter the viewport -->
+@hydrate (visible) {
+  <app-reviews product="{product().id}" />
+}

@@ -1,0 +1,8 @@
+@import { NewsletterFormComponent } from './newsletter-form/newsletter-form.xd.component.ts'
+
+<!-- Not needed at first, ready soon: hydrates once the browser has nothing else to do -->
+<footer>
+  @hydrate (idle) {
+    <app-newsletter-form />
+  }
+</footer>

@@ -57,6 +57,7 @@ Check at least the following:
 - `.forEach`, and `for…of` over an array, instead of an indexed `for` (`for…of` stays for `Map` and `Set`).
 - Empty collections or objects created only to be looped over or spread (`?? []`, `|| []`, `?? new Map()`, `...(x ?? [])`, `...(condition ? [item] : [])`, `...(x ?? {})`, `...(condition ? { key: value } : {})`, `...condition && { key: value }`), a spread of an array or an object that may be empty, a function returning an empty array/`Map`/`Set` instead of `undefined` for "nothing", and a collection tested with a bare `if (items)` instead of `if (items?.length)` / `if (items?.size)`.
 - A condition and its negation tested in separate blocks (`if (x) { … } if (!x) { … }`, `@if (x)` … `@if (!x)`), instead of `if`/`else`.
+- An `if`/`else` whose branches each hold a single line a ternary can express (`return x ? a : b;`, `value = x ? a : b;`, `x ? open() : close();`).
 - The same value compared with several constants in separate `if`s or in an `else if` / `@else if` chain, instead of `switch` / `@switch`.
 - Spaces: an interpolation in a property binding with spaces inside its braces (`title="{ title() }"` instead of `title="{title()}"`), an interpolation in the text without them (`{title()}` instead of `{ title() }`), a control-flow keyword glued to its parenthesis (`@if(x)` instead of `@if (x)`).
 - Line breaks:

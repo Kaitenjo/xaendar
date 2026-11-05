@@ -17,3 +17,8 @@ import { Chart } from 'chart-library';
 })
 export class SalesChartComponent extends CustomElement { }`
 };
+
+/**
+ * The error of a listener in a @placeholder, shown by the page tools/ssr/client-only.
+ */
+export const PLACEHOLDER_LISTENER_ERROR = '[Parser] (click) never runs: the server renders a @placeholder, and the browser replaces it without running its code';

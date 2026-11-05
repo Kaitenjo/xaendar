@@ -1,0 +1,8 @@
+$ npm run prerender            # "prerender": ["/", "/about", "/blog"]
+dist/client/
+├─ index.html                  # /
+├─ about/
+│  └─ index.html               # /about
+├─ blog/
+│  └─ index.html               # /blog
+└─ assets/

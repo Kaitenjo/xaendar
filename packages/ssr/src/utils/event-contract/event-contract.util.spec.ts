@@ -1,5 +1,4 @@
 // @vitest-environment happy-dom
-import type { _EventContract } from '@xaendar/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 await vi.hoisted(async () => {
@@ -7,17 +6,15 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _EVENT_CONTRACT_KEY } = await import('@xaendar/core');
+const core = await import('@xaendar/core');
 const { _writeEventContract, eventContract } = await import('./event-contract.util');
-
-const page = window as unknown as Record<string, _EventContract | undefined>;
 
 /**
  * Runs the contract on a root.
  */
 const run = (root: Element, names = ['click', 'change', 'submit'], limit = 10) => {
-  eventContract(root, _EVENT_CONTRACT_KEY, names, 'data-xd-submit', limit);
-  return page[_EVENT_CONTRACT_KEY]!;
+  eventContract(root, core._EVENT_CONTRACT_KEY, names, 'data-xd-submit', limit);
+  return window[core._EVENT_CONTRACT_KEY]!;
 };
 
 /**
@@ -33,12 +30,12 @@ const createRoot = (html = '<button></button>') => {
 };
 
 afterEach(() => {
-  const contract = page[_EVENT_CONTRACT_KEY];
+  const contract = window[core._EVENT_CONTRACT_KEY];
   for (let i = 0; contract && i < contract.stops.length; i++) {
     contract.stops[i]();
   }
 
-  delete page[_EVENT_CONTRACT_KEY];
+  delete window[core._EVENT_CONTRACT_KEY];
   document.body.innerHTML = '';
 });
 
@@ -147,7 +144,7 @@ describe('_writeEventContract', () => {
 
     expect(script.startsWith('<script>(')).toBe(true);
     expect(script.endsWith('</script>')).toBe(true);
-    expect(script).toContain('document.currentScript.previousElementSibling,"__xdEvents",["click","dblclick","input","change","submit","keydown","keyup","focusin","focusout","pointerdown"],"data-xd-submit",256');
+    expect(script).toContain('document.currentScript.previousElementSibling,Symbol.for("xaendar.eventContract"),["click","dblclick","input","change","submit","keydown","keyup","focusin","focusout","pointerdown"],"data-xd-submit",256');
   });
 
   it('runs by itself in a page, needing nothing outside of its text', () => {
@@ -157,7 +154,7 @@ describe('_writeEventContract', () => {
     new Function('root', script)(root);
     nested.querySelector('button')!.click();
 
-    expect(page[_EVENT_CONTRACT_KEY]!.events).toHaveLength(1);
+    expect(window[core._EVENT_CONTRACT_KEY]!.events).toHaveLength(1);
   });
 
   it('writes the nonce of the response on the script, escaped', () => {

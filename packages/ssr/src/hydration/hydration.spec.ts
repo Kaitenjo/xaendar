@@ -1037,7 +1037,7 @@ describe('hydration', () => {
     }
 
     afterEach(() => {
-      delete (globalThis as unknown as Record<string, unknown>).__xdEvents;
+      delete window[core._EVENT_CONTRACT_KEY];
     });
 
     it('replays what the user did before the runtime was there, without warnings', async () => {
