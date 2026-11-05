@@ -37,6 +37,23 @@ function getNestedNodes(node: ASTNode): Array<readonly ASTNode[]> | undefined {
     case ASTNodeType.Try:
       return [node.children, node.catch.children];
 
+    case ASTNodeType.Defer: {
+      const lists: Array<readonly ASTNode[]> = [node.children];
+      if (node.placeholder) {
+        lists.push(node.placeholder.children);
+      }
+
+      if (node.loading) {
+        lists.push(node.loading.children);
+      }
+
+      if (node.error) {
+        lists.push(node.error.children);
+      }
+
+      return lists;
+    }
+
     case ASTNodeType.If:
     case ASTNodeType.ElseIf:
       return node.alternate ? [node.children, [node.alternate]] : [node.children];

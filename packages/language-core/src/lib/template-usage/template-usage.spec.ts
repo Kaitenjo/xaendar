@@ -43,6 +43,7 @@ describe('getTemplateUsage', () => {
       ['an element ref', '<p #field></p>', 'declares the element ref #field'],
       ['a @hydrate', '@hydrate (idle) { }', 'declares a @hydrate'],
       ['a @client', '@client { }', 'declares a @client'],
+      ['a @defer', '@defer (idle) { }', 'declares a @defer'],
       ['a lazy import', '@import lazy { Panel } from \'./panel\';\n<p></p>', 'imports ./panel lazily'],
       ['a custom element outside of the project', '<sl-button></sl-button>', 'renders <sl-button>, which is not a component of the project'],
       ['a signal of a module', '{ count() }', 'reads the signal count of a module'],
@@ -107,6 +108,10 @@ describe('getTemplateUsage', () => {
       ['a @client', '@client { <x-child></x-child> }'],
       ['a @try', '@try { <x-child></x-child> } @catch { }'],
       ['a @catch', '@try { } @catch (error) { <x-child></x-child> }'],
+      ['a @defer', '@defer (idle) { <x-child></x-child> }'],
+      ['the @placeholder of a @defer', '@defer (idle) { } @placeholder { <x-child></x-child> }'],
+      ['the @loading of a @defer', '@defer (idle) { } @loading { <x-child></x-child> }'],
+      ['the @error of a @defer', '@defer (idle) { } @error { <x-child></x-child> }'],
       ['an element in a reactive @if', '@if (open()) { <div><x-child></x-child></div> }'],
       ['a constant @if in a reactive one', '@if (open()) { @if (other) { <x-child></x-child> } }']
     ])('tells the browser may create a component in %s', (_case, source) => {

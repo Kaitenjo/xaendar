@@ -138,6 +138,34 @@ describe('walkTemplate', () => {
     ]);
   });
 
+  it('visits a @defer, the expression of when, its content and the blocks following it, scopes of their own, the @error declaring the error under its name', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('@defer (when a) { { b } <i #inContent></i> } @placeholder { { c } } @loading { { d } } @error (failure) { { failure } } @defer (idle) { } @error { { e } }'), [], {
+      defer: node => visits.push(`defer ${node.triggers.length}`),
+      expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
+    });
+
+    expect(visits).toEqual([
+      'defer 1',
+      'expression a []',
+      'expression b [inContent]',
+      'expression c []',
+      'expression d []',
+      'expression failure [failure]',
+      'defer 1',
+      'expression e []'
+    ]);
+  });
+
+  it('walks only the @placeholder of a @defer when asked to walk what the server renders', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('@defer (when a) { {b} } @placeholder { {c} } @loading { {d} } @error { {e} } @defer (idle) { {f} }'), [], {
+      expression: expression => visits.push(expression.getText())
+    }, true);
+
+    expect(visits).toEqual(['c']);
+  });
+
   it('walks a @client without a @placeholder, and nothing without callbacks', () => {
     expect(() => walkTemplate(parseTemplate('@client { }'), [], {})).not.toThrow();
   });

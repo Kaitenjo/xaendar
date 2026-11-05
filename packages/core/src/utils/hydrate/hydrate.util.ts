@@ -3,11 +3,10 @@ import { _SSR_MARKERS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
-import type { HydrateTrigger } from '../../types/hydrate-trigger.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import type { _Context } from '../context/context.util';
-import { armTriggers, recordEvents, replayEvents } from '../hydration-triggers/hydration-triggers.util';
+import { armTriggers, recordEvents, replayEvents, toIdle } from '../hydration-triggers/hydration-triggers.util';
 
 /**
  * Renders a `@hydrate` block, whose content the server rendered waits for the first of its triggers to hydrate.
@@ -142,24 +141,6 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     if (interaction && recorded.events.length) {
       queueMicrotask(() => active && fire());
     }
-  }
-}
-
-/**
- * Returns the trigger content without elements waits for in place of one watching its elements, `visible` or
- * `interaction`: `idle`.
- *
- * @param trigger - The trigger.
- * @returns The trigger to wait for.
- */
-function toIdle(trigger: HydrateTrigger): HydrateTrigger {
-  switch (trigger) {
-    case 'visible':
-    case 'interaction':
-      return 'idle';
-
-    default:
-      return trigger;
   }
 }
 

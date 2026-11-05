@@ -84,6 +84,15 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('types the error of an @error as the one of a catch, and reports the trigger of a @defer watching no element', async () => {
+    const source = '@defer (visible, when title) { { title } } @error (failure) { { failure.message } }';
+
+    expect(await diagnose(source)).toEqual([
+      ['visible', 'The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element', DiagnosticCategory.Error],
+      ['failure', '\'failure\' is of type \'unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('reports the type errors on the exact characters of the template they come from', async () => {
     const source = '<b (click)="nope()">{ missing }</b>\n@for (item of items; track item().id) { {item().nam} }';
 

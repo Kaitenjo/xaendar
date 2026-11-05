@@ -47,3 +47,13 @@
 } @placeholder {                                           <!-- optional: the server renders it instead -->
   <p>Loading…</p>
 }
+
+@defer (interaction) {                                     <!-- or load, idle, visible, when expr -->
+  <app-comments />
+} @placeholder {                                           <!-- optional: until a trigger fires -->
+  <button>Show the comments</button>
+} @loading {                                               <!-- optional: while the modules load -->
+  <p>Loading…</p>
+} @error (error) {                                         <!-- optional: the modules failed to load -->
+  <p>Not available</p>
+}

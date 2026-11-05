@@ -78,8 +78,8 @@ export function getExpressionContext(source: string, offset: number): Expression
       const open = before.indexOf('(', lastToken!.span.end);
       // The condition of a `@for` starts with the name of its item, written before ` of ` (or the `;` of an iterable without item)
       const isForItem = lastToken!.type === TokenType.FOR && !/\sof\s|;/.test(before.slice(open + 1, span.start));
-      // The parentheses of a @catch hold the name of its error, not an expression
-      if (open === -1 || isForItem || lastToken!.type === TokenType.CATCH) {
+      // The parentheses of a @catch and of an @error hold the name of the error, not an expression
+      if (open === -1 || isForItem || lastToken!.type === TokenType.CATCH || lastToken!.type === TokenType.ERROR) {
         return undefined;
       }
 

@@ -27,6 +27,9 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'placeholder': '@placeholder {\n\t$0\n}',
   'try': '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}',
   'catch': '@catch (${1:error}) {\n\t$0\n}',
+  'defer': '@defer ($1) {\n\t$0\n}',
+  'loading': '@loading {\n\t$0\n}',
+  'error': '@error (${1:error}) {\n\t$0\n}',
   'import': '@import { $2 } from \'$1\';',
   'render': '@render $1($0)',
   'let': '@let $1 = $0;'
@@ -39,9 +42,10 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
 const RETRIGGERING_KEYWORDS: ReadonlySet<KeywordContext['keywords'][number]> = new Set(['if', 'else if', 'for', 'switch', 'import']);
 
 /**
- * The keywords of the blocks only a project rendering on the server can write, which the type-check rejects elsewhere.
+ * The keywords of the blocks only a project rendering on the server can write, which the type-check rejects elsewhere,
+ * along with the `@placeholder` of a `@client`: the one of a `@defer` is written in any project.
  */
-const SERVER_KEYWORDS: ReadonlySet<KeywordContext['keywords'][number]> = new Set(['hydrate', 'client', 'placeholder']);
+const SERVER_KEYWORDS: ReadonlySet<KeywordContext['keywords'][number]> = new Set(['hydrate', 'client']);
 
 /**
  * The kinds of the symbols that are only types, which an expression cannot read.
@@ -172,8 +176,9 @@ export function getTemplateKeywordCompletions(templatePath: string, source: stri
     return undefined;
   }
 
-  const { keywords, span } = context;
-  const available = readSsr(dirname(templatePath)) === false ? keywords.filter(keyword => !SERVER_KEYWORDS.has(keyword)) : keywords;
+  const { keywords, span, clientPlaceholder } = context;
+  const isServerKeyword = (keyword: KeywordContext['keywords'][number]) => SERVER_KEYWORDS.has(keyword) || (keyword === 'placeholder' && !!clientPlaceholder);
+  const available = readSsr(dirname(templatePath)) === false ? keywords.filter(keyword => !isServerKeyword(keyword)) : keywords;
   return available.map((keyword, index): TemplateCompletion => ({
     name: `@${keyword}`,
     kind: ScriptElementKind.keyword,

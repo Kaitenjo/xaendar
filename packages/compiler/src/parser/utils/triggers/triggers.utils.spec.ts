@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getTemplateSpan } from '../expression-validator/expression-validator';
-import { parseHydrateTriggers } from './hydrate-triggers.utils';
+import { parseDeferTriggers, parseHydrateTriggers } from './triggers.utils';
 
 describe('parseHydrateTriggers', () => {
   it('parses the triggers written by name, with where each one is written', () => {
@@ -59,5 +59,22 @@ describe('parseHydrateTriggers', () => {
 
   it('throws for an expression of when holding a construct not allowed in the templates', () => {
     expect(() => parseHydrateTriggers('when await a', 0)).toThrow('is not allowed inside template expressions');
+  });
+});
+
+describe('parseDeferTriggers', () => {
+  it('parses the triggers of a @hydrate but never', () => {
+    expect(parseDeferTriggers('interaction, when ready()', 8)).toMatchObject([
+      { kind: 'interaction', span: { start: 8, end: 19 } },
+      { kind: 'when', expression: 'ready()', span: { start: 21, end: 33 } }
+    ]);
+  });
+
+  it('throws for never, naming the triggers of a @defer', () => {
+    expect(() => parseDeferTriggers('never', 0)).toThrow(expect.objectContaining({
+      message: 'Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression',
+      cause: { start: 0, end: 5 }
+    }));
+    expect(() => parseDeferTriggers('', 0)).toThrow('@defer needs a trigger: load, idle, visible, interaction, or when followed by an expression');
   });
 });

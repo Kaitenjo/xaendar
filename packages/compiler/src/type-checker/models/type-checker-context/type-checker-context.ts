@@ -70,7 +70,7 @@ export class TypeCheckContext extends CompilerContext {
    *   of the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
   constructor(parent?: TypeCheckContext, namespace?: ElementNamespace) {
-    super(parent, namespace);
+    super(parent as any, namespace);
   }
   
   /**
@@ -98,11 +98,7 @@ export class TypeCheckContext extends CompilerContext {
    * Records in the outermost scope that the type-check code reads the template helpers (see {@link usesTemplateHelpers}).
    */
   public recordTemplateHelpers(): void {
-    if (this.parent) {
-      this.parent.recordTemplateHelpers();
-    } else {
-      this._usesTemplateHelpers = true;
-    }
+   this.parent?.recordTemplateHelpers() ?? (this._usesTemplateHelpers = true);
   }
 
   /**
@@ -112,11 +108,7 @@ export class TypeCheckContext extends CompilerContext {
    * @param position - The position of the element in the template.
    */
   public addInstantiation(position: number): void {
-    if (this.parent) {
-      this.parent.addInstantiation(position);
-    } else {
-      this._instantiations.add(position);
-    }
+   this.parent?.addInstantiation(position) ?? this._instantiations.add(position);
   }
 
   /**
@@ -127,7 +119,7 @@ export class TypeCheckContext extends CompilerContext {
    * @returns `true` if the instantiation is written, `false` otherwise.
    */
   public hasInstantiation(position: number): boolean {
-    return this.parent ? this.parent.hasInstantiation(position) : this._instantiations.has(position);
+    return this.parent?.hasInstantiation(position) ?? this._instantiations.has(position);
   }
 
   /**

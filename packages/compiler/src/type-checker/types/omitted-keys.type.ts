@@ -13,6 +13,7 @@ export type OmittedKeys = Exclude<ASTNodeType,
  | ASTNodeType.Hydrate
  | ASTNodeType.Client
  | ASTNodeType.Try
+ | ASTNodeType.Defer
  | ASTNodeType.Import
  | ASTNodeType.Template
  | ASTNodeType.Render

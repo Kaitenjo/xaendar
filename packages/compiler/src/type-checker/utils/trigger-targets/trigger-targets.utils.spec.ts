@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseTemplate } from '../../../compile/compile';
-import { checkHydrateContent } from './hydrate-content.utils';
+import { checkTriggerTargets } from './trigger-targets.utils';
 
 /**
  * Checks a template, returning for each error the text of the template it points to.
  */
-const check = (template: string) => checkHydrateContent(parseTemplate(template)).map(error => {
+const check = (template: string) => checkTriggerTargets(parseTemplate(template)).map(error => {
   const { start, end } = error.cause as { start: number, end: number };
   return template.slice(start, end);
 });
 
-describe('checkHydrateContent', () => {
+describe('checkTriggerTargets', () => {
   it('rejects a @client without a @placeholder, at the trigger, telling what to add', () => {
-    const [error] = checkHydrateContent(parseTemplate('@hydrate (visible) { @client { <b></b> } }'));
+    const [error] = checkTriggerTargets(parseTemplate('@hydrate (visible) { @client { <b></b> } }'));
 
     expect(error.message).toBe('The trigger "visible" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client');
     expect(check('@hydrate (visible) { @client { <b></b> } }')).toEqual(['visible']);
@@ -61,5 +61,35 @@ describe('checkHydrateContent', () => {
 
   it('reports every @hydrate failing', () => {
     expect(check('@hydrate (visible) { text } @hydrate (interaction) { text } <p></p>')).toEqual(['visible', 'interaction']);
+  });
+
+  describe('a @defer', () => {
+    it('rejects one without a @placeholder, whatever its content, at the trigger, telling what to add', () => {
+      const [error] = checkTriggerTargets(parseTemplate('@defer (interaction) { <b></b> }'));
+
+      expect(error.message).toBe('The trigger "interaction" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element');
+      expect(check('@defer (idle, visible) { <b></b> } @loading { <i></i> }')).toEqual(['visible']);
+    });
+
+    it.each([
+      ['a text', '@defer (visible) { <b></b> } @placeholder { Loading }'],
+      ['a @defer without a @placeholder', '@defer (visible) { <b></b> } @placeholder { @defer (idle) { <i></i> } }'],
+      ['a @client without a @placeholder', '@defer (visible) { <b></b> } @placeholder { @client { <i></i> } }']
+    ])('rejects a @placeholder holding %s', (_name, template) => {
+      expect(check(template)).toEqual(['visible']);
+    });
+
+    it.each([
+      ['an element', '@defer (visible) { text } @placeholder { <i></i> }'],
+      ['a @defer whose @placeholder holds an element', '@defer (interaction) { text } @placeholder { @defer (idle) { text } @placeholder { <i></i> } }'],
+      ['triggers watching no element', '@defer (idle, load, when a()) { text }']
+    ])('accepts %s', (_name, template) => {
+      expect(check(template)).toEqual([]);
+    });
+
+    it('lets a @hydrate watch the @placeholder of a @defer in its content, which the server renders', () => {
+      expect(check('@hydrate (visible) { @defer (idle) { text } @placeholder { <i></i> } }')).toEqual([]);
+      expect(check('@hydrate (visible) { @defer (idle) { <i></i> } }')).toEqual(['visible']);
+    });
   });
 });

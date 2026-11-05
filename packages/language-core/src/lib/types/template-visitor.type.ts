@@ -1,4 +1,4 @@
-import type { ClientNode, HydrateNode, TryNode, ImportNode, ElementNode, ComponentMetadata, ElementRefNode, AttributeNode, ComponentOrDirectiveMetadata, ClassBindingNode, EventNode, DirectiveNode, StructuralDirectiveNode, DirectiveMetadata, ForNode, TemplateNode, RenderNode, LetNode } from '@xaendar/compiler';
+import type { ClientNode, DeferNode, HydrateNode, TryNode, ImportNode, ElementNode, ComponentMetadata, ElementRefNode, AttributeNode, ComponentOrDirectiveMetadata, ClassBindingNode, EventNode, DirectiveNode, StructuralDirectiveNode, DirectiveMetadata, ForNode, TemplateNode, RenderNode, LetNode } from '@xaendar/compiler';
 import type { Expression } from 'typescript';
 
 /**
@@ -65,9 +65,14 @@ export type TemplateVisitor = {
    */
   readonly tryBlock?: (node: TryNode) => void;
   /**
+   * Invoked for every `@defer`, with the blocks following it.
+   */
+  readonly defer?: (node: DeferNode) => void;
+  /**
    * Invoked for every expression, with the names of the variables declared by the template in its scope: the template
    * variables, the templates and the `@let` of the enclosing scopes, the variables of the enclosing `@for` blocks, the parameters of
-   * the enclosing template, the error of the enclosing `@catch` blocks, and `$event` for the parameters of an event.
+   * the enclosing template, the error of the enclosing `@catch` and `@error` blocks, and `$event` for the parameters of an
+   * event.
    */
   readonly expression?: (expression: Expression, variables: ReadonlySet<string>) => void;
 };

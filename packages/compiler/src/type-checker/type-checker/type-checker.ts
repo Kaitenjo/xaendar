@@ -12,6 +12,7 @@ import { typeCheckLet } from '../states/type-check-let/type-check-let.state.js';
 import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
 import { typeCheckClient } from '../states/type-check-client/type-check-client.state.js';
 import { typeCheckTry } from '../states/type-check-try/type-check-try.state.js';
+import { typeCheckDefer } from '../states/type-check-defer/type-check-defer.state.js';
 import { typeCheckHydrate } from '../states/type-check-hydrate/type-check-hydrate.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
@@ -25,7 +26,7 @@ import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
 import { typeCheckScope } from '../utils/scope/scope.utils.js';
 import { getTemplateHelpers } from '../utils/template-types/template-types.utils.js';
-import { checkHydrateContent } from '../utils/hydrate-content/hydrate-content.utils.js';
+import { checkTriggerTargets } from '../utils/trigger-targets/trigger-targets.utils.js';
 import { checkServerBlocks } from '../utils/server-blocks/server-blocks.utils.js';
 import { checkVariableOrder } from '../utils/variable-order/variable-order.utils.js';
 
@@ -72,6 +73,7 @@ export class TypeChecker {
     [ASTNodeType.Hydrate]: typeCheckHydrate,
     [ASTNodeType.Client]: typeCheckClient,
     [ASTNodeType.Try]: typeCheckTry,
+    [ASTNodeType.Defer]: typeCheckDefer,
     [ASTNodeType.Import]: typeCheckImport,
     [ASTNodeType.Template]: typeCheckTemplate,
     [ASTNodeType.Render]: typeCheckRender,
@@ -171,7 +173,7 @@ export class TypeChecker {
     // The element refs read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
     this._report(checkVariableOrder(this._ast));
     // A @hydrate whose trigger has no element to watch, which would silently wait for the browser to be idle
-    this._report(checkHydrateContent(this._ast));
+    this._report(checkTriggerTargets(this._ast));
     // A @hydrate or a @client in a project without the HTML of the server, which they say what to do with
     if (ssr === false) {
       this._report(checkServerBlocks(this._ast));

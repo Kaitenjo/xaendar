@@ -186,6 +186,7 @@ export const NAV: readonly NavSection[] = [
         page('templates/imports', 'import'),
         page('templates/let', 'let variable alias getter computed derived value'),
         page('templates/try', 'try catch error exception fallback broken'),
+        page('templates/defer', 'defer lazy deferred placeholder loading error trigger idle visible interaction when chunk code splitting'),
         page('templates/element-refs', 'element ref reference ref # element focus dialog'),
         page('templates/conditional-bindings', 'conditional binding attribute if switch tag'),
         page('templates/reusable-templates', 'template render reusable fragment parameters optional default recursion tree ng-template outlet'),

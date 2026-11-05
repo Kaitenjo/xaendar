@@ -19,6 +19,9 @@ import type { HydrateToken } from './tokens/hydrate-token.type';
 import type { PlaceholderToken } from './tokens/placeholder-token.type';
 import type { TryToken } from './tokens/try-token.type';
 import type { CatchToken } from './tokens/catch-token.type';
+import type { DeferToken } from './tokens/defer-token.type';
+import type { LoadingToken } from './tokens/loading-token.type';
+import type { ErrorToken } from './tokens/error-token.type';
 import { IfToken } from './tokens/if-token.type';
 import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
@@ -78,4 +81,7 @@ export type Token =
   | PlaceholderToken
   | TryToken
   | CatchToken
+  | DeferToken
+  | LoadingToken
+  | ErrorToken
   | EOFToken;

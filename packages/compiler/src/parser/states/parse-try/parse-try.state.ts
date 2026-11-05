@@ -7,7 +7,7 @@ import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { CatchNode } from '../../types/nodes/catch-node.type';
 import type { TryNode } from '../../types/nodes/try-node.type';
-import { assertDeclaredName } from '../../utils/identifier/identifier.utils';
+import { readErrorName } from '../../utils/error-name/error-name.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**
@@ -33,18 +33,7 @@ export function parseTry(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode
   // consume the keyword
   cursor.advance();
   const catchNode: CatchNode = { type: ASTNodeType.Catch, children: [], span: catchToken.span };
-  const nameToken = cursor.peek();
-  if (nameToken.type === TokenType.CONDITION) {
-    const raw = nameToken.parts[0];
-    const name = raw.trim();
-    const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
-    const nameSpan = { start, end: start + name.length };
-    assertDeclaredName(name, nameSpan, '@catch error');
-    catchNode.name = name;
-    catchNode.nameSpan = nameSpan;
-    // consume the name
-    cursor.advance();
-  }
+  readErrorName(cursor, catchNode, '@catch error');
 
   // consume BLOCK_OPEN
   cursor.advance();

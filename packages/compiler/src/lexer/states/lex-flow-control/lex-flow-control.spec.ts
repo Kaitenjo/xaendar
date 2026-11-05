@@ -96,6 +96,36 @@ describe('lexFlowControl', () => {
     });
   });
 
+  it('recognises @defer, reading its triggers as a condition', () => {
+    const cursor = new LexerCursor('@defer (idle) {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_CONDITION,
+      tokens: [{ type: TokenType.DEFER }],
+      pushState: true
+    });
+  });
+
+  it('recognises @loading', () => {
+    const cursor = new LexerCursor('@loading {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.LOADING }]
+    });
+  });
+
+  it('recognises @error with or without the name of its error', () => {
+    const named = new LexerCursor('@error (failure) {');
+    expect(lexFlowControl(named, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_CONDITION,
+      tokens: [{ type: TokenType.ERROR }],
+      pushState: true
+    });
+    expect(lexFlowControl(new LexerCursor('@error {'), context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.ERROR }]
+    });
+  });
+
   it('recognises @render', () => {
     const cursor = new LexerCursor('@render row(item())');
     expect(lexFlowControl(cursor, context)).toEqual({

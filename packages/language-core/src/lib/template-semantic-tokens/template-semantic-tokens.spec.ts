@@ -61,6 +61,16 @@ describe('getTemplateSemanticTokens', () => {
     ]);
   }, TIMEOUT);
 
+  it('colors the error of an @error where declared and where read', async () => {
+    const source = '@defer (idle) { } @error (failure) { { failure } } @defer (idle) { }';
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([
+      ['failure', 'variable', 'readonly'],
+      ['failure', 'variable', 'readonly']
+    ]);
+  }, TIMEOUT);
+
   it('colors the element refs where declared and where read, the head of a handler called on one included', async () => {
     const source = [
       '<button (click)="dialog.showModal()" (focus)="select(field)">{ field.value }</button>',

@@ -8,6 +8,7 @@ import { ParserCursor } from '../models/parser-cursor/parser-cursor.model.js';
 import { parseElement } from '../states/parse-element/parse-element.state.js';
 import { parseForControlFlow } from '../states/parse-for/parse-for.state.js';
 import { parseClient, parseOrphanPlaceholder } from '../states/parse-client/parse-client.state.js';
+import { parseDefer, parseOrphanError, parseOrphanLoading } from '../states/parse-defer/parse-defer.state.js';
 import { parseHydrate } from '../states/parse-hydrate/parse-hydrate.state.js';
 import { parseIfControlFlow } from '../states/parse-if/parse-if.state.js';
 import { parseImport } from '../states/parse-import/parse-import.state.js';
@@ -54,6 +55,9 @@ export class Parser {
     [TokenType.PLACEHOLDER]: parseOrphanPlaceholder,
     [TokenType.TRY]: parseTry,
     [TokenType.CATCH]: parseOrphanCatch,
+    [TokenType.DEFER]: parseDefer,
+    [TokenType.LOADING]: parseOrphanLoading,
+    [TokenType.ERROR]: parseOrphanError,
     [TokenType.IMPORT]: parseImport,
     [TokenType.RENDER]: parseRender,
     [TokenType.LET]: parseLet

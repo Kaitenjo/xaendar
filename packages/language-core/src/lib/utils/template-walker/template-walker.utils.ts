@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ForNode, getForVariables, type HydrateNode, type IfNode, isStructuralElement, type StructuralDirectiveNode, type TryNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type CatchNode, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DeferNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ErrorNode, type ForNode, getForVariables, type HydrateNode, type IfNode, isStructuralElement, type StructuralDirectiveNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
 
 /**
@@ -112,7 +112,13 @@ class TemplateWalker {
 
       case ASTNodeType.Try:
         this._visitor.tryBlock?.(node);
-        this._walkTry(node, variables);
+        this.walkScope(node.children, variables);
+        this._walkErrorScope(node.catch, variables);
+        break;
+
+      case ASTNodeType.Defer:
+        this._visitor.defer?.(node);
+        this._walkDefer(node, variables);
         break;
 
       case ASTNodeType.Template: {
@@ -284,14 +290,51 @@ class TemplateWalker {
    * @param variables - The variables declared in the scope enclosing the block.
    */
   private _walkHydrate(node: HydrateNode, variables: ReadonlySet<string>): void {
-    for (let i = 0; !this._server && i < node.triggers.length; i++) {
-      const trigger = node.triggers[i];
+    this._walkWhen(node, variables);
+    this.walkScope(node.children, variables);
+  }
+
+  /**
+   * Walks a `@defer` block: the expression of its `when` trigger, its content and the blocks following it, each one a
+   * scope of its own, the `@error` declaring the error under the name it gives it. The server renders only its
+   * `@placeholder`.
+   *
+   * @param node - The `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  private _walkDefer(node: DeferNode, variables: ReadonlySet<string>): void {
+    const { placeholder, loading, error } = node;
+    if (!this._server) {
+      this._walkWhen(node, variables);
+      this.walkScope(node.children, variables);
+    }
+
+    if (placeholder) {
+      this.walkScope(placeholder.children, variables);
+    }
+
+    if (!this._server && loading) {
+      this.walkScope(loading.children, variables);
+    }
+
+    if (!this._server && error) {
+      this._walkErrorScope(error, variables);
+    }
+  }
+
+  /**
+   * Walks the expression of the `when` trigger of a block, if any, which the server does not read.
+   *
+   * @param node - The `@hydrate` or `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  private _walkWhen({ triggers }: HydrateNode | DeferNode, variables: ReadonlySet<string>): void {
+    for (let i = 0; !this._server && i < triggers.length; i++) {
+      const trigger = triggers[i];
       if (trigger.kind === 'when') {
         this._visitor.expression?.(trigger.expressionNode, variables);
       }
     }
-
-    this.walkScope(node.children, variables);
   }
 
   /**
@@ -311,22 +354,19 @@ class TemplateWalker {
   }
 
   /**
-   * Walks a `@try` block and its `@catch`, each one a scope of its own: the server renders either of them, so both are
-   * walked. The `@catch` declares the error, under the name it gives it.
+   * Walks a block receiving an error, a scope of its own declaring the error under the name it gives it: the `@catch` of
+   * a `@try`, which the server renders as it does the content, or the `@error` of a `@defer`.
    *
-   * @param node - The `@try` block.
+   * @param node - The `@catch` or `@error` block.
    * @param variables - The variables declared in the scope enclosing the block.
    */
-  private _walkTry(node: TryNode, variables: ReadonlySet<string>): void {
-    this.walkScope(node.children, variables);
-
-    const { name, children } = node.catch;
-    const catchVariables = new Set(variables);
+  private _walkErrorScope({ name, children }: CatchNode | ErrorNode, variables: ReadonlySet<string>): void {
+    const errorVariables = new Set(variables);
     if (name) {
-      catchVariables.add(name);
+      errorVariables.add(name);
     }
 
-    this.walkScope(children, catchVariables);
+    this.walkScope(children, errorVariables);
   }
 
   /**

@@ -54,7 +54,8 @@ export function parseClient(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
 }
 
 /**
- * Rejects a `@placeholder` block not following the block of a `@client`, or following another `@placeholder`.
+ * Rejects a `@placeholder` block not following the block of a `@client` or of a `@defer`, or following the
+ * `@placeholder` of a `@client`.
  *
  * @param _cursor - Unused parser cursor.
  * @param _parseNode - Unused.
@@ -62,5 +63,5 @@ export function parseClient(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
  * @throws Always.
  */
 export function parseOrphanPlaceholder(_cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: PlaceholderToken): never {
-  throw new Error('@placeholder must follow the block of a @client', { cause: token.span });
+  throw new Error('@placeholder must follow the block of a @client or a @defer', { cause: token.span });
 }

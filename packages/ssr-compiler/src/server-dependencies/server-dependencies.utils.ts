@@ -4,10 +4,10 @@ import type { ServerCompileOptions } from '../types/server-compile-options.type'
 
 /**
  * Keeps, among the modules a template imports, the ones the server evaluates: every one of them, unless the template
- * holds a `@client` block or imports a component rendering only in the browser (`ssr: { render: false }`). In that case
- * they are the modules declaring a component or a directive the server renders, so that what only the browser renders is
- * not loaded on the server, where its module may find no `document`. The other modules are left to the code of the
- * template, which imports the symbols it reads.
+ * holds a `@client` or a `@defer` block, or imports a component rendering only in the browser (`ssr: { render: false }`).
+ * In that case they are the modules declaring a component or a directive the server renders, so that what only the
+ * browser renders is not loaded on the server, where its module may find no `document`. The other modules are left to
+ * the code of the template, which imports the symbols it reads.
  *
  * @param input - The source of the template.
  * @param dependencyPaths - The absolute paths of the modules the template imports.
@@ -45,7 +45,7 @@ export async function getServerDependencies(input: string, dependencyPaths: read
  *
  * @param nodes - The nodes.
  * @param selectors - The selectors, filled as they are found.
- * @returns `true` when the nodes hold a `@client` block.
+ * @returns `true` when the nodes hold a `@client` or a `@defer` block.
  */
 function collectSelectors(nodes: readonly ASTNode[], selectors: Set<string>): boolean {
   let client = false;
@@ -80,7 +80,9 @@ function collectSelectors(nodes: readonly ASTNode[], selectors: Set<string>): bo
         client = collectSelectors(node.catch.children, selectors) || client;
         break;
 
+      // The server renders only the @placeholder of these blocks
       case ASTNodeType.Client:
+      case ASTNodeType.Defer:
         client = true;
         if (node.placeholder) {
           collectSelectors(node.placeholder.children, selectors);

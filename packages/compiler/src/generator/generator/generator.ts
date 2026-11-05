@@ -13,6 +13,7 @@ import { generateElement } from '../states/generate-element/generate-element.sta
 import { generateFor } from '../states/generate-for/generate-for.state.js';
 import { generateClient } from '../states/generate-client/generate-client.state.js';
 import { generateTry } from '../states/generate-try/generate-try.state.js';
+import { generateDefer } from '../states/generate-defer/generate-defer.state.js';
 import { generateHydrate } from '../states/generate-hydrate/generate-hydrate.state.js';
 import { generateIf } from '../states/generate-if/generate-if.state.js';
 import { generateLet } from '../states/generate-let/generate-let.state.js';
@@ -50,6 +51,7 @@ export class Generator {
     [ASTNodeType.Hydrate]: generateHydrate,
     [ASTNodeType.Client]: generateClient,
     [ASTNodeType.Try]: generateTry,
+    [ASTNodeType.Defer]: generateDefer,
     [ASTNodeType.Import]: skipGeneration,
     [ASTNodeType.Template]: skipGeneration,
     [ASTNodeType.Render]: generateRender,
@@ -64,7 +66,7 @@ export class Generator {
   constructor(
     private readonly _input: string,
     private readonly _ast: ASTNode[],
-    private readonly _cache?: CompilerCache
+    private readonly _cache: CompilerCache
   ) { }
 
   /**
@@ -109,8 +111,7 @@ export class Generator {
 
     try {
       this._nodeToProcess.clear();
-      const compilerContext = new CompilerContext();
-      compilerContext.cache = this._cache;
+      const compilerContext = new CompilerContext(this._cache);
       for (let i = 0; i < signals.length; i++) {
         compilerContext.addSignalClassField(signals[i]);
       }

@@ -21,6 +21,10 @@ describe('findEvent', () => {
     ['in a @client', '@client { <b (x)="f()"></b> }'],
     ['in a @try', '@try { <b (x)="f()"></b> } @catch { }'],
     ['in a @catch', '@try { <b></b> } @catch (error) { <b (x)="f()"></b> }'],
+    ['in a @defer', '@defer (idle) { <b (x)="f()"></b> }'],
+    ['in the @placeholder of a @defer', '@defer (idle) { <b></b> } @placeholder { <b (x)="f()"></b> }'],
+    ['in the @loading of a @defer', '@defer (idle) { <b></b> } @placeholder { <b></b> } @loading { <b (x)="f()"></b> }'],
+    ['in the @error of a @defer', '@defer (idle) { <b></b> } @loading { <b></b> } @error { <b (x)="f()"></b> }'],
     ['in a conditional binding', '<a @if (b) { (x)="f()" }></a>'],
     ['in a later branch of a conditional binding', '<a @if (b) { c="1" } @else { (x)="f()" }></a>'],
     ['in a @switch binding', '<a @switch (b) { @case (1) { (x)="f()" } }></a>'],
@@ -37,6 +41,7 @@ describe('findEvent', () => {
     ['in nodes without listeners', '<a b="1" c="{d}"><p>text { e }</p></a>'],
     ['in the bindings of an element without listeners', '<a @if (b) { c="1" } @@tip(d="1")></a>'],
     ['in a @if without an alternate', '@if (a) { <b></b> }'],
+    ['in a @defer without the blocks following it', '@defer (idle) { <b></b> }'],
     ['in a @render, a @let and an interpolation', '@let a = 1; { a } @render row()']
   ])('finds nothing %s', (_case, template) => {
     expect(findEvent(parse(template))).toBeUndefined();

@@ -48,6 +48,12 @@ function findNodeEvent(node: ASTNode): EventNode | undefined {
     case ASTNodeType.Try:
       return findEvent(node.children) ?? findEvent(node.catch.children);
 
+    case ASTNodeType.Defer:
+      return findEvent(node.children)
+        ?? (node.placeholder ? findEvent(node.placeholder.children) : undefined)
+        ?? (node.loading ? findEvent(node.loading.children) : undefined)
+        ?? (node.error ? findEvent(node.error.children) : undefined);
+
     default:
       // Texts, interpolations, imports, @render and @let declare no listener
       return undefined;

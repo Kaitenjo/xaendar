@@ -4,7 +4,7 @@
 export type LayoutBranch<Body> = {
   /**
    * The keyword after the `@`: `if`, `else if`, `else`, `for`, `case`, `default`, `hydrate`, `client`,
-   * `placeholder`, `try` or `catch`.
+   * `placeholder`, `try`, `catch`, `defer`, `loading` or `error`.
    */
   readonly keyword: string;
   /**

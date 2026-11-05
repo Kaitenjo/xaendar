@@ -23,9 +23,9 @@ export function getTemplateUsage(ast: readonly ASTNode[], metadatas: readonly Co
 }
 
 /**
- * Finds what a template does in the browser: its listeners, its directives, its element refs, its `@hydrate` and
- * `@client` blocks, the components of other libraries or loaded by code, the signals of a module and the globals only
- * the browser has.
+ * Finds what a template does in the browser: its listeners, its directives, its element refs, its `@hydrate`,
+ * `@client` and `@defer` blocks, the components of other libraries or loaded by code, the signals of a module and the
+ * globals only the browser has.
  *
  * @param ast - The top-level nodes of the template.
  * @param metadatas - The metadata of the components and directives the template imports.
@@ -54,6 +54,7 @@ function findTemplateLogic(ast: readonly ASTNode[], metadatas: readonly Componen
     directive: ({ selector }) => logic ??= `applies the directive ${selector}`,
     hydrate: () => logic ??= 'declares a @hydrate',
     client: () => logic ??= 'declares a @client',
+    defer: () => logic ??= 'declares a @defer',
     expression: (expression, variables) => {
       logic ??= findExpressionLogic(expression, reactive, name => !declared.has(name) && !variables.has(name));
     }
@@ -137,6 +138,22 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
         visit(node.children, true);
         if (node.placeholder) {
           collectComponents(node.placeholder.children, { dynamic: position.dynamic, placeholder: true }, metadatas, reactive, components);
+        }
+        break;
+
+      // The browser creates each part of a @defer, the @placeholder too when the modules of the content fail to load
+      case ASTNodeType.Defer:
+        visit(node.children, true);
+        if (node.placeholder) {
+          visit(node.placeholder.children, true);
+        }
+
+        if (node.loading) {
+          visit(node.loading.children, true);
+        }
+
+        if (node.error) {
+          visit(node.error.children, true);
         }
         break;
 

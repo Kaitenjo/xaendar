@@ -260,8 +260,28 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] @placeholder must follow the block of a @client',
+    message: '[Parser] @placeholder must follow the block of a @client or a @defer',
     page: 'tools/ssr/client-only'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @loading is declared twice for this @defer',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @loading must follow the block of a @defer',
+    page: 'templates/defer'
   },
   {
     phase: 'Parser',
@@ -382,6 +402,11 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'TypeChecker',
     message: '[TypeChecker] The trigger "visible" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client',
     page: 'tools/ssr/progressive-hydration'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element',
+    page: 'templates/defer'
   },
   {
     phase: 'TypeChecker',

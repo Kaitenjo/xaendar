@@ -251,10 +251,40 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @hydrate lists the same trigger twice, or two when triggers.
 - **Fix:** Keep one of them; join two conditions in the expression of a single when: when a() || b().
 
-### `[Parser] @placeholder must follow the block of a @client`
+### `[Parser] @placeholder must follow the block of a @client or a @defer`
 
-- **Cause:** A @placeholder is not right after the } of a @client: it stands alone, it follows another block or a text, or it is the second one of a @client.
-- **Fix:** Write it right after the block of a @client, once: @client { … } @placeholder { … }.
+- **Cause:** A @placeholder is not right after the } of a @client or of a @defer (or of a block following the @defer): it stands alone, it follows another block or a text, or it is the second one of a @client.
+- **Fix:** Write it right after the block of a @client or of a @defer, once: @client { … } @placeholder { … }.
+
+### `[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression`
+
+- **Cause:** A @defer without triggers between its parentheses, or with an empty one between two commas. Its triggers are required.
+- **Fix:** List at least one trigger: @defer (idle) { … }.
+
+### `[Parser] Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression`
+
+- **Cause:** A trigger of a @defer is not one of the keywords (never is a trigger of @hydrate only), or an expression is written without when.
+- **Fix:** Use load, idle, visible or interaction, and write when before an expression: @defer (when open()).
+
+### `[Parser] @loading is declared twice for this @defer`
+
+- **Cause:** A @placeholder, a @loading or an @error written twice after the same @defer.
+- **Fix:** Keep one of them: each block follows a @defer once, in any order.
+
+### `[Parser] @loading must follow the block of a @defer`
+
+- **Cause:** A @loading or an @error (`@error must follow the block of a @defer`) not right after a @defer or one of the blocks following it.
+- **Fix:** Write it right after the @defer: @defer (idle) { … } @loading { … } @error (error) { … }.
+
+### `[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element`
+
+- **Cause:** A @defer with visible or interaction without a @placeholder, or with one rendering no element (only text): those triggers watch the elements of the @placeholder, so they would never fire.
+- **Fix:** Add a @placeholder holding an element, ideally with the size of the content when the trigger is visible; or use idle, load or when.
+
+### `'error' is reserved in templates: give the error of @error another name.`
+
+- **Cause:** The name of the error of an @error, between its parentheses, is not an identifier, or is reserved (`$event`, names starting with `__` or `$$`).
+- **Fix:** Give it another identifier: @error (failure) { … }.
 
 ### `[Parser] @try needs a @catch: write @catch (error) { … } right after its block`
 

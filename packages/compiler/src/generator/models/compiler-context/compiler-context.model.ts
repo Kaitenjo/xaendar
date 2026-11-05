@@ -1,6 +1,7 @@
 import { matchesCustomElementPattern } from '@xaendar/common';
 import type { CompilerCache } from '../../../types/compiler-cache.type';
 import type { ComponentMetadata } from '../../../types/component-metadata.type';
+import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { IdentifierKind } from '../../types/identifier-kind.type';
@@ -16,12 +17,12 @@ export class CompilerContext {
    * The compiler cache associated with this context, used to store and retrieve
    * intermediate compilation results for efficiency.
    */
-  public cache?: CompilerCache;
+  public cache: CompilerCache;
   /**
-   * The modules each `@hydrate` of the template loads before its content is rendered: the ones of the components its
-   * content alone renders, which the module of the template does not import (see `getDeferredModules`).
+   * The modules each `@hydrate` and `@defer` of the template loads before its content is rendered: the ones of the
+   * components its content alone renders, which the module of the template does not import (see `getDeferredModules`).
    */
-  public deferredModules?: ReadonlyMap<HydrateNode, readonly string[]>;
+  public deferredModules?: ReadonlyMap<HydrateNode | DeferNode, readonly string[]>;
   /**
    * Parent context representing the enclosing scope.
    */
@@ -85,21 +86,22 @@ export class CompilerContext {
     return this._namespace ?? this.parent?.namespace ?? 'html';
   }
 
+  constructor(parentContext: CompilerContext, namespace?: ElementNamespace); 
+  constructor(cache: CompilerCache, namespace?: ElementNamespace);
   /**
    * Creates a new scope context.
    *
-   * @param parent - Optional parent context representing the enclosing scope.
+   * @param parentContextOrCache - Optional parent context representing the enclosing scope.
    * @param _namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
    *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
-  constructor(
-    parent?: CompilerContext,
-    private readonly _namespace?: ElementNamespace
-  ) {
-    if (parent) {
-      this.parent = parent;
-      this.cache = parent.cache;
-      this.deferredModules = parent.deferredModules;
+  constructor(parentContextOrCache: CompilerContext | CompilerCache, private readonly _namespace?: ElementNamespace) {
+    if (parentContextOrCache instanceof CompilerContext) {
+      this.parent = parentContextOrCache;
+      this.cache = parentContextOrCache.cache;
+      this.deferredModules = parentContextOrCache.deferredModules;
+    } else {
+      this.cache = parentContextOrCache;
     }
   }
 

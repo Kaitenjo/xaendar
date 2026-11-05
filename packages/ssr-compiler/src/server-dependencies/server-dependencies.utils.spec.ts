@@ -71,6 +71,19 @@ describe('getServerDependencies', () => {
     expect(await dependenciesOf(template, ['both'])).toEqual(['/src/both.ts']);
   });
 
+  it('keeps only the modules of what the @placeholder of a @defer renders, not of its content, @loading and @error', async () => {
+    const template = [
+      '@import { Waiting } from \'./waiting.ts\';',
+      '@import { Inside } from \'./inside.ts\';',
+      '@import { Outside } from \'./outside.ts\';',
+      '@import { Both } from \'./both.ts\';',
+      '@defer (idle) { <x-inside></x-inside> } @placeholder { <x-waiting></x-waiting> } @loading { <x-outside></x-outside> } @error { <x-both></x-both> }',
+      '@defer (idle) { <x-inside></x-inside> }'
+    ].join('\n');
+
+    expect(await dependenciesOf(template, ['inside', 'waiting', 'outside', 'both'])).toEqual(['/src/waiting.ts']);
+  });
+
   it('keeps the modules of what the placeholder renders, and of a @client nested in it, only for its placeholder', async () => {
     const template = [
       '@import { Waiting } from \'./waiting.ts\';',

@@ -5,7 +5,7 @@ import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { HydrateNode } from '../../types/nodes/hydrate-node.type';
-import { parseHydrateTriggers } from '../../utils/hydrate-triggers/hydrate-triggers.utils';
+import { parseHydrateTriggers } from '../../utils/triggers/triggers.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**

@@ -113,6 +113,25 @@ describe('checkVariableOrder', () => {
       ]);
     });
 
+    it('checks the expression of when of a @defer in the enclosing scope, and the content and each block following it in a scope of its own', () => {
+      const template = [
+        '@defer (when field.checked) { <p>{ a.value }</p><input #a /> }',
+        ' @placeholder { <p>{ b.value }</p><input #b /> }',
+        ' @loading { <p>{ c.value }</p><input #c /> }',
+        ' @error (error) { <p>{ error } { d.value }</p><input #d /> }',
+        '<input #field />'
+      ].join('');
+
+      expect(errorsOf(template)).toEqual([
+        [readBefore('field'), 'field'],
+        [readBefore('a'), 'a'],
+        [readBefore('b'), 'b'],
+        [readBefore('c'), 'c'],
+        [readBefore('d'), 'd']
+      ]);
+      expect(errorsOf('@defer (idle) { a }')).toBeUndefined();
+    });
+
     it('reports an element ref read by the track expression of a @for, declared by its body or outside of it', () => {
       expect(errorsOf('<input #field />@for (item of items(); track field.value + row.value + item()) { <input #row /> }')).toEqual([
         [readByTrack('field'), 'field'],

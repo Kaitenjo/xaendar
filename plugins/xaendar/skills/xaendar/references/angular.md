@@ -23,7 +23,7 @@
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
 | `[ngClass]`, `[style.x]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
 | `@if`, `@for`, `@switch` | the same blocks: `@for` without `@empty`, its variables are signals (`item()`, `$index()`) |
-| `@defer` | `@import lazy` and a dynamic `import()` |
+| `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order: triggers `load` (`immediate`), `idle`, `visible` (`viewport`), `interaction`, `when expr`, required; no `prefetch`, no `minimum`/`after`, no `hover`/`timer`; `@error (error)` receives the error |
 | `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (`load`, `idle`, `visible`, `interaction`, `never`, `when expr`): only for content rendered on the server, in the browser the content renders at once |
 | `<ng-content select="…">` | `<slot name="…" />`; children pick it with `slot="…"` |
 | `<ng-template #row let-item>` + `ngTemplateOutlet` | `<template row(item: Item)>` + `@render row(item)`, in the same template |

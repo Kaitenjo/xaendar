@@ -15,7 +15,10 @@ export type OmittedKeys = Exclude<TokenType,
  | TokenType.PLACEHOLDER
  | TokenType.TRY
  | TokenType.CATCH
- | TokenType.IMPORT 
+ | TokenType.DEFER
+ | TokenType.LOADING
+ | TokenType.ERROR
+ | TokenType.IMPORT
  | TokenType.RENDER
  | TokenType.LET
 >

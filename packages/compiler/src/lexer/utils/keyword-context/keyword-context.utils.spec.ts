@@ -19,22 +19,22 @@ const contextAt = (template: string) => {
 
 describe('getKeywordContext', () => {
   it.each([
-    ['nothing written yet', '<p>a</p>\n@', 'if,for,switch,hydrate,client,try,render,let@9-10'],
-    ['a partial keyword', '<p>a</p>\n@fo', 'if,for,switch,hydrate,client,try,render,let@9-12'],
-    ['a block nested in another one', '@for (item of items) {\n  @', 'if,for,switch,hydrate,client,try,render,let@25-26'],
-    ['a block after a @for block', '@for (item of items) {\n}\n@', 'if,for,switch,hydrate,client,try,render,let@25-26'],
-    ['a block in a @case block', '@switch (a) {\n  @case (1) {\n    @', 'if,for,switch,hydrate,client,try,render,let@32-33'],
-    ['a block in a @else block', '@if (a) {\n} @else {\n  @', 'if,for,switch,hydrate,client,try,render,let@22-23'],
-    ['a block after a @else block', '@if (a) {\n} @else {\n}\n@', 'if,for,switch,hydrate,client,try,render,let@22-23'],
-    ['a block after a text', 'text\n@', 'if,for,switch,hydrate,client,try,render,let@5-6']
+    ['nothing written yet', '<p>a</p>\n@', 'if,for,switch,hydrate,client,try,defer,render,let@9-10'],
+    ['a partial keyword', '<p>a</p>\n@fo', 'if,for,switch,hydrate,client,try,defer,render,let@9-12'],
+    ['a block nested in another one', '@for (item of items) {\n  @', 'if,for,switch,hydrate,client,try,defer,render,let@25-26'],
+    ['a block after a @for block', '@for (item of items) {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let@25-26'],
+    ['a block in a @case block', '@switch (a) {\n  @case (1) {\n    @', 'if,for,switch,hydrate,client,try,defer,render,let@32-33'],
+    ['a block in a @else block', '@if (a) {\n} @else {\n  @', 'if,for,switch,hydrate,client,try,defer,render,let@22-23'],
+    ['a block after a @else block', '@if (a) {\n} @else {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let@22-23'],
+    ['a block after a text', 'text\n@', 'if,for,switch,hydrate,client,try,defer,render,let@5-6']
   ])('proposes the blocks of the template content: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });
 
   it.each([
-    ['right after the block', '@if (a) {\n}\n@el', 'if,for,switch,hydrate,client,try,render,let,else,else if@12-15'],
-    ['on the same line', '@if (a) {\n} @', 'if,for,switch,hydrate,client,try,render,let,else,else if@12-13'],
-    ['after a @else if block', '@if (a) {\n} @else if (b) {\n}\n@', 'if,for,switch,hydrate,client,try,render,let,else,else if@29-30']
+    ['right after the block', '@if (a) {\n}\n@el', 'if,for,switch,hydrate,client,try,defer,render,let,else,else if@12-15'],
+    ['on the same line', '@if (a) {\n} @', 'if,for,switch,hydrate,client,try,defer,render,let,else,else if@12-13'],
+    ['after a @else if block', '@if (a) {\n} @else if (b) {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let,else,else if@29-30']
   ])('proposes @else and @else if after a @if block: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });
@@ -64,12 +64,13 @@ describe('getKeywordContext', () => {
   });
 
   it.each([
-    ['right after the block', '@client {\n}\n@pl', 'if,for,switch,hydrate,client,try,render,let,placeholder@12-15'],
-    ['on the same line', '@client {\n} @', 'if,for,switch,hydrate,client,try,render,let,placeholder@12-13']
-  ])('proposes @placeholder after a @client block: %s', (_case, source, expected) => {
+    ['right after the block', '@client {\n}\n@pl', 'if,for,switch,hydrate,client,try,defer,render,let,placeholder@12-15'],
+    ['on the same line', '@client {\n} @', 'if,for,switch,hydrate,client,try,defer,render,let,placeholder@12-13']
+  ])('proposes @placeholder after a @client block, as the one of a @client: %s', (_case, source, expected) => {
     const context = getKeywordContext(source, source.length)!;
 
     expect(`${context.keywords.join(',')}@${context.span.start}-${context.span.end}`).toBe(expected);
+    expect(context.clientPlaceholder).toBe(true);
   });
 
   it.each([
@@ -80,14 +81,35 @@ describe('getKeywordContext', () => {
     expect(contextOf(template)).toBe(expected);
   });
 
-  it('proposes the blocks of the template content after a @catch block', () => {
-    expect(contextOf('@try {\n} @catch (error) {\n}\n@')).toBe('if,for,switch,hydrate,client,try,render,let@28-29');
+  it.each([
+    ['right after the block', '@defer (idle) {\n}\n@', 'placeholder,loading,error'],
+    ['after its @placeholder', '@defer (idle) {\n} @placeholder {\n}\n@', 'loading,error'],
+    ['after its @error with a name and its @loading', '@defer (idle) {\n} @error (failure) {\n} @loading {\n} @', 'placeholder'],
+    ['after all of them', '@defer (idle) {\n} @loading {\n} @placeholder {\n} @error {\n} @', '']
+  ])('proposes the blocks following a @defer not written yet: %s', (_name, template, expected) => {
+    const context = getKeywordContext(template, template.length)!;
+
+    expect(context.keywords.slice(9).join(',')).toBe(expected);
+    expect(context.clientPlaceholder).toBeUndefined();
   });
 
   it.each([
-    ['nothing written yet', '@', 'if,for,switch,hydrate,client,try,render,let,import@0-1'],
-    ['after other @import statements', '@import { A } from \'./a\';\n@', 'if,for,switch,hydrate,client,try,render,let,import@26-27'],
-    ['after the ; of a statement on a line of its own', '@import { A } from \'./a\'\n;\n@', 'if,for,switch,hydrate,client,try,render,let,import@27-28']
+    ['the @placeholder of a @client', '@client {\n} @placeholder {\n} @'],
+    ['a @placeholder alone', '<p></p>@placeholder {\n} @'],
+    ['the start of the content of a @loading', '@defer (idle) {\n} @loading {\n  @']
+  ])('proposes no block of a @defer after %s', (_name, template) => {
+    expect(getKeywordContext(template, template.length)!.keywords).toEqual(['if', 'for', 'switch', 'hydrate', 'client', 'try', 'defer', 'render', 'let']);
+  });
+
+  it('proposes the blocks of the template content after a @catch block', () => {
+    expect(contextOf('@try {\n} @catch (error) {\n}\n@')).toBe('if,for,switch,hydrate,client,try,defer,render,let@28-29');
+  });
+
+  it.each([
+    ['nothing written yet', '@', 'if,for,switch,hydrate,client,try,defer,render,let,import@0-1'],
+    ['after blank lines only', '\n\n@', 'if,for,switch,hydrate,client,try,defer,render,let,import@2-3'],
+    ['after other @import statements', '@import { A } from \'./a\';\n@', 'if,for,switch,hydrate,client,try,defer,render,let,import@26-27'],
+    ['after the ; of a statement on a line of its own', '@import { A } from \'./a\'\n;\n@', 'if,for,switch,hydrate,client,try,defer,render,let,import@27-28']
   ])('proposes @import before anything else: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });

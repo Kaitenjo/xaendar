@@ -1,0 +1,11 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { CommentListComponent } from './comment-list.xd.component.ts'
+
+<p>Signals notify the code reading them when they change.</p>
+@defer (interaction) {
+  <ex-comment-list />
+} @placeholder {
+  <ex-button>Show the comments</ex-button>
+} @loading {
+  <p class="note">Loading the comments…</p>
+}

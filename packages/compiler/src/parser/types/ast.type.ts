@@ -8,6 +8,9 @@ import type { HydrateNode } from './nodes/hydrate-node.type';
 import type { PlaceholderNode } from './nodes/placeholder-node.type';
 import type { CatchNode } from './nodes/catch-node.type';
 import type { TryNode } from './nodes/try-node.type';
+import type { DeferNode } from './nodes/defer-node.type';
+import type { LoadingNode } from './nodes/loading-node.type';
+import type { ErrorNode } from './nodes/error-node.type';
 import { IfNode } from './nodes/if-node.type';
 import { ImportNode } from './nodes/import-node.type';
 import { InterpolationNode } from './nodes/interpolation-node.type';
@@ -38,5 +41,8 @@ export type ASTNode =
   | ClientNode
   | PlaceholderNode
   | TryNode
-  | CatchNode;
+  | CatchNode
+  | DeferNode
+  | LoadingNode
+  | ErrorNode;
  

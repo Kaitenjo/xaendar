@@ -36,5 +36,10 @@ export const SSR_MARKERS = {
    * A `@client`, holding its `@placeholder`, if any, which the browser replaces with the content of the block:
    * `<!--xd-c-->…<!--/xd-c-->`.
    */
-  client: 'xd-c'
+  client: 'xd-c',
+  /**
+   * A `@defer`, holding its `@placeholder`, if any, which the browser adopts and replaces with the content of the block
+   * once a trigger fires: `<!--xd-d-->…<!--/xd-d-->`.
+   */
+  defer: 'xd-d'
 } as const;

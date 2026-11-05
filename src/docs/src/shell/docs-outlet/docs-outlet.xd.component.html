@@ -53,6 +53,8 @@
 @import lazy { TemplatesReusableTemplatesPage } from '../../pages/templates/reusable-templates/reusable-templates.xd.component.ts'
 @import lazy { TemplatesSvgMathmlPage } from '../../pages/templates/svg-mathml/svg-mathml.xd.component.ts'
 @import lazy { TemplatesSwitchPage } from '../../pages/templates/switch/switch.xd.component.ts'
+@import lazy { TemplatesTryPage } from '../../pages/templates/try/try.xd.component.ts'
+@import lazy { TemplatesDeferPage } from '../../pages/templates/defer/defer.xd.component.ts'
 @import lazy { TemplatesElementRefsPage } from '../../pages/templates/element-refs/element-refs.xd.component.ts'
 @import lazy { TemplatesTextInterpolationPage } from '../../pages/templates/text-interpolation/text-interpolation.xd.component.ts'
 @import lazy { ToolsBuildPage } from '../../pages/tools/build/build.xd.component.ts'
@@ -230,6 +232,12 @@
   }
   @case ('templates/switch') {
     <page-templates-switch />
+  }
+  @case ('templates/try') {
+    <page-templates-try />
+  }
+  @case ('templates/defer') {
+    <page-templates-defer />
   }
   @case ('templates/element-refs') {
     <page-templates-element-refs />

@@ -2,6 +2,7 @@ import { indent } from '@xaendar/common';
 import { assertImportableSymbol, ASTNodeType, CompilerContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentMetadata, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
+import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
 import { generateServerElement } from '../states/generate-server-element/generate-server-element.state';
 import { generateServerFor } from '../states/generate-server-for/generate-server-for.state';
 import { generateServerHydrate } from '../states/generate-server-hydrate/generate-server-hydrate.state';
@@ -44,7 +45,8 @@ const TEXT_MARKER = `<!--${SSR_MARKERS.text}-->`;
  *
  * The dynamic parts of the HTML are marked by the comments the browser adopts their nodes by (see `SSR_MARKERS`): the
  * blocks of the control flows, the items of a `@for`, the elements structural directives are applied to, and the texts.
- * The content of a `@client` is not generated: only its markers and its `@placeholder`, if any, are written.
+ * The content of a `@client` is not generated: only its markers and its `@placeholder`, if any, are written, as for a
+ * `@defer`.
  * No listener is bound, but the events of the template are written as `render.events`, for the event contract of the page.
  * A `<!---->` separates the texts the parser would join into one text node, where `getTextSeparators` of the compiler
  * says, which the client generator reads too.
@@ -67,6 +69,7 @@ export class ServerGenerator {
     [ASTNodeType.Hydrate]: generateServerHydrate,
     [ASTNodeType.Client]: generateServerClient,
     [ASTNodeType.Try]: generateServerTry,
+    [ASTNodeType.Defer]: generateServerDefer,
     [ASTNodeType.Import]: skipNode,
     // A template is declared at the start of its scope, its content is rendered by each @render calling it
     [ASTNodeType.Template]: skipNode,

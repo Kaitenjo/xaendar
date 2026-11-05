@@ -726,7 +726,7 @@ describe('hydration', () => {
           }
         }
 
-        public title(): string {
+        public heading(): string {
           Card.fail('render');
           return 'Card';
         }
@@ -751,7 +751,7 @@ describe('hydration', () => {
       const registerCards = async (failIn: typeof Card.failIn, ...failOn: Array<'server' | 'client'>) => {
         Object.assign(Card, { failIn, failOn, destroyed: 0 });
         const fine = await register('fine', Fine, () => '<u>Fine</u>');
-        const card = await register('card', Card, () => '<b>{ title() }</b>');
+        const card = await register('card', Card, () => '<b>{ heading() }</b>');
         const page = await register('page', CustomElement, name => `<h2>Cards</h2>@try {<${name('fine')} /><${name('card')} />} @catch (error) {<i>{ error.message }</i>}<footer>end</footer>`);
         return { page, define: () => { fine.define(); card.define(); page.define(); } };
       };
@@ -934,6 +934,57 @@ describe('hydration', () => {
       expect(element.isConnected).toBe(false);
       expect(host.shadowRoot!.querySelector('button')).not.toBeNull();
       expect(onDestroy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('@defer', () => {
+    /**
+     * Comments shown once asked for, counting the times they are asked for.
+     */
+    class Comments extends CustomElement {
+      public asked = 0;
+      public count = signal(3);
+
+      public ask(): void {
+        this.asked++;
+      }
+    }
+
+    const commentsTemplate = () => '<h2>Post</h2>@defer (interaction) {<ul><li>{ count() } comments</li></ul>} @placeholder {<button (click)="ask()">Show</button>} @loading {<i>Loading</i>}<footer>end</footer>';
+
+    it('adopts the @placeholder the server rendered, its listeners bound, and creates the content at an interaction on it', async () => {
+      const comments = await register('comments', Comments, commentsTemplate, ['count']);
+      const html = await renderToString(comments.Server);
+      const host = load(html) as Comments;
+      const root = host.shadowRoot!;
+      const button = root.querySelector('button')!;
+      const footer = root.querySelector('footer');
+      onServer = false;
+
+      comments.define();
+      expect(root.querySelector('button')).toBe(button);
+      button.click();
+
+      expect(html).toContain('<h2>Post</h2><!--xd-d--><button>Show</button><!--/xd-d--><footer>end</footer>');
+      expect(host.asked).toBe(1);
+      expect(root.innerHTML).toBe('<h2>Post</h2><ul><li>3 comments</li></ul><!--/xd-d--><footer>end</footer>');
+      expect(root.querySelector('footer')).toBe(footer);
+      host.count.set(4);
+      await flush();
+      expect(root.querySelector('li')!.textContent).toBe('4 comments');
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('renders the @placeholder, then the content, in a page rendered in the browser', async () => {
+      onServer = false;
+      const comments = await register('comments', Comments, commentsTemplate, ['count']);
+      comments.define();
+
+      const host = document.body.appendChild(document.createElement(tag('client', 'comments')));
+      expect(host.shadowRoot!.innerHTML).toBe('<h2>Post</h2><button>Show</button><!--defer--><footer>end</footer>');
+      host.shadowRoot!.querySelector('button')!.click();
+
+      expect(host.shadowRoot!.innerHTML).toBe('<h2>Post</h2><ul><li>3 comments</li></ul><!--defer--><footer>end</footer>');
     });
   });
 
@@ -1278,6 +1329,17 @@ describe('hydration', () => {
 
       expect(paragraph.textContent).toBe('4');
       expect(host.shadowRoot!.querySelector('p')).toBe(paragraph);
+    });
+
+    it('fires the interaction trigger of a @defer for an event of the contract on its @placeholder, which has no listeners', async () => {
+      const page = await register('page', Counter, () => '@defer (interaction) {<p>{ clicks() }</p>} @placeholder {<button>Show</button>}', ['clicks']);
+      const host = runContract(await renderToString(page.Server)) as Counter;
+
+      host.shadowRoot!.querySelector('button')!.click();
+      page.define();
+      await flush();
+
+      expect(host.shadowRoot!.innerHTML).toBe('<p>0</p><!--/xd-d-->');
     });
 
     it('fires the interaction trigger of a component, adopted by its parent, replaying the event', async () => {

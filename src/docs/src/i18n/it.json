@@ -126,6 +126,7 @@
       "templates/imports": "@import",
       "templates/let": "@let",
       "templates/try": "@try e @catch",
+      "templates/defer": "@defer",
       "templates/element-refs": "Element ref",
       "templates/conditional-bindings": "Binding condizionali",
       "templates/reusable-templates": "Template e @render",
@@ -1725,7 +1726,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a> e <a href=\"#/it/templates/try\">@try</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
+          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a>, <a href=\"#/it/templates/try\">@try</a> e <a href=\"#/it/templates/defer\">@defer</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
         },
         "templates": {
           "title": "Template e @render",
@@ -2716,6 +2717,71 @@
           "td3": "Lo stesso, senza dare un nome all’errore."
         }
       },
+      "defer": {
+        "eyebrow": "Template",
+        "title": "@defer",
+        "lead": "Un blocco <code>@defer</code> renderizza il suo contenuto quando scatta uno dei suoi trigger, e solo allora carica i moduli dei componenti che renderizza solo il contenuto. Fino ad allora mostra il suo <code>@placeholder</code>, mentre i moduli si caricano il suo <code>@loading</code>, e quando non si caricano il suo <code>@error</code>.",
+        "when": "<strong>Quando serve</strong>: per una parte della pagina che l’utente può non vedere mai, o vede dopo, e che pesa sul primo caricamento: commenti, una mappa, un editor, un grafico in fondo alla pagina. La pagina parte con meno codice, e la parte arriva quando serve.",
+        "syntax": {
+          "title": "La sintassi",
+          "p1": "I trigger, tra parentesi, sono obbligatori. I blocchi che seguono il contenuto sono facoltativi, ognuno scritto una volta, in qualunque ordine. Ogni parte è uno scope a sé.",
+          "p2": "<code>@defer</code> funziona in qualunque progetto, con o senza rendering lato server."
+        },
+        "triggers": {
+          "title": "I trigger",
+          "p1": "I trigger sono quelli di <code>@hydrate</code>, tranne <code>never</code>. Il primo che scatta renderizza il contenuto, una volta:",
+          "p2": "<code>visible</code> e <code>interaction</code> guardano gli elementi del <code>@placeholder</code>: con loro serve un <code>@placeholder</code> che contenga un elemento. I listener del <code>@placeholder</code> gestiscono prima l’evento, poi il contenuto lo sostituisce. Qui il pulsante del <code>@placeholder</code> carica i commenti, il cui componente sta in un chunk a parte:",
+          "example1": "Commenti caricati al primo click",
+          "p3": "<code>when</code> scatta quando la sua espressione è truthy. Il contenuto viene renderizzato una volta: resta anche quando l’espressione torna falsy.",
+          "example2": "Dettagli renderizzati quando vengono richiesti"
+        },
+        "blocks": {
+          "title": "@placeholder, @loading e @error",
+          "p1": "Il <code>@placeholder</code> viene mostrato finché non scatta un trigger. Fa parte della pagina: i suoi listener funzionano, ed è l’unica parte che renderizza il server. Dagli la dimensione del contenuto, così la pagina non si sposta quando il contenuto arriva.",
+          "p2": "Il <code>@loading</code> viene mostrato dal trigger finché i moduli non sono caricati. Quando non c’è niente da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, il contenuto arriva subito e il <code>@loading</code> non compare.",
+          "p3": "L’<code>@error</code> viene mostrato quando i moduli non si caricano, per esempio offline o dopo un deploy che ha rimosso i chunk vecchi. Dà un nome all’errore, come fa <code>@catch</code>, di tipo <code>unknown</code>. Senza <code>@error</code>, l’errore va in console e torna il <code>@placeholder</code>."
+        },
+        "modules": {
+          "title": "I moduli caricati dopo",
+          "p1": "La build mette in un chunk a parte i moduli dei componenti che renderizza solo il contenuto, e li carica quando scatta un trigger. Un componente che il template renderizza anche altrove, o nel <code>@placeholder</code>, nel <code>@loading</code> o nell’<code>@error</code>, viene caricato con la pagina."
+        },
+        "try": {
+          "title": "Errori del contenuto",
+          "p1": "Il contenuto viene renderizzato dopo il primo render del template: un <code>@try</code> attorno al <code>@defer</code> non ne cattura niente. Metti il <code>@try</code> dentro, dove viene renderizzato con il contenuto:"
+        },
+        "ssr": {
+          "title": "Con il rendering lato server",
+          "p1": "Il server renderizza solo il <code>@placeholder</code>. Il browser lo adotta mentre il componente si idrata, con i suoi listener, e lo sostituisce quando scatta un trigger. Un click sul placeholder prima che arrivi il codice della pagina viene registrato, e poi fa scattare <code>interaction</code>.",
+          "p2": "Usa invece <code>@hydrate</code> quando il contenuto deve stare nell’HTML del server, per i motori di ricerca o per essere letto subito: <code>@hydrate</code> rimanda il suo codice, <code>@defer</code> il contenuto stesso."
+        },
+        "errors": {
+          "title": "Errori"
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Un @placeholder senza dimensione",
+            "body": "<p>Un <code>@placeholder</code> vuoto non occupa spazio: con <code>visible</code> può essere subito nel viewport, e il contenuto poi spinge giù la pagina. Dagli la dimensione del contenuto.</p>"
+          },
+          "callout2": {
+            "heading": "Renderizzato una volta",
+            "body": "<p>Una volta renderizzato, il contenuto resta: <code>when</code> che torna falsy non lo rimuove. Per mostrarlo e nasconderlo, metti un <code>@if</code> dentro il <code>@defer</code>.</p>"
+          },
+          "callout3": {
+            "heading": "Non in un tag",
+            "body": "<p><code>@defer</code> è un blocco del contenuto: non può scegliere i binding di un tag, come fa un binding condizionale.</p>"
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Descrizione",
+          "td1": "Renderizza il contenuto quando scatta un trigger, dopo aver caricato i moduli dei componenti che renderizza solo il contenuto.",
+          "td2": "Mostrato finché non scatta un trigger; lo renderizza il server.",
+          "td3": "Mostrato mentre i moduli si caricano.",
+          "td4": "Mostrato quando i moduli non si caricano, con l’errore, di tipo <code>unknown</code>."
+        }
+      },
       "reusableTemplates": {
         "eyebrow": "Template",
         "title": "Template riutilizzabili con @render",
@@ -3013,7 +3079,7 @@
           "eyebrow": "Rendering lato server",
           "title": "Idratare più tardi",
           "lead": "Per default ogni componente si idrata appena arriva il suo script: tutti insieme, con tutto il loro codice. Un template rimanda una parte di sé con un blocco <code>@hydrate</code>; un componente rimanda tutti i suoi elementi con l’opzione <code>ssr.hydrate</code> di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>. Finché un trigger non scatta, il contenuto mostra l’HTML del server, e il suo codice non viene né caricato né eseguito.",
-          "when": "<strong>Quando serve</strong>: quando una pagina contiene molto di cui l’utente non ha bisogno subito, come ciò che sta sotto la piega, un menu che si apre con un clic o un form nel footer. Rimandandolo, la pagina carica meno codice e risponde prima.",
+          "when": "<strong>Quando serve</strong>: quando una pagina contiene molto di cui l’utente non ha bisogno subito, come ciò che sta sotto la piega, un menu che si apre con un clic o un form nel footer. Rimandandolo, la pagina carica meno codice e risponde prima. Quando il contenuto non deve stare nell’HTML del server, <a href=\"#/it/templates/defer\">@defer</a> rimanda il contenuto stesso.",
           "triggers": {
             "title": "I trigger",
             "p1": "I trigger si scrivono tra parentesi, separati da virgole: il primo che scatta idrata il contenuto.",
@@ -3839,9 +3905,29 @@
       "cause": "Un @hydrate elenca never accanto a un altro trigger.",
       "fix": "Togli never per idratare il contenuto, o gli altri trigger per lasciarlo come l’HTML del server."
     },
-    "[Parser] @placeholder must follow the block of a @client": {
-      "cause": "Un @placeholder non si trova subito dopo la } di un @client: è da solo, segue un altro blocco o un testo, oppure è il secondo di un @client.",
-      "fix": "Scrivilo subito dopo il blocco di un @client, una volta sola: @client { … } @placeholder { … }."
+    "[Parser] @placeholder must follow the block of a @client or a @defer": {
+      "cause": "Un @placeholder non si trova subito dopo la } di un @client o di un @defer (o di un blocco che segue il @defer): è da solo, segue un altro blocco o un testo, oppure è il secondo di un @client.",
+      "fix": "Scrivilo subito dopo il blocco di un @client o di un @defer, una volta sola: @client { … } @placeholder { … }."
+    },
+    "[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression": {
+      "cause": "Un @defer senza trigger tra le parentesi, o con un trigger vuoto tra due virgole. I suoi trigger sono obbligatori.",
+      "fix": "Elenca almeno un trigger: @defer (idle) { … }."
+    },
+    "[Parser] Unknown @defer trigger \"never\": use load, idle, visible, interaction, or when followed by an expression": {
+      "cause": "Un trigger di un @defer non è una delle parole chiave (never è un trigger solo di @hydrate), oppure un’espressione è scritta senza when.",
+      "fix": "Usa load, idle, visible o interaction, e scrivi when prima di un’espressione: @defer (when open())."
+    },
+    "[Parser] @loading is declared twice for this @defer": {
+      "cause": "Un @placeholder, un @loading o un @error scritto due volte dopo lo stesso @defer.",
+      "fix": "Tienine uno: ogni blocco segue un @defer una volta, in qualunque ordine."
+    },
+    "[Parser] @loading must follow the block of a @defer": {
+      "cause": "Un @loading, o un @error, non si trova subito dopo un @defer o uno dei blocchi che lo seguono.",
+      "fix": "Scrivilo subito dopo il @defer: @defer (idle) { … } @loading { … } @error (error) { … }."
+    },
+    "[TypeChecker] The trigger \"visible\" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element": {
+      "cause": "Un @defer con visible o interaction senza @placeholder, o con uno che non renderizza elementi (solo testo): quei trigger guardano gli elementi del @placeholder, quindi non scatterebbero mai.",
+      "fix": "Aggiungi un @placeholder che contenga un elemento, possibilmente con la dimensione del contenuto quando il trigger è visible; oppure usa idle, load o when."
     },
     "[Parser] @try needs a @catch: write @catch (error) { … } right after its block": {
       "cause": "Un blocco @try non seguito dal suo @catch, come richiede JavaScript.",

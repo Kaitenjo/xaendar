@@ -73,6 +73,21 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[hydrate, ['/src/b.ts', '/src/c.ts']]]));
   });
 
+  it('finds the modules of the components only the content of a @defer renders, leaving the ones of the blocks following it to the template', async () => {
+    const nodes = parse('@defer (idle) { <b-x></b-x><a-y></a-y> } @placeholder { <a-x></a-x> } @loading { <c-x></c-x> } @error { <d-x></d-x> }');
+    const [defer] = nodes;
+
+    expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[defer, ['/src/b.ts']]]));
+  });
+
+  it('leaves the blocks following a @defer inside a @hydrate to the @hydrate, and the content of the @defer to it', async () => {
+    const nodes = parse('@hydrate (idle) { @defer (idle) { <b-x></b-x> } @placeholder { <c-x></c-x> } @defer (idle) { } }');
+    const [hydrate] = nodes;
+    const defer = (hydrate as HydrateNode).children.find(({ type }) => type === ASTNodeType.Defer)!;
+
+    expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map<ASTNode, string[]>([[hydrate, ['/src/c.ts']], [defer, ['/src/b.ts']]]));
+  });
+
   it('leaves the components of a @hydrate inside another one to the inner one, through every block', async () => {
     const template = [
       '@hydrate (idle) {',

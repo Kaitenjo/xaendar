@@ -226,10 +226,21 @@ describe('getTemplateKeywordCompletions', () => {
       { name: '@hydrate', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@hydrate ($1) {\n\t$0\n}', retrigger: false },
       { name: '@client', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@client {\n\t$0\n}', retrigger: false },
       { name: '@try', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}', retrigger: false },
-      { name: '@render', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@render $1($0)', retrigger: false },
-      { name: '@let', kind: 'keyword', sortText: '7', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
-      { name: '@else', kind: 'keyword', sortText: '8', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
-      { name: '@else if', kind: 'keyword', sortText: '9', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+      { name: '@defer', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@defer ($1) {\n\t$0\n}', retrigger: false },
+      { name: '@render', kind: 'keyword', sortText: '7', replacementSpan, snippet: '@render $1($0)', retrigger: false },
+      { name: '@let', kind: 'keyword', sortText: '8', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
+      { name: '@else', kind: 'keyword', sortText: '9', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
+      { name: '@else if', kind: 'keyword', sortText: '10', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+    ]);
+  });
+
+  it('proposes the blocks following a @defer not written yet, in a project without the rendering on the server too', () => {
+    const source = '@defer (idle) {\n} @loading {\n}\n@';
+    project.write('src/defer-without-ssr/xaendar.json', '{}');
+
+    expect(getTemplateKeywordCompletions(project.path('src/defer-without-ssr/app.html'), source, source.length)?.slice(-2)).toEqual([
+      expect.objectContaining({ name: '@placeholder', snippet: '@placeholder {\n\t$0\n}' }),
+      expect.objectContaining({ name: '@error', snippet: '@error (${1:error}) {\n\t$0\n}' })
     ]);
   });
 
@@ -246,7 +257,7 @@ describe('getTemplateKeywordCompletions', () => {
   });
 
   it('leaves out the blocks of the rendering on the server in a project that does not declare it, sorting the others from the first', () => {
-    expect(namesIn('keywords-without-ssr', {})).toEqual([['@if', '0'], ['@for', '1'], ['@switch', '2'], ['@try', '3'], ['@render', '4'], ['@let', '5']]);
+    expect(namesIn('keywords-without-ssr', {})).toEqual([['@if', '0'], ['@for', '1'], ['@switch', '2'], ['@try', '3'], ['@defer', '4'], ['@render', '5'], ['@let', '6']]);
   });
 
   it('proposes the blocks of the rendering on the server in a project declaring it', () => {

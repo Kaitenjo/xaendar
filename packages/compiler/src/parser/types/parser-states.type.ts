@@ -5,6 +5,9 @@ import type { HydrateToken } from '../../lexer/types/tokens/hydrate-token.type'
 import type { PlaceholderToken } from '../../lexer/types/tokens/placeholder-token.type'
 import type { TryToken } from '../../lexer/types/tokens/try-token.type'
 import type { CatchToken } from '../../lexer/types/tokens/catch-token.type'
+import type { DeferToken } from '../../lexer/types/tokens/defer-token.type'
+import type { LoadingToken } from '../../lexer/types/tokens/loading-token.type'
+import type { ErrorToken } from '../../lexer/types/tokens/error-token.type'
 import { IfToken } from '../../lexer/types/tokens/if-token.type'
 import { ImportPathToken } from '../../lexer/types/tokens/import-path-token.type'
 import { InterpolationExpressionToken } from '../../lexer/types/tokens/interpolation-expression-token.type'
@@ -38,6 +41,9 @@ export type ParserStates = {
   [TokenType.PLACEHOLDER]: ParserTransitionFunction<PlaceholderToken>,
   [TokenType.TRY]: ParserTransitionFunction<TryToken>,
   [TokenType.CATCH]: ParserTransitionFunction<CatchToken>,
+  [TokenType.DEFER]: ParserTransitionFunction<DeferToken>,
+  [TokenType.LOADING]: ParserTransitionFunction<LoadingToken>,
+  [TokenType.ERROR]: ParserTransitionFunction<ErrorToken>,
   [TokenType.IMPORT]: ParserTransitionFunction<ImportPathToken>,
   [TokenType.RENDER]: ParserTransitionFunction<RenderToken>,
   [TokenType.LET]: ParserTransitionFunction<LetToken>

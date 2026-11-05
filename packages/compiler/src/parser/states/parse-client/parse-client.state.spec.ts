@@ -38,7 +38,7 @@ describe('parseClient', () => {
     ['after a text following the @client', '@client { a } text @placeholder { b }'],
     ['after another @placeholder', '@client { a } @placeholder { b } @placeholder { c }']
   ])('rejects a @placeholder %s', (_case, template) => {
-    expect(() => parse(template)).toThrow('@placeholder must follow the block of a @client');
+    expect(() => parse(template)).toThrow('@placeholder must follow the block of a @client or a @defer');
   });
 
   it('reports a listener in the placeholder on the listener, since it would never run', () => {

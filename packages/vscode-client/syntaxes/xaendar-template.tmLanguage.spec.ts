@@ -279,6 +279,18 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, '{ z')).toContain('punctuation.section.block.begin.xaendar');
   });
 
+  it('colors a @defer, with its triggers, and the blocks following it, with the name of the error of @error as a constant', () => {
+    const template = '@defer (interaction, when ready(a)) { x } @placeholder { p } @loading { l } @error (failure) { e }';
+
+    const keywords = ['@defer', 'interaction', 'when', '@placeholder', '@loading', '@error'];
+    for (let i = 0; i < keywords.length; i++) {
+      expect(scopesOf(template, keywords[i])).toContain('keyword.control.xaendar');
+    }
+    expect(scopesOf(template, 'ready')).toContain('meta.embedded.expression.xaendar');
+    expect(scopesOf(template, '{ l')).toContain('punctuation.section.block.begin.xaendar');
+    expect(scopesOf(template, 'failure')).toContain('variable.other.constant.xaendar');
+  });
+
   it('colors a @hydrate, with its triggers and the expression of when', () => {
     const template = '@hydrate (idle, visible, interaction, load, when ready(a)) { x } <b></b>';
 

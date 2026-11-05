@@ -165,6 +165,20 @@ describe('parseTemplateLayout', () => {
     }]);
   });
 
+  it('reads a @defer with its triggers and the blocks following it in any order, each one once', () => {
+    const text = (value: string) => [{ kind: 'text', value }];
+    expect(parseTemplateLayout('@defer (idle, when ready()) {a} @error (error) {d} @placeholder {b} @loading {c}')).toEqual([{
+      kind: 'block',
+      keyword: 'defer',
+      branches: [
+        { keyword: 'defer', condition: 'idle, when ready()', body: text('a') },
+        { keyword: 'error', condition: 'error', body: text('d') },
+        { keyword: 'placeholder', body: text('b') },
+        { keyword: 'loading', body: text('c') }
+      ]
+    }]);
+  });
+
   it('reads a @hydrate with its triggers as written', () => {
     expect(parseTemplateLayout('@hydrate (idle, when ready()) {x}')).toEqual([
       { kind: 'block', keyword: 'hydrate', branches: [{ keyword: 'hydrate', condition: 'idle, when ready()', body: [{ kind: 'text', value: 'x' }] }] }
@@ -202,6 +216,9 @@ describe('parseTemplateLayout', () => {
     ['a @hydrate as a conditional binding', '<p @hydrate (idle) { id="x" }></p>'],
     ['a @client as a conditional binding', '<p @client { id="x" }></p>'],
     ['a @try as a conditional binding', '<p @try { id="x" } @catch { }></p>'],
+    ['a @defer as a conditional binding', '<p @defer (idle) { id="x" }></p>'],
+    ['a @defer without its triggers', '@defer { a }'],
+    ['a @loading declared twice', '@defer (idle) { a } @loading { b } @loading { c }'],
     ['a @placeholder without a @client', '@placeholder { a }'],
     ['a condition that is not between parentheses', '@switch a { }'],
     ['a condition that is not closed', '@if (a { }'],

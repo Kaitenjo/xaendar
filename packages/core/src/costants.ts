@@ -168,5 +168,10 @@ export const _SSR_MARKERS = {
    * A `@try`, its detail `0` when the server rendered its content, `1` when it rendered its `@catch`:
    * `<!--xd-t:0-->…<!--/xd-t-->`.
    */
-  try: 'xd-t'
+  try: 'xd-t',
+  /**
+   * A `@defer`, holding its `@placeholder`, if any, which the browser adopts and replaces with the content of the block
+   * once a trigger fires: `<!--xd-d-->…<!--/xd-d-->`.
+   */
+  defer: 'xd-d'
 } as const;

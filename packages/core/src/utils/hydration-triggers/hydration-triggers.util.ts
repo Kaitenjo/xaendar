@@ -24,7 +24,7 @@ let replayScheduled = false;
  * Arms the triggers written by name of content waiting to be hydrated: `fire` runs once, when the first of them fires.
  * `load` fires once the code rendering the page is done, `idle` when the browser is idle (after a timeout where
  * `requestIdleCallback` is missing), `visible` when one of the elements enters the viewport, `interaction` at the first
- * event on one of them.
+ * event on one of them, once the listeners of the element and of the ones it holds have handled it.
  *
  * @param triggers - The triggers.
  * @param elements - The elements `visible` and `interaction` watch.
@@ -55,8 +55,9 @@ export function armTriggers(triggers: readonly HydrateTrigger[], elements: reado
         disarms.push(whenVisible(elements, once));
         break;
 
+      // In the bubbling phase, so that the listeners of the elements handle the event first
       case 'interaction':
-        disarms.push(listen(elements, once));
+        disarms.push(listen(elements, once, false));
         break;
 
       default:
@@ -65,6 +66,24 @@ export function armTriggers(triggers: readonly HydrateTrigger[], elements: reado
   }
 
   return disarm;
+}
+
+/**
+ * Returns the trigger to wait for in place of one watching elements, `visible` or `interaction`, where there are none to
+ * watch: `idle`.
+ *
+ * @param trigger - The trigger.
+ * @returns The trigger to wait for.
+ */
+export function toIdle(trigger: HydrateTrigger): HydrateTrigger {
+  switch (trigger) {
+    case 'visible':
+    case 'interaction':
+      return 'idle';
+
+    default:
+      return trigger;
+  }
 }
 
 /**
@@ -319,23 +338,25 @@ function whenVisible(elements: readonly Element[], fire: NoArgsVoidFunction): No
 }
 
 /**
- * Listens, in the capture phase, to the events recorded on content waiting for its hydration.
+ * Listens to the events recorded on content waiting for its hydration: in the capture phase, before any listener of the
+ * content, or in the bubbling phase, after them.
  *
  * @param targets - The nodes to listen on.
  * @param listener - The listener.
+ * @param capture - Whether to listen in the capture phase.
  * @returns Removes the listeners.
  */
-function listen(targets: readonly EventTarget[], listener: (event: Event) => void): NoArgsVoidFunction {
+function listen(targets: readonly EventTarget[], listener: (event: Event) => void, capture = true): NoArgsVoidFunction {
   for (let i = 0; i < targets.length; i++) {
     for (let j = 0; j < _RECORDED_EVENTS.length; j++) {
-      targets[i].addEventListener(_RECORDED_EVENTS[j], listener, { capture: true });
+      targets[i].addEventListener(_RECORDED_EVENTS[j], listener, { capture });
     }
   }
 
   return () => {
     for (let i = 0; i < targets.length; i++) {
       for (let j = 0; j < _RECORDED_EVENTS.length; j++) {
-        targets[i].removeEventListener(_RECORDED_EVENTS[j], listener, { capture: true });
+        targets[i].removeEventListener(_RECORDED_EVENTS[j], listener, { capture });
       }
     }
   };

@@ -27,7 +27,17 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set(['area', 'base', 'br', 'col',
 /**
  * The branches of a block that have no condition.
  */
-const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch']);
+const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch', 'loading', 'error']);
+
+/**
+ * The branches that may follow the first one of a block, in any order and once each: the `@placeholder` of a `@client`,
+ * the `@catch` of a `@try`, the `@placeholder`, `@loading` and `@error` of a `@defer`.
+ */
+const FOLLOWING_BRANCHES: ReadonlyMap<string, readonly string[]> = new Map([
+  ['client', ['placeholder']],
+  ['try', ['catch']],
+  ['defer', ['placeholder', 'loading', 'error']]
+]);
 
 /**
  * The name of an element, a directive, an attribute: what is written up to a space, a quote or a character of the syntax.
@@ -381,7 +391,7 @@ function readItem(reader: Reader): LayoutItem {
 
   if (source[position] === '@') {
     const block = readBlock(reader, readItemsBody);
-    if (block.keyword === 'for' || block.keyword === 'hydrate' || block.keyword === 'client' || block.keyword === 'try') {
+    if (block.keyword !== 'if' && block.keyword !== 'switch') {
       fail(`A conditional binding cannot be a @${block.keyword}`);
     }
 
@@ -514,7 +524,8 @@ function readDirective(reader: Reader): LayoutDirective {
 
 /**
  * Reads a control-flow block: an `@if` with its `@else if` and `@else` branches, a `@for`, a `@switch` with its cases, a
- * `@hydrate`, or a `@client` with its `@placeholder`.
+ * `@hydrate`, a `@client` with its `@placeholder`, a `@try` with its `@catch`, or a `@defer` with its `@placeholder`,
+ * `@loading` and `@error`.
  *
  * @param reader - The reader, on the `@` opening the block.
  * @param readBody - Reads what the braces of a branch hold, up to the `}`, which is left to the caller of the function.
@@ -530,6 +541,7 @@ function readBlock<Body>(reader: Reader, readBody: (reader: Reader) => Body): La
     case 'hydrate':
     case 'client':
     case 'try':
+    case 'defer':
       break;
 
     case 'switch':
@@ -540,17 +552,9 @@ function readBlock<Body>(reader: Reader, readBody: (reader: Reader) => Body): La
   }
 
   const branches = [readBranch(reader, keyword, readBody)];
-  // The block of a @client may be followed by its @placeholder, the one of a @try by its @catch
-  const following = keyword === 'client' ? 'placeholder' : keyword === 'try' ? 'catch' : undefined;
+  const following = FOLLOWING_BRANCHES.get(keyword);
   if (following) {
-    const afterBlock = reader.position;
-    skipWhitespace(reader);
-    if (reader.source.startsWith(`@${following}`, reader.position)) {
-      reader.position += following.length + 1;
-      branches.push(readBranch(reader, following, readBody));
-    } else {
-      reader.position = afterBlock;
-    }
+    readFollowingBranches(reader, following, branches, readBody);
   }
 
   while (keyword === 'if') {
@@ -573,6 +577,33 @@ function readBlock<Body>(reader: Reader, readBody: (reader: Reader) => Body): La
   }
 
   return { kind: 'block', keyword, branches };
+}
+
+/**
+ * Reads the branches following the first one of a block, in any order and once each, up to a node that is not one of
+ * them.
+ *
+ * @param reader - The reader, after the first branch.
+ * @param keywords - The keywords of the branches that may follow it.
+ * @param branches - The branches of the block, filled as they are read.
+ * @param readBody - Reads what the braces of a branch hold.
+ * @throws If a branch is not valid.
+ */
+function readFollowingBranches<Body>(reader: Reader, keywords: readonly string[], branches: Array<LayoutBranch<Body>>, readBody: (reader: Reader) => Body): void {
+  const remaining = keywords.slice();
+  for (;;) {
+    const afterBlock = reader.position;
+    skipWhitespace(reader);
+    const index = remaining.findIndex(keyword => reader.source.startsWith(`@${keyword}`, reader.position));
+    if (index === -1) {
+      reader.position = afterBlock;
+      return;
+    }
+
+    const [keyword] = remaining.splice(index, 1);
+    reader.position += keyword.length + 1;
+    branches.push(readBranch(reader, keyword, readBody));
+  }
 }
 
 /**

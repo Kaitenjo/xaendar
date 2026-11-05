@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
-import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, waitedForTrigger } from './hydration-triggers.util';
+import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, toIdle, waitedForTrigger } from './hydration-triggers.util';
 
 /**
  * The IntersectionObserver standing for the one of the browser: `intersect` calls the callback of the last one created.
@@ -96,6 +96,18 @@ describe('armTriggers', () => {
     expect(fire).toHaveBeenCalledOnce();
   });
 
+  it('fires interaction once the listeners inside the element have handled the event', () => {
+    const element = document.body.appendChild(document.createElement('div'));
+    const button = element.appendChild(document.createElement('button'));
+    const order = new Array<string>();
+    button.addEventListener('click', () => order.push('handler'));
+
+    armTriggers(['interaction'], [element], () => order.push('fire'));
+    button.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(order).toEqual(['handler', 'fire']);
+  });
+
   it('fires once, at the first trigger firing, disarming the other ones, and nothing once disarmed', () => {
     const element = document.body.appendChild(document.createElement('button'));
     const fire = vi.fn();
@@ -109,6 +121,12 @@ describe('armTriggers', () => {
     element.click();
     vi.runAllTimers();
     expect(fire).toHaveBeenCalledOnce();
+  });
+});
+
+describe('toIdle', () => {
+  it('waits for the browser to be idle in place of a trigger watching elements, keeping the others', () => {
+    expect((['visible', 'interaction', 'load', 'idle', 'never'] as const).map(toIdle)).toEqual(['idle', 'idle', 'load', 'idle', 'never']);
   });
 });
 

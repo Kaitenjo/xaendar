@@ -1,15 +1,17 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
 import type { CompilerCache } from '../../../types/compiler-cache.type';
 import type { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 
 /**
- * Finds the modules each `@hydrate` of a template loads before rendering its content: the ones declaring the components
- * that only the content of `@hydrate` blocks renders, which the browser loads in chunks of their own, when a trigger
- * fires or, in a page rendered in the browser, at once. A module declaring a component the template renders anywhere
- * else is loaded with the template. The components of a `@hydrate` inside another one are loaded by the inner one.
+ * Finds the modules each `@hydrate` and each `@defer` of a template loads before rendering its content: the ones
+ * declaring the components that only the content of these blocks renders, which the browser loads in chunks of their
+ * own, when a trigger fires or, for a `@hydrate` in a page rendered in the browser, at once. A module declaring a
+ * component the template renders anywhere else, the `@placeholder`, `@loading` and `@error` of a `@defer` included, is
+ * loaded with the template. The components of a block inside another one are loaded by the inner one.
  *
  * The module of a component is the file declaring its class, read from its metadata: without the cache of the metadata,
  * the components are left to the imports of the template.
@@ -17,16 +19,12 @@ import type { CompilerContext } from '../../models/compiler-context/compiler-con
  * @param nodes - The nodes of the template.
  * @param compilerContext - The root compiler context, holding the cache of the metadata and the patterns of the custom
  *   elements of other libraries.
- * @returns The paths of the modules, by `@hydrate` node, for the ones loading any, `undefined` when none does.
+ * @returns The paths of the modules, by `@hydrate` or `@defer` node, for the ones loading any, `undefined` when none does.
  */
-export async function getDeferredModules(nodes: readonly ASTNode[], compilerContext: CompilerContext): Promise<Map<HydrateNode, string[]> | undefined> {
+export async function getDeferredModules(nodes: readonly ASTNode[], compilerContext: CompilerContext): Promise<Map<HydrateNode | DeferNode, string[]> | undefined> {
   const { cache } = compilerContext;
-  if (!cache) {
-    return undefined;
-  }
-
   const eager = new Set<string>();
-  const deferred = new Map<HydrateNode, Set<string>>();
+  const deferred = new Map<HydrateNode | DeferNode, Set<string>>();
   collectTags(nodes, eager, deferred, compilerContext);
   if (!deferred.size) {
     return undefined;
@@ -40,7 +38,7 @@ export async function getDeferredModules(nodes: readonly ASTNode[], compilerCont
     }
   }
 
-  let modules: Map<HydrateNode, string[]> | undefined;
+  let modules: Map<HydrateNode | DeferNode, string[]> | undefined;
   for (const [node, tags] of deferred) {
     const paths = new Array<string>();
     for (const tag of tags) {
@@ -80,7 +78,7 @@ async function getModule(tag: string, cache: CompilerCache): Promise<string | un
  * @param compilerContext - The root compiler context.
  * @param current - The tags of the content of the `@hydrate` the nodes are in, if any.
  */
-function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Map<HydrateNode, Set<string>>, compilerContext: CompilerContext, current?: Set<string>): void {
+function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Map<HydrateNode | DeferNode, Set<string>>, compilerContext: CompilerContext, current?: Set<string>): void {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     switch (node.type) {
@@ -109,6 +107,25 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
         const content = new Set<string>();
         deferred.set(node, content);
         collectTags(node.children, eager, deferred, compilerContext, content);
+        break;
+      }
+
+      // The blocks following the content of a @defer render without waiting for its modules
+      case ASTNodeType.Defer: {
+        const content = new Set<string>();
+        deferred.set(node, content);
+        collectTags(node.children, eager, deferred, compilerContext, content);
+        if (node.placeholder) {
+          collectTags(node.placeholder.children, eager, deferred, compilerContext, current);
+        }
+
+        if (node.loading) {
+          collectTags(node.loading.children, eager, deferred, compilerContext, current);
+        }
+
+        if (node.error) {
+          collectTags(node.error.children, eager, deferred, compilerContext, current);
+        }
         break;
       }
 

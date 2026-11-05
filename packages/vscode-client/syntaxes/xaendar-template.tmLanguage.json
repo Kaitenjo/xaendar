@@ -206,7 +206,7 @@
       ]
     },
     "hydrate": {
-      "begin": "(@hydrate)\\s*(\\()",
+      "begin": "(@(?:hydrate|defer))\\s*(\\()",
       "beginCaptures": {
         "1": { "name": "keyword.control.xaendar" },
         "2": { "name": "punctuation.section.condition.begin.xaendar" }
@@ -256,7 +256,7 @@
       ]
     },
     "catch": {
-      "match": "(@catch)\\b\\s*(?:(\\()\\s*([A-Za-z_$][\\w$]*)\\s*(\\)))?\\s*(\\{)?",
+      "match": "(@(?:catch|error))\\b\\s*(?:(\\()\\s*([A-Za-z_$][\\w$]*)\\s*(\\)))?\\s*(\\{)?",
       "captures": {
         "1": { "name": "keyword.control.xaendar" },
         "2": { "name": "punctuation.section.parens.begin.xaendar" },
@@ -266,7 +266,7 @@
       }
     },
     "control-flow-bare": {
-      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder|try))\\b\\s*(\\{)?",
+      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder|try|loading))\\b\\s*(\\{)?",
       "captures": {
         "1": { "name": "keyword.control.xaendar" },
         "2": { "name": "punctuation.section.block.begin.xaendar" }

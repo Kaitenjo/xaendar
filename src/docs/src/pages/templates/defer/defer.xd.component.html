@@ -1,0 +1,126 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { CommentsComponent } from '../../../examples/templates/defer/comments/comments.xd.component.ts'
+@import { DetailsComponent } from '../../../examples/templates/defer/details/details.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.templates.defer.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.templates.defer.title') }
+</h1>
+<p @@htmlTranslation(key="pages.templates.defer.lead") class="lead" />
+<p @@htmlTranslation(key="pages.templates.defer.when") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.syntax.title') }
+</h2>
+<docs-code snippet="templates/defer-syntax.html" />
+<p @@htmlTranslation(key="pages.templates.defer.syntax.p1") />
+<p @@htmlTranslation(key="pages.templates.defer.syntax.p2") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.triggers.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.triggers.p1") />
+<docs-code snippet="templates/defer-triggers.html" />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.p2") />
+<docs-example name="templates/defer/comments" heading="{translations().pages.templates.defer.triggers.example1}">
+  <ex-comments />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.defer.triggers.p3") />
+<docs-example name="templates/defer/details" heading="{translations().pages.templates.defer.triggers.example2}">
+  <ex-details />
+</docs-example>
+
+<h2>
+  { t(translations(), 'pages.templates.defer.blocks.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.blocks.p1") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.p2") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.p3") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.modules.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.modules.p1") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.try.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.try.p1") />
+<docs-code snippet="templates/defer-try.html" />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.ssr.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.ssr.p1") />
+<p @@htmlTranslation(key="pages.templates.defer.ssr.p2") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.errors.title') }
+</h2>
+<docs-code snippet="templates/defer-errors.txt" />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.templates.defer.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.templates.defer.edgeCases.callout1.body")
+      heading="{translations().pages.templates.defer.edgeCases.callout1.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.templates.defer.edgeCases.callout2.body")
+      heading="{translations().pages.templates.defer.edgeCases.callout2.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.templates.defer.edgeCases.callout3.body")
+      heading="{translations().pages.templates.defer.edgeCases.callout3.heading}" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.templates.defer.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.templates.defer.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.templates.defer.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '@defer (triggers) { … }' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@placeholder { … }' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@loading { … }' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td3") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@error (error) { … }' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td4") />
+      </tr>
+    </tbody>
+  </table>
+</div>

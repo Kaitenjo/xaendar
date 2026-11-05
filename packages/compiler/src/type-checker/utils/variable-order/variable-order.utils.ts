@@ -12,7 +12,8 @@ import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type'
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
-import type { TryNode } from '../../../parser/types/nodes/try-node.type';
+import type { CatchNode } from '../../../parser/types/nodes/catch-node.type';
+import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getForVariables } from '../../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
@@ -237,7 +238,12 @@ function checkNodes(nodes: readonly ASTNode[], check: OrderCheck): void {
         break;
 
       case ASTNodeType.Try:
-        checkTry(node, check);
+        checkScope(node.children, check);
+        checkErrorScope(node.catch, check);
+        break;
+
+      case ASTNodeType.Defer:
+        checkDefer(node, check);
         break;
 
       case ASTNodeType.Template:
@@ -260,13 +266,13 @@ function checkNodes(nodes: readonly ASTNode[], check: OrderCheck): void {
 }
 
 /**
- * Checks a `@hydrate` block: the expression of its `when` trigger, evaluated where the block is, then its content, a
- * scope of its own.
+ * Checks a `@hydrate` block, or a `@defer` one: the expression of its `when` trigger, evaluated where the block is, then
+ * its content, a scope of its own.
  *
- * @param node - The hydrate block.
+ * @param node - The block.
  * @param check - The state of the check.
  */
-function checkHydrate(node: HydrateNode, check: OrderCheck): void {
+function checkHydrate(node: HydrateNode | DeferNode, check: OrderCheck): void {
   const { triggers } = node;
   for (let i = 0; i < triggers.length; i++) {
     const trigger = triggers[i];
@@ -276,6 +282,28 @@ function checkHydrate(node: HydrateNode, check: OrderCheck): void {
   }
 
   checkScope(node.children, check);
+}
+
+/**
+ * Checks a `@defer` block: its triggers and its content as the ones of a `@hydrate`, then the blocks following it, each
+ * one a scope of its own.
+ *
+ * @param node - The defer block.
+ * @param check - The state of the check.
+ */
+function checkDefer(node: DeferNode, check: OrderCheck): void {
+  checkHydrate(node, check);
+  if (node.placeholder) {
+    checkScope(node.placeholder.children, check);
+  }
+
+  if (node.loading) {
+    checkScope(node.loading.children, check);
+  }
+
+  if (node.error) {
+    checkErrorScope(node.error, check);
+  }
 }
 
 /**
@@ -417,16 +445,13 @@ function checkFor(node: ForNode, check: OrderCheck): void {
 }
 
 /**
- * Checks a `@try` and its `@catch`, each one a scope of its own: the error of the `@catch` exists as soon as its content
- * is created, before the element refs of the content.
+ * Checks a block receiving an error, a `@catch` or an `@error`, a scope of its own: the error exists as soon as its
+ * content is created, before the element refs of the content.
  *
- * @param node - The try node.
+ * @param node - The block.
  * @param check - The state of the check.
  */
-function checkTry(node: TryNode, check: OrderCheck): void {
-  checkScope(node.children, check);
-
-  const { name, children } = node.catch;
+function checkErrorScope({ name, children }: Pick<CatchNode, 'name' | 'children'>, check: OrderCheck): void {
   const names: ScopeNames = new Map();
   if (name) {
     names.set(name, { position: null, level: check.level });

@@ -76,6 +76,20 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('indents the content of a @defer and of the blocks following it, each one on the line of the brace before it', () => {
+      expect(format('@defer(interaction){<p></p>}@placeholder{<b></b>}@loading{<u></u>}@error(failure){<i></i>}')).toBe(lines(
+        '@defer (interaction) {',
+        '  <p></p>',
+        '} @placeholder {',
+        '  <b></b>',
+        '} @loading {',
+        '  <u></u>',
+        '} @error (failure) {',
+        '  <i></i>',
+        '}'
+      ));
+    });
+
     it('indents the content of a @hydrate, keeping its triggers as written', () => {
       expect(format('@hydrate(visible,when ready()){<p></p>}')).toBe(lines(
         '@hydrate (visible,when ready()) {',

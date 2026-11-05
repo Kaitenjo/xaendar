@@ -1,0 +1,35 @@
+<!-- load: as soon as the page is rendered, without blocking it -->
+@defer (load) {
+  <app-chat-widget />
+}
+
+<!-- idle: when the browser has nothing else to do -->
+@defer (idle) {
+  <app-recommendations />
+}
+
+<!-- visible: when the @placeholder enters the viewport -->
+@defer (visible) {
+  <app-map />
+} @placeholder {
+  <div class="map-frame" />
+}
+
+<!-- interaction: at the first click, key or focus on the @placeholder -->
+@defer (interaction) {
+  <app-editor />
+} @placeholder {
+  <button>Edit</button>
+}
+
+<!-- when: once the expression is truthy -->
+@defer (when settingsOpen()) {
+  <app-settings />
+}
+
+<!-- Several triggers: the first one firing renders the content -->
+@defer (visible, when settingsOpen()) {
+  <app-settings />
+} @placeholder {
+  <div class="settings-frame" />
+}

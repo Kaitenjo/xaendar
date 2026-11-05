@@ -1,0 +1,9 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggle()">toggle()</ex-button>
+<p>requested: { requested() }</p>
+@defer (when requested()) {
+  <p class="details">The details, rendered the first time requested() is true.</p>
+} @placeholder {
+  <p class="note">The details are not requested yet.</p>
+}

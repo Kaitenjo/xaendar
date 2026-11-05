@@ -1,0 +1,11 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0 0 0.5rem;
+}
+
+.note {
+  color: var(--xd-text-muted);
+}

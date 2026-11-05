@@ -153,6 +153,18 @@ export enum TokenType {
    */
   CATCH,
   /**
+   * Opening keyword of a `@defer` block, e.g. `@defer` in `@defer (idle) { … }`.
+   */
+  DEFER,
+  /**
+   * Opening keyword of a `@loading` block, e.g. `@loading` in `@loading { … }`.
+   */
+  LOADING,
+  /**
+   * Opening keyword of an `@error` block, e.g. `@error` in `@error (error) { … }`.
+   */
+  ERROR,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

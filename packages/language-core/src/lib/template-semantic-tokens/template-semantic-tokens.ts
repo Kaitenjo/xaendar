@@ -70,6 +70,7 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
       }
     },
     tryBlock: node => add(node.catch.nameSpan, 'variable', ['readonly']),
+    defer: node => add(node.error?.nameSpan, 'variable', ['readonly']),
     render: node => add(node.calleeSpan, 'function'),
     let: node => add(node.nameSpan, 'variable', ['readonly']),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => add(span, 'variable', ['readonly']))

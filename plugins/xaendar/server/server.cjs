@@ -20134,7 +20134,7 @@ function getWellformedEdit(textEdit) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-var import_node36 = __toESM(require_main3(), 1);
+var import_node37 = __toESM(require_main3(), 1);
 
 // ../packages/common/src/models/stack/stack.ts
 var Stack = class {
@@ -20255,6 +20255,9 @@ var ASTNodeType = /* @__PURE__ */ ((ASTNodeType2) => {
   ASTNodeType2[ASTNodeType2["Placeholder"] = 23] = "Placeholder";
   ASTNodeType2[ASTNodeType2["Try"] = 24] = "Try";
   ASTNodeType2[ASTNodeType2["Catch"] = 25] = "Catch";
+  ASTNodeType2[ASTNodeType2["Defer"] = 26] = "Defer";
+  ASTNodeType2[ASTNodeType2["Loading"] = 27] = "Loading";
+  ASTNodeType2[ASTNodeType2["Error"] = 28] = "Error";
   return ASTNodeType2;
 })(ASTNodeType || {});
 
@@ -20377,20 +20380,22 @@ function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
 }
 
 // ../packages/compiler/src/generator/models/compiler-context/compiler-context.model.ts
-var CompilerContext = class {
+var CompilerContext = class _CompilerContext {
   /**
    * Creates a new scope context.
    *
-   * @param parent - Optional parent context representing the enclosing scope.
+   * @param parentContextOrCache - Optional parent context representing the enclosing scope.
    * @param _namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
    *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
-  constructor(parent, _namespace) {
+  constructor(parentContextOrCache, _namespace) {
     this._namespace = _namespace;
-    if (parent) {
-      this.parent = parent;
-      this.cache = parent.cache;
-      this.deferredModules = parent.deferredModules;
+    if (parentContextOrCache instanceof _CompilerContext) {
+      this.parent = parentContextOrCache;
+      this.cache = parentContextOrCache.cache;
+      this.deferredModules = parentContextOrCache.deferredModules;
+    } else {
+      this.cache = parentContextOrCache;
     }
   }
   _namespace;
@@ -20400,8 +20405,8 @@ var CompilerContext = class {
    */
   cache;
   /**
-   * The modules each `@hydrate` of the template loads before its content is rendered: the ones of the components its
-   * content alone renders, which the module of the template does not import (see `getDeferredModules`).
+   * The modules each `@hydrate` and `@defer` of the template loads before its content is rendered: the ones of the
+   * components its content alone renders, which the module of the template does not import (see `getDeferredModules`).
    */
   deferredModules;
   /**
@@ -21149,7 +21154,10 @@ var TokenType = /* @__PURE__ */ ((TokenType2) => {
   TokenType2[TokenType2["PLACEHOLDER"] = 34] = "PLACEHOLDER";
   TokenType2[TokenType2["TRY"] = 35] = "TRY";
   TokenType2[TokenType2["CATCH"] = 36] = "CATCH";
-  TokenType2[TokenType2["EOF"] = 37] = "EOF";
+  TokenType2[TokenType2["DEFER"] = 37] = "DEFER";
+  TokenType2[TokenType2["LOADING"] = 38] = "LOADING";
+  TokenType2[TokenType2["ERROR"] = 39] = "ERROR";
+  TokenType2[TokenType2["EOF"] = 40] = "EOF";
   return TokenType2;
 })(TokenType || {});
 
@@ -21982,12 +21990,35 @@ function lexFlowControl(cursor, _context) {
     };
   } else if (cursor.peekMatch("catch ")) {
     cursor.advance(6);
-    cursor.skipSpaces();
-    retVal = cursor.peekMatch("(") ? { state: "flow-control-condition" /* FLOW_CONTROL_CONDITION */, tokens: [{ type: 36 /* CATCH */ }], pushState: true } : { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 36 /* CATCH */ }] };
+    retVal = lexNamedBlock(cursor, 36 /* CATCH */);
+  } else if (cursor.peekMatch("defer ")) {
+    cursor.advance(6);
+    retVal = {
+      state: "flow-control-condition" /* FLOW_CONTROL_CONDITION */,
+      tokens: [{
+        type: 37 /* DEFER */
+      }],
+      pushState: true
+    };
+  } else if (cursor.peekMatch("loading ")) {
+    cursor.advance(8);
+    retVal = {
+      state: "flow-control-block" /* FLOW_CONTROL_BLOCK */,
+      tokens: [{
+        type: 38 /* LOADING */
+      }]
+    };
+  } else if (cursor.peekMatch("error ")) {
+    cursor.advance(6);
+    retVal = lexNamedBlock(cursor, 39 /* ERROR */);
   } else {
     throw "Unknown flow-control keyword";
   }
   return retVal;
+}
+function lexNamedBlock(cursor, type) {
+  cursor.skipSpaces();
+  return cursor.peekMatch("(") ? { state: "flow-control-condition" /* FLOW_CONTROL_CONDITION */, tokens: [{ type }], pushState: true } : { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type }] };
 }
 
 // ../packages/compiler/src/lexer/states/lex-flow-control-block/lex-flow-control-block.state.ts
@@ -23185,7 +23216,7 @@ var ParserCursor = class extends Cursor {
    * giving EOF instead of starting over from the first token.
    */
   _currentToken = {
-    value: { type: 37 /* EOF */ },
+    value: { type: 40 /* EOF */ },
     index: -1
   };
   /**
@@ -23209,7 +23240,7 @@ var ParserCursor = class extends Cursor {
     }
     const newIndex = this._currentToken.index + chars;
     if (newIndex >= this._tokens.length) {
-      this._currentToken.value = { type: 37 /* EOF */ };
+      this._currentToken.value = { type: 40 /* EOF */ };
       this._currentToken.index = this._tokens.length;
     } else {
       this._currentToken.index = newIndex;
@@ -23256,7 +23287,7 @@ var ParserCursor = class extends Cursor {
    * Peeks a single token at the given absolute index.
    */
   peekOneToken(index) {
-    return index < this._tokens.length ? this._tokens[index] : { type: 37 /* EOF */ };
+    return index < this._tokens.length ? this._tokens[index] : { type: 40 /* EOF */ };
   }
 };
 
@@ -24439,7 +24470,7 @@ function assertNameableElement(element, ref) {
 function isTagClose(cursor, tagName) {
   const nextToken = cursor.peek();
   switch (nextToken.type) {
-    case 37 /* EOF */:
+    case 40 /* EOF */:
       throw new Error(`Expected closing tag ${tagName} while file is over`);
     case 4 /* TAG_CLOSE_NAME */:
       const tokenTagName = nextToken.parts[0];
@@ -24474,7 +24505,7 @@ function getForVariables(node) {
 function parseBlockChildren(cursor, parseNode) {
   const children = new Array();
   while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
-    if (cursor.peek().type === 37 /* EOF */) {
+    if (cursor.peek().type === 40 /* EOF */) {
       throw "Unexpected end of template: expected BLOCK_CLOSE";
     }
     const child = parseNode();
@@ -24658,6 +24689,8 @@ function findNodeEvent(node) {
       return findEvent(node.children);
     case 24 /* Try */:
       return findEvent(node.children) ?? findEvent(node.catch.children);
+    case 26 /* Defer */:
+      return findEvent(node.children) ?? (node.placeholder ? findEvent(node.placeholder.children) : void 0) ?? (node.loading ? findEvent(node.loading.children) : void 0) ?? (node.error ? findEvent(node.error.children) : void 0);
     default:
       return void 0;
   }
@@ -24716,38 +24749,60 @@ function parseClient(cursor, parseNode, token) {
   };
 }
 function parseOrphanPlaceholder(_cursor, _parseNode, token) {
-  throw new Error("@placeholder must follow the block of a @client", { cause: token.span });
+  throw new Error("@placeholder must follow the block of a @client or a @defer", { cause: token.span });
 }
 
-// ../packages/compiler/src/parser/utils/hydrate-triggers/hydrate-triggers.utils.ts
-var KEYWORD_TRIGGERS = /* @__PURE__ */ new Set(["load", "idle", "visible", "interaction", "never"]);
-function parseHydrateTriggers(source, offset) {
-  const triggers = new Array();
-  const parts = splitTopLevel(source);
-  for (let i2 = 0; i2 < parts.length; i2++) {
-    const { text, start } = parts[i2];
-    const span = { start: offset + start, end: offset + start + text.length };
-    if (!text) {
-      throw new Error("@hydrate needs a trigger: load, idle, visible, interaction, never, or when followed by an expression", { cause: span });
-    }
-    const when = /^when\s+/.exec(text);
-    const trigger = when ? { kind: "when", expression: text.slice(when[0].length), expressionNode: validateExpression(text.slice(when[0].length), span.start + when[0].length).node, span } : { kind: toKeywordTrigger(text, span), span };
-    if (triggers.some(({ kind }) => kind === trigger.kind)) {
-      throw new Error(`The trigger "${trigger.kind}" is declared twice`, { cause: span });
-    }
-    triggers.push(trigger);
+// ../packages/compiler/src/parser/utils/error-name/error-name.utils.ts
+function readErrorName(cursor, node, kind) {
+  const nameToken = cursor.peek();
+  if (nameToken.type !== 18 /* CONDITION */) {
+    return;
   }
+  const raw = nameToken.parts[0];
+  const name = raw.trim();
+  const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
+  const nameSpan = { start, end: start + name.length };
+  assertDeclaredName(name, nameSpan, kind);
+  node.name = name;
+  node.nameSpan = nameSpan;
+  cursor.advance();
+}
+
+// ../packages/compiler/src/parser/utils/triggers/triggers.utils.ts
+var HYDRATE_KEYWORDS = /* @__PURE__ */ new Set(["load", "idle", "visible", "interaction", "never"]);
+var DEFER_KEYWORDS = /* @__PURE__ */ new Set(["load", "idle", "visible", "interaction"]);
+function parseHydrateTriggers(source, offset) {
+  const triggers = parseTriggers(source, offset, "@hydrate", HYDRATE_KEYWORDS);
   const never = triggers.find(({ kind }) => kind === "never");
   if (never && triggers.length > 1) {
     throw new Error('The trigger "never" stands alone: any other trigger would hydrate the content', { cause: never.span });
   }
   return triggers;
 }
-function toKeywordTrigger(text, span) {
-  if (!KEYWORD_TRIGGERS.has(text)) {
-    throw new Error(`Unknown @hydrate trigger "${text}": use load, idle, visible, interaction, never, or when followed by an expression`, { cause: span });
+function parseDeferTriggers(source, offset) {
+  return parseTriggers(source, offset, "@defer", DEFER_KEYWORDS);
+}
+function parseTriggers(source, offset, block, keywords) {
+  const triggers = new Array();
+  const accepted = `${Array.from(keywords).join(", ")}, or when followed by an expression`;
+  const parts = splitTopLevel(source);
+  for (let i2 = 0; i2 < parts.length; i2++) {
+    const { text, start } = parts[i2];
+    const span = { start: offset + start, end: offset + start + text.length };
+    if (!text) {
+      throw new Error(`${block} needs a trigger: ${accepted}`, { cause: span });
+    }
+    const when = /^when\s+/.exec(text);
+    if (!when && !keywords.has(text)) {
+      throw new Error(`Unknown ${block} trigger "${text}": use ${accepted}`, { cause: span });
+    }
+    const trigger = when ? { kind: "when", expression: text.slice(when[0].length), expressionNode: validateExpression(text.slice(when[0].length), span.start + when[0].length).node, span } : { kind: text, span };
+    if (triggers.some(({ kind }) => kind === trigger.kind)) {
+      throw new Error(`The trigger "${trigger.kind}" is declared twice`, { cause: span });
+    }
+    triggers.push(trigger);
   }
-  return text;
+  return triggers;
 }
 function splitTopLevel(source) {
   const parts = new Array();
@@ -24794,6 +24849,68 @@ function splitTopLevel(source) {
   }
   push(source.length);
   return parts;
+}
+
+// ../packages/compiler/src/parser/states/parse-defer/parse-defer.state.ts
+function parseDefer(cursor, parseNode, token) {
+  cursor.advance();
+  const conditionToken = cursor.peek();
+  if (conditionToken.type !== 18 /* CONDITION */) {
+    throw `Expected the triggers of @defer between parentheses, got ${TokenType[conditionToken.type]}`;
+  }
+  cursor.advance(2);
+  const node = {
+    type: 26 /* Defer */,
+    triggers: parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start),
+    children: parseBlockChildren(cursor, parseNode),
+    placeholder: null,
+    loading: null,
+    error: null,
+    span: { start: token.span.start, end: cursor.getCurrentToken().value.span.end }
+  };
+  for (let next = cursor.peek(); next.type === 34 /* PLACEHOLDER */ || next.type === 38 /* LOADING */ || next.type === 39 /* ERROR */; next = cursor.peek()) {
+    const start = next.span.start;
+    cursor.advance();
+    switch (next.type) {
+      case 34 /* PLACEHOLDER */: {
+        assertNotDeclared(node.placeholder, "@placeholder", next.span);
+        const children = parseFollowingChildren(cursor, parseNode);
+        node.placeholder = { type: 23 /* Placeholder */, children, span: { start, end: cursor.getCurrentToken().value.span.end } };
+        break;
+      }
+      case 38 /* LOADING */: {
+        assertNotDeclared(node.loading, "@loading", next.span);
+        const children = parseFollowingChildren(cursor, parseNode);
+        node.loading = { type: 27 /* Loading */, children, span: { start, end: cursor.getCurrentToken().value.span.end } };
+        break;
+      }
+      default: {
+        assertNotDeclared(node.error, "@error", next.span);
+        const error = { type: 28 /* Error */, children: [], span: next.span };
+        readErrorName(cursor, error, "error of @error");
+        error.children = parseFollowingChildren(cursor, parseNode);
+        error.span = { start, end: cursor.getCurrentToken().value.span.end };
+        node.error = error;
+      }
+    }
+    node.span.end = cursor.getCurrentToken().value.span.end;
+  }
+  return node;
+}
+function parseOrphanLoading(_cursor, _parseNode, token) {
+  throw new Error("@loading must follow the block of a @defer", { cause: token.span });
+}
+function parseOrphanError(_cursor, _parseNode, token) {
+  throw new Error("@error must follow the block of a @defer", { cause: token.span });
+}
+function parseFollowingChildren(cursor, parseNode) {
+  cursor.advance();
+  return parseBlockChildren(cursor, parseNode);
+}
+function assertNotDeclared(declared, keyword, span) {
+  if (declared) {
+    throw new Error(`${keyword} is declared twice for this @defer`, { cause: span });
+  }
 }
 
 // ../packages/compiler/src/parser/states/parse-hydrate/parse-hydrate.state.ts
@@ -25063,17 +25180,7 @@ function parseTry(cursor, parseNode, token) {
   }
   cursor.advance();
   const catchNode = { type: 25 /* Catch */, children: [], span: catchToken.span };
-  const nameToken = cursor.peek();
-  if (nameToken.type === 18 /* CONDITION */) {
-    const raw = nameToken.parts[0];
-    const name = raw.trim();
-    const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
-    const nameSpan = { start, end: start + name.length };
-    assertDeclaredName(name, nameSpan, "@catch error");
-    catchNode.name = name;
-    catchNode.nameSpan = nameSpan;
-    cursor.advance();
-  }
+  readErrorName(cursor, catchNode, "@catch error");
   cursor.advance();
   catchNode.children = parseBlockChildren(cursor, parseNode);
   const end = cursor.getCurrentToken().value.span.end;
@@ -25122,6 +25229,9 @@ var Parser = class {
     [34 /* PLACEHOLDER */]: parseOrphanPlaceholder,
     [35 /* TRY */]: parseTry,
     [36 /* CATCH */]: parseOrphanCatch,
+    [37 /* DEFER */]: parseDefer,
+    [38 /* LOADING */]: parseOrphanLoading,
+    [39 /* ERROR */]: parseOrphanError,
     [21 /* IMPORT */]: parseImport,
     [28 /* RENDER */]: parseRender,
     [30 /* LET */]: parseLet
@@ -25146,7 +25256,7 @@ var Parser = class {
    */
   parse() {
     const nodes = new Array();
-    while (this._cursor.peek().type !== 37 /* EOF */) {
+    while (this._cursor.peek().type !== 40 /* EOF */) {
       const parseNode = this.parseNode();
       if (parseNode) {
         nodes.push(parseNode);
@@ -25163,7 +25273,7 @@ var Parser = class {
    */
   parseNode() {
     const token = this._cursor.peek();
-    if (token.type === 37 /* EOF */) {
+    if (token.type === 40 /* EOF */) {
       return void 0;
     }
     const startOffset = token.span.start;
@@ -25194,7 +25304,7 @@ var Parser = class {
       this.thrown = true;
       const message = err instanceof Error ? err.message : `${err}`;
       const currentToken = this._cursor.peek();
-      const stateEndIndex = currentToken.type !== 37 /* EOF */ ? currentToken.span.end : this._input.length;
+      const stateEndIndex = currentToken.type !== 40 /* EOF */ ? currentToken.span.end : this._input.length;
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
       throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}
  ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
@@ -26924,6 +27034,43 @@ function typeCheckTry(node, processNode, context) {
   ];
 }
 
+// ../packages/compiler/src/type-checker/states/type-check-defer/type-check-defer.state.ts
+function typeCheckDefer(node, processNode, context) {
+  const lines = new Array();
+  const { triggers, placeholder, loading, error } = node;
+  for (let i2 = 0; i2 < triggers.length; i2++) {
+    const trigger = triggers[i2];
+    if (trigger.kind === "when") {
+      lines.push(line("if (", mappedExpression(trigger.expressionNode, context, trigger.span), ") { }"));
+    }
+  }
+  const block = (children, blockContext = new TypeCheckContext(context)) => {
+    const scope = typeCheckScope(children, blockContext, processNode);
+    return indentLines(scope.declarations.concat(scope.lines));
+  };
+  lines.push(plain("{"), ...block(node.children), plain("}"));
+  if (placeholder) {
+    lines.push(plain("{"), ...block(placeholder.children), plain("}"));
+  }
+  if (loading) {
+    lines.push(plain("{"), ...block(loading.children), plain("}"));
+  }
+  if (error) {
+    const { name, nameSpan, children } = error;
+    const errorContext = new TypeCheckContext(context);
+    if (name) {
+      errorContext.addUnresolvableIdentifier(name, "value");
+    }
+    lines.push(
+      plain("try { }"),
+      name ? line("catch (", mapped(name, nameSpan), ") {") : plain("catch {"),
+      ...block(children, errorContext),
+      plain("}")
+    );
+  }
+  return lines;
+}
+
 // ../packages/compiler/src/type-checker/states/type-check-hydrate/type-check-hydrate.state.ts
 function typeCheckHydrate(node, processNode, context) {
   const lines = new Array();
@@ -27063,6 +27210,19 @@ function getNestedNodes(node) {
       return node.placeholder ? [node.children, node.placeholder.children] : [node.children];
     case 24 /* Try */:
       return [node.children, node.catch.children];
+    case 26 /* Defer */: {
+      const lists = [node.children];
+      if (node.placeholder) {
+        lists.push(node.placeholder.children);
+      }
+      if (node.loading) {
+        lists.push(node.loading.children);
+      }
+      if (node.error) {
+        lists.push(node.error.children);
+      }
+      return lists;
+    }
     case 5 /* If */:
     case 7 /* ElseIf */:
       return node.alternate ? [node.children, [node.alternate]] : [node.children];
@@ -27079,23 +27239,31 @@ function getNestedNodes(node) {
   }
 }
 
-// ../packages/compiler/src/type-checker/utils/hydrate-content/hydrate-content.utils.ts
-function checkHydrateContent(nodes) {
+// ../packages/compiler/src/type-checker/utils/trigger-targets/trigger-targets.utils.ts
+function checkTriggerTargets(nodes) {
   const errors = new Array();
   visitNodes(nodes, (node) => {
-    const error = node.type === 21 /* Hydrate */ ? checkTriggers(node) : void 0;
+    let error;
+    switch (node.type) {
+      case 21 /* Hydrate */:
+        error = checkTriggers(node, node.children, "watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client");
+        break;
+      case 26 /* Defer */:
+        error = checkTriggers(node, node.placeholder?.children, "watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element");
+        break;
+    }
     if (error) {
       errors.push(error);
     }
   });
   return errors;
 }
-function checkTriggers({ triggers, children }) {
+function checkTriggers({ triggers }, watched, reason) {
   const trigger = triggers.find(({ kind }) => kind === "visible" || kind === "interaction");
-  if (!trigger || mayRenderElement(children)) {
+  if (!trigger || watched && mayRenderElement(watched)) {
     return void 0;
   }
-  return new Error(`The trigger "${trigger.kind}" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client`, { cause: trigger.span });
+  return new Error(`The trigger "${trigger.kind}" ${reason}`, { cause: trigger.span });
 }
 function mayRenderElement(nodes) {
   return nodes.some((node) => {
@@ -27105,7 +27273,9 @@ function mayRenderElement(nodes) {
       case 19 /* Let */:
       case 17 /* Template */:
         return false;
+      // Before the browser renders their content, only their @placeholder is there
       case 22 /* Client */:
+      case 26 /* Defer */:
         return !!node.placeholder && mayRenderElement(node.placeholder.children);
       case 21 /* Hydrate */:
         return mayRenderElement(node.children);
@@ -27248,7 +27418,11 @@ function checkNodes(nodes, check) {
         }
         break;
       case 24 /* Try */:
-        checkTry(node, check);
+        checkScope(node.children, check);
+        checkErrorScope(node.catch, check);
+        break;
+      case 26 /* Defer */:
+        checkDefer(node, check);
         break;
       case 17 /* Template */:
         checkTemplate(node, check);
@@ -27273,6 +27447,18 @@ function checkHydrate(node, check) {
     }
   }
   checkScope(node.children, check);
+}
+function checkDefer(node, check) {
+  checkHydrate(node, check);
+  if (node.placeholder) {
+    checkScope(node.placeholder.children, check);
+  }
+  if (node.loading) {
+    checkScope(node.loading.children, check);
+  }
+  if (node.error) {
+    checkErrorScope(node.error, check);
+  }
 }
 function checkElement(node, check) {
   checkBindings(node, check);
@@ -27354,9 +27540,7 @@ function checkFor(node, check) {
   checkNodes(node.children, check);
   check.scopes.pop();
 }
-function checkTry(node, check) {
-  checkScope(node.children, check);
-  const { name, children } = node.catch;
+function checkErrorScope({ name, children }, check) {
   const names = /* @__PURE__ */ new Map();
   if (name) {
     names.set(name, { position: null, level: check.level });
@@ -27437,6 +27621,7 @@ var TypeChecker = class {
     [21 /* Hydrate */]: typeCheckHydrate,
     [22 /* Client */]: typeCheckClient,
     [24 /* Try */]: typeCheckTry,
+    [26 /* Defer */]: typeCheckDefer,
     [11 /* Import */]: typeCheckImport,
     [17 /* Template */]: typeCheckTemplate,
     [18 /* Render */]: typeCheckRender,
@@ -27520,7 +27705,7 @@ var TypeChecker = class {
       this._context.addSignalClassField(reactiveMembers[i2]);
     }
     this._report(checkVariableOrder(this._ast));
-    this._report(checkHydrateContent(this._ast));
+    this._report(checkTriggerTargets(this._ast));
     if (ssr === false) {
       this._report(checkServerBlocks(this._ast));
     }
@@ -27658,7 +27843,7 @@ function getExpressionContext(source, offset) {
   const partial = PARTIAL_IDENTIFIER.exec(before)[0];
   const span = { start: offset - partial.length, end: offset };
   const head = `${before}${partial ? "" : PLACEHOLDER}`;
-  const lastToken = tokens.findLast((token) => token.type !== 37 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 40 /* EOF */);
   switch (lexer.state) {
     case "interpolation" /* INTERPOLATION */:
     case "interpolation-expression" /* INTERPOLATION_EXPRESSION */: {
@@ -27674,7 +27859,7 @@ function getExpressionContext(source, offset) {
     case "flow-control-condition" /* FLOW_CONTROL_CONDITION */: {
       const open = before.indexOf("(", lastToken.span.end);
       const isForItem = lastToken.type === 12 /* FOR */ && !/\sof\s|;/.test(before.slice(open + 1, span.start));
-      if (open === -1 || isForItem || lastToken.type === 36 /* CATCH */) {
+      if (open === -1 || isForItem || lastToken.type === 36 /* CATCH */ || lastToken.type === 39 /* ERROR */) {
         return void 0;
       }
       const closed = closeParenthesized(source, open, offset);
@@ -28038,7 +28223,12 @@ function findStringEnd(text, quoteIndex) {
 // ../packages/compiler/src/lexer/utils/template-layout/template-layout.utils.ts
 var RAW_ELEMENTS = /* @__PURE__ */ new Set(["pre", "textarea", "script", "style"]);
 var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
-var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "default", "client", "placeholder", "try", "catch"]);
+var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "default", "client", "placeholder", "try", "catch", "loading", "error"]);
+var FOLLOWING_BRANCHES = /* @__PURE__ */ new Map([
+  ["client", ["placeholder"]],
+  ["try", ["catch"]],
+  ["defer", ["placeholder", "loading", "error"]]
+]);
 var NAME = /[^\s=<>/(){}"'@*]+/y;
 var TAG_NAME = /[^\s/>(]+/y;
 var TemplateLayoutError = class extends Error {
@@ -28232,7 +28422,7 @@ function readItem(reader) {
   }
   if (source[position] === "@") {
     const block = readBlock(reader, readItemsBody);
-    if (block.keyword === "for" || block.keyword === "hydrate" || block.keyword === "client" || block.keyword === "try") {
+    if (block.keyword !== "if" && block.keyword !== "switch") {
       fail(`A conditional binding cannot be a @${block.keyword}`);
     }
     return block;
@@ -28312,6 +28502,7 @@ function readBlock(reader, readBody) {
     case "hydrate":
     case "client":
     case "try":
+    case "defer":
       break;
     case "switch":
       return readSwitch(reader, readBody);
@@ -28319,16 +28510,9 @@ function readBlock(reader, readBody) {
       return fail(`@${keyword} does not open a block`);
   }
   const branches = [readBranch(reader, keyword, readBody)];
-  const following = keyword === "client" ? "placeholder" : keyword === "try" ? "catch" : void 0;
+  const following = FOLLOWING_BRANCHES.get(keyword);
   if (following) {
-    const afterBlock = reader.position;
-    skipWhitespace(reader);
-    if (reader.source.startsWith(`@${following}`, reader.position)) {
-      reader.position += following.length + 1;
-      branches.push(readBranch(reader, following, readBody));
-    } else {
-      reader.position = afterBlock;
-    }
+    readFollowingBranches(reader, following, branches, readBody);
   }
   while (keyword === "if") {
     const afterBlock = reader.position;
@@ -28347,6 +28531,21 @@ function readBlock(reader, readBody) {
     branches.push(readBranch(reader, isElseIf ? "else if" : "else", readBody));
   }
   return { kind: "block", keyword, branches };
+}
+function readFollowingBranches(reader, keywords, branches, readBody) {
+  const remaining = keywords.slice();
+  for (; ; ) {
+    const afterBlock = reader.position;
+    skipWhitespace(reader);
+    const index = remaining.findIndex((keyword2) => reader.source.startsWith(`@${keyword2}`, reader.position));
+    if (index === -1) {
+      reader.position = afterBlock;
+      return;
+    }
+    const [keyword] = remaining.splice(index, 1);
+    reader.position += keyword.length + 1;
+    branches.push(readBranch(reader, keyword, readBody));
+  }
 }
 function readSwitch(reader, readBody) {
   skipWhitespace(reader);
@@ -28746,6 +28945,11 @@ function getImportPathContext(source, offset) {
 
 // ../packages/compiler/src/lexer/utils/keyword-context/keyword-context.utils.ts
 var KEYWORD_START = /@[a-z]*$/;
+var DEFER_BLOCKS = /* @__PURE__ */ new Map([
+  [34 /* PLACEHOLDER */, "placeholder"],
+  [38 /* LOADING */, "loading"],
+  [39 /* ERROR */, "error"]
+]);
 function getKeywordContext(source, offset) {
   const before = source.slice(0, offset);
   const match = KEYWORD_START.exec(before);
@@ -28765,7 +28969,7 @@ function getKeywordContext(source, offset) {
   switch (state) {
     // The content of the template
     case "text" /* TEXT */:
-      keywords = ["if", "for", "switch", "hydrate", "client", "try", "render", "let"];
+      keywords = ["if", "for", "switch", "hydrate", "client", "try", "defer", "render", "let"];
       break;
     // The bindings of a tag, of a conditional binding or of a directive
     case "tag-body" /* TAG_BODY */:
@@ -28788,10 +28992,18 @@ function getKeywordContext(source, offset) {
       break;
     case 33 /* CLIENT */:
       keywords.push("placeholder");
-      break;
+      return { keywords, span, clientPlaceholder: true };
     // A @try must be followed by its @catch
     case 35 /* TRY */:
       return { keywords: ["catch"], span };
+  }
+  const written = getDeferBlocks(tokens);
+  if (written) {
+    for (const [type, keyword] of DEFER_BLOCKS) {
+      if (!written.has(type)) {
+        keywords.push(keyword);
+      }
+    }
   }
   if (state === "text" /* TEXT */ && tokens.every((token) => token.type === 21 /* IMPORT */ || token.type === 22 /* IMPORT_PATH */ || token.type === 0 /* TEXT */ && /^[\s;]*$/.test(token.parts[0]))) {
     keywords.push("import");
@@ -28816,8 +29028,33 @@ function findOpenBlock(tokens, end) {
   return -1;
 }
 function getClosedBlockKeyword(tokens) {
-  const last = tokens.findLastIndex((token) => token.type !== 0 /* TEXT */ || !!token.parts[0].trim());
+  const last = findLastNotBlank(tokens, tokens.length);
   return tokens[last]?.type === 20 /* BLOCK_CLOSE */ ? getBlockKeyword(tokens, findOpenBlock(tokens, last)) : void 0;
+}
+function getDeferBlocks(tokens) {
+  const written = /* @__PURE__ */ new Set();
+  for (let end = findLastNotBlank(tokens, tokens.length); tokens[end]?.type === 20 /* BLOCK_CLOSE */; ) {
+    const open = findOpenBlock(tokens, end);
+    const keyword = getBlockKeyword(tokens, open);
+    if (keyword === 37 /* DEFER */) {
+      return written;
+    }
+    if (!DEFER_BLOCKS.has(keyword)) {
+      return void 0;
+    }
+    written.add(keyword);
+    end = findLastNotBlank(tokens, tokens[open - 1].type === 18 /* CONDITION */ ? open - 2 : open - 1);
+  }
+  return void 0;
+}
+function findLastNotBlank(tokens, end) {
+  for (let i2 = end - 1; i2 >= 0; i2--) {
+    const token = tokens[i2];
+    if (token.type !== 0 /* TEXT */ || token.parts[0].trim()) {
+      return i2;
+    }
+  }
+  return -1;
 }
 function declaresDefault(tokens, openBlock) {
   let depth = 0;
@@ -29288,7 +29525,12 @@ var TemplateWalker = class {
         break;
       case 24 /* Try */:
         this._visitor.tryBlock?.(node);
-        this._walkTry(node, variables);
+        this.walkScope(node.children, variables);
+        this._walkErrorScope(node.catch, variables);
+        break;
+      case 26 /* Defer */:
+        this._visitor.defer?.(node);
+        this._walkDefer(node, variables);
         break;
       case 17 /* Template */: {
         this._visitor.template?.(node);
@@ -29439,13 +29681,46 @@ var TemplateWalker = class {
    * @param variables - The variables declared in the scope enclosing the block.
    */
   _walkHydrate(node, variables) {
-    for (let i2 = 0; !this._server && i2 < node.triggers.length; i2++) {
-      const trigger = node.triggers[i2];
+    this._walkWhen(node, variables);
+    this.walkScope(node.children, variables);
+  }
+  /**
+   * Walks a `@defer` block: the expression of its `when` trigger, its content and the blocks following it, each one a
+   * scope of its own, the `@error` declaring the error under the name it gives it. The server renders only its
+   * `@placeholder`.
+   *
+   * @param node - The `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkDefer(node, variables) {
+    const { placeholder, loading, error } = node;
+    if (!this._server) {
+      this._walkWhen(node, variables);
+      this.walkScope(node.children, variables);
+    }
+    if (placeholder) {
+      this.walkScope(placeholder.children, variables);
+    }
+    if (!this._server && loading) {
+      this.walkScope(loading.children, variables);
+    }
+    if (!this._server && error) {
+      this._walkErrorScope(error, variables);
+    }
+  }
+  /**
+   * Walks the expression of the `when` trigger of a block, if any, which the server does not read.
+   *
+   * @param node - The `@hydrate` or `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkWhen({ triggers }, variables) {
+    for (let i2 = 0; !this._server && i2 < triggers.length; i2++) {
+      const trigger = triggers[i2];
       if (trigger.kind === "when") {
         this._visitor.expression?.(trigger.expressionNode, variables);
       }
     }
-    this.walkScope(node.children, variables);
   }
   /**
    * Walks a `@client` block: its content and its `@placeholder`, if any, each one a scope of its own.
@@ -29462,20 +29737,18 @@ var TemplateWalker = class {
     }
   }
   /**
-   * Walks a `@try` block and its `@catch`, each one a scope of its own: the server renders either of them, so both are
-   * walked. The `@catch` declares the error, under the name it gives it.
+   * Walks a block receiving an error, a scope of its own declaring the error under the name it gives it: the `@catch` of
+   * a `@try`, which the server renders as it does the content, or the `@error` of a `@defer`.
    *
-   * @param node - The `@try` block.
+   * @param node - The `@catch` or `@error` block.
    * @param variables - The variables declared in the scope enclosing the block.
    */
-  _walkTry(node, variables) {
-    this.walkScope(node.children, variables);
-    const { name, children } = node.catch;
-    const catchVariables = new Set(variables);
+  _walkErrorScope({ name, children }, variables) {
+    const errorVariables = new Set(variables);
     if (name) {
-      catchVariables.add(name);
+      errorVariables.add(name);
     }
-    this.walkScope(children, catchVariables);
+    this.walkScope(children, errorVariables);
   }
   /**
    * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
@@ -30377,12 +30650,15 @@ var KEYWORD_SNIPPETS = {
   "placeholder": "@placeholder {\n	$0\n}",
   "try": "@try {\n	$1\n} @catch (${2:error}) {\n	$0\n}",
   "catch": "@catch (${1:error}) {\n	$0\n}",
+  "defer": "@defer ($1) {\n	$0\n}",
+  "loading": "@loading {\n	$0\n}",
+  "error": "@error (${1:error}) {\n	$0\n}",
   "import": "@import { $2 } from '$1';",
   "render": "@render $1($0)",
   "let": "@let $1 = $0;"
 };
 var RETRIGGERING_KEYWORDS = /* @__PURE__ */ new Set(["if", "else if", "for", "switch", "import"]);
-var SERVER_KEYWORDS = /* @__PURE__ */ new Set(["hydrate", "client", "placeholder"]);
+var SERVER_KEYWORDS = /* @__PURE__ */ new Set(["hydrate", "client"]);
 var TYPE_KINDS = /* @__PURE__ */ new Set([import_typescript27.ScriptElementKind.interfaceElement, import_typescript27.ScriptElementKind.typeElement]);
 function getTemplateCompletions(analysis, offset) {
   const shimPosition = findShimPosition(analysis, offset);
@@ -30444,8 +30720,9 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
   if (!context) {
     return void 0;
   }
-  const { keywords, span } = context;
-  const available = readSsr((0, import_node_path8.dirname)(templatePath)) === false ? keywords.filter((keyword) => !SERVER_KEYWORDS.has(keyword)) : keywords;
+  const { keywords, span, clientPlaceholder } = context;
+  const isServerKeyword = (keyword) => SERVER_KEYWORDS.has(keyword) || keyword === "placeholder" && !!clientPlaceholder;
+  const available = readSsr((0, import_node_path8.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
     kind: import_typescript27.ScriptElementKind.keyword,
@@ -30990,6 +31267,7 @@ function getTemplateSemanticTokens({ ast, metadatas }) {
       }
     },
     tryBlock: (node) => add(node.catch.nameSpan, "variable", ["readonly"]),
+    defer: (node) => add(node.error?.nameSpan, "variable", ["readonly"]),
     render: (node) => add(node.calleeSpan, "function"),
     let: (node) => add(node.nameSpan, "variable", ["readonly"]),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, (span) => add(span, "variable", ["readonly"]))
@@ -31009,7 +31287,7 @@ var import_typescript33 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path11 = require("path");
-var import_node35 = __toESM(require_main3(), 1);
+var import_node36 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
@@ -31152,7 +31430,7 @@ var Debouncer = class {
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
 var import_typescript35 = require("typescript");
-var import_node34 = __toESM(require_main3(), 1);
+var import_node35 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
 var t = { 975(t2) {
@@ -31503,13 +31781,13 @@ function getDocument(fileName, getOpenDocument) {
 function toSeverity(category) {
   switch (category) {
     case import_typescript35.DiagnosticCategory.Error:
-      return import_node34.DiagnosticSeverity.Error;
+      return import_node35.DiagnosticSeverity.Error;
     case import_typescript35.DiagnosticCategory.Warning:
-      return import_node34.DiagnosticSeverity.Warning;
+      return import_node35.DiagnosticSeverity.Warning;
     case import_typescript35.DiagnosticCategory.Suggestion:
-      return import_node34.DiagnosticSeverity.Hint;
+      return import_node35.DiagnosticSeverity.Hint;
     default:
-      return import_node34.DiagnosticSeverity.Information;
+      return import_node35.DiagnosticSeverity.Information;
   }
 }
 function toCompletionItemKind(kind) {
@@ -31517,30 +31795,30 @@ function toCompletionItemKind(kind) {
     case import_typescript35.ScriptElementKind.memberVariableElement:
     case import_typescript35.ScriptElementKind.memberGetAccessorElement:
     case import_typescript35.ScriptElementKind.memberSetAccessorElement:
-      return import_node34.CompletionItemKind.Field;
+      return import_node35.CompletionItemKind.Field;
     case import_typescript35.ScriptElementKind.memberFunctionElement:
-      return import_node34.CompletionItemKind.Method;
+      return import_node35.CompletionItemKind.Method;
     case import_typescript35.ScriptElementKind.functionElement:
-      return import_node34.CompletionItemKind.Function;
+      return import_node35.CompletionItemKind.Function;
     case import_typescript35.ScriptElementKind.variableElement:
     case import_typescript35.ScriptElementKind.letElement:
     case import_typescript35.ScriptElementKind.constElement:
-      return import_node34.CompletionItemKind.Variable;
+      return import_node35.CompletionItemKind.Variable;
     case import_typescript35.ScriptElementKind.classElement:
-      return import_node34.CompletionItemKind.Class;
+      return import_node35.CompletionItemKind.Class;
     case import_typescript35.ScriptElementKind.directory:
-      return import_node34.CompletionItemKind.Folder;
+      return import_node35.CompletionItemKind.Folder;
     case import_typescript35.ScriptElementKind.scriptElement:
-      return import_node34.CompletionItemKind.File;
+      return import_node35.CompletionItemKind.File;
     case "event":
-      return import_node34.CompletionItemKind.Event;
+      return import_node35.CompletionItemKind.Event;
     case "component":
-      return import_node34.CompletionItemKind.Class;
+      return import_node35.CompletionItemKind.Class;
     case "directive":
     case import_typescript35.ScriptElementKind.keyword:
-      return import_node34.CompletionItemKind.Keyword;
+      return import_node35.CompletionItemKind.Keyword;
     default:
-      return import_node34.CompletionItemKind.Text;
+      return import_node35.CompletionItemKind.Text;
   }
 }
 
@@ -31615,11 +31893,11 @@ var XaendarLanguageServer = class {
     this._hasConfiguration = !!capabilities?.workspace?.configuration;
     return {
       capabilities: {
-        textDocumentSync: import_node35.TextDocumentSyncKind.Incremental,
+        textDocumentSync: import_node36.TextDocumentSyncKind.Incremental,
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: [".", "(", "<", "@", "*", "/"] },
-        codeActionProvider: { codeActionKinds: [import_node35.CodeActionKind.QuickFix, import_node35.CodeActionKind.SourceOrganizeImports] },
+        codeActionProvider: { codeActionKinds: [import_node36.CodeActionKind.QuickFix, import_node36.CodeActionKind.SourceOrganizeImports] },
         documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
@@ -31688,7 +31966,7 @@ var XaendarLanguageServer = class {
         this._scheduleOpenComponentsValidation();
         continue;
       }
-      if (type === import_node35.FileChangeType.Deleted) {
+      if (type === import_node36.FileChangeType.Deleted) {
         this._registry.remove(fileName);
       }
       await this._onTypeScriptFileChanged(fileName);
@@ -31727,7 +32005,7 @@ var XaendarLanguageServer = class {
     }
     const analysis = await this._getCurrentAnalysis(document);
     const hover = analysis && getTemplateHover(analysis, document.offsetAt(position));
-    return hover ? { contents: { kind: import_node35.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
+    return hover ? { contents: { kind: import_node36.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
   }
   /**
    * Proposes the changes of the imports of a template: removing the unused import under the cursor (quick fix), and
@@ -31747,19 +32025,19 @@ var XaendarLanguageServer = class {
     const source = document.getText();
     const analysis = (await this._getAnalysis(document))?.analysis;
     const actions = new Array();
-    const unused = analysis?.source === source && isWanted(import_node35.CodeActionKind.QuickFix) ? findUnusedImports(analysis) : void 0;
+    const unused = analysis?.source === source && isWanted(import_node36.CodeActionKind.QuickFix) ? findUnusedImports(analysis) : void 0;
     if (unused) {
       const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
       for (let i2 = 0; i2 < unused.length; i2++) {
         const change = start <= unused[i2].span.end && end >= unused[i2].span.start ? removeTemplateImport(source, unused[i2]) : void 0;
         if (change) {
-          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node35.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
+          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node36.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
         }
       }
     }
-    const organization = isWanted(import_node35.CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : void 0;
+    const organization = isWanted(import_node36.CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : void 0;
     if (organization) {
-      actions.push({ title: "Organize imports", kind: import_node35.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
+      actions.push({ title: "Organize imports", kind: import_node36.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
     }
     return actions;
   }
@@ -31804,7 +32082,7 @@ var XaendarLanguageServer = class {
    * @returns The semantic tokens, encoded.
    */
   async onSemanticTokens({ textDocument }) {
-    const builder = new import_node35.SemanticTokensBuilder();
+    const builder = new import_node36.SemanticTokensBuilder();
     const document = this._documents.get(textDocument.uri);
     const analysis = document && await this._getCurrentAnalysis(document);
     const tokens = analysis ? getTemplateSemanticTokens(analysis) : [];
@@ -31878,7 +32156,7 @@ var XaendarLanguageServer = class {
       diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code, unnecessary }) => {
         const diagnostic = { range: toRange(document, span), message, severity: toSeverity(category), code, source: "xaendar" };
         if (unnecessary) {
-          diagnostic.tags = [import_node35.DiagnosticTag.Unnecessary];
+          diagnostic.tags = [import_node36.DiagnosticTag.Unnecessary];
         }
         return diagnostic;
       })
@@ -31902,7 +32180,7 @@ var XaendarLanguageServer = class {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node35.DiagnosticSeverity.Error, source: "xaendar" }))
+      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node36.DiagnosticSeverity.Error, source: "xaendar" }))
     });
   }
   /**
@@ -31962,7 +32240,7 @@ var XaendarLanguageServer = class {
         item.textEdit = { range: toRange(document, replacementSpan), newText: snippet ?? name };
       }
       if (snippet) {
-        item.insertTextFormat = import_node35.InsertTextFormat.Snippet;
+        item.insertTextFormat = import_node36.InsertTextFormat.Snippet;
       }
       if (retrigger) {
         item.command = { title: "Suggest", command: "editor.action.triggerSuggest" };
@@ -32039,7 +32317,7 @@ function isTemplate(document) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-new XaendarLanguageServer((0, import_node36.createConnection)(import_node36.ProposedFeatures.all), new import_node36.TextDocuments(TextDocument)).listen();
+new XaendarLanguageServer((0, import_node37.createConnection)(import_node37.ProposedFeatures.all), new import_node37.TextDocuments(TextDocument)).listen();
 /*! Bundled license information:
 
 is-extglob/index.js:

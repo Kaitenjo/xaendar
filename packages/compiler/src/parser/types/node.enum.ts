@@ -95,7 +95,8 @@ export enum ASTNodeType {
    */
   Client,
   /**
-   * What the server renders in place of the content of a `@client`, `@placeholder { … }`.
+   * What the server renders in place of the content of a `@client`, or of a `@defer` until a trigger fires,
+   * `@placeholder { … }`.
    */
   Placeholder,
   /**
@@ -105,5 +106,17 @@ export enum ASTNodeType {
   /**
    * What a `@try` renders when its content throws, `@catch (error) { … }`.
    */
-  Catch
+  Catch,
+  /**
+   * Content rendered once a trigger fires, `@defer (idle) { … }`, with the blocks following it.
+   */
+  Defer,
+  /**
+   * What a `@defer` renders while the modules of its content load, `@loading { … }`.
+   */
+  Loading,
+  /**
+   * What a `@defer` renders when the modules of its content fail to load, `@error (error) { … }`.
+   */
+  Error
 }
