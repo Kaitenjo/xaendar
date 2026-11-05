@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
 import { _Context, createAnchor, mountNode } from './context.util';
 
 function createRoot(): _Context {
@@ -193,6 +194,18 @@ describe('_Context', () => {
       root.clear();
       expect(first).toHaveBeenCalledOnce();
       expect(childClear).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('constructor', () => {
+    it('is collected by the @try rendering its content, and by no other', () => {
+      const root = createRoot();
+      const scope = openTryScope();
+      const child = root.addChild();
+      closeTryScope(scope);
+      root.addChild();
+
+      expect(scope.contexts).toEqual([child]);
     });
   });
 

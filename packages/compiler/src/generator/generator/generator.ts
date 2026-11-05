@@ -12,6 +12,7 @@ import { CompilerContext } from '../models/compiler-context/compiler-context.mod
 import { generateElement } from '../states/generate-element/generate-element.state.js';
 import { generateFor } from '../states/generate-for/generate-for.state.js';
 import { generateClient } from '../states/generate-client/generate-client.state.js';
+import { generateTry } from '../states/generate-try/generate-try.state.js';
 import { generateHydrate } from '../states/generate-hydrate/generate-hydrate.state.js';
 import { generateIf } from '../states/generate-if/generate-if.state.js';
 import { generateLet } from '../states/generate-let/generate-let.state.js';
@@ -48,8 +49,8 @@ export class Generator {
     [ASTNodeType.Switch]: generateSwitch,
     [ASTNodeType.Hydrate]: generateHydrate,
     [ASTNodeType.Client]: generateClient,
+    [ASTNodeType.Try]: generateTry,
     [ASTNodeType.Import]: skipGeneration,
-    // A template is registered at the start of its scope, its content is rendered by each @render calling it
     [ASTNodeType.Template]: skipGeneration,
     [ASTNodeType.Render]: generateRender,
     [ASTNodeType.Let]: generateLet
@@ -128,7 +129,7 @@ export class Generator {
         'function render(nodeStrategy) {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
-          'const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined }, nodeStrategy);'
+          'const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);'
         ])
       ]
 

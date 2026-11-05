@@ -25,6 +25,8 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'hydrate': '@hydrate ($1) {\n\t$0\n}',
   'client': '@client {\n\t$0\n}',
   'placeholder': '@placeholder {\n\t$0\n}',
+  'try': '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}',
+  'catch': '@catch (${1:error}) {\n\t$0\n}',
   'import': '@import { $2 } from \'$1\';',
   'render': '@render $1($0)',
   'let': '@let $1 = $0;'

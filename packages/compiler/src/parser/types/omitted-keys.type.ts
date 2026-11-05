@@ -13,6 +13,8 @@ export type OmittedKeys = Exclude<TokenType,
  | TokenType.HYDRATE
  | TokenType.CLIENT
  | TokenType.PLACEHOLDER
+ | TokenType.TRY
+ | TokenType.CATCH
  | TokenType.IMPORT 
  | TokenType.RENDER
  | TokenType.LET

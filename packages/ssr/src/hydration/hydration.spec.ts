@@ -613,6 +613,202 @@ describe('hydration', () => {
     });
   });
 
+  describe('@try', () => {
+    /**
+     * A profile whose city cannot be read on the sides `failOn` lists.
+     */
+    class Profile extends CustomElement {
+      public static failOn: Array<'server' | 'client'> = [];
+      public clicks = 0;
+      public failing = Profile.failOn.includes(onServer ? 'server' : 'client');
+
+      public city(): string {
+        if (this.failing) {
+          throw new Error(onServer ? 'Server failed' : 'Browser failed');
+        }
+
+        return 'Rome';
+      }
+
+      public add(): void {
+        this.clicks++;
+      }
+    }
+
+    const profileTemplate = () => '<h2>Profile</h2>@try {<p>{ city() }</p><button (click)="add()">Add</button>} @catch (error) {<i>{ error.message }</i>}<footer>end</footer>';
+
+    /**
+     * Renders the profile on the server, then defines it in the browser, failing on the sides given.
+     */
+    const hydrateProfile = async (...failOn: Array<'server' | 'client'>) => {
+      Profile.failOn = failOn;
+      const profile = await register('profile', Profile, profileTemplate);
+      const html = await renderToString(profile.Server);
+      const host = load(html) as Profile;
+      const root = host.shadowRoot!;
+      const server = { heading: root.querySelector('h2'), footer: root.querySelector('footer'), p: root.querySelector('p'), i: root.querySelector('i') };
+      onServer = false;
+      profile.define();
+      return { html, host, root, server };
+    };
+
+    it('adopts the content the server rendered, its listeners bound to its nodes', async () => {
+      const { html, host, root, server } = await hydrateProfile();
+
+      expect(html).toContain('<!--xd-t:0--><p><!---->Rome</p><button>Add</button><!--/xd-t-->');
+      expect(root.innerHTML).toBe('<h2>Profile</h2><p>Rome</p><button>Add</button><!--/xd-t--><footer>end</footer>');
+      expect(root.querySelector('p')).toBe(server.p);
+      root.querySelector('button')!.click();
+      expect(host.clicks).toBe(1);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('renders the @catch when the content throws in the browser only, with a warning, adopting what surrounds the block', async () => {
+      const { root, server } = await hydrateProfile('client');
+
+      expect(root.innerHTML).toBe('<h2>Profile</h2><i>Browser failed</i><!--/xd-t--><footer>end</footer>');
+      expect(root.querySelector('h2')).toBe(server.heading);
+      expect(root.querySelector('footer')).toBe(server.footer);
+      expect(console.warn).toHaveBeenCalledWith(`Xaendar: the server rendered in <${tag('client', 'profile')}> <!--xd-t:0--> where the browser renders <!--xd-t:1-->, which it renders again`);
+    });
+
+    it('renders the content again from scratch, without warnings, where the server rendered the @catch, whose error does not reach the browser', async () => {
+      const { html, host, root, server } = await hydrateProfile('server');
+
+      expect(html).toContain('<!--xd-t:1--><i><!---->Server failed</i><!--/xd-t-->');
+      expect(root.innerHTML).toBe('<h2>Profile</h2><p>Rome</p><button>Add</button><!--/xd-t--><footer>end</footer>');
+      expect(root.querySelector('footer')).toBe(server.footer);
+      root.querySelector('button')!.click();
+      expect(host.clicks).toBe(1);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('creates the @catch again, with the error of the browser, where both sides throw', async () => {
+      const { root, server } = await hydrateProfile('server', 'client');
+
+      expect(root.innerHTML).toBe('<h2>Profile</h2><i>Browser failed</i><!--/xd-t--><footer>end</footer>');
+      expect(root.querySelector('i')).not.toBe(server.i);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('renders the @catch in a page rendered in the browser when the content throws', async () => {
+      Profile.failOn = ['client'];
+      onServer = false;
+      const profile = await register('profile', Profile, profileTemplate);
+      profile.define();
+
+      const host = document.body.appendChild(document.createElement(tag('client', 'profile')));
+
+      expect(host.shadowRoot!.innerHTML).toBe('<h2>Profile</h2><i>Browser failed</i><!--try--><footer>end</footer>');
+    });
+
+    describe('a child component', () => {
+      /**
+       * A card throwing in the hook `failIn` names, on the sides `failOn` lists, counting the times it is destroyed.
+       */
+      class Card extends CustomElement {
+        public static failIn: 'constructor' | 'onInit' | 'render' = 'onInit';
+        public static failOn: Array<'server' | 'client'> = [];
+        public static destroyed = 0;
+
+        constructor() {
+          super();
+          Card.fail('constructor');
+        }
+
+        public onInit(): void {
+          Card.fail('onInit');
+        }
+
+        public static fail(hook: typeof Card.failIn): void {
+          if (Card.failIn === hook && Card.failOn.includes(onServer ? 'server' : 'client')) {
+            throw new Error(`${hook} failed on the ${onServer ? 'server' : 'browser'}`);
+          }
+        }
+
+        public title(): string {
+          Card.fail('render');
+          return 'Card';
+        }
+
+        public onDestroy(): void {
+          Card.destroyed++;
+        }
+      }
+
+      /**
+       * A card rendering without errors, counted with the cards destroyed.
+       */
+      class Fine extends CustomElement {
+        public onDestroy(): void {
+          Card.destroyed++;
+        }
+      }
+
+      /**
+       * Registers a page rendering in a @try a card rendering without errors, then a card throwing as given.
+       */
+      const registerCards = async (failIn: typeof Card.failIn, ...failOn: Array<'server' | 'client'>) => {
+        Object.assign(Card, { failIn, failOn, destroyed: 0 });
+        const fine = await register('fine', Fine, () => '<u>Fine</u>');
+        const card = await register('card', Card, () => '<b>{ title() }</b>');
+        const page = await register('page', CustomElement, name => `<h2>Cards</h2>@try {<${name('fine')} /><${name('card')} />} @catch (error) {<i>{ error.message }</i>}<footer>end</footer>`);
+        return { page, define: () => { fine.define(); card.define(); page.define(); } };
+      };
+
+      it('catches the error of its onInit thrown in the browser only, with a warning, removing the components the content rendered', async () => {
+        const { page, define } = await registerCards('onInit', 'client');
+        const html = await renderToString(page.Server);
+        const root = load(html).shadowRoot!;
+        const footer = root.querySelector('footer');
+        onServer = false;
+
+        define();
+
+        expect(html).toContain('<!--xd-t:0-->');
+        expect(root.innerHTML).toBe('<h2>Cards</h2><i>onInit failed on the browser</i><!--/xd-t--><footer>end</footer>');
+        expect(root.querySelector('footer')).toBe(footer);
+        expect(Card.destroyed).toBe(2);
+        expect(console.warn).toHaveBeenCalledWith(`Xaendar: the server rendered in <${tag('client', 'page')}> <!--xd-t:0--> where the browser renders <!--xd-t:1-->, which it renders again`);
+      });
+
+      it('catches the error of its constructor on both sides, the browser creating the @catch again without warnings', async () => {
+        const { page, define } = await registerCards('constructor', 'server', 'client');
+        const html = await renderToString(page.Server);
+        const root = load(html).shadowRoot!;
+        onServer = false;
+
+        define();
+
+        expect(html).toContain('<!--xd-t:1--><i><!---->constructor failed on the server</i><!--/xd-t-->');
+        expect(root.innerHTML).toBe('<h2>Cards</h2><i>constructor failed on the browser</i><!--/xd-t--><footer>end</footer>');
+        expect(console.warn).not.toHaveBeenCalled();
+      });
+
+      it('catches the error of its first render in a page rendered in the browser, disposing what it rendered', async () => {
+        const { define } = await registerCards('render', 'client');
+        onServer = false;
+        define();
+
+        const host = document.body.appendChild(document.createElement(tag('client', 'page')));
+
+        expect(host.shadowRoot!.innerHTML).toBe('<h2>Cards</h2><i>render failed on the browser</i><!--try--><footer>end</footer>');
+        expect(Card.destroyed).toBe(2);
+      });
+
+      it('catches the error of its constructor in a page rendered in the browser', async () => {
+        const { define } = await registerCards('constructor', 'client');
+        onServer = false;
+        define();
+
+        const host = document.body.appendChild(document.createElement(tag('client', 'page')));
+
+        expect(host.shadowRoot!.innerHTML).toBe('<h2>Cards</h2><i>constructor failed on the browser</i><!--try--><footer>end</footer>');
+        expect(Card.destroyed).toBe(1);
+      });
+    });
+  });
+
   describe('@client', () => {
     /**
      * An alert whose button exists only in the browser, recording what `afterRender` finds.

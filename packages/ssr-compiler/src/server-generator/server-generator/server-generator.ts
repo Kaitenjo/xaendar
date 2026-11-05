@@ -1,6 +1,7 @@
 import { indent } from '@xaendar/common';
 import { assertImportableSymbol, ASTNodeType, CompilerContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentMetadata, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
+import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerElement } from '../states/generate-server-element/generate-server-element.state';
 import { generateServerFor } from '../states/generate-server-for/generate-server-for.state';
 import { generateServerHydrate } from '../states/generate-server-hydrate/generate-server-hydrate.state';
@@ -23,7 +24,7 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  */
 const RUNTIME_IMPORTS: readonly string[] = [
   'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionProperty, _setProperty } from \'@xaendar/core\';',
-  'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate } from \'@xaendar/ssr\';'
+  'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
 /**
@@ -65,6 +66,7 @@ export class ServerGenerator {
     [ASTNodeType.Switch]: generateServerSwitch,
     [ASTNodeType.Hydrate]: generateServerHydrate,
     [ASTNodeType.Client]: generateServerClient,
+    [ASTNodeType.Try]: generateServerTry,
     [ASTNodeType.Import]: skipNode,
     // A template is declared at the start of its scope, its content is rendered by each @render calling it
     [ASTNodeType.Template]: skipNode,

@@ -32,6 +32,7 @@ const { StructuralDirective } = await import('../../models/structural-directive/
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
+const { closeTryScope, openTryScope } = await import('../try-scope/try-scope.util');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -140,6 +141,34 @@ const settle = () => new Promise<void>(resolve => setTimeout(resolve));
 describe('element factories', () => {
   it('creates an HTML element', () => {
     expect(_createElement('section').tagName).toBe('SECTION');
+  });
+
+  it('constructs a custom element defined by its class in the content of a @try, so that the error of its constructor is thrown', () => {
+    const failure = new Error('constructor');
+    let fails = false;
+    class Failing extends HTMLElement {
+      constructor() {
+        super();
+        if (fails) {
+          throw failure;
+        }
+      }
+    }
+    customElements.define('x-factory-failing', Failing);
+    const create = vi.spyOn(document, 'createElement');
+    const scope = openTryScope();
+
+    try {
+      expect(_createElement('x-factory-failing')).toBeInstanceOf(Failing);
+      expect(_createElement('x-factory-undefined').localName).toBe('x-factory-undefined');
+      fails = true;
+      expect(() => _createElement('x-factory-failing')).toThrow(failure);
+    } finally {
+      closeTryScope(scope);
+    }
+
+    expect(create.mock.calls).toEqual([['x-factory-undefined']]);
+    create.mockRestore();
   });
 
   it('creates an SVG element in the SVG namespace', () => {

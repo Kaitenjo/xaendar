@@ -16,6 +16,8 @@ import type { ForToken } from './tokens/for-token.type';
 import type { ClientToken } from './tokens/client-token.type';
 import type { HydrateToken } from './tokens/hydrate-token.type';
 import type { PlaceholderToken } from './tokens/placeholder-token.type';
+import type { TryToken } from './tokens/try-token.type';
+import type { CatchToken } from './tokens/catch-token.type';
 import type { IfToken } from './tokens/if-token.type';
 import type { ImportPathToken } from './tokens/import-path-token.type';
 import type { ImportToken } from './tokens/import-token.type';
@@ -74,4 +76,6 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<LetDeclarationToken>
   | MaybeTokenWithSpan<HydrateToken>
   | MaybeTokenWithSpan<ClientToken>
-  | MaybeTokenWithSpan<PlaceholderToken>;
+  | MaybeTokenWithSpan<PlaceholderToken>
+  | MaybeTokenWithSpan<TryToken>
+  | MaybeTokenWithSpan<CatchToken>;

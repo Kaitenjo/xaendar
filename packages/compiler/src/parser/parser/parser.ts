@@ -16,6 +16,7 @@ import { parseLet } from '../states/parse-let/parse-let.state.js';
 import { parseRender } from '../states/parse-render/parse-render.state.js';
 import { parseSwitchControlFlow } from '../states/parse-switch/parse-switch.state.js';
 import { parseText } from '../states/parse-text/parse-text.state.js';
+import { parseOrphanCatch, parseTry } from '../states/parse-try/parse-try.state.js';
 import { ASTNode } from '../types/ast.type.js';
 import { ASTNodeType } from '../types/node.enum.js';
 import { ParserStates } from '../types/parser-states.type.js';
@@ -51,6 +52,8 @@ export class Parser {
     [TokenType.HYDRATE]: parseHydrate,
     [TokenType.CLIENT]: parseClient,
     [TokenType.PLACEHOLDER]: parseOrphanPlaceholder,
+    [TokenType.TRY]: parseTry,
+    [TokenType.CATCH]: parseOrphanCatch,
     [TokenType.IMPORT]: parseImport,
     [TokenType.RENDER]: parseRender,
     [TokenType.LET]: parseLet

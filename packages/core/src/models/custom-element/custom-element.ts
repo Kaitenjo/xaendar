@@ -14,6 +14,7 @@ import { deferElementHydration, replayContractEvents, replayElementEvents } from
 import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
+import { runConnection } from '../../utils/try-scope/try-scope.util';
 import type { CustomDirective } from '../custom-directive/custom-directive';
 
 /**
@@ -185,9 +186,61 @@ export class CustomElement extends HTMLElement {
    * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostProperty`
    * and `@HostEvent`, and finally invokes `afterRender`, if declared.
    *
-   * @throws When no render function is registered for this component class.
+   * Mounted by a template inside a `@try`, its error is thrown by the template, which the `@try` catches (see
+   * `runConnection`).
+   *
+   * @throws When no render function is registered for this component class, and the error of the code of the component,
+   *   unless a template mounts it inside a `@try`.
    */
   private connectedCallback(): void {
+    runConnection(() => this._connect());
+  }
+
+  /**
+   * Called by the browser engine each time the element is removed from the DOM.
+   *
+   * Invokes `onDestroy`, if declared, then invokes `context.clear()` to dispose the effects
+   * created via {@link effect} and all the other active signal subscriptions, detach event listeners,
+   * and remove tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
+   * and finally invokes the internal disconnected hooks.
+   *
+   * An element rendered on the server removed before hydrating, as the ones of a `@placeholder`, never started: only what
+   * its constructor created is disposed.
+   */
+  private disconnectedCallback(): void {
+    if (this._hydrating) {
+      this._context.clear();
+      this._hostDirectivesContext.clear();
+      return;
+    }
+
+    this.onDestroy?.();
+    this._context.clear();
+    // The host directives are stopped after the component, then their effects are disposed
+    for (const directive of this.hostDirectives.values()) {
+      directive[DIRECTIVE_DISCONNECT]();
+    }
+    this._hostDirectivesContext.clear();
+    for (let i = 0; i < this[DISCONNECTED_HOOKS].length; i++) {
+      this[DISCONNECTED_HOOKS][i]();
+    }
+  }
+
+  /**
+   * Called by the browser engine, in place of `disconnectedCallback` and `connectedCallback`, when the element is
+   * moved with `moveBefore`, as `@for` does with the rows it reuses: the element stays the same, with its render,
+   * its state and its effects, so there is nothing to do.
+   */
+  private connectedMoveCallback(): void {
+    // Declaring it is what keeps the element from being disconnected and connected again
+  }
+
+  /**
+   * Connects the element, see {@link connectedCallback}.
+   *
+   * @throws When no render function is registered for this component class, and the error of the code of the component.
+   */
+  private _connect(): void {
     const hydrating = this._hydrating;
     if (hydrating && this._waitsForHydration()) {
       return;
@@ -237,45 +290,6 @@ export class CustomElement extends HTMLElement {
       replayElementEvents(this);
       replayContractEvents();
     }
-  }
-
-  /**
-   * Called by the browser engine each time the element is removed from the DOM.
-   *
-   * Invokes `onDestroy`, if declared, then invokes `context.clear()` to dispose the effects
-   * created via {@link effect} and all the other active signal subscriptions, detach event listeners,
-   * and remove tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
-   * and finally invokes the internal disconnected hooks.
-   *
-   * An element rendered on the server removed before hydrating, as the ones of a `@placeholder`, never started: only what
-   * its constructor created is disposed.
-   */
-  private disconnectedCallback(): void {
-    if (this._hydrating) {
-      this._context.clear();
-      this._hostDirectivesContext.clear();
-      return;
-    }
-
-    this.onDestroy?.();
-    this._context.clear();
-    // The host directives are stopped after the component, then their effects are disposed
-    for (const directive of this.hostDirectives.values()) {
-      directive[DIRECTIVE_DISCONNECT]();
-    }
-    this._hostDirectivesContext.clear();
-    for (let i = 0; i < this[DISCONNECTED_HOOKS].length; i++) {
-      this[DISCONNECTED_HOOKS][i]();
-    }
-  }
-
-  /**
-   * Called by the browser engine, in place of `disconnectedCallback` and `connectedCallback`, when the element is
-   * moved with `moveBefore`, as `@for` does with the rows it reuses: the element stays the same, with its render,
-   * its state and its effects, so there is nothing to do.
-   */
-  private connectedMoveCallback(): void {
-    // Declaring it is what keeps the element from being disconnected and connected again
   }
 
   /**

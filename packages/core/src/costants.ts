@@ -163,5 +163,10 @@ export const _SSR_MARKERS = {
    * A `@client`, holding its `@placeholder`, if any, which the browser replaces with the content of the block:
    * `<!--xd-c-->…<!--/xd-c-->`.
    */
-  client: 'xd-c'
+  client: 'xd-c',
+  /**
+   * A `@try`, its detail `0` when the server rendered its content, `1` when it rendered its `@catch`:
+   * `<!--xd-t:0-->…<!--/xd-t-->`.
+   */
+  try: 'xd-t'
 } as const;

@@ -6,8 +6,9 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
 
 /**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
- * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@render`,
- * `@let` and `@import`.
+ * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
+ * `@catch`, `@render`, `@let` and `@import`. A `@catch` reads the name of its error between parentheses, when it has
+ * one, as `catch (error)` does in JavaScript.
  * Advances the cursor past the keyword and transitions to the appropriate next state.
  *
  * @param cursor - The lexer cursor positioned on the `@` character.
@@ -127,6 +128,21 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
     retVal = {
       state: LexerState.IMPORT
     };
+  } else if (cursor.peekMatch('try ')) {
+    cursor.advance(4);
+    retVal = {
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{
+        type: TokenType.TRY
+      }]
+    };
+  } else if (cursor.peekMatch('catch ')) {
+    cursor.advance(6);
+    cursor.skipSpaces();
+    // The name of the error, between parentheses, is optional
+    retVal = cursor.peekMatch('(')
+      ? { state: LexerState.FLOW_CONTROL_CONDITION, tokens: [{ type: TokenType.CATCH }], pushState: true }
+      : { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type: TokenType.CATCH }] };
   } else {
     throw 'Unknown flow-control keyword';
   }

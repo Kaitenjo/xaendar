@@ -127,6 +127,12 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
         visit(node.children, true);
         break;
 
+      // The browser creates the content where the server rendered the @catch, and the @catch where the content throws
+      case ASTNodeType.Try:
+        visit(node.children, true);
+        visit(node.catch.children, true);
+        break;
+
       case ASTNodeType.Client:
         visit(node.children, true);
         if (node.placeholder) {

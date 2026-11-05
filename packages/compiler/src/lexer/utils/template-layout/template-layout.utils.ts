@@ -27,7 +27,7 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set(['area', 'base', 'br', 'col',
 /**
  * The branches of a block that have no condition.
  */
-const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder']);
+const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch']);
 
 /**
  * The name of an element, a directive, an attribute: what is written up to a space, a quote or a character of the syntax.
@@ -381,7 +381,7 @@ function readItem(reader: Reader): LayoutItem {
 
   if (source[position] === '@') {
     const block = readBlock(reader, readItemsBody);
-    if (block.keyword === 'for' || block.keyword === 'hydrate' || block.keyword === 'client') {
+    if (block.keyword === 'for' || block.keyword === 'hydrate' || block.keyword === 'client' || block.keyword === 'try') {
       fail(`A conditional binding cannot be a @${block.keyword}`);
     }
 
@@ -529,6 +529,7 @@ function readBlock<Body>(reader: Reader, readBody: (reader: Reader) => Body): La
     case 'for':
     case 'hydrate':
     case 'client':
+    case 'try':
       break;
 
     case 'switch':
@@ -539,12 +540,14 @@ function readBlock<Body>(reader: Reader, readBody: (reader: Reader) => Body): La
   }
 
   const branches = [readBranch(reader, keyword, readBody)];
-  if (keyword === 'client') {
+  // The block of a @client may be followed by its @placeholder, the one of a @try by its @catch
+  const following = keyword === 'client' ? 'placeholder' : keyword === 'try' ? 'catch' : undefined;
+  if (following) {
     const afterBlock = reader.position;
     skipWhitespace(reader);
-    if (reader.source.startsWith('@placeholder', reader.position)) {
-      reader.position += '@placeholder'.length;
-      branches.push(readBranch(reader, 'placeholder', readBody));
+    if (reader.source.startsWith(`@${following}`, reader.position)) {
+      reader.position += following.length + 1;
+      branches.push(readBranch(reader, following, readBody));
     } else {
       reader.position = afterBlock;
     }

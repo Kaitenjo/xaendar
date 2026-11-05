@@ -21,8 +21,8 @@ export const TEMPLATE_SEMANTIC_TOKEN_MODIFIERS = ['readonly'] as const;
  * - an attribute bound to an input of a component or directive: `property`;
  * - an event bound to an output of a component or directive: `event`;
  * - the selector of a directive or structural directive: `decorator`;
- * - the element refs (`#name`), the variables of a `@for` block, the parameters of a template, the `@let` and
- *   `$event`, where declared and where read, the head of a handler called on a variable included: `variable`, `readonly`;
+ * - the element refs (`#name`), the variables of a `@for` block, the parameters of a template, the `@let`, the error of a
+ *   `@catch` and `$event`, where declared and where read, the head of a handler called on a variable included: `variable`, `readonly`;
  * - the name of a template, where declared (`<template name(…)>`) and where rendered (`@render name(…)`): `function`.
  *
  * The tag names, of components too, and the native attributes and events are left to the grammar.
@@ -69,6 +69,7 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
         add(parameters[i].nameSpan, 'variable', ['readonly']);
       }
     },
+    tryBlock: node => add(node.catch.nameSpan, 'variable', ['readonly']),
     render: node => add(node.calleeSpan, 'function'),
     let: node => add(node.nameSpan, 'variable', ['readonly']),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => add(span, 'variable', ['readonly']))

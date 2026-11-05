@@ -1,0 +1,16 @@
+@try {
+  <!-- ✓ Caught: the expressions, the @let, the @render, the directives and the blocks, while the block is first rendered -->
+  @let theme = settings().theme;
+  <p>{ theme().name }</p>
+  @if (theme().dark) {
+    <p>{ theme().palette.join(', ') }</p>
+  }
+
+  <!-- ✓ Caught: the constructor, the onInit and the first render of a component it renders -->
+  <app-chart />
+
+  <!-- ✗ Not caught: an event handler runs later, when the user clicks -->
+  <button (click)="save()">Save</button>
+} @catch (error) {
+  <p>The settings cannot be shown.</p>
+}

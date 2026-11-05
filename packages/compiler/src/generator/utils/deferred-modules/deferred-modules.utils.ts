@@ -99,6 +99,12 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
         }
         break;
 
+      // The content of a @try and its @catch are rendered with the template
+      case ASTNodeType.Try:
+        collectTags(node.children, eager, deferred, compilerContext, current);
+        collectTags(node.catch.children, eager, deferred, compilerContext, current);
+        break;
+
       case ASTNodeType.Hydrate: {
         const content = new Set<string>();
         deferred.set(node, content);

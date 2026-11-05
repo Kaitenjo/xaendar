@@ -89,7 +89,7 @@ Use a `@let`, also called a template variable, to name a part of a signal the te
 The language server formats the templates (Format Document, `xaendar.format.printWidth` for the width of the lines) and applies these rules:
 - An interpolation in a property binding has no spaces inside its braces: `title="{title()}"`, not `title="{ title() }"`. This holds in the parentheses of a directive too.
 - An interpolation in the text has one space on each side: `{ title() }`, not `{title()}`.
-- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else` or a `@placeholder` (`} @else {`, `} @placeholder {`).
+- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else`, a `@placeholder` or a `@catch` (`} @else {`, `} @placeholder {`, `} @catch (error) {`).
 
 ## Names
 

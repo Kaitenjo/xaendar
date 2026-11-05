@@ -92,6 +92,15 @@ describe('checkVariableOrder', () => {
       expect(errorsOf('@client { <input #inner /><p>{ inner.value }</p> }')).toBeUndefined();
     });
 
+    it('checks the content of a @try and its @catch in scopes of their own, the error existing from the start of the @catch', () => {
+      expect(errorsOf('@try { <p>{ inner.value }</p><input #inner /> } @catch (error) { <p>{ error } { other.value }</p><input #other /> }')).toEqual([
+        [readBefore('inner'), 'inner'],
+        [readBefore('other'), 'other']
+      ]);
+      expect(errorsOf('@try { } @catch { <input #inner /><p>{ inner.value }</p> }')).toBeUndefined();
+      expect(errorsOf('@try { } @catch (error) { <p>{ error }</p><input #error /> }')).toBeUndefined();
+    });
+
     it('checks the expression of when of a @hydrate in the enclosing scope, and its content in a scope of its own', () => {
       const template = [
         '@hydrate (idle, when field.checked) { <p>{ inner.value }</p><input #inner /> }',

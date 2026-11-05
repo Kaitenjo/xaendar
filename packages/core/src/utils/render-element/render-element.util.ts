@@ -25,6 +25,7 @@ import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { trackNode } from '../track-node/track-node.util';
+import { connectChild, isInTryScope } from '../try-scope/try-scope.util';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
 
@@ -65,7 +66,8 @@ import type { StructuralCollector } from '../../types/structural-collector.type'
  * @param children - Renders the children of the element, each time the element is created, or `null` when it has none.
  * @param ref - The element ref naming the element (`#name`), declared by the context of its scope: it is
  *   initialized with the element as soon as the element is created, so that its own bindings and children read it.
- * @throws When no directive of the expected kind is registered for the selector of a directive.
+ * @throws When no directive of the expected kind is registered for the selector of a directive, and, in the content of a
+ *   `@try`, the error of the component the element is.
  */
 export function _renderElement(
   parentNode: Element,
@@ -101,7 +103,8 @@ export function _renderElement(
  * @param directives - List of directive descriptors to apply to the element, once all its own bindings are applied.
  * @param children - Renders the children of the element, or `null` when it has none.
  * @param ref - The element ref naming the element, if it declares one.
- * @throws When no custom directive is registered for the selector of a directive.
+ * @throws When no custom directive is registered for the selector of a directive, and, in the content of a `@try`, the
+ *   error of the component the element is.
  */
 function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, tagName: string, attributes: RenderElementAttribute[], events: RenderElementEvent[], conditionalBindings: RenderElementConditionalBinding[], directives: RenderElementDirective[], children: RenderChildren | null, ref: string | undefined): void {
   const { nodeStrategy } = context;
@@ -134,9 +137,9 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
     in some cases because inputs have their default value
     Ex: reading .field when an input is still undefined
     An element adopted from the HTML of the server is already in the DOM: mounting it starts the hydration of the
-    component it is, at the same point
+    component it is, at the same point. Inside a @try, the error of the component is thrown here
   */
-  nodeStrategy.mount(element, parentNode, anchor);
+  connectChild(() => nodeStrategy.mount(element, parentNode, anchor));
   mounted = true;
   for (let i = 0; i < pendingDirectives.length; i++) {
     pendingDirectives[i]();
@@ -410,13 +413,17 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: Rende
 }
 
 /**
- * Creates an HTML element with the specified tag name.
+ * Creates an HTML element with the specified tag name. In the content of a `@try`, the element of a custom element
+ * already defined is constructed by its class, so that the error of the constructor is thrown here, as the template
+ * calls it: `document.createElement` reports it and creates an element that is not the component.
  *
  * @param tagName - The HTML tag name of the element to create.
  * @returns The newly created HTML element.
+ * @throws The error of the constructor of the custom element, in the content of a `@try`.
  */
 export function _createElement(tagName: string): HTMLElement {
-  return document.createElement(tagName);
+  const Component = isInTryScope() ? customElements.get(tagName) : undefined;
+  return Component ? new Component() : document.createElement(tagName);
 }
 
 /**

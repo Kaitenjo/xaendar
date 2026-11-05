@@ -4,6 +4,7 @@ import { trackNode } from '../track-node/track-node.util';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
+import { captureContext } from '../try-scope/try-scope.util';
 
 /**
  * Tracks identifier scope during run time template function execution
@@ -52,7 +53,8 @@ export class _Context {
   private _unlistenFns = new Array<NoArgsVoidFunction>;
 
   /**
-   * Creates a new scope context.
+   * Creates a new scope context. Created in the first render of the content of a `@try`, it is collected by the `@try`,
+   * which disposes it when the content throws (see `_try`).
    *
    * @param _parent - Parent context used for outer-scope resolution.
    * @param nodeStrategy - How the nodes of the context are got. Defaults to the strategy of the parent, or to creating them
@@ -61,6 +63,7 @@ export class _Context {
   constructor(private _parent: _Context, nodeStrategy?: NodeStrategy) {
     this.createElement = this._parent.createElement;
     this.nodeStrategy = nodeStrategy ?? this._parent.nodeStrategy ?? CREATE_NODES;
+    captureContext(this);
   }
 
   /**

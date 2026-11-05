@@ -90,7 +90,9 @@ describe('getServerDependencies', () => {
     ['a @for', '@for (item of items; track item()) { <x-outside></x-outside> } @client { }'],
     ['a @case', '@switch (a) { @case (1) { <x-outside></x-outside> } } @client { }'],
     ['a template', '<template row()><x-outside></x-outside></template>@client { }'],
-    ['a @hydrate', '@hydrate (idle) { <x-outside></x-outside> } @client { }']
+    ['a @hydrate', '@hydrate (idle) { <x-outside></x-outside> } @client { }'],
+    ['a @try', '@try { <x-outside></x-outside> } @catch { } @client { }'],
+    ['a @catch', '@try { } @catch (error) { <x-outside></x-outside> } @client { }']
   ])('finds what is rendered in %s', async (_case, template) => {
     expect(await dependenciesOf(`${IMPORTS}${template}`, ['inside', 'outside'])).toEqual(['/src/outside.ts']);
   });
@@ -102,7 +104,9 @@ describe('getServerDependencies', () => {
     ['a @else if', '@if (a) { } @else if (b) { @client { } }'],
     ['a @for', '@for (item of items; track item()) { @client { } }'],
     ['a @case', '@switch (a) { @case (1) { @client { } } }'],
-    ['a @hydrate', '@hydrate (idle) { @client { } }']
+    ['a @hydrate', '@hydrate (idle) { @client { } }'],
+    ['a @try', '@try { @client { } } @catch { }'],
+    ['a @catch', '@try { } @catch { @client { } }']
   ])('finds a @client in %s', async (_case, template) => {
     expect(await dependenciesOf(`${IMPORTS}${template}`, ['inside'])).toEqual([]);
   });

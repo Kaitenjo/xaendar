@@ -6,6 +6,8 @@ import type { ForNode } from './nodes/for-node.type';
 import type { ClientNode } from './nodes/client-node.type';
 import type { HydrateNode } from './nodes/hydrate-node.type';
 import type { PlaceholderNode } from './nodes/placeholder-node.type';
+import type { TryNode } from './nodes/try-node.type';
+import type { CatchNode } from './nodes/catch-node.type';
 import type { IfNode } from './nodes/if-node.type';
 import type { ImportNode } from './nodes/import-node.type';
 import type { InterpolationNode } from './nodes/interpolation-node.type';
@@ -35,4 +37,6 @@ export type ASTNodeWithOptionalSpan =
 | MaybeASTNodeWithSpan<LetNode>
 | MaybeASTNodeWithSpan<HydrateNode>
 | MaybeASTNodeWithSpan<ClientNode>
-| MaybeASTNodeWithSpan<PlaceholderNode>;
+| MaybeASTNodeWithSpan<PlaceholderNode>
+| MaybeASTNodeWithSpan<TryNode>
+| MaybeASTNodeWithSpan<CatchNode>;

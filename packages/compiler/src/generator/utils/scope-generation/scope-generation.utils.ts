@@ -28,9 +28,8 @@ import type { TemplateFunctionFactory } from '../../types/template-function-fact
  *   scope declares none.
  */
 export function declareScope(nodes: readonly ASTNode[], compilerContext: CompilerContext, toTemplateFunction: TemplateFunctionFactory, templateFactory = '_template'): Required<GeneratorTransitionFunctionReturnType> | undefined {
-  let declarations: Required<GeneratorTransitionFunctionReturnType> | undefined;
+  const declarations: Required<GeneratorTransitionFunctionReturnType> = { code: [], functionsToProcess: new Map() };
   const add = (line: string): Required<GeneratorTransitionFunctionReturnType> => {
-    declarations ??= { code: [], functionsToProcess: new Map() };
     declarations.code.push(line);
     return declarations;
   };

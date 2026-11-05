@@ -2,6 +2,7 @@ import { ASTNodeType } from '../../parser/types/node.enum'
 import { ElementNode } from '../../parser/types/nodes/element-node.type'
 import { ForNode } from '../../parser/types/nodes/for-node.type'
 import type { ClientNode } from '../../parser/types/nodes/client-node.type'
+import type { TryNode } from '../../parser/types/nodes/try-node.type'
 import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type'
 import { IfNode } from '../../parser/types/nodes/if-node.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type'
@@ -32,6 +33,7 @@ export type TypeCheckerStates = {
   [ASTNodeType.Switch]: TypeCheckerTransitionFunction<SwitchNode>
   [ASTNodeType.Hydrate]: TypeCheckerTransitionFunction<HydrateNode>,
   [ASTNodeType.Client]: TypeCheckerTransitionFunction<ClientNode>,
+  [ASTNodeType.Try]: TypeCheckerTransitionFunction<TryNode>,
   [ASTNodeType.Import]: TypeCheckerTransitionFunction<ImportNode>,
   [ASTNodeType.Template]: TypeCheckerTransitionFunction<TemplateNode>,
   [ASTNodeType.Render]: TypeCheckerTransitionFunction<RenderNode>,

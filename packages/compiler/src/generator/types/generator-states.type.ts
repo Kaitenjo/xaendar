@@ -2,6 +2,7 @@ import { ASTNodeType } from '../../parser/types/node.enum'
 import { ElementNode } from '../../parser/types/nodes/element-node.type'
 import { ForNode } from '../../parser/types/nodes/for-node.type'
 import type { ClientNode } from '../../parser/types/nodes/client-node.type'
+import type { TryNode } from '../../parser/types/nodes/try-node.type'
 import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type'
 import { IfNode } from '../../parser/types/nodes/if-node.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type'
@@ -32,6 +33,7 @@ export type GeneratorStates = {
   [ASTNodeType.Switch]: GeneratorTransitionFunction<SwitchNode>
   [ASTNodeType.Hydrate]: GeneratorTransitionFunction<HydrateNode>,
   [ASTNodeType.Client]: GeneratorTransitionFunction<ClientNode>,
+  [ASTNodeType.Try]: GeneratorTransitionFunction<TryNode>,
   [ASTNodeType.Import]: GeneratorTransitionFunction<ImportNode>,
   [ASTNodeType.Template]: GeneratorTransitionFunction<TemplateNode>,
   [ASTNodeType.Render]: GeneratorTransitionFunction<RenderNode>,

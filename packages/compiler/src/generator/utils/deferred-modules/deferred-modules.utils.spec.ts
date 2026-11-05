@@ -66,6 +66,13 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[hydrate, ['/src/b.ts']]]));
   });
 
+  it('counts the content of a @try and of its @catch in the @hydrate holding them', async () => {
+    const nodes = parse('@hydrate (idle) { @try { <b-x></b-x> } @catch (error) { <c-x></c-x> } }');
+    const [hydrate] = hydrateNodes(nodes);
+
+    expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[hydrate, ['/src/b.ts', '/src/c.ts']]]));
+  });
+
   it('leaves the components of a @hydrate inside another one to the inner one, through every block', async () => {
     const template = [
       '@hydrate (idle) {',

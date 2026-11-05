@@ -72,6 +72,8 @@ export type * from './parser/types/nodes/for-node.type';
 export type * from './parser/types/nodes/client-node.type';
 export type * from './parser/types/nodes/hydrate-node.type';
 export type * from './parser/types/nodes/placeholder-node.type';
+export type * from './parser/types/nodes/try-node.type';
+export type * from './parser/types/nodes/catch-node.type';
 export type * from './parser/types/hydrate-trigger.type';
 export type * from './parser/types/nodes/if-binding-node.type';
 export type * from './parser/types/nodes/if-node.type';

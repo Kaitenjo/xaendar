@@ -28,7 +28,7 @@ const TS_TOKEN_RE = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|('(?:\\.|[^'\\\n])*'?|"(?:\\.
 /**
  * Control-flow keywords of the template language, longest first.
  */
-const CONTROL_FLOW_RE = /^@(else if|if|else|for|switch|case|default|hydrate|client|placeholder|import|let|render)\b/;
+const CONTROL_FLOW_RE = /^@(else if|if|else|for|switch|case|default|hydrate|client|placeholder|try|catch|import|let|render)\b/;
 
 /**
  * Escapes the characters that are special in HTML.

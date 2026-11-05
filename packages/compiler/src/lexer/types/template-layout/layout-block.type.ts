@@ -2,7 +2,7 @@ import type { LayoutBranch } from './layout-branch.type';
 
 /**
  * A control-flow block: an `@if` with its `@else if` and `@else` branches, a `@for`, a `@switch` with its cases, a
- * `@hydrate`, or a `@client` with its `@placeholder`.
+ * `@hydrate`, a `@client` with its `@placeholder`, or a `@try` with its `@catch`.
  */
 export type LayoutBlock<Body> = {
   /**
@@ -10,9 +10,9 @@ export type LayoutBlock<Body> = {
    */
   readonly kind: 'block';
   /**
-   * The keyword opening the block: `if`, `for`, `switch`, `hydrate` or `client`.
+   * The keyword opening the block: `if`, `for`, `switch`, `hydrate`, `client` or `try`.
    */
-  readonly keyword: 'if' | 'for' | 'switch' | 'hydrate' | 'client';
+  readonly keyword: 'if' | 'for' | 'switch' | 'hydrate' | 'client' | 'try';
   /**
    * The expression a `@switch` is on, `undefined` for the other blocks.
    */

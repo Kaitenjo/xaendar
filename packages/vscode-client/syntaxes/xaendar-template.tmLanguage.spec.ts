@@ -266,6 +266,19 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, '\'a\'')).toContain('string.quoted.single.ts');
   });
 
+  it('colors a @try and its @catch, with the name of the error as a constant', () => {
+    const template = '@try { x } @catch (failure) { { failure } } @try { y } @catch { z }';
+
+    expect(scopesOf(template, '@try { x')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, '{ x')).toContain('punctuation.section.block.begin.xaendar');
+    expect(scopesOf(template, '@catch (')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, 'failure)')).toContain('variable.other.constant.xaendar');
+    expect(scopesOf(template, '(failure')).toContain('punctuation.section.parens.begin.xaendar');
+    expect(scopesOf(template, ') {')).toContain('punctuation.section.parens.end.xaendar');
+    expect(scopesOf(template, '@catch { z')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, '{ z')).toContain('punctuation.section.block.begin.xaendar');
+  });
+
   it('colors a @hydrate, with its triggers and the expression of when', () => {
     const template = '@hydrate (idle, visible, interaction, load, when ready(a)) { x } <b></b>';
 

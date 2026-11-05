@@ -32,6 +32,12 @@
   }
 }
 
+@try {                                                    <!-- the first render only -->
+  <p>{ settings().theme.name }</p>
+} @catch (error) {                                         <!-- or @catch { … } -->
+  <p>{ error instanceof Error ? error.message : 'Error' }</p>
+}
+
 @hydrate (visible, when ready()) {                         <!-- or load, idle, interaction, never -->
   <app-reviews />
 }

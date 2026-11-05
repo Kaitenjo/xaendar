@@ -12,6 +12,7 @@ import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type'
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
+import type { TryNode } from '../../../parser/types/nodes/try-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getForVariables } from '../../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
@@ -235,6 +236,10 @@ function checkNodes(nodes: readonly ASTNode[], check: OrderCheck): void {
         }
         break;
 
+      case ASTNodeType.Try:
+        checkTry(node, check);
+        break;
+
       case ASTNodeType.Template:
         checkTemplate(node, check);
         break;
@@ -408,6 +413,27 @@ function checkFor(node: ForNode, check: OrderCheck): void {
   }
 
   checkNodes(node.children, check);
+  check.scopes.pop();
+}
+
+/**
+ * Checks a `@try` and its `@catch`, each one a scope of its own: the error of the `@catch` exists as soon as its content
+ * is created, before the element refs of the content.
+ *
+ * @param node - The try node.
+ * @param check - The state of the check.
+ */
+function checkTry(node: TryNode, check: OrderCheck): void {
+  checkScope(node.children, check);
+
+  const { name, children } = node.catch;
+  const names: ScopeNames = new Map();
+  if (name) {
+    names.set(name, { position: null, level: check.level });
+  }
+
+  check.scopes.push(declareNames(children, names, check.level));
+  checkNodes(children, check);
   check.scopes.pop();
 }
 

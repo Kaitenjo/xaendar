@@ -18,4 +18,16 @@ describe('trackNode', () => {
     expect(node.parentNode).toBeNull();
     expect(context.getNodes()).toEqual([]);
   });
+
+  it('removes nothing when the context is cleared before the node is inserted', () => {
+    const parent = document.createElement('div');
+    const node = document.createElement('p');
+    const context = new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as unknown as _Context);
+
+    trackNode(node, parent, context);
+    context.clear();
+
+    expect(node.parentNode).toBeNull();
+    expect(context.getNodes()).toEqual([]);
+  });
 });

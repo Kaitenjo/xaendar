@@ -1,0 +1,4 @@
+@try { … }                          @try needs a @catch: write @catch (error) { … } right after its block
+@catch (error) { … }                @catch must follow the block of a @try
+@try { … } @catch (e.message) { }   'e.message' is not a valid name for a @catch error: it must be an identifier.
+@catch (error) { { error.message } } 'error' is of type 'unknown'.

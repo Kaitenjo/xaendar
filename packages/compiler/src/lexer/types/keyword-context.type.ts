@@ -7,10 +7,10 @@ export type KeywordContext = {
   /**
    * The keywords that can be written there, without the `@`: the ones of the blocks of the template content, `render` and `let`, or of
    * the conditional bindings among the bindings of a tag, `else` and `else if` right after an `@if` block,
-   * `placeholder` right after a `@client` block, only `case` and `default` in a `@switch` block, `import` before anything
+   * `placeholder` right after a `@client` block, only `catch` right after a `@try` block, only `case` and `default` in a `@switch` block, `import` before anything
    * else.
    */
-  readonly keywords: readonly ('if' | 'else' | 'else if' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'import' | 'render' | 'let')[];
+  readonly keywords: readonly ('if' | 'else' | 'else if' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'try' | 'catch' | 'import' | 'render' | 'let')[];
   /**
    * The span of the `@` and of the part of the keyword written so far.
    */

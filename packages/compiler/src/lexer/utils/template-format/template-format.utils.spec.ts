@@ -66,6 +66,16 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('indents the content of a @try and of its @catch, the @catch on the line of the brace before it', () => {
+      expect(format('@try{<p></p>}@catch(error){<i></i>}')).toBe(lines(
+        '@try {',
+        '  <p></p>',
+        '} @catch (error) {',
+        '  <i></i>',
+        '}'
+      ));
+    });
+
     it('indents the content of a @hydrate, keeping its triggers as written', () => {
       expect(format('@hydrate(visible,when ready()){<p></p>}')).toBe(lines(
         '@hydrate (visible,when ready()) {',

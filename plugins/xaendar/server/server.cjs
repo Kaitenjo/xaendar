@@ -20134,7 +20134,7 @@ function getWellformedEdit(textEdit) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-var import_node35 = __toESM(require_main3(), 1);
+var import_node36 = __toESM(require_main3(), 1);
 
 // ../packages/common/src/models/stack/stack.ts
 var Stack = class {
@@ -20253,6 +20253,8 @@ var ASTNodeType = /* @__PURE__ */ ((ASTNodeType2) => {
   ASTNodeType2[ASTNodeType2["Hydrate"] = 21] = "Hydrate";
   ASTNodeType2[ASTNodeType2["Client"] = 22] = "Client";
   ASTNodeType2[ASTNodeType2["Placeholder"] = 23] = "Placeholder";
+  ASTNodeType2[ASTNodeType2["Try"] = 24] = "Try";
+  ASTNodeType2[ASTNodeType2["Catch"] = 25] = "Catch";
   return ASTNodeType2;
 })(ASTNodeType || {});
 
@@ -21145,7 +21147,9 @@ var TokenType = /* @__PURE__ */ ((TokenType2) => {
   TokenType2[TokenType2["HYDRATE"] = 32] = "HYDRATE";
   TokenType2[TokenType2["CLIENT"] = 33] = "CLIENT";
   TokenType2[TokenType2["PLACEHOLDER"] = 34] = "PLACEHOLDER";
-  TokenType2[TokenType2["EOF"] = 35] = "EOF";
+  TokenType2[TokenType2["TRY"] = 35] = "TRY";
+  TokenType2[TokenType2["CATCH"] = 36] = "CATCH";
+  TokenType2[TokenType2["EOF"] = 37] = "EOF";
   return TokenType2;
 })(TokenType || {});
 
@@ -21968,6 +21972,18 @@ function lexFlowControl(cursor, _context) {
     retVal = {
       state: "import" /* IMPORT */
     };
+  } else if (cursor.peekMatch("try ")) {
+    cursor.advance(4);
+    retVal = {
+      state: "flow-control-block" /* FLOW_CONTROL_BLOCK */,
+      tokens: [{
+        type: 35 /* TRY */
+      }]
+    };
+  } else if (cursor.peekMatch("catch ")) {
+    cursor.advance(6);
+    cursor.skipSpaces();
+    retVal = cursor.peekMatch("(") ? { state: "flow-control-condition" /* FLOW_CONTROL_CONDITION */, tokens: [{ type: 36 /* CATCH */ }], pushState: true } : { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 36 /* CATCH */ }] };
   } else {
     throw "Unknown flow-control keyword";
   }
@@ -23169,7 +23185,7 @@ var ParserCursor = class extends Cursor {
    * giving EOF instead of starting over from the first token.
    */
   _currentToken = {
-    value: { type: 35 /* EOF */ },
+    value: { type: 37 /* EOF */ },
     index: -1
   };
   /**
@@ -23193,7 +23209,7 @@ var ParserCursor = class extends Cursor {
     }
     const newIndex = this._currentToken.index + chars;
     if (newIndex >= this._tokens.length) {
-      this._currentToken.value = { type: 35 /* EOF */ };
+      this._currentToken.value = { type: 37 /* EOF */ };
       this._currentToken.index = this._tokens.length;
     } else {
       this._currentToken.index = newIndex;
@@ -23240,7 +23256,7 @@ var ParserCursor = class extends Cursor {
    * Peeks a single token at the given absolute index.
    */
   peekOneToken(index) {
-    return index < this._tokens.length ? this._tokens[index] : { type: 35 /* EOF */ };
+    return index < this._tokens.length ? this._tokens[index] : { type: 37 /* EOF */ };
   }
 };
 
@@ -24423,7 +24439,7 @@ function assertNameableElement(element, ref) {
 function isTagClose(cursor, tagName) {
   const nextToken = cursor.peek();
   switch (nextToken.type) {
-    case 35 /* EOF */:
+    case 37 /* EOF */:
       throw new Error(`Expected closing tag ${tagName} while file is over`);
     case 4 /* TAG_CLOSE_NAME */:
       const tokenTagName = nextToken.parts[0];
@@ -24458,7 +24474,7 @@ function getForVariables(node) {
 function parseBlockChildren(cursor, parseNode) {
   const children = new Array();
   while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
-    if (cursor.peek().type === 35 /* EOF */) {
+    if (cursor.peek().type === 37 /* EOF */) {
       throw "Unexpected end of template: expected BLOCK_CLOSE";
     }
     const child = parseNode();
@@ -24640,6 +24656,8 @@ function findNodeEvent(node) {
     case 21 /* Hydrate */:
     case 22 /* Client */:
       return findEvent(node.children);
+    case 24 /* Try */:
+      return findEvent(node.children) ?? findEvent(node.catch.children);
     default:
       return void 0;
   }
@@ -25035,6 +25053,42 @@ function parseText(cursor, _parseNode, token) {
   };
 }
 
+// ../packages/compiler/src/parser/states/parse-try/parse-try.state.ts
+function parseTry(cursor, parseNode, token) {
+  cursor.advance(2);
+  const children = parseBlockChildren(cursor, parseNode);
+  const catchToken = cursor.peek();
+  if (catchToken.type !== 36 /* CATCH */) {
+    throw new Error("@try needs a @catch: write @catch (error) { \u2026 } right after its block", { cause: token.span });
+  }
+  cursor.advance();
+  const catchNode = { type: 25 /* Catch */, children: [], span: catchToken.span };
+  const nameToken = cursor.peek();
+  if (nameToken.type === 18 /* CONDITION */) {
+    const raw = nameToken.parts[0];
+    const name = raw.trim();
+    const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
+    const nameSpan = { start, end: start + name.length };
+    assertDeclaredName(name, nameSpan, "@catch error");
+    catchNode.name = name;
+    catchNode.nameSpan = nameSpan;
+    cursor.advance();
+  }
+  cursor.advance();
+  catchNode.children = parseBlockChildren(cursor, parseNode);
+  const end = cursor.getCurrentToken().value.span.end;
+  catchNode.span = { start: catchToken.span.start, end };
+  return {
+    type: 24 /* Try */,
+    children,
+    catch: catchNode,
+    span: { start: token.span.start, end }
+  };
+}
+function parseOrphanCatch(_cursor, _parseNode, token) {
+  throw new Error("@catch must follow the block of a @try", { cause: token.span });
+}
+
 // ../packages/compiler/src/parser/parser/parser.ts
 var Parser = class {
   /**
@@ -25066,6 +25120,8 @@ var Parser = class {
     [32 /* HYDRATE */]: parseHydrate,
     [33 /* CLIENT */]: parseClient,
     [34 /* PLACEHOLDER */]: parseOrphanPlaceholder,
+    [35 /* TRY */]: parseTry,
+    [36 /* CATCH */]: parseOrphanCatch,
     [21 /* IMPORT */]: parseImport,
     [28 /* RENDER */]: parseRender,
     [30 /* LET */]: parseLet
@@ -25090,7 +25146,7 @@ var Parser = class {
    */
   parse() {
     const nodes = new Array();
-    while (this._cursor.peek().type !== 35 /* EOF */) {
+    while (this._cursor.peek().type !== 37 /* EOF */) {
       const parseNode = this.parseNode();
       if (parseNode) {
         nodes.push(parseNode);
@@ -25107,7 +25163,7 @@ var Parser = class {
    */
   parseNode() {
     const token = this._cursor.peek();
-    if (token.type === 35 /* EOF */) {
+    if (token.type === 37 /* EOF */) {
       return void 0;
     }
     const startOffset = token.span.start;
@@ -25138,7 +25194,7 @@ var Parser = class {
       this.thrown = true;
       const message = err instanceof Error ? err.message : `${err}`;
       const currentToken = this._cursor.peek();
-      const stateEndIndex = currentToken.type !== 35 /* EOF */ ? currentToken.span.end : this._input.length;
+      const stateEndIndex = currentToken.type !== 37 /* EOF */ ? currentToken.span.end : this._input.length;
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
       throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}
  ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
@@ -26850,6 +26906,24 @@ function typeCheckBlock(children, processNode, context) {
   return [plain("{"), ...indentLines(declarations.concat(lines)), plain("}")];
 }
 
+// ../packages/compiler/src/type-checker/states/type-check-try/type-check-try.state.ts
+function typeCheckTry(node, processNode, context) {
+  const content = typeCheckScope(node.children, new TypeCheckContext(context), processNode);
+  const { name, nameSpan, children } = node.catch;
+  const catchContext = new TypeCheckContext(context);
+  if (name) {
+    catchContext.addUnresolvableIdentifier(name, "value");
+  }
+  const fallback = typeCheckScope(children, catchContext, processNode);
+  return [
+    plain("try {"),
+    ...indentLines(content.declarations.concat(content.lines)),
+    name ? line("} catch (", mapped(name, nameSpan), ") {") : plain("} catch {"),
+    ...indentLines(fallback.declarations.concat(fallback.lines)),
+    plain("}")
+  ];
+}
+
 // ../packages/compiler/src/type-checker/states/type-check-hydrate/type-check-hydrate.state.ts
 function typeCheckHydrate(node, processNode, context) {
   const lines = new Array();
@@ -26987,6 +27061,8 @@ function getNestedNodes(node) {
   switch (node.type) {
     case 22 /* Client */:
       return node.placeholder ? [node.children, node.placeholder.children] : [node.children];
+    case 24 /* Try */:
+      return [node.children, node.catch.children];
     case 5 /* If */:
     case 7 /* ElseIf */:
       return node.alternate ? [node.children, [node.alternate]] : [node.children];
@@ -27171,6 +27247,9 @@ function checkNodes(nodes, check) {
           checkScope(node.placeholder.children, check);
         }
         break;
+      case 24 /* Try */:
+        checkTry(node, check);
+        break;
       case 17 /* Template */:
         checkTemplate(node, check);
         break;
@@ -27275,6 +27354,17 @@ function checkFor(node, check) {
   checkNodes(node.children, check);
   check.scopes.pop();
 }
+function checkTry(node, check) {
+  checkScope(node.children, check);
+  const { name, children } = node.catch;
+  const names = /* @__PURE__ */ new Map();
+  if (name) {
+    names.set(name, { position: null, level: check.level });
+  }
+  check.scopes.push(declareNames(children, names, check.level));
+  checkNodes(children, check);
+  check.scopes.pop();
+}
 function checkReads(expression, span, check) {
   const reads = collectReads(expression);
   for (let i2 = 0; i2 < reads.length; i2++) {
@@ -27346,6 +27436,7 @@ var TypeChecker = class {
     [9 /* Switch */]: typeCheckSwitch,
     [21 /* Hydrate */]: typeCheckHydrate,
     [22 /* Client */]: typeCheckClient,
+    [24 /* Try */]: typeCheckTry,
     [11 /* Import */]: typeCheckImport,
     [17 /* Template */]: typeCheckTemplate,
     [18 /* Render */]: typeCheckRender,
@@ -27567,7 +27658,7 @@ function getExpressionContext(source, offset) {
   const partial = PARTIAL_IDENTIFIER.exec(before)[0];
   const span = { start: offset - partial.length, end: offset };
   const head = `${before}${partial ? "" : PLACEHOLDER}`;
-  const lastToken = tokens.findLast((token) => token.type !== 35 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 37 /* EOF */);
   switch (lexer.state) {
     case "interpolation" /* INTERPOLATION */:
     case "interpolation-expression" /* INTERPOLATION_EXPRESSION */: {
@@ -27583,7 +27674,7 @@ function getExpressionContext(source, offset) {
     case "flow-control-condition" /* FLOW_CONTROL_CONDITION */: {
       const open = before.indexOf("(", lastToken.span.end);
       const isForItem = lastToken.type === 12 /* FOR */ && !/\sof\s|;/.test(before.slice(open + 1, span.start));
-      if (open === -1 || isForItem) {
+      if (open === -1 || isForItem || lastToken.type === 36 /* CATCH */) {
         return void 0;
       }
       const closed = closeParenthesized(source, open, offset);
@@ -27947,7 +28038,7 @@ function findStringEnd(text, quoteIndex) {
 // ../packages/compiler/src/lexer/utils/template-layout/template-layout.utils.ts
 var RAW_ELEMENTS = /* @__PURE__ */ new Set(["pre", "textarea", "script", "style"]);
 var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
-var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "default", "client", "placeholder"]);
+var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "default", "client", "placeholder", "try", "catch"]);
 var NAME = /[^\s=<>/(){}"'@*]+/y;
 var TAG_NAME = /[^\s/>(]+/y;
 var TemplateLayoutError = class extends Error {
@@ -28141,7 +28232,7 @@ function readItem(reader) {
   }
   if (source[position] === "@") {
     const block = readBlock(reader, readItemsBody);
-    if (block.keyword === "for" || block.keyword === "hydrate" || block.keyword === "client") {
+    if (block.keyword === "for" || block.keyword === "hydrate" || block.keyword === "client" || block.keyword === "try") {
       fail(`A conditional binding cannot be a @${block.keyword}`);
     }
     return block;
@@ -28220,6 +28311,7 @@ function readBlock(reader, readBody) {
     case "for":
     case "hydrate":
     case "client":
+    case "try":
       break;
     case "switch":
       return readSwitch(reader, readBody);
@@ -28227,12 +28319,13 @@ function readBlock(reader, readBody) {
       return fail(`@${keyword} does not open a block`);
   }
   const branches = [readBranch(reader, keyword, readBody)];
-  if (keyword === "client") {
+  const following = keyword === "client" ? "placeholder" : keyword === "try" ? "catch" : void 0;
+  if (following) {
     const afterBlock = reader.position;
     skipWhitespace(reader);
-    if (reader.source.startsWith("@placeholder", reader.position)) {
-      reader.position += "@placeholder".length;
-      branches.push(readBranch(reader, "placeholder", readBody));
+    if (reader.source.startsWith(`@${following}`, reader.position)) {
+      reader.position += following.length + 1;
+      branches.push(readBranch(reader, following, readBody));
     } else {
       reader.position = afterBlock;
     }
@@ -28672,7 +28765,7 @@ function getKeywordContext(source, offset) {
   switch (state) {
     // The content of the template
     case "text" /* TEXT */:
-      keywords = ["if", "for", "switch", "hydrate", "client", "render", "let"];
+      keywords = ["if", "for", "switch", "hydrate", "client", "try", "render", "let"];
       break;
     // The bindings of a tag, of a conditional binding or of a directive
     case "tag-body" /* TAG_BODY */:
@@ -28696,6 +28789,9 @@ function getKeywordContext(source, offset) {
     case 33 /* CLIENT */:
       keywords.push("placeholder");
       break;
+    // A @try must be followed by its @catch
+    case 35 /* TRY */:
+      return { keywords: ["catch"], span };
   }
   if (state === "text" /* TEXT */ && tokens.every((token) => token.type === 21 /* IMPORT */ || token.type === 22 /* IMPORT_PATH */ || token.type === 0 /* TEXT */ && /^[\s;]*$/.test(token.parts[0]))) {
     keywords.push("import");
@@ -29190,6 +29286,10 @@ var TemplateWalker = class {
         this._visitor.client?.(node);
         this._walkClient(node, variables);
         break;
+      case 24 /* Try */:
+        this._visitor.tryBlock?.(node);
+        this._walkTry(node, variables);
+        break;
       case 17 /* Template */: {
         this._visitor.template?.(node);
         const contentVariables = /* @__PURE__ */ new Set([...variables, ...node.parameters.map(({ name }) => name)]);
@@ -29360,6 +29460,22 @@ var TemplateWalker = class {
     if (node.placeholder) {
       this.walkScope(node.placeholder.children, variables);
     }
+  }
+  /**
+   * Walks a `@try` block and its `@catch`, each one a scope of its own: the server renders either of them, so both are
+   * walked. The `@catch` declares the error, under the name it gives it.
+   *
+   * @param node - The `@try` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkTry(node, variables) {
+    this.walkScope(node.children, variables);
+    const { name, children } = node.catch;
+    const catchVariables = new Set(variables);
+    if (name) {
+      catchVariables.add(name);
+    }
+    this.walkScope(children, catchVariables);
   }
   /**
    * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
@@ -30259,6 +30375,8 @@ var KEYWORD_SNIPPETS = {
   "hydrate": "@hydrate ($1) {\n	$0\n}",
   "client": "@client {\n	$0\n}",
   "placeholder": "@placeholder {\n	$0\n}",
+  "try": "@try {\n	$1\n} @catch (${2:error}) {\n	$0\n}",
+  "catch": "@catch (${1:error}) {\n	$0\n}",
   "import": "@import { $2 } from '$1';",
   "render": "@render $1($0)",
   "let": "@let $1 = $0;"
@@ -30871,6 +30989,7 @@ function getTemplateSemanticTokens({ ast, metadatas }) {
         add(parameters[i2].nameSpan, "variable", ["readonly"]);
       }
     },
+    tryBlock: (node) => add(node.catch.nameSpan, "variable", ["readonly"]),
     render: (node) => add(node.calleeSpan, "function"),
     let: (node) => add(node.nameSpan, "variable", ["readonly"]),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, (span) => add(span, "variable", ["readonly"]))
@@ -30890,7 +31009,7 @@ var import_typescript33 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path11 = require("path");
-var import_node34 = __toESM(require_main3(), 1);
+var import_node35 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
@@ -31033,7 +31152,7 @@ var Debouncer = class {
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
 var import_typescript35 = require("typescript");
-var import_node33 = __toESM(require_main3(), 1);
+var import_node34 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
 var t = { 975(t2) {
@@ -31384,13 +31503,13 @@ function getDocument(fileName, getOpenDocument) {
 function toSeverity(category) {
   switch (category) {
     case import_typescript35.DiagnosticCategory.Error:
-      return import_node33.DiagnosticSeverity.Error;
+      return import_node34.DiagnosticSeverity.Error;
     case import_typescript35.DiagnosticCategory.Warning:
-      return import_node33.DiagnosticSeverity.Warning;
+      return import_node34.DiagnosticSeverity.Warning;
     case import_typescript35.DiagnosticCategory.Suggestion:
-      return import_node33.DiagnosticSeverity.Hint;
+      return import_node34.DiagnosticSeverity.Hint;
     default:
-      return import_node33.DiagnosticSeverity.Information;
+      return import_node34.DiagnosticSeverity.Information;
   }
 }
 function toCompletionItemKind(kind) {
@@ -31398,30 +31517,30 @@ function toCompletionItemKind(kind) {
     case import_typescript35.ScriptElementKind.memberVariableElement:
     case import_typescript35.ScriptElementKind.memberGetAccessorElement:
     case import_typescript35.ScriptElementKind.memberSetAccessorElement:
-      return import_node33.CompletionItemKind.Field;
+      return import_node34.CompletionItemKind.Field;
     case import_typescript35.ScriptElementKind.memberFunctionElement:
-      return import_node33.CompletionItemKind.Method;
+      return import_node34.CompletionItemKind.Method;
     case import_typescript35.ScriptElementKind.functionElement:
-      return import_node33.CompletionItemKind.Function;
+      return import_node34.CompletionItemKind.Function;
     case import_typescript35.ScriptElementKind.variableElement:
     case import_typescript35.ScriptElementKind.letElement:
     case import_typescript35.ScriptElementKind.constElement:
-      return import_node33.CompletionItemKind.Variable;
+      return import_node34.CompletionItemKind.Variable;
     case import_typescript35.ScriptElementKind.classElement:
-      return import_node33.CompletionItemKind.Class;
+      return import_node34.CompletionItemKind.Class;
     case import_typescript35.ScriptElementKind.directory:
-      return import_node33.CompletionItemKind.Folder;
+      return import_node34.CompletionItemKind.Folder;
     case import_typescript35.ScriptElementKind.scriptElement:
-      return import_node33.CompletionItemKind.File;
+      return import_node34.CompletionItemKind.File;
     case "event":
-      return import_node33.CompletionItemKind.Event;
+      return import_node34.CompletionItemKind.Event;
     case "component":
-      return import_node33.CompletionItemKind.Class;
+      return import_node34.CompletionItemKind.Class;
     case "directive":
     case import_typescript35.ScriptElementKind.keyword:
-      return import_node33.CompletionItemKind.Keyword;
+      return import_node34.CompletionItemKind.Keyword;
     default:
-      return import_node33.CompletionItemKind.Text;
+      return import_node34.CompletionItemKind.Text;
   }
 }
 
@@ -31496,11 +31615,11 @@ var XaendarLanguageServer = class {
     this._hasConfiguration = !!capabilities?.workspace?.configuration;
     return {
       capabilities: {
-        textDocumentSync: import_node34.TextDocumentSyncKind.Incremental,
+        textDocumentSync: import_node35.TextDocumentSyncKind.Incremental,
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: [".", "(", "<", "@", "*", "/"] },
-        codeActionProvider: { codeActionKinds: [import_node34.CodeActionKind.QuickFix, import_node34.CodeActionKind.SourceOrganizeImports] },
+        codeActionProvider: { codeActionKinds: [import_node35.CodeActionKind.QuickFix, import_node35.CodeActionKind.SourceOrganizeImports] },
         documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
@@ -31569,7 +31688,7 @@ var XaendarLanguageServer = class {
         this._scheduleOpenComponentsValidation();
         continue;
       }
-      if (type === import_node34.FileChangeType.Deleted) {
+      if (type === import_node35.FileChangeType.Deleted) {
         this._registry.remove(fileName);
       }
       await this._onTypeScriptFileChanged(fileName);
@@ -31608,7 +31727,7 @@ var XaendarLanguageServer = class {
     }
     const analysis = await this._getCurrentAnalysis(document);
     const hover = analysis && getTemplateHover(analysis, document.offsetAt(position));
-    return hover ? { contents: { kind: import_node34.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
+    return hover ? { contents: { kind: import_node35.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
   }
   /**
    * Proposes the changes of the imports of a template: removing the unused import under the cursor (quick fix), and
@@ -31628,19 +31747,19 @@ var XaendarLanguageServer = class {
     const source = document.getText();
     const analysis = (await this._getAnalysis(document))?.analysis;
     const actions = new Array();
-    const unused = analysis?.source === source && isWanted(import_node34.CodeActionKind.QuickFix) ? findUnusedImports(analysis) : void 0;
+    const unused = analysis?.source === source && isWanted(import_node35.CodeActionKind.QuickFix) ? findUnusedImports(analysis) : void 0;
     if (unused) {
       const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
       for (let i2 = 0; i2 < unused.length; i2++) {
         const change = start <= unused[i2].span.end && end >= unused[i2].span.start ? removeTemplateImport(source, unused[i2]) : void 0;
         if (change) {
-          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node34.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
+          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node35.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
         }
       }
     }
-    const organization = isWanted(import_node34.CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : void 0;
+    const organization = isWanted(import_node35.CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : void 0;
     if (organization) {
-      actions.push({ title: "Organize imports", kind: import_node34.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
+      actions.push({ title: "Organize imports", kind: import_node35.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
     }
     return actions;
   }
@@ -31685,7 +31804,7 @@ var XaendarLanguageServer = class {
    * @returns The semantic tokens, encoded.
    */
   async onSemanticTokens({ textDocument }) {
-    const builder = new import_node34.SemanticTokensBuilder();
+    const builder = new import_node35.SemanticTokensBuilder();
     const document = this._documents.get(textDocument.uri);
     const analysis = document && await this._getCurrentAnalysis(document);
     const tokens = analysis ? getTemplateSemanticTokens(analysis) : [];
@@ -31759,7 +31878,7 @@ var XaendarLanguageServer = class {
       diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code, unnecessary }) => {
         const diagnostic = { range: toRange(document, span), message, severity: toSeverity(category), code, source: "xaendar" };
         if (unnecessary) {
-          diagnostic.tags = [import_node34.DiagnosticTag.Unnecessary];
+          diagnostic.tags = [import_node35.DiagnosticTag.Unnecessary];
         }
         return diagnostic;
       })
@@ -31783,7 +31902,7 @@ var XaendarLanguageServer = class {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node34.DiagnosticSeverity.Error, source: "xaendar" }))
+      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node35.DiagnosticSeverity.Error, source: "xaendar" }))
     });
   }
   /**
@@ -31843,7 +31962,7 @@ var XaendarLanguageServer = class {
         item.textEdit = { range: toRange(document, replacementSpan), newText: snippet ?? name };
       }
       if (snippet) {
-        item.insertTextFormat = import_node34.InsertTextFormat.Snippet;
+        item.insertTextFormat = import_node35.InsertTextFormat.Snippet;
       }
       if (retrigger) {
         item.command = { title: "Suggest", command: "editor.action.triggerSuggest" };
@@ -31920,7 +32039,7 @@ function isTemplate(document) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-new XaendarLanguageServer((0, import_node35.createConnection)(import_node35.ProposedFeatures.all), new import_node35.TextDocuments(TextDocument)).listen();
+new XaendarLanguageServer((0, import_node36.createConnection)(import_node36.ProposedFeatures.all), new import_node36.TextDocuments(TextDocument)).listen();
 /*! Bundled license information:
 
 is-extglob/index.js:

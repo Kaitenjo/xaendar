@@ -6,6 +6,7 @@ export type * from '../types/declaration-kind.type';
 export * from './directive-registry/directive-registry.util';
 export * from './for/for.util';
 export { _client } from './client/client.util';
+export { _try } from './try/try.util';
 export { _hydrate } from './hydrate/hydrate.util';
 export { _applyHostProperties } from './host-bindings/host-bindings.util';
 export * from './if/if.util';

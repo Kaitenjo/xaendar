@@ -256,6 +256,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @placeholder is not right after the } of a @client: it stands alone, it follows another block or a text, or it is the second one of a @client.
 - **Fix:** Write it right after the block of a @client, once: @client { … } @placeholder { … }.
 
+### `[Parser] @try needs a @catch: write @catch (error) { … } right after its block`
+
+- **Cause:** A @try block not followed by its @catch, as JavaScript requires.
+- **Fix:** Write @catch (error) { … } right after the } of the @try, or remove the @try.
+
+### `[Parser] @catch must follow the block of a @try`
+
+- **Cause:** A @catch not right after the } of a @try: alone, after another block or a text, or the second one of a @try.
+- **Fix:** Write it right after the block of a @try, once: @try { … } @catch (error) { … }.
+
 ### `[Parser] (click) never runs: the server renders a @placeholder, and the browser replaces it without running its code`
 
 - **Cause:** An element of a @placeholder declares a listener. The server binds no listener, and the browser removes the placeholder without running its code.

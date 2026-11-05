@@ -3,6 +3,8 @@ import { ForToken } from '../../lexer/types/tokens/for-token.type'
 import type { ClientToken } from '../../lexer/types/tokens/client-token.type'
 import type { HydrateToken } from '../../lexer/types/tokens/hydrate-token.type'
 import type { PlaceholderToken } from '../../lexer/types/tokens/placeholder-token.type'
+import type { TryToken } from '../../lexer/types/tokens/try-token.type'
+import type { CatchToken } from '../../lexer/types/tokens/catch-token.type'
 import { IfToken } from '../../lexer/types/tokens/if-token.type'
 import { ImportPathToken } from '../../lexer/types/tokens/import-path-token.type'
 import { InterpolationExpressionToken } from '../../lexer/types/tokens/interpolation-expression-token.type'
@@ -34,6 +36,8 @@ export type ParserStates = {
   [TokenType.HYDRATE]: ParserTransitionFunction<HydrateToken>,
   [TokenType.CLIENT]: ParserTransitionFunction<ClientToken>,
   [TokenType.PLACEHOLDER]: ParserTransitionFunction<PlaceholderToken>,
+  [TokenType.TRY]: ParserTransitionFunction<TryToken>,
+  [TokenType.CATCH]: ParserTransitionFunction<CatchToken>,
   [TokenType.IMPORT]: ParserTransitionFunction<ImportPathToken>,
   [TokenType.RENDER]: ParserTransitionFunction<RenderToken>,
   [TokenType.LET]: ParserTransitionFunction<LetToken>

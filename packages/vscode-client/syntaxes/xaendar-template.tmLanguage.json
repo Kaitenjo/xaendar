@@ -13,6 +13,7 @@
     { "include": "#template-declaration" },
     { "include": "#hydrate" },
     { "include": "#control-flow" },
+    { "include": "#catch" },
     { "include": "#control-flow-bare" },
     { "include": "#render" },
     { "include": "#let" },
@@ -254,8 +255,18 @@
         { "include": "#expression" }
       ]
     },
+    "catch": {
+      "match": "(@catch)\\b\\s*(?:(\\()\\s*([A-Za-z_$][\\w$]*)\\s*(\\)))?\\s*(\\{)?",
+      "captures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "punctuation.section.parens.begin.xaendar" },
+        "3": { "name": "variable.other.constant.xaendar" },
+        "4": { "name": "punctuation.section.parens.end.xaendar" },
+        "5": { "name": "punctuation.section.block.begin.xaendar" }
+      }
+    },
     "control-flow-bare": {
-      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder))\\b\\s*(\\{)?",
+      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder|try))\\b\\s*(\\{)?",
       "captures": {
         "1": { "name": "keyword.control.xaendar" },
         "2": { "name": "punctuation.section.block.begin.xaendar" }

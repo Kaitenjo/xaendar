@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ForNode, getForVariables, type HydrateNode, type IfNode, isStructuralElement, type StructuralDirectiveNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ForNode, getForVariables, type HydrateNode, type IfNode, isStructuralElement, type StructuralDirectiveNode, type TryNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
 
 /**
@@ -108,6 +108,11 @@ class TemplateWalker {
       case ASTNodeType.Client:
         this._visitor.client?.(node);
         this._walkClient(node, variables);
+        break;
+
+      case ASTNodeType.Try:
+        this._visitor.tryBlock?.(node);
+        this._walkTry(node, variables);
         break;
 
       case ASTNodeType.Template: {
@@ -303,6 +308,25 @@ class TemplateWalker {
     if (node.placeholder) {
       this.walkScope(node.placeholder.children, variables);
     }
+  }
+
+  /**
+   * Walks a `@try` block and its `@catch`, each one a scope of its own: the server renders either of them, so both are
+   * walked. The `@catch` declares the error, under the name it gives it.
+   *
+   * @param node - The `@try` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  private _walkTry(node: TryNode, variables: ReadonlySet<string>): void {
+    this.walkScope(node.children, variables);
+
+    const { name, children } = node.catch;
+    const catchVariables = new Set(variables);
+    if (name) {
+      catchVariables.add(name);
+    }
+
+    this.walkScope(children, catchVariables);
   }
 
   /**

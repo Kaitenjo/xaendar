@@ -75,6 +75,11 @@ function collectSelectors(nodes: readonly ASTNode[], selectors: Set<string>): bo
         client = collectSelectors(node.children, selectors) || client;
         break;
 
+      case ASTNodeType.Try:
+        client = collectSelectors(node.children, selectors) || client;
+        client = collectSelectors(node.catch.children, selectors) || client;
+        break;
+
       case ASTNodeType.Client:
         client = true;
         if (node.placeholder) {

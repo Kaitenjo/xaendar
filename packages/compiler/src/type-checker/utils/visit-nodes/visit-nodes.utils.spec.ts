@@ -32,7 +32,8 @@ describe('visitNodes', () => {
     ['a template', '<template row()><a></a></template>', ['a']],
     ['a @hydrate', '@hydrate (idle) { <a></a> }', ['a']],
     ['a @client', '@client { <a></a> }', ['a']],
-    ['a @client and its @placeholder', '@client { <a></a> } @placeholder { <b></b> }', ['a', 'b']]
+    ['a @client and its @placeholder', '@client { <a></a> } @placeholder { <b></b> }', ['a', 'b']],
+    ['a @try and its @catch', '@try { <a></a> } @catch (error) { <b></b> }', ['a', 'b']]
   ])('goes through %s', (_name, template, expected) => {
     expect(tags(template)).toEqual(expected);
   });

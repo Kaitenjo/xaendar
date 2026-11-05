@@ -6,4 +6,5 @@ export { _defineServerRender } from './utils/server-render-registry/server-rende
 export { _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrStartTag } from './utils/ssr-element/ssr-element.util';
 export * from './utils/ssr-items/ssr-items.util';
 export * from './utils/ssr-structural/ssr-structural.util';
+export { _ssrTry } from './utils/ssr-try/ssr-try.util';
 export { _ssrRenderTemplate, _ssrTemplate } from './utils/ssr-template/ssr-template.util';

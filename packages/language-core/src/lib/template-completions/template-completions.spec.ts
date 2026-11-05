@@ -225,11 +225,18 @@ describe('getTemplateKeywordCompletions', () => {
       { name: '@switch', kind: 'keyword', sortText: '2', replacementSpan, snippet: '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}', retrigger: true },
       { name: '@hydrate', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@hydrate ($1) {\n\t$0\n}', retrigger: false },
       { name: '@client', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@client {\n\t$0\n}', retrigger: false },
-      { name: '@render', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@render $1($0)', retrigger: false },
-      { name: '@let', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
-      { name: '@else', kind: 'keyword', sortText: '7', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
-      { name: '@else if', kind: 'keyword', sortText: '8', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
+      { name: '@try', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}', retrigger: false },
+      { name: '@render', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@render $1($0)', retrigger: false },
+      { name: '@let', kind: 'keyword', sortText: '7', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
+      { name: '@else', kind: 'keyword', sortText: '8', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
+      { name: '@else if', kind: 'keyword', sortText: '9', replacementSpan, snippet: '@else if ($1) {\n\t$0\n}', retrigger: true }
     ]);
+  });
+
+  it('proposes only @catch after a @try block, with the name of its error to fill', () => {
+    const source = '@try {\n}\n@';
+
+    expect(keywordsOf(source, source.length)).toEqual([expect.objectContaining({ name: '@catch', snippet: '@catch (${1:error}) {\n\t$0\n}', retrigger: false })]);
   });
 
   it('proposes @placeholder after a @client block', () => {
@@ -239,7 +246,7 @@ describe('getTemplateKeywordCompletions', () => {
   });
 
   it('leaves out the blocks of the rendering on the server in a project that does not declare it, sorting the others from the first', () => {
-    expect(namesIn('keywords-without-ssr', {})).toEqual([['@if', '0'], ['@for', '1'], ['@switch', '2'], ['@render', '3'], ['@let', '4']]);
+    expect(namesIn('keywords-without-ssr', {})).toEqual([['@if', '0'], ['@for', '1'], ['@switch', '2'], ['@try', '3'], ['@render', '4'], ['@let', '5']]);
   });
 
   it('proposes the blocks of the rendering on the server in a project declaring it', () => {

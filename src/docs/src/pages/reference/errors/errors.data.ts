@@ -265,6 +265,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
+    message: '[Parser] @try needs a @catch: write @catch (error) { … } right after its block',
+    page: 'templates/try'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @catch must follow the block of a @try',
+    page: 'templates/try'
+  },
+  {
+    phase: 'Parser',
     message: '[Parser] (click) never runs: the server renders a @placeholder, and the browser replaces it without running its code',
     page: 'tools/ssr/client-only'
   },

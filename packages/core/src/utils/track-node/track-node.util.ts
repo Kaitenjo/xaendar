@@ -5,7 +5,8 @@ import type { _Context } from '../context/context.util';
  * a cleanup listener that removes the node from both the context and the DOM when the context is destroyed.
  *
  * Lets a caller register the removal of a node before the cleanup listeners of what it binds to the node,
- * and insert the node afterwards: the cleanup listeners run in registration order.
+ * and insert the node afterwards: the cleanup listeners run in registration order. A node never inserted, as the element
+ * whose bindings threw in the content of a `@try`, has nothing to remove.
  *
  * @param node - The node to track.
  * @param parentNode - The node the node is inserted into: an element, or the shadow root of a component.
@@ -15,6 +16,8 @@ export function trackNode(node: Node, parentNode: Node, context: _Context): void
   context.addNode(node);
   context.addUnlistener(() => {
     context.removeNode(node);
-    parentNode.removeChild(node);
+    if (node.parentNode === parentNode) {
+      parentNode.removeChild(node);
+    }
   });
 }

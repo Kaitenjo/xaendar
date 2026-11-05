@@ -1,0 +1,12 @@
+@try {
+  <p>{ settings().theme.name }</p>
+} @catch (error) {
+  <p>{ error instanceof Error ? error.message : 'Unknown error' }</p>
+}
+
+<!-- Without a name, when the error is not shown -->
+@try {
+  <app-summary report="{parse(report())}" />
+} @catch {
+  <p>The report cannot be read.</p>
+}

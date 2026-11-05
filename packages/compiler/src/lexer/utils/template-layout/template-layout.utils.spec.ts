@@ -152,6 +152,19 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
+  it('reads a @try with its @catch, the name of its error as a condition, and one without a name', () => {
+    expect(parseTemplateLayout('@try {a} @catch (error) {b}')).toEqual([{
+      kind: 'block',
+      keyword: 'try',
+      branches: [{ keyword: 'try', body: [{ kind: 'text', value: 'a' }] }, { keyword: 'catch', condition: 'error', body: [{ kind: 'text', value: 'b' }] }]
+    }]);
+    expect(parseTemplateLayout('@try {a} @catch {b}')).toEqual([{
+      kind: 'block',
+      keyword: 'try',
+      branches: [{ keyword: 'try', body: [{ kind: 'text', value: 'a' }] }, { keyword: 'catch', body: [{ kind: 'text', value: 'b' }] }]
+    }]);
+  });
+
   it('reads a @hydrate with its triggers as written', () => {
     expect(parseTemplateLayout('@hydrate (idle, when ready()) {x}')).toEqual([
       { kind: 'block', keyword: 'hydrate', branches: [{ keyword: 'hydrate', condition: 'idle, when ready()', body: [{ kind: 'text', value: 'x' }] }] }
@@ -188,6 +201,7 @@ describe('parseTemplateLayout', () => {
     ['a condition that is missing', '@if { }'],
     ['a @hydrate as a conditional binding', '<p @hydrate (idle) { id="x" }></p>'],
     ['a @client as a conditional binding', '<p @client { id="x" }></p>'],
+    ['a @try as a conditional binding', '<p @try { id="x" } @catch { }></p>'],
     ['a @placeholder without a @client', '@placeholder { a }'],
     ['a condition that is not between parentheses', '@switch a { }'],
     ['a condition that is not closed', '@if (a { }'],

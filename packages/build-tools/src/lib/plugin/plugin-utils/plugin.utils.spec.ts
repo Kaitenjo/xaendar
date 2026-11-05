@@ -188,7 +188,7 @@ describe('generateTemplateModule()', () => {
     const code = generateTemplateModule(compiled, ['/src/a.xd.component.ts', 'C:/my src/b.xd.component.ts', '/src/c.xd.component.ts']);
 
     expect(code.startsWith('import "/src/a.xd.component.ts";\nimport { _if')).toBe(true);
-    expect(code).toContain('_hydrate, _client, ');
+    expect(code).toContain('_hydrate, _client, _try, ');
     expect(code).toContain(compiled);
   });
 });

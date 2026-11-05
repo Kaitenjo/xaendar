@@ -145,6 +145,14 @@ export enum TokenType {
    */
   PLACEHOLDER,
   /**
+   * Opening keyword of a `@try` block, e.g. `@try` in `@try { … } @catch (error) { … }`.
+   */
+  TRY,
+  /**
+   * Opening keyword of a `@catch` block, e.g. `@catch` in `@catch (error) { … }`.
+   */
+  CATCH,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

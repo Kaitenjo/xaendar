@@ -76,6 +76,14 @@ describe('getTemplateDiagnostics', () => {
     }, TIMEOUT);
   });
 
+  it('types the error of a @catch as TypeScript types the one of a catch, unknown until it is narrowed', async () => {
+    const source = '@try { { title } } @catch (failure) { { failure.message } { failure instanceof Error ? failure.message : \'\' } }';
+
+    expect(await diagnose(source)).toEqual([
+      ['failure', '\'failure\' is of type \'unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('reports the type errors on the exact characters of the template they come from', async () => {
     const source = '<b (click)="nope()">{ missing }</b>\n@for (item of items; track item().id) { {item().nam} }';
 

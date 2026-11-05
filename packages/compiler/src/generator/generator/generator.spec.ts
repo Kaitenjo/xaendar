@@ -15,7 +15,7 @@ describe('Generator', () => {
     expect(code).toBe([
       'function render(nodeStrategy) {',
       '  const root = this._root;',
-      '  const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined }, nodeStrategy);',
+      '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
       '  _renderLiteralText(root, context, \'hello\', null);',
       '  return context;',
       '}'
@@ -27,7 +27,7 @@ describe('Generator', () => {
       const code = await generate('<button (click)="highlight(name)">Go</button><label>Name <input #name /></label>');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined }, nodeStrategy);',
+        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
         '  context.declare(\'name\');',
         '  _renderElement(root, context, null, \'button\', [],'
       ].join('\n'));
@@ -79,7 +79,7 @@ describe('Generator', () => {
       const start = template.indexOf('<template');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: document.createElement.bind(document), get: () => undefined }, nodeStrategy);',
+        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
         `  context.addIdentifier('row', _template(context, template_row_${start}.bind(this)));`,
         '  _renderTemplate(root, context, null, context.get(\'row\'), [() => this.name(), () => 1]);',
         '  return context;'

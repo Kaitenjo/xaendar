@@ -45,6 +45,9 @@ function findNodeEvent(node: ASTNode): EventNode | undefined {
     case ASTNodeType.Client:
       return findEvent(node.children);
 
+    case ASTNodeType.Try:
+      return findEvent(node.children) ?? findEvent(node.catch.children);
+
     default:
       // Texts, interpolations, imports, @render and @let declare no listener
       return undefined;

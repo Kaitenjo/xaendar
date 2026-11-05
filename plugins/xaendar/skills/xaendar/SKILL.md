@@ -180,7 +180,7 @@ Follow these in every template you write or edit:
     Edit
   </button>
   ```
-- **Spaces**: an interpolation in a property binding has no spaces inside its braces (`title="{title()}"`), one in the text has one on each side (`{ title() }`), and a control-flow keyword is followed by a space (`@if (x)`). The braces follow JavaScript: `{` on the line of the keyword, `}` on its own line, except `} @else {` and `} @placeholder {`. The language server formats a template with these rules (Format Document; line width `xaendar.format.printWidth`, default 120).
+- **Spaces**: an interpolation in a property binding has no spaces inside its braces (`title="{title()}"`), one in the text has one on each side (`{ title() }`), and a control-flow keyword is followed by a space (`@if (x)`). The braces follow JavaScript: `{` on the line of the keyword, `}` on its own line, except `} @else {`, `} @placeholder {` and `} @catch (error) {`. The language server formats a template with these rules (Format Document; line width `xaendar.format.printWidth`, default 120).
 - **Conditions** (in classes and templates alike):
   - Never test a condition and its negation separately (`if (x) { … } if (!x) { … }`, `@if (x) { … }` … `@if (!x) { … }`): use `if`/`else`, `@if`/`@else`.
   - When the `if` and the `else` of a class each hold a single line, write a ternary instead: `return x ? a : b;`, `value = x ? a : b;`, `x ? open() : close();`. Keep `if`/`else` only when a branch holds several statements or one a ternary cannot express (`throw`, `break`, `continue`, a `return` in one branch only).

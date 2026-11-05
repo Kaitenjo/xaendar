@@ -11,6 +11,7 @@ import { typeCheckImport } from '../states/type-check-import/type-check-import.s
 import { typeCheckLet } from '../states/type-check-let/type-check-let.state.js';
 import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
 import { typeCheckClient } from '../states/type-check-client/type-check-client.state.js';
+import { typeCheckTry } from '../states/type-check-try/type-check-try.state.js';
 import { typeCheckHydrate } from '../states/type-check-hydrate/type-check-hydrate.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
@@ -70,6 +71,7 @@ export class TypeChecker {
     [ASTNodeType.Switch]: typeCheckSwitch,
     [ASTNodeType.Hydrate]: typeCheckHydrate,
     [ASTNodeType.Client]: typeCheckClient,
+    [ASTNodeType.Try]: typeCheckTry,
     [ASTNodeType.Import]: typeCheckImport,
     [ASTNodeType.Template]: typeCheckTemplate,
     [ASTNodeType.Render]: typeCheckRender,

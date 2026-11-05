@@ -122,6 +122,22 @@ describe('walkTemplate', () => {
     ]);
   });
 
+  it('visits a @try and its @catch, scopes of their own, the @catch declaring the error under its name', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('@try { { a } <i #inContent></i> } @catch (failure) { { failure } } @try { } @catch { { b } }'), [], {
+      tryBlock: node => visits.push(`try ${node.catch.name}`),
+      expression: (expression, variables) => visits.push(`expression ${expression.getText()} [${[...variables].join(',')}]`)
+    }, true);
+
+    expect(visits).toEqual([
+      'try failure',
+      'expression a [inContent]',
+      'expression failure [failure]',
+      'try undefined',
+      'expression b []'
+    ]);
+  });
+
   it('walks a @client without a @placeholder, and nothing without callbacks', () => {
     expect(() => walkTemplate(parseTemplate('@client { }'), [], {})).not.toThrow();
   });

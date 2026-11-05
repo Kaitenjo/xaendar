@@ -410,7 +410,7 @@ export function getTextIdentifier(prefix = 'text', parentNode: string, index: st
  * @param index - A suffix to disambiguate sibling blocks.
  * @returns A unique variable name string for the block.
  */
-export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder', parentNode: string, index: string): string {
+export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'try' | 'catch', parentNode: string, index: string): string {
   return getIdentifier(prefix, parentNode, index);
 }
 

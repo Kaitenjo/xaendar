@@ -97,5 +97,13 @@ export enum ASTNodeType {
   /**
    * What the server renders in place of the content of a `@client`, `@placeholder { … }`.
    */
-  Placeholder
+  Placeholder,
+  /**
+   * Content whose first render may throw, `@try { … }`, with the `@catch` rendered in its place when it does.
+   */
+  Try,
+  /**
+   * What a `@try` renders when its content throws, `@catch (error) { … }`.
+   */
+  Catch
 }

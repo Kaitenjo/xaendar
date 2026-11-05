@@ -70,6 +70,32 @@ describe('lexFlowControl', () => {
     });
   });
 
+  it('recognises @try', () => {
+    const cursor = new LexerCursor('@try {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.TRY }]
+    });
+  });
+
+  it('recognises @catch with the name of its error, reading it as a condition', () => {
+    const cursor = new LexerCursor('@catch  (error) {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_CONDITION,
+      tokens: [{ type: TokenType.CATCH }],
+      pushState: true
+    });
+    expect(cursor.peekMatch('(')).toBe(true);
+  });
+
+  it('recognises @catch without a name', () => {
+    const cursor = new LexerCursor('@catch {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.CATCH }]
+    });
+  });
+
   it('recognises @render', () => {
     const cursor = new LexerCursor('@render row(item())');
     expect(lexFlowControl(cursor, context)).toEqual({

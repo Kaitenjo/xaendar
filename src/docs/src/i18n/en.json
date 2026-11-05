@@ -125,6 +125,7 @@
       "templates/switch": "@switch",
       "templates/imports": "@import",
       "templates/let": "@let",
+      "templates/try": "@try and @catch",
       "templates/element-refs": "Element refs",
       "templates/conditional-bindings": "Conditional bindings",
       "templates/reusable-templates": "Templates and @render",
@@ -1724,7 +1725,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, all signals. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a> and <a href=\"#/en/templates/switch\">@switch</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
+          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, all signals. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a> and <a href=\"#/en/templates/try\">@try</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
         },
         "templates": {
           "title": "Templates and @render",
@@ -2661,6 +2662,58 @@
           "td1": "Names the value of the expression in its scope: the expressions read it after its <code>;</code>, the event handlers anywhere.",
           "td2": "Reads a <code>@let</code> whose value reads a signal: it is a signal, updated when what it reads changes.",
           "td3": "Reads a <code>@let</code> whose value reads no signal: a value, computed once."
+        }
+      },
+      "try": {
+        "eyebrow": "Templates",
+        "title": "@try and @catch",
+        "lead": "A <code>@try</code> block renders its content, and when the content throws while it is first rendered, the <code>@catch</code> following it is rendered in its place, with the error, as <code>try</code> and <code>catch</code> do in JavaScript. What the content rendered before throwing is removed.",
+        "when": "<strong>When it is needed</strong>: when a part of a page reads data that may be broken, such as a configuration, a row of an import or a value parsed from text, and the rest of the page must render anyway. An error the template does not catch stops the render of the whole component.",
+        "syntax": {
+          "title": "The syntax",
+          "p1": "The <code>@catch</code> must follow the block of the <code>@try</code>, and gives the error a name between parentheses, readable only in its content. The name is optional, as in <code>catch {}</code>: write <code>@catch { … }</code> when the error is not shown.",
+          "p2": "The error is a value, read as <code>{ error }</code>, not a signal. The editor types it as TypeScript types the error of a <code>catch</code>: <code>unknown</code> with <code>strict</code>, so it must be narrowed before reading its members, as in <code>error instanceof Error ? error.message : …</code>."
+        },
+        "scope": {
+          "title": "What it catches",
+          "p1": "Only what runs while the content is first rendered: the expressions, the <code>@let</code>, the <code>@render</code>, the directives and the blocks it holds, and the components it renders, whose constructor, <code>onInit</code> and first render are part of it, as the functions a <code>try</code> calls in JavaScript. What runs later is not caught, as a function called later is not caught by a <code>try</code>:",
+          "p2": "An event handler runs at the event; a promise, such as the one of an asynchronous structural directive, settles later. When the content throws, the components it rendered are removed along with the rest, running their <code>onDestroy</code>. An error of the <code>@catch</code> goes on to what holds the block, which a <code>@try</code> around it can catch."
+        },
+        "recovery": {
+          "title": "Updates and recovery",
+          "p1": "The <code>@catch</code> stays until the block is created again, by a block holding it: an <code>@if</code> showing it again, a new item of a <code>@for</code>. Each row below is an item with its own <code>@try</code>: a broken row shows its <code>@catch</code>, and a row added is rendered for the first time:",
+          "example1": "Rows of an import, each one in a @try",
+          "p2": "A signal changing after the first render, and making an expression of the content throw, is not caught: the error goes to the console, and the content keeps what it showed. To guard a value that can break at any time, compute it in the class, in a <code>computed</code> with a <code>try</code>/<code>catch</code>, and show its outcome."
+        },
+        "ssr": {
+          "title": "With server-side rendering",
+          "p1": "The server renders the content, or the <code>@catch</code> when the content throws. In the browser the block runs again from its own state: it adopts the content the server rendered, and when it throws there, the rest of the content is removed, with a warning, and the <code>@catch</code> is created. The error of the server does not reach the browser, so a <code>@catch</code> the server rendered is removed and the content rendered from scratch, then the <code>@catch</code> again if it throws again. The <code>onInit</code> and the render of a component the content holds run when the block runs again, so their errors in the browser are caught there too."
+        },
+        "errors": {
+          "title": "Errors"
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "Asynchronous errors",
+            "body": "<p>A promise rejecting is not caught, as in JavaScript without <code>await</code>: an asynchronous structural directive in the content rejects after the first render. Handle the rejection where the promise is created.</p>"
+          },
+          "callout2": {
+            "heading": "Components the template does not create",
+            "body": "<p>A component inserted by code, as with <code>appendChild</code> in an <code>onInit</code>, is not caught: the browser runs it and reports its error, as it does for any code outside the <code>@try</code>. In a page rendered on the server, the browser constructs the components of the HTML as soon as their classes are defined, before the template runs: a constructor throwing only in the browser is not caught there, while <code>onInit</code> and the render are.</p>"
+          },
+          "callout3": {
+            "heading": "Not in a tag",
+            "body": "<p><code>@try</code> is a block of the content: it cannot choose the bindings of a tag, as a conditional binding does.</p>"
+          }
+        },
+        "summary": {
+          "title": "Summary",
+          "th1": "Syntax",
+          "th2": "Description",
+          "td1": "Renders its content; when the content throws while it is first rendered, the components it renders included, its <code>@catch</code> is rendered in its place.",
+          "td2": "Rendered with the error, a value named <code>error</code> in its content, typed <code>unknown</code>.",
+          "td3": "The same, without naming the error."
         }
       },
       "reusableTemplates": {
@@ -3789,6 +3842,14 @@
     "[Parser] @placeholder must follow the block of a @client": {
       "cause": "A @placeholder is not right after the } of a @client: it stands alone, it follows another block or a text, or it is the second one of a @client.",
       "fix": "Write it right after the block of a @client, once: @client { … } @placeholder { … }."
+    },
+    "[Parser] @try needs a @catch: write @catch (error) { … } right after its block": {
+      "cause": "A @try block not followed by its @catch, as JavaScript requires.",
+      "fix": "Write @catch (error) { … } right after the } of the @try, or remove the @try."
+    },
+    "[Parser] @catch must follow the block of a @try": {
+      "cause": "A @catch not right after the } of a @try: alone, after another block or a text, or the second one of a @try.",
+      "fix": "Write it right after the block of a @try, once: @try { … } @catch (error) { … }."
     },
     "[Parser] (click) never runs: the server renders a @placeholder, and the browser replaces it without running its code": {
       "cause": "An element of a @placeholder declares a listener. The server binds no listener, and the browser removes the placeholder without running its code.",

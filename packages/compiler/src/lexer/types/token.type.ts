@@ -17,6 +17,8 @@ import { ForToken } from './tokens/for-token.type';
 import type { ClientToken } from './tokens/client-token.type';
 import type { HydrateToken } from './tokens/hydrate-token.type';
 import type { PlaceholderToken } from './tokens/placeholder-token.type';
+import type { TryToken } from './tokens/try-token.type';
+import type { CatchToken } from './tokens/catch-token.type';
 import { IfToken } from './tokens/if-token.type';
 import { ImportPathToken } from './tokens/import-path-token.type';
 import { ImportToken } from './tokens/import-token.type';
@@ -74,4 +76,6 @@ export type Token =
   | HydrateToken
   | ClientToken
   | PlaceholderToken
+  | TryToken
+  | CatchToken
   | EOFToken;

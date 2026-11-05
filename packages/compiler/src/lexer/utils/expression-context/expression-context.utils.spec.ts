@@ -99,6 +99,7 @@ describe('getExpressionContext', () => {
     ['a block keyword before its condition', '@if  |'],
     ['the item of a @for', '@for (|'],
     ['the partial item of a @for', '@for (ite|'],
+    ['the name of the error of a @catch', '@try { a } @catch (err|'],
     ['the item of a @for before its of', '@for (item |'],
     ['a string in a condition', '@if (\'a|'],
     ['the name of the template of a @render', '@render ro|'],

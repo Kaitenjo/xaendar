@@ -19,6 +19,8 @@ describe('findEvent', () => {
     ['in a template', '<template row()><b (x)="f()"></b></template>'],
     ['in a @hydrate', '@hydrate (idle) { <b (x)="f()"></b> }'],
     ['in a @client', '@client { <b (x)="f()"></b> }'],
+    ['in a @try', '@try { <b (x)="f()"></b> } @catch { }'],
+    ['in a @catch', '@try { <b></b> } @catch (error) { <b (x)="f()"></b> }'],
     ['in a conditional binding', '<a @if (b) { (x)="f()" }></a>'],
     ['in a later branch of a conditional binding', '<a @if (b) { c="1" } @else { (x)="f()" }></a>'],
     ['in a @switch binding', '<a @switch (b) { @case (1) { (x)="f()" } }></a>'],

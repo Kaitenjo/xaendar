@@ -3,8 +3,8 @@
  */
 export type LayoutBranch<Body> = {
   /**
-   * The keyword after the `@`: `if`, `else if`, `else`, `for`, `case`, `default`, `hydrate`, `client` or
-   * `placeholder`.
+   * The keyword after the `@`: `if`, `else if`, `else`, `for`, `case`, `default`, `hydrate`, `client`,
+   * `placeholder`, `try` or `catch`.
    */
   readonly keyword: string;
   /**
