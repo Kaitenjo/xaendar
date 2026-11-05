@@ -327,6 +327,7 @@ describe('XaendarLanguageServer', () => {
 
       expect(analyzeTemplate).toHaveBeenCalledTimes(1);
       expect(analyzeTemplate).toHaveBeenCalledWith(pathOf(TEMPLATE_URI), '<b>{ title }</b>', expect.anything());
+      expect(getComponentDiagnostics).toHaveBeenCalledExactlyOnceWith(pathOf(COMPONENT_URI), '');
       expect(invalidateTemplateMetadata).not.toHaveBeenCalled();
     });
   });
@@ -349,6 +350,23 @@ describe('XaendarLanguageServer', () => {
         version: 1,
         diagnostics: [{ range: { start: { line: 0, character: 1 }, end: { line: 0, character: 13 } }, message: 'wrong', severity: DiagnosticSeverity.Error, source: 'xaendar' }]
       });
+    });
+
+    it('keeps them while the editor asks the hover, the semantic tokens and the completions of the file', async () => {
+      const document = component();
+      const { server, connection } = setup(document);
+      vi.mocked(getComponentDiagnostics).mockResolvedValue([{ span: { start: 1, end: 13 }, message: 'wrong' }]);
+      const textDocument = { uri: COMPONENT_URI };
+      const position = { line: 0, character: 1 };
+
+      await server.onDidChangeContent(document);
+      await server.onHover({ textDocument, position });
+      await server.onSemanticTokens({ textDocument });
+      await server.onCompletion({ textDocument, position });
+      await vi.runAllTimersAsync();
+
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+      expect(connection.sendDiagnostics).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ uri: COMPONENT_URI, diagnostics: [expect.objectContaining({ message: 'wrong' })] }));
     });
 
     it('clears them when the file is closed, cancelling the pending validation', async () => {

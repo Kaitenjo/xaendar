@@ -173,8 +173,10 @@ export class XaendarLanguageServer {
     for (let i = 0; i < changes.length; i++) {
       const { uri, type } = changes[i];
       const fileName = fromUri(uri);
+      // Its ssr decides whether the blocks of the templates and the ssr option of the decorators are allowed
       if (basename(fileName) === XAENDAR_CONFIG_FILE) {
         this._scheduleOpenTemplatesValidation();
+        this._scheduleOpenComponentsValidation();
         continue;
       }
 
@@ -442,12 +444,17 @@ export class XaendarLanguageServer {
   }
 
   /**
-   * Returns the analysis of the current version of a template, analyzing it if needed.
+   * Returns the analysis of the current version of a template, analyzing it if needed. A component file has none: it
+   * must not reach `validate`, whose empty diagnostics would replace the ones of its decorators.
    *
    * @param document - The template.
-   * @returns The analysis, `undefined` if no component uses the template.
+   * @returns The analysis, `undefined` if the document is not a template or no component uses it.
    */
   private async _getAnalysis(document: TextDocument): Promise<TemplateAnalysisResult | undefined> {
+    if (!isTemplate(document)) {
+      return undefined;
+    }
+
     const analysis = this._analyses.get(document.uri);
     return analysis?.version === document.version ? analysis.result : await this.validate(document.uri);
   }

@@ -530,6 +530,21 @@ describe('findWebComponentErrors', () => {
     expect(sourceFile.text.slice(span.start, span.end)).toBe('MyEl');
   });
 
+  it('reports the ssr option, on the option, in a project that does not render on the server', () => {
+    const sourceFile = sourceFileOf(component('', '@WebComponent({ selector: \'a-b\', ssr: { hydrate: \'idle\' }, templateUrl: \'./t\' })'));
+    const [{ message, span }] = findWebComponentErrors(sourceFile, true, false);
+
+    expect(message).toBe('The ssr option of MyEl is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option');
+    expect(sourceFile.text.slice(span.start, span.end)).toBe('ssr: { hydrate: \'idle\' }');
+  });
+
+  it.each([
+    ['renders on the server', true],
+    ['may render on the server', undefined]
+  ])('accepts the ssr option in a project that %s', (_description, ssr) => {
+    expect(findWebComponentErrors(sourceFileOf(component('', '@WebComponent({ selector: \'a-b\', ssr: { render: false }, templateUrl: \'./t\' })')), true, ssr)).toEqual([]);
+  });
+
   it('reports the required options that are missing, ignoring the properties it does not read', () => {
     expect(errorsOf('@WebComponent({ \'selector\': \'a-b\', ...BASE, [key]: 1, other: 1 })')).toEqual([
       'The selector option of MyEl must be a string literal',

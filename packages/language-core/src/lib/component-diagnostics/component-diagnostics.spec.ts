@@ -64,6 +64,22 @@ describe('getComponentDiagnostics', () => {
     expect(diagnostics.map(({ message }) => message)).toEqual([`Could not find template at ${project.path('outside/nope.html')}`]);
   }, TIMEOUT);
 
+  it.each([
+    ['declaring no ssr', {}, ['The ssr option of Card is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option']],
+    ['declaring ssr', { ssr: { entry: 'src/entry-server' } }, []],
+    ['missing', undefined, []]
+  ])('reports the ssr option according to the xaendar.json of the project, %s', async (_name, config, messages) => {
+    const directory = `ssr-${config ? Object.keys(config).length : 'none'}`;
+    project.write(`${directory}/card.xd.component.html`, '<p></p>');
+    if (config) {
+      project.write(`${directory}/xaendar.json`, JSON.stringify(config));
+    }
+
+    const diagnostics = await getComponentDiagnostics(project.path(`${directory}/card.xd.component.ts`), '@WebComponent({ selector: \'x-card\', ssr: { hydrate: \'idle\' }, templateUrl: \'./card.xd.component.html\' })\nexport class Card {}\n');
+
+    expect(diagnostics.map(({ message }) => message)).toEqual(messages);
+  }, TIMEOUT);
+
   describe('of a selector declared twice', () => {
     const component = (className: string, selector: string) => `@WebComponent({ selector: '${selector}', templateUrl: './card.xd.component.html' })\nexport class ${className} {}\n`;
 

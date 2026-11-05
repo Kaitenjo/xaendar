@@ -5,10 +5,12 @@ import { createSourceFile, ScriptTarget, type SourceFile, type StringLiteral } f
 import { resolveDeclarations } from '../template-analysis/template-analysis';
 import { findStringOptions } from '../utils/component-options/component-options.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
+import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * Collects the problems of the `@WebComponent` decorators of a component file, the ones the build reports, on their
- * position: the options it cannot read (see `findWebComponentErrors`), a `templateUrl` or a `styleUrl` leading to a
+ * position: the options it cannot read (see `findWebComponentErrors`), the `ssr` option in a project whose nearest
+ * `xaendar.json` declares no `ssr` (nothing without the file), a `templateUrl` or a `styleUrl` leading to a
  * missing file, and a selector declared by another component of the TypeScript project of the file, which the build
  * finds only among the components it reaches.
  *
@@ -20,7 +22,7 @@ export async function getComponentDiagnostics(fileName: string, text: string): P
   const sourceFile = createSourceFile(fileName, text, ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
 
-  const errors = findWebComponentErrors(sourceFile, true);
+  const errors = findWebComponentErrors(sourceFile, true, readSsr(dirname(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
   }

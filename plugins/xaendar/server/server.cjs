@@ -25682,7 +25682,7 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
   }
   return metadatas;
 }
-function findWebComponentErrors(sourceFile, componentFile) {
+function findWebComponentErrors(sourceFile, componentFile, ssr) {
   const errors = new Array();
   const report2 = (message, node) => {
     errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
@@ -25709,7 +25709,7 @@ function findWebComponentErrors(sourceFile, componentFile) {
       }
       const name = property.name.text;
       if (name === "ssr") {
-        const error = findSsrError(property, className);
+        const error = ssr === false ? `The ssr option of ${className} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option` : findSsrError(property, className);
         if (error) {
           report2(error, property);
         }
@@ -30187,7 +30187,7 @@ function toError(error) {
 async function getComponentDiagnostics(fileName, text) {
   const sourceFile = (0, import_typescript26.createSourceFile)(fileName, text, import_typescript26.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
-  const errors = findWebComponentErrors(sourceFile, true);
+  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path7.dirname)(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
   }
@@ -31562,6 +31562,7 @@ var XaendarLanguageServer = class {
       const fileName = fromUri(uri);
       if ((0, import_node_path11.basename)(fileName) === XAENDAR_CONFIG_FILE) {
         this._scheduleOpenTemplatesValidation();
+        this._scheduleOpenComponentsValidation();
         continue;
       }
       if (!fileName.endsWith(TYPESCRIPT_SUFFIX)) {
@@ -31786,12 +31787,16 @@ var XaendarLanguageServer = class {
     });
   }
   /**
-   * Returns the analysis of the current version of a template, analyzing it if needed.
+   * Returns the analysis of the current version of a template, analyzing it if needed. A component file has none: it
+   * must not reach `validate`, whose empty diagnostics would replace the ones of its decorators.
    *
    * @param document - The template.
-   * @returns The analysis, `undefined` if no component uses the template.
+   * @returns The analysis, `undefined` if the document is not a template or no component uses it.
    */
   async _getAnalysis(document) {
+    if (!isTemplate(document)) {
+      return void 0;
+    }
     const analysis = this._analyses.get(document.uri);
     return analysis?.version === document.version ? analysis.result : await this.validate(document.uri);
   }

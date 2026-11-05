@@ -3050,7 +3050,7 @@
           },
           "withoutSsr": {
             "title": "In un progetto senza ssr",
-            "p1": "<code>@hydrate</code> e <code>@client</code> hanno senso solo per una pagina renderizzata sul server: in un progetto il cui <code>xaendar.json</code> non dichiara <code>ssr</code> sono un errore di compilazione, e l’editor non li propone. Senza <code>xaendar.json</code> l’editor non sa dove renderizza il progetto, e non segnala nulla."
+            "p1": "<code>@hydrate</code>, <code>@client</code> e l’opzione <code>ssr</code> di <code>@WebComponent</code> hanno senso solo per una pagina renderizzata sul server: in un progetto il cui <code>xaendar.json</code> non dichiara <code>ssr</code> sono un errore di compilazione, e l’editor non propone i blocchi. Senza <code>xaendar.json</code> l’editor non sa dove renderizza il progetto, e non segnala nulla."
           }
         },
         "staticComponents": {
@@ -3801,6 +3801,10 @@
     "[TypeChecker] @client is only for a project rendering on the server: declare \"ssr\" in its xaendar.json, or remove the block": {
       "cause": "Un @client o un @hydrate in un progetto senza ssr in xaendar.json: hanno senso solo per una pagina renderizzata sul server.",
       "fix": "Rimuovi il blocco, tenendone il contenuto, o dichiara ssr in xaendar.json."
+    },
+    "The ssr option of XCard is only for a project rendering on the server: declare \"ssr\" in its xaendar.json, or remove the option - <path>": {
+      "cause": "L’opzione ssr di @WebComponent in un progetto senza ssr in xaendar.json: ha senso solo per una pagina renderizzata sul server.",
+      "fix": "Rimuovi l’opzione, o dichiara ssr in xaendar.json."
     },
     "[TypeChecker] \"field\" is read before the element it names is created: only an event handler can read an element ref declared after it": {
       "cause": "Un’interpolazione, un binding, una condizione, l’iterabile di un @for o un argomento di un @render che legge un element ref il cui elemento viene dopo nel suo scope.",

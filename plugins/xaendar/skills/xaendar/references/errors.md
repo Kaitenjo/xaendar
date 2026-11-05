@@ -271,6 +271,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @client or a @hydrate in a project without ssr in xaendar.json: they only mean something for a page rendered on the server.
 - **Fix:** Remove the block, keeping its content, or declare ssr in xaendar.json.
 
+### `The ssr option of XCard is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option - <path>`
+
+- **Cause:** The ssr option of @WebComponent in a project without ssr in xaendar.json: it only means something for a page rendered on the server.
+- **Fix:** Remove the option, or declare ssr in xaendar.json.
+
 ### `[Parser] A type argument cannot be empty`
 
 - **Cause:** An empty type argument between two commas: <Row,, number>.

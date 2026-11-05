@@ -73,7 +73,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     }
 
     const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
-    const errors = findWebComponentErrors(tsSource, componentFile);
+    const errors = findWebComponentErrors(tsSource, componentFile, !!state.ssr);
     if (errors.length) {
       for (let i = 0; i < errors.length; i++) {
         state.logError('', `${errors[i].message} - ${componentPath}`);

@@ -75,14 +75,15 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
  * Finds the `@WebComponent` declarations of a source file that the plugin cannot compile, as it reads them
  * from the source code: a component declared in a file not following the component convention, whose
  * `selector`, `templateUrl` or `styleUrl` is not a string literal (`selector` and `templateUrl` are required), whose
- * `selector` is not a valid custom element name, or whose `ssr` cannot be read (see {@link findSsrError}). The build
- * and the editor report the same errors.
+ * `selector` is not a valid custom element name, or whose `ssr` cannot be read (see {@link findSsrError}) or is declared
+ * in a project that does not render on the server. The build and the editor report the same errors.
  *
  * @param sourceFile - The source file declaring the components.
  * @param componentFile - Whether the file follows the component convention (`.xd.component.ts`).
+ * @param ssr - Whether the project renders on the server: `false` rejects the `ssr` option, `undefined` when it is not known.
  * @returns One error per component or option that cannot be compiled, or `undefined` when there is none.
  */
-export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean): WebComponentError[] {
+export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean, ssr?: boolean): WebComponentError[] {
   const errors = new Array<WebComponentError>;
   const report = (message: string, node: Node): void => {
     errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
@@ -113,7 +114,8 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
 
       const name = property.name.text;
       if (name === 'ssr') {
-        const error = findSsrError(property, className);
+        // Without the HTML of the server the option has nothing to act on, as the @hydrate and @client blocks
+        const error = ssr === false ? `The ssr option of ${className} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option` : findSsrError(property, className);
         if (error) {
           report(error, property);
         }

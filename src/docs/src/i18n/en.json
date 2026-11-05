@@ -3050,7 +3050,7 @@
           },
           "withoutSsr": {
             "title": "In a project without ssr",
-            "p1": "<code>@hydrate</code> and <code>@client</code> only mean something for a page rendered on the server: in a project whose <code>xaendar.json</code> declares no <code>ssr</code> they are a compile error, and the editor does not propose them. Without <code>xaendar.json</code> the editor does not know where the project renders, and reports nothing."
+            "p1": "<code>@hydrate</code>, <code>@client</code> and the <code>ssr</code> option of <code>@WebComponent</code> only mean something for a page rendered on the server: in a project whose <code>xaendar.json</code> declares no <code>ssr</code> they are a compile error, and the editor does not propose the blocks. Without <code>xaendar.json</code> the editor does not know where the project renders, and reports nothing."
           }
         },
         "staticComponents": {
@@ -3801,6 +3801,10 @@
     "[TypeChecker] @client is only for a project rendering on the server: declare \"ssr\" in its xaendar.json, or remove the block": {
       "cause": "A @client or a @hydrate in a project without ssr in xaendar.json: they only mean something for a page rendered on the server.",
       "fix": "Remove the block, keeping its content, or declare ssr in xaendar.json."
+    },
+    "The ssr option of XCard is only for a project rendering on the server: declare \"ssr\" in its xaendar.json, or remove the option - <path>": {
+      "cause": "The ssr option of @WebComponent in a project without ssr in xaendar.json: it only means something for a page rendered on the server.",
+      "fix": "Remove the option, or declare ssr in xaendar.json."
     },
     "[TypeChecker] \"field\" is read before the element it names is created: only an event handler can read an element ref declared after it": {
       "cause": "An interpolation, a binding, a condition, the iterable of a @for or an argument of a @render reading an element ref whose element comes after it in its scope.",

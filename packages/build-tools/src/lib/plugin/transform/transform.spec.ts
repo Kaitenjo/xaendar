@@ -230,7 +230,7 @@ describe('createTransformHook()', () => {
 
     expect(result).toBe('import { WebComponent } from "@xaendar/core";');
     expect(readFile).toHaveBeenCalledWith('/src/foo/util.ts', 'utf8');
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: '/src/foo/util.ts' }), false);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: '/src/foo/util.ts' }), false, false);
     expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
     expect(state.logError).not.toHaveBeenCalled();
   });
@@ -257,7 +257,7 @@ describe('createTransformHook()', () => {
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(result).toBeNull();
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true, false);
     expect(state.logError).toHaveBeenCalledWith('', `The templateUrl option of FooComponent must be a string literal - ${COMPONENT_PATH}`);
     expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
   });
@@ -496,6 +496,7 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ ssr: true }));
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
   });
 
   it('extracts the metadata of the component and of the imported ones with the project compiler options', async () => {

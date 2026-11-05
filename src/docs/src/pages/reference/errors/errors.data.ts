@@ -380,6 +380,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Build',
+    message: 'The ssr option of XCard is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option - <path>',
+    page: 'tools/ssr/client-only'
+  },
+  {
+    phase: 'Build',
     message: 'Could not find template at <path>',
     page: 'components/registration'
   },
