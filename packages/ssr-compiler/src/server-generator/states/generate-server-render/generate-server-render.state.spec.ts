@@ -1,10 +1,12 @@
-import { CompilerContext, parseTemplate, type RenderNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type RenderNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerRender } from './generate-server-render.state';
 
+const cache = {} as ContextCache;
+
 describe('generateServerRender', () => {
   it('renders an instance of the template with a function for each argument', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addIdentifier('row');
     context.addTemplate('row', 'html');
 
@@ -14,6 +16,6 @@ describe('generateServerRender', () => {
   });
 
   it('throws when the name is not a template visible in the scope', () => {
-    expect(() => generateServerRender(parseTemplate('@render row()')[0] as RenderNode, { id: 'root' }, '0', new CompilerContext())).toThrow('"row" is not a template visible here');
+    expect(() => generateServerRender(parseTemplate('@render row()')[0] as RenderNode, { id: 'root' }, '0', new GeneratorContext(cache))).toThrow('"row" is not a template visible here');
   });
 });

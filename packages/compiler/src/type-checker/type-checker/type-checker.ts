@@ -3,7 +3,7 @@ import { ASTNodeType } from '../../parser/types/node.enum.js';
 import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type.js';
 import type { SymbolImport } from '../../types/symbol-import.type.js';
 import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
-import { TypeCheckContext } from '../models/type-checker-context/type-checker-context.js';
+import { TypeCheckContext } from '../models/context/context.js';
 import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
 import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';

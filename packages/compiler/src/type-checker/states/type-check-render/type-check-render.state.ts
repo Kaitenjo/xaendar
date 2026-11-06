@@ -1,7 +1,7 @@
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { assertRenderTarget } from '../../../utils/render-target/render-target.utils';
-import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import type { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped } from '../../utils/line-builder/line-builder.utils';

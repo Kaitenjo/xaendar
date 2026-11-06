@@ -14,7 +14,7 @@ import { validateExpression } from '../../../parser/utils/expression-validator/e
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 
@@ -34,19 +34,19 @@ import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../
  * @param node - The `ElementNode` to process.
  * @param index - Variable name to use for the created DOM element.
  * @param parentNode - Variable name of the parent DOM node to append to.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @returns Array of generated code lines.
  */
-export async function generateElement(node: ElementNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateElement(node: ElementNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
   // A custom element of another library has no metadata: it is generated like a native element
-  const isCustomElement = isValidCustomElementName(tagName, false) && !compilerContext.isForeignElement(tagName);
-  const attributes = mapClassBindings(node.classBindings, compilerContext, false).concat(await mapAttributes(node.attributes, compilerContext, tagName, isCustomElement, false, false));
-  const events = mapEvents(node.events, compilerContext);
-  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, compilerContext, tagName, isCustomElement);
-  const directives = await mapDirectives(node.directives, compilerContext);
-  const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, compilerContext);
-  const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, compilerContext);
+  const isCustomElement = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
+  const attributes = mapClassBindings(node.classBindings, generatorContext, false).concat(await mapAttributes(node.attributes, generatorContext, tagName, isCustomElement, false, false));
+  const events = mapEvents(node.events, generatorContext);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, generatorContext, tagName, isCustomElement);
+  const directives = await mapDirectives(node.directives, generatorContext);
+  const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, generatorContext);
+  const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, generatorContext);
   const hasChildren = !!node.children.length;
   const nodeName = getElementIdentifier(node, parentNode, index);
   const retVal: GeneratorTransitionFunctionReturnType = {
@@ -86,7 +86,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   }
 
   if (hasChildren) {
-    const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, compilerContext.namespace));
+    const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
     retVal.functionsToProcess!.set(`${nodeName}Children`, {
       fn: {
         node,
@@ -95,7 +95,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
           The content of an element a structural directive is applied to is a scope of its own, created and destroyed with
           it, and the children of an element opening a namespace are created in it
         */
-        context: isStructuralElement(node) || childrenNamespace !== compilerContext.namespace ? new CompilerContext(compilerContext, childrenNamespace) : compilerContext,
+        context: isStructuralElement(node) || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext,
         precode: overrideChildrenCreateElement(tagName)
       },
       args: [nodeName, 'parentContext', 'nodeStrategy']
@@ -137,7 +137,7 @@ function appendArgument(code: string[], lines: string[]): void {
  * A required property gets no `unbind`, since the branch selected next binds it again.
  *
  * @param attributes - The attribute nodes to map onto the element or the directive.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the attributes are bound to.
  * @param isCustomElement - Whether the owner is a custom element.
  * @param isDirective - Whether the owner is a directive.
@@ -145,10 +145,10 @@ function appendArgument(code: string[], lines: string[]): void {
  * @returns Array of generated code strings, one per attribute.
  * @throws If the metadata of a directive property bound inside a conditional binding can't be resolved.
  */
-async function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<string[]> {
+async function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext, owner: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<string[]> {
   const mappedAttributes = new Array<string>();
   // Native elements have no metadata, and the one of a directive is needed only to unbind its properties
-  const metadata = attributes.length && (isCustomElement || isDirective && conditional) ? await compilerContext.cache?.getOrInsert(owner) : undefined;
+  const metadata = attributes.length && (isCustomElement || isDirective && conditional) ? await generatorContext.cache?.getOrInsert(owner) : undefined;
   for (let i = 0; i < attributes.length; i++) {
     const { name, value } = attributes[i];
     const propertyMetadata = metadata?.properties.get(name);
@@ -166,7 +166,7 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
         ])
       );
     } else {
-      const { expression, reactive } = resolveExpression(value.expression, compilerContext);
+      const { expression, reactive } = resolveExpression(value.expression, generatorContext);
       const setter = reactive
         ? input ? '_setReactiveInput' : '_setReactiveProperty'
         : input ? '_setExpressionInput' : '_setExpressionProperty';
@@ -222,15 +222,15 @@ async function mapAttributes(attributes: AttributeNode[], compilerContext: Compi
  * A class toggled inside a conditional binding is also removed when its branch is no longer the selected one.
  *
  * @param classBindings - The class binding nodes of the element, or of a branch of one of its conditional bindings.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @param conditional - Whether the class bindings are declared inside a conditional binding.
  * @returns Array of generated code lines, one descriptor per class.
  */
-function mapClassBindings(classBindings: ClassBindingNode[], compilerContext: CompilerContext, conditional: boolean): string[] {
+function mapClassBindings(classBindings: ClassBindingNode[], generatorContext: GeneratorContext, conditional: boolean): string[] {
   const mappedAttributes = new Array<string>();
   for (let i = 0; i < classBindings.length; i++) {
     const { className, value } = classBindings[i];
-    const { expression, reactive } = resolveExpression(value.expression, compilerContext);
+    const { expression, reactive } = resolveExpression(value.expression, generatorContext);
     const setter = `setter: ${reactive ? '_setReactiveClass' : '_setExpressionClass'}`;
 
     mappedAttributes.push(
@@ -261,15 +261,15 @@ function mapClassBindings(classBindings: ClassBindingNode[], compilerContext: Co
  * in part (`$event.target`).
  *
  * @param events - The event nodes to bind to the element.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code lines, one descriptor per event listener.
  */
-function mapEvents(events: EventNode[], compilerContext: CompilerContext): string[] {
-  compilerContext.addUnresolvableIdentifier('$event');
+function mapEvents(events: EventNode[], generatorContext: GeneratorContext): string[] {
+  generatorContext.addUnresolvableIdentifier('$event');
 
   const mappedEvents = events.map(({ name, handler, parameters }) => {
-    const method = resolveHandler(handler, compilerContext);
-    const args = parameters.map(parameter => resolveExpression(parameter, compilerContext).expression).join(', ');
+    const method = resolveHandler(handler, generatorContext);
+    const args = parameters.map(parameter => resolveExpression(parameter, generatorContext).expression).join(', ');
     const eventParameter = parameters.some(readsEvent) ? '$event' : '';
 
     return [
@@ -282,7 +282,7 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
     ];
   }).flat();
 
-  compilerContext.removeUnresolvabledIdentifier('$event');
+  generatorContext.removeUnresolvabledIdentifier('$event');
   return mappedEvents;
 }
 
@@ -294,18 +294,18 @@ function mapEvents(events: EventNode[], compilerContext: CompilerContext): strin
  * name of a property, which a reserved word can be, and called on the component.
  *
  * @param handler - The handler of the event binding, as written before its parenthesis.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns The expression of the method to call.
  * @throws If the handler is not a valid expression.
  */
-function resolveHandler(handler: string, compilerContext: CompilerContext): string {
+function resolveHandler(handler: string, generatorContext: GeneratorContext): string {
   const keyword = identifierToKeywordKind(factory.createIdentifier(handler.split(/\?\.|[.[]/)[0]));
   if (keyword !== undefined && keyword >= SyntaxKind.FirstReservedWord && keyword <= SyntaxKind.LastReservedWord) {
     validateExpression(`x.${handler}`);
     return `this.${handler}`;
   }
 
-  return resolveExpression(validateExpression(handler).node, compilerContext).expression;
+  return resolveExpression(validateExpression(handler).node, generatorContext).expression;
 }
 
 /**
@@ -316,14 +316,14 @@ function resolveHandler(handler: string, compilerContext: CompilerContext): stri
  * since they are applied through the descriptors generated by {@link mapStructuralConditionalBindings}.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the conditional bindings are declared in.
  * @param isCustomElement - Whether the owner is a custom element.
  * @param isDirective - Whether the owner is a directive.
  * @returns Array of generated code lines, one descriptor per conditional binding.
  */
-async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext, owner: string, isCustomElement = false, isDirective = false): Promise<string[]> {
-  return mapConditionalBindingDescriptors(conditionalBindings, compilerContext, isEmptyBranch, (branch, condition) => mapBranch(branch, condition, compilerContext, owner, isCustomElement, isDirective));
+async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], generatorContext: GeneratorContext, owner: string, isCustomElement = false, isDirective = false): Promise<string[]> {
+  return mapConditionalBindingDescriptors(conditionalBindings, generatorContext, isEmptyBranch, (branch, condition) => mapBranch(branch, condition, generatorContext, owner, isCustomElement, isDirective));
 }
 
 /**
@@ -335,11 +335,11 @@ async function mapConditionalBindings(conditionalBindings: ConditionalBindingNod
  * conditional bindings, are skipped.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code lines, one descriptor per conditional binding.
  */
-async function mapStructuralConditionalBindings(conditionalBindings: ConditionalBindingNode[], compilerContext: CompilerContext): Promise<string[]> {
-  return mapConditionalBindingDescriptors(conditionalBindings, compilerContext, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, compilerContext));
+async function mapStructuralConditionalBindings(conditionalBindings: ConditionalBindingNode[], generatorContext: GeneratorContext): Promise<string[]> {
+  return mapConditionalBindingDescriptors(conditionalBindings, generatorContext, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, generatorContext));
 }
 
 /**
@@ -347,14 +347,14 @@ async function mapStructuralConditionalBindings(conditionalBindings: Conditional
  * and, for a `@switch`, the expression whose value selects the branch to apply.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @param isEmpty - Tells whether a branch has nothing to apply: a conditional binding whose branches all have nothing to apply is skipped.
  * @param mapBranch - Maps a branch, given the generated code lines declaring its condition, to its descriptor.
  * @returns Array of generated code lines, one descriptor per conditional binding.
  */
 async function mapConditionalBindingDescriptors(
   conditionalBindings: ConditionalBindingNode[],
-  compilerContext: CompilerContext,
+  generatorContext: GeneratorContext,
   isEmpty: Function<[branch: ConditionalBindingBranchNode], boolean>,
   mapBranch: AsyncFunction<[branch: ConditionalBindingBranchNode, condition: string[]], string[]>
 ): Promise<string[]> {
@@ -369,13 +369,13 @@ async function mapConditionalBindingDescriptors(
 
     const mappedBranches = new Array<string>();
     for (let j = 0; j < branches.length; j++) {
-      mappedBranches.push(...await mapBranch(branches[j], mapCondition(conditionalBinding, j, compilerContext)));
+      mappedBranches.push(...await mapBranch(branches[j], mapCondition(conditionalBinding, j, generatorContext)));
     }
 
     const retVal = ['{'];
 
     if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
-      retVal.push(indent(`expression: () => ${resolveExpression(conditionalBinding.expression, compilerContext).expression},`));
+      retVal.push(indent(`expression: () => ${resolveExpression(conditionalBinding.expression, generatorContext).expression},`));
     }
 
     retVal.push(
@@ -423,17 +423,17 @@ function appliesStructuralDirectives({ structuralDirectives, conditionalBindings
  *
  * @param conditionalBinding - The conditional binding node the branch belongs to.
  * @param index - The index of the branch among the ones of the conditional binding.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns The generated code lines declaring the condition of the branch, if any.
  */
-function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, compilerContext: CompilerContext): string[] {
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, generatorContext: GeneratorContext): string[] {
   if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
     const { condition } = conditionalBinding.branches[index];
     return [`condition: ${condition ? `[${condition.join(', ')}]` : 'null'},`];
   }
 
   const { condition } = conditionalBinding.branches[index];
-  return condition ? [`condition: () => ${resolveExpression(condition, compilerContext).expression},`] : [];
+  return condition ? [`condition: () => ${resolveExpression(condition, generatorContext).expression},`] : [];
 }
 
 /**
@@ -443,17 +443,17 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  *
  * @param branch - The branch node to map.
  * @param condition - The generated code lines declaring the condition of the branch, if any.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @param owner - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the branch is declared in.
  * @param isCustomElement - Whether the owner is a custom element.
  * @param isDirective - Whether the owner is a directive.
  * @returns Array of generated code lines describing the branch.
  */
-async function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext, owner: string, isCustomElement: boolean, isDirective: boolean): Promise<string[]> {
+async function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], generatorContext: GeneratorContext, owner: string, isCustomElement: boolean, isDirective: boolean): Promise<string[]> {
   const { attributes, classBindings, events, conditionalBindings, directives } = branch;
-  const mappedAttributes = mapClassBindings(classBindings, compilerContext, true).concat(await mapAttributes(attributes, compilerContext, owner, isCustomElement, isDirective, true));
-  const mappedEvents = mapEvents(events, compilerContext);
-  const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, compilerContext, owner, isCustomElement, isDirective);
+  const mappedAttributes = mapClassBindings(classBindings, generatorContext, true).concat(await mapAttributes(attributes, generatorContext, owner, isCustomElement, isDirective, true));
+  const mappedEvents = mapEvents(events, generatorContext);
+  const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, generatorContext, owner, isCustomElement, isDirective);
 
   const retVal = [
     '{',
@@ -468,7 +468,7 @@ async function mapBranch(branch: ConditionalBindingBranchNode, condition: string
 
   // A conditional binding declared inside a directive cannot apply other directives
   if (!isDirective) {
-    const mappedDirectives = await mapDirectives(directives, compilerContext);
+    const mappedDirectives = await mapDirectives(directives, generatorContext);
     retVal.push(...indent(mapList('directives', mappedDirectives)));
   }
 
@@ -484,17 +484,17 @@ async function mapBranch(branch: ConditionalBindingBranchNode, condition: string
  * as the directive, so the directive metadata is only needed by its conditional bindings.
  *
  * @param directives - The directive nodes applied to the element.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code lines, one descriptor per directive.
  */
-async function mapDirectives(directives: DirectiveNode[], compilerContext: CompilerContext): Promise<string[]> {
+async function mapDirectives(directives: DirectiveNode[], generatorContext: GeneratorContext): Promise<string[]> {
   const mappedDirectives = new Array<string>();
 
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes, events, conditionalBindings } = directives[i];
-    const mappedAttributes = await mapAttributes(attributes, compilerContext, selector, false, true, false);
-    const mappedEvents = mapEvents(events, compilerContext);
-    const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, compilerContext, `@@${selector}`, false, true);
+    const mappedAttributes = await mapAttributes(attributes, generatorContext, selector, false, true, false);
+    const mappedEvents = mapEvents(events, generatorContext);
+    const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, generatorContext, `@@${selector}`, false, true);
 
     const retVal = [
       '{',
@@ -523,12 +523,12 @@ async function mapDirectives(directives: DirectiveNode[], compilerContext: Compi
  *
  * @param branch - The branch node to map.
  * @param condition - The generated code lines declaring the condition of the branch, if any.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code lines describing the branch.
  */
-async function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext): Promise<string[]> {
-  const mappedStructuralDirectives = await mapStructuralDirectives(branch.structuralDirectives, compilerContext);
-  const mappedConditionalBindings = await mapStructuralConditionalBindings(branch.conditionalBindings, compilerContext);
+async function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string[], generatorContext: GeneratorContext): Promise<string[]> {
+  const mappedStructuralDirectives = await mapStructuralDirectives(branch.structuralDirectives, generatorContext);
+  const mappedConditionalBindings = await mapStructuralConditionalBindings(branch.conditionalBindings, generatorContext);
 
   return [
     '{',
@@ -548,10 +548,10 @@ async function mapStructuralBranch(branch: ConditionalBindingBranchNode, conditi
  * Properties are never unbound, since they live as long as the structural directive and cannot be bound conditionally.
  *
  * @param structuralDirectives - The structural directive nodes applied to the element.
- * @param compilerContext - Current render scope context, used to resolve identifier references.
+ * @param generatorContext - Current render scope context, used to resolve identifier references.
  * @returns Array of generated code lines, one descriptor per structural directive.
  */
-async function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], compilerContext: CompilerContext): Promise<string[]> {
+async function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], generatorContext: GeneratorContext): Promise<string[]> {
   const mappedStructuralDirectives = new Array<string>();
 
   for (let i = 0; i < structuralDirectives.length; i++) {
@@ -560,7 +560,7 @@ async function mapStructuralDirectives(structuralDirectives: StructuralDirective
       '{',
       ...indent([
         `selector: '${selector}',`,
-        ...mapList('attributes', await mapAttributes(attributes, compilerContext, selector, false, true, false), '')
+        ...mapList('attributes', await mapAttributes(attributes, generatorContext, selector, false, true, false), '')
       ]),
       '},'
     );

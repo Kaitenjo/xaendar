@@ -22,7 +22,7 @@ export async function compileServer(input: string, options: ServerCompileOptions
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   const imports = templateDir ? await resolveTemplateImports(importNodes, templateDir, cache) : undefined;
 
-  return new ServerGenerator(input, nodes).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas.filter(isClientComponent));
+  return new ServerGenerator(input, nodes, cache).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas.filter(isClientComponent));
 }
 
 /**

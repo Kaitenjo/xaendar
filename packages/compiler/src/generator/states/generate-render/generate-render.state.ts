@@ -1,6 +1,6 @@
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import { assertRenderTarget } from '../../../utils/render-target/render-target.utils';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { resolveExpression } from '../../utils/generator/generator.utils';
 
@@ -12,7 +12,7 @@ import { resolveExpression } from '../../utils/generator/generator.utils';
  * @param node - The `RenderNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
  * @param _index - Unused index of the node among its siblings.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @param anchor - The name of the anchor variable the instance is rendered before, or `null` to append it.
  * @param separated - Whether the server separates the instance from the text preceding it with `<!---->`, which the
  *   hydration passes over.
@@ -20,10 +20,10 @@ import { resolveExpression } from '../../utils/generator/generator.utils';
  * @throws If the name doesn't refer to a template visible in the scope, or the template creates its content in another
  *   namespace.
  */
-export async function generateRender(node: RenderNode, parentNode: string, _index: string, compilerContext: CompilerContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateRender(node: RenderNode, parentNode: string, _index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType> {
   const { callee, calleeSpan } = node;
-  assertRenderTarget(callee, calleeSpan, compilerContext.getTemplateNamespace(callee), compilerContext.namespace);
+  assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
 
-  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, compilerContext).expression}`);
+  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, generatorContext).expression}`);
   return { code: [`_renderTemplate(${parentNode}, context, ${anchor}, context.get('${callee}'), [${args.join(', ')}]${separated ? ', true' : ''});`] };
 }

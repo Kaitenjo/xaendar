@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { getBlockIdentifier, getElementFactory, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
+import type { ContextCache } from '../../../types/context-cache.type';
 
-const resolve = (source: string, context = new CompilerContext(), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
+const cache = {} as ContextCache;
+
+const resolve = (source: string, context = new GeneratorContext(cache), options?: Parameters<typeof resolveExpression>[2]) => resolveExpression(validateExpression(source).node, context, options);
 
 describe('resolveExpression', () => {
   describe('segments', () => {
-    const collect = (source: string, offset: number, context = new CompilerContext()) => {
+    const collect = (source: string, offset: number, context = new GeneratorContext(cache)) => {
       const segments = new Array<LineMapping>();
       const { expression } = resolveExpression(validateExpression(source, offset).node, context, { resolver: 'root' }, segments);
       return { expression, segments };
@@ -45,7 +48,7 @@ describe('resolveExpression', () => {
     });
 
     it('maps the whole access of an identifier read through the context, and the name of a shorthand property', () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addIdentifier('item', 'signal');
 
       const { expression, segments } = collect('{ item }', 0, context);
@@ -55,7 +58,7 @@ describe('resolveExpression', () => {
     });
 
     it('maps the read of a narrowed signal onto the call, keeping the mappings of the call', () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addSignalClassField('user');
       const segments = new Array<LineMapping>();
 
@@ -73,7 +76,7 @@ describe('resolveExpression', () => {
 
     it('collects no segment for an expression validated without offset', () => {
       const segments = new Array<LineMapping>();
-      resolveExpression(validateExpression('a + b').node, new CompilerContext(), {}, segments);
+      resolveExpression(validateExpression('a + b').node, new GeneratorContext(cache), {}, segments);
 
       expect(segments).toEqual([]);
     });
@@ -84,34 +87,34 @@ describe('resolveExpression', () => {
   });
 
   it('uses a custom resolver', () => {
-    expect(resolve('items', new CompilerContext(), { resolver: 'ctx' })).toEqual({ expression: 'ctx.items' });
+    expect(resolve('items', new GeneratorContext(cache), { resolver: 'ctx' })).toEqual({ expression: 'ctx.items' });
   });
 
   it('emits the bare identifier when the resolver is empty', () => {
-    expect(resolve('items', new CompilerContext(), { resolver: '' })).toEqual({ expression: 'items' });
+    expect(resolve('items', new GeneratorContext(cache), { resolver: '' })).toEqual({ expression: 'items' });
   });
 
   it('resolves a local identifier named like a global to the local value, keeping window and globalThis for the global', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('Math');
     expect(resolve('Math', context)).toEqual({ expression: 'this.Math', reactive: true });
     expect(resolve('window.Math.PI + globalThis.Math.E', context)).toEqual({ expression: 'window.Math.PI + globalThis.Math.E' });
   });
 
   it('resolves a non-signal class member named like a global through the resolver', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addShadowingMember('name');
     expect(resolve('name', context)).toEqual({ expression: 'this.name' });
     expect(resolve('name', context, { resolver: 'root' })).toEqual({ expression: 'root.name' });
     expect(resolve('window.name', context)).toEqual({ expression: 'window.name' });
-    expect(resolve('name', new CompilerContext(new CompilerContext()))).toEqual({ expression: 'name' });
+    expect(resolve('name', new GeneratorContext(new GeneratorContext(cache)))).toEqual({ expression: 'name' });
   });
 
   it('drops the non-null assertion, resolving the value it applies to', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('user');
     expect(resolve('user()!.name', context)).toEqual({ expression: 'this.user().name', reactive: true });
-    expect(resolve('items!', new CompilerContext())).toEqual({ expression: 'this.items' });
+    expect(resolve('items!', new GeneratorContext(cache))).toEqual({ expression: 'this.items' });
     expect(resolve('(a! + b!)!')).toEqual({ expression: '(this.a + this.b)' });
   });
 
@@ -120,14 +123,14 @@ describe('resolveExpression', () => {
   });
 
   it('keeps the non-null assertion when asked to', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('user');
     expect(resolve('user()!.name', context, { preserveNonNull: true })).toEqual({ expression: 'this.user()!.name', reactive: true });
     expect(resolve('window.name!.length', undefined, { preserveNonNull: true })).toEqual({ expression: 'window.name!.length' });
   });
 
   it('resolves signal class fields as reactive this-members', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
     expect(resolve('count', context)).toEqual({ expression: 'this.count', reactive: true });
   });
@@ -136,7 +139,7 @@ describe('resolveExpression', () => {
     ['signal', true],
     ['value', false]
   ] as const)('leaves unresolvable %s identifiers untouched', (kind, reactive) => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addUnresolvableIdentifier('$event', kind);
     expect(resolve('$event', context)).toEqual({ expression: '$event', reactive });
   });
@@ -145,17 +148,17 @@ describe('resolveExpression', () => {
     ['signal', true],
     ['value', false]
   ] as const)('resolves declared %s identifiers through the context', (kind, reactive) => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addIdentifier('item', kind);
     expect(resolve('item', context)).toEqual({ expression: 'context.get(\'item\')', reactive });
   });
 
   it('resolves a variable of the template named like a signal member to the variable, which shadows the member', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
-    const forContext = new CompilerContext(context);
+    const forContext = new GeneratorContext(context);
     forContext.addIdentifier('count', 'signal');
-    const eventContext = new CompilerContext(context);
+    const eventContext = new GeneratorContext(context);
     eventContext.addUnresolvableIdentifier('count');
 
     expect(resolve('count()', forContext)).toEqual({ expression: 'context.get(\'count\')()', reactive: true });
@@ -173,7 +176,7 @@ describe('resolveExpression', () => {
   });
 
   it('keeps the name of a shorthand property, giving it the resolved value', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
     context.addUnresolvableIdentifier('$event');
     expect(resolve('[{ b, count, $event, Math }]', context)).toEqual({ expression: '[{ b: this.b, count: this.count, $event, Math }]', reactive: true });
@@ -194,7 +197,7 @@ describe('resolveExpression', () => {
   });
 
   it('propagates reactivity from any part of the expression', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('a');
     expect(resolve('a + b', context).reactive).toBe(true);
     expect(resolve('b + c', context).reactive).toBeUndefined();
@@ -205,7 +208,7 @@ describe('resolveExpression', () => {
   });
 
   it('reads a narrowed signal called without arguments through its constant, after the call, leaving its other reads untouched', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('user');
     context.addSignalClassField('count');
     const narrowedSignal = (name: string) => name === 'user' ? '__if0_user' : undefined;
@@ -217,24 +220,24 @@ describe('resolveExpression', () => {
   });
 
   it('calls a global named like a narrowed signal', () => {
-    expect(resolve('Date()', new CompilerContext(), { narrowedSignal: () => '__if0_Date' })).toEqual({ expression: 'Date()' });
+    expect(resolve('Date()', new GeneratorContext(cache), { narrowedSignal: () => '__if0_Date' })).toEqual({ expression: 'Date()' });
   });
 
   describe('browserGlobals', () => {
     it('reads the globals of the browser through the given object, leaving the ones of ECMAScript as written', () => {
-      expect(resolve('document.title + Math.max(innerWidth, 1) + JSON.stringify(undefined)', new CompilerContext(), { browserGlobals: 'globalThis' }).expression)
+      expect(resolve('document.title + Math.max(innerWidth, 1) + JSON.stringify(undefined)', new GeneratorContext(cache), { browserGlobals: 'globalThis' }).expression)
         .toBe('globalThis.document.title + Math.max(globalThis.innerWidth, 1) + JSON.stringify(undefined)');
     });
 
     it('keeps the name of a shorthand property, giving it the global', () => {
-      expect(resolve('{ window }', new CompilerContext(), { browserGlobals: 'globalThis' }).expression).toBe('({ window: globalThis.window })');
+      expect(resolve('{ window }', new GeneratorContext(cache), { browserGlobals: 'globalThis' }).expression).toBe('({ window: globalThis.window })');
     });
 
     it('resolves a member or a variable of the template named like a global of the browser as without the option', () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addShadowingMember('name');
       context.addSignalClassField('status');
-      const blockContext = new CompilerContext(context);
+      const blockContext = new GeneratorContext(context);
       blockContext.addIdentifier('location');
 
       expect(resolve('name + status() + location', blockContext, { browserGlobals: 'globalThis' })).toEqual({

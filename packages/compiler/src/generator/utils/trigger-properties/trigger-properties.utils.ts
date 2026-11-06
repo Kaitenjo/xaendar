@@ -1,6 +1,6 @@
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
-import type { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import type { GeneratorContext } from '../../context/context';
 import { resolveExpression } from '../generator/generator.utils';
 
 /**
@@ -13,16 +13,16 @@ import { resolveExpression } from '../generator/generator.utils';
  * // ["triggers: ['idle']", 'when: () => this.ready()']
  *
  * @param node - The block.
- * @param compilerContext - The compiler context of the block.
+ * @param generatorContext - The generator context of the block.
  * @returns The properties, as written in the object literal of the block.
  */
-export function getTriggerProperties(node: HydrateNode | DeferNode, compilerContext: CompilerContext): string[] {
+export function getTriggerProperties(node: HydrateNode | DeferNode, generatorContext: GeneratorContext): string[] {
   const triggers = new Array<string>();
   let when: string | undefined;
   for (let i = 0; i < node.triggers.length; i++) {
     const trigger = node.triggers[i];
     trigger.kind === 'when'
-      ? when = `when: () => ${resolveExpression(trigger.expressionNode, compilerContext).expression}`
+      ? when = `when: () => ${resolveExpression(trigger.expressionNode, generatorContext).expression}`
       : triggers.push(`'${trigger.kind}'`);
   }
 
@@ -31,7 +31,7 @@ export function getTriggerProperties(node: HydrateNode | DeferNode, compilerCont
     properties.push(when);
   }
 
-  const modules = compilerContext.deferredModules?.get(node);
+  const modules = generatorContext.deferredModules?.get(node);
   if (modules?.length) {
     properties.push(`load: () => Promise.all([${modules.map(path => `import(${JSON.stringify(path)})`).join(', ')}])`);
   }

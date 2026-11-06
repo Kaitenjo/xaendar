@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateDefer } from './generate-defer.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as DeferNode;
 
 describe('generateDefer', () => {
   it('passes the triggers and the function rendering the content, a scope of its own rendered before the anchor it receives', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     const node = parse('@defer (idle) { <b></b> }');
     const { code, functionsToProcess } = await generateDefer(node, 'root', '0', context, null);
 
@@ -29,7 +32,7 @@ describe('generateDefer', () => {
 
   it('passes the expression of when, the modules of the content and the functions of the blocks following it, the @error taking the error', async () => {
     const node = parse('@defer (interaction, when ready()) { <b></b> } @error (failure) { <s></s> } @placeholder { <i></i> } @loading { <u></u> }');
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.deferredModules = new Map([[node, ['/src/a.ts']]]);
     const { code, functionsToProcess } = await generateDefer(node, 'root', '1', context, 'anchor');
 
@@ -55,7 +58,7 @@ describe('generateDefer', () => {
   });
 
   it('declares no error for an @error without a name', async () => {
-    const { functionsToProcess } = await generateDefer(parse('@defer (idle) { a } @error { b }'), 'root', '0', new CompilerContext(), null);
+    const { functionsToProcess } = await generateDefer(parse('@defer (idle) { a } @error { b }'), 'root', '0', new GeneratorContext(cache), null);
 
     expect(functionsToProcess!.get('error0')!.fn.precode).toBeUndefined();
   });

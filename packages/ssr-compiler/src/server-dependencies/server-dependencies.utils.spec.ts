@@ -1,4 +1,4 @@
-import type { CompilerCache, ComponentOrDirectiveMetadata } from '@xaendar/compiler';
+import type { ContextCache, ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import { getServerDependencies } from './server-dependencies.utils';
 
@@ -24,7 +24,7 @@ const exportsByName: Record<string, ComponentOrDirectiveMetadata> = {
 
 const cache = {
   getImport: vi.fn(async (imported: string, _local: string, _baseDir: string, path: string) => exportsByName[imported] ?? { type: 'symbol', modulePath: path, reactive: false })
-} as unknown as CompilerCache;
+} as unknown as ContextCache;
 
 /**
  * Keeps the modules a template imports, named as `/src/<name>.ts` after the exports of the modules above.

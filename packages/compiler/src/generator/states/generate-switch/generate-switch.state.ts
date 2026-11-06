@@ -1,6 +1,6 @@
 import { indent } from '@xaendar/common';
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 
@@ -11,21 +11,21 @@ import { getBlockIdentifier, resolveExpression } from '../../utils/generator/gen
  * @param node - The `SwitchNode` to process.
  * @param index - Base variable name prefix for child nodes.
  * @param parentNode - Variable name of the parent DOM node.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @returns An object with the main block code lines and a map of helper functions to register.
  */
-export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
   }
 
-  retVal.code.push(`_switch(${parentNode}, context, ${anchor}, () => ${resolveExpression(node.expression, compilerContext).expression}, [`);
+  retVal.code.push(`_switch(${parentNode}, context, ${anchor}, () => ${resolveExpression(node.expression, generatorContext).expression}, [`);
 
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
     const caseNode = children[i];
-    const caseContext = new CompilerContext(compilerContext);
+    const caseContext = new GeneratorContext(generatorContext);
     const caseKey = caseNode.condition ? getBlockIdentifier('case', parentNode, `${index}_${i}`) : getBlockIdentifier('default', parentNode, index);
 
     retVal.functionsToProcess!.set(caseKey, {

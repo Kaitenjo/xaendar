@@ -1,15 +1,15 @@
 import { slice } from '@xaendar/common';
+import { Dictionary } from '@xaendar/types';
+import globals from 'globals';
 import { Expression, forEachChild, Identifier, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { Span } from '../../../types/span.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
-import { Dictionary } from '@xaendar/types';
-import globals from 'globals';
+import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import type { EmittedNode } from '../../types/emitted-node.type';
+import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 
 /**
  * Complete set of JavaScript global identifiers up to ES2026.
@@ -82,7 +82,7 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  *
  * @param expression - Either a raw identifier string or a validated
  *   `Expression` node produced by `validateExpression`.
- * @param compilerContext - The active template scope context.
+ * @param generatorContext - The active template scope context.
  * @param options - The options of the resolution.
  * @param segments - Optional collector of the mappings of the resolved expression, whose columns are relative to its start.
  * @returns The resolved expression as a JavaScript string ready for codegen.
@@ -102,8 +102,8 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * // typeof id !== 'boolean' || pippo instanceof HTMLElement
  * // → typeof this.id !== 'boolean' || this.pippo instanceof HTMLElement
  */
-export function resolveExpression(expression: Expression, compilerContext: CompilerContext, options?: ResolveExpressionOptions, segments?: LineMapping[]): { expression: string, reactive?: boolean } {
-  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
+export function resolveExpression(expression: Expression, generatorContext: CompilerContext, options?: ResolveExpressionOptions, segments?: LineMapping[]): { expression: string, reactive?: boolean } {
+  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, generatorContext, mapDefaultOptions(options));
 
   /*
     An expression starting with an object literal is wrapped in parentheses: where the generated code
@@ -148,14 +148,14 @@ function segmentOf(text: string, span: Span | undefined, columnStart = 0): LineM
  * - Otherwise recurses into children and concatenates their output.
  */
 
-function emitNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
+function emitNode(node: Node, parent: Node, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
   /*
     A signal an `@if` narrows is read through the constant holding its value, which TypeScript narrows: the call is kept
     before it, so that the features of the editor still find the signal (`(root.item(), __if12_item)`)
   */
   const callee = getSignalCallee(node);
-  const narrowed = callee && needsResolution(callee, node, compilerContext, options) ? options.narrowedSignal(callee.text) : undefined;
-  const emitted = emitResolvedNode(node, parent, compilerContext, options);
+  const narrowed = callee && needsResolution(callee, node, generatorContext, options) ? options.narrowedSignal(callee.text) : undefined;
+  const emitted = emitResolvedNode(node, parent, generatorContext, options);
   if (!narrowed) {
     return emitted;
   }
@@ -186,17 +186,17 @@ export function getSignalCallee(node: Node): Identifier | undefined {
  *
  * @param node - The node to emit.
  * @param parent - The parent of the node.
- * @param compilerContext - The active template scope context.
+ * @param generatorContext - The active template scope context.
  * @param options - The options of the resolution.
  * @returns The emitted text, with its mappings.
  */
-function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
+function emitResolvedNode(node: Node, parent: Node, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
   const span = getTemplateSpan(node);
 
   // Leaf Identifier that needs resolution
-  if (isIdentifier(node) && needsResolution(node, parent, compilerContext, options)) {
+  if (isIdentifier(node) && needsResolution(node, parent, generatorContext, options)) {
     const text = node.text;
-    const resolved = resolveIdentifier(text, compilerContext, options);
+    const resolved = resolveIdentifier(text, generatorContext, options);
 
     // A shorthand property ({ name }) keeps its name, and takes the resolved value
     const expression = isShorthandPropertyAssignment(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
@@ -207,11 +207,11 @@ function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerCon
 
   // The non-null assertion (`value!`) is TypeScript only: unless kept for the type-check code, it is dropped and the value it applies to is emitted
   if (!options.preserveNonNull && isNonNullExpression(node)) {
-    return emitNode(node.expression, node, compilerContext, options);
+    return emitNode(node.expression, node, generatorContext, options);
   }
 
   // No resolvable identifiers nor non-null assertions to drop in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent, compilerContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -245,7 +245,7 @@ function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerCon
   };
 
   forEachChild(node, child => {
-    append(lastEnd, child.getStart(), emitNode(child, node, compilerContext, options));
+    append(lastEnd, child.getStart(), emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
 
@@ -260,33 +260,33 @@ function emitResolvedNode(node: Node, parent: Node, compilerContext: CompilerCon
  * The variables of the template shadow the members and the imported names, as the type-check code reads them.
  *
  * @param text - The name of the identifier.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @param options - The options of the resolution.
  * @returns The resolved access expression, and whether it reads a signal.
  */
-function resolveIdentifier(text: string, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
-  if (compilerContext.hasUnresolvableIdentifier(text)) {
-    return { expression: text, reactive: compilerContext.getUnresolvableIdentifierKind(text) === 'signal' };
+function resolveIdentifier(text: string, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
+  if (generatorContext.hasUnresolvableIdentifier(text)) {
+    return { expression: text, reactive: generatorContext.getUnresolvableIdentifierKind(text) === 'signal' };
   }
 
-  if (compilerContext.hasIdentifier(text)) {
-    const kind = compilerContext.getIdentifierKind(text);
+  if (generatorContext.hasIdentifier(text)) {
+    const kind = generatorContext.getIdentifierKind(text);
     return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
   }
 
   const member = options.resolver ? `${options.resolver}.${text}` : text;
-  if (compilerContext.hasSignalField(text)) {
+  if (generatorContext.hasSignalField(text)) {
     return { expression: member, reactive: true };
   }
 
-  const imported = compilerContext.getImportedIdentifier(text);
+  const imported = generatorContext.getImportedIdentifier(text);
   if (imported) {
     imported.used = true;
     return { expression: imported.expression, reactive: imported.kind === 'signal' };
   }
 
   // A global of the browser reaches here only when it is read through `browserGlobals`, unless a member shadows it
-  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !compilerContext.hasShadowingMember(text)) {
+  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !generatorContext.hasShadowingMember(text)) {
     return { expression: `${options.browserGlobals}.${text}` };
   }
 
@@ -301,12 +301,12 @@ function resolveIdentifier(text: string, compilerContext: CompilerContext, optio
  *
  * @param node - The root of the subtree.
  * @param parent - The parent of the root.
- * @param compilerContext - The active template scope context.
+ * @param generatorContext - The active template scope context.
  * @param options - The options of the resolution.
  * @returns Whether the subtree contains an identifier to resolve.
  */
-function containsResolvableIdentifier(node: Node, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
-  if (isIdentifier(node) && needsResolution(node, parent, compilerContext, options)) {
+function containsResolvableIdentifier(node: Node, parent: Node, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
+  if (isIdentifier(node) && needsResolution(node, parent, generatorContext, options)) {
     return true;
   }
 
@@ -314,7 +314,7 @@ function containsResolvableIdentifier(node: Node, parent: Node, compilerContext:
 
   forEachChild(node, child => {
     if (!found) {
-      found = containsResolvableIdentifier(child, node, compilerContext, options);
+      found = containsResolvableIdentifier(child, node, generatorContext, options);
     }
   });
 
@@ -350,17 +350,17 @@ function containsNonNullExpression(node: Node): boolean {
  *
  * @param node - The identifier.
  * @param parent - The parent of the identifier.
- * @param compilerContext - The active template scope context.
+ * @param generatorContext - The active template scope context.
  * @param options - The options of the resolution.
  * @returns Whether the identifier is resolved.
  */
-function needsResolution(node: Identifier, parent: Node, compilerContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
+function needsResolution(node: Identifier, parent: Node, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): boolean {
   const { text } = node;
-  const isLocal = compilerContext.hasSignalField(text)
-    || compilerContext.hasShadowingMember(text)
-    || compilerContext.hasUnresolvableIdentifier(text)
-    || compilerContext.hasIdentifier(text)
-    || !!compilerContext.getImportedIdentifier(text);
+  const isLocal = generatorContext.hasSignalField(text)
+    || generatorContext.hasShadowingMember(text)
+    || generatorContext.hasUnresolvableIdentifier(text)
+    || generatorContext.hasIdentifier(text)
+    || !!generatorContext.getImportedIdentifier(text);
   const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
 
   return !(

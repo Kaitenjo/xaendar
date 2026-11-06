@@ -2,20 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
-import type { CompilerCache } from '../../../types/compiler-cache.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { ComponentPropertyMetadata } from '../../../type-checker/models/component-property-metadata/component-property-metadata.model';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateElement } from './generate-element.state';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as ElementNode;
 
-const cacheWith = (properties: Record<string, ComponentPropertyMetadata>): CompilerCache => ({
+const cacheWith = (properties: Record<string, ComponentPropertyMetadata>): ContextCache => ({
   getOrInsert: async () => ({ properties: new Map(Object.entries(properties)) }) as never,
   getImport: () => Promise.reject(new Error('No import')),
   set: () => undefined
 });
 
-const run = async (template: string, context = new CompilerContext(), anchor: string | null = null) => generateElement(parse(template), 'root', '0', context, anchor);
+const run = async (template: string, context = new GeneratorContext(cache), anchor: string | null = null) => generateElement(parse(template), 'root', '0', context, anchor);
 
 /**
  * Asserts the generated lines are valid JavaScript statements.
@@ -30,12 +32,12 @@ describe('generateElement', () => {
   });
 
   it('forwards the anchor', async () => {
-    const { code } = await run('<div></div>', new CompilerContext(), 'anchor');
+    const { code } = await run('<div></div>', new GeneratorContext(cache), 'anchor');
     expect(code[0]).toContain('context, anchor, \'div\'');
   });
 
   it('generates literal, expression and reactive attributes', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
     const { code } = await run('<div class="a" title="{heading}" id="{count}"></div>', context);
     const output = code.join('\n');
@@ -56,8 +58,7 @@ describe('generateElement', () => {
     });
 
     it('sets the inputs of a component by the name of their property, the one they are exposed with for the inputs of a host directive, through the setters of the inputs', async () => {
-      const context = new CompilerContext();
-      context.cache = cache;
+      const context = new GeneratorContext(cache);
       context.addSignalClassField('count');
       const { code } = await run('<my-el user-id="u" title="{heading}" count="{count()}" tone="dark" id="main"></my-el>', context);
 
@@ -95,8 +96,7 @@ describe('generateElement', () => {
     });
 
     it('resets an input bound by a conditional binding by the name of its property', async () => {
-      const context = new CompilerContext();
-      context.cache = cache;
+      const context = new GeneratorContext(cache);
       const { code } = await run('<my-el @if (cond()) { user-id="u" }></my-el>', context);
       const output = code.join('\n');
 
@@ -106,8 +106,7 @@ describe('generateElement', () => {
     });
 
     it('does not query the metadata of a component binding no attribute', async () => {
-      const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
+      const context = new GeneratorContext({ getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined });
       const { code } = await run('<my-el></my-el>', context);
 
       expect(code).toEqual(['_renderElement(root, context, null, \'my-el\', [], [], [], [], [], [], null);']);
@@ -140,7 +139,7 @@ describe('generateElement', () => {
   });
 
   it('calls a method of a member on that member', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
     const { code } = await run('<div (click)="helper.run($event)" (focus)="count.set(1)" (blur)="helper?.stop()"></div>', context);
     const output = code.join('\n');
@@ -166,7 +165,7 @@ describe('generateElement', () => {
   });
 
   it('does not leak $event into the context after generating events', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     await run('<div (click)="f($event)"></div>', context);
 
     expect(context.hasUnresolvableIdentifier('$event')).toBe(false);
@@ -187,7 +186,7 @@ describe('generateElement', () => {
   });
 
   it('passes the element ref naming the element after its children, rendering them in the scope of the element', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     const { code, functionsToProcess } = await run('<div #panel><span></span></div>', context);
     expect(code).toEqual([
       '_renderElement(root, context, null, \'div\', [], [], [], [], [], [],',
@@ -204,17 +203,17 @@ describe('generateElement', () => {
   });
 
   it('renders the children of an element a structural directive is applied to in a scope of their own', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     const { functionsToProcess } = await run('<div *visible><span></span></div>', context);
     const childrenContext = functionsToProcess?.get('div0Children')?.fn.context;
     expect(childrenContext).not.toBe(context);
-    expect(childrenContext).toBeInstanceOf(CompilerContext);
+    expect(childrenContext).toBeInstanceOf(GeneratorContext);
   });
 
   it.each([
-    ['an <svg>', '<svg><g /></svg>', 'svg0Children', new CompilerContext(), 'svg'],
-    ['a <math>', '<math><mi /></math>', 'math0Children', new CompilerContext(), 'mathml'],
-    ['a <foreignObject>', '<foreignObject><div /></foreignObject>', 'foreignObject0Children', new CompilerContext(undefined, 'svg'), 'html']
+    ['an <svg>', '<svg><g /></svg>', 'svg0Children', new GeneratorContext(cache), 'svg'],
+    ['a <math>', '<math><mi /></math>', 'math0Children', new GeneratorContext(cache), 'mathml'],
+    ['a <foreignObject>', '<foreignObject><div /></foreignObject>', 'foreignObject0Children', new GeneratorContext(cache, 'svg'), 'html']
   ])('renders the children of %s in a context of their namespace', async (_description, template, key, context, namespace) => {
     const { functionsToProcess } = await run(template, context);
     const childrenContext = functionsToProcess?.get(key)?.fn.context;
@@ -223,7 +222,7 @@ describe('generateElement', () => {
   });
 
   it('renders the children of an element keeping the namespace of its scope in the same context', async () => {
-    const context = new CompilerContext(undefined, 'svg');
+    const context = new GeneratorContext(cache, 'svg');
     const { functionsToProcess } = await run('<g><circle /></g>', context);
     expect(functionsToProcess?.get('g0Children')?.fn.context).toBe(context);
   });
@@ -245,7 +244,7 @@ describe('generateElement', () => {
   });
 
   it('generates the classes toggled on the element before its attributes, with a setter toggling them, so that writing class finds them', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addSignalClassField('active');
     const { code } = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{size > 1}"></div>', context);
 
@@ -424,7 +423,7 @@ describe('generateElement', () => {
     });
 
     it('generates the expression of a @switch and the values of its branches, the @default one having none', async () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addSignalClassField('mode');
       const { code } = await run('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @default { id="y" } }></div>', context);
 
@@ -470,7 +469,7 @@ describe('generateElement', () => {
     });
 
     it('resolves the conditions and the expressions against the current scope', async () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addIdentifier('item');
       const { code } = await run('<div @if (item.active) { title="x" } @switch (item.kind) { @case (1) { id="y" } }></div>', context);
       const output = code.join('\n');
@@ -480,16 +479,14 @@ describe('generateElement', () => {
     });
 
     it('does not query the metadata of a native element', async () => {
-      const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
+      const context = new GeneratorContext({ getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined });
       const { code } = await run('<div @if (cond()) { title="x" }></div>', context);
 
       expect(code.join('\n')).toContain('unbind: _removeAttribute');
     });
 
     it('generates a custom element of another library like a native element, without querying its metadata', async () => {
-      const context = new CompilerContext();
-      context.cache = { getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined };
+      const context = new GeneratorContext({ getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined });
       context.addCustomElementPatterns('sl-*');
       const { code } = await run('<sl-button @if (cond()) { variant="primary" }></sl-button>', context);
 
@@ -558,8 +555,7 @@ describe('generateElement', () => {
     });
 
     it('uses the component metadata to describe known optional properties', async () => {
-      const context = new CompilerContext();
-      context.cache = cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: false }) });
+      const context = new GeneratorContext(cacheWith({ title: new ComponentPropertyMetadata('title', 'string', { required: false }) }));
       const { code } = await run('<my-el @if (cond()) { title="x" } @else { title="y" }></my-el>', context);
       const output = code.join('\n');
 
@@ -575,7 +571,7 @@ describe('generateElement', () => {
     });
 
     it('does not add unbind information for required properties, which the branch selected next binds again', async () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.cache = cacheWith({
         title: new ComponentPropertyMetadata('title', 'string', { required: true }),
         label: new ComponentPropertyMetadata('label', 'string', { required: false })
@@ -645,7 +641,7 @@ describe('generateElement', () => {
 
     it('generates the conditional bindings of a directive, resetting its properties to their default value', async () => {
       const selectors = new Array<string>();
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addSignalClassField('mode');
       context.cache = {
         getOrInsert: async selector => {
@@ -737,8 +733,7 @@ describe('generateElement', () => {
     });
 
     it('generates the expression and the branches of a @switch declared in a directive', async () => {
-      const context = new CompilerContext();
-      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) });
+      const context = new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) }));
       const { code } = await run('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { (toggled)="onToggled()" } })></div>', context);
       const output = code.join('\n');
 
@@ -750,18 +745,17 @@ describe('generateElement', () => {
     });
 
     it('throws when the metadata of a directive property bound inside a conditional binding is not available', async () => {
-      await expect(run('<div @@myDirective(@if (cond()) { display="block" })></div>')).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
+      await expect(run('<div @@myDirective(@if (cond()) { display="block" })></div>', new GeneratorContext({ getOrInsert: async () => undefined } as unknown as ContextCache))).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
     });
 
     it('throws when the directive metadata does not declare a property bound inside a conditional binding', async () => {
-      const context = new CompilerContext();
-      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string') });
+      const context = new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string') }));
 
       await expect(run('<div @@myDirective(@if (cond()) { other="x" })></div>', context)).rejects.toThrow('Unable to resolve the metadata of property "other" of @@myDirective');
     });
 
     it('generates the properties and events of a directive, without unbind information', async () => {
-      const context = new CompilerContext();
+      const context = new GeneratorContext(cache);
       context.addSignalClassField('mode');
       context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) });
       const { code } = await run('<my-el @@myDirective(display="block" mode="{mode}" (toggled)="onToggled($event)")></my-el>', context);

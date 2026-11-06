@@ -1,12 +1,14 @@
-import { CompilerContext, parseTemplate, type DeferNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type DeferNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerDefer } from './generate-server-defer.state';
+
+const cache = {} as ContextCache;
 
 describe('generateServerDefer', () => {
   it('writes only the markers of a block without a placeholder', () => {
     const node = parseTemplate('@defer (idle) { <b></b> } @loading { <i></i> }')[0] as DeferNode;
 
-    expect(generateServerDefer(node, { id: 'ul0', tag: 'ul' }, '2', new CompilerContext())).toEqual({
+    expect(generateServerDefer(node, { id: 'ul0', tag: 'ul' }, '2', new GeneratorContext(cache))).toEqual({
       pieces: [{ html: '<!--xd-d-->' }, { html: '<!--/xd-d-->' }]
     });
   });
@@ -14,7 +16,7 @@ describe('generateServerDefer', () => {
   it('renders the placeholder between the markers of the block, through a function of its own, not the other blocks', () => {
     const node = parseTemplate('@defer (idle) { <b></b> } @placeholder { <i></i> } @loading { <u></u> } @error { <s></s> }')[0] as DeferNode;
 
-    const { pieces, functionsToProcess } = generateServerDefer(node, { id: 'ul0', tag: 'ul' }, '2', new CompilerContext());
+    const { pieces, functionsToProcess } = generateServerDefer(node, { id: 'ul0', tag: 'ul' }, '2', new GeneratorContext(cache));
 
     expect(pieces).toEqual([
       { html: '<!--xd-d-->' },

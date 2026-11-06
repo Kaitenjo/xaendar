@@ -1,12 +1,12 @@
 import { indent } from '@xaendar/common';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 
-export async function generateIf(node: IfNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
-  const ifContext = new CompilerContext(compilerContext);
+export async function generateIf(node: IfNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+  const ifContext = new GeneratorContext(generatorContext);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -17,7 +17,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   retVal.code.push(
     ...indent([
       '{',
-      ...indent([`condition: () => ${resolveExpression(node.conditionNode, compilerContext).expression},`, `block: ${ifKey}.bind(this)`]),
+      ...indent([`condition: () => ${resolveExpression(node.conditionNode, generatorContext).expression},`, `block: ${ifKey}.bind(this)`]),
       '},'
     ])
   );
@@ -30,14 +30,14 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   let alt = node.alternate;
   let i = 0;
   while (alt?.type === ASTNodeType.ElseIf) {
-    const elseIfContext = new CompilerContext(compilerContext);
+    const elseIfContext = new GeneratorContext(generatorContext);
     const elseIfKey = getBlockIdentifier('elseIf', parentNode, `${index}_${i}`);
     const conditionNode = alt.conditionNode;
 
     retVal.code.push(
       ...indent([
         '{',
-        ...indent([`condition: () => ${resolveExpression(conditionNode, compilerContext).expression},`, `block: ${elseIfKey}.bind(this)`]),
+        ...indent([`condition: () => ${resolveExpression(conditionNode, generatorContext).expression},`, `block: ${elseIfKey}.bind(this)`]),
         '},'
       ])
     );
@@ -51,7 +51,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   }
 
   if (alt) {
-    const elseContext = new CompilerContext(compilerContext);
+    const elseContext = new GeneratorContext(generatorContext);
     const elseKey = getBlockIdentifier('else', parentNode, index);
     retVal.code.push(
       ...indent([

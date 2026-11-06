@@ -1,4 +1,4 @@
-import { CompilerContext, getBlockIdentifier, resolveExpression, toStringLiteral, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
+import { GeneratorContext, getBlockIdentifier, resolveExpression, toStringLiteral, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -30,12 +30,12 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  * @param node - The `@for` node.
  * @param parent - Where the body is rendered.
  * @param index - The position of the node among its siblings.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the node, and the function rendering its body.
  */
-export function generateServerFor(node: ForNode, parent: ServerParent, index: string, compilerContext: CompilerContext): ServerTransitionResult {
+export function generateServerFor(node: ForNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
   const { itemAlias } = node;
-  const iterable = resolveExpression(node.iterableExpression, compilerContext, SERVER_RESOLVE_OPTIONS).expression;
+  const iterable = resolveExpression(node.iterableExpression, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
   const implicitNames: Readonly<Record<ForImplicitVariables, string>> = {
     $index: resolveImplicit(node, '$index'),
     $first: resolveImplicit(node, '$first'),
@@ -44,7 +44,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     $odd: resolveImplicit(node, '$odd')
   };
 
-  const context = new CompilerContext(compilerContext);
+  const context = new GeneratorContext(generatorContext);
   if (itemAlias) {
     context.addIdentifier(itemAlias, 'signal');
   }
@@ -69,7 +69,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     The track expression is written as the client writes it: a function outside of the context of the items, whose
     parameters are the item and the implicit variables, read as written
   */
-  const trackContext = new CompilerContext(compilerContext);
+  const trackContext = new GeneratorContext(generatorContext);
   if (itemAlias) {
     trackContext.addUnresolvableIdentifier(itemAlias, 'signal');
   }

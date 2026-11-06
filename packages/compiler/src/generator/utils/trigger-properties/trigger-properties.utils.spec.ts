@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { getTriggerProperties } from './trigger-properties.utils';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as DeferNode;
 
 describe('getTriggerProperties', () => {
   it('writes the triggers by name, then the expression of when and the modules of the content', () => {
     const node = parse('@defer (visible, when ready(), idle) { <b></b> }');
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.deferredModules = new Map([[node, ['/src/a.ts', '/src/b.ts']]]);
 
     expect(getTriggerProperties(node, context)).toEqual([
@@ -21,7 +24,7 @@ describe('getTriggerProperties', () => {
   });
 
   it('writes no trigger by name when only when triggers the block, and nothing to load without modules', () => {
-    expect(getTriggerProperties(parse('@defer (when ready()) { <b></b> }'), new CompilerContext())).toEqual(['triggers: []', 'when: () => this.ready()']);
-    expect(getTriggerProperties(parse('@defer (load) { <b></b> }'), new CompilerContext())).toEqual(['triggers: [\'load\']']);
+    expect(getTriggerProperties(parse('@defer (when ready()) { <b></b> }'), new GeneratorContext(cache))).toEqual(['triggers: []', 'when: () => this.ready()']);
+    expect(getTriggerProperties(parse('@defer (load) { <b></b> }'), new GeneratorContext(cache))).toEqual(['triggers: [\'load\']']);
   });
 });

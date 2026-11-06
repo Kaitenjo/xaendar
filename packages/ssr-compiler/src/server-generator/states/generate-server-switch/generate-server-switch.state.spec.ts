@@ -1,12 +1,14 @@
-import { CompilerContext, parseTemplate, type SwitchNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type SwitchNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerSwitch } from './generate-server-switch.state';
+
+const cache = {} as ContextCache;
 
 /**
  * Generates the code of a `@switch` written at the root of a template.
  */
 const generate = (source: string) => {
-  const context = new CompilerContext();
+  const context = new GeneratorContext(cache);
   context.addSignalClassField('kind');
   return generateServerSwitch(parseTemplate(source)[0] as SwitchNode, { id: 'root' }, '0', context);
 };

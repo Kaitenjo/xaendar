@@ -1,6 +1,6 @@
 import { indent } from '@xaendar/common';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
@@ -16,15 +16,15 @@ import { getTriggerProperties } from '../../utils/trigger-properties/trigger-pro
  * @param node - The defer node.
  * @param parentNode - Variable name of the parent DOM node.
  * @param index - The index of the node among its siblings.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @param anchor - The name of the anchor variable the block is rendered before, or `null` to append it.
  * @returns The generated code, and the functions of the content and of the blocks following it.
  */
-export async function generateDefer(node: DeferNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
-  const properties = getTriggerProperties(node, compilerContext);
+export async function generateDefer(node: DeferNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+  const properties = getTriggerProperties(node, generatorContext);
   const functionsToProcess = new Map<string, GeneratorFunctionToProcess>();
 
-  const addBlock = (property: 'content' | 'placeholder' | 'loading' | 'error', prefix: 'defer' | 'placeholder' | 'loading' | 'error', block: GeneratorFunctionToProcess['fn']['node'], context = new CompilerContext(compilerContext), precode?: string) => {
+  const addBlock = (property: 'content' | 'placeholder' | 'loading' | 'error', prefix: 'defer' | 'placeholder' | 'loading' | 'error', block: GeneratorFunctionToProcess['fn']['node'], context = new GeneratorContext(generatorContext), precode?: string) => {
     const key = getBlockIdentifier(prefix, parentNode, index);
     properties.push(`${property}: ${key}.bind(this)`);
     const args = [key, 'parentContext', 'anchor', 'nodeStrategy'];
@@ -46,7 +46,7 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
 
   if (node.error) {
     const { name } = node.error;
-    const errorContext = new CompilerContext(compilerContext);
+    const errorContext = new GeneratorContext(generatorContext);
     if (name) {
       errorContext.addIdentifier(name, 'value');
     }

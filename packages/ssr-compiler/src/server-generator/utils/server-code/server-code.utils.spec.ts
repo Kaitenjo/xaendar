@@ -1,6 +1,8 @@
-import { CompilerContext, parseTemplate, type IfNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type IfNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { SERVER_RESOLVE_OPTIONS, toArrayLiteral, toBlockFunction, toStatements } from './server-code.utils';
+
+const cache = {} as ContextCache;
 
 describe('toStatements', () => {
   it('pushes the HTML and the values following each other together, merging the adjacent HTML', () => {
@@ -37,13 +39,13 @@ describe('toArrayLiteral', () => {
 describe('toBlockFunction', () => {
   it('describes a scope of its own rendered where the control flow is, taking the output and the context', () => {
     const node = parseTemplate('@if (x) { a }')[0] as IfNode;
-    const compilerContext = new CompilerContext();
+    const generatorContext = new GeneratorContext(cache);
 
-    const { fn, args } = toBlockFunction(node, 'if0', { id: 'root', tag: 'ul' }, compilerContext);
+    const { fn, args } = toBlockFunction(node, 'if0', { id: 'root', tag: 'ul' }, generatorContext);
 
     expect(fn.node).toBe(node);
     expect(fn.parent).toEqual({ id: 'if0', tag: 'ul' });
-    expect(fn.context).not.toBe(compilerContext);
+    expect(fn.context).not.toBe(generatorContext);
     expect(args).toEqual(['out', 'parentContext']);
   });
 });

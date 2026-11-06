@@ -1,7 +1,7 @@
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import type { TemplateParameterNode } from '../../../parser/types/nodes/template-parameter-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';

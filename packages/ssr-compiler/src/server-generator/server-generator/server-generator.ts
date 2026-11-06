@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, CompilerContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentMetadata, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -79,17 +79,19 @@ export class ServerGenerator {
   /**
    * Generates the code of the children of an element in the function being written, as the states call it.
    */
-  private readonly _generateChildren: GenerateChildren = (nodes, parent, compilerContext) => this._generateNodes(nodes, parent, compilerContext);
+  private readonly _generateChildren: GenerateChildren = (nodes, parent, generatorContext) => this._generateNodes(nodes, parent, generatorContext);
 
   /**
    * Creates a generator for the AST of a template.
    *
    * @param _input - The source of the template, quoted by the errors.
    * @param _ast - The AST of the template.
+   * @param _cache - The cache of the metadata, held by the root generator context.
    */
   constructor(
     private readonly _input: string,
-    private readonly _ast: ASTNode[]
+    private readonly _ast: ASTNode[],
+    private readonly _cache: ContextCache
   ) { }
 
   /**
@@ -108,28 +110,28 @@ export class ServerGenerator {
   public generate(signals: readonly string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], islands?: ReadonlySet<string>, clientComponents?: readonly ComponentMetadata[]): string {
     try {
       this._functions.clear();
-      const compilerContext = new CompilerContext();
+      const generatorContext = new GeneratorContext(this._cache);
       for (let i = 0; i < signals.length; i++) {
-        compilerContext.addSignalClassField(signals[i]);
+        generatorContext.addSignalClassField(signals[i]);
       }
 
       for (let i = 0; i < shadowingMembers.length; i++) {
-        compilerContext.addShadowingMember(shadowingMembers[i]);
+        generatorContext.addShadowingMember(shadowingMembers[i]);
       }
 
       if (customElements.length) {
-        compilerContext.addCustomElementPatterns(...customElements);
+        generatorContext.addCustomElementPatterns(...customElements);
       }
 
       if (islands?.size) {
         for (const island of islands) {
-          compilerContext.addIsland(island);
+          generatorContext.addIsland(island);
         }
       }
 
       if (clientComponents?.length) {
         for (let i = 0; i < clientComponents.length; i++) {
-          compilerContext.addClientComponent(clientComponents[i]);
+          generatorContext.addClientComponent(clientComponents[i]);
         }
       }
 
@@ -137,10 +139,10 @@ export class ServerGenerator {
       for (let i = 0; i < symbols.length; i++) {
         const symbol = symbols[i];
         assertImportableSymbol(symbol);
-        compilerContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
+        generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      const root = this._writeBody(this._ast, { id: ROOT_NODE }, compilerContext, 'const context = new _Context({ get: () => undefined });');
+      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, 'const context = new _Context({ get: () => undefined });');
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
         const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'const context = new _Context(parentContext);', fn.precode);
@@ -148,12 +150,12 @@ export class ServerGenerator {
       }
 
       // Read by the event contract of the page: a template without listeners adds nothing
-      if (compilerContext.eventNames.size) {
-        code.push('', `render.events = ${JSON.stringify(Array.from(compilerContext.eventNames))};`);
+      if (generatorContext.eventNames.size) {
+        code.push('', `render.events = ${JSON.stringify(Array.from(generatorContext.eventNames))};`);
       }
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
-      const imports = symbols.filter(({ local }) => compilerContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
+      const imports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
       return RUNTIME_IMPORTS.concat(imports, code).join('\n');
     } catch (error) {
       throw formatErrorWithPrefix('Server generator', this._input, error);
@@ -170,18 +172,18 @@ export class ServerGenerator {
    *
    * @param nodes - The nodes the function renders.
    * @param parent - Where the nodes are rendered.
-   * @param compilerContext - The compiler context of the nodes.
+   * @param generatorContext - The generator context of the nodes.
    * @param contextDeclaration - The statement creating the runtime context of the function.
    * @param precode - The code preparing the context, e.g. declaring the item of a `@for`, if any.
    * @returns The lines of the body.
    */
-  private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, compilerContext: CompilerContext, contextDeclaration: string, precode?: string): string[] {
+  private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, contextDeclaration: string, precode?: string): string[] {
     const lines = [contextDeclaration];
     if (precode) {
       lines.push(...precode.split('\n'));
     }
 
-    const declarations = declareScope(nodes, compilerContext, toTemplateFunction, '_ssrTemplate');
+    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate');
     if (declarations) {
       lines.push(...declarations.code);
       // The functions of the templates, the only ones of the declarations, always declare their parameters (see toTemplateFunction)
@@ -190,7 +192,7 @@ export class ServerGenerator {
       }
     }
 
-    const { pieces, functionsToProcess } = this._generateNodes(nodes, parent, compilerContext);
+    const { pieces, functionsToProcess } = this._generateNodes(nodes, parent, generatorContext);
     const statements = toStatements(pieces);
     for (let i = 0; i < statements.length; i++) {
       lines.push(statements[i]);
@@ -208,14 +210,14 @@ export class ServerGenerator {
    *
    * @param nodes - The nodes.
    * @param parent - Where the nodes are rendered.
-   * @param compilerContext - The compiler context of the nodes.
+   * @param generatorContext - The generator context of the nodes.
    * @returns The code of the nodes, and the functions it calls.
    * @throws If a node has no state.
    */
-  private _generateNodes(nodes: readonly ASTNode[], parent: ServerParent, compilerContext: CompilerContext): Required<ServerTransitionResult> {
+  private _generateNodes(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext): Required<ServerTransitionResult> {
     const pieces = new Array<ServerCodePiece>();
     const functionsToProcess = new Map<string, ServerFunctionToProcess>();
-    const separators = getTextSeparators(nodes, parent.tag, compilerContext.namespace);
+    const separators = getTextSeparators(nodes, parent.tag, generatorContext.namespace);
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
       const state = this._states[node.type];
@@ -227,7 +229,7 @@ export class ServerGenerator {
         pieces.push({ html: TEXT_MARKER });
       }
 
-      const result = state(node as never, parent, i.toString(), compilerContext, this._generateChildren);
+      const result = state(node as never, parent, i.toString(), generatorContext, this._generateChildren);
       if (!result) {
         continue;
       }
@@ -264,12 +266,12 @@ function skipNode(): undefined {
  * @param template - The template.
  * @param key - The name of the function.
  * @param namespace - The namespace the content of the template is created in.
- * @param compilerContext - The compiler context of the scope declaring the template.
+ * @param generatorContext - The generator context of the scope declaring the template.
  * @returns The function, taking the output, the runtime context of the scope declaring the template and the signals of
  *   the parameters.
  */
-function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, compilerContext: CompilerContext): GeneratorFunctionToProcess {
-  const context = new CompilerContext(compilerContext, namespace);
+function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
+  const context = new GeneratorContext(generatorContext, namespace);
   return {
     fn: { node: template, parentNode: key, context, precode: declareTemplateParameters(template, context, SERVER_RESOLVE_OPTIONS).join('\n') },
     args: ['out', 'parentContext', 'params']

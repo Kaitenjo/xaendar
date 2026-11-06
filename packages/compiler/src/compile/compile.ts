@@ -8,7 +8,7 @@ import { ImportNode } from '../parser/types/nodes/import-node.type';
 import { TypeChecker } from '../type-checker/type-checker/type-checker';
 import type { TypeCheckResult } from '../type-checker/types/type-checker-result.type';
 import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result.type';
-import type { CompilerCache } from '../types/compiler-cache.type';
+import type { ContextCache } from '../types/context-cache.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
 import type { SymbolImport } from '../types/symbol-import.type';
 
@@ -74,7 +74,7 @@ export function parseTemplate(input: string): ASTNode[] {
  * @param symbols - The symbols the template imports from modules, if they are resolved.
  * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: CompilerCache, symbols?: readonly SymbolImport[]): Promise<string> {
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: ContextCache, symbols?: readonly SymbolImport[]): Promise<string> {
   return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols);
 }
 
@@ -124,7 +124,7 @@ export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[],
  * @returns The metadata of the components and directives, and the symbols, in the order they are imported.
  * @throws If a module can't be resolved.
  */
-export async function resolveTemplateImports(importNodes: ImportNode[], baseDir: string, cache: Pick<CompilerCache, 'getImport'>): Promise<{ metadatas: ComponentOrDirectiveMetadata[], symbols: SymbolImport[] }> {
+export async function resolveTemplateImports(importNodes: ImportNode[], baseDir: string, cache: Pick<ContextCache, 'getImport'>): Promise<{ metadatas: ComponentOrDirectiveMetadata[], symbols: SymbolImport[] }> {
   const resolutions = new Array<Promise<SymbolImport | ComponentOrDirectiveMetadata>>();
 
   for (let i = 0; i < importNodes.length; i++) {

@@ -1,12 +1,14 @@
-import { CompilerContext, parseTemplate, type ClientNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ClientNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerClient } from './generate-server-client.state';
+
+const cache = {} as ContextCache;
 
 describe('generateServerClient', () => {
   it('writes only the markers of a block without a placeholder', () => {
     const node = parseTemplate('@client { <b></b> }')[0] as ClientNode;
 
-    expect(generateServerClient(node, { id: 'ul0', tag: 'ul' }, '2', new CompilerContext())).toEqual({
+    expect(generateServerClient(node, { id: 'ul0', tag: 'ul' }, '2', new GeneratorContext(cache))).toEqual({
       pieces: [{ html: '<!--xd-c-->' }, { html: '<!--/xd-c-->' }]
     });
   });
@@ -14,7 +16,7 @@ describe('generateServerClient', () => {
   it('renders the placeholder between the markers of the block, through a function of its own, not the content', () => {
     const node = parseTemplate('@client { <b></b> } @placeholder { <i></i> }')[0] as ClientNode;
 
-    const { pieces, functionsToProcess } = generateServerClient(node, { id: 'ul0', tag: 'ul' }, '2', new CompilerContext());
+    const { pieces, functionsToProcess } = generateServerClient(node, { id: 'ul0', tag: 'ul' }, '2', new GeneratorContext(cache));
 
     expect(pieces).toEqual([
       { html: '<!--xd-c-->' },

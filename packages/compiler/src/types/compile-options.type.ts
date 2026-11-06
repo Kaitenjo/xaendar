@@ -1,4 +1,4 @@
-import { CompilerCache } from './compiler-cache.type';
+import { ContextCache } from './context-cache.type';
 
 /**
  * Configuration options for the compile function.
@@ -84,5 +84,5 @@ export type CompileOptions = {
    * Improves compilation performance by caching extracted metadata,
    * avoiding redundant parsing and extraction of imported components.
    */
-  cache: CompilerCache
+  cache: ContextCache
 }

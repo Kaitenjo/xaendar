@@ -1,4 +1,4 @@
-import { CompilerContext } from '../../../generator/models/compiler-context/compiler-context.model';
+import { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
@@ -14,7 +14,7 @@ import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
  * import-specific functionality.
  */
 export class TypeCheckContext extends CompilerContext {
-    /**
+  /**
    * Parent context representing the enclosing scope.
    */
   protected declare parent: TypeCheckContext | undefined;
@@ -70,7 +70,7 @@ export class TypeCheckContext extends CompilerContext {
    *   of the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
   constructor(parent?: TypeCheckContext, namespace?: ElementNamespace) {
-    super(parent as any, namespace);
+    super(parent, namespace);
   }
   
   /**

@@ -2,13 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Parser } from '../parser/parser/parser';
 import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
-import type { CompilerCache } from '../types/compiler-cache.type';
+import type { ContextCache } from '../types/context-cache.type';
 import type { ImportedSymbol } from '../types/imported-symbol.type';
 import { TemplateError } from '../models/template-error/template-error.model';
 import { compile, parseTemplate, typeCheckTemplate, typeCheckTemplateTolerant } from './compile';
 
 const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };
-const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), getImport: vi.fn(async () => component as never), set: vi.fn() }) satisfies CompilerCache;
+const createCache = () => ({ getOrInsert: vi.fn(async () => component as never), getImport: vi.fn(async () => component as never), set: vi.fn() }) satisfies ContextCache;
 
 /**
  * A cache resolving every import as a symbol of `/base/utils.ts`, reactive for the given names.
@@ -16,7 +16,7 @@ const createCache = () => ({ getOrInsert: vi.fn(async () => component as never),
 const createSymbolCache = (...reactive: string[]) => ({
   ...createCache(),
   getImport: vi.fn(async (imported: string): Promise<ImportedSymbol> => ({ type: 'symbol', modulePath: '/base/utils.ts', reactive: reactive.includes(imported) }))
-}) satisfies CompilerCache;
+}) satisfies ContextCache;
 
 describe('compile', () => {
   afterEach(() => {
@@ -66,7 +66,7 @@ describe('compile', () => {
 
   it('compiles a @hydrate loading the modules of the components only its content renders, and type-checks the expression of when', async () => {
     const declaring = (selector: string) => ({ ...component, selector, className: selector, typescriptNodes: { klass: { getSourceFile: () => ({ fileName: `/base/${selector}.ts` }) } } });
-    const cache: CompilerCache = {
+    const cache: ContextCache = {
       getOrInsert: async selector => declaring(selector) as never,
       getImport: async imported => declaring(imported.replace('_', '-')) as never,
       set: () => undefined

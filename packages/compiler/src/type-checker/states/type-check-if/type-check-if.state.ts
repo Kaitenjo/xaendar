@@ -1,7 +1,7 @@
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, plain } from '../../utils/line-builder/line-builder.utils';

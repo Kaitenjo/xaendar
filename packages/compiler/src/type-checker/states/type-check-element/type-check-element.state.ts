@@ -21,7 +21,7 @@ import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import type { Span } from '../../../types/span.type';
 import type { Line } from '../../types/line.type';
 import type { LineMapping } from '../../types/line-mapping.type';

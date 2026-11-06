@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { CompilerContext, toStringLiteral, type ASTNode, type ResolveExpressionOptions } from '@xaendar/compiler';
+import { GeneratorContext, toStringLiteral, type ASTNode, type ResolveExpressionOptions } from '@xaendar/compiler';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
@@ -72,12 +72,12 @@ export function toArrayLiteral(lines: string[]): string[] {
  * @param node - The node of the block.
  * @param key - The name of the function.
  * @param parent - Where the control flow is rendered.
- * @param compilerContext - The compiler context of the control flow.
+ * @param generatorContext - The generator context of the control flow.
  * @returns The function, taking the output and the runtime context of the control flow.
  */
-export function toBlockFunction(node: Extract<ASTNode, { children: ASTNode[] }>, key: string, parent: ServerParent, compilerContext: CompilerContext): ServerFunctionToProcess {
+export function toBlockFunction(node: Extract<ASTNode, { children: ASTNode[] }>, key: string, parent: ServerParent, generatorContext: GeneratorContext): ServerFunctionToProcess {
   return {
-    fn: { node, context: new CompilerContext(compilerContext), parent: { id: key, tag: parent.tag } },
+    fn: { node, context: new GeneratorContext(generatorContext), parent: { id: key, tag: parent.tag } },
     args: ['out', 'parentContext']
   };
 }

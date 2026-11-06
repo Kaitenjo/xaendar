@@ -1,5 +1,5 @@
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { resolveExpression } from '../../utils/generator/generator.utils';
 
@@ -15,11 +15,11 @@ import { resolveExpression } from '../../utils/generator/generator.utils';
  * @param node - The `LetNode` to process.
  * @param _parentNode - Unused variable name of the parent DOM node.
  * @param _index - Unused index of the node among its siblings.
- * @param compilerContext - Current render scope context.
+ * @param generatorContext - Current render scope context.
  * @param _anchor - Unused anchor variable name.
  * @returns The generated code.
  */
-export async function generateLet(node: LetNode, _parentNode: string, _index: string, compilerContext: CompilerContext, _anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
-  const { expression, reactive } = resolveExpression(node.value, compilerContext);
+export async function generateLet(node: LetNode, _parentNode: string, _index: string, generatorContext: GeneratorContext, _anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+  const { expression, reactive } = resolveExpression(node.value, generatorContext);
   return { code: [`context.set('${node.name}', ${reactive ? `_let(() => ${expression})` : expression});`] };
 }

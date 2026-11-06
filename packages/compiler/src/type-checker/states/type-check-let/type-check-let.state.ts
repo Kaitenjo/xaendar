@@ -1,7 +1,7 @@
 import { resolveExpression, ROOT_NODE } from '../../../generator/utils/generator/generator.utils';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
-import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import type { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line } from '../../utils/line-builder/line-builder.utils';

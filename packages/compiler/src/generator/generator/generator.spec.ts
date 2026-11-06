@@ -5,9 +5,12 @@ import { ASTNode } from '../../parser/types/ast.type';
 import type { ElementNode } from '../../parser/types/nodes/element-node.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import { Generator } from './generator';
+import type { ContextCache } from '../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
-const generate = (template: string, signals: string[] = []) => new Generator(template, parse(template)).generate(signals);
+const generate = (template: string, signals: string[] = []) => new Generator(template, parse(template), cache).generate(signals);
 
 describe('Generator', () => {
   it('wraps the generated nodes in a module-level render function', async () => {
@@ -166,7 +169,7 @@ describe('Generator', () => {
 
   it('reads the class members named like a global from the component', async () => {
     const template = '{name}';
-    const code = await new Generator(template, parse(template)).generate([], ['name']);
+    const code = await new Generator(template, parse(template), cache).generate([], ['name']);
     expect(code).toContain('() => this.name');
   });
 
@@ -232,7 +235,7 @@ describe('Generator', () => {
     const [, element] = nodes;
     (element as ElementNode).children.unshift(nodes[0]);
 
-    expect(await new Generator(template, nodes).generate([])).not.toContain('import');
+    expect(await new Generator(template, nodes, cache).generate([])).not.toContain('import');
   });
 
   it('registers signals as reactive class fields', async () => {
@@ -260,7 +263,7 @@ describe('Generator', () => {
 
   it('resets the pending functions between generations', async () => {
     const template = '<div><span></span></div>';
-    const generator = new Generator(template, parse(template));
+    const generator = new Generator(template, parse(template), cache);
     const first = await generator.generate([]);
     expect(await generator.generate([])).toBe(first);
   });
@@ -278,8 +281,8 @@ describe('Generator', () => {
   });
 
   it('reports nodes without a registered transition function', async () => {
-    const ast = [{ type: ASTNodeType.Case, span: { start: 0, end: 5 } }] as unknown as ASTNode[];
+    const ast = [{ type: ASTNodeType.Case, span: { start: 0, end: 5 }, children: [] }] as unknown as ASTNode[];
 
-    await expect(new Generator('hello', ast).generate([])).rejects.toThrow('[Generator] No transition function for ASTNode of type Case');
+    await expect(new Generator('hello', ast, cache).generate([])).rejects.toThrow('[Generator] No transition function for ASTNode of type Case');
   });
 });

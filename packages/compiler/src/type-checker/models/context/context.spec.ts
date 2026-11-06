@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
-import { TypeCheckContext } from './type-checker-context';
+import { TypeCheckContext } from './context';
 
 const component = { type: 'component', selector: 'my-a' } as unknown as ComponentMetadata;
 const directive = { type: 'directive', selector: 'my-a' } as unknown as ComponentOrDirectiveMetadata;

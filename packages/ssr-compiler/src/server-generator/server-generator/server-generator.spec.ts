@@ -1,11 +1,13 @@
-import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type SymbolImport } from '@xaendar/compiler';
+import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type SymbolImport, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { ServerGenerator } from './server-generator';
+
+const cache = {} as ContextCache;
 
 /**
  * Generates the server code of a template.
  */
-const generate = (source: string, signals: string[] = [], shadowingMembers?: string[], customElements?: string[], symbols?: SymbolImport[]) => new ServerGenerator(source, parseTemplate(source)).generate(signals, shadowingMembers, customElements, symbols);
+const generate = (source: string, signals: string[] = [], shadowingMembers?: string[], customElements?: string[], symbols?: SymbolImport[]) => new ServerGenerator(source, parseTemplate(source), cache).generate(signals, shadowingMembers, customElements, symbols);
 
 /**
  * A symbol a template imports, as `resolveTemplateImports` resolves it.
@@ -35,7 +37,7 @@ describe('ServerGenerator', () => {
   it('writes the components rendering only in the browser through _ssrClientComponent, in the blocks too, with the names of their inputs', () => {
     const source = '<x-map center="{ here }"></x-map>@if (open) { <x-map></x-map> }<x-card></x-card>';
     const metadata = { selector: 'x-map', clientOnly: { hydrate: 'idle' }, properties: new Map([['center', { name: 'centre', exposed: false }], ['hint', { name: 'tip', exposed: true }]]) } as unknown as ComponentMetadata;
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], [], [], [], new Set(['x-map']), [metadata]);
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], new Set(['x-map']), [metadata]);
 
     expect(code.match(/_ssrClientComponent\(out/g)).toHaveLength(2);
     expect(code.match(/_ssrComponent\(out/g)).toHaveLength(1);
@@ -45,14 +47,14 @@ describe('ServerGenerator', () => {
   it('tells _ssrClientComponent a component is not an island and has no trigger', () => {
     const source = '<x-map></x-map>';
     const metadata = { selector: 'x-map', clientOnly: {}, properties: new Map() } as unknown as ComponentMetadata;
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], [], [], [], undefined, [metadata]);
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [metadata]);
 
     expect(code).toContain('{"inputs":{},"island":false});');
   });
 
   it('writes the events of the template for the event contract, once each, the ones of the blocks and of the conditional bindings included', () => {
     const source = '<button (click)="a()"></button>@if (open) { <i (click)="b()" (focus)="c()"></i> }<p @if (on) { (keydown)="d()" }></p>';
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], []);
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
 
     expect(code).toContain('render.events = ["click","keydown","focus"];');
   });
@@ -60,12 +62,12 @@ describe('ServerGenerator', () => {
   it('writes no events for a template without listeners', () => {
     const source = '<p></p>';
 
-    expect(new ServerGenerator(source, parseTemplate(source)).generate([], [])).not.toContain('render.events');
+    expect(new ServerGenerator(source, parseTemplate(source), cache).generate([], [])).not.toContain('render.events');
   });
 
   it('marks what listens to submit, as HTML or through the runtime', () => {
     const source = '<form (submit)="a()"></form><form [class.on]="{on}" (submit)="b()"></form><form></form>';
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], []);
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
 
     expect(code).toContain('<form data-xd-submit="">');
     expect(code).toContain('{ name: \'data-xd-submit\', value: \'\', setter: _setProperty },');
@@ -74,7 +76,7 @@ describe('ServerGenerator', () => {
 
   it('marks a form when the branch of a conditional binding listens to submit, in that branch only', () => {
     const source = '<form @if (on) { (submit)="a()" } @else { (reset)="b()" }></form>';
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], []);
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
 
     expect(code).toContain('_ssrStartTag(');
     expect(code.match(/data-xd-submit/g)).toHaveLength(1);
@@ -82,7 +84,7 @@ describe('ServerGenerator', () => {
 
   it('writes the interactive components a static template renders through _ssrIsland, in the blocks too', () => {
     const source = '<x-card></x-card><x-counter></x-counter>@if (open) { <x-counter></x-counter> }';
-    const code = new ServerGenerator(source, parseTemplate(source)).generate([], [], [], [], new Set(['x-counter']));
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], new Set(['x-counter']));
 
     expect(code.match(/_ssrIsland\(out/g)).toHaveLength(2);
     expect(code.match(/_ssrComponent\(out/g)).toHaveLength(1);
@@ -183,7 +185,7 @@ describe('ServerGenerator', () => {
   it('throws when a node has no state', () => {
     const node = { type: ASTNodeType.Attribute, span: { start: 0, end: 1 } } as unknown as ASTNode;
 
-    expect(() => new ServerGenerator('x', [node]).generate([])).toThrow('[Server generator] No transition function for ASTNode of type Attribute');
+    expect(() => new ServerGenerator('x', [node], cache).generate([])).toThrow('[Server generator] No transition function for ASTNode of type Attribute');
   });
 
   it('throws when a symbol is imported under a reserved name', () => {

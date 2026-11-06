@@ -1,6 +1,6 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import type { Span } from '../../../types/span.type';

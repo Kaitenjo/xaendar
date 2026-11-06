@@ -1,5 +1,5 @@
 import type { TryNode } from '../../../parser/types/nodes/try-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';

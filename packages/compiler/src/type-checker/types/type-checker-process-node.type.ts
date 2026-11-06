@@ -1,5 +1,5 @@
 import { ASTNode } from '../../parser/types/ast.type';
-import { TypeCheckContext } from '../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../models/context/context';
 import type { Line } from './line.type';
 
 /**

@@ -2,7 +2,7 @@ import type { Function, VoidFunction } from '@xaendar/types';
 import type { ComponentOrDirectiveMetadata } from './component-or-directive-metadata.type';
 import type { ImportedSymbol } from './imported-symbol.type';
 
-export type CompilerCache = {
+export type ContextCache = {
   /**
    * Retrieves cached metadata by key and populates the registry automatically if not present and path is provided.
    * To achieve this, the function must implement a loading mechanism that can fetch files and calls the api to

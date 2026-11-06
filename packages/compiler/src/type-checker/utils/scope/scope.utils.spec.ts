@@ -3,7 +3,7 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { ComponentMetadata } from '../../../types/component-metadata.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import { typeCheckElement } from '../../states/type-check-element/type-check-element.state';
 import { typeCheckTextAndInterpolation } from '../../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';

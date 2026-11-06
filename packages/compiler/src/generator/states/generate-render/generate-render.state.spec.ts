@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateRender } from './generate-render.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as RenderNode;
 
@@ -11,7 +14,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
  * Creates a context declaring the template `row`, whose content is created in the given namespace.
  */
 const withTemplate = (namespace: 'html' | 'svg' = 'html') => {
-  const context = new CompilerContext();
+  const context = new GeneratorContext(cache);
   context.addIdentifier('row');
   context.addTemplate('row', namespace);
   return context;
@@ -39,10 +42,10 @@ describe('generateRender', () => {
   });
 
   it('throws for a name not referring to a template, pointing to it', async () => {
-    await expect(generateRender(parse('@render row()'), 'root', '0', new CompilerContext(), null, false)).rejects.toThrow(new Error('"row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one', { cause: { start: 8, end: 11 } }));
+    await expect(generateRender(parse('@render row()'), 'root', '0', new GeneratorContext(cache), null, false)).rejects.toThrow(new Error('"row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one', { cause: { start: 8, end: 11 } }));
   });
 
   it('throws for a template creating its content in another namespace', async () => {
-    await expect(generateRender(parse('@render row()'), 'root', '0', new CompilerContext(withTemplate('svg')), null, false)).rejects.toThrow('Template "row" is declared among SVG elements, and its content cannot be rendered among HTML elements');
+    await expect(generateRender(parse('@render row()'), 'root', '0', new GeneratorContext(withTemplate('svg')), null, false)).rejects.toThrow('Template "row" is declared among SVG elements, and its content cannot be rendered among HTML elements');
   });
 });

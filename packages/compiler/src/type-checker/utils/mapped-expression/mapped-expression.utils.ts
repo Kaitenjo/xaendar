@@ -2,7 +2,7 @@ import type { Expression } from 'typescript';
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import type { ResolveExpressionOptions } from '../../../generator/types/resolve-expresion-options.type';
 import type { Span } from '../../../types/span.type';
-import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import type { TypeCheckContext } from '../../models/context/context';
 import type { LineMapping } from '../../types/line-mapping.type';
 import { mappedSegments } from '../line-builder/line-builder.utils';
 import type { LinePart } from '../../types/line-part.type';

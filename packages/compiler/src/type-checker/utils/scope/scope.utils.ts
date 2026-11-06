@@ -7,7 +7,7 @@ import type { TemplateNode } from '../../../parser/types/nodes/template-node.typ
 import { visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
-import type { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import type { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped, plain } from '../line-builder/line-builder.utils';

@@ -1,6 +1,6 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 
@@ -22,7 +22,7 @@ import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../
  * }
  * ```
  *
- * The iterable expression is resolved through the active {@link CompilerContext}
+ * The iterable expression is resolved through the active {@link GeneratorContext}
  * like any other template expression. A numeric iterable `n` is turned into
  * `0, 1, ..., n - 1` at runtime by `_for`. When the `item of` part is omitted
  * no item alias is declared, and the item parameter of the track function is `_`.
@@ -34,16 +34,16 @@ import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../
  * @param index - Base variable name prefix used for child nodes and
  *   to produce a unique loop counter identifier.
  * @param parentNode - Variable name of the parent DOM node.
- * @param compilerContext - The enclosing scope context.
+ * @param generatorContext - The enclosing scope context.
  * @returns Array of generated code lines.
  */
-export async function generateFor(node: ForNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateFor(node: ForNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
   }
 
-  const iterableExpr = resolveExpression(node.iterableExpression, compilerContext).expression;
+  const iterableExpr = resolveExpression(node.iterableExpression, generatorContext).expression;
   const itemName = node.itemAlias ?? '_';
 
   const itemsName = getTextIdentifier('items', parentNode, index);
@@ -54,7 +54,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   const lastName = resolveImplicit(node, '$last');
   const evenName = resolveImplicit(node, '$even');
   const oddName = resolveImplicit(node, '$odd');
-  const forContext = new CompilerContext(compilerContext);
+  const forContext = new GeneratorContext(generatorContext);
 
   // The item is a signal, like the implicit variables: it is updated when the row is reused for a new item with the same key
   if (node.itemAlias) {
@@ -91,7 +91,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     the implicit variables are its parameters, read as written, while the members of the component, the imports and
     the variables of the enclosing scopes are resolved like in any other expression of the scope of the @for
   */
-  const trackContext = new CompilerContext(compilerContext);
+  const trackContext = new GeneratorContext(generatorContext);
   if (node.itemAlias) {
     trackContext.addUnresolvableIdentifier(node.itemAlias, 'signal');
   }

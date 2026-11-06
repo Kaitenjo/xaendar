@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateFor } from './generate-for.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as ForNode;
 
@@ -11,14 +14,14 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
  * Builds a scope declaring the given identifiers.
  */
 const contextWith = (...identifiers: string[]) => {
-  const context = new CompilerContext();
+  const context = new GeneratorContext(cache);
   identifiers.forEach(identifier => context.addIdentifier(identifier));
   return context;
 };
 
 describe('generateFor', () => {
   it('generates the _for call and registers the loop body function', async () => {
-    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li></li> }'), 'root', '0', new CompilerContext(), null);
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li></li> }'), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index, $first, $last, $even, $odd) => item.id, for0.bind(this));']);
 
@@ -30,7 +33,7 @@ describe('generateFor', () => {
   });
 
   it('declares the item and the implicit variables as signals of the body', async () => {
-    const { functionsToProcess } = await generateFor(parse('@for (item of items; track item.id; i = $index) { <li></li> }'), 'root', '0', new CompilerContext(), null);
+    const { functionsToProcess } = await generateFor(parse('@for (item of items; track item.id; i = $index) { <li></li> }'), 'root', '0', new GeneratorContext(cache), null);
     const context = functionsToProcess!.get('for0')!.fn.context;
 
     expect(context.getIdentifierKind('item')).toBe('signal');
@@ -60,7 +63,7 @@ describe('generateFor', () => {
     ['numbers', 'this.numbers'],
     ['numbers()', 'this.numbers()']
   ])('generates a loop without item alias over %s', async (iterable, expected) => {
-    const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index()) { <li></li> }`), 'root', '0', new CompilerContext(), null);
+    const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index()) { <li></li> }`), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code).toEqual([`_for(root, context, null, () => ${expected}, (_, $index, $first, $last, $even, $odd) => $index(), for0.bind(this));`]);
     expect(functionsToProcess?.get('for0')?.fn.precode).toContain('_iterationVariables(context, items0, i0, undefined, {');
@@ -68,7 +71,7 @@ describe('generateFor', () => {
   });
 
   it('applies the aliases declared for implicit variables', async () => {
-    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item(); i = $index) { <li></li> }'), 'root', '0', new CompilerContext(), null);
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item(); i = $index) { <li></li> }'), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code[0]).toContain('(item, i, $first, $last, $even, $odd) => item()');
     expect(functionsToProcess?.get('for0')?.fn.precode).toContain('const { item, i, $first, $last, $even, $odd } = vars;');

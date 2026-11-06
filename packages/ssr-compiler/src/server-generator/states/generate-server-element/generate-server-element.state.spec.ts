@@ -1,8 +1,10 @@
-import { CompilerContext, parseTemplate, type ElementNode } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ElementNode, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import type { GenerateChildren } from '../../types/generate-children.type';
 import { toStatements } from '../../utils/server-code/server-code.utils';
 import { generateServerElement } from './generate-server-element.state';
+
+const cache = {} as ContextCache;
 
 /**
  * Generates the children of an element as a placeholder naming where they are rendered.
@@ -12,7 +14,7 @@ const generateChildren = vi.fn<GenerateChildren>((nodes, parent) => ({ pieces: n
 /**
  * Generates the code of the first element of a template, returning its lines and the functions it calls.
  */
-const generate = (source: string, context = new CompilerContext()) => {
+const generate = (source: string, context = new GeneratorContext(cache)) => {
   context.addSignalClassField('on');
   context.addSignalClassField('mode');
   const { pieces, functionsToProcess } = generateServerElement(parseTemplate(source)[0] as ElementNode, { id: 'root' }, '0', context, generateChildren);
@@ -54,7 +56,7 @@ describe('generateServerElement', () => {
   });
 
   it('writes a custom element of another library like a native element', () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.addCustomElementPatterns('sl-*');
 
     expect(generate('<sl-button variant="primary"></sl-button>', context).code).toEqual(['out.push(\'<sl-button variant="primary"></sl-button>\');']);

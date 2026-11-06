@@ -1,7 +1,8 @@
 export * from './compile/compile';
 export * from './types/compile-options.type';
 export * from './types/compiler-host.type';
-export * from './generator/models/compiler-context/compiler-context.model';
+export * from './generator/context/context';
+export * from './models/compiler-context/compiler-context.model';
 export type * from './generator/types/identifier-kind.type';
 export type * from './generator/types/imported-identifier.type';
 export type * from './generator/types/generator-function-to-process.type';
@@ -51,7 +52,7 @@ export * from './type-checker/types/line-mapping.type';
 export * from './type-checker/types/template-position.type';
 export * from './type-checker/types/type-checker-result.type';
 export * from './type-checker/types/type-checker-tolerant-result.type';
-export * from './types/compiler-cache.type';
+export * from './types/context-cache.type';
 export * from './type-checker/utils/mapping-resolver/mapping-resolver.utils';
 export * from './types';
 export * from './utils/component-logic/component-logic.utils';

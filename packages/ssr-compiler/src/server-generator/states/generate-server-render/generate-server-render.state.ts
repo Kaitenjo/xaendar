@@ -1,4 +1,4 @@
-import { assertRenderTarget, resolveExpression, type CompilerContext, type RenderNode } from '@xaendar/compiler';
+import { assertRenderTarget, resolveExpression, type GeneratorContext, type RenderNode } from '@xaendar/compiler';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
 import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.utils';
@@ -11,15 +11,15 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  * @param node - The `@render` node.
  * @param _parent - Unused place of the node.
  * @param _index - Unused position of the node.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the node.
  * @throws If the name doesn't refer to a template visible in the scope, or the template creates its content in another
  *   namespace.
  */
-export function generateServerRender(node: RenderNode, _parent: ServerParent, _index: string, compilerContext: CompilerContext): ServerTransitionResult {
+export function generateServerRender(node: RenderNode, _parent: ServerParent, _index: string, generatorContext: GeneratorContext): ServerTransitionResult {
   const { callee, calleeSpan } = node;
-  assertRenderTarget(callee, calleeSpan, compilerContext.getTemplateNamespace(callee), compilerContext.namespace);
+  assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
 
-  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, compilerContext, SERVER_RESOLVE_OPTIONS).expression}`);
+  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, generatorContext, SERVER_RESOLVE_OPTIONS).expression}`);
   return { pieces: [{ statement: `_ssrRenderTemplate(out, context, context.get('${callee}'), [${args.join(', ')}]);` }] };
 }

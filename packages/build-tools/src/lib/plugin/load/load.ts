@@ -1,4 +1,4 @@
-import { type CompilerCache, parseTemplate } from '@xaendar/compiler';
+import { type ContextCache, parseTemplate } from '@xaendar/compiler';
 import { getTemplateWarnings } from '@xaendar/language-core';
 import { dirname } from 'node:path';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -128,7 +128,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       }
     }
 
-    const cache: CompilerCache = {
+    const cache: ContextCache = {
       getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
       getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
       set: registerMetadata

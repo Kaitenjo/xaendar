@@ -1,4 +1,4 @@
-import type { ASTNode, CompilerContext } from '@xaendar/compiler';
+import type { ASTNode, GeneratorContext } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerParent } from './server-parent.type';
 import type { ServerTransitionResult } from './server-transition-result.type';
@@ -9,7 +9,7 @@ import type { ServerTransitionResult } from './server-transition-result.type';
  *
  * @param nodes - The children.
  * @param parent - Where the children are rendered.
- * @param compilerContext - The compiler context of the children.
+ * @param generatorContext - The generator context of the children.
  * @returns The code of the children.
  */
-export type GenerateChildren = Function<[nodes: readonly ASTNode[], parent: ServerParent, compilerContext: CompilerContext], ServerTransitionResult>;
+export type GenerateChildren = Function<[nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext], ServerTransitionResult>;

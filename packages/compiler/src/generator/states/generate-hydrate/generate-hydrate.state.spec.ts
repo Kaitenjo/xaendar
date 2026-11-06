@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateHydrate } from './generate-hydrate.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as HydrateNode;
 
 describe('generateHydrate', () => {
   it('passes the triggers and the function rendering the content, a scope of its own rendered before the anchor it receives', async () => {
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     const { code, functionsToProcess } = await generateHydrate(parse('@hydrate (idle, load) { <b></b> }'), 'root', '0', context, null);
 
     expect(code).toEqual([
@@ -28,7 +31,7 @@ describe('generateHydrate', () => {
 
   it('passes the expression of when and the modules of the content', async () => {
     const node = parse('@hydrate (visible, when ready()) { <b></b> }');
-    const context = new CompilerContext();
+    const context = new GeneratorContext(cache);
     context.deferredModules = new Map([[node, ['/src/a.ts', '/src/b.ts']]]);
     const { code } = await generateHydrate(node, 'root', '1', context, 'anchor');
 
@@ -43,7 +46,7 @@ describe('generateHydrate', () => {
   });
 
   it('passes no triggers written by name when only when triggers the block', async () => {
-    const { code } = await generateHydrate(parse('@hydrate (when ready()) { <b></b> }'), 'root', '0', new CompilerContext(), null);
+    const { code } = await generateHydrate(parse('@hydrate (when ready()) { <b></b> }'), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code[1]).toBe('  triggers: [],');
   });

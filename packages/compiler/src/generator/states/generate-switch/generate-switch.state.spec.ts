@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateSwitch } from './generate-switch.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as SwitchNode;
 
 describe('generateSwitch', () => {
   it('generates cases, grouped cases and default', async () => {
     const template = '@switch (x) { @case (1) { <a></a> } @case (2) @case (3) { <b></b> } @default { <c></c> } }';
-    const { code, functionsToProcess } = await generateSwitch(parse(template), 'root', '0', new CompilerContext(), null);
+    const { code, functionsToProcess } = await generateSwitch(parse(template), 'root', '0', new GeneratorContext(cache), null);
     const output = code.join('\n');
 
     expect(code[0]).toBe('_switch(root, context, null, () => this.x, [');
@@ -25,7 +28,7 @@ describe('generateSwitch', () => {
 
   it('renders the content of every branch before the anchor its function receives', async () => {
     const template = '@switch (x) { @case (1) { <a></a> } @default { <c></c> } }';
-    const { functionsToProcess } = await generateSwitch(parse(template), 'root', '0', new CompilerContext(), null);
+    const { functionsToProcess } = await generateSwitch(parse(template), 'root', '0', new GeneratorContext(cache), null);
 
     expect([...functionsToProcess?.values() ?? []].map(({ fn, args }) => [fn.anchor, args])).toEqual([
       ['anchor', ['case0_0', 'parentContext', 'anchor', 'nodeStrategy']],
@@ -34,7 +37,7 @@ describe('generateSwitch', () => {
   });
 
   it('forwards the anchor it is rendered before to the runtime', async () => {
-    const { code } = await generateSwitch(parse('@switch (x) { @case (1) { <a></a> } }'), 'if0', '0', new CompilerContext(), 'anchor');
+    const { code } = await generateSwitch(parse('@switch (x) { @case (1) { <a></a> } }'), 'if0', '0', new GeneratorContext(cache), 'anchor');
 
     expect(code[0]).toBe('_switch(if0, context, anchor, () => this.x, [');
   });

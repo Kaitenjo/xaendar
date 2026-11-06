@@ -1,65 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { CompilerCache } from '../../../types/compiler-cache.type';
-import type { ComponentMetadata } from '../../../types/component-metadata.type';
 import { CompilerContext } from './compiler-context.model';
 
 describe('CompilerContext', () => {
-  describe('islands', () => {
-    it('finds the tag names registered in the scope or in its ancestors', () => {
-      const parent = new CompilerContext();
-      const child = new CompilerContext(parent);
-      parent.addIsland('x-a');
-      child.addIsland('x-b');
-
-      expect(child.isIsland('x-a')).toBe(true);
-      expect(child.isIsland('x-b')).toBe(true);
-      expect(parent.isIsland('x-b')).toBe(false);
-      expect(child.isIsland('x-c')).toBe(false);
-    });
-  });
-
-  describe('addEventName', () => {
-    it('holds the events of every scope in the root one', () => {
-      const root = new CompilerContext();
-      const scope = new CompilerContext(new CompilerContext(root));
-      root.addEventName('click');
-      scope.addEventName('click');
-      scope.addEventName('focus');
-
-      expect(Array.from(root.eventNames)).toEqual(['click', 'focus']);
-    });
-  });
-
-  describe('getClientComponent', () => {
-    it('finds the components rendering only in the browser of the scope and of its ancestors', () => {
-      const parent = new CompilerContext();
-      const child = new CompilerContext(parent);
-      const inParent = { selector: 'x-a' } as ComponentMetadata;
-      const inChild = { selector: 'x-b' } as ComponentMetadata;
-      parent.addClientComponent(inParent);
-      child.addClientComponent(inChild);
-
-      expect(child.getClientComponent('x-a')).toBe(inParent);
-      expect(child.getClientComponent('x-b')).toBe(inChild);
-      expect(parent.getClientComponent('x-b')).toBeUndefined();
-    });
-  });
-
   describe('constructor', () => {
     it('starts without identifiers', () => {
       expect(new CompilerContext().hasIdentifier('a')).toBe(false);
-    });
-
-    it('inherits the cache from the parent', () => {
-      const parent = new CompilerContext();
-      parent.cache = { getOrInsert: async () => undefined, set: () => undefined } as unknown as CompilerCache;
-      expect(new CompilerContext(parent).cache).toBe(parent.cache);
-    });
-
-    it('inherits the modules the @hydrate blocks load from the parent', () => {
-      const parent = new CompilerContext();
-      parent.deferredModules = new Map();
-      expect(new CompilerContext(parent).deferredModules).toBe(parent.deferredModules);
     });
   });
 
@@ -164,6 +109,30 @@ describe('CompilerContext', () => {
       expect(child.hasUnresolvableIdentifier('$event')).toBe(true);
       expect(child.getUnresolvableIdentifierKind('$event')).toBe('value');
       expect(child.hasUnresolvableIdentifier('missing')).toBe(false);
+    });
+  });
+
+  describe('imported identifiers', () => {
+    it('finds the names imported in the scope or in its ancestors', () => {
+      const parent = new CompilerContext();
+      parent.addImportedIdentifier('count', '_import0.count', 'signal');
+      const child = new CompilerContext(parent);
+      child.addImportedIdentifier('format', '_import1.format');
+
+      expect(child.getImportedIdentifier('count')).toEqual({ expression: '_import0.count', kind: 'signal', used: false });
+      expect(child.getImportedIdentifier('format')).toEqual({ expression: '_import1.format', kind: 'value', used: false });
+      expect(parent.getImportedIdentifier('format')).toBeUndefined();
+    });
+  });
+
+  describe('shadowing members', () => {
+    it('finds the members registered in the scope or in its ancestors', () => {
+      const parent = new CompilerContext();
+      parent.addShadowingMember('name');
+      const child = new CompilerContext(parent);
+
+      expect(child.hasShadowingMember('name')).toBe(true);
+      expect(child.hasShadowingMember('missing')).toBe(false);
     });
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import { line } from '../line-builder/line-builder.utils';
 import { mappedExpression } from './mapped-expression.utils';
 

@@ -4,27 +4,25 @@ import { Parser } from '../../../parser/parser/parser';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
-import type { CompilerCache } from '../../../types/compiler-cache.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import type { ContextCache } from '../../../types/context-cache.type';
+import { GeneratorContext } from '../../context/context';
 import { getDeferredModules } from './deferred-modules.utils';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
 /**
- * A compiler context whose cache declares each component in the module its tag names, `<a-b>` in `/src/a.ts`, and
+ * A generator context whose cache declares each component in the module its tag names, `<a-b>` in `/src/a.ts`, and
  * `<dir-x>` as a directive.
  */
 const contextWithModules = () => {
-  const context = new CompilerContext();
-  const cache: CompilerCache = {
+  const cache: ContextCache = {
     getOrInsert: async selector => (selector === 'dir-x'
       ? { type: 'directive' }
       : { type: 'component', typescriptNodes: { klass: { getSourceFile: () => ({ fileName: `/src/${selector.split('-')[0]}.ts` }) } } }) as never,
     getImport: () => Promise.reject(new Error('No import')),
     set: () => undefined
   };
-  context.cache = cache;
-  return context;
+  return new GeneratorContext(cache);
 };
 
 /**
@@ -117,8 +115,7 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(nodes, context)).toBeUndefined();
   });
 
-  it('finds none without a @hydrate, or without the cache of the metadata', async () => {
+  it('finds none without a @hydrate', async () => {
     expect(await getDeferredModules(parse('<a-x></a-x>'), contextWithModules())).toBeUndefined();
-    expect(await getDeferredModules(parse('@hydrate (idle) { <a-x></a-x> }'), new CompilerContext())).toBeUndefined();
   });
 });

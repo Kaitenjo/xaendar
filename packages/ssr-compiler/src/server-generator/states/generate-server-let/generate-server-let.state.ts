@@ -1,4 +1,4 @@
-import { resolveExpression, type CompilerContext, type LetNode } from '@xaendar/compiler';
+import { resolveExpression, type GeneratorContext, type LetNode } from '@xaendar/compiler';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
 import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.utils';
@@ -11,10 +11,10 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  * @param node - The `@let` node.
  * @param _parent - Unused place of the node.
  * @param _index - Unused position of the node.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the node.
  */
-export function generateServerLet(node: LetNode, _parent: ServerParent, _index: string, compilerContext: CompilerContext): ServerTransitionResult {
-  const { expression, reactive } = resolveExpression(node.value, compilerContext, SERVER_RESOLVE_OPTIONS);
+export function generateServerLet(node: LetNode, _parent: ServerParent, _index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+  const { expression, reactive } = resolveExpression(node.value, generatorContext, SERVER_RESOLVE_OPTIONS);
   return { pieces: [{ statement: `context.set('${node.name}', ${reactive ? `_let(() => ${expression})` : expression});` }] };
 }

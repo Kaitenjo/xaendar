@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import { typeCheckLet } from './type-check-let.state';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as LetNode;

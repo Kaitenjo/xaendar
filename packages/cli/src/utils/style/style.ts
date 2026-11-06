@@ -11,8 +11,8 @@ export const STYLES = ['css', 'scss', 'sass', 'less'] as const;
  * The package compiling each preprocessed format, with the version installed in a new project.
  */
 export const STYLE_PREPROCESSORS: Partial<Record<Style, { name: string, version: string }>> = {
-  scss: { name: 'sass', version: '^1.107.1' },
-  sass: { name: 'sass', version: '^1.107.1' },
+  scss: { name: 'sass', version: '^1.108.0' },
+  sass: { name: 'sass', version: '^1.108.0' },
   less: { name: 'less', version: '^4.9.1' }
 };
 

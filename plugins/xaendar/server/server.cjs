@@ -20940,8 +20940,8 @@ var ROOT_NODE = "root";
 function isBrowserOnlyGlobal(name) {
   return BROWSER_GLOBAL_IDENTIFIERS.has(name) && (!Object.hasOwn(import_globals.default.node, name) || USER_AGENT_GLOBALS.has(name));
 }
-function resolveExpression(expression, compilerContext, options, segments) {
-  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, compilerContext, mapDefaultOptions(options));
+function resolveExpression(expression, generatorContext, options, segments) {
+  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, generatorContext, mapDefaultOptions(options));
   const wrapped = resolved.expression.startsWith("{");
   segments?.push(...shiftSegments(emittedSegments, wrapped ? 1 : 0));
   return wrapped ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
@@ -20952,10 +20952,10 @@ function shiftSegments(segments, columns) {
 function segmentOf(text, span, columnStart = 0) {
   return span && text.length ? [{ columnStart, columnEnd: text.length, original: span }] : [];
 }
-function emitNode(node, parent, compilerContext, options) {
+function emitNode(node, parent, generatorContext, options) {
   const callee = getSignalCallee(node);
-  const narrowed = callee && needsResolution(callee, node, compilerContext, options) ? options.narrowedSignal(callee.text) : void 0;
-  const emitted = emitResolvedNode(node, parent, compilerContext, options);
+  const narrowed = callee && needsResolution(callee, node, generatorContext, options) ? options.narrowedSignal(callee.text) : void 0;
+  const emitted = emitResolvedNode(node, parent, generatorContext, options);
   if (!narrowed) {
     return emitted;
   }
@@ -20970,19 +20970,19 @@ function emitNode(node, parent, compilerContext, options) {
 function getSignalCallee(node) {
   return (0, import_typescript3.isCallExpression)(node) && (0, import_typescript3.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
 }
-function emitResolvedNode(node, parent, compilerContext, options) {
+function emitResolvedNode(node, parent, generatorContext, options) {
   const span = getTemplateSpan(node);
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext, options)) {
+  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     const text = node.text;
-    const resolved = resolveIdentifier(text, compilerContext, options);
+    const resolved = resolveIdentifier(text, generatorContext, options);
     const expression = (0, import_typescript3.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
     const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
     return { ...resolved, expression, segments };
   }
   if (!options.preserveNonNull && (0, import_typescript3.isNonNullExpression)(node)) {
-    return emitNode(node.expression, node, compilerContext, options);
+    return emitNode(node.expression, node, generatorContext, options);
   }
-  if (!containsResolvableIdentifier(node, parent, compilerContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -21002,42 +21002,42 @@ function emitResolvedNode(node, parent, compilerContext, options) {
     result.reactive = result.reactive || child?.reactive;
   };
   (0, import_typescript3.forEachChild)(node, (child) => {
-    append(lastEnd, child.getStart(), emitNode(child, node, compilerContext, options));
+    append(lastEnd, child.getStart(), emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
   append(lastEnd, node.getEnd());
   return result;
 }
-function resolveIdentifier(text, compilerContext, options) {
-  if (compilerContext.hasUnresolvableIdentifier(text)) {
-    return { expression: text, reactive: compilerContext.getUnresolvableIdentifierKind(text) === "signal" };
+function resolveIdentifier(text, generatorContext, options) {
+  if (generatorContext.hasUnresolvableIdentifier(text)) {
+    return { expression: text, reactive: generatorContext.getUnresolvableIdentifierKind(text) === "signal" };
   }
-  if (compilerContext.hasIdentifier(text)) {
-    const kind = compilerContext.getIdentifierKind(text);
+  if (generatorContext.hasIdentifier(text)) {
+    const kind = generatorContext.getIdentifierKind(text);
     return { expression: `context.get('${text}')`, reactive: kind === "signal" };
   }
   const member = options.resolver ? `${options.resolver}.${text}` : text;
-  if (compilerContext.hasSignalField(text)) {
+  if (generatorContext.hasSignalField(text)) {
     return { expression: member, reactive: true };
   }
-  const imported = compilerContext.getImportedIdentifier(text);
+  const imported = generatorContext.getImportedIdentifier(text);
   if (imported) {
     imported.used = true;
     return { expression: imported.expression, reactive: imported.kind === "signal" };
   }
-  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !compilerContext.hasShadowingMember(text)) {
+  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !generatorContext.hasShadowingMember(text)) {
     return { expression: `${options.browserGlobals}.${text}` };
   }
   return { expression: member };
 }
-function containsResolvableIdentifier(node, parent, compilerContext, options) {
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, compilerContext, options)) {
+function containsResolvableIdentifier(node, parent, generatorContext, options) {
+  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     return true;
   }
   let found = false;
   (0, import_typescript3.forEachChild)(node, (child) => {
     if (!found) {
-      found = containsResolvableIdentifier(child, node, compilerContext, options);
+      found = containsResolvableIdentifier(child, node, generatorContext, options);
     }
   });
   return found;
@@ -21051,9 +21051,9 @@ function containsNonNullExpression(node) {
   });
   return found;
 }
-function needsResolution(node, parent, compilerContext, options) {
+function needsResolution(node, parent, generatorContext, options) {
   const { text } = node;
-  const isLocal = compilerContext.hasSignalField(text) || compilerContext.hasShadowingMember(text) || compilerContext.hasUnresolvableIdentifier(text) || compilerContext.hasIdentifier(text) || !!compilerContext.getImportedIdentifier(text);
+  const isLocal = generatorContext.hasSignalField(text) || generatorContext.hasShadowingMember(text) || generatorContext.hasUnresolvableIdentifier(text) || generatorContext.hasIdentifier(text) || !!generatorContext.getImportedIdentifier(text);
   const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
   return !((0, import_typescript3.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript3.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
 }
@@ -25400,7 +25400,7 @@ var TypeCheckContext = class extends CompilerContext {
     this._imports.push(...value);
   }
   /**
-   * Registers a template declared in this scope (see {@link CompilerContext.addTemplate}), recording in the outermost
+   * Registers a template declared in this scope (see {@link generatorContext.addTemplate}), recording in the outermost
    * scope that the type-check code reads the template helpers.
    *
    * @param name - The name of the template.

@@ -3,7 +3,7 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { TextNode } from '../../../parser/types/nodes/text-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import { typeCheckTextAndInterpolation } from './type-check-text-and-interpolation.state';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as TextNode | InterpolationNode;

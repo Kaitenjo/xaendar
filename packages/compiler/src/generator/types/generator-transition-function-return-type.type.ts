@@ -1,5 +1,5 @@
 import { ASTNode } from '../../parser/types/ast.type'
-import { CompilerContext } from '../models/compiler-context/compiler-context.model'
+import { GeneratorContext } from '../context/context'
 
 export type GeneratorTransitionFunctionReturnType = {
   /**
@@ -33,7 +33,7 @@ export type GeneratorTransitionFunctionReturnType = {
        * resolve identifiers (e.g. loop variables, aliases) when generating
        * the function's children.
        */
-      context: CompilerContext;
+      context: GeneratorContext;
       /**
        * Optional line(s) of code to prepend to the function body, before
        * its children are generated (e.g. the `_iterationVariables(...)`

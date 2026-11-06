@@ -1,4 +1,4 @@
-import type { CompilerCache } from '@xaendar/compiler';
+import type { ContextCache } from '@xaendar/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import { compileServer } from './compile-server';
 
@@ -7,7 +7,7 @@ import { compileServer } from './compile-server';
  */
 const createCache = () => ({
   getImport: vi.fn(async () => ({ type: 'symbol' as const, modulePath: '/src/format.ts', reactive: false }))
-}) as unknown as CompilerCache & { getImport: ReturnType<typeof vi.fn> };
+}) as unknown as ContextCache & { getImport: ReturnType<typeof vi.fn> };
 
 describe('compileServer', () => {
   it('compiles a template into the code rendering it on the server', async () => {
@@ -30,7 +30,7 @@ describe('compileServer', () => {
     const other = { type: 'component', selector: 'x-card', properties: new Map() };
     const directive = { type: 'directive', selector: 'tip', properties: new Map() };
     const exportsByName: Record<string, unknown> = { Map: metadata, Card: other, Tip: directive };
-    const cache = { getImport: vi.fn(async (imported: string) => exportsByName[imported]) } as unknown as CompilerCache;
+    const cache = { getImport: vi.fn(async (imported: string) => exportsByName[imported]) } as unknown as ContextCache;
     const code = await compileServer('@import { Map } from \'./map\';\n@import { Card } from \'./card\';\n@import { Tip } from \'./tip\';\n<x-map></x-map><x-card></x-card>', { signals: [], templateDir: '/src', cache });
 
     expect(code).toContain('_ssrClientComponent(out, context, \'x-map\'');

@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { getBlockIdentifier, resolveExpression, toStringLiteral, type CompilerContext, type SwitchNode } from '@xaendar/compiler';
+import { getBlockIdentifier, resolveExpression, toStringLiteral, type GeneratorContext, type SwitchNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -32,11 +32,11 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * @param node - The `@switch` node.
  * @param parent - Where the blocks are rendered.
  * @param index - The position of the node among its siblings.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the node, and the functions rendering its blocks.
  */
-export function generateServerSwitch(node: SwitchNode, parent: ServerParent, index: string, compilerContext: CompilerContext): ServerTransitionResult {
-  const body = [`const __value = ${resolveExpression(node.expression, compilerContext, SERVER_RESOLVE_OPTIONS).expression};`];
+export function generateServerSwitch(node: SwitchNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+  const body = [`const __value = ${resolveExpression(node.expression, generatorContext, SERVER_RESOLVE_OPTIONS).expression};`];
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
   let selectDefault = [`out.push(${toStringLiteral(`<!--${SSR_MARKERS.switch}-->`)});`];
   let opening = 'if';
@@ -45,7 +45,7 @@ export function generateServerSwitch(node: SwitchNode, parent: ServerParent, ind
     const caseNode = node.children[i];
     const { condition } = caseNode;
     const key = condition ? getBlockIdentifier('case', parent.id, `${index}_${i}`) : getBlockIdentifier('default', parent.id, index);
-    functionsToProcess.set(key, toBlockFunction(caseNode, key, parent, compilerContext));
+    functionsToProcess.set(key, toBlockFunction(caseNode, key, parent, generatorContext));
     const render = [`out.push(${toStringLiteral(`<!--${SSR_MARKERS.switch}:${i}-->`)});`, `${key}.call(this, out, context);`];
     if (condition) {
       body.push(`${opening} ([${condition.join(', ')}].some(candidate => candidate === __value)) {`, ...indent(render));

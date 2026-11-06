@@ -3,12 +3,12 @@ import { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type.js';
 import { isStructuralElement } from '../../parser/utils/scope-declarations/scope-declarations.utils.js';
-import { CompilerCache } from '../../types/compiler-cache.type.js';
+import { ContextCache } from '../../types/context-cache.type.js';
 import type { ElementNamespace } from '../../types/element-namespace.type.js';
 import type { SymbolImport } from '../../types/symbol-import.type.js';
 import { catchErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { assertImportableSymbol, getRuntimeAlias, toRuntimeImport } from '../../utils/symbol-imports/symbol-imports.utils.js';
-import { CompilerContext } from '../models/compiler-context/compiler-context.model.js';
+import { GeneratorContext } from '../context/context.js';
 import { generateElement } from '../states/generate-element/generate-element.state.js';
 import { generateFor } from '../states/generate-for/generate-for.state.js';
 import { generateClient } from '../states/generate-client/generate-client.state.js';
@@ -66,7 +66,7 @@ export class Generator {
   constructor(
     private readonly _input: string,
     private readonly _ast: ASTNode[],
-    private readonly _cache: CompilerCache
+    private readonly _cache: ContextCache
   ) { }
 
   /**
@@ -111,19 +111,19 @@ export class Generator {
 
     try {
       this._nodeToProcess.clear();
-      const compilerContext = new CompilerContext(this._cache);
+      const generatorContext = new GeneratorContext(this._cache);
       for (let i = 0; i < signals.length; i++) {
-        compilerContext.addSignalClassField(signals[i]);
+        generatorContext.addSignalClassField(signals[i]);
       }
       for (let i = 0; i < shadowingMembers.length; i++) {
-        compilerContext.addShadowingMember(shadowingMembers[i]);
+        generatorContext.addShadowingMember(shadowingMembers[i]);
       }
-      compilerContext.addCustomElementPatterns(...customElements);
-      compilerContext.deferredModules = await getDeferredModules(this._ast, compilerContext);
+      generatorContext.addCustomElementPatterns(...customElements);
+      generatorContext.deferredModules = await getDeferredModules(this._ast, generatorContext);
       for (let i = 0; i < symbols.length; i++) {
         const symbol = symbols[i];
         assertImportableSymbol(symbol);
-        compilerContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
+        generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
       const generatedCode = [
@@ -134,15 +134,15 @@ export class Generator {
         ])
       ]
 
-      const rootDeclarations = declareScope(this._ast, compilerContext, toTemplateFunction);
+      const rootDeclarations = declareScope(this._ast, generatorContext, toTemplateFunction);
       if (rootDeclarations) {
         processFunctions(rootDeclarations.functionsToProcess);
         generatedCode.push(...indent(rootDeclarations.code));
       }
 
-      const rootSeparators = getTextSeparators(this._ast, undefined, compilerContext.namespace);
+      const rootSeparators = getTextSeparators(this._ast, undefined, generatorContext.namespace);
       for (let i = 0; i < this._ast.length; i++) {
-        const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), compilerContext, null, rootSeparators[i]);
+        const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), generatorContext, null, rootSeparators[i]);
         if (result) {
           const { code, functionsToProcess } = result;
           processFunctions(functionsToProcess);
@@ -200,7 +200,7 @@ export class Generator {
       }
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
-      const imports = symbols.filter(({ local }) => compilerContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
+      const imports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
       return (imports.length ? imports.concat(generatedCode) : generatedCode).join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
@@ -212,18 +212,18 @@ export class Generator {
    * @param node The AST node to process.
    * @param parentNode The variable name of the parent node in the generated code.
    * @param index The index of the node among its siblings.
-   * @param compilerContext The context object containing compiler-related information.
+   * @param generatorContext The context object containing compiler-related information.
    * @param anchor The anchor point for inserting the generated code, if applicable.
    * @param separated Whether the server writes `<!---->` before the node (see `getTextSeparators`).
    * @returns The result of processing the node, including generated code and functions to process, or undefined if no code is generated.
    */
-  private async _processNode(node: ASTNode, parentNode: string, index: string, compilerContext: CompilerContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType | undefined> {
+  private async _processNode(node: ASTNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType | undefined> {
     const state = this._states[node.type];
     if (!state) {
       throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span });
     }
 
-    return await state(node as never, parentNode, index, compilerContext, anchor, separated);
+    return await state(node as never, parentNode, index, generatorContext, anchor, separated);
   }
 }
 
@@ -238,13 +238,13 @@ export class Generator {
  * @param namespace - The namespace the content of the template is created in, the one of its declaration: the factory
  *   of the elements of the instance is set explicitly, since the scope declaring the template may create its elements
  *   in another namespace.
- * @param compilerContext - The compiler context of the scope declaring the template.
+ * @param generatorContext - The generator context of the scope declaring the template.
  * @returns The function, taking the element the instance is rendered into, the runtime context of the scope declaring
  *   the template, the node the instance is rendered before, the signals of the parameters and the strategy getting the
  *   nodes of the instance.
  */
-function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, compilerContext: CompilerContext): GeneratorFunctionToProcess {
-  const context = new CompilerContext(compilerContext, namespace);
+function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
+  const context = new GeneratorContext(generatorContext, namespace);
   const precode = [`context.createElement = ${getElementFactory(namespace)};`, ...declareTemplateParameters(template, context)];
 
   return {

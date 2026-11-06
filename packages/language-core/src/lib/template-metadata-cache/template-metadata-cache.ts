@@ -1,4 +1,4 @@
-import { type CompilerCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport } from '@xaendar/compiler';
+import { type ContextCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
@@ -14,12 +14,12 @@ const DECLARATION_DECORATOR = /@(?:WebComponent|Directive)\s*\(/;
 
 /**
  * Cache of the metadata of the components and directives imported by the templates open in an editor:
- * the implementation of the `CompilerCache` the compiler resolves the `@import`s of a template through.
+ * the implementation of the `ContextCache` the compiler resolves the `@import`s of a template through.
  *
  * The metadata of a file are extracted again whenever its text changes, the unsaved one of an open document
  * included (see `readDocument`), or when the file is invalidated explicitly.
  */
-export class TemplateMetadataCache implements CompilerCache {
+export class TemplateMetadataCache implements ContextCache {
   /**
    * The metadata extracted from each file, keyed by its normalized path.
    */

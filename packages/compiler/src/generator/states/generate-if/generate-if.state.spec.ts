@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
-import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import { GeneratorContext } from '../../context/context';
 import { generateIf } from './generate-if.state';
+import type { ContextCache } from '../../../types/context-cache.type';
+
+const cache = {} as ContextCache;
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as IfNode;
 
 describe('generateIf', () => {
   it('generates a single conditional block', async () => {
-    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b></b> }'), 'root', '0', new CompilerContext(), null);
+    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b></b> }'), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code.join('\n')).toBe([
       '_if(root, context, null, [',
@@ -25,7 +28,7 @@ describe('generateIf', () => {
 
   it('generates else-if and else branches', async () => {
     const template = '@if (a) { <b></b> } @else if (b) { <i></i> } @else if (c) { <u></u> } @else { <s></s> }';
-    const { code, functionsToProcess } = await generateIf(parse(template), 'root', '0', new CompilerContext(), 'anchor');
+    const { code, functionsToProcess } = await generateIf(parse(template), 'root', '0', new GeneratorContext(cache), 'anchor');
     const output = code.join('\n');
 
     expect(output).toContain('condition: () => this.b,');
@@ -37,7 +40,7 @@ describe('generateIf', () => {
 
   it('makes every branch the parent of its own content', async () => {
     const template = '@if (a) { <b></b> } @else if (b) { <i></i> } @else { <s></s> }';
-    const { functionsToProcess } = await generateIf(parse(template), 'root', '0', new CompilerContext(), null);
+    const { functionsToProcess } = await generateIf(parse(template), 'root', '0', new GeneratorContext(cache), null);
 
     for (const key of ['if0', 'elseIf0_0', 'else0']) {
       expect(functionsToProcess?.get(key)?.fn.parentNode).toBe(key);

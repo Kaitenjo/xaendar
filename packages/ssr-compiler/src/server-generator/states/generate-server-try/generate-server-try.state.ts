@@ -1,4 +1,4 @@
-import { CompilerContext, getBlockIdentifier, type TryNode } from '@xaendar/compiler';
+import { GeneratorContext, getBlockIdentifier, type TryNode } from '@xaendar/compiler';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
 import { toBlockFunction } from '../../utils/server-code/server-code.utils';
@@ -11,15 +11,15 @@ import { toBlockFunction } from '../../utils/server-code/server-code.utils';
  * @param node - The try node.
  * @param parent - Where the block is rendered.
  * @param index - The index of the node among its siblings.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the block, and the functions rendering its content and its `@catch`.
  */
-export function generateServerTry(node: TryNode, parent: ServerParent, index: string, compilerContext: CompilerContext): ServerTransitionResult {
+export function generateServerTry(node: TryNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
   const contentKey = getBlockIdentifier('try', parent.id, index);
   const catchKey = getBlockIdentifier('catch', parent.id, index);
 
   const { name } = node.catch;
-  const catchContext = new CompilerContext(compilerContext);
+  const catchContext = new GeneratorContext(generatorContext);
   if (name) {
     catchContext.addIdentifier(name, 'value');
   }
@@ -27,7 +27,7 @@ export function generateServerTry(node: TryNode, parent: ServerParent, index: st
   return {
     pieces: [{ statement: `_ssrTry(out, output => ${contentKey}.call(this, output, context), (output, error) => ${catchKey}.call(this, output, context, error));` }],
     functionsToProcess: new Map([
-      [contentKey, toBlockFunction(node, contentKey, parent, compilerContext)],
+      [contentKey, toBlockFunction(node, contentKey, parent, generatorContext)],
       [catchKey, {
         fn: { node: node.catch, context: catchContext, parent: { id: catchKey, tag: parent.tag }, precode: name ? `context.addIdentifier('${name}', error);` : undefined },
         args: ['out', 'parentContext', 'error']

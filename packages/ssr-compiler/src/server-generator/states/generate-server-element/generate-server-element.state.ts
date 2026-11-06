@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, indent, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { ASTNodeType, CompilerContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { ASTNodeType, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -33,32 +33,32 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
  * @param node - The element node.
  * @param parent - Where the element is rendered.
  * @param index - The position of the node among its siblings.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @param generateChildren - Generates the code of the children of the element, in the function being written.
  * @returns The code of the element, and the functions it calls.
  */
-export function generateServerElement(node: ElementNode, parent: ServerParent, index: string, compilerContext: CompilerContext, generateChildren: GenerateChildren): ServerTransitionResult {
+export function generateServerElement(node: ElementNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, generateChildren: GenerateChildren): ServerTransitionResult {
   const { tagName } = node;
   const id = getElementIdentifier(node, parent.id, index);
-  const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, compilerContext.namespace));
+  const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
   const childrenParent: ServerParent = { id, tag: tagName };
   if (!isStructuralElement(node)) {
-    const childrenContext = childrenNamespace !== compilerContext.namespace ? new CompilerContext(compilerContext, childrenNamespace) : compilerContext;
+    const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext;
     const children = generateChildren(node.children, childrenParent, childrenContext);
-    return { pieces: writeElement(node, compilerContext, children.pieces), functionsToProcess: children.functionsToProcess };
+    return { pieces: writeElement(node, generatorContext, children.pieces), functionsToProcess: children.functionsToProcess };
   }
 
-  const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, compilerContext);
-  const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, compilerContext, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, compilerContext));
+  const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, generatorContext);
+  const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, generatorContext));
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
   const children = new Array<ServerCodePiece>();
   if (node.children.length) {
     const key = `${id}Children`;
-    functionsToProcess.set(key, { fn: { node, context: new CompilerContext(compilerContext, childrenNamespace), parent: childrenParent }, args: ['out', 'parentContext'] });
+    functionsToProcess.set(key, { fn: { node, context: new GeneratorContext(generatorContext, childrenNamespace), parent: childrenParent }, args: ['out', 'parentContext'] });
     children.push({ statement: `${key}.call(this, out, context);` });
   }
 
-  const render = ['(out, context) => {', ...indent(toStatements(writeElement(node, compilerContext, children))), '}'];
+  const render = ['(out, context) => {', ...indent(toStatements(writeElement(node, generatorContext, children))), '}'];
   return {
     pieces: [{ statement: toCall('_ssrStructural', 'out, context', [toArrayLiteral(structuralDirectives), toArrayLiteral(structuralConditionalBindings), render]) }],
     functionsToProcess
@@ -70,45 +70,45 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
  * an element whose leading one the parser drops, its children, and its end tag, unless it is a void element.
  *
  * @param node - The element node.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @param children - The code of the children.
  * @returns The code of the element.
  */
-function writeElement(node: ElementNode, compilerContext: CompilerContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
+function writeElement(node: ElementNode, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
   const { tagName, attributes, classBindings, ref } = node;
-  const isHtml = getElementNamespace(tagName, compilerContext.namespace) === 'html';
-  const isComponent = isValidCustomElementName(tagName, false) && !compilerContext.isForeignElement(tagName);
+  const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
+  const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
   // Only a native element applies its custom directives on the server
   const withDirectives = !isComponent;
-  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, compilerContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, withDirectives, compilerContext));
-  const directives = withDirectives ? mapDirectives(node.directives, compilerContext) : undefined;
+  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, withDirectives, generatorContext));
+  const directives = withDirectives ? mapDirectives(node.directives, generatorContext) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
     pieces.push({ statement: `context.set('${ref.name}', undefined);` });
   }
 
-  registerEvents(node, compilerContext);
+  registerEvents(node, generatorContext);
 
   if (isComponent || classBindings.length || conditionalBindings.length || directives?.length) {
-    const descriptors = mapAttributes(attributes, compilerContext);
+    const descriptors = mapAttributes(attributes, generatorContext);
     appendSubmitMark(descriptors, node);
-    appendClassBindings(descriptors, classBindings, compilerContext);
+    appendClassBindings(descriptors, classBindings, generatorContext);
     const args = [toArrayLiteral(descriptors), toArrayLiteral(conditionalBindings)];
-    const clientComponent = isComponent ? compilerContext.getClientComponent(tagName) : undefined;
+    const clientComponent = isComponent ? generatorContext.getClientComponent(tagName) : undefined;
     if (clientComponent) {
-      args.push([toClientOptions(clientComponent, compilerContext)]);
+      args.push([toClientOptions(clientComponent, generatorContext)]);
     } else if (directives?.length) {
       args.push(toArrayLiteral(directives));
     }
 
-    pieces.push({ statement: toCall(getStartTagWriter(tagName, isComponent, compilerContext), `out, context, '${tagName}'`, args) });
+    pieces.push({ statement: toCall(getStartTagWriter(tagName, isComponent, generatorContext), `out, context, '${tagName}'`, args) });
   } else {
     pieces.push({ html: `<${tagName}` });
     for (let i = 0; i < attributes.length; i++) {
       const { name, value } = attributes[i];
       typeof value === 'string'
         ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
-        : pieces.push({ html: ` ${name}="` }, { value: `_escapeAttribute(${resolve(value.expression, compilerContext)})` }, { html: '"' });
+        : pieces.push({ html: ` ${name}="` }, { value: `_escapeAttribute(${resolve(value.expression, generatorContext)})` }, { html: '"' });
     }
 
     if (listensToSubmit(node)) {
@@ -137,17 +137,17 @@ function writeElement(node: ElementNode, compilerContext: CompilerContext, child
  * Registers the events an element listens to, the ones of its conditional bindings included, whatever branch is selected.
  *
  * @param bindings - The element, or a branch of a conditional binding.
- * @param compilerContext - The compiler context of the element.
+ * @param generatorContext - The generator context of the element.
  */
-function registerEvents({ events, conditionalBindings }: Pick<ConditionalBindingBranchNode, 'events' | 'conditionalBindings'>, compilerContext: CompilerContext): void {
+function registerEvents({ events, conditionalBindings }: Pick<ConditionalBindingBranchNode, 'events' | 'conditionalBindings'>, generatorContext: GeneratorContext): void {
   for (let i = 0; i < events.length; i++) {
-    compilerContext.addEventName(events[i].name);
+    generatorContext.addEventName(events[i].name);
   }
 
   for (let i = 0; i < conditionalBindings.length; i++) {
     const { branches } = conditionalBindings[i];
     for (let j = 0; j < branches.length; j++) {
-      registerEvents(branches[j], compilerContext);
+      registerEvents(branches[j], generatorContext);
     }
   }
 }
@@ -180,19 +180,19 @@ function appendSubmitMark(descriptors: string[], bindings: Pick<ConditionalBindi
  *
  * @param tagName - The tag name of the element.
  * @param isComponent - Whether the element is a component.
- * @param compilerContext - The compiler context of the element.
+ * @param generatorContext - The generator context of the element.
  * @returns The name of the helper.
  */
-function getStartTagWriter(tagName: string, isComponent: boolean, compilerContext: CompilerContext): string {
+function getStartTagWriter(tagName: string, isComponent: boolean, generatorContext: GeneratorContext): string {
   if (!isComponent) {
     return '_ssrStartTag';
   }
 
-  if (compilerContext.getClientComponent(tagName)) {
+  if (generatorContext.getClientComponent(tagName)) {
     return '_ssrClientComponent';
   }
 
-  return compilerContext.isIsland(tagName) ? '_ssrIsland' : '_ssrComponent';
+  return generatorContext.isIsland(tagName) ? '_ssrIsland' : '_ssrComponent';
 }
 
 /**
@@ -201,29 +201,29 @@ function getStartTagWriter(tagName: string, isComponent: boolean, compilerContex
  * no template sets its inputs in the browser, and its trigger.
  *
  * @param component - The metadata of the component.
- * @param compilerContext - The compiler context of the element.
+ * @param generatorContext - The generator context of the element.
  * @returns The object literal.
  */
-function toClientOptions({ selector, properties, clientOnly }: ComponentMetadata, compilerContext: CompilerContext): string {
+function toClientOptions({ selector, properties, clientOnly }: ComponentMetadata, generatorContext: GeneratorContext): string {
   const inputs: Record<string, string> = {};
   for (const [name, input] of properties) {
     inputs[name] = input.exposed ? name : input.name;
   }
 
-  return JSON.stringify({ inputs, island: compilerContext.isIsland(selector), hydrate: clientOnly!.hydrate });
+  return JSON.stringify({ inputs, island: generatorContext.isIsland(selector), hydrate: clientOnly!.hydrate });
 }
 
 /**
  * Maps attribute nodes to the descriptors the runtime applies, with the setters of the client reading the value once.
  *
  * @param attributes - The attribute nodes.
- * @param compilerContext - The compiler context of the attributes.
+ * @param generatorContext - The generator context of the attributes.
  * @returns The lines of the descriptors, one per attribute.
  */
-function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerContext): string[] {
+function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext): string[] {
   return attributes.map(({ name, value }) => typeof value === 'string'
     ? `{ name: ${toStringLiteral(name)}, value: ${toStringLiteral(value)}, setter: _setProperty },`
-    : `{ name: ${toStringLiteral(name)}, value: () => ${resolve(value.expression, compilerContext)}, setter: _setExpressionProperty },`);
+    : `{ name: ${toStringLiteral(name)}, value: () => ${resolve(value.expression, generatorContext)}, setter: _setExpressionProperty },`);
 }
 
 /**
@@ -231,12 +231,12 @@ function mapAttributes(attributes: AttributeNode[], compilerContext: CompilerCon
  *
  * @param descriptors - The lines of the descriptors of the attributes.
  * @param classBindings - The class binding nodes.
- * @param compilerContext - The compiler context of the class bindings.
+ * @param generatorContext - The generator context of the class bindings.
  */
-function appendClassBindings(descriptors: string[], classBindings: ClassBindingNode[], compilerContext: CompilerContext): void {
+function appendClassBindings(descriptors: string[], classBindings: ClassBindingNode[], generatorContext: GeneratorContext): void {
   for (let i = 0; i < classBindings.length; i++) {
     const { className, value } = classBindings[i];
-    descriptors.push(`{ name: ${toStringLiteral(className)}, value: () => ${resolve(value.expression, compilerContext)}, setter: _setExpressionClass },`);
+    descriptors.push(`{ name: ${toStringLiteral(className)}, value: () => ${resolve(value.expression, generatorContext)}, setter: _setExpressionClass },`);
   }
 }
 
@@ -245,7 +245,7 @@ function appendClassBindings(descriptors: string[], classBindings: ClassBindingN
  * `mapBranch`, and, for a `@switch`, the expression whose value selects the branch.
  *
  * @param conditionalBindings - The conditional binding nodes.
- * @param compilerContext - The compiler context of the conditional bindings.
+ * @param generatorContext - The generator context of the conditional bindings.
  * @param isEmpty - Tells whether a branch has nothing to apply: a conditional binding whose branches all have nothing
  *   to apply is skipped.
  * @param mapBranch - Maps a branch, given the lines declaring its condition, to its descriptor.
@@ -253,7 +253,7 @@ function appendClassBindings(descriptors: string[], classBindings: ClassBindingN
  */
 function mapConditionalBindingDescriptors(
   conditionalBindings: ConditionalBindingNode[],
-  compilerContext: CompilerContext,
+  generatorContext: GeneratorContext,
   isEmpty: Function<[branch: ConditionalBindingBranchNode], boolean>,
   mapBranch: Function<[branch: ConditionalBindingBranchNode, condition: string[]], string[]>
 ): string[] {
@@ -267,12 +267,12 @@ function mapConditionalBindingDescriptors(
 
     const mappedBranches = new Array<string>();
     for (let j = 0; j < branches.length; j++) {
-      mappedBranches.push(...mapBranch(branches[j], mapCondition(conditionalBinding, j, compilerContext)));
+      mappedBranches.push(...mapBranch(branches[j], mapCondition(conditionalBinding, j, generatorContext)));
     }
 
     lines.push('{');
     if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
-      lines.push(indent(`expression: () => ${resolve(conditionalBinding.expression, compilerContext)},`));
+      lines.push(indent(`expression: () => ${resolve(conditionalBinding.expression, generatorContext)},`));
     }
     lines.push(...indent(['branches: [', ...indent(mappedBranches), ']']), '},');
   }
@@ -287,17 +287,17 @@ function mapConditionalBindingDescriptors(
  *
  * @param conditionalBinding - The conditional binding node.
  * @param index - The position of the branch.
- * @param compilerContext - The compiler context of the conditional binding.
+ * @param generatorContext - The generator context of the conditional binding.
  * @returns The lines declaring the condition of the branch, if any.
  */
-function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, compilerContext: CompilerContext): string[] {
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, generatorContext: GeneratorContext): string[] {
   if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
     const { condition } = conditionalBinding.branches[index];
     return [`condition: ${condition ? `[${condition.join(', ')}]` : 'null'},`];
   }
 
   const { condition } = conditionalBinding.branches[index];
-  return condition ? [`condition: () => ${resolve(condition, compilerContext)},`] : [];
+  return condition ? [`condition: () => ${resolve(condition, generatorContext)},`] : [];
 }
 
 /**
@@ -307,17 +307,17 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * @param branch - The branch node.
  * @param condition - The lines declaring the condition of the branch.
  * @param withDirectives - Whether the element applies its custom directives on the server.
- * @param compilerContext - The compiler context of the branch.
+ * @param generatorContext - The generator context of the branch.
  * @returns The lines of the descriptor.
  */
-function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], withDirectives: boolean, compilerContext: CompilerContext): string[] {
-  const attributes = mapAttributes(branch.attributes, compilerContext);
+function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], withDirectives: boolean, generatorContext: GeneratorContext): string[] {
+  const attributes = mapAttributes(branch.attributes, generatorContext);
   appendSubmitMark(attributes, branch);
-  appendClassBindings(attributes, branch.classBindings, compilerContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, compilerContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, withDirectives, compilerContext));
+  appendClassBindings(attributes, branch.classBindings, generatorContext);
+  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, withDirectives, generatorContext));
   const lines = condition.concat(toProperty('attributes', attributes, ','));
   if (withDirectives && branch.directives.length) {
-    lines.push(...toProperty('directives', mapDirectives(branch.directives, compilerContext), ','));
+    lines.push(...toProperty('directives', mapDirectives(branch.directives, generatorContext), ','));
   }
 
   return ['{', ...indent(lines.concat(toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
@@ -329,12 +329,12 @@ function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], wi
  *
  * @param branch - The branch node.
  * @param condition - The lines declaring the condition of the branch.
- * @param compilerContext - The compiler context of the branch.
+ * @param generatorContext - The generator context of the branch.
  * @returns The lines of the descriptor.
  */
-function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string[], compilerContext: CompilerContext): string[] {
-  const structuralDirectives = mapStructuralDirectives(branch.structuralDirectives, compilerContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, compilerContext, nested => !appliesStructuralDirectives(nested), (nested, nestedCondition) => mapStructuralBranch(nested, nestedCondition, compilerContext));
+function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string[], generatorContext: GeneratorContext): string[] {
+  const structuralDirectives = mapStructuralDirectives(branch.structuralDirectives, generatorContext);
+  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => !appliesStructuralDirectives(nested), (nested, nestedCondition) => mapStructuralBranch(nested, nestedCondition, generatorContext));
 
   return ['{', ...indent(condition.concat(toProperty('structuralDirectives', structuralDirectives, ','), toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
 }
@@ -344,14 +344,14 @@ function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: st
  * and their conditional bindings are left out, as the events of the element: the server listens to nothing.
  *
  * @param directives - The custom directive nodes.
- * @param compilerContext - The compiler context of the directives.
+ * @param generatorContext - The generator context of the directives.
  * @returns The lines of the descriptors, one per directive.
  */
-function mapDirectives(directives: DirectiveNode[], compilerContext: CompilerContext): string[] {
+function mapDirectives(directives: DirectiveNode[], generatorContext: GeneratorContext): string[] {
   const lines = new Array<string>();
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes } = directives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, compilerContext), ''))), '},');
+    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext), ''))), '},');
   }
 
   return lines;
@@ -361,14 +361,14 @@ function mapDirectives(directives: DirectiveNode[], compilerContext: CompilerCon
  * Maps structural directive nodes to the descriptors the runtime evaluates: the selector and the properties.
  *
  * @param structuralDirectives - The structural directive nodes.
- * @param compilerContext - The compiler context of the structural directives.
+ * @param generatorContext - The generator context of the structural directives.
  * @returns The lines of the descriptors, one per structural directive.
  */
-function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], compilerContext: CompilerContext): string[] {
+function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], generatorContext: GeneratorContext): string[] {
   const lines = new Array<string>();
   for (let i = 0; i < structuralDirectives.length; i++) {
     const { selector, attributes } = structuralDirectives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, compilerContext), ''))), '},');
+    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext), ''))), '},');
   }
 
   return lines;
@@ -440,9 +440,9 @@ function toCall(callee: string, inlineArgs: string, blockArgs: string[][]): stri
  * Resolves an expression of the element as the code rendering on the server reads it.
  *
  * @param expression - The expression.
- * @param compilerContext - The compiler context of the element.
+ * @param generatorContext - The generator context of the element.
  * @returns The resolved expression.
  */
-function resolve(expression: Parameters<typeof resolveExpression>[0], compilerContext: CompilerContext): string {
-  return resolveExpression(expression, compilerContext, SERVER_RESOLVE_OPTIONS).expression;
+function resolve(expression: Parameters<typeof resolveExpression>[0], generatorContext: GeneratorContext): string {
+  return resolveExpression(expression, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
 }

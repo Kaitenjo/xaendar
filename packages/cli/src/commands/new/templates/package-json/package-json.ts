@@ -37,7 +37,7 @@ export function packageJson(name: string, version: string, style: Style, renderi
     '@xaendar/cli': `^${version}`,
     'happy-dom': '^21.0.4',
     'typescript': '^6.0.3',
-    'vite': '^8.3.5',
+    'vite': '^8.3.6',
     'vitest': '^5.1.0'
   }, rendering.devDependencies);
 

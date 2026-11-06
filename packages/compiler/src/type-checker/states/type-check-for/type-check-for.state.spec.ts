@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
-import { TypeCheckContext } from '../../models/type-checker-context/type-checker-context';
+import { TypeCheckContext } from '../../models/context/context';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { typeCheckFor } from './type-check-for.state';
 

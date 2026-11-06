@@ -14,7 +14,7 @@ const core = await import('@xaendar/core');
 const ssr = await import('@xaendar/ssr');
 const { signal } = await import('@xaendar/core/signals');
 const { compile } = await import('@xaendar/compiler');
-type CompilerCache = import('@xaendar/compiler').CompilerCache;
+type ContextCache = import('@xaendar/compiler').ContextCache;
 const { compileServer } = await import('@xaendar/ssr-compiler');
 const { CustomDirective, CustomElement, Property, StructuralDirective, _defineDirective, _defineRender } = core;
 const { renderToString, _defineServerRender } = ssr;
@@ -81,12 +81,23 @@ let onServer = true;
 const tag = (side: 'server' | 'client', name: string) => `${side}-${name}-${run}`;
 
 /**
+ * The cache of the metadata of the tests needing none: it tells no input of the components, whose attributes are set as
+ * attributes, and no module declaring them, so a `@hydrate` loads nothing before rendering its content. Every tag is
+ * described as a directive without properties, the only metadata naming no module.
+ */
+const emptyCache = {
+  getOrInsert: async () => ({ type: 'directive', properties: new Map() }),
+  getImport: () => Promise.reject(new Error('No import')),
+  set: () => undefined
+} as unknown as ContextCache;
+
+/**
  * Compiles a template with both generators, and registers a class of the component for each side.
  */
-async function register(name: string, Base: Constructor<Component>, template: (tag: (name: string) => string) => string, signals: string[] = [], css?: string, cache?: CompilerCache): Promise<{ Server: Constructor<Component>, define: () => void }> {
+async function register(name: string, Base: Constructor<Component>, template: (tag: (name: string) => string) => string, signals: string[] = [], css?: string, cache = emptyCache): Promise<{ Server: Constructor<Component>, define: () => void }> {
   const Server = class extends Base { };
   customElements.define(tag('server', name), Server);
-  _defineServerRender(Server, evaluate(await compileServer(template(child => tag('server', child)), { signals, cache: undefined as never })), css);
+  _defineServerRender(Server, evaluate(await compileServer(template(child => tag('server', child)), { signals, cache: emptyCache })), css);
 
   const Client = class extends Base { };
   let styleSheet: CSSStyleSheet | undefined;
@@ -94,7 +105,7 @@ async function register(name: string, Base: Constructor<Component>, template: (t
     styleSheet = new CSSStyleSheet();
     styleSheet.replaceSync(css);
   }
-  _defineRender(Client, evaluate(await compile(template(child => tag('client', child)), { signals, cache: cache as never })), styleSheet);
+  _defineRender(Client, evaluate(await compile(template(child => tag('client', child)), { signals, cache })), styleSheet);
   return { Server, define: () => customElements.define(tag('client', name), Client) };
 }
 
@@ -186,7 +197,7 @@ const badgeCache = {
   getOrInsert: async () => ({ type: 'component', properties: new Map([['label', { name: 'label', type: 'string', required: false, exposed: false }]]) }),
   getImport: () => Promise.reject(new Error('No import')),
   set: () => undefined
-} as unknown as CompilerCache;
+} as unknown as ContextCache;
 
 /**
  * Registers the badge of the current test.
@@ -1010,10 +1021,10 @@ describe('hydration', () => {
     /**
      * Compiles a static page for the server only, and renders it: the browser never gets its class.
      */
-    async function renderStatic(name: string, template: (tag: (name: string) => string) => string, islands: string[], cache?: CompilerCache): Promise<Element> {
+    async function renderStatic(name: string, template: (tag: (name: string) => string) => string, islands: string[], cache = emptyCache): Promise<Element> {
       const Static = class extends CustomElement { };
       customElements.define(tag('server', name), Static);
-      _defineServerRender(Static, evaluate(await compileServer(template(child => tag('server', child)), { signals: [], islands: new Set(islands.map(island => tag('server', island))), cache: cache as never })));
+      _defineServerRender(Static, evaluate(await compileServer(template(child => tag('server', child)), { signals: [], islands: new Set(islands.map(island => tag('server', island))), cache })));
       return load(await renderToString(Static));
     }
 
@@ -1058,7 +1069,7 @@ describe('hydration', () => {
     it('adopts a static component without a class in an interactive one, its light DOM included', async () => {
       const Static = class extends CustomElement { };
       customElements.define(tag('server', 'card'), Static);
-      _defineServerRender(Static, evaluate(await compileServer('<i>Card</i><slot></slot>', { signals: [], cache: undefined as never })));
+      _defineServerRender(Static, evaluate(await compileServer('<i>Card</i><slot></slot>', { signals: [], cache: emptyCache })));
       class Parent extends CustomElement {
         public clicks = 0;
 
@@ -1140,7 +1151,7 @@ describe('hydration', () => {
       getOrInsert: async () => ({ type: 'component', properties: new Map([['center', { name: 'center', type: 'number', required: false, exposed: false }]]) }),
       getImport: () => Promise.reject(new Error('No import')),
       set: () => undefined
-    } as unknown as CompilerCache;
+    } as unknown as ContextCache;
 
     /**
      * Compiles for the server a template importing the chart, whose class the server never gets.
@@ -1154,7 +1165,7 @@ describe('hydration', () => {
         properties: new Map([['center', { name: 'center', exposed: false }]]),
         clientOnly: hydrate ? { hydrate } : {}
       });
-      _defineServerRender(Server, evaluate(await compileServer(`@import { Chart } from './chart.ts';\n${template}`, { signals: [], templateDir: '/src', islands: new Set(islands), cache: { getImport } as unknown as CompilerCache })));
+      _defineServerRender(Server, evaluate(await compileServer(`@import { Chart } from './chart.ts';\n${template}`, { signals: [], templateDir: '/src', islands: new Set(islands), cache: { getImport } as unknown as ContextCache })));
       return Server;
     }
 
@@ -1165,7 +1176,7 @@ describe('hydration', () => {
      */
     async function registerChart(): Promise<() => void> {
       const Client = class extends Chart { };
-      _defineRender(Client, evaluate(await compile('<i>{ center() }</i><slot></slot>', { signals: ['center'], cache: undefined as never })));
+      _defineRender(Client, evaluate(await compile('<i>{ center() }</i><slot></slot>', { signals: ['center'], cache: emptyCache })));
       return () => customElements.define(tag('client', 'chart'), Client);
     }
 
@@ -1176,7 +1187,7 @@ describe('hydration', () => {
       const page = (name: string) => `<${name} title="Map" center="{ 5 }"><a>Source</a></${name}>`;
       const Server = await defineOnServer('page', page(tag('server', 'chart')), [], hydrate);
       const Client = class extends CustomElement { };
-      _defineRender(Client, evaluate(await compile(page(tag('client', 'chart')), { signals: [], cache: chartCache as never })));
+      _defineRender(Client, evaluate(await compile(page(tag('client', 'chart')), { signals: [], cache: chartCache })));
       return { html: await renderToString(Server), define: () => customElements.define(tag('client', 'page'), Client) };
     }
 

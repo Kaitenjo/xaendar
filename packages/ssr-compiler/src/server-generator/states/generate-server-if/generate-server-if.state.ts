@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { ASTNodeType, getBlockIdentifier, resolveExpression, toStringLiteral, type CompilerContext, type IfNode } from '@xaendar/compiler';
+import { ASTNodeType, getBlockIdentifier, resolveExpression, toStringLiteral, type GeneratorContext, type IfNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -27,19 +27,19 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * @param node - The `@if` node.
  * @param parent - Where the blocks are rendered.
  * @param index - The position of the node among its siblings.
- * @param compilerContext - The compiler context of the node.
+ * @param generatorContext - The generator context of the node.
  * @returns The code of the node, and the functions rendering its blocks.
  */
-export function generateServerIf(node: IfNode, parent: ServerParent, index: string, compilerContext: CompilerContext): ServerTransitionResult {
+export function generateServerIf(node: IfNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
   const lines = new Array<string>();
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
   let branch = 0;
   const addBranch = (opening: string, key: string, block: ServerFunctionToProcess['fn']['node']): void => {
     lines.push(`${opening} {`, indent(`out.push(${toStringLiteral(`<!--${SSR_MARKERS.if}:${branch}-->`)});`), indent(`${key}.call(this, out, context);`));
-    functionsToProcess.set(key, toBlockFunction(block, key, parent, compilerContext));
+    functionsToProcess.set(key, toBlockFunction(block, key, parent, generatorContext));
     branch++;
   };
-  const resolve = (condition: IfNode['conditionNode']): string => resolveExpression(condition, compilerContext, SERVER_RESOLVE_OPTIONS).expression;
+  const resolve = (condition: IfNode['conditionNode']): string => resolveExpression(condition, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
 
   addBranch(`if (${resolve(node.conditionNode)})`, getBlockIdentifier('if', parent.id, index), node);
 
