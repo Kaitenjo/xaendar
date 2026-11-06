@@ -1,7 +1,15 @@
-@defer () { … }                       @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression
-@defer (never) { … }                  Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression
+@defer () { … }                       @defer needs a trigger: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only
+@defer (never) { … }                  Unknown @defer trigger "never": use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only
+@defer (timer) { … }                  The trigger "timer" needs a duration, such as timer(500ms)
+@defer (timer(soon)) { … }            Expected a duration, such as 500ms or 1s, got "soon"
+@defer (hover(a.b)) { … }             Expected the element ref naming the element to watch, got "a.b"
+@defer (idle, idle(1s)) { … }         The trigger "idle" is declared twice
+@hydrate (hover(more)) { … }          A trigger of @hydrate watches the elements of its content: it takes no element ref
 @defer (idle) { … } @loading { … } @loading { … }
                                       @loading is declared twice for this @defer
+@defer { … } @placeholder (after 1s) { … }
+                                      Unknown parameter "after 1s" of @placeholder: use minimum followed by a duration, such as minimum 500ms
 @loading { … }                        @loading must follow the block of a @defer
-@defer (visible) { … }                The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element
+@defer (visible) { … }                The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)
+@defer (hover(title)) { … }           Type 'string' does not satisfy the expected type 'Element'.
 @error (error) { { error.message } }  'error' is of type 'unknown'.

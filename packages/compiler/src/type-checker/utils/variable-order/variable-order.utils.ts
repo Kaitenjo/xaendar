@@ -14,6 +14,7 @@ import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import type { CatchNode } from '../../../parser/types/nodes/catch-node.type';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
+import type { HydrateTrigger } from '../../../parser/types/triggers/hydrate-trigger.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getForVariables } from '../../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
@@ -266,22 +267,45 @@ function checkNodes(nodes: readonly ASTNode[], check: OrderCheck): void {
 }
 
 /**
- * Checks a `@hydrate` block, or a `@defer` one: the expression of its `when` trigger, evaluated where the block is, then
- * its content, a scope of its own.
+ * Checks a `@hydrate` block, or a `@defer` one: its triggers, the ones following `prefetch` too (see
+ * {@link checkTriggers}), then its content, a scope of its own.
  *
  * @param node - The block.
  * @param check - The state of the check.
  */
 function checkHydrate(node: HydrateNode | DeferNode, check: OrderCheck): void {
-  const { triggers } = node;
+  checkTriggers(node.triggers, check);
+  checkTriggers(node.prefetch, check);
+  checkScope(node.children, check);
+}
+
+/**
+ * Checks the expressions of the triggers of a block evaluated where the block is: the one of `when`, and the options of
+ * the observer of `visible`. The element ref a trigger watches is not checked: it is read once the template holding the
+ * block is rendered.
+ *
+ * @param triggers - The triggers.
+ * @param check - The state of the check.
+ */
+function checkTriggers(triggers: readonly HydrateTrigger[], check: OrderCheck): void {
   for (let i = 0; i < triggers.length; i++) {
     const trigger = triggers[i];
-    if (trigger.kind === 'when') {
-      checkReads(trigger.expressionNode, trigger.span, check);
+    switch (trigger.kind) {
+      case 'when':
+        checkReads(trigger.expressionNode, trigger.span, check);
+        break;
+
+      case 'visible':
+        if (trigger.options) {
+          checkReads(trigger.options.expressionNode, trigger.options.span, check);
+        }
+        break;
+
+      default:
+        // The other triggers read no expression of the template
+        break;
     }
   }
-
-  checkScope(node.children, check);
 }
 
 /**

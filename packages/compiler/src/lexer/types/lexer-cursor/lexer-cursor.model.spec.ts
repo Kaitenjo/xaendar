@@ -140,6 +140,20 @@ describe('LexerCursor', () => {
     });
   });
 
+  describe('peekMatchAfterSpaces', () => {
+    it('matches a text after the whitespace following the current position, without advancing', () => {
+      const cursor = new LexerCursor(' \t\r\n(idle)');
+      expect(cursor.peekMatchAfterSpaces('(')).toBe(true);
+      expect(cursor.currentChar.index).toBe(-1);
+      expect(new LexerCursor('(idle)').peekMatchAfterSpaces('(')).toBe(true);
+    });
+
+    it('returns false when the text does not follow, at the end of the input too', () => {
+      expect(new LexerCursor('  {').peekMatchAfterSpaces('(')).toBe(false);
+      expect(new LexerCursor('  ').peekMatchAfterSpaces('(')).toBe(false);
+    });
+  });
+
   describe('skipSpaces', () => {
     it('skips spaces, tabs, line feeds and carriage returns', () => {
       const cursor = new LexerCursor(' \t\n\r x');

@@ -1,0 +1,18 @@
+<!-- The modules load when the browser is idle, the content renders at the first click -->
+@defer (interaction, prefetch idle) {
+  <app-editor />
+} @placeholder {
+  <button>Edit</button>
+}
+
+<!-- The modules load when the pointer moves over the button, before the click -->
+@defer (interaction, prefetch hover) {
+  <app-comments />
+} @placeholder {
+  <button>Show the comments</button>
+}
+
+<!-- The modules load once the expression is truthy -->
+@defer (when expanded(), prefetch when previewing()) {
+  <app-details />
+}

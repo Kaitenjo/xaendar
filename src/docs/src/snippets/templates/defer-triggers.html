@@ -1,11 +1,21 @@
+<!-- No triggers: when the browser has nothing else to do, as with idle -->
+@defer {
+  <app-recommendations />
+}
+
 <!-- load: as soon as the page is rendered, without blocking it -->
 @defer (load) {
   <app-chat-widget />
 }
 
-<!-- idle: when the browser has nothing else to do -->
-@defer (idle) {
+<!-- idle: when the browser has nothing else to do, at the latest after the time given, if any -->
+@defer (idle(2s)) {
   <app-recommendations />
+}
+
+<!-- timer: once the time has passed, in ms or s -->
+@defer (timer(500ms)) {
+  <app-newsletter />
 }
 
 <!-- visible: when the @placeholder enters the viewport -->
@@ -20,6 +30,13 @@
   <app-editor />
 } @placeholder {
   <button>Edit</button>
+}
+
+<!-- hover: when the pointer moves over the @placeholder, or the focus enters it -->
+@defer (hover) {
+  <app-preview />
+} @placeholder {
+  <a href="/report">Report</a>
 }
 
 <!-- when: once the expression is truthy -->

@@ -165,28 +165,19 @@ export class TypeChecker {
       this._context.addShadowingMember(shadowingMembers[i]);
     }
     this._context.addCustomElementPatterns(...customElements);
-    // The signals the members read decide only whether a @let is a signal: the expressions read every member through root
     for (let i = 0; i < reactiveMembers.length; i++) {
       this._context.addSignalClassField(reactiveMembers[i]);
     }
 
-    // The element refs read before their element is created, which TypeScript cannot tell, since they are declared at the start of their scope
     this._report(checkVariableOrder(this._ast));
-    // A @hydrate whose trigger has no element to watch, which would silently wait for the browser to be idle
     this._report(checkTriggerTargets(this._ast));
-    // A @hydrate or a @client in a project without the HTML of the server, which they say what to do with
     if (ssr === false) {
       this._report(checkServerBlocks(this._ast));
     }
 
-    // The declarations importing the symbols of the template are written at the top level, before the function
     const imports = this._ast.filter(node => node.type === ASTNodeType.Import).flatMap(node => this._processNode(node, this._context));
-    // The template is the outermost scope: the element refs it declares come first in the function
     const { declarations, lines: body } = typeCheckScope(this._ast.filter(node => node.type !== ASTNodeType.Import), this._context, this._processNode);
-
-    // The types and the functions the type-check code of the templates and of the @let is written with are declared once, before the function
     const prelude = this._context.usesTemplateHelpers ? imports.concat(getTemplateHelpers()) : imports;
-    // The modules the types of the bindings reference are imported once, before the function
     const lines = hoistImportTypes(prelude.concat(plain('function typeCheck() {'), indentLines(declarations.concat(body)), plain('}')));
 
     return {

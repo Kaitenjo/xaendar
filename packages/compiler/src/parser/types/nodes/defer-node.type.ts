@@ -1,6 +1,6 @@
 import type { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
-import type { DeferTrigger } from '../defer-trigger.type';
+import type { DeferTrigger } from '../triggers/defer-trigger.type';
 import { ASTNodeType } from '../node.enum';
 import type { ErrorNode } from './error-node.type';
 import type { LoadingNode } from './loading-node.type';
@@ -16,9 +16,13 @@ export type DeferNode = ASTNodeWithSpan<{
    */
   type: ASTNodeType.Defer;
   /**
-   * The triggers, any of which renders the content.
+   * The triggers, any of which renders the content: none waits for the browser to be idle.
    */
   triggers: DeferTrigger[];
+  /**
+   * The triggers written after `prefetch`, any of which loads the modules of the content without rendering it.
+   */
+  prefetch: DeferTrigger[];
   /**
    * The content.
    */

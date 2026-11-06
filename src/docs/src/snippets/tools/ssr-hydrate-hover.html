@@ -1,0 +1,6 @@
+@import { MenuComponent } from './menu/menu.xd.component.ts'
+
+<!-- Hydrates when the pointer moves over the menu or the focus enters it, before the click -->
+@hydrate (hover, interaction) {
+  <app-menu />
+}

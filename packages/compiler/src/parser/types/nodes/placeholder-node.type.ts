@@ -3,7 +3,8 @@ import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import { ASTNodeType } from '../node.enum';
 
 /**
- * AST node representing a `@placeholder` block: what the server renders in place of the content of a `@client`.
+ * AST node representing a `@placeholder` block: what the server renders in place of the content of a `@client`, and
+ * what a `@defer` renders until a trigger fires.
  */
 export type PlaceholderNode = ASTNodeWithSpan<{
   /**
@@ -14,4 +15,8 @@ export type PlaceholderNode = ASTNodeWithSpan<{
    * The content of the block.
    */
   children: ASTNode[];
+  /**
+   * The shortest time the `@placeholder` of a `@defer` is shown, in milliseconds, if it declares one: `minimum 500ms`.
+   */
+  minimum?: number;
 }>

@@ -974,6 +974,8 @@ describe('hydration', () => {
 
       comments.define();
       expect(root.querySelector('button')).toBe(button);
+      // The triggers are armed once the code rendering the block is done
+      await flush();
       button.click();
 
       expect(html).toContain('<h2>Post</h2><!--xd-d--><button>Show</button><!--/xd-d--><footer>end</footer>');
@@ -993,6 +995,7 @@ describe('hydration', () => {
 
       const host = document.body.appendChild(document.createElement(tag('client', 'comments')));
       expect(host.shadowRoot!.innerHTML).toBe('<h2>Post</h2><button>Show</button><!--defer--><footer>end</footer>');
+      await flush();
       host.shadowRoot!.querySelector('button')!.click();
 
       expect(host.shadowRoot!.innerHTML).toBe('<h2>Post</h2><ul><li>3 comments</li></ul><!--defer--><footer>end</footer>');

@@ -3,6 +3,13 @@ import { _EVENT_CONTRACT_KEY, _HYDRATE_ATTRIBUTE, _RECORDED_EVENTS, WAITS_FOR_HY
 import type { _ContractEvent } from '../../types/event-contract.type';
 import type { HydrateTrigger } from '../../types/hydrate-trigger.type';
 import type { RecordedEvents } from '../../types/recorded-events.type';
+import type { Trigger } from '../../types/triggers/trigger.type';
+
+/**
+ * The events firing the `hover` trigger: the pointer moving over an element, and the focus entering it, for the users
+ * of the keyboard.
+ */
+const HOVER_EVENTS: readonly string[] = ['mouseover', 'focusin'];
 
 /**
  * The events recorded on the elements of components waiting for the trigger their `@WebComponent` declares, replayed
@@ -21,17 +28,20 @@ let contractEvents: _ContractEvent[] | undefined;
 let replayScheduled = false;
 
 /**
- * Arms the triggers written by name of content waiting to be hydrated: `fire` runs once, when the first of them fires.
+ * Arms the triggers of content waiting to be rendered or hydrated: `fire` runs once, when the first of them fires.
  * `load` fires once the code rendering the page is done, `idle` when the browser is idle (after a timeout where
- * `requestIdleCallback` is missing), `visible` when one of the elements enters the viewport, `interaction` at the first
- * event on one of them, once the listeners of the element and of the ones it holds have handled it.
+ * `requestIdleCallback` is missing), at the latest once the time it declares has passed, `timer` once its time has
+ * passed, `visible` when one of the elements enters the viewport, observed with the options it declares, `interaction`
+ * at the first event on one of them, once the listeners of the element and of the ones it holds have handled it, `hover`
+ * when the pointer moves over one of them or the focus enters it, before any listener. A trigger naming the element it
+ * watches watches that one in place of the elements.
  *
  * @param triggers - The triggers.
- * @param elements - The elements `visible` and `interaction` watch.
+ * @param elements - The elements `visible`, `interaction` and `hover` watch, unless they name the element to watch.
  * @param fire - Runs when a trigger fires.
  * @returns Disarms the triggers.
  */
-export function armTriggers(triggers: readonly HydrateTrigger[], elements: readonly Element[], fire: NoArgsVoidFunction): NoArgsVoidFunction {
+export function armTriggers(triggers: readonly Trigger[], elements: readonly Element[], fire: NoArgsVoidFunction): NoArgsVoidFunction {
   const disarms = new Array<NoArgsVoidFunction>();
   const disarm = () => {
     for (let i = 0; i < disarms.length; i++) {
@@ -46,39 +56,28 @@ export function armTriggers(triggers: readonly HydrateTrigger[], elements: reado
   };
 
   for (let i = 0; i < triggers.length; i++) {
-    switch (triggers[i]) {
-      case 'idle':
-        disarms.push(whenIdle(once));
-        break;
-
-      case 'visible':
-        disarms.push(whenVisible(elements, once));
-        break;
-
-      // In the bubbling phase, so that the listeners of the elements handle the event first
-      case 'interaction':
-        disarms.push(listen(elements, once, false));
-        break;
-
-      default:
-        disarms.push(whenLoaded(once));
-    }
+    disarms.push(armTrigger(triggers[i], elements, once));
   }
 
   return disarm;
 }
 
 /**
- * Returns the trigger to wait for in place of one watching elements, `visible` or `interaction`, where there are none to
- * watch: `idle`.
+ * Returns the trigger to wait for in place of one watching the elements of its block, `visible`, `interaction` or
+ * `hover` without an element it names, where there are none to watch: `idle`.
  *
  * @param trigger - The trigger.
  * @returns The trigger to wait for.
  */
-export function toIdle(trigger: HydrateTrigger): HydrateTrigger {
+export function toIdle(trigger: Trigger): Trigger {
+  if (typeof trigger !== 'string') {
+    return trigger.kind === 'idle' || trigger.kind === 'timer' || trigger.target ? trigger : 'idle';
+  }
+
   switch (trigger) {
     case 'visible':
     case 'interaction':
+    case 'hover':
       return 'idle';
 
     default:
@@ -186,9 +185,10 @@ export function deferElementHydration(element: Element, start: NoArgsVoidFunctio
   // The events are recorded on the shadow root too, where the ones that are not composed stop
   const targets = element.shadowRoot ? [element, element.shadowRoot] : [element];
   const interaction = trigger === 'interaction';
+  // Armed before the events are recorded, so that `hover` sees the focus entering the element before it is stopped
+  const disarm = interaction ? () => undefined : armTriggers([trigger], [element], fire);
   const recorded = recordEvents(targets, () => interaction && fire());
   elementEvents.set(element, recorded);
-  const disarm = interaction ? () => undefined : armTriggers([trigger], [element], fire);
   // Fired once the element has done connecting: what the contract recorded was an interaction too
   if (interaction && recorded.events.length) {
     queueMicrotask(fire);
@@ -291,29 +291,84 @@ function takeContractEvents(targets?: readonly EventTarget[]): _ContractEvent[] 
 }
 
 /**
+ * Arms a trigger (see {@link armTriggers}).
+ *
+ * @param trigger - The trigger.
+ * @param elements - The elements a trigger watching elements watches, unless it names the element to watch.
+ * @param fire - Runs when the trigger fires.
+ * @param options - The options of the observer of `visible`, if it declares them.
+ * @returns Disarms the trigger.
+ */
+function armTrigger(trigger: Trigger, elements: readonly Element[], fire: NoArgsVoidFunction, options?: IntersectionObserverInit): NoArgsVoidFunction {
+  if (typeof trigger !== 'string') {
+    switch (trigger.kind) {
+      case 'idle':
+        return whenIdle(fire, trigger.timeout);
+
+      case 'timer':
+        return whenTimer(fire, trigger.delay);
+
+      default:
+        return armTrigger(trigger.kind, trigger.target ? [trigger.target()] : elements, fire, trigger.options);
+    }
+  }
+
+  switch (trigger) {
+    case 'idle':
+      return whenIdle(fire);
+
+    case 'visible':
+      return whenVisible(elements, fire, options);
+
+    // In the bubbling phase, so that the listeners of the elements handle the event first
+    case 'interaction':
+      return listen(elements, fire, false);
+
+    // In the capture phase, before the recording of the events of content waiting for its hydration stops them
+    case 'hover':
+      return listen(elements, fire, true, HOVER_EVENTS);
+
+    default:
+      return whenLoaded(fire);
+  }
+}
+
+/**
  * Runs a function once the code running now is done.
  *
  * @param fire - The function.
  * @returns Cancels it.
  */
 function whenLoaded(fire: NoArgsVoidFunction): NoArgsVoidFunction {
-  const timeout = setTimeout(fire);
+  return whenTimer(fire, 0);
+}
+
+/**
+ * Runs a function once a time has passed.
+ *
+ * @param fire - The function.
+ * @param delay - The time, in milliseconds.
+ * @returns Cancels it.
+ */
+function whenTimer(fire: NoArgsVoidFunction, delay: number): NoArgsVoidFunction {
+  const timeout = setTimeout(fire, delay);
   return () => clearTimeout(timeout);
 }
 
 /**
- * Runs a function when the browser is idle, or once the code running now is done where `requestIdleCallback` is
- * missing.
+ * Runs a function when the browser is idle, at the latest once a time has passed, or once the code running now is done
+ * where `requestIdleCallback` is missing.
  *
  * @param fire - The function.
+ * @param timeout - The longest time to wait, in milliseconds, if any.
  * @returns Cancels it.
  */
-function whenIdle(fire: NoArgsVoidFunction): NoArgsVoidFunction {
+function whenIdle(fire: NoArgsVoidFunction, timeout?: number): NoArgsVoidFunction {
   if (typeof requestIdleCallback !== 'function') {
     return whenLoaded(fire);
   }
 
-  const handle = requestIdleCallback(fire);
+  const handle = requestIdleCallback(fire, { timeout });
   return () => cancelIdleCallback(handle);
 }
 
@@ -322,14 +377,15 @@ function whenIdle(fire: NoArgsVoidFunction): NoArgsVoidFunction {
  *
  * @param elements - The elements.
  * @param fire - The function.
+ * @param options - The options of the observer, if any.
  * @returns Stops observing the elements.
  */
-function whenVisible(elements: readonly Element[], fire: NoArgsVoidFunction): NoArgsVoidFunction {
+function whenVisible(elements: readonly Element[], fire: NoArgsVoidFunction, options?: IntersectionObserverInit): NoArgsVoidFunction {
   const observer = new IntersectionObserver(entries => {
     if (entries.some(entry => entry.isIntersecting)) {
       fire();
     }
-  });
+  }, options);
   for (let i = 0; i < elements.length; i++) {
     observer.observe(elements[i]);
   }
@@ -338,25 +394,26 @@ function whenVisible(elements: readonly Element[], fire: NoArgsVoidFunction): No
 }
 
 /**
- * Listens to the events recorded on content waiting for its hydration: in the capture phase, before any listener of the
- * content, or in the bubbling phase, after them.
+ * Listens to events on some nodes, by default the ones recorded on content waiting for its hydration: in the capture
+ * phase, before any listener of the content, or in the bubbling phase, after them.
  *
  * @param targets - The nodes to listen on.
  * @param listener - The listener.
  * @param capture - Whether to listen in the capture phase.
+ * @param events - The events to listen to.
  * @returns Removes the listeners.
  */
-function listen(targets: readonly EventTarget[], listener: (event: Event) => void, capture = true): NoArgsVoidFunction {
+function listen(targets: readonly EventTarget[], listener: (event: Event) => void, capture = true, events = _RECORDED_EVENTS): NoArgsVoidFunction {
   for (let i = 0; i < targets.length; i++) {
-    for (let j = 0; j < _RECORDED_EVENTS.length; j++) {
-      targets[i].addEventListener(_RECORDED_EVENTS[j], listener, { capture });
+    for (let j = 0; j < events.length; j++) {
+      targets[i].addEventListener(events[j], listener, { capture });
     }
   }
 
   return () => {
     for (let i = 0; i < targets.length; i++) {
-      for (let j = 0; j < _RECORDED_EVENTS.length; j++) {
-        targets[i].removeEventListener(_RECORDED_EVENTS[j], listener, { capture });
+      for (let j = 0; j < events.length; j++) {
+        targets[i].removeEventListener(events[j], listener, { capture });
       }
     }
   };

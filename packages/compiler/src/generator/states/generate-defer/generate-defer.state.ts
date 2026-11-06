@@ -9,9 +9,10 @@ import { getTriggerProperties } from '../../utils/trigger-properties/trigger-pro
 /**
  * Generates the code of a `@defer` block: a `_defer(...)` call receiving its triggers, the function reading the
  * expression of its `when` trigger, the one loading the modules of the components only its content renders (see
- * `getTriggerProperties`), and the functions rendering its content and the blocks following it, each one a scope of its
- * own rendered before the anchor it receives. The function of the `@error` takes the error too, declared in its scope as a
- * value under the name the `@error` gives it, if any.
+ * `getTriggerProperties`), the functions rendering its content and the blocks following it, each one a scope of its
+ * own rendered before the anchor it receives, and the times the `@placeholder` and the `@loading` declare, in
+ * milliseconds. The function of the `@error` takes the error too, declared in its scope as a value under the name the
+ * `@error` gives it, if any.
  *
  * @param node - The defer node.
  * @param parentNode - Variable name of the parent DOM node.
@@ -38,10 +39,21 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
   addBlock('content', 'defer', node);
   if (node.placeholder) {
     addBlock('placeholder', 'placeholder', node.placeholder);
+    if (node.placeholder.minimum !== undefined) {
+      properties.push(`placeholderMinimum: ${node.placeholder.minimum}`);
+    }
   }
 
   if (node.loading) {
+    const { after, minimum } = node.loading;
     addBlock('loading', 'loading', node.loading);
+    if (after !== undefined) {
+      properties.push(`loadingAfter: ${after}`);
+    }
+
+    if (minimum !== undefined) {
+      properties.push(`loadingMinimum: ${minimum}`);
+    }
   }
 
   if (node.error) {

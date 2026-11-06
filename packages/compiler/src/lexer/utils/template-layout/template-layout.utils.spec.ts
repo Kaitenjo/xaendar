@@ -185,6 +185,13 @@ describe('parseTemplateLayout', () => {
     ]);
   });
 
+  it('reads a @hydrate and a @defer without triggers, waiting for the browser to be idle', () => {
+    expect(parseTemplateLayout('@hydrate {x}@defer {y}')).toEqual([
+      { kind: 'block', keyword: 'hydrate', branches: [{ keyword: 'hydrate', body: [{ kind: 'text', value: 'x' }] }] },
+      { kind: 'block', keyword: 'defer', branches: [{ keyword: 'defer', body: [{ kind: 'text', value: 'y' }] }] }
+    ]);
+  });
+
   it('leaves the whitespace after an @if that is not followed by an @else to the content', () => {
     expect(parseTemplateLayout('@if (a) { x }\n<b></b>')).toEqual([
       { kind: 'block', keyword: 'if', branches: [{ keyword: 'if', condition: 'a', body: [{ kind: 'text', value: ' x ' }] }] },
@@ -217,7 +224,6 @@ describe('parseTemplateLayout', () => {
     ['a @client as a conditional binding', '<p @client { id="x" }></p>'],
     ['a @try as a conditional binding', '<p @try { id="x" } @catch { }></p>'],
     ['a @defer as a conditional binding', '<p @defer (idle) { id="x" }></p>'],
-    ['a @defer without its triggers', '@defer { a }'],
     ['a @loading declared twice', '@defer (idle) { a } @loading { b } @loading { c }'],
     ['a @placeholder without a @client', '@placeholder { a }'],
     ['a condition that is not between parentheses', '@switch a { }'],

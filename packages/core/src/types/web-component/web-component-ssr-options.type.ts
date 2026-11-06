@@ -14,11 +14,12 @@ export type WebComponentSsrOptions = {
   /**
    * When an element of the component rendered on the server hydrates, unless a `@hydrate` holding it decides: `load` as
    * soon as it can, the default, `idle` when the browser is idle, `visible` when it enters the viewport, `interaction` at
-   * the first event on it. Until then it shows the HTML of the server, and the events on it are recorded, replayed once it
-   * is hydrated. With `never` it stays the HTML of the server for good: no event is recorded, and the code of the component
-   * stays in the bundle, for the instances a `@hydrate` hydrates and the ones the browser creates. A `@hydrate` holding an
-   * element always decides in place of this option, which is for every instance. A component rendered in the browser
-   * renders at once. Declaring it keeps the component in the bundle of the browser.
+   * the first event on it, `hover` when the pointer moves over it or the focus enters it. Until then it shows the HTML of
+   * the server, and the events on it are recorded, replayed once it is hydrated. With `never` it stays the HTML of the
+   * server for good: no event is recorded, and the code of the component stays in the bundle, for the instances a
+   * `@hydrate` hydrates and the ones the browser creates. A `@hydrate` holding an element always decides in place of this
+   * option, which is for every instance. A component rendered in the browser renders at once. Declaring it keeps the
+   * component in the bundle of the browser.
    */
   hydrate?: HydrateTrigger,
   /**

@@ -483,12 +483,12 @@ export const CORE_API: ApiPackage = {
     {
       name: 'WebComponentSsrOptions',
       kind: 'type',
-      signature: 'type WebComponentSsrOptions = {\n  hydrate?: \'load\' | \'idle\' | \'visible\' | \'interaction\' | \'never\';\n  render?: false;\n  static?: false;\n};',
+      signature: 'type WebComponentSsrOptions = {\n  hydrate?: \'load\' | \'idle\' | \'visible\' | \'interaction\' | \'hover\' | \'never\';\n  render?: false;\n  static?: false;\n};',
       members: [
         {
           name: 'hydrate',
           group: 'properties',
-          signature: 'hydrate?: \'load\' | \'idle\' | \'visible\' | \'interaction\' | \'never\''
+          signature: 'hydrate?: \'load\' | \'idle\' | \'visible\' | \'interaction\' | \'hover\' | \'never\''
         },
         {
           name: 'render',

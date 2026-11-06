@@ -96,20 +96,30 @@ describe('lexFlowControl', () => {
     });
   });
 
-  it('recognises @defer, reading its triggers as a condition', () => {
-    const cursor = new LexerCursor('@defer (idle) {');
+  it.each([
+    ['@defer (idle) {', TokenType.DEFER],
+    ['@hydrate (idle) {', TokenType.HYDRATE],
+    ['@placeholder (minimum 1s) {', TokenType.PLACEHOLDER],
+    ['@loading (after 100ms) {', TokenType.LOADING]
+  ])('recognises %s, reading its parameters as a condition', (source, type) => {
+    const cursor = new LexerCursor(source);
     expect(lexFlowControl(cursor, context)).toEqual({
       state: LexerState.FLOW_CONTROL_CONDITION,
-      tokens: [{ type: TokenType.DEFER }],
+      tokens: [{ type }],
       pushState: true
     });
+    expect(cursor.peekMatch('(')).toBe(true);
   });
 
-  it('recognises @loading', () => {
-    const cursor = new LexerCursor('@loading {');
+  it.each([
+    ['@defer {', TokenType.DEFER],
+    ['@hydrate {', TokenType.HYDRATE],
+    ['@loading {', TokenType.LOADING]
+  ])('recognises %s without parameters, followed by its block', (source, type) => {
+    const cursor = new LexerCursor(source);
     expect(lexFlowControl(cursor, context)).toEqual({
       state: LexerState.FLOW_CONTROL_BLOCK,
-      tokens: [{ type: TokenType.LOADING }]
+      tokens: [{ type }]
     });
   });
 
@@ -159,15 +169,6 @@ describe('lexFlowControl', () => {
     expect(lexFlowControl(cursor, context)).toEqual({
       state: LexerState.FLOW_CONTROL_BLOCK,
       tokens: [{ type }]
-    });
-  });
-
-  it('recognises @hydrate', () => {
-    const cursor = new LexerCursor('@hydrate (idle) {');
-    expect(lexFlowControl(cursor, context)).toEqual({
-      state: LexerState.FLOW_CONTROL_CONDITION,
-      tokens: [{ type: TokenType.HYDRATE }],
-      pushState: true
     });
   });
 

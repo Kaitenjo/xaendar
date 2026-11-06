@@ -159,6 +159,23 @@ export class LexerCursor extends Cursor {
   }
 
   /**
+   * Checks whether the characters following the whitespace (spaces, tabs and line breaks) after the current position
+   * start with a text, without advancing the cursor: e.g. the parentheses following a keyword on another line. Reaching
+   * the end of the input does not throw.
+   *
+   * @param pattern - The text.
+   * @returns `true` if the characters after the whitespace start with the text, `false` otherwise.
+   */
+  public peekMatchAfterSpaces(pattern: string): boolean {
+    let index = this._currentChar.index + 1;
+    for (let code = this.input.charCodeAt(index); code === SPACE || code === TAB || code === LF || code === CR; code = this.input.charCodeAt(index)) {
+      index++;
+    }
+
+    return this.input.startsWith(pattern, index);
+  }
+
+  /**
    * Skips all consecutive whitespace characters (spaces, tabs and line breaks) from the current position.
    */
   public skipSpaces(): void {

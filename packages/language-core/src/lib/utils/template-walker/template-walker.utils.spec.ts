@@ -157,6 +157,15 @@ describe('walkTemplate', () => {
     ]);
   });
 
+  it('visits the element refs and the options of the triggers, the ones following prefetch too', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('<b #more></b>@defer (hover(more), interaction, visible({ rootMargin: margin }), timer(1s), prefetch visible(more), prefetch when soon) { }'), [], {
+      expression: expression => visits.push(expression.getText())
+    });
+
+    expect(visits).toEqual(['more', '{ rootMargin: margin }', 'more', 'soon']);
+  });
+
   it('walks only the @placeholder of a @defer when asked to walk what the server renders', () => {
     const visits = new Array<string>();
     walkTemplate(parseTemplate('@defer (when a) { {b} } @placeholder { {c} } @loading { {d} } @error { {e} } @defer (idle) { {f} }'), [], {

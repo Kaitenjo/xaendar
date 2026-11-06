@@ -305,6 +305,43 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, '} <b>')).toContain('punctuation.section.block.end.xaendar');
   });
 
+  it('colors the triggers written with arguments, after prefetch too, the durations as numbers and the element refs as expressions', () => {
+    const template = '@defer (hover(more), timer(1.5s), idle(500), prefetch visible(more, { rootMargin: m })) { x }';
+
+    const keywords = ['hover', 'timer', 'idle', 'prefetch', 'visible'];
+    for (let i = 0; i < keywords.length; i++) {
+      expect(scopesOf(template, keywords[i])).toContain('keyword.control.xaendar');
+    }
+    expect(scopesOf(template, '1.5s')).toContain('constant.numeric.duration.xaendar');
+    expect(scopesOf(template, 'more')).toContain('meta.embedded.expression.xaendar');
+  });
+
+  it('colors never only in a @hydrate', () => {
+    expect(scopesOf('@hydrate (never) { x }', 'never')).toContain('keyword.control.xaendar');
+    expect(scopesOf('@defer (never) { x }', 'never')).not.toContain('keyword.control.xaendar');
+  });
+
+  it('colors a @defer and a @hydrate without triggers', () => {
+    const template = '@defer { x } @hydrate { y }';
+
+    expect(scopesOf(template, '@defer')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, '{ x')).toContain('punctuation.section.block.begin.xaendar');
+    expect(scopesOf(template, '@hydrate')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, '{ y')).toContain('punctuation.section.block.begin.xaendar');
+  });
+
+  it('colors the times of a @placeholder and of a @loading', () => {
+    const template = '@defer { x } @placeholder (minimum 500ms) { p } @loading (after 100ms, minimum 1s) { l }';
+
+    expect(scopesOf(template, '@placeholder')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, 'minimum')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, 'after')).toContain('keyword.control.xaendar');
+    expect(scopesOf(template, '500ms')).toContain('constant.numeric.duration.xaendar');
+    expect(scopesOf(template, '1s')).toContain('constant.numeric.duration.xaendar');
+    expect(scopesOf(template, ', minimum')).toContain('punctuation.separator.xaendar');
+    expect(scopesOf(template, '{ l')).toContain('punctuation.section.block.begin.xaendar');
+  });
+
   it('colors the render of a template, with its arguments as expressions', () => {
     const template = '<ul>@render row(items()[0], (count), \'a)\')</ul> after';
 

@@ -85,7 +85,10 @@ describe('getKeywordContext', () => {
     ['right after the block', '@defer (idle) {\n}\n@', 'placeholder,loading,error'],
     ['after its @placeholder', '@defer (idle) {\n} @placeholder {\n}\n@', 'loading,error'],
     ['after its @error with a name and its @loading', '@defer (idle) {\n} @error (failure) {\n} @loading {\n} @', 'placeholder'],
-    ['after all of them', '@defer (idle) {\n} @loading {\n} @placeholder {\n} @error {\n} @', '']
+    ['after all of them', '@defer (idle) {\n} @loading {\n} @placeholder {\n} @error {\n} @', ''],
+    ['after a @defer without triggers', '@defer {\n}\n@', 'placeholder,loading,error'],
+    ['none after a text following the block', '@defer (idle) {\n} text\n@', ''],
+    ['after the times of its @placeholder and of its @loading', '@defer {\n} @placeholder (minimum 1s) {\n} @loading (after 100ms, minimum 1s) {\n} @', 'error']
   ])('proposes the blocks following a @defer not written yet: %s', (_name, template, expected) => {
     const context = getKeywordContext(template, template.length)!;
 

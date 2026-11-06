@@ -132,6 +132,19 @@ describe('checkVariableOrder', () => {
       expect(errorsOf('@defer (idle) { a }')).toBeUndefined();
     });
 
+    it('checks the expressions of the triggers evaluated where the block is, but not the element refs they watch, read once it is rendered', () => {
+      const template = [
+        '@defer (hover(more), visible(more, { rootMargin: field.value }), prefetch when other.checked) { a }',
+        '<button #more></button><input #field /><input #other />'
+      ].join('');
+
+      expect(errorsOf(template)).toEqual([
+        [readBefore('field'), 'field'],
+        [readBefore('other'), 'other']
+      ]);
+      expect(errorsOf('@hydrate (prefetch visible({ threshold: 1 })) { <b></b> }')).toBeUndefined();
+    });
+
     it('reports an element ref read by the track expression of a @for, declared by its body or outside of it', () => {
       expect(errorsOf('<input #field />@for (item of items(); track field.value + row.value + item()) { <input #row /> }')).toEqual([
         [readByTrack('field'), 'field'],

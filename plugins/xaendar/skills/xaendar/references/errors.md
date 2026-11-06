@@ -226,20 +226,30 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A spread argument (...values) in a @render.
 - **Fix:** Pass one argument per parameter.
 
-### `[Parser] @hydrate needs a trigger: load, idle, visible, interaction, never, or when followed by an expression`
+### `[Parser] @hydrate needs a trigger: use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only`
 
 - **Cause:** The parentheses of a @hydrate are empty, or hold an empty trigger between two commas.
-- **Fix:** List at least one trigger, separated by commas: @hydrate (visible, when ready()).
+- **Fix:** List at least one trigger, separated by commas: @hydrate (visible, when ready()); or leave out the parentheses to hydrate when the browser is idle: @hydrate { … }.
 
-### `[Parser] Unknown @hydrate trigger "hover": use load, idle, visible, interaction, never, or when followed by an expression`
+### `[Parser] Unknown @hydrate trigger "viewport": use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only`
 
 - **Cause:** A trigger of a @hydrate is not one of the keywords, or an expression is written without when.
-- **Fix:** Use load, idle, visible, interaction or never, and write when before an expression: @hydrate (when open()).
+- **Fix:** Use load, idle, timer, visible, interaction, hover or never, and write when before an expression: @hydrate (when open()).
 
 ### `[Parser] The trigger "never" stands alone: any other trigger would hydrate the content`
 
 - **Cause:** A @hydrate lists never next to another trigger.
 - **Fix:** Remove never to hydrate the content, or the other triggers to leave it as the HTML of the server.
+
+### `[Parser] The trigger "never" loads nothing: it cannot follow prefetch`
+
+- **Cause:** prefetch never is written in a @hydrate: never loads no module.
+- **Fix:** Remove it, or write after prefetch the trigger that should load the modules: @hydrate (interaction, prefetch idle).
+
+### `[Parser] A trigger of @hydrate watches the elements of its content: it takes no element ref`
+
+- **Cause:** A trigger of a @hydrate is written with an element ref: visible, interaction and hover of a @hydrate watch the elements of its content, which the server rendered.
+- **Fix:** Remove the element ref: @hydrate (hover) { … }; use a @defer to watch another element.
 
 ### `[TypeChecker] The trigger "visible" watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client`
 
@@ -256,15 +266,65 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @placeholder is not right after the } of a @client or of a @defer (or of a block following the @defer): it stands alone, it follows another block or a text, or it is the second one of a @client.
 - **Fix:** Write it right after the block of a @client or of a @defer, once: @client { … } @placeholder { … }.
 
-### `[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression`
+### `[Parser] The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once`
 
-- **Cause:** A @defer without triggers between its parentheses, or with an empty one between two commas. Its triggers are required.
-- **Fix:** List at least one trigger: @defer (idle) { … }.
+- **Cause:** A @placeholder following a @client is written with parameters, which only the one of a @defer takes.
+- **Fix:** Remove the parentheses: @client { … } @placeholder { … }.
 
-### `[Parser] Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression`
+### `[Parser] @defer needs a trigger: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only`
+
+- **Cause:** The parentheses of a @defer are empty, or hold an empty trigger between two commas.
+- **Fix:** List at least one trigger: @defer (interaction) { … }; or leave out the parentheses to render the content when the browser is idle: @defer { … }.
+
+### `[Parser] Unknown @defer trigger "never": use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only`
 
 - **Cause:** A trigger of a @defer is not one of the keywords (never is a trigger of @hydrate only), or an expression is written without when.
-- **Fix:** Use load, idle, visible or interaction, and write when before an expression: @defer (when open()).
+- **Fix:** Use load, idle, timer, visible, interaction or hover, and write when before an expression: @defer (when open()).
+
+### `[Parser] @defer needs a trigger after prefetch: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only`
+
+- **Cause:** prefetch is written without the trigger loading the modules after it.
+- **Fix:** Write the trigger after prefetch: @defer (interaction, prefetch idle).
+
+### `[Parser] The trigger "timer" needs a duration, such as timer(500ms)`
+
+- **Cause:** timer is written without the time to wait between its parentheses.
+- **Fix:** Write the time, in ms or s: timer(500ms), timer(2s).
+
+### `[Parser] Expected a duration, such as 500ms or 1s, got "soon"`
+
+- **Cause:** The time of timer, of idle, or of a parameter of a @placeholder or a @loading is not a number followed by ms or s.
+- **Fix:** Write a number, with decimals or without, followed by ms or s, or alone for milliseconds: timer(1.5s), idle(500).
+
+### `[Parser] The trigger "load" takes no arguments`
+
+- **Cause:** A trigger taking no arguments, load or never, is written with parentheses.
+- **Fix:** Remove the parentheses: @defer (load).
+
+### `[Parser] The trigger "hover" takes at most one argument`
+
+- **Cause:** A trigger is written with more arguments than it takes: interaction, hover, idle and timer take one, visible two, the element ref and its options.
+- **Fix:** Keep one argument, the element ref of the element to watch: hover(more).
+
+### `[Parser] Expected the element ref naming the element to watch, got "a.b"`
+
+- **Cause:** The argument of visible, interaction or hover is not a name: they watch the element an element ref names.
+- **Fix:** Give the element an element ref, and write its name: <button #more>…</button> @defer (hover(more)) { … }.
+
+### `[Parser] Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got "margin"`
+
+- **Cause:** The options of visible, after the element ref or alone, are not written as an object literal.
+- **Fix:** Write the options between braces, reading the members of the component inside them if needed: visible(frame, { rootMargin: margin() }).
+
+### `[Parser] Unknown parameter "after 1s" of @placeholder: use minimum followed by a duration, such as minimum 500ms`
+
+- **Cause:** A parameter of a @placeholder or of a @loading is not one it takes: a @placeholder takes minimum, a @loading after and minimum.
+- **Fix:** Use the parameters of the block, each one followed by a time: @placeholder (minimum 500ms), @loading (after 100ms, minimum 1s).
+
+### `[Parser] The parameter "minimum" of @loading is declared twice`
+
+- **Cause:** A parameter of a @placeholder or of a @loading is written twice.
+- **Fix:** Keep one of them.
 
 ### `[Parser] @loading is declared twice for this @defer`
 
@@ -276,10 +336,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @loading or an @error (`@error must follow the block of a @defer`) not right after a @defer or one of the blocks following it.
 - **Fix:** Write it right after the @defer: @defer (idle) { … } @loading { … } @error (error) { … }.
 
-### `[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element`
+### `[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)`
 
-- **Cause:** A @defer with visible or interaction without a @placeholder, or with one rendering no element (only text): those triggers watch the elements of the @placeholder, so they would never fire.
-- **Fix:** Add a @placeholder holding an element, ideally with the size of the content when the trigger is visible; or use idle, load or when.
+- **Cause:** A @defer with visible, interaction or hover without a @placeholder, or with one rendering no element (only text): those triggers watch the elements of the @placeholder, so they would never fire.
+- **Fix:** Add a @placeholder holding an element, ideally with the size of the content when the trigger is visible; name the element to watch, as in hover(button); or use idle, load, timer or when.
 
 ### `'error' is reserved in templates: give the error of @error another name.`
 

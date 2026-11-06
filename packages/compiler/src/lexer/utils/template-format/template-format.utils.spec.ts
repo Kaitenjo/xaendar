@@ -90,6 +90,18 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('indents a @defer without triggers, and the times of the blocks following it as written', () => {
+      expect(format('@defer {<p></p>}@placeholder (minimum 1s){<b></b>}@loading (after 100ms,minimum 1s){<u></u>}')).toBe(lines(
+        '@defer {',
+        '  <p></p>',
+        '} @placeholder (minimum 1s) {',
+        '  <b></b>',
+        '} @loading (after 100ms,minimum 1s) {',
+        '  <u></u>',
+        '}'
+      ));
+    });
+
     it('indents the content of a @hydrate, keeping its triggers as written', () => {
       expect(format('@hydrate(visible,when ready()){<p></p>}')).toBe(lines(
         '@hydrate (visible,when ready()) {',

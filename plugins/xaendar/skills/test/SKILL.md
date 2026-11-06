@@ -86,6 +86,25 @@ export class CounterHostComponent extends CustomElement {
 - `afterEach(() => document.body.replaceChildren())` disconnects the components: `onDestroy` runs and the effects are disposed.
 - Never import the `_`-prefixed helpers of `@xaendar/core` (`_Context`, `_setExpressionProperty`): they are the API of the compiled templates.
 - happy-dom computes no layout (`offsetWidth`, `getBoundingClientRect` are 0: define them on the element with `Object.defineProperty`) and has no `ElementInternals` (stub `attachInternals` on `HTMLElement.prototype` in a `beforeAll`).
+- `@defer` blocks: their triggers are armed once the template holding them is rendered, so `await flush()` after mounting before firing one (`click()`, `dispatchEvent(new Event('mouseover', { bubbles: true }))`); the content waits for its modules (`vi.waitFor`). To show each part without triggers, import `@xaendar/core/testing`:
+
+```ts
+import { getDeferBlocks, setDeferBlockBehavior } from '@xaendar/core/testing';
+
+afterEach(() => setDeferBlockBehavior('playthrough'));
+
+it('shows the comments', async () => {
+  setDeferBlockBehavior('manual');           // before mounting: the triggers never fire
+  const element = mount();
+  const [comments] = getDeferBlocks(element);  // in render order; state is 'placeholder'
+
+  await comments.render('loading');
+  await comments.render('complete');          // waits for the modules of the content
+  expect(element.shadowRoot!.querySelector('app-comment-list')).not.toBeNull();
+});
+```
+
+  `render('error', error)` shows the `@error` with that error; a part the block does not declare rejects.
 - `xd test` compiles the templates for the browser, also in a project with `ssr`: `renderToString` rejects there (`has no template compiled for the server`). Check the server rendering with `xd start` or `xd prerender`.
 
 ## Running

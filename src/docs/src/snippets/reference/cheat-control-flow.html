@@ -38,7 +38,7 @@
   <p>{ error instanceof Error ? error.message : 'Error' }</p>
 }
 
-@hydrate (visible, when ready()) {                         <!-- or load, idle, interaction, never -->
+@hydrate (visible, when ready()) {                         <!-- or load, idle, timer(2s), interaction, hover, never, prefetch idle; none: idle -->
   <app-reviews />
 }
 
@@ -48,11 +48,11 @@
   <p>Loading…</p>
 }
 
-@defer (interaction) {                                     <!-- or load, idle, visible, when expr -->
+@defer (interaction, prefetch hover) {                     <!-- or load, idle, timer(2s), visible, hover(ref), when expr; none: idle -->
   <app-comments />
-} @placeholder {                                           <!-- optional: until a trigger fires -->
+} @placeholder (minimum 500ms) {                           <!-- optional: until a trigger fires -->
   <button>Show the comments</button>
-} @loading {                                               <!-- optional: while the modules load -->
+} @loading (after 100ms, minimum 1s) {                     <!-- optional: while the modules load -->
   <p>Loading…</p>
 } @error (error) {                                         <!-- optional: the modules failed to load -->
   <p>Not available</p>

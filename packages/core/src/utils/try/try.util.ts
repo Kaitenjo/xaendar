@@ -37,11 +37,10 @@ export function _try(parentNode: HTMLElement, parentContext: _Context, reference
   const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'try', _SSR_MARKERS.try);
   const replaced = nodeBlock.marker === CATCH;
   const strategy = replaced ? nodeStrategy.replace(parentNode, nodeBlock) : nodeStrategy.adopt(parentNode, nodeBlock, CONTENT);
-
   const holder = new _Context(parentContext);
-  // Wrapped, so that `undefined` thrown can be told from no error
-  let failure: { readonly error: unknown } | undefined;
   const scope = openTryScope();
+
+  let failure: { readonly error: unknown } | undefined;
   try {
     holder.addChild(block.content(parentNode, holder, nodeBlock.anchor, strategy));
   } catch (error) {
@@ -51,18 +50,15 @@ export function _try(parentNode: HTMLElement, parentContext: _Context, reference
   }
 
   if (failure) {
-    // In creation order, so that a component is removed, running its `onDestroy`, before its own contexts are disposed
     for (let i = 0; i < scope.contexts.length; i++) {
       scope.contexts[i].clear();
     }
 
-    // What is left of the content the server rendered is removed, with a warning, and the @catch is created
     const fallback = replaced ? strategy : nodeStrategy.adopt(parentNode, nodeBlock, CATCH);
     holder.addChild(block.catch(parentNode, holder, nodeBlock.anchor, fallback, failure.error));
   }
 
   parentContext.addChild(holder);
-  // `replace` has already moved past the block
   if (!replaced) {
     nodeStrategy.close(parentNode, nodeBlock);
   }

@@ -4,6 +4,7 @@ import type { ExpressionContext } from '../../types/expression-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import type { ScanState } from '../../types/scan-state.type';
+import { isTriggerExpression } from '../trigger-context/trigger-context.utils';
 
 /**
  * The part of an identifier written right before an offset.
@@ -15,6 +16,12 @@ const PARTIAL_IDENTIFIER = /[\w$]*$/;
  * that the members of the component are proposed there.
  */
 const PLACEHOLDER = '__xaendarCompletion__';
+
+/**
+ * The keywords whose parentheses hold no expression: the name of the error of a `@catch` and of an `@error`, the times
+ * of a `@placeholder` and of a `@loading`.
+ */
+const WITHOUT_EXPRESSION: ReadonlySet<TokenType> = new Set([TokenType.CATCH, TokenType.ERROR, TokenType.PLACEHOLDER, TokenType.LOADING]);
 
 /**
  * The character opening each construct closed by a parenthesis, a bracket or a brace.
@@ -37,8 +44,9 @@ const OPENERS: Readonly<Record<string, string>> = { ')': '(', ']': '[', '}': '{'
  * @param source - The source of the template.
  * @param offset - The offset in the template.
  * @returns The expression being written, `undefined` if the offset is not in an interpolation, in the handler of an
- *   event, in the condition of `@if`, `@else if`, `@for` or `@switch`, in the arguments of a `@render`, or in the value
- *   of a `@let`.
+ *   event, in the condition of `@if`, `@else if`, `@for` or `@switch`, in the expression of the `when` of a `@defer` or
+ *   of a `@hydrate` or in the arguments of one of their triggers, in the arguments of a `@render`, or in the value of a
+ *   `@let`.
  */
 export function getExpressionContext(source: string, offset: number): ExpressionContext | undefined {
   const before = source.slice(0, offset);
@@ -78,8 +86,9 @@ export function getExpressionContext(source: string, offset: number): Expression
       const open = before.indexOf('(', lastToken!.span.end);
       // The condition of a `@for` starts with the name of its item, written before ` of ` (or the `;` of an iterable without item)
       const isForItem = lastToken!.type === TokenType.FOR && !/\sof\s|;/.test(before.slice(open + 1, span.start));
-      // The parentheses of a @catch and of an @error hold the name of the error, not an expression
-      if (open === -1 || isForItem || lastToken!.type === TokenType.CATCH || lastToken!.type === TokenType.ERROR) {
+      // The triggers of a @defer and of a @hydrate are keywords: only the expression of a when, and the arguments of a trigger, are expressions
+      const isTriggerKeyword = (lastToken!.type === TokenType.DEFER || lastToken!.type === TokenType.HYDRATE) && !isTriggerExpression(before.slice(open + 1, span.start));
+      if (open === -1 || isForItem || isTriggerKeyword || WITHOUT_EXPRESSION.has(lastToken!.type)) {
         return undefined;
       }
 

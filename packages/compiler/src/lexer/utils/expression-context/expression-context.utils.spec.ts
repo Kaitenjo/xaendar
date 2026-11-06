@@ -62,7 +62,11 @@ describe('getExpressionContext', () => {
     ['the track of a @for without item', '@for (10; track |) {\n}', 'condition@16-16: @for (10; track P) {\n}'],
     ['a @switch', '@switch (|) {\n}', 'condition@9-9: @switch (P) {\n}'],
     ['a call left open', '@if (fn(|', 'condition@8-8: @if (fn(P)) {}'],
-    ['a conditional binding', '<b @if (|) { title="x" }></b>', 'condition@8-8: <b @if (P) { title="x" }></b>']
+    ['a conditional binding', '<b @if (|) { title="x" }></b>', 'condition@8-8: <b @if (P) { title="x" }></b>'],
+    ['the expression of the when of a @defer', '@defer (idle, when re|', 'condition@19-21: @defer (idle, when re) {}'],
+    ['the expression of the when following prefetch', '@hydrate (prefetch when |) {\n}', 'condition@24-24: @hydrate (prefetch when P) {\n}'],
+    ['the element ref a trigger watches', '@defer (hover(|', 'condition@14-14: @defer (hover(P)) {}'],
+    ['the options of visible', '@defer (visible(more, { rootMargin: |', 'condition@36-36: @defer (visible(more, { rootMargin: P})) {}']
   ])('closes the condition of a block: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });
@@ -101,6 +105,12 @@ describe('getExpressionContext', () => {
     ['the partial item of a @for', '@for (ite|'],
     ['the name of the error of a @catch', '@try { a } @catch (err|'],
     ['the name of the error of an @error', '@defer (idle) { a } @error (err|'],
+    ['the name of a trigger', '@defer (idle, ho|'],
+    ['the name of a trigger following prefetch', '@hydrate (prefetch |'],
+    ['the name of a trigger after the arguments of another one', '@defer (hover(more)|'],
+    ['a string in the options of a trigger', '@defer (visible({ rootMargin: \'1(|'],
+    ['the times of a @placeholder', '@defer { a } @placeholder (min|'],
+    ['the times of a @loading', '@defer { a } @loading (after |'],
     ['the item of a @for before its of', '@for (item |'],
     ['a string in a condition', '@if (\'a|'],
     ['the name of the template of a @render', '@render ro|'],

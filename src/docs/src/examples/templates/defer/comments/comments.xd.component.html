@@ -2,10 +2,10 @@
 @import { CommentListComponent } from './comment-list.xd.component.ts'
 
 <p>Signals notify the code reading them when they change.</p>
-@defer (interaction) {
+@defer (interaction, prefetch hover) {
   <ex-comment-list />
 } @placeholder {
   <ex-button>Show the comments</ex-button>
-} @loading {
+} @loading (after 100ms, minimum 500ms) {
   <p class="note">Loading the comments…</p>
 }

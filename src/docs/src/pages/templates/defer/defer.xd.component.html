@@ -7,6 +7,7 @@
 @import { DetailsComponent } from '../../../examples/templates/defer/details/details.xd.component.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { DEFER_TESTING } from './defer.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.templates.defer.eyebrow') }
@@ -39,11 +40,26 @@
 </docs-example>
 
 <h2>
+  { t(translations(), 'pages.templates.defer.targets.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.targets.p1") />
+<docs-code snippet="templates/defer-targets.html" />
+<p @@htmlTranslation(key="pages.templates.defer.targets.p2") />
+
+<h2>
+  { t(translations(), 'pages.templates.defer.prefetch.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.prefetch.p1") />
+<docs-code snippet="templates/defer-prefetch.html" />
+<p @@htmlTranslation(key="pages.templates.defer.prefetch.p2") />
+
+<h2>
   { t(translations(), 'pages.templates.defer.blocks.title') }
 </h2>
 <p @@htmlTranslation(key="pages.templates.defer.blocks.p1") />
 <p @@htmlTranslation(key="pages.templates.defer.blocks.p2") />
 <p @@htmlTranslation(key="pages.templates.defer.blocks.p3") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.p4") />
 
 <h2>
   { t(translations(), 'pages.templates.defer.modules.title') }
@@ -63,6 +79,13 @@
 <p @@htmlTranslation(key="pages.templates.defer.ssr.p2") />
 
 <h2>
+  { t(translations(), 'pages.templates.defer.testing.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.defer.testing.p1") />
+<docs-code snippet="{DEFER_TESTING}" />
+<p @@htmlTranslation(key="pages.templates.defer.testing.p2") />
+
+<h2>
   { t(translations(), 'pages.templates.defer.errors.title') }
 </h2>
 <docs-code snippet="templates/defer-errors.txt" />
@@ -78,6 +101,8 @@
       heading="{translations().pages.templates.defer.edgeCases.callout2.heading}" />
     <docs-callout-item @@htmlTranslation(key="pages.templates.defer.edgeCases.callout3.body")
       heading="{translations().pages.templates.defer.edgeCases.callout3.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.templates.defer.edgeCases.callout4.body")
+      heading="{translations().pages.templates.defer.edgeCases.callout4.heading}" />
   </docs-callout>
 </section>
 
@@ -105,13 +130,25 @@
       </tr>
       <tr>
         <td>
-          <code>{ '@placeholder { … }' }</code>
+          <code>{ 'prefetch trigger' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'hover(ref), visible(ref, { … })' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.defer.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@placeholder (minimum 500ms) { … }' }</code>
         </td>
         <td @@htmlTranslation(key="pages.templates.defer.summary.td2") />
       </tr>
       <tr>
         <td>
-          <code>{ '@loading { … }' }</code>
+          <code>{ '@loading (after 100ms, minimum 1s) { … }' }</code>
         </td>
         <td @@htmlTranslation(key="pages.templates.defer.summary.td3") />
       </tr>

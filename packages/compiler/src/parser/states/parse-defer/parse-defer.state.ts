@@ -8,33 +8,37 @@ import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { DeferNode } from '../../types/nodes/defer-node.type';
 import type { ErrorNode } from '../../types/nodes/error-node.type';
+import { LOADING_PARAMETERS, PLACEHOLDER_PARAMETERS, readBlockParameters } from '../../utils/block-parameters/block-parameters.utils';
 import { readErrorName } from '../../utils/error-name/error-name.utils';
 import { parseDeferTriggers } from '../../utils/triggers/triggers.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**
- * Parses a `@defer` block: its triggers, its content, and the blocks following it, each one optional and declared once,
- * in any order: `@placeholder`, `@loading`, and `@error` with the name of its error between parentheses, when it has one.
+ * Parses a `@defer` block: its triggers, between parentheses, which can be left out to wait for the browser to be idle,
+ * its content, and the blocks following it, each one optional and declared once, in any order: `@placeholder`, with the
+ * shortest time it is shown (`minimum`), `@loading`, with the time the modules load for before it is shown (`after`)
+ * and the shortest time it is shown (`minimum`), and `@error` with the name of its error, each one between parentheses
+ * when the block declares it.
  *
  * @param cursor - The parser cursor positioned on the `@defer` keyword.
  * @param parseNode - Parses the next node.
  * @param token - The `@defer` keyword.
  * @returns The defer node.
- * @throws When the triggers are missing or not valid, a block following the content is declared twice, or the name of
- *   the error is not one a template can declare.
+ * @throws When the triggers or the parameters of a block are not valid, a block following the content is declared
+ *   twice, or the name of the error is not one a template can declare.
  */
 export function parseDefer(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: DeferToken): DeferNode {
   cursor.advance();
   const conditionToken = cursor.peek();
-  if (conditionToken.type !== TokenType.CONDITION) {
-    throw `Expected the triggers of @defer between parentheses, got ${TokenType[conditionToken.type]}`;
-  }
-
-  // consume CONDITION and BLOCK_OPEN
-  cursor.advance(2);
+  const { triggers, prefetch } = conditionToken.type === TokenType.CONDITION
+    ? parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start)
+    : { triggers: [], prefetch: [] };
+  // consume CONDITION, if any, and BLOCK_OPEN
+  cursor.advance(conditionToken.type === TokenType.CONDITION ? 2 : 1);
   const node: DeferNode = {
     type: ASTNodeType.Defer,
-    triggers: parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start),
+    triggers,
+    prefetch,
     children: parseBlockChildren(cursor, parseNode),
     placeholder: null,
     loading: null,
@@ -49,15 +53,17 @@ export function parseDefer(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNo
     switch (next.type) {
       case TokenType.PLACEHOLDER: {
         assertNotDeclared(node.placeholder, '@placeholder', next.span);
+        const parameters = readBlockParameters(cursor, '@placeholder', PLACEHOLDER_PARAMETERS);
         const children = parseFollowingChildren(cursor, parseNode);
-        node.placeholder = { type: ASTNodeType.Placeholder, children, span: { start, end: cursor.getCurrentToken().value.span.end } };
+        node.placeholder = Object.assign({ type: ASTNodeType.Placeholder as const, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
         break;
       }
 
       case TokenType.LOADING: {
         assertNotDeclared(node.loading, '@loading', next.span);
+        const parameters = readBlockParameters(cursor, '@loading', LOADING_PARAMETERS);
         const children = parseFollowingChildren(cursor, parseNode);
-        node.loading = { type: ASTNodeType.Loading, children, span: { start, end: cursor.getCurrentToken().value.span.end } };
+        node.loading = Object.assign({ type: ASTNodeType.Loading as const, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
         break;
       }
 

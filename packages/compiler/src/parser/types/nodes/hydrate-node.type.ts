@@ -1,6 +1,7 @@
 import type { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
-import type { HydrateTrigger } from '../hydrate-trigger.type';
+import type { DeferTrigger } from '../triggers/defer-trigger.type';
+import type { HydrateTrigger } from '../triggers/hydrate-trigger.type';
 import { ASTNodeType } from '../node.enum';
 
 /**
@@ -13,9 +14,13 @@ export type HydrateNode = ASTNodeWithSpan<{
    */
   type: ASTNodeType.Hydrate;
   /**
-   * The triggers, any of which hydrates the content.
+   * The triggers, any of which hydrates the content: none waits for the browser to be idle.
    */
   triggers: HydrateTrigger[];
+  /**
+   * The triggers written after `prefetch`, any of which loads the modules of the content without hydrating it.
+   */
+  prefetch: DeferTrigger[];
   /**
    * The content.
    */

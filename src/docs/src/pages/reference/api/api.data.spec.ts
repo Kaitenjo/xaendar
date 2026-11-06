@@ -11,6 +11,7 @@ import { API, findApiSymbol, packageFile, searchSymbols, symbolPath } from './ap
 const ENTRY_POINTS: Readonly<Record<ApiPackageName, string>> = {
   '@xaendar/core': 'packages/core/src/public-api.ts',
   '@xaendar/core/signals': 'packages/core/src/signals/index.ts',
+  '@xaendar/core/testing': 'packages/core/src/testing/index.ts',
   '@xaendar/signals': 'packages/signals/src/public-api.ts',
   '@xaendar/build-tools': 'packages/build-tools/src/public-api.ts',
   '@xaendar/ssr': 'packages/ssr/src/public-api.ts',

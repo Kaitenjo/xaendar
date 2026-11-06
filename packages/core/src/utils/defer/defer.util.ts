@@ -3,9 +3,13 @@ import { _SSR_MARKERS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { DeferBlock } from '../../types/defer-block.type';
+import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
+import type { DeferBlockState } from '../../types/defer-testing/defer-block-state.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import type { Trigger } from '../../types/triggers/trigger.type';
 import type { _Context } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
+import { registerDeferBlock } from '../defer-testing/defer-testing.util';
 import { armTriggers, toIdle } from '../hydration-triggers/hydration-triggers.util';
 
 /**
@@ -15,12 +19,21 @@ import { armTriggers, toIdle } from '../hydration-triggers/hydration-triggers.ut
  * `@placeholder` rendered again. The content is rendered once: the triggers are disarmed when the first one fires, and the
  * `when` expression, read in an effect, fires once it is truthy.
  *
- * `visible` and `interaction` watch the elements the `@placeholder` renders where the block is: without any, the block
- * waits for the browser to be idle in their place.
+ * The triggers following `prefetch`, and the expression of the `when` following it, load the modules without rendering
+ * the content: the trigger rendering it waits for the same load. The `@placeholder` is shown at least for its `minimum`,
+ * from when it is rendered. The `@loading` is shown once the modules have loaded for its `after`, and the `@placeholder`
+ * has been shown for its `minimum`: it is never shown when they load sooner. Once shown, it stays at least for its own
+ * `minimum`.
+ *
+ * The triggers are armed once the template holding the block is rendered, so that the element refs they name are
+ * initialized, the ones of the elements following the block too. `visible`, `interaction` and `hover` watch the element
+ * they name, or the elements the `@placeholder` renders where the block is: without any, the block waits for the
+ * browser to be idle in their place.
  *
  * In a page rendered on the server, the server rendered only the `@placeholder`, which the block adopts, its listeners
  * bound, while the component holding it hydrates: the other parts are created once a trigger fires, which is always
- * after the hydration. Nothing happens once the context is destroyed.
+ * after the hydration. Nothing happens once the context is destroyed. In the tests, the block can be driven by hand
+ * (see `registerDeferBlock`).
  *
  * @param parentNode - The parent HTML element the block is rendered into.
  * @param parentContext - The context owning the block.
@@ -31,9 +44,13 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   const { nodeStrategy } = parentContext;
   const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer);
   const { anchor } = nodeBlock;
+  const { placeholder, loading, error } = block;
   const disarms = new Array<NoArgsVoidFunction>();
   let active = true;
+  let fired = false;
   let shown: _Context | undefined;
+  let state: DeferBlockState = 'placeholder';
+  let loaded: Promise<unknown> | undefined;
 
   const disarm = () => {
     for (let i = 0; i < disarms.length; i++) {
@@ -47,7 +64,8 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   });
 
   // Replaces the part shown with another one, created, or with nothing
-  const show = (render?: (strategy: NodeStrategy) => _Context) => untracked(() => {
+  const show = (next: DeferBlockState, render?: (strategy: NodeStrategy) => _Context) => untracked(() => {
+    state = next;
     if (shown) {
       parentContext.removeChild(shown);
       shown.clear();
@@ -59,16 +77,30 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
     }
   });
 
-  const { placeholder, loading, error } = block;
-  const showPlaceholder = placeholder && ((strategy: NodeStrategy) => placeholder(parentNode, parentContext, anchor, strategy));
+  const renderPlaceholder = placeholder && ((strategy: NodeStrategy) => placeholder(parentNode, parentContext, anchor, strategy));
+  const renderLoading = loading && ((strategy: NodeStrategy) => loading(parentNode, parentContext, anchor, strategy));
+  const renderContent = (strategy: NodeStrategy) => block.content(parentNode, parentContext, anchor, strategy);
   // The placeholder the server rendered is adopted
-  if (showPlaceholder) {
-    shown = parentContext.addChild(showPlaceholder(nodeStrategy.adopt(parentNode, nodeBlock, '')));
+  if (renderPlaceholder) {
+    shown = parentContext.addChild(renderPlaceholder(nodeStrategy.adopt(parentNode, nodeBlock, '')));
   }
   nodeStrategy.close(parentNode, nodeBlock);
 
-  const showContent = () => show(strategy => block.content(parentNode, parentContext, anchor, strategy));
-  let fired = false;
+  // When the placeholder has been shown for its minimum
+  const placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
+  // The modules of the content are loaded once, for the trigger rendering it and the ones prefetching them
+  const load = () => loaded ??= block.load!();
+  // A failed prefetch is not reported: the trigger rendering the content shows its error
+  const prefetch = () => {
+    load().catch(() => undefined);
+  };
+
+  // Runs a function once a time has come, while the block is rendered
+  const at = (time: number, run: NoArgsVoidFunction) => {
+    const left = time - performance.now();
+    left > 0 ? setTimeout(() => active && run(), left) : run();
+  };
+
   const fire = () => {
     if (fired) {
       return;
@@ -77,30 +109,86 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
     fired = true;
     disarm();
     if (!block.load) {
-      showContent();
+      at(placeholderEnd, () => show('complete', renderContent));
       return;
     }
 
-    if (loading) {
-      show(strategy => loading(parentNode, parentContext, anchor, strategy));
+    let settled = false;
+    let loadingEnd = 0;
+    if (renderLoading) {
+      at(Math.max(placeholderEnd, performance.now() + (block.loadingAfter ?? 0)), () => {
+        if (!settled) {
+          show('loading', renderLoading);
+          loadingEnd = performance.now() + (block.loadingMinimum ?? 0);
+        }
+      });
     }
 
-    block.load().then(() => active && showContent(), (failure: unknown) => {
-      if (!active) {
-        return;
+    // The part following the placeholder and the @loading waits for them to be shown for their minimum
+    const settle = (run: NoArgsVoidFunction) => {
+      settled = true;
+      if (active) {
+        at(Math.max(placeholderEnd, loadingEnd), run);
       }
+    };
 
+    load().then(() => settle(() => show('complete', renderContent)), (failure: unknown) => settle(() => {
       if (error) {
-        show(strategy => error(parentNode, parentContext, anchor, strategy, failure));
+        show('error', strategy => error(parentNode, parentContext, anchor, strategy, failure));
       } else {
         console.error(failure);
-        show(showPlaceholder);
+        show('placeholder', renderPlaceholder);
       }
-    });
+    }));
   };
 
-  const elements = elementsOf(shown, parentNode);
-  disarms.push(armTriggers(elements.length ? block.triggers : block.triggers.map(toIdle), elements, fire));
+  const fixture: DeferBlockFixture = {
+    get state() {
+      return state;
+    },
+    render: async (next, failure) => {
+      fired = true;
+      disarm();
+      switch (next) {
+        case 'placeholder':
+          show(next, required(renderPlaceholder, '@placeholder'));
+          break;
+
+        case 'loading':
+          show(next, required(renderLoading, '@loading'));
+          break;
+
+        case 'error': {
+          const renderError = required(error, '@error');
+          show(next, strategy => renderError(parentNode, parentContext, anchor, strategy, failure));
+          break;
+        }
+
+        default:
+          if (block.load) {
+            await load();
+          }
+
+          show(next, renderContent);
+      }
+    }
+  };
+  // The tests drive the block by hand
+  if (registerDeferBlock(parentNode, parentContext, fixture)) {
+    return;
+  }
+
+  const watched = (triggers: ReadonlyArray<Exclude<Trigger, 'never'>>, elements: readonly Element[]) => elements.length ? triggers : triggers.map(toIdle);
+  queueMicrotask(() => {
+    if (active && !fired) {
+      const elements = elementsOf(shown, parentNode);
+      disarms.push(armTriggers(watched(block.triggers, elements), elements, fire));
+      if (block.prefetch) {
+        disarms.push(armTriggers(watched(block.prefetch, elements), elements, prefetch));
+      }
+    }
+  });
+
   if (block.when) {
     const when = block.when;
     // Fired once the effect has run: the effect is disposed by the trigger firing
@@ -110,6 +198,31 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
       }
     }));
   }
+
+  if (block.prefetchWhen) {
+    const prefetchWhen = block.prefetchWhen;
+    disarms.push(effect(() => {
+      if (prefetchWhen()) {
+        queueMicrotask(() => active && !fired && prefetch());
+      }
+    }));
+  }
+}
+
+/**
+ * Returns a part of a block a test shows, throwing when the block does not declare it.
+ *
+ * @param part - The part, `undefined` when the block does not declare it.
+ * @param keyword - The keyword of the part, named by the error.
+ * @returns The part.
+ * @throws When the block does not declare the part.
+ */
+function required<TPart>(part: TPart | undefined, keyword: string): TPart {
+  if (!part) {
+    throw new Error(`The @defer declares no ${keyword} to render`);
+  }
+
+  return part;
 }
 
 /**

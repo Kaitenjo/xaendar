@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Xaendar is a framework for building Web Components declaratively, using a template language that extends HTML5. No virtual DOM, no component-level re-renders: the compiler statically analyses each template and wires every DOM node (element, attribute, or text node) directly to the exact signal(s) it depends on, so a signal change updates only the nodes that read it.
 
-This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
+This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals`, `@xaendar/core/testing` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
 
 ## Commands
 
@@ -41,7 +41,7 @@ npm run typecheck:projects    # typechecks each package via its tsconfig.typeche
 npm run check:dependencies    # depcheck across packages
 ```
 
-Each publishable package's `vite.config.ts` just calls the shared `getViteConfig(name, dirName, options)` helper in root `vite-config.ts`: it builds `src/public-api.ts` (plus any declared `secondaryEntryPoints`, e.g. `@xaendar/core`'s `signals` and `@xaendar/ssr`'s `dom` sub-entries) to ESM, bundles `.d.ts` files via `vite-plugin-dts`, rewrites cross-package type imports to `@xaendar/*` specifiers, and generates a trimmed `dist/@xaendar/<name>/package.json` + copies the package `README.md`.
+Each publishable package's `vite.config.ts` just calls the shared `getViteConfig(name, dirName, options)` helper in root `vite-config.ts`: it builds `src/public-api.ts` (plus any declared `secondaryEntryPoints`, e.g. `@xaendar/core`'s `signals` and `testing` and `@xaendar/ssr`'s `dom` sub-entries) to ESM, bundles `.d.ts` files via `vite-plugin-dts`, rewrites cross-package type imports to `@xaendar/*` specifiers, and generates a trimmed `dist/@xaendar/<name>/package.json` + copies the package `README.md`.
 
 `plugins/xaendar` is the Claude Code plugin for applications written with Xaendar (the `xaendar` skill and its references, the `check`, `test`, `new-component` and `new-directive` skills, the `xaendar-reviewer` agent and the language server bundled by `npm run build:claude-plugin`), listed by `.claude-plugin/marketplace.json`. `.claude/rules/claude-plugin.md` says what to update in it when the framework changes.
 

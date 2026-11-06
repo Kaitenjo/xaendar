@@ -4,6 +4,7 @@ import { effect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import type { Trigger } from '../../types/triggers/trigger.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import type { _Context } from '../context/context.util';
 import { armTriggers, recordEvents, replayEvents, toIdle } from '../hydration-triggers/hydration-triggers.util';
@@ -18,9 +19,11 @@ import { armTriggers, recordEvents, replayEvents, toIdle } from '../hydration-tr
  * `@WebComponent` declares, and the events are replayed. What the state changed meanwhile is rendered again, without
  * warnings. When the modules fail to load, the error is logged and the content stays inert.
  *
- * `visible` and `interaction` watch the elements of the content: content the server rendered without elements waits for
- * the browser to be idle in their place. The `when` expression is read in an effect, and fires once it is truthy. With
- * `never`, the content stays the HTML of the server for good: no event is recorded and no module is loaded.
+ * `visible`, `interaction` and `hover` watch the elements of the content: content the server rendered without elements
+ * waits for the browser to be idle in their place. The `when` expression is read in an effect, and fires once it is
+ * truthy. The triggers following `prefetch`, and the expression of the `when` following it, load the modules of the
+ * content without hydrating it: the trigger hydrating it waits for the same load. With `never`, the content stays the
+ * HTML of the server for good: no event is recorded and no module is loaded.
  *
  * In a page rendered in the browser, the block is as if it were not there: the content is rendered as soon as its
  * modules are loaded, whatever its triggers. Nothing happens once the context is destroyed.
@@ -47,6 +50,9 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     disarm();
   });
 
+  // The modules of the content are loaded once, for the trigger hydrating it and the ones prefetching them
+  let loaded: Promise<unknown> | undefined;
+  const loadModules = () => loaded ??= block.load!();
   // Runs `onLoad` once the modules of the content are loaded: when they fail to load, the error is logged and `onError` runs
   const load = (onLoad: NoArgsVoidFunction, onError?: NoArgsVoidFunction) => {
     if (!block.load) {
@@ -54,7 +60,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
       return;
     }
 
-    block.load().then(() => active && onLoad(), (error: unknown) => {
+    loadModules().then(() => active && onLoad(), (error: unknown) => {
       if (active) {
         console.error(error);
         onError?.();
@@ -110,8 +116,15 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   }, () => recorded?.stop());
 
   const elements = elementsOf(serverNodes);
-  const triggers = elements.length ? block.triggers : block.triggers.map(toIdle);
+  const watched = (list: readonly Trigger[]) => elements.length ? list : list.map(toIdle);
+  const triggers = watched(block.triggers);
   const interaction = triggers.includes('interaction');
+  const prefetch = block.prefetch && watched(block.prefetch);
+  const prefetchInteraction = !!prefetch?.includes('interaction');
+  // A failed prefetch is not reported: the trigger hydrating the content logs its error
+  const prefetchModules = () => {
+    loadModules().catch(() => undefined);
+  };
   let fired = false;
   const fire = () => {
     if (!fired) {
@@ -121,8 +134,32 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     }
   };
 
+  // An event on the content fires `interaction`, the one following `prefetch` too
+  const interact = () => {
+    if (prefetchInteraction && !fired) {
+      prefetchModules();
+    }
+
+    if (interaction) {
+      fire();
+    }
+  };
+
   // An interaction fires through the events recorded
   disarms.push(armTriggers(interaction ? triggers.filter(trigger => trigger !== 'interaction') : triggers, elements, fire));
+  if (prefetch) {
+    disarms.push(armTriggers(prefetchInteraction ? prefetch.filter(trigger => trigger !== 'interaction') : prefetch, elements, prefetchModules));
+  }
+
+  if (block.prefetchWhen) {
+    const prefetchWhen = block.prefetchWhen;
+    disarms.push(effect(() => {
+      if (prefetchWhen()) {
+        queueMicrotask(() => active && !fired && prefetchModules());
+      }
+    }));
+  }
+
   if (block.when) {
     const when = block.when;
     // Fired once the effect has run: the effect is disposed by the trigger firing
@@ -134,12 +171,12 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   }
 
   // Recorded until the content is hydrated, after its trigger fires too, while its modules load
-  const recorded = triggers.length && elements.length ? recordEvents(elements, () => interaction && fire()) : undefined;
+  const recorded = triggers.length && elements.length ? recordEvents(elements, () => interact()) : undefined;
   if (recorded) {
     parentContext.addUnlistener(recorded.stop);
     // Fired once the block has been rendered: what the contract recorded was an interaction too
-    if (interaction && recorded.events.length) {
-      queueMicrotask(() => active && fire());
+    if (recorded.events.length) {
+      queueMicrotask(() => active && interact());
     }
   }
 }

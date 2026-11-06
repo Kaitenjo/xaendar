@@ -11,7 +11,7 @@ class FakeIntersectionObserver {
   public readonly observed = new Array<Element>();
   public disconnected = false;
 
-  constructor(private readonly _callback: (entries: Array<Pick<IntersectionObserverEntry, 'isIntersecting'>>) => void) {
+  constructor(private readonly _callback: (entries: Array<Pick<IntersectionObserverEntry, 'isIntersecting'>>) => void, public readonly options?: IntersectionObserverInit) {
     FakeIntersectionObserver.last = this;
   }
 
@@ -71,6 +71,67 @@ describe('armTriggers', () => {
     expect(fire).toHaveBeenCalledTimes(2);
   });
 
+  it('fires idle at the latest once the time it declares has passed', () => {
+    const idle = vi.fn((_callback: IdleRequestCallback, _options?: IdleRequestOptions) => 7);
+    vi.stubGlobal('requestIdleCallback', idle);
+    vi.stubGlobal('cancelIdleCallback', vi.fn());
+
+    armTriggers([{ kind: 'idle', timeout: 500 }], [], vi.fn());
+
+    expect(idle.mock.calls[0][1]).toEqual({ timeout: 500 });
+  });
+
+  it('fires timer once its time has passed', () => {
+    const fire = vi.fn();
+
+    armTriggers([{ kind: 'timer', delay: 500 }], [], fire);
+    vi.advanceTimersByTime(499);
+    expect(fire).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(fire).toHaveBeenCalledOnce();
+
+    armTriggers([{ kind: 'timer', delay: 500 }], [], fire)();
+    vi.runAllTimers();
+    expect(fire).toHaveBeenCalledOnce();
+  });
+
+  it('fires hover when the pointer moves over one of the elements or the focus enters it, before the listeners inside it', () => {
+    const element = document.body.appendChild(document.createElement('div'));
+    const button = element.appendChild(document.createElement('button'));
+    const order = new Array<string>();
+    button.addEventListener('mouseover', () => order.push('handler'));
+    const fire = vi.fn(() => order.push('fire'));
+
+    armTriggers(['hover'], [element], fire);
+    button.dispatchEvent(new Event('mouseover', { bubbles: true }));
+    expect(order).toEqual(['fire', 'handler']);
+
+    armTriggers(['hover'], [element], fire);
+    button.dispatchEvent(new Event('focusin', { bubbles: true }));
+    button.dispatchEvent(new Event('focusin', { bubbles: true }));
+    expect(fire).toHaveBeenCalledTimes(2);
+  });
+
+  it('watches the element a trigger names in place of the elements, with the options of the observer of visible', () => {
+    const elements = [document.createElement('p')];
+    const named = document.body.appendChild(document.createElement('button'));
+    const fire = vi.fn();
+
+    armTriggers([{ kind: 'visible', target: () => named, options: { rootMargin: '10px' } }], elements, fire);
+    expect(FakeIntersectionObserver.last.observed).toEqual([named]);
+    expect(FakeIntersectionObserver.last.options).toEqual({ rootMargin: '10px' });
+
+    armTriggers([{ kind: 'visible', options: { threshold: 1 } }], elements, fire);
+    expect(FakeIntersectionObserver.last.observed).toEqual(elements);
+    expect(FakeIntersectionObserver.last.options).toEqual({ threshold: 1 });
+
+    armTriggers([{ kind: 'interaction', target: () => named }], elements, fire);
+    elements[0].click();
+    expect(fire).not.toHaveBeenCalled();
+    named.click();
+    expect(fire).toHaveBeenCalledOnce();
+  });
+
   it('fires visible when one of the elements enters the viewport', () => {
     const elements = [document.createElement('p'), document.createElement('b')];
     const fire = vi.fn();
@@ -126,7 +187,18 @@ describe('armTriggers', () => {
 
 describe('toIdle', () => {
   it('waits for the browser to be idle in place of a trigger watching elements, keeping the others', () => {
-    expect((['visible', 'interaction', 'load', 'idle', 'never'] as const).map(toIdle)).toEqual(['idle', 'idle', 'load', 'idle', 'never']);
+    expect((['visible', 'interaction', 'hover', 'load', 'idle', 'never'] as const).map(toIdle)).toEqual(['idle', 'idle', 'idle', 'load', 'idle', 'never']);
+    expect(toIdle({ kind: 'visible', options: { threshold: 1 } })).toBe('idle');
+  });
+
+  it('keeps the triggers naming the element they watch, and the ones watching none', () => {
+    const triggers = [
+      { kind: 'hover', target: () => document.body },
+      { kind: 'idle', timeout: 1 },
+      { kind: 'timer', delay: 1 }
+    ] as const;
+
+    expect(triggers.map(toIdle)).toEqual(triggers);
   });
 });
 
@@ -229,6 +301,22 @@ describe('deferElementHydration', () => {
     element.addEventListener('click', replayed);
     replayElementEvents(element);
     expect(replayed).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts an element waiting for hover when the focus enters it, recording the event before it is stopped, to be replayed', () => {
+    const element = document.body.appendChild(document.createElement('x-a'));
+    element.setAttribute('data-xd-hydrate', 'hover');
+    const inner = element.attachShadow({ mode: 'open' }).appendChild(document.createElement('input'));
+    const start = vi.fn();
+
+    deferElementHydration(element, start);
+    inner.dispatchEvent(new Event('focusin', { bubbles: true, composed: true }));
+
+    expect(start).toHaveBeenCalledOnce();
+    const replayed = vi.fn();
+    inner.addEventListener('focusin', replayed);
+    replayElementEvents(element);
+    expect(replayed).toHaveBeenCalledOnce();
   });
 
   it('keeps an element declaring never waiting for good, without recording its events', () => {

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 
@@ -13,6 +14,7 @@ const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
 const { _renderLiteralText } = await import('../render-text/render-text.util');
+const { getDeferBlocks, setDeferBlockBehavior } = await import('../defer-testing/defer-testing.util');
 const { _defer } = await import('./defer.util');
 const { effect, signal } = await import('../../signals');
 
@@ -25,7 +27,7 @@ class FakeIntersectionObserver {
   public static last: FakeIntersectionObserver;
   public readonly observed = new Array<Element>();
 
-  constructor(private readonly _callback: (entries: Array<Pick<IntersectionObserverEntry, 'isIntersecting'>>) => void) {
+  constructor(private readonly _callback: (entries: Array<Pick<IntersectionObserverEntry, 'isIntersecting'>>) => void, public readonly options?: IntersectionObserverInit) {
     FakeIntersectionObserver.last = this;
   }
 
@@ -42,7 +44,18 @@ class FakeIntersectionObserver {
   }
 }
 
-const flush = () => new Promise<void>(resolve => setTimeout(resolve));
+/**
+ * Waits for the triggers of the blocks rendered to be armed, once the code rendering them is done.
+ */
+const armed = () => Promise.resolve();
+
+/**
+ * Waits for the triggers to be armed, then for the timers and the promises settled meanwhile.
+ */
+const flush = async () => {
+  await armed();
+  await new Promise<void>(resolve => setTimeout(resolve));
+};
 
 const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement: (tag: string) => document.createElement(tag) } as never, nodeStrategy);
 
@@ -80,6 +93,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   document.body.innerHTML = '';
@@ -99,13 +113,14 @@ describe('_defer', () => {
       expect(content.mock.calls[0][3]).toBe(CREATE_NODES);
     });
 
-    it('renders the @placeholder until an interaction on it, then replaces it with the content, once', () => {
+    it('renders the @placeholder until an interaction on it, then replaces it with the content, once', async () => {
       const element = parent();
       const clicked = vi.fn();
       const content = part('b');
 
       _defer(element, createRoot(), null, { triggers: ['interaction'], content, placeholder: part('button', [{ name: 'click', handler: clicked }]) });
       expect(element.innerHTML).toBe('<button></button><!--defer-->');
+      await armed();
       const button = element.querySelector('button')!;
       button.click();
       button.click();
@@ -115,7 +130,20 @@ describe('_defer', () => {
       expect(content).toHaveBeenCalledOnce();
     });
 
-    it('watches the elements of the @placeholder, and the ones of the blocks it holds, for visible', () => {
+    it('arms the triggers once the code rendering the block is done, firing none before', async () => {
+      const element = parent();
+      const content = part('b');
+
+      _defer(element, createRoot(), null, { triggers: ['interaction'], content, placeholder: part('button') });
+      element.querySelector('button')!.click();
+      await armed();
+
+      expect(content).not.toHaveBeenCalled();
+      element.querySelector('button')!.click();
+      expect(content).toHaveBeenCalledOnce();
+    });
+
+    it('watches the elements of the @placeholder, and the ones of the blocks it holds, for visible', async () => {
       const element = parent();
       const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
         const context = part('i')(parentNode, parentContext, anchor, nodeStrategy);
@@ -126,6 +154,7 @@ describe('_defer', () => {
       };
 
       _defer(element, createRoot(), null, { triggers: ['visible'], content: part('b'), placeholder });
+      await armed();
       const observer = FakeIntersectionObserver.last;
       expect(observer.observed.map(({ localName }) => localName)).toEqual(['i', 'u']);
       observer.intersect();
@@ -133,14 +162,31 @@ describe('_defer', () => {
       expect(element.innerHTML).toBe('<b></b><!--defer-->');
     });
 
-    it('waits for the browser to be idle in place of visible and interaction when the @placeholder renders no element', async () => {
+    it('waits for the browser to be idle in place of visible, interaction and hover when the @placeholder renders no element', async () => {
       const element = parent();
 
-      _defer(element, createRoot(), null, { triggers: ['visible', 'interaction'], content: part('b'), placeholder: textPart('Wait') });
+      _defer(element, createRoot(), null, { triggers: ['visible', 'interaction', 'hover'], content: part('b'), placeholder: textPart('Wait') });
       expect(element.innerHTML).toBe('Wait<!--defer-->');
       await flush();
 
       expect(element.innerHTML).toBe('<b></b><!--defer-->');
+    });
+
+    it('watches the element a trigger names, read once the code rendering the block is done, in place of the @placeholder', async () => {
+      const element = parent();
+      const root = createRoot();
+      const content = part('b');
+      root.declare('more');
+
+      _defer(element, root, null, { triggers: [{ kind: 'hover', target: () => root.get('more') as Element }, { kind: 'visible', target: () => root.get('more') as Element, options: { rootMargin: '10px' } }], content, placeholder: textPart('Wait') });
+      const more = element.appendChild(document.createElement('button'));
+      root.set('more', more);
+      await armed();
+
+      expect(FakeIntersectionObserver.last.observed).toEqual([more]);
+      expect(FakeIntersectionObserver.last.options).toEqual({ rootMargin: '10px' });
+      more.dispatchEvent(new Event('mouseover'));
+      expect(content).toHaveBeenCalledOnce();
     });
 
     it('renders the content once the expression of when is truthy, and keeps it when it is not anymore', async () => {
@@ -163,17 +209,20 @@ describe('_defer', () => {
 
     it('renders the content once when several triggers fire, the expression of when after an interaction', async () => {
       const element = parent();
+      const ready = signal(false);
       const content = part('b');
 
-      _defer(element, createRoot(), null, { triggers: ['interaction'], when: () => true, content, placeholder: part('button') });
+      _defer(element, createRoot(), null, { triggers: ['interaction'], when: () => ready(), content, placeholder: part('button') });
+      await armed();
       element.querySelector('button')!.click();
+      ready.set(true);
       await flush();
 
       expect(content).toHaveBeenCalledOnce();
       expect(element.innerHTML).toBe('<b></b><!--defer-->');
     });
 
-    it('renders the content untracked, so that an effect firing a trigger does not track what it reads', () => {
+    it('renders the content untracked, so that an effect firing a trigger does not track what it reads', async () => {
       const element = parent();
       const read = signal(0);
       const runs = vi.fn();
@@ -182,6 +231,7 @@ describe('_defer', () => {
         return part('b')(parentNode, parentContext, anchor, nodeStrategy);
       });
       _defer(element, createRoot(), null, { triggers: ['interaction'], content, placeholder: part('button') });
+      await armed();
 
       effect(() => {
         runs();
@@ -189,6 +239,7 @@ describe('_defer', () => {
       });
       read.set(1);
 
+      expect(content).toHaveBeenCalledOnce();
       expect(runs).toHaveBeenCalledOnce();
     });
 
@@ -197,6 +248,7 @@ describe('_defer', () => {
       let loaded!: () => void;
 
       _defer(element, createRoot(), null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content: part('b'), placeholder: part('button'), loading: part('progress') });
+      await armed();
       element.querySelector('button')!.click();
       expect(element.innerHTML).toBe('<progress></progress><!--defer-->');
       loaded();
@@ -210,6 +262,7 @@ describe('_defer', () => {
       let loaded!: () => void;
 
       _defer(element, createRoot(), null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content: part('b'), placeholder: part('button') });
+      await armed();
       element.querySelector('button')!.click();
       expect(element.innerHTML).toBe('<button></button><!--defer-->');
       loaded();
@@ -255,6 +308,7 @@ describe('_defer', () => {
       _defer(parent(), root, null, { triggers: [], when: () => ready(), content });
       _defer(parent(), root, null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content, placeholder: part('button') });
       _defer(parent(), root, null, { triggers: ['interaction'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content, placeholder: part('button') });
+      await armed();
       const buttons = document.querySelectorAll('button');
       buttons[0].click();
       buttons[1].click();
@@ -269,10 +323,248 @@ describe('_defer', () => {
       expect(content).not.toHaveBeenCalled();
       expect(console.error).not.toHaveBeenCalled();
     });
+
+    it('arms nothing once its context is destroyed before the code rendering it is done', async () => {
+      const root = createRoot();
+      const load = vi.fn(() => Promise.resolve());
+      _defer(parent(), root, null, { triggers: ['load'], prefetch: ['load'], load, content: part('b') });
+
+      root.clear();
+      await flush();
+
+      expect(load).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('prefetching the modules of the content', () => {
+    it('loads them when a trigger following prefetch fires, without rendering the content, which loads them once', async () => {
+      const element = parent();
+      const load = vi.fn(() => Promise.resolve());
+      const content = part('b');
+
+      _defer(element, createRoot(), null, { triggers: ['interaction'], prefetch: ['load'], load, content, placeholder: part('button') });
+      await flush();
+      expect(load).toHaveBeenCalledOnce();
+      expect(content).not.toHaveBeenCalled();
+      element.querySelector('button')!.click();
+      await flush();
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(element.innerHTML).toBe('<b></b><!--defer-->');
+    });
+
+    it('loads them once the expression of the when following prefetch is truthy, before the content renders', async () => {
+      const element = parent();
+      const soon = signal(false);
+      const load = vi.fn(() => Promise.resolve());
+
+      _defer(element, createRoot(), null, { triggers: ['interaction'], prefetchWhen: () => soon(), load, content: part('b'), placeholder: part('button') });
+      await flush();
+      expect(load).not.toHaveBeenCalled();
+      soon.set(true);
+      await flush();
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(element.innerHTML).toBe('<button></button><!--defer-->');
+    });
+
+    it('reports nothing when the prefetch fails, the trigger rendering the content showing the error', async () => {
+      const element = parent();
+      const failure = new Error('offline');
+      const error = vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy, _error: unknown) => part('s')(parentNode, parentContext, anchor, nodeStrategy));
+
+      _defer(element, createRoot(), null, { triggers: ['interaction'], prefetch: ['load'], load: () => Promise.reject(failure), content: part('b'), placeholder: part('button'), error });
+      await flush();
+      expect(element.innerHTML).toBe('<button></button><!--defer-->');
+      element.querySelector('button')!.click();
+      await flush();
+
+      expect(element.innerHTML).toBe('<s></s><!--defer-->');
+      expect(error.mock.calls[0][4]).toBe(failure);
+    });
+
+    it('stops prefetching once the content renders', async () => {
+      const element = parent();
+      const soon = signal(false);
+      const load = vi.fn(() => Promise.resolve());
+
+      _defer(element, createRoot(), null, { triggers: ['load'], prefetchWhen: () => soon(), load, content: part('b') });
+      await flush();
+      await flush();
+      soon.set(true);
+      await flush();
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(element.innerHTML).toBe('<b></b><!--defer-->');
+    });
+  });
+
+  describe('the times of the @placeholder and of the @loading', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    });
+
+    it('keeps the @placeholder for its minimum, from when it is rendered', async () => {
+      const element = parent();
+
+      _defer(element, createRoot(), null, { triggers: ['interaction'], content: part('b'), placeholder: part('button'), placeholderMinimum: 500 });
+      await armed();
+      vi.advanceTimersByTime(200);
+      element.querySelector('button')!.click();
+      vi.advanceTimersByTime(299);
+      expect(element.innerHTML).toBe('<button></button><!--defer-->');
+      vi.advanceTimersByTime(1);
+
+      expect(element.innerHTML).toBe('<b></b><!--defer-->');
+    });
+
+    it('shows the @loading once the modules have loaded for its after, never when they load sooner', async () => {
+      const element = parent();
+      const other = parent();
+      let loaded!: () => void;
+      let loadedSoon!: () => void;
+
+      _defer(element, createRoot(), null, { triggers: ['load'], load: () => new Promise<void>(resolve => loaded = resolve), content: part('b'), loading: part('progress'), loadingAfter: 100 });
+      _defer(other, createRoot(), null, { triggers: ['load'], load: () => new Promise<void>(resolve => loadedSoon = resolve), content: part('b'), loading: part('progress'), loadingAfter: 100 });
+      await armed();
+      await vi.advanceTimersByTimeAsync(0);
+      loadedSoon();
+      await vi.advanceTimersByTimeAsync(99);
+      expect(element.innerHTML).toBe('<!--defer-->');
+      expect(other.innerHTML).toBe('<b></b><!--defer-->');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(element.innerHTML).toBe('<progress></progress><!--defer-->');
+      loaded();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(element.innerHTML).toBe('<b></b><!--defer-->');
+      expect(other.innerHTML).toBe('<b></b><!--defer-->');
+    });
+
+    it('keeps the @loading for its minimum once shown, the @error too waiting for it', async () => {
+      const element = parent();
+      let failed!: (error: Error) => void;
+
+      _defer(element, createRoot(), null, { triggers: ['load'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content: part('b'), loading: part('progress'), loadingMinimum: 1000, error: part('s') });
+      await armed();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(element.innerHTML).toBe('<progress></progress><!--defer-->');
+      failed(new Error('offline'));
+      await vi.advanceTimersByTimeAsync(999);
+      expect(element.innerHTML).toBe('<progress></progress><!--defer-->');
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(element.innerHTML).toBe('<s></s><!--defer-->');
+    });
+
+    it('shows the @loading once the @placeholder has been shown for its minimum', async () => {
+      const element = parent();
+
+      _defer(element, createRoot(), null, { triggers: ['load'], load: () => new Promise<void>(() => undefined), content: part('b'), placeholder: part('i'), placeholderMinimum: 300, loading: part('progress'), loadingAfter: 100 });
+      await armed();
+      await vi.advanceTimersByTimeAsync(299);
+      expect(element.innerHTML).toBe('<i></i><!--defer-->');
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(element.innerHTML).toBe('<progress></progress><!--defer-->');
+    });
+
+    it('does nothing once its context is destroyed while it waits', async () => {
+      const root = createRoot();
+      const content = part('b');
+      _defer(parent(), root, null, { triggers: ['load'], content, placeholder: part('i'), placeholderMinimum: 300 });
+      await armed();
+      await vi.advanceTimersByTimeAsync(0);
+
+      root.clear();
+      await vi.advanceTimersByTimeAsync(300);
+
+      expect(content).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('in the tests', () => {
+    afterEach(() => setDeferBlockBehavior('playthrough'));
+
+    /**
+     * Renders a block in the shadow root of a host, returning the host.
+     */
+    const host = (block: Parameters<typeof _defer>[3]) => {
+      const element = document.body.appendChild(document.createElement('x-host'));
+      const shadowRoot = element.attachShadow({ mode: 'open' });
+      _defer(shadowRoot as unknown as HTMLElement, createRoot(), null, block);
+      return element;
+    };
+
+    it('lets the tests drive the blocks by hand, arming no trigger, rendering each part and the content once its modules load', async () => {
+      setDeferBlockBehavior('manual');
+      const load = vi.fn(() => Promise.resolve());
+      const failure = new Error('offline');
+      const element = host({ triggers: ['load'], when: () => true, prefetch: ['load'], load, content: part('b'), placeholder: part('i'), loading: part('progress'), error: (parentNode, parentContext, anchor, nodeStrategy, error) => part(error === failure ? 's' : 'u')(parentNode, parentContext, anchor, nodeStrategy) });
+      await flush();
+      const [block] = getDeferBlocks(element);
+      const { shadowRoot } = element;
+
+      expect(load).not.toHaveBeenCalled();
+      expect(block.state).toBe('placeholder');
+      expect(shadowRoot!.innerHTML).toBe('<i></i><!--defer-->');
+      await block.render('loading');
+      expect(shadowRoot!.innerHTML).toBe('<progress></progress><!--defer-->');
+      await block.render('error', failure);
+      expect(shadowRoot!.innerHTML).toBe('<s></s><!--defer-->');
+      expect(block.state).toBe('error');
+      await block.render('placeholder');
+      expect(shadowRoot!.innerHTML).toBe('<i></i><!--defer-->');
+      await block.render('complete');
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(block.state).toBe('complete');
+      expect(shadowRoot!.innerHTML).toBe('<b></b><!--defer-->');
+    });
+
+    it('stops the triggers once the test renders a part, the expression of when about to fire included', async () => {
+      setDeferBlockBehavior('playthrough');
+      const content = part('b');
+      const [block] = getDeferBlocks(host({ triggers: ['load'], when: () => true, content, placeholder: part('i') }));
+
+      await block.render('placeholder');
+      await flush();
+
+      expect(content).not.toHaveBeenCalled();
+      expect(block.state).toBe('placeholder');
+    });
+
+    it('rejects a part the block does not declare', async () => {
+      setDeferBlockBehavior('manual');
+      const [block] = getDeferBlocks(host({ triggers: ['load'], content: part('b') }));
+
+      await expect(block.render('placeholder')).rejects.toThrow('The @defer declares no @placeholder to render');
+      await expect(block.render('loading')).rejects.toThrow('The @defer declares no @loading to render');
+      await expect(block.render('error')).rejects.toThrow('The @defer declares no @error to render');
+      await block.render('complete');
+      expect(block.state).toBe('complete');
+    });
+
+    it('lets the blocks play through, finding them in the order they render, until destroyed', async () => {
+      setDeferBlockBehavior('playthrough');
+      const element = document.body.appendChild(document.createElement('x-host'));
+      const shadowRoot = element.attachShadow({ mode: 'open' });
+      const root = createRoot();
+      _defer(shadowRoot as unknown as HTMLElement, root, null, { triggers: ['load'], content: part('b') });
+      _defer(shadowRoot as unknown as HTMLElement, root, null, { triggers: ['interaction'], content: part('u'), placeholder: part('i') });
+      const blocks: DeferBlockFixture[] = getDeferBlocks(element);
+      await flush();
+
+      expect(blocks.map(({ state }) => state)).toEqual(['complete', 'placeholder']);
+      root.clear();
+      expect(getDeferBlocks(element)).toEqual([]);
+      expect(getDeferBlocks(document.createElement('div'))).toEqual([]);
+    });
   });
 
   describe('in a page rendered on the server', () => {
-    it('adopts the @placeholder the server rendered, its listeners bound, and replaces it with the content once a trigger fires', () => {
+    it('adopts the @placeholder the server rendered, its listeners bound, and replaces it with the content once a trigger fires', async () => {
       const element = parent('<!--xd-d--><button>Load</button><!--/xd-d--><p></p>');
       const button = element.querySelector('button')!;
       const clicked = vi.fn();
@@ -284,6 +576,7 @@ describe('_defer', () => {
       expect(placeholder.mock.calls[0][3]).toBe(strategy);
       expect(element.querySelector('button')).toBe(button);
       expect(strategy.element(context, element, 'p')).toBe(element.querySelector('p'));
+      await armed();
       button.click();
 
       expect(clicked).toHaveBeenCalledOnce();

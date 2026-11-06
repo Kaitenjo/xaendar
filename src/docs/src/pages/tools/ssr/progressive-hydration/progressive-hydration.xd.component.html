@@ -49,6 +49,13 @@
       </tr>
       <tr>
         <td>
+          <code>timer</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.timer.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.timer.use") />
+      </tr>
+      <tr>
+        <td>
           <code>visible</code>
         </td>
         <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.visible.fires") />
@@ -60,6 +67,13 @@
         </td>
         <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.fires") />
         <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.use") />
+      </tr>
+      <tr>
+        <td>
+          <code>hover</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.hover.fires") />
+        <td @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.hover.use") />
       </tr>
       <tr>
         <td>
@@ -92,6 +106,12 @@
 <docs-code snippet="tools/ssr-hydrate-idle.html" />
 
 <h3>
+  <code>timer</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.timer.p1") />
+<docs-code snippet="tools/ssr-hydrate-timer.html" />
+
+<h3>
   <code>visible</code>
 </h3>
 <p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.visible.p1") />
@@ -102,6 +122,12 @@
 </h3>
 <p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.interaction.p1") />
 <docs-code snippet="tools/ssr-hydrate-interaction.html" />
+
+<h3>
+  <code>hover</code>
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.hover.p1") />
+<docs-code snippet="tools/ssr-hydrate-hover.html" />
 
 <h3>
   <code>when</code>
@@ -120,6 +146,12 @@
 </h3>
 <p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.combined.p1") />
 <docs-code snippet="tools/ssr-hydrate.html" />
+
+<h3>
+  { t(translations(), 'pages.tools.ssr.progressiveHydration.triggers.prefetch.title') }
+</h3>
+<p @@htmlTranslation(key="pages.tools.ssr.progressiveHydration.triggers.prefetch.p1") />
+<docs-code snippet="tools/ssr-hydrate-prefetch.html" />
 
 <h2>
   { t(translations(), 'pages.tools.ssr.progressiveHydration.placeholder.title') }

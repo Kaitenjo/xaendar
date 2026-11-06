@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateTriggerCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -223,10 +223,10 @@ describe('getTemplateKeywordCompletions', () => {
       { name: '@if', kind: 'keyword', sortText: '0', replacementSpan, snippet: '@if ($1) {\n\t$0\n}', retrigger: true },
       { name: '@for', kind: 'keyword', sortText: '1', replacementSpan, snippet: '@for (item of $1) {\n\t$0\n}', retrigger: true },
       { name: '@switch', kind: 'keyword', sortText: '2', replacementSpan, snippet: '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}', retrigger: true },
-      { name: '@hydrate', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@hydrate ($1) {\n\t$0\n}', retrigger: false },
+      { name: '@hydrate', kind: 'keyword', sortText: '3', replacementSpan, snippet: '@hydrate (${1:idle}) {\n\t$0\n}', retrigger: false },
       { name: '@client', kind: 'keyword', sortText: '4', replacementSpan, snippet: '@client {\n\t$0\n}', retrigger: false },
       { name: '@try', kind: 'keyword', sortText: '5', replacementSpan, snippet: '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}', retrigger: false },
-      { name: '@defer', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@defer ($1) {\n\t$0\n}', retrigger: false },
+      { name: '@defer', kind: 'keyword', sortText: '6', replacementSpan, snippet: '@defer (${1:idle}) {\n\t$0\n}', retrigger: false },
       { name: '@render', kind: 'keyword', sortText: '7', replacementSpan, snippet: '@render $1($0)', retrigger: false },
       { name: '@let', kind: 'keyword', sortText: '8', replacementSpan, snippet: '@let $1 = $0;', retrigger: false },
       { name: '@else', kind: 'keyword', sortText: '9', replacementSpan, snippet: '@else {\n\t$0\n}', retrigger: false },
@@ -471,5 +471,37 @@ describe('getTemplateImportPathCompletions', () => {
     expect(completionsOf(`${imports}@scope/|';`)).toEqual([]);
     expect(completionsOf(`${imports}./missing/|';`)).toEqual([]);
     expect(completionsOf('@import { | } from \'./child\';')).toBeUndefined();
+  });
+});
+
+describe('getTemplateTriggerCompletions', () => {
+  it('proposes the triggers of a @defer as snippets replacing the name written so far, the time of timer to fill, proposing the completions again after when and prefetch', () => {
+    const source = '@defer (idle, ti';
+    const replacementSpan = { start: 14, end: 16 };
+
+    expect(getTemplateTriggerCompletions(source, source.length)).toEqual([
+      { name: 'load', kind: 'keyword', sortText: '0', replacementSpan, snippet: 'load', retrigger: false },
+      { name: 'timer', kind: 'keyword', sortText: '1', replacementSpan, snippet: 'timer(${1:500ms})', retrigger: false },
+      { name: 'visible', kind: 'keyword', sortText: '2', replacementSpan, snippet: 'visible', retrigger: false },
+      { name: 'interaction', kind: 'keyword', sortText: '3', replacementSpan, snippet: 'interaction', retrigger: false },
+      { name: 'hover', kind: 'keyword', sortText: '4', replacementSpan, snippet: 'hover', retrigger: false },
+      { name: 'when', kind: 'keyword', sortText: '5', replacementSpan, snippet: 'when $0', retrigger: true },
+      { name: 'prefetch', kind: 'keyword', sortText: '6', replacementSpan, snippet: 'prefetch ', retrigger: true }
+    ]);
+  });
+
+  it('proposes the parameters of a @loading with their time to fill', () => {
+    const source = '@defer { } @loading (';
+
+    expect(getTemplateTriggerCompletions(source, source.length)?.map(({ name, snippet }) => [name, snippet])).toEqual([
+      ['after', 'after ${1:100ms}'],
+      ['minimum', 'minimum ${1:500ms}']
+    ]);
+  });
+
+  it('leaves the offsets not on the name of a trigger or of a parameter to the other completions', () => {
+    const source = '@defer (when re';
+
+    expect(getTemplateTriggerCompletions(source, source.length)).toBeUndefined();
   });
 });

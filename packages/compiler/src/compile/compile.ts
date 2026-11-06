@@ -38,7 +38,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
       generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
       typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr)
     ]);
-    
+
     return {
       javascript,
       typescript
@@ -140,11 +140,7 @@ export async function resolveTemplateImports(importNodes: ImportNode[], baseDir:
   const resolved = await Promise.all(resolutions);
   for (let i = 0; i < resolved.length; i++) {
     const imported = resolved[i];
-    if (imported.type === 'symbol') {
-      symbols.push(imported);
-    } else {
-      metadatas.push(imported);
-    }
+    imported.type === 'symbol' ? symbols.push(imported) : metadatas.push(imported);
   }
 
   return { metadatas, symbols };

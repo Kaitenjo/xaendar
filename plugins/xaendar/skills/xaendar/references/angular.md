@@ -23,8 +23,9 @@
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
 | `[ngClass]`, `[style.x]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
 | `@if`, `@for`, `@switch` | the same blocks: `@for` without `@empty`, its variables are signals (`item()`, `$index()`) |
-| `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order: triggers `load` (`immediate`), `idle`, `visible` (`viewport`), `interaction`, `when expr`, required; no `prefetch`, no `minimum`/`after`, no `hover`/`timer`; `@error (error)` receives the error |
-| `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (`load`, `idle`, `visible`, `interaction`, `never`, `when expr`): only for content rendered on the server, in the browser the content renders at once |
+| `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order, triggers separated by commas without `on`: `load` (`immediate`), `idle`/`idle(500)`, `timer(2s)`, `visible` (`viewport`), `interaction`, `hover`, `when expr`; no parentheses waits for `idle`. An element: `hover(ref)`, `visible(ref, { rootMargin: '200px' })` (Angular's `viewport({ trigger: ref, … })`). `prefetch idle`, `prefetch when expr` (Angular's `prefetch on idle`). `@placeholder (minimum 500ms)`, `@loading (after 100ms, minimum 1s)`, commas between the parameters. `@error (error)` receives the error |
+| `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (the triggers of `@defer` without element refs, `never`, and `prefetch`): only for content rendered on the server, in the browser the content renders at once |
+| `TestBed` `DeferBlockBehavior`, `getDeferBlocks()`, `render(DeferBlockState.Complete)` | `@xaendar/core/testing`: `setDeferBlockBehavior('manual')`, `getDeferBlocks(element)`, `await block.render('complete')` |
 | `<ng-content select="…">` | `<slot name="…" />`; children pick it with `slot="…"` |
 | `<ng-template #row let-item>` + `ngTemplateOutlet` | `<template row(item: Item)>` + `@render row(item)`, in the same template |
 | `@let` | `@let name = value;`, a signal when its value reads one |

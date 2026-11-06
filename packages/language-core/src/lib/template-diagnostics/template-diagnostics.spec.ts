@@ -88,8 +88,17 @@ describe('getTemplateDiagnostics', () => {
     const source = '@defer (visible, when title) { { title } } @error (failure) { { failure.message } }';
 
     expect(await diagnose(source)).toEqual([
-      ['visible', 'The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element', DiagnosticCategory.Error],
+      ['visible', 'The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)', DiagnosticCategory.Error],
       ['failure', '\'failure\' is of type \'unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a trigger naming what is not an element, and options the observer of visible does not take', async () => {
+    const source = '<input #field />@defer (hover(field), interaction(title), visible({ rootMargin: 1, threshold: 0.5 })) { a } @placeholder { <p></p> }';
+
+    expect(await diagnose(source)).toEqual([
+      ['title', 'Type \'string\' does not satisfy the expected type \'Element\'.', DiagnosticCategory.Error],
+      ['rootMargin', 'Type \'number\' is not assignable to type \'string\'.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 

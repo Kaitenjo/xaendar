@@ -160,6 +160,73 @@ describe('_hydrate', () => {
       expect(clicks).toHaveBeenCalledTimes(2);
     });
 
+    it('hydrates when the pointer moves over the content', async () => {
+      const parent = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const overs = vi.fn();
+      const content = block('button', [{ name: 'mouseover', handler: overs }]);
+
+      _hydrate(parent, createRoot(new ClaimNodes('x-host')), null, { triggers: ['hover'], content });
+      expect(content).not.toHaveBeenCalled();
+      parent.querySelector('button')!.dispatchEvent(new Event('mouseover', { bubbles: true }));
+      await flush();
+      overs.mockClear();
+      parent.querySelector('button')!.dispatchEvent(new Event('mouseover', { bubbles: true }));
+
+      expect(content).toHaveBeenCalledOnce();
+      expect(overs).toHaveBeenCalledOnce();
+    });
+
+    it('loads the modules once a trigger following prefetch fires, the trigger hydrating the content waiting for the same load', async () => {
+      const parent = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const load = vi.fn(() => Promise.resolve());
+      const content = block('button');
+      const soon = signal(false);
+
+      _hydrate(parent, createRoot(new ClaimNodes('x-host')), null, { triggers: ['interaction'], prefetch: ['load'], prefetchWhen: () => soon(), load, content });
+      await flush();
+      expect(load).toHaveBeenCalledOnce();
+      expect(content).not.toHaveBeenCalled();
+      soon.set(true);
+      parent.querySelector('button')!.click();
+      await flush();
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(content).toHaveBeenCalledOnce();
+    });
+
+    it('prefetches at the first interaction with prefetch interaction, the expression of the when following prefetch too', async () => {
+      const parent = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const other = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const load = vi.fn(() => Promise.resolve());
+      const otherLoad = vi.fn(() => Promise.resolve());
+      const soon = signal(false);
+
+      const content = block('button');
+
+      _hydrate(parent, createRoot(new ClaimNodes('x-host')), null, { triggers: [{ kind: 'timer', delay: 100000 }], prefetch: ['interaction'], load, content });
+      _hydrate(other, createRoot(new ClaimNodes('x-host')), null, { triggers: [{ kind: 'timer', delay: 100000 }], prefetchWhen: () => soon(), load: otherLoad, content });
+      parent.querySelector('button')!.click();
+      soon.set(true);
+      await flush();
+
+      expect(load).toHaveBeenCalledOnce();
+      expect(otherLoad).toHaveBeenCalledOnce();
+      expect(content).not.toHaveBeenCalled();
+    });
+
+    it('reports nothing when the prefetch fails, the trigger hydrating the content logging the error', async () => {
+      const parent = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const failure = new Error('offline');
+
+      _hydrate(parent, createRoot(new ClaimNodes('x-host')), null, { triggers: ['interaction'], prefetch: ['load'], load: () => Promise.reject(failure), content: block('button') });
+      await flush();
+      expect(console.error).not.toHaveBeenCalled();
+      parent.querySelector('button')!.click();
+      await flush();
+
+      expect(console.error).toHaveBeenCalledWith(failure);
+    });
+
     it('waits for the browser to be idle in place of visible and interaction when the server rendered no element, without warnings for what changed meanwhile', async () => {
       const parent = parse('<!--xd-h-->text<!--/xd-h-->');
       const content = block('b');

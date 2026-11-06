@@ -67,7 +67,7 @@ describe('checkTriggerTargets', () => {
     it('rejects one without a @placeholder, whatever its content, at the trigger, telling what to add', () => {
       const [error] = checkTriggerTargets(parseTemplate('@defer (interaction) { <b></b> }'));
 
-      expect(error.message).toBe('The trigger "interaction" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element');
+      expect(error.message).toBe('The trigger "interaction" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)');
       expect(check('@defer (idle, visible) { <b></b> } @loading { <i></i> }')).toEqual(['visible']);
     });
 
@@ -82,9 +82,20 @@ describe('checkTriggerTargets', () => {
     it.each([
       ['an element', '@defer (visible) { text } @placeholder { <i></i> }'],
       ['a @defer whose @placeholder holds an element', '@defer (interaction) { text } @placeholder { @defer (idle) { text } @placeholder { <i></i> } }'],
-      ['triggers watching no element', '@defer (idle, load, when a()) { text }']
+      ['triggers watching no element', '@defer (idle, load, timer(1s), when a()) { text }'],
+      ['triggers naming the element they watch', '<button #more></button>@defer (hover(more), interaction(more), visible(more, { threshold: 1 }), prefetch hover(more)) { text }'],
+      ['no triggers, waiting for the browser to be idle', '@defer { text }']
     ])('accepts %s', (_name, template) => {
       expect(check(template)).toEqual([]);
+    });
+
+    it.each([
+      ['hover', '@defer (hover) { text }', 'hover'],
+      ['visible with options alone', '@defer (visible({ threshold: 1 })) { text }', 'visible({ threshold: 1 })'],
+      ['a trigger following prefetch', '@defer (idle, prefetch hover) { text }', 'hover'],
+      ['a trigger following prefetch, after the ones rendering the content', '@defer (prefetch visible, interaction) { text }', 'interaction']
+    ])('rejects %s without a @placeholder holding an element', (_name, template, trigger) => {
+      expect(check(template)).toEqual([trigger]);
     });
 
     it('lets a @hydrate watch the @placeholder of a @defer in its content, which the server renders', () => {

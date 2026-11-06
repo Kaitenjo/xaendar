@@ -94,6 +94,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
           '@xaendar/compiler',
           '@xaendar/core',
           '@xaendar/core/signals',
+          '@xaendar/core/testing',
           '@xaendar/signals',
           '@xaendar/types',
           'typescript'

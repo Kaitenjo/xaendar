@@ -56,6 +56,21 @@ describe('parseClient', () => {
     expect(template.slice(span.start, span.end)).toBe('(click)="buy()"');
   });
 
+  it('reports the parameters of the placeholder on them, since only the one of a @defer takes any', () => {
+    const template = '@client { a } @placeholder (minimum 1s) { b }';
+    let error: unknown;
+    try {
+      parse(template);
+    } catch (thrown) {
+      error = thrown;
+    }
+
+    expect(error).toBeInstanceOf(TemplateError);
+    const { detail, span } = error as TemplateError;
+    expect(detail).toBe('The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once');
+    expect(template.slice(span.start, span.end)).toBe('minimum 1s');
+  });
+
   it('accepts a listener in the content', () => {
     expect(parse('@client { <button (click)="buy()"></button> } @placeholder { <p></p> }')).toHaveLength(1);
   });

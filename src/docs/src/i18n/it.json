@@ -1651,6 +1651,7 @@
         "packages": {
           "@xaendar/core": "Componenti, direttive, i loro decoratori e le loro classi base.",
           "@xaendar/core/signals": "I signal di componenti e direttive: signal, computed, effect e untracked, e i tipi di input e query.",
+          "@xaendar/core/testing": "Gli strumenti degli spec: i blocchi @defer di un componente, trovati e pilotati a mano con getDeferBlocks e setDeferBlockBehavior.",
           "@xaendar/signals": "Il Signal globale della proposta TC39, installato da loadSignals, su cui si basano i signal di @xaendar/core/signals.",
           "@xaendar/build-tools": "Il plugin di Vite che compila template e fogli di stile, per il browser e per il server, e le sue opzioni.",
           "@xaendar/ssr": "Il rendering lato server: renderToString, che renderizza un componente in HTML con shadow root dichiarativi, e il tipo dei suoi input.",
@@ -1699,7 +1700,7 @@
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
             "heading": "Non disponibile",
-            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi come <code>(keydown.enter)</code>, <code>@defer</code>, <code>@empty</code> e i template passati ad altri componenti. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
+            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi come <code>(keydown.enter)</code>, <code>@empty</code> e i template passati ad altri componenti. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
           }
         }
       },
@@ -1758,7 +1759,7 @@
           "th2": "Al suo posto",
           "td1": "<code>prop=\"{ … }\"</code> e un listener; una direttiva che scrive la proprietà",
           "td2": "Un filtro nel metodo: <code>(keydown.enter)</code> ascolta un evento con quel nome",
-          "td3": "<code>@if</code> intorno al <code>@for</code>; import dinamici",
+          "td3": "<code>@if</code> intorno al <code>@for</code>",
           "td4": "Pipe",
           "td5": "Metodi e computed"
         }
@@ -2720,30 +2721,41 @@
       "defer": {
         "eyebrow": "Template",
         "title": "@defer",
-        "lead": "Un blocco <code>@defer</code> renderizza il suo contenuto quando scatta uno dei suoi trigger, e solo allora carica i moduli dei componenti che renderizza solo il contenuto. Fino ad allora mostra il suo <code>@placeholder</code>, mentre i moduli si caricano il suo <code>@loading</code>, e quando non si caricano il suo <code>@error</code>.",
+        "lead": "Un blocco <code>@defer</code> renderizza il suo contenuto quando scatta uno dei suoi trigger, e solo allora carica i moduli dei componenti e delle direttive che renderizza solo il contenuto, o prima, quando scatta un trigger che segue <code>prefetch</code>. Fino ad allora mostra il suo <code>@placeholder</code>, mentre i moduli si caricano il suo <code>@loading</code>, e quando non si caricano il suo <code>@error</code>.",
         "when": "<strong>Quando serve</strong>: per una parte della pagina che l’utente può non vedere mai, o vede dopo, e che pesa sul primo caricamento: commenti, una mappa, un editor, un grafico in fondo alla pagina. La pagina parte con meno codice, e la parte arriva quando serve.",
         "syntax": {
           "title": "La sintassi",
-          "p1": "I trigger, tra parentesi, sono obbligatori. I blocchi che seguono il contenuto sono facoltativi, ognuno scritto una volta, in qualunque ordine. Ogni parte è uno scope a sé.",
+          "p1": "I trigger, tra parentesi, si possono omettere: il blocco aspetta allora che il browser sia inattivo. I blocchi che seguono il contenuto sono facoltativi, ognuno scritto una volta, in qualunque ordine, il <code>@placeholder</code> e il <code>@loading</code> con i loro tempi tra parentesi. Ogni parte è uno scope a sé.",
           "p2": "<code>@defer</code> funziona in qualunque progetto, con o senza rendering lato server."
         },
         "triggers": {
           "title": "I trigger",
-          "p1": "I trigger sono quelli di <code>@hydrate</code>, tranne <code>never</code>. Il primo che scatta renderizza il contenuto, una volta:",
-          "p2": "<code>visible</code> e <code>interaction</code> guardano gli elementi del <code>@placeholder</code>: con loro serve un <code>@placeholder</code> che contenga un elemento. I listener del <code>@placeholder</code> gestiscono prima l’evento, poi il contenuto lo sostituisce. Qui il pulsante del <code>@placeholder</code> carica i commenti, il cui componente sta in un chunk a parte:",
-          "example1": "Commenti caricati al primo click",
+          "p1": "I trigger sono quelli di <code>@hydrate</code>, tranne <code>never</code>, separati da virgole. Il primo che scatta renderizza il contenuto, una volta:",
+          "p2": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano gli elementi del <code>@placeholder</code>: con loro serve un <code>@placeholder</code> che contenga un elemento, a meno che non indichino l’elemento da guardare. I listener del <code>@placeholder</code> gestiscono prima un’interazione, poi il contenuto lo sostituisce. Qui passare con il puntatore sul pulsante del <code>@placeholder</code> carica i commenti, il cui componente sta in un chunk a parte, e il click li mostra:",
+          "example1": "Commenti caricati quando il puntatore passa sul pulsante, mostrati al primo click",
           "p3": "<code>when</code> scatta quando la sua espressione è truthy. Il contenuto viene renderizzato una volta: resta anche quando l’espressione torna falsy.",
           "example2": "Dettagli renderizzati quando vengono richiesti"
+        },
+        "targets": {
+          "title": "L’elemento da guardare",
+          "p1": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano l’elemento indicato da un element ref, scritto tra le loro parentesi, al posto del <code>@placeholder</code>: un elemento del template che contiene il blocco, prima del blocco o dopo. <code>visible</code> accetta anche le opzioni del suo <code>IntersectionObserver</code>, tranne <code>root</code>, come oggetto letterale dopo l’element ref o da sole: <code>rootMargin</code> renderizza il contenuto prima che l’elemento entri nel viewport, <code>threshold</code> quando se ne vede abbastanza.",
+          "p2": "I trigger vengono attivati quando il template che contiene il blocco è renderizzato, quindi l’element ref indica un elemento già renderizzato a quel punto. Un elemento dentro un <code>@if</code> o un <code>@for</code> appartiene a un altro scope: lì il type-check rifiuta il suo nome, come rifiuta un nome che non è un elemento."
+        },
+        "prefetch": {
+          "title": "Caricare prima i moduli",
+          "p1": "Un trigger scritto dopo <code>prefetch</code> carica i moduli del contenuto senza renderizzarlo: quando scatta il trigger che renderizza il contenuto, i moduli sono già lì, o in arrivo, e il contenuto aspetta lo stesso caricamento. <code>prefetch</code> accetta ogni trigger, <code>when</code> compreso. Un blocco che dichiara solo trigger che seguono <code>prefetch</code> renderizza il contenuto quando il browser è inattivo:",
+          "p2": "Senza moduli da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, <code>prefetch</code> non fa niente. Un prefetch che fallisce non viene segnalato: il trigger che renderizza il contenuto mostra l’<code>@error</code>."
         },
         "blocks": {
           "title": "@placeholder, @loading e @error",
           "p1": "Il <code>@placeholder</code> viene mostrato finché non scatta un trigger. Fa parte della pagina: i suoi listener funzionano, ed è l’unica parte che renderizza il server. Dagli la dimensione del contenuto, così la pagina non si sposta quando il contenuto arriva.",
           "p2": "Il <code>@loading</code> viene mostrato dal trigger finché i moduli non sono caricati. Quando non c’è niente da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, il contenuto arriva subito e il <code>@loading</code> non compare.",
-          "p3": "L’<code>@error</code> viene mostrato quando i moduli non si caricano, per esempio offline o dopo un deploy che ha rimosso i chunk vecchi. Dà un nome all’errore, come fa <code>@catch</code>, di tipo <code>unknown</code>. Senza <code>@error</code>, l’errore va in console e torna il <code>@placeholder</code>."
+          "p3": "L’<code>@error</code> viene mostrato quando i moduli non si caricano, per esempio offline o dopo un deploy che ha rimosso i chunk vecchi. Dà un nome all’errore, come fa <code>@catch</code>, di tipo <code>unknown</code>. Senza <code>@error</code>, l’errore va in console e torna il <code>@placeholder</code>.",
+          "p4": "I tempi evitano un lampo quando i moduli arrivano in fretta. Il <code>minimum</code> del <code>@placeholder</code> lo tiene visibile almeno per quel tempo, da quando viene renderizzato. Il <code>@loading</code> compare solo quando i moduli si stanno caricando da almeno il suo <code>after</code>, mai quando arrivano prima, poi resta almeno per il suo <code>minimum</code>. Il contenuto, o l’<code>@error</code>, li aspetta. Un tempo è un numero seguito da <code>ms</code> o <code>s</code>, in millisecondi senza unità."
         },
         "modules": {
           "title": "I moduli caricati dopo",
-          "p1": "La build mette in un chunk a parte i moduli dei componenti che renderizza solo il contenuto, e li carica quando scatta un trigger. Un componente che il template renderizza anche altrove, o nel <code>@placeholder</code>, nel <code>@loading</code> o nell’<code>@error</code>, viene caricato con la pagina."
+          "p1": "La build mette in un chunk a parte i moduli dei componenti e delle direttive che renderizza solo il contenuto, e li carica quando scatta un trigger. Un componente o una direttiva che il template renderizza anche altrove, o nel <code>@placeholder</code>, nel <code>@loading</code> o nell’<code>@error</code>, viene caricato con la pagina."
         },
         "try": {
           "title": "Errori del contenuto",
@@ -2753,6 +2765,11 @@
           "title": "Con il rendering lato server",
           "p1": "Il server renderizza solo il <code>@placeholder</code>. Il browser lo adotta mentre il componente si idrata, con i suoi listener, e lo sostituisce quando scatta un trigger. Un click sul placeholder prima che arrivi il codice della pagina viene registrato, e poi fa scattare <code>interaction</code>.",
           "p2": "Usa invece <code>@hydrate</code> quando il contenuto deve stare nell’HTML del server, per i motori di ricerca o per essere letto subito: <code>@hydrate</code> rimanda il suo codice, <code>@defer</code> il contenuto stesso."
+        },
+        "testing": {
+          "title": "Nei test",
+          "p1": "<code>@xaendar/core/testing</code> trova i blocchi <code>@defer</code> che renderizza un componente: <a href=\"#/it/reference/api/core/testing/getDeferBlocks\"><code>getDeferBlocks(element)</code></a> li restituisce nell’ordine in cui vengono renderizzati, ognuno con la parte che mostra, <code>state</code>, e <code>render(state)</code>, che ne mostra subito un’altra. Con <a href=\"#/it/reference/api/core/testing/setDeferBlockBehavior\"><code>setDeferBlockBehavior('manual')</code></a>, chiamata prima del render, i trigger non scattano mai, e il test mostra ogni parte a mano:",
+          "p2": "<code>render('complete')</code> aspetta i moduli del contenuto, <code>render('error', error)</code> passa l’errore all’<code>@error</code>. Una parte che il blocco non dichiara rifiuta la promise. Senza <code>'manual'</code>, i blocchi funzionano come nel browser: è il test a far scattare i loro trigger."
         },
         "errors": {
           "title": "Errori"
@@ -2770,16 +2787,22 @@
           "callout3": {
             "heading": "Non in un tag",
             "body": "<p><code>@defer</code> è un blocco del contenuto: non può scegliere i binding di un tag, come fa un binding condizionale.</p>"
+          },
+          "callout4": {
+            "heading": "hover su uno schermo touch",
+            "body": "<p>Uno schermo touch non ha un puntatore che passa sopra gli elementi: lì <code>hover</code> scatta solo quando il focus vi entra. Abbinalo a <code>interaction</code>, o scrivilo dopo <code>prefetch</code>, così che un tocco renderizzi comunque il contenuto.</p>"
           }
         },
         "summary": {
           "title": "Riepilogo",
           "th1": "Sintassi",
           "th2": "Descrizione",
-          "td1": "Renderizza il contenuto quando scatta un trigger, dopo aver caricato i moduli dei componenti che renderizza solo il contenuto.",
-          "td2": "Mostrato finché non scatta un trigger; lo renderizza il server.",
-          "td3": "Mostrato mentre i moduli si caricano.",
-          "td4": "Mostrato quando i moduli non si caricano, con l’errore, di tipo <code>unknown</code>."
+          "td1": "Renderizza il contenuto quando scatta un trigger, dopo aver caricato i moduli dei componenti e delle direttive che renderizza solo il contenuto. Senza trigger, quando il browser è inattivo.",
+          "td2": "Mostrato finché non scatta un trigger, almeno per il suo <code>minimum</code>; lo renderizza il server.",
+          "td3": "Mostrato mentre i moduli si caricano, quando si stanno caricando da almeno il suo <code>after</code>, poi almeno per il suo <code>minimum</code>.",
+          "td4": "Mostrato quando i moduli non si caricano, con l’errore, di tipo <code>unknown</code>.",
+          "td5": "Carica i moduli del contenuto quando scatta il trigger, senza renderizzarlo.",
+          "td6": "Guarda l’elemento indicato dall’element ref, <code>visible</code> con le opzioni del suo observer."
         }
       },
       "reusableTemplates": {
@@ -3082,7 +3105,7 @@
           "when": "<strong>Quando serve</strong>: quando una pagina contiene molto di cui l’utente non ha bisogno subito, come ciò che sta sotto la piega, un menu che si apre con un clic o un form nel footer. Rimandandolo, la pagina carica meno codice e risponde prima. Quando il contenuto non deve stare nell’HTML del server, <a href=\"#/it/templates/defer\">@defer</a> rimanda il contenuto stesso.",
           "triggers": {
             "title": "I trigger",
-            "p1": "I trigger si scrivono tra parentesi, separati da virgole: il primo che scatta idrata il contenuto.",
+            "p1": "I trigger si scrivono tra parentesi, separati da virgole: il primo che scatta idrata il contenuto. Senza parentesi, <code>@hydrate { … }</code> idrata il contenuto quando il browser è inattivo.",
             "th1": "Trigger",
             "th2": "Idrata",
             "th3": "Usalo per",
@@ -3094,17 +3117,27 @@
             "idle": {
               "fires": "Quando il browser è inattivo",
               "use": "Ciò che deve essere pronto presto, ma non per primo: un form nel footer, una chat",
-              "p1": "Il contenuto si idrata quando il browser non ha altro da fare, dopo il resto della pagina; dove manca <code>requestIdleCallback</code>, dopo un timeout. Per un componente: <code>ssr: { hydrate: 'idle' }</code>."
+              "p1": "Il contenuto si idrata quando il browser non ha altro da fare, dopo il resto della pagina; dove manca <code>requestIdleCallback</code>, dopo un timeout. Con un tempo, <code>idle(2s)</code> lo idrata al più tardi quando il tempo è passato. Per un componente: <code>ssr: { hydrate: 'idle' }</code>."
+            },
+            "timer": {
+              "fires": "Quando è passato un tempo",
+              "use": "Ciò che può aspettare un tempo fisso: una chat, un banner",
+              "p1": "Il contenuto si idrata quando è passato il tempo tra le parentesi, in <code>ms</code> o <code>s</code>, qualunque cosa faccia l’utente nel frattempo. Solo un template lo ha."
             },
             "visible": {
               "fires": "Quando uno dei suoi elementi entra nel viewport",
               "use": "Ciò che sta sotto la piega: recensioni, commenti, prodotti correlati",
-              "p1": "Il contenuto si idrata quando uno dei suoi elementi entra nel viewport: il codice di una pagina lunga arriva man mano che l’utente scorre. Per un componente: <code>ssr: { hydrate: 'visible' }</code>, che osserva il suo elemento."
+              "p1": "Il contenuto si idrata quando uno dei suoi elementi entra nel viewport: il codice di una pagina lunga arriva man mano che l’utente scorre. Le opzioni del suo <code>IntersectionObserver</code>, come in <code>visible({ rootMargin: '200px' })</code>, idratano il contenuto prima che entri nel viewport. Un <code>@hydrate</code> osserva il suo contenuto: a differenza di quelli di un <code>@defer</code>, i suoi trigger non indicano elementi. Per un componente: <code>ssr: { hydrate: 'visible' }</code>, che osserva il suo elemento."
             },
             "interaction": {
               "fires": "Al primo evento dell’utente sui suoi elementi",
               "use": "Ciò che non fa nulla finché non lo si tocca: un menu, un selettore, un accordion",
               "p1": "Il contenuto si idrata al primo <code>click</code>, <code>input</code>, <code>keydown</code>, <code>focusin</code> o altro evento dell’utente sui suoi elementi. L’evento non va perso: idratato il contenuto, raggiunge il suo listener, quindi un solo clic apre il menu. Per un componente: <code>ssr: { hydrate: 'interaction' }</code>."
+            },
+            "hover": {
+              "fires": "Quando il puntatore passa su uno dei suoi elementi, o il focus vi entra",
+              "use": "Ciò che l’utente sta per usare: un menu, un pulsante che apre una finestra",
+              "p1": "Il contenuto si idrata quando il puntatore passa su uno dei suoi elementi, o il focus vi entra: il suo codice arriva mentre l’utente ci va sopra, prima del clic. Uno schermo touch non ha un puntatore che passa sopra gli elementi: abbinalo a <code>interaction</code>. Per un componente: <code>ssr: { hydrate: 'hover' }</code>."
             },
             "when": {
               "fires": "Quando un’espressione diventa vera",
@@ -3119,17 +3152,21 @@
             "combined": {
               "title": "Più trigger",
               "p1": "Il primo trigger che scatta idrata il contenuto: qui un clic sulle recensioni, o un pulsante altrove che le apre."
+            },
+            "prefetch": {
+              "title": "Caricare prima il codice",
+              "p1": "Un trigger scritto dopo <code>prefetch</code> carica i moduli dei componenti che renderizza solo il contenuto, senza idratarlo: quando scatta il trigger che idrata il contenuto, il suo codice è già lì, o in arrivo. Solo un template lo ha."
             }
           },
           "placeholder": {
-            "title": "visible, interaction e @placeholder",
-            "p1": "<code>visible</code> e <code>interaction</code> osservano gli elementi che il server ha renderizzato nel blocco. Un <code>@client</code> sul server non renderizza nulla, quindi un blocco che contiene solo un <code>@client</code> non ha nulla da osservare, e non si idraterebbe mai: è un errore di compilazione, in <code>xd start</code>, <code>xd build</code> e nell’editor.",
+            "title": "visible, interaction, hover e @placeholder",
+            "p1": "<code>visible</code>, <code>interaction</code> e <code>hover</code> osservano gli elementi che il server ha renderizzato nel blocco. Un <code>@client</code> sul server non renderizza nulla, quindi un blocco che contiene solo un <code>@client</code> non ha nulla da osservare, e non si idraterebbe mai: è un errore di compilazione, in <code>xd start</code>, <code>xd build</code> e nell’editor.",
             "p2": "Dai al <code>@client</code> un <code>@placeholder</code> che contenga un elemento, meglio se grande quanto il contenuto, o mettigli accanto un elemento:",
-            "p3": "Un <code>@placeholder</code> con solo testo non basta, e nemmeno un blocco di solo testo. Un <code>@if</code>, un <code>@for</code>, uno <code>@switch</code> o un <code>@render</code> sono accettati, perché possono renderizzare un elemento: se alla fine non ne renderizzano nessuno, il blocco aspetta <code>idle</code>. <code>idle</code>, <code>load</code>, <code>when</code> e <code>never</code> non osservano elementi, e non hanno bisogno di un placeholder."
+            "p3": "Un <code>@placeholder</code> con solo testo non basta, e nemmeno un blocco di solo testo. Un <code>@if</code>, un <code>@for</code>, uno <code>@switch</code> o un <code>@render</code> sono accettati, perché possono renderizzare un elemento: se alla fine non ne renderizzano nessuno, il blocco aspetta <code>idle</code>. <code>idle</code>, <code>load</code>, <code>timer</code>, <code>when</code> e <code>never</code> non osservano elementi, e non hanno bisogno di un placeholder."
           },
           "component": {
             "title": "Per un componente: ssr.hydrate",
-            "p1": "Quando un componente deve aspettare ovunque sia usato, dichiara il trigger una volta in <code>@WebComponent</code>: <code>ssr.hydrate</code> accetta gli stessi trigger tranne <code>when</code>, e il server lo scrive nell’attributo <code>data-xd-hydrate</code> di ogni elemento.",
+            "p1": "Quando un componente deve aspettare ovunque sia usato, dichiara il trigger una volta in <code>@WebComponent</code>: <code>ssr.hydrate</code> accetta i trigger scritti per nome, <code>load</code>, <code>idle</code>, <code>visible</code>, <code>interaction</code>, <code>hover</code> e <code>never</code>, e il server lo scrive nell’attributo <code>data-xd-hydrate</code> di ogni elemento.",
             "p2": "Il template vince sempre sull’opzione, che vale per ogni istanza: i componenti dentro un <code>@hydrate</code> si idratano con esso, qualunque cosa dichiarino."
           },
           "meanwhile": {
@@ -3885,13 +3922,13 @@
       "cause": "Un argomento con lo spread (...values) in un @render.",
       "fix": "Passa un argomento per ogni parametro."
     },
-    "[Parser] @hydrate needs a trigger: load, idle, visible, interaction, never, or when followed by an expression": {
+    "[Parser] @hydrate needs a trigger: use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only": {
       "cause": "Le parentesi di un @hydrate sono vuote, o contengono un trigger vuoto tra due virgole.",
-      "fix": "Elenca almeno un trigger, separati da virgole: @hydrate (visible, when ready())."
+      "fix": "Elenca almeno un trigger, separati da virgole: @hydrate (visible, when ready()); oppure ometti le parentesi per idratare quando il browser è inattivo: @hydrate { … }."
     },
-    "[Parser] Unknown @hydrate trigger \"hover\": use load, idle, visible, interaction, never, or when followed by an expression": {
+    "[Parser] Unknown @hydrate trigger \"viewport\": use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only": {
       "cause": "Un trigger di un @hydrate non è una delle parole chiave, o un’espressione è scritta senza when.",
-      "fix": "Usa load, idle, visible, interaction o never, e scrivi when prima di un’espressione: @hydrate (when open())."
+      "fix": "Usa load, idle, timer, visible, interaction, hover o never, e scrivi when prima di un’espressione: @hydrate (when open())."
     },
     "[Parser] The trigger \"idle\" is declared twice": {
       "cause": "Un @hydrate elenca due volte lo stesso trigger, o due trigger when.",
@@ -3905,17 +3942,65 @@
       "cause": "Un @hydrate elenca never accanto a un altro trigger.",
       "fix": "Togli never per idratare il contenuto, o gli altri trigger per lasciarlo come l’HTML del server."
     },
+    "[Parser] The trigger \"never\" loads nothing: it cannot follow prefetch": {
+      "cause": "prefetch never è scritto in un @hydrate: never non carica alcun modulo.",
+      "fix": "Toglilo, o scrivi dopo prefetch il trigger che deve caricare i moduli: @hydrate (interaction, prefetch idle)."
+    },
+    "[Parser] A trigger of @hydrate watches the elements of its content: it takes no element ref": {
+      "cause": "Un trigger di un @hydrate è scritto con un element ref: visible, interaction e hover di un @hydrate guardano gli elementi del suo contenuto, renderizzati dal server.",
+      "fix": "Togli l’element ref: @hydrate (hover) { … }; usa un @defer per guardare un altro elemento."
+    },
     "[Parser] @placeholder must follow the block of a @client or a @defer": {
       "cause": "Un @placeholder non si trova subito dopo la } di un @client o di un @defer (o di un blocco che segue il @defer): è da solo, segue un altro blocco o un testo, oppure è il secondo di un @client.",
       "fix": "Scrivilo subito dopo il blocco di un @client o di un @defer, una volta sola: @client { … } @placeholder { … }."
     },
-    "[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression": {
-      "cause": "Un @defer senza trigger tra le parentesi, o con un trigger vuoto tra due virgole. I suoi trigger sono obbligatori.",
-      "fix": "Elenca almeno un trigger: @defer (idle) { … }."
+    "[Parser] The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once": {
+      "cause": "Un @placeholder che segue un @client è scritto con dei parametri, che accetta solo quello di un @defer.",
+      "fix": "Togli le parentesi: @client { … } @placeholder { … }."
     },
-    "[Parser] Unknown @defer trigger \"never\": use load, idle, visible, interaction, or when followed by an expression": {
+    "[Parser] @defer needs a trigger: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only": {
+      "cause": "Le parentesi di un @defer sono vuote, o contengono un trigger vuoto tra due virgole.",
+      "fix": "Elenca almeno un trigger: @defer (interaction) { … }; oppure ometti le parentesi per renderizzare il contenuto quando il browser è inattivo: @defer { … }."
+    },
+    "[Parser] Unknown @defer trigger \"never\": use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only": {
       "cause": "Un trigger di un @defer non è una delle parole chiave (never è un trigger solo di @hydrate), oppure un’espressione è scritta senza when.",
-      "fix": "Usa load, idle, visible o interaction, e scrivi when prima di un’espressione: @defer (when open())."
+      "fix": "Usa load, idle, timer, visible, interaction o hover, e scrivi when prima di un’espressione: @defer (when open())."
+    },
+    "[Parser] @defer needs a trigger after prefetch: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only": {
+      "cause": "prefetch è scritto senza il trigger che dopo di lui carica i moduli.",
+      "fix": "Scrivi il trigger dopo prefetch: @defer (interaction, prefetch idle)."
+    },
+    "[Parser] The trigger \"timer\" needs a duration, such as timer(500ms)": {
+      "cause": "timer è scritto senza il tempo da aspettare tra le parentesi.",
+      "fix": "Scrivi il tempo, in ms o s: timer(500ms), timer(2s)."
+    },
+    "[Parser] Expected a duration, such as 500ms or 1s, got \"soon\"": {
+      "cause": "Il tempo di timer, di idle, o di un parametro di un @placeholder o di un @loading non è un numero seguito da ms o s.",
+      "fix": "Scrivi un numero, con decimali o senza, seguito da ms o s, o da solo per i millisecondi: timer(1.5s), idle(500)."
+    },
+    "[Parser] The trigger \"load\" takes no arguments": {
+      "cause": "Un trigger senza argomenti, load o never, è scritto con le parentesi.",
+      "fix": "Togli le parentesi: @defer (load)."
+    },
+    "[Parser] The trigger \"hover\" takes at most one argument": {
+      "cause": "Un trigger è scritto con più argomenti di quanti ne accetti: interaction, hover, idle e timer ne accettano uno, visible due, l’element ref e le sue opzioni.",
+      "fix": "Tieni un argomento, l’element ref dell’elemento da guardare: hover(more)."
+    },
+    "[Parser] Expected the element ref naming the element to watch, got \"a.b\"": {
+      "cause": "L’argomento di visible, interaction o hover non è un nome: guardano l’elemento indicato da un element ref.",
+      "fix": "Dai all’elemento un element ref, e scrivine il nome: <button #more>…</button> @defer (hover(more)) { … }."
+    },
+    "[Parser] Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got \"margin\"": {
+      "cause": "Le opzioni di visible, dopo l’element ref o da sole, non sono scritte come oggetto letterale.",
+      "fix": "Scrivi le opzioni tra graffe, leggendo lì dentro i membri del componente se serve: visible(frame, { rootMargin: margin() })."
+    },
+    "[Parser] Unknown parameter \"after 1s\" of @placeholder: use minimum followed by a duration, such as minimum 500ms": {
+      "cause": "Un parametro di un @placeholder o di un @loading non è uno di quelli che accetta: un @placeholder accetta minimum, un @loading after e minimum.",
+      "fix": "Usa i parametri del blocco, ognuno seguito da un tempo: @placeholder (minimum 500ms), @loading (after 100ms, minimum 1s)."
+    },
+    "[Parser] The parameter \"minimum\" of @loading is declared twice": {
+      "cause": "Un parametro di un @placeholder o di un @loading è scritto due volte.",
+      "fix": "Tienine uno."
     },
     "[Parser] @loading is declared twice for this @defer": {
       "cause": "Un @placeholder, un @loading o un @error scritto due volte dopo lo stesso @defer.",
@@ -3925,9 +4010,9 @@
       "cause": "Un @loading, o un @error, non si trova subito dopo un @defer o uno dei blocchi che lo seguono.",
       "fix": "Scrivilo subito dopo il @defer: @defer (idle) { … } @loading { … } @error (error) { … }."
     },
-    "[TypeChecker] The trigger \"visible\" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element": {
-      "cause": "Un @defer con visible o interaction senza @placeholder, o con uno che non renderizza elementi (solo testo): quei trigger guardano gli elementi del @placeholder, quindi non scatterebbero mai.",
-      "fix": "Aggiungi un @placeholder che contenga un elemento, possibilmente con la dimensione del contenuto quando il trigger è visible; oppure usa idle, load o when."
+    "[TypeChecker] The trigger \"visible\" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)": {
+      "cause": "Un @defer con visible, interaction o hover senza @placeholder, o con uno che non renderizza elementi (solo testo): quei trigger guardano gli elementi del @placeholder, quindi non scatterebbero mai.",
+      "fix": "Aggiungi un @placeholder che contenga un elemento, possibilmente con la dimensione del contenuto quando il trigger è visible; indica l’elemento da guardare, come in hover(button); oppure usa idle, load, timer o when."
     },
     "[Parser] @try needs a @catch: write @catch (error) { … } right after its block": {
       "cause": "Un blocco @try non seguito dal suo @catch, come richiede JavaScript.",

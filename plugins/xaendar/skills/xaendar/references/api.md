@@ -7,14 +7,14 @@ Every export applications use, by module. Symbols exported only for the compiled
 ### WebComponent (decorator)
 
 ```ts
-@WebComponent({ selector: 'x-y', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'never', render?: false, static?: false }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
+@WebComponent({ selector: 'x-y', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never', render?: false, static?: false }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
 Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet (`.css`, `.scss`, `.sass` or `.less`). The options must be string literals; `hostDirectives` an array literal. The class must be declared in a file ending with `.xd.component.ts`; the decorator is not inherited.
 
 `hostDirectives` lists custom directives applied to every instance of the component, on its own element. An entry is the class of the directive, or an object with the class (`directive`) and the `properties` and `events` of the directive the component exposes, each as `'name'` or as `{ name, alias }`: an exposed input is bound from the templates using the component, an exposed output is dispatched on it. The events not exposed are not dispatched. They belong to the class declaring them: a subclass with its own @WebComponent does not inherit the ones of its parent. Templates cannot name the class, so expose the instance as a member (`public readonly tip = this.hostDirectives.get(Tip)`, a field of the subclass) to use it in the template.
 
-`ssr.hydrate` decides when the elements of the component rendered on the server hydrate: `load` (default) as soon as they can, `idle`, `visible` (in the viewport), `interaction` (first event on them), `never` (they stay the HTML of the server for good, no event recorded; instances the browser creates render as usual). Until then they show the HTML of the server and the events on them are recorded, then replayed. A `@hydrate` block holding the element decides in its place; a component rendered in the browser renders at once. `ssr.static: false` keeps a component in the bundle of the browser where the build would find it static; `true` is not a value. `ssr.render: false` renders the component only in the browser, as a `@client` around each of its elements: the server writes its empty element, runs none of its code and does not evaluate its module for the templates rendering it; it takes no `hydrate: 'never'`. `ssr` must be an object literal and `render` the literal `false`, since the plugin reads them from the source code. Declaring any of these keeps the component in the bundle.
+`ssr.hydrate` decides when the elements of the component rendered on the server hydrate: `load` (default) as soon as they can, `idle`, `visible` (in the viewport), `interaction` (first event on them), `hover` (pointer over them, or focus entering them), `never` (they stay the HTML of the server for good, no event recorded; instances the browser creates render as usual). Until then they show the HTML of the server and the events on them are recorded, then replayed. A `@hydrate` block holding the element decides in its place; a component rendered in the browser renders at once. `ssr.static: false` keeps a component in the bundle of the browser where the build would find it static; `true` is not a value. `ssr.render: false` renders the component only in the browser, as a `@client` around each of its elements: the server writes its empty element, runs none of its code and does not evaluate its module for the templates rendering it; it takes no `hydrate: 'never'`. `ssr` must be an object literal and `render` the literal `false`, since the plugin reads them from the source code. Declaring any of these keeps the component in the bundle.
 
 ### Property (decorator)
 
@@ -191,7 +191,7 @@ The options of an output: a plain object in @Event, an EventOptions instance in 
 ### WebComponentOptions (type)
 
 ```ts
-{ selector: string; hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>; ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'never'; render?: false; static?: false }; styleUrl?: string; templateUrl: string }
+{ selector: string; hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>; ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never'; render?: false; static?: false }; styleUrl?: string; templateUrl: string }
 ```
 
 The options of @WebComponent.
@@ -317,6 +317,46 @@ QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; 
 ```
 
 The target of a query, the element type it resolves to, and the options of the content queries.
+
+## `@xaendar/core/testing`
+
+Importing it makes the `@defer` blocks rendered from then on findable by the specs.
+
+### getDeferBlocks (function)
+
+```ts
+getDeferBlocks(host: Element): DeferBlockFixture[]
+```
+
+The `@defer` blocks the component of `host` renders in its shadow root, in render order (nested ones once rendered, destroyed ones left out).
+
+### setDeferBlockBehavior (function)
+
+```ts
+setDeferBlockBehavior(value: 'playthrough' | 'manual'): void
+```
+
+For the blocks rendered after the call: `'playthrough'` (default) as in the browser; `'manual'` never arms their triggers, `when` or `prefetch`, the spec shows each part with `render`. Set `'playthrough'` again in `afterEach`.
+
+### DeferBlockFixture (type)
+
+```ts
+DeferBlockFixture = { readonly state: DeferBlockState; render(state: DeferBlockState, error?: unknown): Promise<void> }
+```
+
+`state` is the part shown. `render` shows a part at once, stopping the triggers and the times: `'complete'` awaits the modules of the content, `'error'` passes the error to the `@error`; it rejects when the block declares no such part.
+
+### DeferBlockState (type)
+
+```ts
+DeferBlockState = 'placeholder' | 'loading' | 'complete' | 'error'
+```
+
+### DeferBlockBehavior (type)
+
+```ts
+DeferBlockBehavior = 'playthrough' | 'manual'
+```
 
 ## `@xaendar/signals`
 

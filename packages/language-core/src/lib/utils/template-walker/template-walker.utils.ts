@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type CatchNode, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DeferNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ErrorNode, type ForNode, getForVariables, type HydrateNode, type IfNode, isStructuralElement, type StructuralDirectiveNode, visitScopeDeclarations } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type CatchNode, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DeferNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ErrorNode, type ForNode, getForVariables, type HydrateNode, type HydrateTrigger, type IfNode, isStructuralElement, type StructuralDirectiveNode, visitScopeDeclarations } from '@xaendar/compiler';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
 
 /**
@@ -323,16 +323,49 @@ class TemplateWalker {
   }
 
   /**
-   * Walks the expression of the `when` trigger of a block, if any, which the server does not read.
+   * Walks the expressions of the triggers of a block, the ones following `prefetch` too, which the server does not read:
+   * the one of `when`, the element ref naming the element a trigger watches, and the options of the observer of
+   * `visible`.
    *
    * @param node - The `@hydrate` or `@defer` block.
    * @param variables - The variables declared in the scope enclosing the block.
    */
-  private _walkWhen({ triggers }: HydrateNode | DeferNode, variables: ReadonlySet<string>): void {
-    for (let i = 0; !this._server && i < triggers.length; i++) {
+  private _walkWhen({ triggers, prefetch }: HydrateNode | DeferNode, variables: ReadonlySet<string>): void {
+    if (!this._server) {
+      this._walkTriggers(triggers, variables);
+      this._walkTriggers(prefetch, variables);
+    }
+  }
+
+  /**
+   * Walks the expressions of triggers (see {@link _walkWhen}).
+   *
+   * @param triggers - The triggers.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  private _walkTriggers(triggers: readonly HydrateTrigger[], variables: ReadonlySet<string>): void {
+    for (let i = 0; i < triggers.length; i++) {
       const trigger = triggers[i];
-      if (trigger.kind === 'when') {
-        this._visitor.expression?.(trigger.expressionNode, variables);
+      switch (trigger.kind) {
+        case 'when':
+          this._visitor.expression?.(trigger.expressionNode, variables);
+          break;
+
+        case 'visible':
+        case 'interaction':
+        case 'hover':
+          if (trigger.target) {
+            this._visitor.expression?.(trigger.target.expressionNode, variables);
+          }
+
+          if (trigger.kind === 'visible' && trigger.options) {
+            this._visitor.expression?.(trigger.options.expressionNode, variables);
+          }
+          break;
+
+        default:
+          // The other triggers read nothing of the template
+          break;
       }
     }
   }

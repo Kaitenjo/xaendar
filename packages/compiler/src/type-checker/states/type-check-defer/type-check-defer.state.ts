@@ -4,14 +4,13 @@ import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
-import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';
+import { typeCheckTriggers } from '../../utils/triggers/triggers.utils';
 
 /**
- * Type-checks a `@defer` block: the expression of its `when` trigger, read as the condition of an `@if`, then its
- * content, its `@placeholder` and its `@loading`, each one a scope of its own, and its `@error` as the `catch` of a
- * TypeScript `try`, so that the error is typed as TypeScript types the binding of a `catch`, `unknown` with `strict`, its
- * name mapped onto the template.
+ * Type-checks a `@defer` block: its triggers (see `typeCheckTriggers`), then its content, its `@placeholder` and its
+ * `@loading`, each one a scope of its own, and its `@error` as the `catch` of a TypeScript `try`, so that the error is
+ * typed as TypeScript types the binding of a `catch`, `unknown` with `strict`, its name mapped onto the template.
  *
  * @param node - The defer node.
  * @param processNode - Type-checks a node of a block.
@@ -19,14 +18,8 @@ import { typeCheckScope } from '../../utils/scope/scope.utils';
  * @returns The generated type-check lines.
  */
 export function typeCheckDefer(node: DeferNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
-  const lines = new Array<Line>();
-  const { triggers, placeholder, loading, error } = node;
-  for (let i = 0; i < triggers.length; i++) {
-    const trigger = triggers[i];
-    if (trigger.kind === 'when') {
-      lines.push(line('if (', mappedExpression(trigger.expressionNode, context, trigger.span), ') { }'));
-    }
-  }
+  const lines = typeCheckTriggers(node, context);
+  const { placeholder, loading, error } = node;
 
   const block = (children: readonly ASTNode[], blockContext = new TypeCheckContext(context)) => {
     const scope = typeCheckScope(children, blockContext, processNode);

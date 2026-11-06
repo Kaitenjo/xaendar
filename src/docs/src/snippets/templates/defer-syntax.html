@@ -1,8 +1,8 @@
 @defer (interaction) {
   <app-comments />
-} @placeholder {
+} @placeholder (minimum 500ms) {
   <button>Show the comments</button>
-} @loading {
+} @loading (after 100ms, minimum 1s) {
   <p>Loading the comments…</p>
 } @error (error) {
   <p>The comments cannot be loaded.</p>

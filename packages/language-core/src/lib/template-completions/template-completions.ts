@@ -1,4 +1,4 @@
-import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, type KeywordContext, resolveShimPosition, type Span } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type Symbol, SymbolFlags } from 'typescript';
 import { analyzeCompletionTemplate, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports } from '../template-analysis/template-analysis';
@@ -22,18 +22,36 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'switch': '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}',
   'case': '@case ($1) {\n\t$0\n}',
   'default': '@default {\n\t$0\n}',
-  'hydrate': '@hydrate ($1) {\n\t$0\n}',
+  'hydrate': '@hydrate (${1:idle}) {\n\t$0\n}',
   'client': '@client {\n\t$0\n}',
   'placeholder': '@placeholder {\n\t$0\n}',
   'try': '@try {\n\t$1\n} @catch (${2:error}) {\n\t$0\n}',
   'catch': '@catch (${1:error}) {\n\t$0\n}',
-  'defer': '@defer ($1) {\n\t$0\n}',
+  'defer': '@defer (${1:idle}) {\n\t$0\n}',
   'loading': '@loading {\n\t$0\n}',
   'error': '@error (${1:error}) {\n\t$0\n}',
   'import': '@import { $2 } from \'$1\';',
   'render': '@render $1($0)',
   'let': '@let $1 = $0;'
 };
+
+/**
+ * The snippet writing each name of a trigger, or of a parameter of a `@placeholder` or of a `@loading`, followed by
+ * something to fill: the others are written as they are.
+ */
+const TRIGGER_SNIPPETS: Readonly<Partial<Record<TriggerContext['names'][number], string>>> = {
+  'timer': 'timer(${1:500ms})',
+  'when': 'when $0',
+  'prefetch': 'prefetch ',
+  'minimum': 'minimum ${1:500ms}',
+  'after': 'after ${1:100ms}'
+};
+
+/**
+ * The names of the triggers followed by something having completions of its own, the expression of `when` and the
+ * trigger following `prefetch`: the completions are proposed there again once the snippet is inserted.
+ */
+const RETRIGGERING_TRIGGERS: ReadonlySet<TriggerContext['names'][number]> = new Set(['when', 'prefetch']);
 
 /**
  * The keywords whose snippet starts on an expression or on the path of a module, which have completions of their own:
@@ -186,6 +204,34 @@ export function getTemplateKeywordCompletions(templatePath: string, source: stri
     replacementSpan: span,
     snippet: KEYWORD_SNIPPETS[keyword],
     retrigger: RETRIGGERING_KEYWORDS.has(keyword)
+  }));
+}
+
+/**
+ * Proposes the names that can be written at an offset of a template between the parentheses of a block taking
+ * keywords (see `getTriggerContext`): the triggers of a `@defer` or of a `@hydrate` not written yet in the same list,
+ * `when` and `prefetch`, or the parameters of a `@placeholder` or of a `@loading`, as snippets replacing the name
+ * written so far, the value of `timer`, `minimum` and `after` to fill. After `when` and `prefetch` the completions are
+ * proposed again, for the expression and for the trigger following them.
+ *
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @returns The completions, `undefined` if the offset is not on the name of a trigger or of a parameter.
+ */
+export function getTemplateTriggerCompletions(source: string, offset: number): TemplateCompletion[] | undefined {
+  const context = getTriggerContext(source, offset);
+  if (!context) {
+    return undefined;
+  }
+
+  const { names, span } = context;
+  return names.map((name, index): TemplateCompletion => ({
+    name,
+    kind: ScriptElementKind.keyword,
+    sortText: String(index),
+    replacementSpan: span,
+    snippet: TRIGGER_SNIPPETS[name] ?? name,
+    retrigger: RETRIGGERING_TRIGGERS.has(name)
   }));
 }
 

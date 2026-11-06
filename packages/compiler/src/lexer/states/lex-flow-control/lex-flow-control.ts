@@ -7,8 +7,8 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
 /**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
  * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
- * `@catch`, `@defer`, `@loading`, `@error`, `@render`, `@let` and `@import`. A `@catch` and an `@error` read the name of
- * their error between parentheses, when they have one, as `catch (error)` does in JavaScript.
+ * `@catch`, `@defer`, `@loading`, `@error`, `@render`, `@let` and `@import`. The parentheses following `@catch`, `@error`,
+ * `@defer`, `@hydrate`, `@placeholder` and `@loading` are optional (see {@link lexBlockWithParameters}).
  * Advances the cursor past the keyword and transitions to the appropriate next state.
  *
  * @param cursor - The lexer cursor positioned on the `@` character.
@@ -84,13 +84,7 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
     };
   } else if (cursor.peekMatch('hydrate ')) {
     cursor.advance(8);
-    retVal = {
-      state: LexerState.FLOW_CONTROL_CONDITION,
-      tokens: [{
-        type: TokenType.HYDRATE
-      }],
-      pushState: true
-    };
+    retVal = lexBlockWithParameters(cursor, TokenType.HYDRATE);
   } else if (cursor.peekMatch('client ')) {
     cursor.advance(7);
     retVal = {
@@ -101,12 +95,7 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
     };
   } else if (cursor.peekMatch('placeholder ')) {
     cursor.advance(12);
-    retVal = {
-      state: LexerState.FLOW_CONTROL_BLOCK,
-      tokens: [{
-        type: TokenType.PLACEHOLDER
-      }]
-    };
+    retVal = lexBlockWithParameters(cursor, TokenType.PLACEHOLDER);
   } else if (cursor.peekMatch('render ')) {
     cursor.advance(7);
     retVal = {
@@ -138,27 +127,16 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
     };
   } else if (cursor.peekMatch('catch ')) {
     cursor.advance(6);
-    retVal = lexNamedBlock(cursor, TokenType.CATCH);
+    retVal = lexBlockWithParameters(cursor, TokenType.CATCH);
   } else if (cursor.peekMatch('defer ')) {
     cursor.advance(6);
-    retVal = {
-      state: LexerState.FLOW_CONTROL_CONDITION,
-      tokens: [{
-        type: TokenType.DEFER
-      }],
-      pushState: true
-    };
+    retVal = lexBlockWithParameters(cursor, TokenType.DEFER);
   } else if (cursor.peekMatch('loading ')) {
     cursor.advance(8);
-    retVal = {
-      state: LexerState.FLOW_CONTROL_BLOCK,
-      tokens: [{
-        type: TokenType.LOADING
-      }]
-    };
+    retVal = lexBlockWithParameters(cursor, TokenType.LOADING);
   } else if (cursor.peekMatch('error ')) {
     cursor.advance(6);
-    retVal = lexNamedBlock(cursor, TokenType.ERROR);
+    retVal = lexBlockWithParameters(cursor, TokenType.ERROR);
   } else {
     throw 'Unknown flow-control keyword';
   }
@@ -167,16 +145,19 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
 }
 
 /**
- * Lexes the keyword of a block giving the error it receives a name between parentheses, which is optional, as
- * `catch (error)` does in JavaScript: `@catch` and `@error`.
+ * Lexes the keyword of a block whose parameters, between parentheses, are optional: the name of the error a `@catch` and
+ * an `@error` receive, as `catch (error)` does in JavaScript, the triggers of a `@defer` and of a `@hydrate`, which wait
+ * for `idle` without them, and the times of a `@placeholder` and of a `@loading`.
  *
  * @param cursor - The lexer cursor positioned after the keyword.
  * @param type - The token of the keyword.
- * @returns Transition result reading the name as a condition, when there is one, or the block.
+ * @returns Transition result reading the parameters as a condition, when there are some, or the block.
  */
-function lexNamedBlock(cursor: LexerCursor, type: TokenType.CATCH | TokenType.ERROR): LexerTransitionFunctionReturnType {
+function lexBlockWithParameters(cursor: LexerCursor, type: TokenType.CATCH | TokenType.ERROR | TokenType.DEFER | TokenType.HYDRATE | TokenType.PLACEHOLDER | TokenType.LOADING): LexerTransitionFunctionReturnType {
+  if (!cursor.peekMatchAfterSpaces('(')) {
+    return { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type }] };
+  }
+
   cursor.skipSpaces();
-  return cursor.peekMatch('(')
-    ? { state: LexerState.FLOW_CONTROL_CONDITION, tokens: [{ type }], pushState: true }
-    : { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type }] };
+  return { state: LexerState.FLOW_CONTROL_CONDITION, tokens: [{ type }], pushState: true };
 }

@@ -57,6 +57,30 @@ describe('generateDefer', () => {
     expect(functionsToProcess!.get('defer1')!.fn.context.hasIdentifier('failure')).toBe(false);
   });
 
+  it('passes the times of the @placeholder and of the @loading, in milliseconds, after the function of each one', async () => {
+    const node = parse('@defer { <b></b> } @placeholder (minimum 500ms) { <i></i> } @loading (after 100ms, minimum 1s) { <u></u> }');
+    const { code } = await generateDefer(node, 'root', '2', new GeneratorContext(cache), null);
+
+    expect(code).toEqual([
+      '_defer(root, context, null, {',
+      '  triggers: [\'idle\'],',
+      '  content: defer2.bind(this),',
+      '  placeholder: placeholder2.bind(this),',
+      '  placeholderMinimum: 500,',
+      '  loading: loading2.bind(this),',
+      '  loadingAfter: 100,',
+      '  loadingMinimum: 1000',
+      '});'
+    ]);
+  });
+
+  it('passes only the times declared', async () => {
+    const { code } = await generateDefer(parse('@defer { <b></b> } @loading (minimum 1s) { <u></u> }'), 'root', '0', new GeneratorContext(cache), null);
+
+    expect(code).toContain('  loadingMinimum: 1000');
+    expect(code.some(line => line.includes('loadingAfter'))).toBe(false);
+  });
+
   it('declares no error for an @error without a name', async () => {
     const { functionsToProcess } = await generateDefer(parse('@defer (idle) { a } @error { b }'), 'root', '0', new GeneratorContext(cache), null);
 

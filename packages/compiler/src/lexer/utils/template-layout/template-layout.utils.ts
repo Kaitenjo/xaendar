@@ -25,9 +25,11 @@ const RAW_ELEMENTS: ReadonlySet<string> = new Set(['pre', 'textarea', 'script', 
 const VOID_ELEMENTS: ReadonlySet<string> = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
 /**
- * The branches of a block that have no condition.
+ * The branches of a block that need no condition: the ones without one, and the ones whose parentheses are optional,
+ * the triggers of a `@hydrate` and of a `@defer`, the times of a `@placeholder` and of a `@loading`, the name of the
+ * error of a `@catch` and of an `@error`.
  */
-const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch', 'loading', 'error']);
+const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch', 'loading', 'error', 'hydrate', 'defer']);
 
 /**
  * The branches that may follow the first one of a block, in any order and once each: the `@placeholder` of a `@client`,

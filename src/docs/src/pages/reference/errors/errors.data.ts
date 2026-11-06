@@ -240,12 +240,12 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] @hydrate needs a trigger: load, idle, visible, interaction, never, or when followed by an expression',
+    message: '[Parser] @hydrate needs a trigger: use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only',
     page: 'tools/ssr/progressive-hydration'
   },
   {
     phase: 'Parser',
-    message: '[Parser] Unknown @hydrate trigger "hover": use load, idle, visible, interaction, never, or when followed by an expression',
+    message: '[Parser] Unknown @hydrate trigger "viewport": use load, idle, timer, visible, interaction, hover, never, or when followed by an expression, each one after prefetch to load the modules only',
     page: 'tools/ssr/progressive-hydration'
   },
   {
@@ -260,17 +260,77 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
+    message: '[Parser] The trigger "never" loads nothing: it cannot follow prefetch',
+    page: 'tools/ssr/progressive-hydration'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] A trigger of @hydrate watches the elements of its content: it takes no element ref',
+    page: 'tools/ssr/progressive-hydration'
+  },
+  {
+    phase: 'Parser',
     message: '[Parser] @placeholder must follow the block of a @client or a @defer',
     page: 'tools/ssr/client-only'
   },
   {
     phase: 'Parser',
-    message: '[Parser] @defer needs a trigger: load, idle, visible, interaction, or when followed by an expression',
+    message: '[Parser] The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once',
+    page: 'tools/ssr/client-only'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @defer needs a trigger: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only',
     page: 'templates/defer'
   },
   {
     phase: 'Parser',
-    message: '[Parser] Unknown @defer trigger "never": use load, idle, visible, interaction, or when followed by an expression',
+    message: '[Parser] Unknown @defer trigger "never": use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @defer needs a trigger after prefetch: use load, idle, timer, visible, interaction, hover, or when followed by an expression, each one after prefetch to load the modules only',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The trigger "timer" needs a duration, such as timer(500ms)',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Expected a duration, such as 500ms or 1s, got "soon"',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The trigger "load" takes no arguments',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The trigger "hover" takes at most one argument',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Expected the element ref naming the element to watch, got "a.b"',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Expected the options of the observer as an object literal, such as { rootMargin: \'200px\' }, got "margin"',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Unknown parameter "after 1s" of @placeholder: use minimum followed by a duration, such as minimum 500ms',
+    page: 'templates/defer'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The parameter "minimum" of @loading is declared twice',
     page: 'templates/defer'
   },
   {
@@ -405,7 +465,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: '[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element',
+    message: '[TypeChecker] The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)',
     page: 'templates/defer'
   },
   {

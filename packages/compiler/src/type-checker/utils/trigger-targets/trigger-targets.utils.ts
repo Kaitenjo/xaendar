@@ -2,11 +2,13 @@ import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
+import type { HydrateTrigger } from '../../../parser/types/triggers/hydrate-trigger.type';
 import { visitNodes } from '../visit-nodes/visit-nodes.utils';
 
 /**
- * Checks that a block with a trigger watching elements, `visible` or `interaction`, has some to watch: a `@hydrate`
- * watches the elements of its content the server renders, a `@defer` the ones of its `@placeholder`. A `@client` without
+ * Checks that a block with a trigger watching its elements, `visible`, `interaction` or `hover`, the ones following
+ * `prefetch` too, has some to watch: a `@hydrate` watches the elements of its content the server renders, a `@defer` the
+ * ones of its `@placeholder`, unless the trigger names the element it watches with an element ref. A `@client` without
  * a `@placeholder` holding an element writes none on the server, a `@defer` without a `@placeholder` holding one renders
  * none before its trigger, and the trigger would never fire, silently waiting for the browser to be idle in its place.
  *
@@ -33,7 +35,7 @@ export function checkTriggerTargets(nodes: readonly ASTNode[]): Error[] {
         break;
 
       case ASTNodeType.Defer:
-        error = checkTriggers(node, node.placeholder?.children, 'watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element');
+        error = checkTriggers(node, node.placeholder?.children, 'watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)');
         break;
     }
 
@@ -53,13 +55,32 @@ export function checkTriggerTargets(nodes: readonly ASTNode[]): Error[] {
  * @param reason - Why the trigger watches no element, and how to fix it.
  * @returns The error of the first trigger left without elements to watch, `undefined` when there is none.
  */
-function checkTriggers({ triggers }: HydrateNode | DeferNode, watched: readonly ASTNode[] | undefined, reason: string): Error | undefined {
-  const trigger = triggers.find(({ kind }) => kind === 'visible' || kind === 'interaction');
+function checkTriggers({ triggers, prefetch }: HydrateNode | DeferNode, watched: readonly ASTNode[] | undefined, reason: string): Error | undefined {
+  const trigger = triggers.find(watchesBlock) ?? prefetch.find(watchesBlock);
   if (!trigger || (watched && mayRenderElement(watched))) {
     return undefined;
   }
 
   return new Error(`The trigger "${trigger.kind}" ${reason}`, { cause: trigger.span });
+}
+
+/**
+ * Tells whether a trigger watches the elements of its block: `visible`, `interaction` and `hover`, without an element
+ * ref naming the element to watch.
+ *
+ * @param trigger - The trigger.
+ * @returns `true` when it watches the elements of its block.
+ */
+function watchesBlock(trigger: HydrateTrigger): boolean {
+  switch (trigger.kind) {
+    case 'visible':
+    case 'interaction':
+    case 'hover':
+      return !trigger.target;
+
+    default:
+      return false;
+  }
 }
 
 /**

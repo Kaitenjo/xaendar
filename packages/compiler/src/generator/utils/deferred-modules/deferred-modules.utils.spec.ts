@@ -11,14 +11,16 @@ import { getDeferredModules } from './deferred-modules.utils';
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
 /**
- * A generator context whose cache declares each component in the module its tag names, `<a-b>` in `/src/a.ts`, and
- * `<dir-x>` as a directive.
+ * A generator context whose cache declares each component in the module its tag names, `<a-b>` in `/src/a.ts`, each
+ * directive in the module its selector names, `@@tip` in `/src/directives/tip.ts`, and the tag `<dir-x>` as a directive.
  */
 const contextWithModules = () => {
   const cache: ContextCache = {
-    getOrInsert: async selector => (selector === 'dir-x'
-      ? { type: 'directive' }
-      : { type: 'component', typescriptNodes: { klass: { getSourceFile: () => ({ fileName: `/src/${selector.split('-')[0]}.ts` }) } } }) as never,
+    getOrInsert: async selector => {
+      const directive = selector.startsWith('@@');
+      const fileName = directive ? `/src/directives/${selector.slice(2)}.ts` : `/src/${selector.split('-')[0]}.ts`;
+      return { type: directive || selector === 'dir-x' ? 'directive' : 'component', typescriptNodes: { klass: { getSourceFile: () => ({ fileName }) } } } as never;
+    },
     getImport: () => Promise.reject(new Error('No import')),
     set: () => undefined
   };
@@ -50,7 +52,7 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[hydrate, ['/src/b.ts', '/src/c.ts']]]));
   });
 
-  it('leaves to the template the modules of the components it renders after a @hydrate too, and the ones of directives', async () => {
+  it('leaves to the template the modules of the components it renders after a @hydrate too, and the tags naming directives', async () => {
     const nodes = parse('@hydrate (visible) { <b-x></b-x><c-x></c-x><dir-x></dir-x> }<b-y></b-y>');
     const [hydrate] = hydrateNodes(nodes);
 
@@ -105,6 +107,13 @@ describe('getDeferredModules', () => {
       [outer, ['/src/b.ts', '/src/c.ts', '/src/d.ts', '/src/e.ts', '/src/f.ts', '/src/g.ts', '/src/h.ts', '/src/i.ts']],
       [inner, ['/src/j.ts', '/src/b.ts']]
     ]));
+  });
+
+  it('finds the modules of the custom and structural directives only the content applies, leaving the others to the template', async () => {
+    const nodes = parse('<p @@tip></p>@defer { <p @@tip @@glow *shown(when="{ a }")></p> <b-x @@glow></b-x> } @placeholder { <i *hidden></i> }');
+    const [defer] = nodes.filter(({ type }) => type === ASTNodeType.Defer);
+
+    expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[defer, ['/src/directives/glow.ts', '/src/directives/shown.ts', '/src/b.ts']]]));
   });
 
   it('leaves the custom elements of other libraries to the template', async () => {

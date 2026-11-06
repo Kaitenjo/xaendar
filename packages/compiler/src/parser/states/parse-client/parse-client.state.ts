@@ -18,7 +18,7 @@ import { parseBlockChildren } from '../parse-block-children/parse-block-children
  * @param parseNode - Parses the next node.
  * @param token - The `@client` keyword.
  * @returns The client node.
- * @throws When the `@placeholder` holds a listener.
+ * @throws When the `@placeholder` declares parameters, which only the one of a `@defer` takes, or holds a listener.
  */
 export function parseClient(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: ClientToken): ClientNode {
   // consume the keyword and BLOCK_OPEN
@@ -29,8 +29,15 @@ export function parseClient(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
   let placeholder: PlaceholderNode | null = null;
   const next = cursor.peek();
   if (next.type === TokenType.PLACEHOLDER) {
-    // consume the keyword and BLOCK_OPEN
-    cursor.advance(2);
+    // consume the keyword
+    cursor.advance();
+    const parameters = cursor.peek();
+    if (parameters.type === TokenType.CONDITION) {
+      throw new Error('The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once', { cause: cursor.findConditionSpan(parameters) });
+    }
+
+    // consume BLOCK_OPEN
+    cursor.advance();
     const placeholderChildren = parseBlockChildren(cursor, parseNode);
     const event = findEvent(placeholderChildren);
     if (event) {
