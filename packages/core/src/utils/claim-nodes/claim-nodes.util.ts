@@ -38,13 +38,13 @@ const quietElements = new WeakSet<Element>();
  */
 export class ClaimNodes implements NodeStrategy {
   /**
-   * The next node to adopt among the children of each node, `null` once every child is adopted.
-   */
-  private readonly _positions = new Map<Node, Node | null>();
-  /**
    * The elements created in place of a node not matching them, whose content is created too.
    */
   private readonly _created = new WeakSet<Element>();
+  /**
+   * The next node to adopt among the children of each node, `null` once every child is adopted.
+   */
+  private readonly _positions = new Map<Node, Node | null>();
 
   /**
    * Creates the strategy adopting the content of the shadow root of a component, or the one of a `@hydrate`.
@@ -55,7 +55,11 @@ export class ClaimNodes implements NodeStrategy {
    * @param _quiet - Whether the hydration waited for a trigger: what differs from the HTML of the server is rendered
    *   again without a warning, in the components it adopts too.
    */
-  constructor(private readonly _host: string, private readonly _withinBlock = false, private readonly _quiet = _withinBlock) { }
+  constructor(
+    private readonly _host: string, 
+    private readonly _withinBlock = false, 
+    private readonly _quiet = _withinBlock
+  ) { }
 
   /**
    * Adopts the element at the position, or creates it when the node there is not one with the same tag name.
@@ -322,11 +326,7 @@ export class ClaimNodes implements NodeStrategy {
    * @returns The node, `null` when every child is adopted.
    */
   private _next(parentNode: Node): Node | null {
-    if (!this._positions.has(parentNode)) {
-      this._positions.set(parentNode, parentNode.firstChild);
-    }
-
-    return this._positions.get(parentNode)!;
+    return this._positions.getOrInsert(parentNode, parentNode.firstChild);
   }
 
   /**
@@ -415,13 +415,23 @@ export function isClaimed(element: Element): boolean {
  * @param prefix - Whether `data` is the start of the text.
  * @returns `true` when the node is a comment holding the text.
  */
-function isMarker(node: Node | null, data: string, prefix = false): boolean {
-  if (node?.nodeType !== Node.COMMENT_NODE) {
+function isMarker(node: Node | null, data: string, prefix = false): node is Comment {
+  if (!isComment(node)) {
     return false;
   }
 
-  const text = (node as Comment).data;
+  const text = node.data;
   return prefix ? text.startsWith(data) : text === data;
+}
+
+/**
+ * Tells whether a node is a comment.
+ *
+ * @param node - The node.
+ * @returns `true` when the node is a comment.
+ */
+function isComment(node: Node | null): node is Comment {
+  return node?.nodeType === Node.COMMENT_NODE;
 }
 
 /**
@@ -437,7 +447,7 @@ function findClose(open: Node, kind: string): Comment | null {
   for (let node = open.nextSibling; node; node = node.nextSibling) {
     if (isMarker(node, `/${kind}`)) {
       if (!depth) {
-        return node as Comment;
+        return node;
       }
 
       depth--;
@@ -466,7 +476,7 @@ function findItemMarkers(first: Node, anchor: Node): Comment[] {
     } else if (isMarker(node, `/${_SSR_MARKERS.for}`)) {
       depth--;
     } else if (!depth && isMarker(node, `${_SSR_MARKERS.item}:`, true)) {
-      markers.push(node as Comment);
+      markers.push(node);
     }
   }
 

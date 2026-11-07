@@ -58,6 +58,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
     }
     disarms.length = 0;
   };
+
   parentContext.addUnlistener(() => {
     active = false;
     disarm();
@@ -88,12 +89,8 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
 
   // When the placeholder has been shown for its minimum
   const placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
-  // The modules of the content are loaded once, for the trigger rendering it and the ones prefetching them
   const load = () => loaded ??= block.load!();
-  // A failed prefetch is not reported: the trigger rendering the content shows its error
-  const prefetch = () => {
-    load().catch(() => undefined);
-  };
+  const prefetch = () => load().catch(() => undefined);
 
   // Runs a function once a time has come, while the block is rendered
   const at = (time: number, run: NoArgsVoidFunction) => {

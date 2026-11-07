@@ -11,6 +11,6 @@
     "publish": "node dist/publish.js",
     "publish-extension": "node dist/publish-extension.js",
     "typecheck-projects": "node dist/typecheck-projects.js",
-    "update-version": "node dist/update-version.js --bump=patch"
+    "update-version": "node dist/update-version.js --bump=minor"
   }
 }
