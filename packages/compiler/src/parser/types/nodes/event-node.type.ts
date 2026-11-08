@@ -2,6 +2,7 @@ import { Expression } from 'typescript';
 import { ASTNodeType } from '../node.enum';
 import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import type { CastNode } from './cast-node.type';
 
 /**
  * AST node representing a DOM event binding on an element.
@@ -29,4 +30,9 @@ export type EventNode = ASTNodeWithSpan<{
    * The Event Handler parameters
    */
   parameters: Expression[]
+  /**
+   * The types the parameters are cast to, by the index of the parameter, e.g. `MouseEvent` for `0` in
+   * `(click)="select($event as MouseEvent)"`: only the ones of the parameters cast, if any.
+   */
+  casts?: Map<number, CastNode>;
 }>;

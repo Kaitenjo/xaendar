@@ -125,8 +125,26 @@ describe('resolveExpression', () => {
   it('keeps the non-null assertion when asked to', () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('user');
-    expect(resolve('user()!.name', context, { preserveNonNull: true })).toEqual({ expression: 'this.user()!.name', reactive: true });
-    expect(resolve('window.name!.length', undefined, { preserveNonNull: true })).toEqual({ expression: 'window.name!.length' });
+    expect(resolve('user()!.name', context, { preserveTypeScript: true })).toEqual({ expression: 'this.user()!.name', reactive: true });
+    expect(resolve('window.name!.length', undefined, { preserveTypeScript: true })).toEqual({ expression: 'window.name!.length' });
+  });
+
+  it('drops the casts of the arguments of a call, resolving the values they apply to', () => {
+    expect(resolve('format(value as Date)')).toEqual({ expression: 'this.format(this.value)' });
+    expect(resolve('format(value as unknown as Row, 1)')).toEqual({ expression: 'this.format(this.value, 1)' });
+    expect(resolve('Math.max(1 as number)')).toEqual({ expression: 'Math.max(1)' });
+  });
+
+  it('keeps the casts when asked to, writing their types as written and mapped onto the template', () => {
+    const context = new GeneratorContext(cache);
+    context.addSignalClassField('Row');
+    const segments = new Array<LineMapping>();
+    // `{ format(value as Row) }`: the expression starts at offset 2
+    const { expression } = resolveExpression(validateExpression('format(value as Row)', 2).node, context, { resolver: 'root', preserveTypeScript: true }, segments);
+
+    expect(expression).toBe('root.format(root.value as Row)');
+    expect(segments).toContainEqual({ columnStart: 26, columnEnd: 29, original: { start: 18, end: 21 } });
+    expect(resolve('Math.max(1 as number)', undefined, { preserveTypeScript: true })).toEqual({ expression: 'Math.max(1 as number)' });
   });
 
   it('resolves signal class fields as reactive this-members', () => {

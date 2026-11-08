@@ -29,6 +29,13 @@
 <p @@htmlTranslation(key="pages.templates.expressions.whatAnExpressionCan.p1") />
 
 <h2>
+  { t(translations(), 'pages.templates.expressions.casts.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.expressions.casts.p1") />
+<docs-code snippet="templates/casts.html" />
+<p @@htmlTranslation(key="pages.templates.expressions.casts.p2") />
+
+<h2>
   { t(translations(), 'pages.templates.expressions.whatItCannotDo.title') }
 </h2>
 <p @@htmlTranslation(key="pages.templates.expressions.whatItCannotDo.p1") />
@@ -85,7 +92,6 @@
       <tr>
         <td @@htmlTranslation(key="pages.templates.expressions.summary.td3") />
         <td>
-          <code>as</code>,
           <code>this</code>
         </td>
       </tr>
@@ -110,6 +116,10 @@
         <td>
           { t(translations(), 'pages.templates.expressions.summary.td9') }
         </td>
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.templates.expressions.summary.td10") />
+        <td @@htmlTranslation(key="pages.templates.expressions.summary.td11") />
       </tr>
     </tbody>
   </table>

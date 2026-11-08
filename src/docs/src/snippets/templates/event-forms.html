@@ -3,6 +3,7 @@
 <button (click)="inspect('button', $event)">Inspect</button> <!-- the event, in any position -->
 <button (click)="bump(apples)">+</button>                  <!-- a member: a signal is passed, not its value -->
 <input (keydown)="press($event.key)" />                     <!-- a property of the event -->
+<input (input)="search($event.target as HTMLInputElement)" /> <!-- an argument cast to a type -->
 <button (click)="add(count() + 1, format(name()))">Add</button> <!-- expressions and calls -->
 @for (color of colors; track color().id) {
   <button (click)="pick(color().id)">{ color().name }</button> <!-- variables of the loop and their properties -->

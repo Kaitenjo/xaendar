@@ -117,6 +117,7 @@ describe('lexText', () => {
 
     it.each([
       ['two interpolations', TokenType.INTERPOLATION_EXPRESSION, ' {b}'],
+      ['an interpolation closed by a cast and an interpolation', TokenType.CAST, ' {b}'],
       ['an interpolation and an element', TokenType.INTERPOLATION_EXPRESSION, ' <b>'],
       ['a closed element and an interpolation', TokenType.TAG_CLOSE_NAME, ' {b}'],
       ['a self-closed element and an element', TokenType.TAG_SELF_CLOSE, '\t<b>']

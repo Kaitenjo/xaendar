@@ -31,7 +31,8 @@ describe('getTemplateUsage', () => {
       ['a member named like a global', '{ status }'],
       ['a variable named like a global', '@let status = 1; { status }'],
       ['an imported name', '{ location }'],
-      ['the names of members and keys', '{ user.document } { { window: 1 } }']
+      ['the names of members and keys', '{ user.document } { { window: 1 } }'],
+      ['the types of the casts', '{ format(value as Window) }']
     ])('finds none in %s', (_case, source) => {
       expect(usageOf(source, [], [symbol('location', false)], ['status']).logic).toBeUndefined();
     });

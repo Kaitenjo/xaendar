@@ -7,11 +7,14 @@ import { EventToken } from '../../../lexer/types/tokens/event-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
+import type { CastNode } from '../../types/nodes/cast-node.type';
 import { EventNode } from '../../types/nodes/event-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
+import { parseCast } from '../parse-cast/parse-cast.state';
 
 /**
- * Parses EVENT + EVENT_HANDLER tokens into an `EventNode`.
+ * Parses EVENT + EVENT_HANDLER tokens, the EVENT_PARAMETER tokens following them and the CAST token closing each
+ * parameter, if any, into an `EventNode`.
  *
  * @param cursor - Parser cursor; advanced past the EVENT token.
  * @param _parseNode - Unused parser function (kept for signature consistency).
@@ -33,14 +36,21 @@ export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTN
   let endOffset = cursor.getCurrentToken().value.span.end;
 
   const parameters = new Array<Expression>
+  let casts: Map<number, CastNode> | undefined;
   while (cursor.peek().type === TokenType.EVENT_PARAMETER) {
     cursor.advance();
     const { parts: [parameter], span } = cursor.getCurrentToken<EventParAmeterToken>().value;
     parameters.push(validateExpression(parameter, cursor.findSpan(parameter, span.start).start).node);
+    const cast = parseCast(cursor);
+    if (cast) {
+      casts ??= new Map();
+      casts.set(parameters.length - 1, cast);
+    }
+
     endOffset = cursor.getCurrentToken().value.span.end;
   }
 
-  return {
+  const node: EventNode = {
     type: ASTNodeType.Event,
     name,
     nameSpan: cursor.findSpan(name, startOffset),
@@ -52,4 +62,10 @@ export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTN
       end: endOffset,
     },
   };
+
+  if (casts?.size) {
+    node.casts = casts;
+  }
+
+  return node;
 }

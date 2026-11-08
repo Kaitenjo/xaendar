@@ -11,7 +11,7 @@ import type { TriggerTarget } from '../../types/triggers/trigger-target.type';
 import type { VisibleTrigger } from '../../types/triggers/visible-trigger.type';
 import { parseDuration } from '../durations/durations.utils';
 import { validateExpression } from '../expression-validator/expression-validator';
-import { splitTopLevel } from '../split-top-level/split-top-level.utils';
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 
 /**
  * The triggers of a `@defer` named by a keyword, followed by their arguments between parentheses when they take any.

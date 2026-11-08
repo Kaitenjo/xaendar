@@ -1,9 +1,9 @@
-import { CLOSERS } from '../../../costants/closers.costant';
+import { ExpressionScanner } from '../../../models/expression-scanner/expression-scanner.model';
 import { Lexer } from '../../lexer/lexer';
 import type { ExpressionContext } from '../../types/expression-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
-import type { ScanState } from '../../types/scan-state.type';
+import { findEnd } from '../balanced-text/balanced-text.utils';
 import { isTriggerExpression } from '../trigger-context/trigger-context.utils';
 
 /**
@@ -22,11 +22,6 @@ const PLACEHOLDER = '__xaendarCompletion__';
  * of a `@placeholder` and of a `@loading`.
  */
 const WITHOUT_EXPRESSION: ReadonlySet<TokenType> = new Set([TokenType.CATCH, TokenType.ERROR, TokenType.PLACEHOLDER, TokenType.LOADING]);
-
-/**
- * The character opening each construct closed by a parenthesis, a bracket or a brace.
- */
-const OPENERS: Readonly<Record<string, string>> = { ')': '(', ']': '[', '}': '{' };
 
 /**
  * Tells where an expression is being written at an offset of a template, by lexing the template up to it, and closes
@@ -67,18 +62,9 @@ export function getExpressionContext(source: string, offset: number): Expression
   const lastToken = tokens.findLast(token => token.type !== TokenType.EOF);
 
   switch (lexer.state) {
-    case LexerState.INTERPOLATION:
-    case LexerState.INTERPOLATION_EXPRESSION: {
-      const state: ScanState = { nesting: [], quote: undefined };
-      scanExpression(before, before.indexOf('{', lastToken?.span.end ?? 0) + 1, offset, state, '}');
-      if (!isClosable(state)) {
-        return undefined;
-      }
-
-      // The expression goes on after the offset up to the `}` closing it, if any: the template after the `}` is kept
-      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, '}');
-      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
-      return { kind: 'interpolation', span, source: `${head}${closersOf(state)} }${after}` };
+    case LexerState.INTERPOLATION: {
+      const closed = closeExpression(source, before.indexOf('{', lastToken?.span.end ?? 0) + 1, offset, '}');
+      return closed && { kind: 'interpolation', span, source: `${head}${closed.closers} }${closed.after}` };
     }
 
     case LexerState.FLOW_CONTROL_CONDITION: {
@@ -92,7 +78,7 @@ export function getExpressionContext(source: string, offset: number): Expression
         return undefined;
       }
 
-      const closed = closeParenthesized(source, open, offset);
+      const closed = closeExpression(source, open + 1, offset, ')');
       if (!closed) {
         return undefined;
       }
@@ -105,27 +91,15 @@ export function getExpressionContext(source: string, offset: number): Expression
     case LexerState.RENDER: {
       // The keyword `@render` is the last token, the arguments start after the `(` following the name of the template
       const open = before.indexOf('(', lastToken!.span.end);
-      const closed = open === -1 ? undefined : closeParenthesized(source, open, offset);
+      const closed = open === -1 ? undefined : closeExpression(source, open + 1, offset, ')');
       return closed && { kind: 'render', span, source: `${head}${closed.closers})${closed.after}` };
     }
 
     case LexerState.LET: {
       // The keyword `@let` is the last token, the value starts after the `=` following the name
       const equal = before.indexOf('=', lastToken!.span.end);
-      if (equal === -1) {
-        return undefined;
-      }
-
-      const state: ScanState = { nesting: [], quote: undefined };
-      scanExpression(before, equal + 1, offset, state, ';');
-      if (!isClosable(state)) {
-        return undefined;
-      }
-
-      // The value goes on after the offset up to the `;` ending it, if any: the template after the `;` is kept
-      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, ';');
-      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
-      return { kind: 'let', span, source: `${head}${closersOf(state)};${after}` };
+      const closed = equal === -1 ? undefined : closeExpression(source, equal + 1, offset, ';');
+      return closed && { kind: 'let', span, source: `${head}${closed.closers};${closed.after}` };
     }
 
     case LexerState.EVENT_HANDLER:
@@ -142,11 +116,9 @@ export function getExpressionContext(source: string, offset: number): Expression
         return span.start === handlerStart ? { kind: 'handler', span, source: `${head}()${source.slice(handlerEnd)}` } : undefined;
       }
 
-      const state: ScanState = { nesting: [], quote: undefined };
-      scanExpression(before, call + 1, offset, state, ')');
-      return isClosable(state)
-        ? { kind: 'argument', span, source: `${head}${closersOf(state)}, $event)${source.slice(handlerEnd)}` }
-        : undefined;
+      // The arguments after the offset are dropped up to the double quote closing the handler
+      const closed = closeExpression(source, call + 1, offset, ')');
+      return closed && { kind: 'argument', span, source: `${head}${closed.closers}, $event)${source.slice(handlerEnd)}` };
     }
 
     default:
@@ -155,115 +127,26 @@ export function getExpressionContext(source: string, offset: number): Expression
 }
 
 /**
- * Scans part of an expression, updating the constructs open and the string literal the scan is in, exactly like the
- * lexer reads an interpolation: braces, quotes and backticks in a string literal are part of it.
- *
- * @param text - The text holding the expression.
- * @param start - The offset the scan starts at.
- * @param end - The offset the scan ends at, excluded.
- * @param state - The state at `start`, updated to the one at the end of the scan.
- * @param closer - The character closing the construct the expression is in: the `}` of an interpolation, the `)` of a
- *   condition or of the call of an event, the `;` ending the value of a `@let`.
- * @returns The offset of the character closing the construct the expression is in, which stops the scan, `-1` if none is met.
- */
-function scanExpression(text: string, start: number, end: number, state: ScanState, closer: '}' | ')' | ';'): number {
-  const { nesting } = state;
-  for (let i = start; i < end; i++) {
-    const char = text[i];
-    if (state.quote) {
-      // An escaped character never closes the string
-      if (char === '\\') {
-        i++;
-      } else if (char === state.quote) {
-        state.quote = undefined;
-      }
-    } else if (nesting.at(-1) === '`') {
-      // An escaped character never closes the template literal, nor starts a substitution
-      if (char === '\\') {
-        i++;
-      } else if (char === '`') {
-        nesting.pop();
-      } else if (char === '$' && text[i + 1] === '{') {
-        nesting.push('{');
-        i++;
-      }
-    } else {
-      switch (char) {
-        case '\'':
-        case '"':
-          state.quote = char;
-          break;
-
-        case '(':
-        case '[':
-        case '{':
-        case '`':
-          nesting.push(char);
-          break;
-
-        case ')':
-        case ']':
-        case '}': {
-          // Like for the lexer, the character closing the expression is the first one outside of every construct it opens
-          const opener = nesting.lastIndexOf(OPENERS[char]);
-          if (opener !== -1) {
-            nesting.length = opener;
-          } else if (char === closer) {
-            return i;
-          }
-          break;
-        }
-
-        case ';':
-          if (closer === ';' && !nesting.length) {
-            return i;
-          }
-          break;
-      }
-    }
-  }
-
-  return -1;
-}
-
-/**
- * Closes an expression written between parentheses at an offset: the constructs open at the offset are closed, then
- * the parentheses, and the expression written after the offset is dropped up to the `)` closing them, if any.
+ * Closes an expression at an offset: the groups and the template literals open there are closed, and the expression
+ * written after the offset is dropped up to the character ending it, if any (see `findEnd`).
  *
  * @param source - The source of the template.
- * @param open - The offset of the `(` opening the parentheses.
+ * @param start - The offset the expression starts at.
  * @param offset - The offset the expression is closed at.
- * @returns The characters closing the constructs open at the offset, and the template after the `)` closing the
- *   parentheses (after the offset when none does), `undefined` if the expression cannot be closed at the offset.
+ * @param terminator - The character ending the expression: the `}` of an interpolation, the `)` of a condition or of the
+ *   call of an event, the `;` ending the value of a `@let`.
+ * @returns The characters closing the groups open at the offset, and the template after the character ending the
+ *   expression (after the offset when none does), `undefined` if the offset is in a string or in the text of a template
+ *   literal, where nothing is being written.
  */
-function closeParenthesized(source: string, open: number, offset: number): { closers: string, after: string } | undefined {
-  const state: ScanState = { nesting: [], quote: undefined };
-  scanExpression(source, open + 1, offset, state, ')');
-  if (!isClosable(state)) {
+function closeExpression(source: string, start: number, offset: number, terminator: string): { closers: string, after: string } | undefined {
+  const scanner = new ExpressionScanner();
+  findEnd(source, start, terminator, scanner, offset);
+  if (!scanner.isCode) {
     return undefined;
   }
 
-  const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: undefined }, ')');
-  return { closers: closersOf(state), after: end === -1 ? source.slice(offset) : source.slice(end + 1) };
-}
-
-/**
- * Tells whether an expression can be closed where a scan ended: not in a string literal, nor in the text of a
- * template literal.
- *
- * @param state - The state at the end of the scan.
- * @returns `true` if the expression can be closed.
- */
-function isClosable({ nesting, quote }: ScanState): boolean {
-  return !quote && nesting.at(-1) !== '`';
-}
-
-/**
- * Returns the characters closing the constructs open where a scan ended, the innermost first.
- *
- * @param state - The state at the end of the scan.
- * @returns The closing characters.
- */
-function closersOf({ nesting }: ScanState): string {
-  return nesting.map(opener => CLOSERS[opener]).reverse().join('');
+  const { closers } = scanner;
+  const end = findEnd(source, offset, terminator, scanner);
+  return { closers, after: end === undefined ? source.slice(offset) : source.slice(end + 1) };
 }

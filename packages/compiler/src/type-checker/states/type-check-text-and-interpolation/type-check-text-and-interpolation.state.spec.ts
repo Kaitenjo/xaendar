@@ -22,4 +22,11 @@ describe('typeCheckTextAndInterpolation', () => {
       { columnStart: 5, columnEnd: 12, original: { start: 1, end: 8 } }
     ]);
   });
+
+  it('casts the expression to the type of the cast closing the interpolation', () => {
+    const [line] = typeCheckTextAndInterpolation(parse('{ heading as Title }'), () => [], new TypeCheckContext());
+
+    expect(line.text).toBe('((root.heading) as Title);');
+    expect(line.mappings).toContainEqual({ columnStart: 19, columnEnd: 24, original: { start: 13, end: 18 } });
+  });
 });

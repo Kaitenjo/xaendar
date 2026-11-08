@@ -1,6 +1,5 @@
 {
   "brand": {
-    "tagline": "Web Component con reattività a grana fine",
     "home": "Home di Xaendar"
   },
   "search": {
@@ -2216,7 +2215,7 @@
           "p1": "I template non hanno modificatori degli eventi: <code>(keydown.enter)</code> ascolta un evento che si chiama letteralmente <code>keydown.enter</code>, che il browser non invia mai, e il primo contatore non si muove. Filtra il tasto nel metodo, come fa il secondo campo. Lo stesso vale per <code>preventDefault()</code> e <code>stopPropagation()</code>: chiamali su <code>$event</code>.",
           "callout2": {
             "heading": "Il target di $event",
-            "body": "<code>$event.target</code> è tipizzato <code>EventTarget | null</code>: l’evento può arrivare da un discendente dell’elemento, quindi <code>$event.target.value</code> non compila. Leggi il campo con un <a href=\"#/it/templates/element-refs\">element ref</a>, come in <code>save(field.value)</code>, oppure restringi il target nel metodo."
+            "body": "<code>$event.target</code> è tipizzato <code>EventTarget | null</code>: l’evento può arrivare da un discendente dell’elemento, quindi <code>$event.target.value</code> non compila. Leggi il campo con un <a href=\"#/it/templates/element-refs\">element ref</a>, come in <code>save(field.value)</code>, passalo con un cast, come in <code>save($event.target as HTMLInputElement)</code> (vedi <a href=\"#/it/templates/expressions\">Sintassi delle espressioni</a>), oppure restringi il target nel metodo."
           }
         },
         "summary": {
@@ -2238,9 +2237,14 @@
           "example1": "Un’espressione per ogni tipo",
           "p1": "Operatori, il ternario, optional chaining e nullish coalescing, chiamate a metodi del componente e dei valori, indici, <code>typeof</code>, letterali di array e oggetti, spread, e i globali del browser come <code>Math</code> e <code>JSON</code>. Un oggetto letterale va racchiuso tra parentesi: senza, l’interpolazione non mostra nulla."
         },
+        "casts": {
+          "title": "Cast",
+          "p1": "Un cast, <code>as</code> seguito da un tipo come in TypeScript, può chiudere un’interpolazione, e allora l’intera espressione prima di <code>as</code> assume quel tipo, o seguire un argomento di una chiamata: del metodo di un listener, di un <code>@render</code>, di una funzione chiamata in qualsiasi espressione. Il tipo viene scritto così com’è nel type-check, quindi può nominare un tipo che il template importa, e non genera codice: a runtime il valore resta lo stesso.",
+          "p2": "Il cast di un’interpolazione prosegue fino alla sua <code>}</code>, quello di un argomento fino alla <code>,</code> o alla <code>)</code> che lo chiude. Ogni altro cast, come in <code>{ (item() as Row).id }</code> o <code>{ total + (tax as number) }</code>, viene rifiutato: fai il cast dell’intera interpolazione, o di un argomento. TypeScript controlla un cast come ogni <code>as</code>: una conversione tra tipi che non si sovrappongono viene segnalata, e passare da <code>unknown</code> (<code>value as unknown as Row</code>) la forza. Preferisci tipizzare i membri della classe: un cast dice a TypeScript ciò che non può sapere, come l’elemento da cui arriva un evento."
+        },
         "whatItCannotDo": {
           "title": "Cosa non può fare",
-          "p1": "Assegnazioni, <code>new</code>, funzioni, <code>this</code>, asserzioni di tipo, espressioni regolari e più di un’espressione vengono rifiutate quando il template viene compilato:",
+          "p1": "Assegnazioni, <code>new</code>, funzioni, <code>this</code>, cast di ciò che non è un’interpolazione o un argomento, espressioni regolari e più di un’espressione vengono rifiutate quando il template viene compilato:",
           "p2": "Ognuna di queste ha un posto nella classe: un metodo che assegna, un computed che trasforma una lista, un membro che contiene il risultato di <code>new</code> o di un’espressione regolare."
         },
         "whatItCanRead": {
@@ -2272,7 +2276,9 @@
           "td6": "Letterali di array e oggetti, spread",
           "td7": "Letterali di espressioni regolari",
           "td8": "Una sola espressione",
-          "td9": "L’operatore virgola, più istruzioni"
+          "td9": "L’operatore virgola, più istruzioni",
+          "td10": "<code>as</code> che chiude l’interpolazione o segue un argomento di una chiamata",
+          "td11": "<code>as</code> in ogni altro punto"
         }
       },
       "for": {

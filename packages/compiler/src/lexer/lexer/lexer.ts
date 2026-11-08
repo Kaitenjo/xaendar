@@ -5,6 +5,7 @@ import { TemplateError } from '../../models/template-error/template-error.model'
 import { Span } from '../../types/span.type';
 import { lexAttributeValue } from '../states/lex-attribute-value/lex-attribute-value.state';
 import { lexAttribute } from '../states/lex-attribute/lex-attribute.state';
+import { lexCast } from '../states/lex-cast/lex-cast.state';
 import { lexCaseFlowControlCondition } from '../states/lex-case-flow-control-condition/lex-case-flow-control-condition.state';
 import { lexDirectiveBody } from '../states/lex-directive-body/lex-directive-body.state';
 import { lexDirective, lexStructuralDirective } from '../states/lex-directive/lex-directive.state';
@@ -17,7 +18,6 @@ import { lexFlowControl } from '../states/lex-flow-control/lex-flow-control';
 import { lexFlowControlBlock } from '../states/lex-flow-control-block/lex-flow-control-block.state';
 import { lexImportPath } from '../states/lex-import-path/lex-import-path.state';
 import { lexImport } from '../states/lex-import/lex-import.state';
-import { lexInterpolationExpression } from '../states/lex-interpolation-expression/lex-interpolation-expression.state';
 import { lexInterpolation } from '../states/lex-interpolation/lex-interpolation.state';
 import { lexLet } from '../states/lex-let/lex-let.state';
 import { lexTagBody } from '../states/lex-tag-body/lex-tag-body.state';
@@ -78,7 +78,6 @@ export class Lexer {
     [LexerState.CASE_FLOW_CONTROL_CONDITION]: lexCaseFlowControlCondition,
     [LexerState.FLOW_CONTROL_BLOCK]: lexFlowControlBlock,
     [LexerState.INTERPOLATION]: lexInterpolation,
-    [LexerState.INTERPOLATION_EXPRESSION]: lexInterpolationExpression,
     [LexerState.IMPORT]: lexImport,
     [LexerState.IMPORT_PATH]: lexImportPath,
     [LexerState.CONDITIONAL_BINDING_BODY]: lexConditionalBindingBody,
@@ -88,6 +87,7 @@ export class Lexer {
     [LexerState.ELEMENT_REF]: lexElementRef,
     [LexerState.TEMPLATE_DECLARATION]: lexTemplateDeclaration,
     [LexerState.RENDER]: lexRender,
+    [LexerState.CAST]: lexCast,
     [LexerState.LET]: lexLet
   }
 

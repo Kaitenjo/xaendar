@@ -5,17 +5,18 @@ import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line } from '../../utils/line-builder/line-builder.utils';
-import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
+import { mappedInterpolation } from '../../utils/mapped-expression/mapped-expression.utils';
 
 /**
  * Type-checks a text or interpolation node.
  *
  * Plain text nodes carry no expression, so they produce no lines. An
  * interpolation's expression is emitted as a bare statement — enough for
- * TS to validate it, with no name needing to be bound to the result.
+ * TS to validate it, with no name needing to be bound to the result —, cast
+ * to the type of its cast, if any.
  */
 export function typeCheckTextAndInterpolation(node: TextNode | InterpolationNode, _processNode: ProcessNode, context: TypeCheckContext): Line[] {
   return node.type === ASTNodeType.Interpolation
-    ? [line(mappedExpression(node.expression, context, node.span, ';'))]
+    ? [line(mappedInterpolation(node, context, ';'))]
     : [];
 }

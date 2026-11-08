@@ -1,6 +1,6 @@
 import { LESS_THAN, LPAREN } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
-import { lexGroup } from '../group/group.utils';
+import { lexGroup } from '../expression-text/expression-text.utils';
 
 /**
  * Consumes type arguments up to the character closing the one opening them, already consumed:

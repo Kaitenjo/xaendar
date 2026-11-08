@@ -1,7 +1,7 @@
 import { slice } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import globals from 'globals';
-import { Expression, forEachChild, Identifier, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, Node } from 'typescript';
+import { Expression, forEachChild, Identifier, isAsExpression, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, isTypeNode, Node } from 'typescript';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
@@ -9,6 +9,7 @@ import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { Span } from '../../../types/span.type';
 import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import type { EmittedNode } from '../../types/emitted-node.type';
+import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 
 /**
@@ -205,13 +206,16 @@ function emitResolvedNode(node: Node, parent: Node, generatorContext: CompilerCo
     return { ...resolved, expression, segments };
   }
 
-  // The non-null assertion (`value!`) is TypeScript only: unless kept for the type-check code, it is dropped and the value it applies to is emitted
-  if (!options.preserveNonNull && isNonNullExpression(node)) {
+  /*
+    The non-null assertion (`value!`) and the cast (`value as Date`) are TypeScript only: unless kept for the type-check
+    code, they are dropped and the value they apply to is emitted
+  */
+  if (!options.preserveTypeScript && (isNonNullExpression(node) || isAsExpression(node))) {
     return emitNode(node.expression, node, generatorContext, options);
   }
 
-  // No resolvable identifiers nor non-null assertions to drop in this subtree — emit verbatim
-  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  // No resolvable identifiers nor TypeScript syntax to drop in this subtree — emit verbatim
+  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveTypeScript || !containsTypeScriptSyntax(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -244,14 +248,26 @@ function emitResolvedNode(node: Node, parent: Node, generatorContext: CompilerCo
     result.reactive = result.reactive || child?.reactive;
   };
 
+  // The type of a cast, kept for the type-check code, is written as is: its names are types, not members
   forEachChild(node, child => {
-    append(lastEnd, child.getStart(), emitNode(child, node, generatorContext, options));
+    append(lastEnd, child.getStart(), isTypeNode(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
 
   // Append any trailing text after the last child (e.g. closing paren)
   append(lastEnd, node.getEnd());
   return result;
+}
+
+/**
+ * Emits the text of a node as written, mapped onto its span in the template.
+ *
+ * @param node - The node.
+ * @returns The text of the node, with its mapping.
+ */
+function emitVerbatim(node: Node): EmittedNode {
+  const expression = node.getText();
+  return { expression, segments: segmentOf(expression, getTemplateSpan(node)) };
 }
 
 /**
@@ -297,7 +313,8 @@ function resolveIdentifier(text: string, generatorContext: CompilerContext, opti
  * Returns true if the subtree rooted at `node` contains at least one
  * Identifier that needs context resolution.
  *
- * Short-circuits as soon as one is found to avoid visiting the whole tree.
+ * Short-circuits as soon as one is found to avoid visiting the whole tree. The type of a cast is left out: its names are
+ * types.
  *
  * @param node - The root of the subtree.
  * @param parent - The parent of the root.
@@ -310,34 +327,18 @@ function containsResolvableIdentifier(node: Node, parent: Node, generatorContext
     return true;
   }
 
-  let found = false;
-
-  forEachChild(node, child => {
-    if (!found) {
-      found = containsResolvableIdentifier(child, node, generatorContext, options);
-    }
-  });
-
-  return found;
+  return forEachExpressionChild(node, child => containsResolvableIdentifier(child, node, generatorContext, options)) ?? false;
 }
 
 /**
- * Returns true if the subtree rooted at `node` contains a non-null assertion (`value!`),
- * which is dropped from the emitted text.
+ * Returns true if the subtree rooted at `node` contains a non-null assertion (`value!`) or a cast (`value as Date`),
+ * which are dropped from the emitted text.
  *
  * @param node - The root of the subtree.
- * @returns Whether the subtree contains a non-null assertion.
+ * @returns Whether the subtree contains a non-null assertion or a cast.
  */
-function containsNonNullExpression(node: Node): boolean {
-  let found = isNonNullExpression(node);
-
-  forEachChild(node, child => {
-    if (!found) {
-      found = containsNonNullExpression(child);
-    }
-  });
-
-  return found;
+function containsTypeScriptSyntax(node: Node): boolean {
+  return isNonNullExpression(node) || isAsExpression(node) || (forEachChild(node, containsTypeScriptSyntax) ?? false);
 }
 
 /**
@@ -457,7 +458,7 @@ function getIdentifier(prefix: string, parentNode: string, index: string): strin
 function mapDefaultOptions(options?: ResolveExpressionOptions): Required<ResolveExpressionOptions> {
   return {
     resolver: options?.resolver ?? 'this',
-    preserveNonNull: options?.preserveNonNull ?? false,
+    preserveTypeScript: options?.preserveTypeScript ?? false,
     narrowedSignal: options?.narrowedSignal ?? (() => undefined),
     browserGlobals: options?.browserGlobals ?? ''
   };

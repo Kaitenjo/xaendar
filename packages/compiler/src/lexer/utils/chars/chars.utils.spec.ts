@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNotBlank } from './chars.utils';
+import { isNotBlank, isWhitespace } from './chars.utils';
 
 describe('isNotBlank', () => {
   it('returns true for a string containing non-whitespace characters', () => {
@@ -20,5 +20,12 @@ describe('isNotBlank', () => {
 
   it('returns false for a string made of mixed whitespace characters', () => {
     expect(isNotBlank('\n\r\t\f\v')).toBe(false);
+  });
+});
+
+describe('isWhitespace', () => {
+  it('tells the spaces, the tabs and the line breaks', () => {
+    expect([...' \t\n\r'].map(char => isWhitespace(char.charCodeAt(0)))).toEqual([true, true, true, true]);
+    expect([...'a\f;'].map(char => isWhitespace(char.charCodeAt(0)))).toEqual([false, false, false]);
   });
 });

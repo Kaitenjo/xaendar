@@ -1,6 +1,7 @@
 import { slice } from '@xaendar/common';
-import { LanguageVariant, Node, ScriptTarget, SourceFile, SyntaxKind, VariableStatement, createScanner, createSourceFile, forEachChild } from 'typescript';
+import { LanguageVariant, Node, ScriptTarget, SourceFile, SyntaxKind, VariableStatement, createScanner, createSourceFile, isAsExpression, isCallExpression } from 'typescript';
 import type { Span } from '../../../types/span.type';
+import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
 import { ExpressionValidationResult } from '../../types/expression-validation-result.type';
 
 /**
@@ -36,6 +37,7 @@ const templateOffsets = new WeakMap<SourceFile, number>();
  * - **Object literals** — `{ key: value }`, `{ ...defaults, name }`
  * - **Spread** — `foo(...args)`, `[...items]`, `{ ...obj }`
  * - **`typeof` / `instanceof`** — `typeof user.role`, `user instanceof AdminUser`
+ * - **Casts of the arguments of a call** — `format(value as Date)`: the type is not validated, TypeScript checks it
  *
  * ## Prohibited constructs
  *
@@ -44,6 +46,8 @@ const templateOffsets = new WeakMap<SourceFile, number>();
  * - `new` expressions
  * - Function and arrow function expressions
  * - Tagged template expressions
+ * - Casts (`as`) of anything but an argument of a call: the one closing a whole interpolation or parameter of an event
+ *   handler is read by the lexer, and is not part of the expression
  *
  * ## Scope resolution
  *
@@ -135,7 +139,8 @@ function visitNode(node: Node): void {
     throw new Error(buildDisallowedMessage(node), { cause: getTemplateSpan(node) });
   }
 
-  forEachChild(node, visitNode);
+  // The type of a cast is not visited: TypeScript checks it
+  forEachExpressionChild(node, visitNode);
 }
 
 /**
@@ -263,6 +268,11 @@ function isAllowedNode(node: Node): boolean {
     case SyntaxKind.NonNullExpression:
       return true;
 
+    // ---- Casts of the arguments of a call ----
+    // format(value as Date), format(value as unknown as Date): the cast a cast applies to is checked with it
+    case SyntaxKind.AsExpression:
+      return isAsExpression(node.parent) || (isCallExpression(node.parent) && node.parent.arguments.some(argument => argument === node));
+
     // ---- Disallowed by default ----
     default:
       return false;
@@ -290,6 +300,9 @@ function buildDisallowedMessage(node: Node): string {
     case SyntaxKind.ArrowFunction:
     case SyntaxKind.FunctionExpression:
       return 'Function expressions are not allowed inside template expressions.';
+
+    case SyntaxKind.AsExpression:
+      return "A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)=\"select($event as MouseEvent)\".";
 
     default:
       return `'${SyntaxKind[node.kind]}' is not allowed inside template expressions.`;

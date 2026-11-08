@@ -1,7 +1,7 @@
 import { LPAREN } from '../../../costants/chars.constant';
 import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
-import { lexGroup } from '../group/group.utils';
+import { lexGroup } from '../expression-text/expression-text.utils';
 
 /**
  * Consumes a parenthesised flow-control condition expression from the cursor.

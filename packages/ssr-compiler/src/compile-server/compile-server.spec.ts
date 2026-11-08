@@ -16,6 +16,13 @@ describe('compileServer', () => {
     expect(code).toContain('out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');');
   });
 
+  it('writes nothing of the casts, which only the type-check reads', async () => {
+    const code = await compileServer('<p title="{ title() as string }" (click)="pick($event as MouseEvent)">{ count() as number }</p>', { signals: ['title', 'count'], cache: createCache() });
+
+    expect(code).not.toContain(' as ');
+    expect(code).toContain('_escapeText(this.count())');
+  });
+
   it('resolves the symbols the template imports relative to its directory, importing the ones an expression reads', async () => {
     const cache = createCache();
     const code = await compileServer('@import { format } from \'./format\';\n<p>{ format(1) }</p>', { signals: [], templateDir: '/src', cache });

@@ -6,7 +6,7 @@ import type { MaybeTokenWithSpan } from '../../types/maybe-token-with-span.type'
 import type { TemplateDeclarationToken } from '../../types/tokens/template-declaration-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
-import { lexGroup } from '../../utils/group/group.utils';
+import { lexGroup } from '../../utils/expression-text/expression-text.utils';
 
 /**
  * Consumes the declaration of a template on a `<template>`, its name and its parameters, e.g. `row(item: Item)` in

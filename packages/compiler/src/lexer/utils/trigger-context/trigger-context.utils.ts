@@ -1,5 +1,6 @@
 import { LOADING_PARAMETERS, PLACEHOLDER_PARAMETERS } from '../../../parser/utils/block-parameters/block-parameters.utils';
-import { splitTopLevel } from '../../../parser/utils/split-top-level/split-top-level.utils';
+import { ExpressionScanner } from '../../../models/expression-scanner/expression-scanner.model';
+import { splitTopLevel } from '../balanced-text/balanced-text.utils';
 import { DEFER_TRIGGER_KEYWORDS, HYDRATE_TRIGGER_KEYWORDS } from '../../../parser/utils/triggers/triggers.utils';
 import { Lexer } from '../../lexer/lexer';
 import { LexerState } from '../../types/lexer-state.enum';
@@ -126,33 +127,10 @@ export function isTriggerExpression(text: string): boolean {
     return true;
   }
 
-  let depth = 0;
-  let quote: string | undefined;
-  for (let i = 0; i < part.length; i++) {
-    const char = part[i];
-    if (quote) {
-      quote = char === quote ? undefined : quote;
-      continue;
-    }
-
-    switch (char) {
-      case '\'':
-      case '"':
-      case '`':
-        quote = char;
-        break;
-
-      case '(':
-        depth++;
-        break;
-
-      case ')':
-        depth--;
-        break;
-    }
-  }
-
-  return depth > 0;
+  // The arguments of a trigger are open when the part doesn't end outside of any group
+  const scanner = new ExpressionScanner();
+  scanner.readText(part);
+  return !scanner.isTopLevel;
 }
 
 /**

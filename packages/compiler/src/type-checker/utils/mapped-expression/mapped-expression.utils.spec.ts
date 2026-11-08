@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { TypeCheckContext } from '../../models/context/context';
 import { line } from '../line-builder/line-builder.utils';
-import { mappedExpression } from './mapped-expression.utils';
+import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
+import { mappedExpression, mappedInterpolation } from './mapped-expression.utils';
 
 describe('mappedExpression', () => {
   const span = { start: 0, end: 20 };
@@ -35,5 +37,34 @@ describe('mappedExpression', () => {
     const { node } = validateExpression('user');
 
     expect(line(mappedExpression(node, new TypeCheckContext(), span)).mappings).toEqual([{ columnStart: 0, columnEnd: 9, original: span }]);
+  });
+});
+
+describe('mappedInterpolation', () => {
+  const interpolation = (template: string, expression: string, cast?: string): InterpolationNode => {
+    const node: InterpolationNode = { type: ASTNodeType.Interpolation, expression: validateExpression(expression, template.indexOf(expression)).node, span: { start: 0, end: template.length } };
+    if (cast) {
+      node.cast = { text: cast, span: { start: template.indexOf(cast), end: template.indexOf(cast) + cast.length } };
+    }
+
+    return node;
+  };
+
+  it('resolves the expression of an interpolation, mapped onto the span of the interpolation', () => {
+    const template = '{ user }';
+    const { text, mappings } = line(mappedInterpolation(interpolation(template, 'user'), new TypeCheckContext(), ';'));
+
+    expect(text).toBe('root.user;');
+    expect(mappings).toContainEqual({ columnStart: 0, columnEnd: 10, original: { start: 0, end: template.length } });
+    expect(mappings).toContainEqual({ columnStart: 5, columnEnd: 9, original: { start: 2, end: 6 } });
+  });
+
+  it('casts the expression to the type of its cast, mapped onto the type', () => {
+    const template = '{ user as User }';
+    const { text, mappings } = line(mappedInterpolation(interpolation(template, 'user', 'User'), new TypeCheckContext(), ';'));
+
+    expect(text).toBe('((root.user) as User);');
+    expect(mappings).toContainEqual({ columnStart: 7, columnEnd: 11, original: { start: 2, end: 6 } });
+    expect(mappings).toContainEqual({ columnStart: 16, columnEnd: 20, original: { start: 10, end: 14 } });
   });
 });

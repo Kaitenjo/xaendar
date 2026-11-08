@@ -3,7 +3,7 @@
  */
 export type ForSection = {
   /**
-   * The text of the section, without the `;` separators and the leading spaces.
+   * The text of the section, without the `;` separators and the whitespace around it.
    */
   text: string;
   /**

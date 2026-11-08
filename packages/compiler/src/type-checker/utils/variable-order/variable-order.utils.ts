@@ -1,4 +1,5 @@
-import { forEachChild, type Expression, type Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
+import { type Expression, type Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
+import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
@@ -536,7 +537,8 @@ function resolve(name: string, check: OrderCheck): Declaration | undefined {
 }
 
 /**
- * Collects the identifiers of an expression reading a name: the names of the members (`obj.name`, `{ name: 1 }`) don't.
+ * Collects the identifiers of an expression reading a name: the names of the members (`obj.name`, `{ name: 1 }`) and
+ * the types of the casts (`format(value as Date)`) don't.
  *
  * @param expression - The expression.
  * @returns The identifiers, in the order they are written.
@@ -549,7 +551,7 @@ function collectReads(expression: Expression): Identifier[] {
       reads.push(node);
     }
 
-    forEachChild(node, child => visit(child, node));
+    forEachExpressionChild(node, child => visit(child, node));
   };
 
   visit(expression, expression);

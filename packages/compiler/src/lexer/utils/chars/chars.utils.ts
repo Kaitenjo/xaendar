@@ -1,4 +1,4 @@
-import { A, DOLLAR, NINE, UNDERSCORE, Z, ZERO, a, z } from '../../../costants/chars.constant';
+import { A, CR, DOLLAR, LF, NINE, SPACE, TAB, UNDERSCORE, Z, ZERO, a, z } from '../../../costants/chars.constant';
 
 /**
  * Checks whether a string contains at least one non-whitespace character.
@@ -33,4 +33,14 @@ export function isNotBlank(str: string): boolean {
  */
 export function isIdentifierChar(code: number): boolean {
   return (code >= a && code <= z) || (code >= A && code <= Z) || (code >= ZERO && code <= NINE) || code === UNDERSCORE || code === DOLLAR;
+}
+
+/**
+ * Tells whether a character is whitespace laying out a template: a space, a tab or a line break.
+ *
+ * @param code - The code of the character.
+ * @returns `true` for a space, a tab, a line feed or a carriage return.
+ */
+export function isWhitespace(code: number): boolean {
+  return code === SPACE || code === TAB || code === LF || code === CR;
 }

@@ -61,13 +61,9 @@ export enum LexerState {
    */
   ATTRIBUTE_VALUE = 'attribute-value',
   /**
-   * Opening an interpolation after `{`.
+   * Consuming an interpolation `{ expression }`, from its `{`.
    */
   INTERPOLATION = 'interpolation',
-  /**
-   * Consuming a JavaScript expression inside `{ }`.
-   */
-  INTERPOLATION_EXPRESSION = 'interpolation-expression',
   /**
    * Consuming an import statement `@import { X, Y, ... }
    */
@@ -108,6 +104,11 @@ export enum LexerState {
    * `@render row(item())`.
    */
   RENDER = 'render',
+  /**
+   * Consuming the cast closing an interpolation or a parameter of an event handler: `as` and the type after it, up to
+   * the `}` of the interpolation, or the `,` or `)` ending the parameter, e.g. `as string` in `{ value() as string }`.
+   */
+  CAST = 'cast',
   /**
    * Consuming the declaration after `@let`: its name and its value up to the `;` ending it, e.g.
    * `total = price() * quantity();` in `@let total = price() * quantity();`.

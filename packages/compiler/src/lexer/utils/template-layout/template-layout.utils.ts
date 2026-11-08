@@ -11,7 +11,7 @@ import type { LayoutTemplateDeclaration } from '../../types/template-layout/layo
 import type { LayoutElementRef } from '../../types/template-layout/layout-element-ref.type';
 import type { LayoutEvent } from '../../types/template-layout/layout-event.type';
 import type { LayoutAttribute } from '../../types/template-layout/layout-attribute.type';
-import { findClosing, findOutside } from '../balanced-text/balanced-text.utils';
+import { findClosing, findEnd } from '../balanced-text/balanced-text.utils';
 import type { Reader } from '../../types/template-layout/reader.type';
 
 /**
@@ -248,7 +248,7 @@ function readLet(reader: Reader): LayoutLet {
   const name = readName(reader, NAME);
   skipWhitespace(reader);
   const { source, position } = reader;
-  const end = source[position] === '=' ? findOutside(source, position + 1, ';') : undefined;
+  const end = source[position] === '=' ? findEnd(source, position + 1, ';') : undefined;
   if (end === undefined) {
     return fail('@let needs its value between = and ;');
   }

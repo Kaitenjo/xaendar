@@ -113,4 +113,11 @@ describe('getTemplateHover of imported symbols', () => {
     expect(getTemplateHover(symbols, source.indexOf('formatDate') + 1)?.contents).toContain('formatDate(value: number): string');
     expect(getTemplateHover(symbols, source.lastIndexOf('formatDate') + 1)?.contents).toContain('Formats a date.');
   }, TIMEOUT);
+
+  it('shows what TypeScript knows about a type named by a cast', async () => {
+    const source = '@import { Row } from \'./utils\';\n{ items[0] as Row }';
+    const symbols = (await project.analyze(source)).analysis!;
+
+    expect(getTemplateHover(symbols, source.lastIndexOf('Row') + 1)?.contents).toContain('interface Row');
+  }, TIMEOUT);
 });

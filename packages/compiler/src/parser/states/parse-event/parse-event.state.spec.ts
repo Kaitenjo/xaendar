@@ -28,6 +28,22 @@ describe('parseEvent', () => {
     expect(node.parameters.map(p => p.getText())).toEqual(['a', 'b + 1']);
   });
 
+  it('parses the casts of the parameters, by the index of the parameter', () => {
+    const template = '<div (click)="onClick($event as MouseEvent, a, b + 1 as number)"></div>';
+    const node = run(template);
+
+    expect(node.parameters.map(p => p.getText())).toEqual(['$event', 'a', 'b + 1']);
+    expect(node.casts).toEqual(new Map([
+      [0, { text: 'MouseEvent', span: { start: template.indexOf('MouseEvent'), end: template.indexOf(', a') } }],
+      [2, { text: 'number', span: { start: template.indexOf('number'), end: template.indexOf(')"') } }]
+    ]));
+    expect(node.span.end).toBe(template.indexOf('></div>'));
+  });
+
+  it('parses an event without casts', () => {
+    expect(run('<div (click)="onClick(a)"></div>')).not.toHaveProperty('casts');
+  });
+
   it('throws when the event is not followed by a handler', () => {
     expect(() => runTokens([{ type: TokenType.EVENT, parts: ['click'], span: { start: 0, end: 5 } }])).toThrow('Invalid event format for click');
   });

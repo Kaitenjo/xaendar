@@ -150,7 +150,8 @@ function separatesInlineNodes(text: string, lineBreak: boolean, previousToken: T
 }
 
 /**
- * Tells whether a token ends an inline node: an interpolation, or an element closed by its closing tag or self-closed.
+ * Tells whether a token ends an inline node: an interpolation, or the cast closing it, or an element closed by its closing
+ * tag or self-closed.
  *
  * @param type - The type of the token.
  * @returns `true` if the token ends an inline node, `false` otherwise.
@@ -158,6 +159,7 @@ function separatesInlineNodes(text: string, lineBreak: boolean, previousToken: T
 function isInlineNodeEnd(type: TokenType): boolean {
   switch (type) {
     case TokenType.INTERPOLATION_EXPRESSION:
+    case TokenType.CAST:
     case TokenType.TAG_CLOSE_NAME:
     case TokenType.TAG_SELF_CLOSE:
       return true;

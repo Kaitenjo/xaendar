@@ -40,6 +40,10 @@ describe('checkVariableOrder', () => {
     expect(errorsOf('<p>{ item.field } { { field: 1 } } { other } { Math.max(1, 2) }</p><input #field />')).toBeUndefined();
   });
 
+  it('ignores the types of the casts, which read nothing', () => {
+    expect(errorsOf('<p>{ format(value as field) }</p><input #field />')).toBeUndefined();
+  });
+
   it('keeps the first declaration of a name declared twice in a scope, which TypeScript reports', () => {
     expect(errorsOf('<input #field /><p>{ field.value }</p><select #field />')).toBeUndefined();
     expect(errorsOf('@for (item of items(); track item()) { <p>{ item() }</p><input #item /> }')).toBeUndefined();

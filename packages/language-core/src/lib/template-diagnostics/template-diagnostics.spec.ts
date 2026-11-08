@@ -112,6 +112,28 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('checks the casts of the interpolations and of the arguments of a handler, reporting a type on its name and a conversion on the cast', async () => {
+    const source = '@import { Row } from \'./utils\';\n<b (click)="select($event as unknown as number)" title="{ items[0] as Row }">{ title as Missing } { title as number }</b>';
+
+    expect(await diagnose(source)).toEqual([
+      ['Missing', 'Cannot find name \'Missing\'.', DiagnosticCategory.Error],
+      ['title as number', expect.stringContaining('Conversion of type \'string\' to type \'number\' may be a mistake'), DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('checks the casts of the arguments of the calls, the ones of a @render included', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '<template row(item: Row)>{ item().id }</template>',
+      '@render row(items[0] as Row)',
+      '{ select(title as unknown as number) } { select(title as Unknown) }'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['Unknown', 'Cannot find name \'Unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
   it('types an element ref with the type of the element it names, reporting its reads before the element and its duplicates', async () => {
     expect(await diagnose('<p>{ field.value }</p>\n<input #field />\n{ field.valu }')).toEqual([
       ['field', '"field" is read before the element it names is created: only an event handler can read an element ref declared after it', DiagnosticCategory.Error],

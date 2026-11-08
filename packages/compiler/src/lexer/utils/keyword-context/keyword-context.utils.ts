@@ -140,26 +140,28 @@ function findOpenBlock(tokens: readonly Token[], end: number): number {
 }
 
 /**
- * Finds the keyword of the block the tokens end with, the blank text after it ignored.
+ * Finds the keyword of the block the tokens end with. The lexer keeps no whitespace between a block and what follows it,
+ * so the last token is the end of the block.
  *
  * @param tokens - The tokens.
  * @returns The type of the token of the keyword, `undefined` if the tokens don't end with a block.
  */
 function getClosedBlockKeyword(tokens: readonly Token[]): TokenType | undefined {
-  const last = findLastNotBlank(tokens, tokens.length);
+  const last = tokens.length - 1;
   return tokens[last]?.type === TokenType.BLOCK_CLOSE ? getBlockKeyword(tokens, findOpenBlock(tokens, last)) : undefined;
 }
 
 /**
  * Finds the blocks following the one of a `@defer` written so far, when the tokens end with a `@defer` block or with one
- * of the blocks following it, the blank text between them ignored.
+ * of the blocks following it: the lexer keeps no whitespace between them, so each block ends right before the keyword
+ * of the next one.
  *
  * @param tokens - The tokens.
  * @returns The tokens of the keywords of the blocks following the `@defer`, `undefined` if the tokens don't end with one.
  */
 function getDeferBlocks(tokens: readonly Token[]): Set<TokenType> | undefined {
   const written = new Set<TokenType>();
-  for (let end = findLastNotBlank(tokens, tokens.length); tokens[end]?.type === TokenType.BLOCK_CLOSE;) {
+  for (let end = tokens.length - 1; tokens[end]?.type === TokenType.BLOCK_CLOSE;) {
     const open = findOpenBlock(tokens, end);
     const keyword = getBlockKeyword(tokens, open);
     if (keyword === TokenType.DEFER) {
@@ -171,28 +173,10 @@ function getDeferBlocks(tokens: readonly Token[]): Set<TokenType> | undefined {
     }
 
     written.add(keyword);
-    end = findLastNotBlank(tokens, tokens[open - 1].type === TokenType.CONDITION ? open - 2 : open - 1);
+    end = tokens[open - 1].type === TokenType.CONDITION ? open - 3 : open - 2;
   }
 
   return undefined;
-}
-
-/**
- * Finds the last token before an index that is not a blank text.
- *
- * @param tokens - The tokens.
- * @param end - The index, excluded.
- * @returns The index of the token, `-1` if there is none.
- */
-function findLastNotBlank(tokens: readonly Token[], end: number): number {
-  for (let i = end - 1; i >= 0; i--) {
-    const token = tokens[i];
-    if (token.type !== TokenType.TEXT || token.parts[0].trim()) {
-      return i;
-    }
-  }
-
-  return -1;
 }
 
 /**

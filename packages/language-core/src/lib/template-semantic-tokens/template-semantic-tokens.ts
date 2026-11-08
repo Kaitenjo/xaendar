@@ -1,5 +1,5 @@
-import { getTemplateSpan, type Span } from '@xaendar/compiler';
-import { forEachChild, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
+import { forEachExpressionChild, getTemplateSpan, type Span } from '@xaendar/compiler';
+import { isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 import type { TemplateSemanticTokenType } from '../types/template-semantic-token-type.type';
@@ -80,7 +80,8 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
 }
 
 /**
- * Collects the identifiers of an expression reading a variable declared by the template.
+ * Collects the identifiers of an expression reading a variable declared by the template: the types of the casts
+ * (`format(value as Date)`) read none.
  *
  * @param node - The node of the expression to visit.
  * @param parent - The parent of the node.
@@ -94,5 +95,5 @@ function collectVariableReads(node: Node, parent: Node, variables: ReadonlySet<s
     collect(getTemplateSpan(node));
   }
 
-  forEachChild(node, child => collectVariableReads(child, node, variables, collect));
+  forEachExpressionChild(node, child => collectVariableReads(child, node, variables, collect));
 }

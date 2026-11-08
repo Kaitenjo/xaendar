@@ -7,10 +7,10 @@ export type ResolveExpressionOptions = {
    */
   resolver?: string,
   /**
-   * Whether to keep the non-null assertions (`value!`) in the resolved expression.
-   * They are TypeScript only: dropped from the JavaScript code, kept in the type-check code.
+   * Whether to keep the syntax of TypeScript in the resolved expression: the non-null assertions (`value!`) and the casts
+   * (`value as Date`). They are TypeScript only: dropped from the JavaScript code, kept in the type-check code.
    */
-  preserveNonNull?: boolean,
+  preserveTypeScript?: boolean,
   /**
    * Returns the constant holding the value of a signal an `@if` narrows, which a call of the signal without arguments
    * is read through, after the call: `(root.user(), __if12_user)`. Only the type-check code narrows the signals.

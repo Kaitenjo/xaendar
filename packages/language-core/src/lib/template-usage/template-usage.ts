@@ -1,5 +1,5 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, isBrowserOnlyGlobal, type SymbolImport } from '@xaendar/compiler';
-import { type Expression, forEachChild, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, isBrowserOnlyGlobal, type SymbolImport } from '@xaendar/compiler';
+import { type Expression, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { ComponentUsage } from '../types/component-usage.type';
 import type { TemplateUsage } from '../types/template-usage.type';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
@@ -252,7 +252,8 @@ function isReactive(expression: Node, reactive: ReadonlySet<string>): boolean {
 }
 
 /**
- * Visits the identifiers an expression reads: the names of its members and the keys of its objects are left out.
+ * Visits the identifiers an expression reads: the names of its members, the keys of its objects and the types of its
+ * casts (`format(value as Date)`) are left out.
  *
  * @param expression - The expression.
  * @param read - Invoked for each identifier.
@@ -265,7 +266,7 @@ function visitReads(expression: Node, read: (identifier: Identifier) => void, ca
     }
 
     if (!isIdentifier(node)) {
-      forEachChild(node, child => visit(child, node));
+      forEachExpressionChild(node, child => visit(child, node));
     } else if (!((isPropertyAccessExpression(parent) || isPropertyAssignment(parent)) && parent.name === node)) {
       read(node);
     }

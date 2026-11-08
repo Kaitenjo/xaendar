@@ -27,7 +27,8 @@ describe('getExpressionContext', () => {
     ['the value of an attribute of a directive', '<b @@tooltip(text="{ |")></b>', 'interpolation@21-21: <b @@tooltip(text="{ P }")></b>'],
     ['an interpolation after text', '<b>hello { |</b>', 'interpolation@11-11: <b>hello { P }</b>'],
     ['an interpolation starting the template', '{ |', 'interpolation@2-2: { P }'],
-    ['a parenthesis closing nothing', '<b>{ a) + |</b>', 'interpolation@10-10: <b>{ a) + P }</b>']
+    ['a parenthesis closing nothing', '<b>{ a) + |</b>', 'interpolation@10-10: <b>{ a) + P }</b>'],
+    ['the cast after the offset dropped', '<b>{ ti| as string }</b>', 'interpolation@5-7: <b>{ ti }</b>']
   ])('closes an interpolation: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });
@@ -47,7 +48,8 @@ describe('getExpressionContext', () => {
     ['the beginning of $event', '<b (click)="pick($e|)">x</b>', 'argument@17-19: <b (click)="pick($e, $event)">x</b>'],
     ['a following argument', '<b (click)="pick(a, |)">x</b>', 'argument@20-20: <b (click)="pick(a, P, $event)">x</b>'],
     ['a call in an argument', '<b (click)="pick(fn(|)">x</b>', 'argument@20-20: <b (click)="pick(fn(P), $event)">x</b>'],
-    ['an argument after a closed call', '<b (click)="pick(fn(a), |)">x</b>', 'argument@24-24: <b (click)="pick(fn(a), P, $event)">x</b>']
+    ['an argument after a closed call', '<b (click)="pick(fn(a), |)">x</b>', 'argument@24-24: <b (click)="pick(fn(a), P, $event)">x</b>'],
+    ['an argument after a cast', '<b (click)="pick(a as A, |)">x</b>', 'argument@25-25: <b (click)="pick(a as A, P, $event)">x</b>']
   ])('closes the arguments of the method of an event: %s', (_name, template, expected) => {
     expect(contextOf(template)).toBe(expected);
   });
@@ -100,6 +102,8 @@ describe('getExpressionContext', () => {
     ['a handler not closed by a double quote', '<b (click)="se|'],
     ['a method read from an object', '<b (click)="a.b|">x</b>'],
     ['a string in an argument', '<b (click)="pick(\'a|\')">x</b>'],
+    ['the type of the cast of an interpolation', '<b>{ value() as Str|</b>'],
+    ['the type of the cast of an argument', '<b (click)="pick(a as Str|)">x</b>'],
     ['a block keyword before its condition', '@if  |'],
     ['the item of a @for', '@for (|'],
     ['the partial item of a @for', '@for (ite|'],

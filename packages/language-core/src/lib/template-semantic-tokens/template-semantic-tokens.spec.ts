@@ -102,6 +102,13 @@ describe('getTemplateSemanticTokens', () => {
     ]);
   }, TIMEOUT);
 
+  it('leaves out the types of the casts, which read no variable', async () => {
+    const source = '@let label = title;\n<p>{ format(title as label) }</p>';
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span }) => source.slice(span.start, span.end))).toEqual(['label']);
+  }, TIMEOUT);
+
   it('colors the @let where declared and where read', async () => {
     const source = '@let label = title;\n@let shout = label + \'!\';\n<p>{ shout }</p>';
     const { analysis } = await project.analyze(source);

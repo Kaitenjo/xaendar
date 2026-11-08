@@ -165,6 +165,11 @@ export enum TokenType {
    */
   ERROR,
   /**
+   * The type an interpolation or a parameter of an event handler is cast to, following the INTERPOLATION_EXPRESSION or
+   * the EVENT_PARAMETER token, e.g. `string` in `{ value() as string }`.
+   */
+  CAST,
+  /**
    * Sentinel token emitted when the end of the input is reached.
    */
   EOF

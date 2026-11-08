@@ -1,8 +1,9 @@
 import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
-import { CR, EOF, LF, SPACE, TAB } from '../../../costants/chars.constant';
+import { EOF } from '../../../costants/chars.constant';
 import { COMMENT_END, COMMENT_START } from '../../../costants/comment.costant';
 import { Cursor } from '../../../models/cursor/cursor';
+import { isWhitespace } from '../../utils/chars/chars.utils';
 import { CurrentChar } from '../current-char.type';
 
 /**
@@ -41,12 +42,6 @@ export class LexerCursor extends Cursor {
     value: ''
   };
   /**
-   * Returns a read-only snapshot of the current character.
-   */
-  public get currentChar(): Readonly<CurrentChar> {
-    return this._currentChar;
-  }
-  /**
    * Cache used by peek operations to avoid re-reading
    * the same character positions multiple times.
    *
@@ -54,6 +49,13 @@ export class LexerCursor extends Cursor {
    * Value: Unicode code point
    */
   private readonly _peekCache = new Map<number, number>();
+
+  /**
+   * Returns a read-only snapshot of the current character.
+   */
+  public get currentChar(): Readonly<CurrentChar> {
+    return this._currentChar;
+  }
 
   /**
    * Creates a new cursor for the given input source.
@@ -87,7 +89,7 @@ export class LexerCursor extends Cursor {
       this._currentChar.code = EOF;
       this._currentChar.index = -1;
       this._currentChar.value = '';
-      this.throwEOFError();
+      this._throwEOFError();
     } else {
       // Clear cache when advance
       for (let i = this._currentChar.index + 1; i <= newIndex; i++) {
@@ -116,7 +118,7 @@ export class LexerCursor extends Cursor {
   public peekMatch(pattern: RegExp, length: number): boolean;
   public peekMatch(pattern: string | RegExp, length?: number): boolean {
     if (typeof pattern === 'string') {
-      this.consumeComment();
+      this._consumeComment();
       return this.input.startsWith(pattern, this._currentChar.index + 1);
     }
 
@@ -150,11 +152,11 @@ export class LexerCursor extends Cursor {
   public peek<ReadChars extends number>(chars: PositiveInteger<ReadChars>): TupleOfLength<ReadChars>;
   public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): number | number[] {
-    this.consumeComment();
+    this._consumeComment();
     const cache = this._peekCache;
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
-    const result = chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(chars + offset, cache);
+    const result = chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1, cache) : this._peekMany(chars + offset, cache);
     return result;
   }
 
@@ -167,32 +169,62 @@ export class LexerCursor extends Cursor {
    * @returns `true` if the characters after the whitespace start with the text, `false` otherwise.
    */
   public peekMatchAfterSpaces(pattern: string): boolean {
-    let index = this._currentChar.index + 1;
-    for (let code = this.input.charCodeAt(index); code === SPACE || code === TAB || code === LF || code === CR; code = this.input.charCodeAt(index)) {
-      index++;
-    }
+    return this.input.startsWith(pattern, this._skipWhitespace(this._currentChar.index + 1));
+  }
 
-    return this.input.startsWith(pattern, index);
+  /**
+   * Checks whether whitespace (spaces, tabs and line breaks) follows the current position, then a keyword, then
+   * whitespace again, without advancing the cursor: e.g. the `as` of a cast in `value() as string`. Reaching the end of
+   * the input does not throw.
+   *
+   * @param keyword - The keyword.
+   * @returns `true` if the keyword is written between whitespace right after the current position, `false` otherwise.
+   */
+  public peekKeywordAfterSpaces(keyword: string): boolean {
+    const start = this._currentChar.index + 1;
+    const index = this._skipWhitespace(start);
+    const end = index + keyword.length;
+    return index > start && this.input.startsWith(keyword, index) && this._skipWhitespace(end) > end;
   }
 
   /**
    * Skips all consecutive whitespace characters (spaces, tabs and line breaks) from the current position.
    */
   public skipSpaces(): void {
-    while (this.peek() === SPACE || this.peek() === TAB || this.peek() === LF || this.peek() === CR) {
+    while (isWhitespace(this.peek())) {
       this.advance();
     }
   }
 
   /**
-   * Peeks multiple characters ahead.
+   * Finds the end of the whitespace (spaces, tabs and line breaks) starting at an index of the input.
+   *
+   * @param index - The index the whitespace starts at.
+   * @returns The index of the first character after the whitespace: `index` itself when no whitespace is there, the
+   *   length of the input when the whitespace reaches its end.
    */
-  private peekMany(chars: number, cache: Map<number, number>): number[] {
+  private _skipWhitespace(index: number): number {
+    while (isWhitespace(this.input.charCodeAt(index))) {
+      index++;
+    }
+
+    return index;
+  }
+
+  /**
+   * Peeks multiple characters ahead.
+   *
+   * @param chars - The number of characters to peek.
+   * @param cache - The cache of the characters already peeked.
+   * @returns The codes of the characters.
+   * @throws Error with cause `EOF` if the peek exceeds input length.
+   */
+  private _peekMany(chars: number, cache: Map<number, number>): number[] {
     const peekedChars = new Array<number>;
     const nextCharIndex = this._currentChar.index + 1;
 
     for (let i = nextCharIndex; i < nextCharIndex + chars; i++) {
-      peekedChars.push(this.peekOneChar(i, cache));
+      peekedChars.push(this._peekOneChar(i, cache));
     }
 
     return peekedChars;
@@ -200,14 +232,19 @@ export class LexerCursor extends Cursor {
 
   /**
    * Peeks a single character at the given absolute index.
+   *
+   * @param index - The index of the character.
+   * @param cache - The cache of the characters already peeked.
+   * @returns The code of the character.
+   * @throws Error with cause `EOF` if the index exceeds input length.
    */
-  private peekOneChar(index: number, cache: Map<number, number>): number {
+  private _peekOneChar(index: number, cache: Map<number, number>): number {
     if (cache.has(index)) {
       return cache.get(index)!;
     }
 
     if (index >= this.input.length) {
-      this.throwEOFError();
+      this._throwEOFError();
     }
 
     const charCode = this.input.charCodeAt(index);
@@ -221,7 +258,7 @@ export class LexerCursor extends Cursor {
    *
    * @throws When a comment is never closed.
    */
-  private consumeComment(): void {
+  private _consumeComment(): void {
     let start = this._currentChar.index + 1;
 
     while (this.input.startsWith(COMMENT_START, start)) {
@@ -239,8 +276,10 @@ export class LexerCursor extends Cursor {
   /**
    * Throws a standardized EOF error used by the lexer engine
    * to terminate tokenization.
+   *
+   * @throws Always, an error with cause `EOF`.
    */
-  private throwEOFError(): never {
+  private _throwEOFError(): never {
     throw new Error('', { cause: endOfFile });
   }
 }

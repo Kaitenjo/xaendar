@@ -36,4 +36,17 @@ describe('parseInterpolation', () => {
 
     expect(getTemplateSpan(interpolation.expression)).toEqual({ start: 6, end: 15 });
   });
+
+  it('parses the cast closing the interpolation, which the interpolation spans', () => {
+    const template = '{ first ?? second as Map<string, number> }';
+    const node = run(template);
+
+    expect(node.expression.getText()).toBe('first ?? second');
+    expect(node.cast).toEqual({ text: 'Map<string, number>', span: { start: template.indexOf('Map'), end: template.indexOf(' }') } });
+    expect(node.span.end).toBe(template.length);
+  });
+
+  it('parses an interpolation without cast', () => {
+    expect(run('{ value }')).not.toHaveProperty('cast');
+  });
 });

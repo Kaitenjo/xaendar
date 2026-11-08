@@ -33,7 +33,7 @@ export function narrowSignals(conditions: readonly Expression[], prefix: string,
     if (callee && !chainContext.getNarrowedSignal(callee.text) && resolveExpression(callee, context, { resolver: ROOT_NODE }).reactive) {
       const value = `${prefix}_${callee.text}`;
       // Not mapped onto the template: the condition reports the errors of the call, which it keeps
-      declarations.push(plain(`const ${value} = ${resolveExpression(node as Expression, context, { resolver: ROOT_NODE, preserveNonNull: true }).expression};`));
+      declarations.push(plain(`const ${value} = ${resolveExpression(node as Expression, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
       chainContext.addNarrowedSignal(callee.text, value);
     }
 

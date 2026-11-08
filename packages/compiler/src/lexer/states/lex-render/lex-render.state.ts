@@ -5,7 +5,7 @@ import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
 import { isIdentifierChar } from '../../utils/chars/chars.utils';
-import { lexGroup } from '../../utils/group/group.utils';
+import { lexGroup } from '../../utils/expression-text/expression-text.utils';
 
 /**
  * Consumes the call of a template after `@render`, already consumed by the flow-control state, and transitions back

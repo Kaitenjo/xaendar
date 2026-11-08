@@ -1,5 +1,6 @@
 import { slice } from '@xaendar/common';
 import { NoArgsFunction } from '@xaendar/types';
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { ForToken } from '../../../lexer/types/tokens/for-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
@@ -64,14 +65,18 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
  * @throws When `source` is not a valid `@for` expression.
  */
 export function parseForExpression(source: string, offset = 0): ForExpression {
-  const sections = splitForSections(source, offset);
+  // The sections are separated by the `;` outside of the groups and of the literals; the one after the last `;` may be empty
+  const sections = splitTopLevel(source, ';').map(({ text, start }): ForSection => ({ text, offset: offset + start }));
+  if (!sections[sections.length - 1].text) {
+    sections.pop();
+  }
 
   if (sections.length < 1) {
     throw '@for requires at least one of these forms: "item of items()" or "numberItems()".';
   }
 
   // ---- Section 1: "item of items" or "items" ----
-  const { text: iterSection, offset: iterOffset } = trimSection(sections[0]);
+  const { text: iterSection, offset: iterOffset } = sections[0];
   const ofIndex = iterSection.indexOf(' of ');
 
   let itemAlias: string | undefined;
@@ -97,12 +102,12 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
   const implicitAliasSpans = new Map<ForImplicitVariables, Span>;
 
   if (sections.length >= 3 && sections[2] !== undefined) {
-    parseImplicitAliases(trimSection(sections[2]), implicitAliases, implicitAliasSpans);
+    parseImplicitAliases(sections[2], implicitAliases, implicitAliasSpans);
   }
 
   // ---- Section 3 (optional): "track item.id" ----
   // Without it the loop tracks by the value of the item, or of the index when there is no item alias.
-  const trackSection = sections[1] && trimSection(sections[1]);
+  const trackSection = sections[1];
   let trackSource = `${itemAlias ?? implicitAliases.get('$index') ?? '$index'}()`;
   // The default track expression is not written in the template, so it has no offset
   let trackOffset: number | undefined;
@@ -149,15 +154,12 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
  * @throws When an entry is not a valid alias declaration.
  */
 function parseImplicitAliases({ text, offset }: ForSection, out: Map<ForImplicitVariables, string>, spans: Map<ForImplicitVariables, Span>): void {
-  const entries = text.split(',');
+  const entries = splitTopLevel(text);
   const IMPLICIT_VARIABLES = new Set(['$index', '$last', '$first', '$even', '$odd']);
-  let entryOffset = offset;
 
   for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    const { text: trimmed, offset: trimmedOffset } = trimSection({ text: entry, offset: entryOffset });
-    // The next entry starts after the comma
-    entryOffset += entry.length + 1;
+    const { text: trimmed, start } = entries[i];
+    const trimmedOffset = offset + start;
 
     const eqIndex = trimmed.indexOf('=');
     if (eqIndex === -1) {
@@ -194,79 +196,4 @@ function parseImplicitAliases({ text, offset }: ForSection, out: Map<ForImplicit
 function trimSection({ text, offset }: ForSection): ForSection {
   const trimmedStart = text.trimStart();
   return { text: trimmedStart.trimEnd(), offset: offset + text.length - trimmedStart.length };
-}
-
-/**
- * Splits the raw `@for(...)` body into its semicolon-delimited sections,
- * respecting nested brackets and string literals so that semicolons inside
- * them are never treated as section separators.
- *
- * Example input:  `"item of items; track item.id; i = $index"`
- * Example output: `["item of items", "track item.id", "i = $index"]`, each with its offset
- *
- * @param source - The raw content of the `@for(...)` expression.
- * @param offset - The offset of `source` in the template.
- * @returns An array of sections (without the `;` separators and the leading spaces), each with its offset in the template.
- */
-function splitForSections(source: string, offset: number): ForSection[] {
-  const sections = new Array<ForSection>;
-  let current = '';
-  let currentStart = 0;
-  let depth = 0;
-  let inString: '"' | "'" | '`' | null | undefined;
-
-  for (let i = 0; i < source.length; i++) {
-    const char = source[i];
-
-    if (!current && char === ' ') {
-      continue;
-    }
-
-    if (!current) {
-      currentStart = i;
-    }
-
-    if (inString) {
-      current = `${current}${char}`;
-      if (char === inString && source[i - 1] !== '\\') {
-        inString = null;
-      }
-      continue;
-    }
-
-    if (char === '"' || char === "'" || char === '`') {
-      inString = char;
-      current = `${current}${char}`;
-      continue;
-    }
-
-    // Brackets — do not split inside nested bracket pairs.
-    if (char === '(' || char === '[' || char === '{') {
-      depth++;
-      current = `${current}${char}`;
-      continue;
-    }
-
-    if (char === ')' || char === ']' || char === '}') {
-      depth--;
-      current = `${current}${char}`;
-      continue;
-    }
-
-    // Section separator — only split when not inside brackets or strings.
-    if (char === ';' && depth === 0) {
-      sections.push({ text: current, offset: offset + currentStart });
-      current = '';
-      continue;
-    }
-
-    current = `${current}${char}`;
-  }
-
-  // Push the last section even when it has no trailing `;`.
-  if (current.trim().length) {
-    sections.push({ text: current, offset: offset + currentStart });
-  }
-
-  return sections;
 }

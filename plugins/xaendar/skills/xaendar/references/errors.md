@@ -84,6 +84,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @let without its name or its =, or whose block closes before its ;. The same message is reported as [Parser] when the template ends before the ;, or the value is missing.
 - **Fix:** Write @let name = value; with a ; ending the value.
 
+### `[Lexer] A cast needs a type after "as", e.g. { value() as string }`
+
+- **Cause:** An `as` closing an interpolation or an argument of a listener without the type after it: { value() as }.
+- **Fix:** Write the type after as, or drop the cast.
+
 ### `[Lexer] Type arguments cannot be empty`
 
 - **Cause:** Empty type arguments: @@exList<>(…) on a directive, <ex-picker()> on a component.
@@ -148,8 +153,13 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Parser] 'FirstAssignment' is not allowed inside template expressions.`
 
-- **Cause:** A construct forbidden in expressions. The same message names the others: 'new', function expressions, 'ThisKeyword', 'AsExpression', 'RegularExpressionLiteral', 'CommaToken'.
+- **Cause:** A construct forbidden in expressions. The same message names the others: 'new', function expressions, 'ThisKeyword', 'RegularExpressionLiteral', 'CommaToken'.
 - **Fix:** Move the logic into a method or a computed signal of the class.
+
+### `[Parser] A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)="select($event as MouseEvent)".`
+
+- **Cause:** A cast of something that is not an argument of a call: { (item as Row).id }, { a + (b as number) }, [value as Row].
+- **Fix:** Cast the whole interpolation or an argument ({ item() as Row }, { show(item() as Row) }), or type the value in the class.
 
 ### `[Parser] 'let i' is not a valid alias identifier.`
 

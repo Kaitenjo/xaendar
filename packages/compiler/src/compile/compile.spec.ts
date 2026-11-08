@@ -47,6 +47,27 @@ describe('compile', () => {
     await expect(compile(template, { baseDir: '/base', customElements: ['sl-*'], cache: createCache() })).resolves.toMatchObject({ text: expect.stringContaining('sl-click') });
   });
 
+  it('writes the casts only in the type-check, as written in the template', async () => {
+    const template = '<p title="{ title() as string }" (click)="pick($event as MouseEvent)">{ count as number }</p>';
+    const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['title'], cache: createCache() });
+
+    expect(javascript).not.toContain(' as ');
+    expect(javascript).toContain('handler: ($event) => this.pick($event)');
+    expect(typescript.text).toContain('((root.title()) as string);');
+    expect(typescript.text).toContain('root.pick((($event) as MouseEvent));');
+    expect(typescript.text).toContain('((root.count) as number);');
+  });
+
+  it('writes the casts of the arguments of the calls only in the type-check, the ones of a @render included', async () => {
+    const template = '<template row(item: Row)><b>{ item().id }</b></template>@render row(selected() as Row)<p>{ format(count as number) }</p>';
+    const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['selected'], cache: createCache() });
+
+    expect(javascript).not.toContain(' as ');
+    expect(javascript).toContain('[() => this.selected()]');
+    expect(typescript.text).toContain('__render(row, 1)(root.selected() as Row);');
+    expect(typescript.text).toContain('root.format(root.count as number);');
+  });
+
   it('generates both outputs when base directory and signals are provided', async () => {
     const result = await compile('{count}', { baseDir: '/base', signals: ['count'], cache: createCache() });
 

@@ -1,15 +1,5 @@
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 import type { TypeArgumentNode } from '../../types/nodes/type-argument-node.type';
-
-/**
- * The characters opening a group a comma doesn't separate the type arguments in: the arguments of a generic type,
- * a tuple, an object type, a function type.
- */
-const OPENERS = '<([{';
-
-/**
- * The characters closing a group opened by one of {@link OPENERS}.
- */
-const CLOSERS = '>)]}';
 
 /**
  * Splits the text of the type arguments of a directive or of a web component at the commas outside of any group, so that
@@ -25,45 +15,16 @@ const CLOSERS = '>)]}';
  * @throws If a type argument is empty.
  */
 export function parseTypeArguments(text: string, offset: number): TypeArgumentNode[] {
-  const typeArguments = new Array<TypeArgumentNode>();
-  let depth = 0;
-  let quote: string | undefined;
-  let start = 0;
+  const parts = splitTopLevel(text, ',', true);
+  if (!parts[parts.length - 1].text) {
+    parts.pop();
+  }
 
-  const add = (end: number, isLast: boolean): void => {
-    const segment = text.slice(start, end);
-    const trimmed = segment.trim();
-    if (trimmed) {
-      const spanStart = offset + start + segment.indexOf(trimmed);
-      typeArguments.push({ text: trimmed, span: { start: spanStart, end: spanStart + trimmed.length } });
-    } else if (!isLast) {
+  return parts.map(({ text: type, start }) => {
+    if (!type) {
       throw 'A type argument cannot be empty';
     }
 
-    start = end + 1;
-  };
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (quote !== undefined) {
-      // An escaped character never closes the string
-      if (char === '\\') {
-        i++;
-      } else if (char === quote) {
-        quote = undefined;
-      }
-    } else if (char === '\'' || char === '"' || char === '`') {
-      quote = char;
-    } else if (OPENERS.includes(char)) {
-      depth++;
-    } else if (CLOSERS.includes(char)) {
-      // The `>` of the arrow of a function type (`() => void`) closes nothing
-      depth -= char === '>' && text[i - 1] === '=' ? 0 : 1;
-    } else if (char === ',' && !depth) {
-      add(i, false);
-    }
-  }
-
-  add(text.length, true);
-  return typeArguments;
+    return { text: type, span: { start: offset + start, end: offset + start + type.length } };
+  });
 }

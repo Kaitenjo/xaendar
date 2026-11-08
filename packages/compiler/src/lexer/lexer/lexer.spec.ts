@@ -60,6 +60,16 @@ describe('Lexer', () => {
     ]);
   });
 
+  it.each([
+    ['the condition of a block', '@if (f(`a ${ `)` } b`)) {x}', TokenType.CONDITION, ['f(`a ${ `)` } b`)']],
+    ['the arguments of a @render', '@render row(`a ${ `)` } b`, 1)', TokenType.RENDER_CALL, ['row', '`a ${ `)` } b`, 1']],
+    ['the parameters of a template', '<template row(a = `a ${ `)` } b`)></template>', TokenType.TEMPLATE_DECLARATION, ['row', 'a = `a ${ `)` } b`']],
+    ['the type arguments of a directive', '<p @@tip<`a${ `>` }`>(text="a")></p>', TokenType.DIRECTIVE, ['tip', '`a${ `>` }`']]
+  ])('reads a template literal nested in a substitution of another one in %s', (_name, template, type, parts) => {
+    const tokens: ReadToken[] = new Lexer(template).tokenize();
+    expect(tokens.find(token => token.type === type)?.parts).toEqual(parts);
+  });
+
   it('tokenizes an attribute and an event binding', () => {
     const tokens = new Lexer('<button class="a" (click)="onClick()"></button>').tokenize();
     expect(tokens.map(t => t.type)).toEqual([
@@ -71,6 +81,34 @@ describe('Lexer', () => {
       TokenType.TAG_OPEN_END,
       TokenType.TAG_CLOSE_NAME
     ]);
+  });
+
+  it('tokenizes the casts closing the interpolations and the parameters of the event handlers', () => {
+    const template = '<p title="{ title() as string }" (click)="pick($event as MouseEvent, row() as Row)">{ value() as Map<string, number> } { x }</p>';
+    const tokens: ReadToken[] = new Lexer(template).tokenize();
+    const at = (text: string): Span => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
+
+    expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
+      [TokenType.TAG_OPEN_NAME, ['p']],
+      [TokenType.ATTRIBUTE, ['title']],
+      [TokenType.INTERPOLATION_EXPRESSION, ['title()']],
+      [TokenType.CAST, ['string']],
+      [TokenType.EVENT, ['click']],
+      [TokenType.EVENT_HANDLER, ['pick']],
+      [TokenType.EVENT_PARAMETER, ['$event']],
+      [TokenType.CAST, ['MouseEvent']],
+      [TokenType.EVENT_PARAMETER, ['row()']],
+      [TokenType.CAST, ['Row']],
+      [TokenType.TAG_OPEN_END, []],
+      [TokenType.INTERPOLATION_EXPRESSION, ['value()']],
+      [TokenType.CAST, ['Map<string, number>']],
+      [TokenType.TEXT, [' ']],
+      [TokenType.INTERPOLATION_EXPRESSION, ['x']],
+      [TokenType.TAG_CLOSE_NAME, ['p']]
+    ]);
+    // A cast spans from the whitespace before `as` to the end of the construct it closes
+    expect(tokens[3].span).toEqual(at(' as string }"'));
+    expect(tokens[7].span).toEqual(at(' as MouseEvent,'));
   });
 
   it('tokenizes directives with and without bindings', () => {

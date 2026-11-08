@@ -110,7 +110,7 @@ export class CounterComponent extends CustomElement {
 - An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`. Toggle a single class with `[class.name]="{expr}"`.
 - A listener is one method call, whose arguments are expressions (`save($event.key, count() + 1, format(name()))`): no assignments, arrow functions or several statements, no `(keydown.enter)` modifiers.
 - Add or remove boolean attributes (`disabled`, `checked`) with a conditional binding inside the tag, not with `="{false}"`.
-- Expressions allow the non-null assertion (`item().page!.title`), but no `as`, `new`, arrow functions or assignments.
+- Expressions allow the non-null assertion (`item().page!.title`), but no `new`, arrow functions or assignments. A cast `as Type` closes a whole interpolation (`{ value() as string }`) or casts an argument of a call: of a listener (`(input)="search($event.target as HTMLInputElement)"`), of a `@render`, of a call in an expression (`{ format(value() as Date) }`). It is type-checked only and generates no code.
 - Import every component and directive used, at the top of the template, with `@import { X } from './relative/path.xd.component.ts'` (packages and `tsconfig.json` aliases work too, except the components of compiled packages). Import the functions, constants, enums, signals and types of other modules the same way: the expressions read them by name. Tags of other libraries are declared in `customElements` of `xaendar.json` instead.
 - `@for (item of items(); track item().id)`: arrays and numbers only; the item and `$index`, `$first`, … are signals. Without `track` the item itself is the key.
 - Write control flow as `@if (x) {` with a space, one block per line.

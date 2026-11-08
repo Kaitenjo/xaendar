@@ -154,6 +154,23 @@ describe('LexerCursor', () => {
     });
   });
 
+  describe('peekKeywordAfterSpaces', () => {
+    it('matches a keyword between whitespace after the current position, without advancing', () => {
+      const cursor = new LexerCursor(' as string');
+      expect(cursor.peekKeywordAfterSpaces('as')).toBe(true);
+      expect(cursor.currentChar.index).toBe(-1);
+      expect(new LexerCursor('\r\n\t as\nstring').peekKeywordAfterSpaces('as')).toBe(true);
+    });
+
+    it('returns false without whitespace before or after the keyword, or at the end of the input', () => {
+      expect(new LexerCursor('as string').peekKeywordAfterSpaces('as')).toBe(false);
+      expect(new LexerCursor(' asset').peekKeywordAfterSpaces('as')).toBe(false);
+      expect(new LexerCursor(' as').peekKeywordAfterSpaces('as')).toBe(false);
+      expect(new LexerCursor(' is string').peekKeywordAfterSpaces('as')).toBe(false);
+      expect(new LexerCursor('  ').peekKeywordAfterSpaces('as')).toBe(false);
+    });
+  });
+
   describe('skipSpaces', () => {
     it('skips spaces, tabs, line feeds and carriage returns', () => {
       const cursor = new LexerCursor(' \t\n\r x');

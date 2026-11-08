@@ -20642,21 +20642,29 @@ var CompilerContext = class {
 };
 
 // ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
-var import_typescript4 = require("typescript");
+var import_typescript5 = require("typescript");
 
 // ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
+var import_typescript2 = require("typescript");
+
+// ../packages/compiler/src/utils/expression-children/expression-children.utils.ts
 var import_typescript = require("typescript");
+function forEachExpressionChild(node, callback) {
+  return (0, import_typescript.isAsExpression)(node) ? callback(node.expression) : (0, import_typescript.forEachChild)(node, callback);
+}
+
+// ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
 var EXPRESSION_PREFIX = "const x = ";
 var templateOffsets = /* @__PURE__ */ new WeakMap();
 function validateExpression(source, templateOffset) {
-  const sourceFile = (0, import_typescript.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript.ScriptTarget.ESNext, true);
+  const sourceFile = (0, import_typescript2.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript2.ScriptTarget.ESNext, true);
   if (templateOffset !== void 0) {
     templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
   }
   const statement = sourceFile.statements[0];
   const expression = statement.declarationList.declarations[0].initializer;
-  const scanner = (0, import_typescript.createScanner)(import_typescript.ScriptTarget.ESNext, true, import_typescript.LanguageVariant.Standard, sourceFile.text, void 0, expression.end);
-  if (scanner.scan() !== import_typescript.SyntaxKind.EndOfFileToken) {
+  const scanner = (0, import_typescript2.createScanner)(import_typescript2.ScriptTarget.ESNext, true, import_typescript2.LanguageVariant.Standard, sourceFile.text, void 0, expression.end);
+  if (scanner.scan() !== import_typescript2.SyntaxKind.EndOfFileToken) {
     const rest = slice(sourceFile.text, expression.end);
     throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
       cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
@@ -20679,134 +20687,138 @@ function visitNode(node) {
   if (!isAllowedNode(node)) {
     throw new Error(buildDisallowedMessage(node), { cause: getTemplateSpan(node) });
   }
-  (0, import_typescript.forEachChild)(node, visitNode);
+  forEachExpressionChild(node, visitNode);
 }
 function isAllowedNode(node) {
   switch (node.kind) {
     // ---- Literals ----
-    case import_typescript.SyntaxKind.StringLiteral:
-    case import_typescript.SyntaxKind.NumericLiteral:
-    case import_typescript.SyntaxKind.BigIntLiteral:
-    case import_typescript.SyntaxKind.TrueKeyword:
-    case import_typescript.SyntaxKind.FalseKeyword:
-    case import_typescript.SyntaxKind.NullKeyword:
-    case import_typescript.SyntaxKind.UndefinedKeyword:
+    case import_typescript2.SyntaxKind.StringLiteral:
+    case import_typescript2.SyntaxKind.NumericLiteral:
+    case import_typescript2.SyntaxKind.BigIntLiteral:
+    case import_typescript2.SyntaxKind.TrueKeyword:
+    case import_typescript2.SyntaxKind.FalseKeyword:
+    case import_typescript2.SyntaxKind.NullKeyword:
+    case import_typescript2.SyntaxKind.UndefinedKeyword:
     // ---- Identifiers ----
-    case import_typescript.SyntaxKind.Identifier:
+    case import_typescript2.SyntaxKind.Identifier:
     // ---- Member access ----
     // user.name
-    case import_typescript.SyntaxKind.PropertyAccessExpression:
+    case import_typescript2.SyntaxKind.PropertyAccessExpression:
     // user['name'], items[0]
-    case import_typescript.SyntaxKind.ElementAccessExpression:
+    case import_typescript2.SyntaxKind.ElementAccessExpression:
     // ---- Call expressions ----
     // user.getFullName(), user.hasRole('admin')
-    case import_typescript.SyntaxKind.CallExpression:
+    case import_typescript2.SyntaxKind.CallExpression:
     // ---- Binary expressions ----
     // Covers arithmetic, comparison, logical, bitwise, nullish coalescing,
     // and instanceof. Assignment operators are rejected in visitNode via
     // buildDisallowedMessage before recursing into children.
-    case import_typescript.SyntaxKind.BinaryExpression:
+    case import_typescript2.SyntaxKind.BinaryExpression:
     // ---- Operator tokens — visited as children of BinaryExpression ----
     // Comparison
-    case import_typescript.SyntaxKind.EqualsEqualsToken:
+    case import_typescript2.SyntaxKind.EqualsEqualsToken:
     // ==
-    case import_typescript.SyntaxKind.EqualsEqualsEqualsToken:
+    case import_typescript2.SyntaxKind.EqualsEqualsEqualsToken:
     // ===
-    case import_typescript.SyntaxKind.ExclamationEqualsToken:
+    case import_typescript2.SyntaxKind.ExclamationEqualsToken:
     // !=
-    case import_typescript.SyntaxKind.ExclamationEqualsEqualsToken:
+    case import_typescript2.SyntaxKind.ExclamationEqualsEqualsToken:
     // !==
-    case import_typescript.SyntaxKind.LessThanToken:
+    case import_typescript2.SyntaxKind.LessThanToken:
     // 
-    case import_typescript.SyntaxKind.LessThanEqualsToken:
+    case import_typescript2.SyntaxKind.LessThanEqualsToken:
     // <=
-    case import_typescript.SyntaxKind.GreaterThanToken:
+    case import_typescript2.SyntaxKind.GreaterThanToken:
     // >
-    case import_typescript.SyntaxKind.GreaterThanEqualsToken:
+    case import_typescript2.SyntaxKind.GreaterThanEqualsToken:
     // >=
     // Arithmetic
-    case import_typescript.SyntaxKind.PlusToken:
+    case import_typescript2.SyntaxKind.PlusToken:
     // +
-    case import_typescript.SyntaxKind.MinusToken:
+    case import_typescript2.SyntaxKind.MinusToken:
     // -
-    case import_typescript.SyntaxKind.AsteriskToken:
+    case import_typescript2.SyntaxKind.AsteriskToken:
     // *
-    case import_typescript.SyntaxKind.SlashToken:
+    case import_typescript2.SyntaxKind.SlashToken:
     // /
-    case import_typescript.SyntaxKind.PercentToken:
+    case import_typescript2.SyntaxKind.PercentToken:
     // %
-    case import_typescript.SyntaxKind.AsteriskAsteriskToken:
+    case import_typescript2.SyntaxKind.AsteriskAsteriskToken:
     // **
     // Logical
-    case import_typescript.SyntaxKind.AmpersandAmpersandToken:
+    case import_typescript2.SyntaxKind.AmpersandAmpersandToken:
     // &&
-    case import_typescript.SyntaxKind.BarBarToken:
+    case import_typescript2.SyntaxKind.BarBarToken:
     // ||
-    case import_typescript.SyntaxKind.QuestionQuestionToken:
+    case import_typescript2.SyntaxKind.QuestionQuestionToken:
     // ??
-    case import_typescript.SyntaxKind.QuestionDotToken:
+    case import_typescript2.SyntaxKind.QuestionDotToken:
     // ?.
-    case import_typescript.SyntaxKind.QuestionToken:
+    case import_typescript2.SyntaxKind.QuestionToken:
     // ?
-    case import_typescript.SyntaxKind.ColonToken:
+    case import_typescript2.SyntaxKind.ColonToken:
     // :
     // Bitwise
-    case import_typescript.SyntaxKind.AmpersandToken:
+    case import_typescript2.SyntaxKind.AmpersandToken:
     // &
-    case import_typescript.SyntaxKind.BarToken:
+    case import_typescript2.SyntaxKind.BarToken:
     // |
-    case import_typescript.SyntaxKind.CaretToken:
+    case import_typescript2.SyntaxKind.CaretToken:
     // ^
-    case import_typescript.SyntaxKind.LessThanLessThanToken:
+    case import_typescript2.SyntaxKind.LessThanLessThanToken:
     // 
-    case import_typescript.SyntaxKind.GreaterThanGreaterThanToken:
+    case import_typescript2.SyntaxKind.GreaterThanGreaterThanToken:
     // >>
-    case import_typescript.SyntaxKind.GreaterThanGreaterThanGreaterThanToken:
+    case import_typescript2.SyntaxKind.GreaterThanGreaterThanGreaterThanToken:
     // >>>
     // instanceof / in
-    case import_typescript.SyntaxKind.InstanceOfKeyword:
+    case import_typescript2.SyntaxKind.InstanceOfKeyword:
     // instanceof
-    case import_typescript.SyntaxKind.InKeyword:
+    case import_typescript2.SyntaxKind.InKeyword:
     // in
     // ---- Unary expressions ----
     // !isAdmin, ~flags, +n, -n, typeof x, void 0
-    case import_typescript.SyntaxKind.PrefixUnaryExpression:
-    case import_typescript.SyntaxKind.PostfixUnaryExpression:
+    case import_typescript2.SyntaxKind.PrefixUnaryExpression:
+    case import_typescript2.SyntaxKind.PostfixUnaryExpression:
     // typeof is represented as a dedicated node kind in some TS versions
-    case import_typescript.SyntaxKind.TypeOfExpression:
-    case import_typescript.SyntaxKind.VoidExpression:
+    case import_typescript2.SyntaxKind.TypeOfExpression:
+    case import_typescript2.SyntaxKind.VoidExpression:
     // ---- Conditional (ternary) ----
     // isAdmin ? 'yes' : 'no'
-    case import_typescript.SyntaxKind.ConditionalExpression:
+    case import_typescript2.SyntaxKind.ConditionalExpression:
     // ---- Parenthesised expressions ----
-    case import_typescript.SyntaxKind.ParenthesizedExpression:
+    case import_typescript2.SyntaxKind.ParenthesizedExpression:
     // ---- Template literals ----
     // `Hello ${user.name}`
-    case import_typescript.SyntaxKind.TemplateExpression:
-    case import_typescript.SyntaxKind.NoSubstitutionTemplateLiteral:
-    case import_typescript.SyntaxKind.TemplateHead:
-    case import_typescript.SyntaxKind.TemplateMiddle:
-    case import_typescript.SyntaxKind.TemplateTail:
-    case import_typescript.SyntaxKind.TemplateSpan:
+    case import_typescript2.SyntaxKind.TemplateExpression:
+    case import_typescript2.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case import_typescript2.SyntaxKind.TemplateHead:
+    case import_typescript2.SyntaxKind.TemplateMiddle:
+    case import_typescript2.SyntaxKind.TemplateTail:
+    case import_typescript2.SyntaxKind.TemplateSpan:
     // ---- Arrays ----
     // [1, 2, 3], [...items]
-    case import_typescript.SyntaxKind.ArrayLiteralExpression:
+    case import_typescript2.SyntaxKind.ArrayLiteralExpression:
     // ---- Objects ----
     // { key: value }, { ...defaults, name }
-    case import_typescript.SyntaxKind.ObjectLiteralExpression:
-    case import_typescript.SyntaxKind.PropertyAssignment:
-    case import_typescript.SyntaxKind.ShorthandPropertyAssignment:
+    case import_typescript2.SyntaxKind.ObjectLiteralExpression:
+    case import_typescript2.SyntaxKind.PropertyAssignment:
+    case import_typescript2.SyntaxKind.ShorthandPropertyAssignment:
     // { ...obj } inside an object literal
-    case import_typescript.SyntaxKind.SpreadAssignment:
+    case import_typescript2.SyntaxKind.SpreadAssignment:
     // ---- Spread ----
     // foo(...args), [...items]
-    case import_typescript.SyntaxKind.SpreadElement:
-    case import_typescript.SyntaxKind.TaggedTemplateExpression:
+    case import_typescript2.SyntaxKind.SpreadElement:
+    case import_typescript2.SyntaxKind.TaggedTemplateExpression:
     // ---- Internal structural nodes ----
     // Visited during recursion but carry no semantic meaning of their own.
-    case import_typescript.SyntaxKind.SyntaxList:
-    case import_typescript.SyntaxKind.NonNullExpression:
+    case import_typescript2.SyntaxKind.SyntaxList:
+    case import_typescript2.SyntaxKind.NonNullExpression:
       return true;
+    // ---- Casts of the arguments of a call ----
+    // format(value as Date), format(value as unknown as Date): the cast a cast applies to is checked with it
+    case import_typescript2.SyntaxKind.AsExpression:
+      return (0, import_typescript2.isAsExpression)(node.parent) || (0, import_typescript2.isCallExpression)(node.parent) && node.parent.arguments.some((argument) => argument === node);
     // ---- Disallowed by default ----
     default:
       return false;
@@ -20814,38 +20826,40 @@ function isAllowedNode(node) {
 }
 function buildDisallowedMessage(node) {
   switch (node.kind) {
-    case import_typescript.SyntaxKind.AwaitExpression:
+    case import_typescript2.SyntaxKind.AwaitExpression:
       return "'await' is not allowed inside template expressions.";
-    case import_typescript.SyntaxKind.YieldExpression:
+    case import_typescript2.SyntaxKind.YieldExpression:
       return "'yield' is not allowed inside template expressions.";
-    case import_typescript.SyntaxKind.NewExpression:
+    case import_typescript2.SyntaxKind.NewExpression:
       return "'new' is not allowed inside template expressions.";
-    case import_typescript.SyntaxKind.ArrowFunction:
-    case import_typescript.SyntaxKind.FunctionExpression:
+    case import_typescript2.SyntaxKind.ArrowFunction:
+    case import_typescript2.SyntaxKind.FunctionExpression:
       return "Function expressions are not allowed inside template expressions.";
+    case import_typescript2.SyntaxKind.AsExpression:
+      return `A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)="select($event as MouseEvent)".`;
     default:
-      return `'${import_typescript.SyntaxKind[node.kind]}' is not allowed inside template expressions.`;
+      return `'${import_typescript2.SyntaxKind[node.kind]}' is not allowed inside template expressions.`;
   }
 }
 
 // ../packages/compiler/src/utils/event-reads/event-reads.utils.ts
-var import_typescript2 = require("typescript");
+var import_typescript3 = require("typescript");
 function readsEvent(node) {
-  if ((0, import_typescript2.isIdentifier)(node)) {
+  if ((0, import_typescript3.isIdentifier)(node)) {
     return node.text === "$event";
   }
-  if ((0, import_typescript2.isPropertyAccessExpression)(node)) {
+  if ((0, import_typescript3.isPropertyAccessExpression)(node)) {
     return readsEvent(node.expression);
   }
-  if ((0, import_typescript2.isPropertyAssignment)(node)) {
+  if ((0, import_typescript3.isPropertyAssignment)(node)) {
     return readsEvent(node.initializer);
   }
-  return (0, import_typescript2.forEachChild)(node, readsEvent) ?? false;
+  return (0, import_typescript3.forEachChild)(node, readsEvent) ?? false;
 }
 
 // ../packages/compiler/src/generator/utils/generator/generator.utils.ts
 var import_globals = __toESM(require_globals2(), 1);
-var import_typescript3 = require("typescript");
+var import_typescript4 = require("typescript");
 var GLOBAL_IDENTIFIERS = /* @__PURE__ */ new Set([
   ...Object.keys(import_globals.default.browser),
   ...Object.keys(import_globals.default.builtin),
@@ -20885,21 +20899,21 @@ function emitNode(node, parent, generatorContext, options) {
   return { ...emitted, expression, segments };
 }
 function getSignalCallee(node) {
-  return (0, import_typescript3.isCallExpression)(node) && (0, import_typescript3.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
+  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
 }
 function emitResolvedNode(node, parent, generatorContext, options) {
   const span = getTemplateSpan(node);
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, generatorContext, options);
-    const expression = (0, import_typescript3.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
+    const expression = (0, import_typescript4.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
     const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
     return { ...resolved, expression, segments };
   }
-  if (!options.preserveNonNull && (0, import_typescript3.isNonNullExpression)(node)) {
+  if (!options.preserveTypeScript && ((0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node))) {
     return emitNode(node.expression, node, generatorContext, options);
   }
-  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveNonNull || !containsNonNullExpression(node))) {
+  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveTypeScript || !containsTypeScriptSyntax(node))) {
     const expression = node.getText();
     return { expression, segments: segmentOf(expression, span) };
   }
@@ -20918,12 +20932,16 @@ function emitResolvedNode(node, parent, generatorContext, options) {
     result.expression = `${result.expression}${verbatim}${child?.expression ?? ""}`;
     result.reactive = result.reactive || child?.reactive;
   };
-  (0, import_typescript3.forEachChild)(node, (child) => {
-    append(lastEnd, child.getStart(), emitNode(child, node, generatorContext, options));
+  (0, import_typescript4.forEachChild)(node, (child) => {
+    append(lastEnd, child.getStart(), (0, import_typescript4.isTypeNode)(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
   append(lastEnd, node.getEnd());
   return result;
+}
+function emitVerbatim(node) {
+  const expression = node.getText();
+  return { expression, segments: segmentOf(expression, getTemplateSpan(node)) };
 }
 function resolveIdentifier(text, generatorContext, options) {
   if (generatorContext.hasUnresolvableIdentifier(text)) {
@@ -20948,36 +20966,24 @@ function resolveIdentifier(text, generatorContext, options) {
   return { expression: member };
 }
 function containsResolvableIdentifier(node, parent, generatorContext, options) {
-  if ((0, import_typescript3.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     return true;
   }
-  let found = false;
-  (0, import_typescript3.forEachChild)(node, (child) => {
-    if (!found) {
-      found = containsResolvableIdentifier(child, node, generatorContext, options);
-    }
-  });
-  return found;
+  return forEachExpressionChild(node, (child) => containsResolvableIdentifier(child, node, generatorContext, options)) ?? false;
 }
-function containsNonNullExpression(node) {
-  let found = (0, import_typescript3.isNonNullExpression)(node);
-  (0, import_typescript3.forEachChild)(node, (child) => {
-    if (!found) {
-      found = containsNonNullExpression(child);
-    }
-  });
-  return found;
+function containsTypeScriptSyntax(node) {
+  return (0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node) || ((0, import_typescript4.forEachChild)(node, containsTypeScriptSyntax) ?? false);
 }
 function needsResolution(node, parent, generatorContext, options) {
   const { text } = node;
   const isLocal = generatorContext.hasSignalField(text) || generatorContext.hasShadowingMember(text) || generatorContext.hasUnresolvableIdentifier(text) || generatorContext.hasIdentifier(text) || !!generatorContext.getImportedIdentifier(text);
   const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
-  return !((0, import_typescript3.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript3.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
+  return !((0, import_typescript4.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript4.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
 }
 function mapDefaultOptions(options) {
   return {
     resolver: options?.resolver ?? "this",
-    preserveNonNull: options?.preserveNonNull ?? false,
+    preserveTypeScript: options?.preserveTypeScript ?? false,
     narrowedSignal: options?.narrowedSignal ?? (() => void 0),
     browserGlobals: options?.browserGlobals ?? ""
   };
@@ -21074,7 +21080,8 @@ var TokenType = /* @__PURE__ */ ((TokenType2) => {
   TokenType2[TokenType2["DEFER"] = 37] = "DEFER";
   TokenType2[TokenType2["LOADING"] = 38] = "LOADING";
   TokenType2[TokenType2["ERROR"] = 39] = "ERROR";
-  TokenType2[TokenType2["EOF"] = 40] = "EOF";
+  TokenType2[TokenType2["CAST"] = 40] = "CAST";
+  TokenType2[TokenType2["EOF"] = 41] = "EOF";
   return TokenType2;
 })(TokenType || {});
 
@@ -21268,43 +21275,256 @@ function lexAttribute(cursor, context) {
   return retVal;
 }
 
-// ../packages/compiler/src/lexer/utils/group/group.utils.ts
-function lexGroup(cursor, open) {
-  const close = open === LESS_THAN ? GREATER_THEN : RPAREN;
-  let depth = 1;
-  let text = "";
-  let quote2;
-  let escaped = false;
-  while (depth) {
-    cursor.advance();
-    const { code, value } = cursor.currentChar;
-    if (escaped) {
-      escaped = false;
-    } else if (quote2 !== void 0) {
-      escaped = code === BACKSLASH;
-      quote2 = code === quote2 ? void 0 : quote2;
-    } else {
-      switch (code) {
-        case SINGLE_QUOTE:
-        case DOUBLE_QUOTE:
-        case GRAVE_ACCENT:
-          quote2 = code;
-          break;
-        case open:
-          depth++;
-          break;
-        case close:
-          if (code !== GREATER_THEN || !text.endsWith("=")) {
-            depth--;
-          }
-          break;
-      }
-    }
-    if (depth) {
-      text = `${text}${value}`;
+// ../packages/compiler/src/lexer/utils/event-parameters/event-parameters.utils.ts
+function closeEventParameters(cursor, context) {
+  cursor.advance();
+  if (cursor.peek() !== DOUBLE_QUOTE) {
+    throw "Event must be included in Double Quotes";
+  }
+  cursor.advance();
+  return resolveTagBodyState(context.history.at(-1));
+}
+
+// ../packages/compiler/src/costants/closers.costant.ts
+var CLOSERS = /* @__PURE__ */ new Map([
+  [LPAREN, RPAREN],
+  [LEFT_BRACKET, RIGHT_BRACKET],
+  [LEFT_BRACE, RIGHT_BRACE],
+  [LESS_THAN, GREATER_THEN],
+  [GRAVE_ACCENT, GRAVE_ACCENT]
+]);
+
+// ../packages/compiler/src/models/expression-scanner/expression-scanner.model.ts
+var OPENERS = new Map([...CLOSERS].filter(([opener, closer]) => opener !== closer).map(([opener, closer]) => [closer, opener]));
+function isTerminator(char, terminators) {
+  for (let i2 = 0; i2 < terminators.length; i2++) {
+    if (terminators.charCodeAt(i2) === char) {
+      return true;
     }
   }
+  return false;
+}
+var ExpressionScanner = class {
+  /**
+   * @param _types - Whether the text holds types, whose type arguments (`<…>`) are groups.
+   */
+  constructor(_types = false) {
+    this._types = _types;
+  }
+  _types;
+  /**
+   * The groups and the template literals open, by their opening character, the innermost last.
+   */
+  _nesting = new Array();
+  /**
+   * The quote of the string the scan is in, `null` outside of a string.
+   */
+  _quote = null;
+  /**
+   * Whether the last character read, in a literal, escapes the next one.
+   */
+  _escaped = false;
+  /**
+   * The last character read, which starts a substitution (`$`) or an arrow (`=`) with the next one: `0` after an
+   * escaped character, which starts nothing.
+   */
+  _previous = 0;
+  /**
+   * Whether the scan is in code: outside of the strings and of the text of the template literals.
+   *
+   * @returns `true` in code.
+   */
+  get isCode() {
+    return this._quote === null && this._nesting.at(-1) !== GRAVE_ACCENT;
+  }
+  /**
+   * Whether the scan is in code outside of any group, e.g. where a comma separates two arguments.
+   *
+   * @returns `true` outside of any literal and group.
+   */
+  get isTopLevel() {
+    return this._quote === null && !this._nesting.length;
+  }
+  /**
+   * The characters closing the groups and the template literals open, the innermost first: what closes the text read
+   * so far, e.g. `)]` after `f([a`.
+   *
+   * @returns The closing characters.
+   */
+  get closers() {
+    let closers = "";
+    for (let i2 = this._nesting.length - 1; i2 >= 0; i2--) {
+      closers = `${closers}${String.fromCharCode(CLOSERS.get(this._nesting[i2]))}`;
+    }
+    return closers;
+  }
+  /**
+   * Tells whether a text ends before a character, one of `terminators`, in code: a separator (`,`, `;`) outside of any
+   * group, a closing character closing no open group, as the `}` of `{ format(a }`.
+   *
+   * @param char - The code of the character.
+   * @param terminators - The characters that can end the text.
+   * @returns `true` if the text ends before the character.
+   */
+  endsAt(char, terminators) {
+    if (!this.isCode || !isTerminator(char, terminators)) {
+      return false;
+    }
+    const opener = OPENERS.get(char);
+    return opener === void 0 ? !this._nesting.length : this._isClosing(char, this._previous) && !this._nesting.includes(opener);
+  }
+  /**
+   * Reads a character, following the text past it.
+   *
+   * @param char - The code of the character.
+   */
+  read(char) {
+    const previous = this._previous;
+    this._previous = this._escaped ? 0 : char;
+    if (this._escaped) {
+      this._escaped = false;
+    } else if (this._quote !== null) {
+      this._escaped = char === BACKSLASH;
+      this._quote = char === this._quote ? null : this._quote;
+    } else if (this._nesting.at(-1) === GRAVE_ACCENT) {
+      this._readTemplateText(char, previous);
+    } else {
+      this._readCode(char, previous);
+    }
+  }
+  /**
+   * Reads a text, following it past its end.
+   *
+   * @param text - The text.
+   */
+  readText(text) {
+    for (let i2 = 0; i2 < text.length; i2++) {
+      this.read(text.charCodeAt(i2));
+    }
+  }
+  /**
+   * Reads a character of the text of a template literal: an escape, the backtick closing the literal, the `{` of a
+   * substitution.
+   *
+   * @param char - The code of the character.
+   * @param previous - The code of the character read before it.
+   */
+  _readTemplateText(char, previous) {
+    switch (char) {
+      case BACKSLASH:
+        this._escaped = true;
+        break;
+      case GRAVE_ACCENT:
+        this._nesting.pop();
+        break;
+      case LEFT_BRACE:
+        if (previous === DOLLAR) {
+          this._nesting.push(LEFT_BRACE);
+        }
+        break;
+    }
+  }
+  /**
+   * Reads a character of code: the start of a literal, a character opening or closing a group.
+   *
+   * @param char - The code of the character.
+   * @param previous - The code of the character read before it.
+   */
+  _readCode(char, previous) {
+    switch (char) {
+      case SINGLE_QUOTE:
+      case DOUBLE_QUOTE:
+        this._quote = char;
+        break;
+      case GRAVE_ACCENT:
+      case LPAREN:
+      case LEFT_BRACKET:
+      case LEFT_BRACE:
+        this._nesting.push(char);
+        break;
+      case LESS_THAN:
+        if (this._types) {
+          this._nesting.push(char);
+        }
+        break;
+      default: {
+        const opener = OPENERS.get(char);
+        const index = opener === void 0 || !this._isClosing(char, previous) ? -1 : this._nesting.lastIndexOf(opener);
+        if (index !== -1) {
+          this._nesting.length = index;
+        }
+      }
+    }
+  }
+  /**
+   * Tells whether a closing character closes a group where it is: `>` only in a type, out of an arrow.
+   *
+   * @param char - The code of the closing character.
+   * @param previous - The code of the character before it.
+   * @returns `true` if the character can close a group.
+   */
+  _isClosing(char, previous) {
+    return char !== GREATER_THEN || this._types && previous !== EQUAL_THEN;
+  }
+};
+
+// ../packages/compiler/src/lexer/utils/expression-text/expression-text.utils.ts
+function lexExpressionText(cursor, terminators, options) {
+  const scanner = new ExpressionScanner(options?.types);
+  let text = "";
+  const endsAtCast = () => !!options?.cast && !!text && scanner.isTopLevel && cursor.peekKeywordAfterSpaces("as");
+  for (let char = cursor.peek(); !scanner.endsAt(char, terminators) && !endsAtCast(); char = cursor.peek()) {
+    cursor.advance();
+    text = `${text}${cursor.currentChar.value}`;
+    scanner.read(char);
+  }
   return text;
+}
+function lexGroup(cursor, open) {
+  const types = open === LESS_THAN;
+  const text = lexExpressionText(cursor, types ? ">" : ")", { types });
+  cursor.advance();
+  return text;
+}
+
+// ../packages/compiler/src/lexer/utils/interpolation/interpolation.utils.ts
+function closeInterpolation(cursor, context) {
+  cursor.advance();
+  const previousState = context.history.at(-1);
+  switch (previousState) {
+    case "attribute" /* ATTRIBUTE */:
+      if (cursor.peek() !== DOUBLE_QUOTE) {
+        throw `Interpolation must end with double quotes '"', found '${String.fromCharCode(cursor.peek())}'`;
+      }
+      cursor.advance();
+      return resolveTagBodyState(context.history.at(-2));
+    case "text" /* TEXT */:
+    case "tag-body" /* TAG_BODY */:
+      return previousState;
+    default:
+      throw `Unexpected state '${previousState}' after interpolation expression`;
+  }
+}
+
+// ../packages/compiler/src/lexer/states/lex-cast/lex-cast.state.ts
+function lexCast(cursor, context) {
+  cursor.skipSpaces();
+  cursor.advance(2);
+  cursor.skipSpaces();
+  const isInterpolation = context.tokens.at(-1)?.type === 10 /* INTERPOLATION_EXPRESSION */;
+  const type = lexExpressionText(cursor, isInterpolation ? "}" : ",)", { types: true }).trimEnd();
+  if (!type) {
+    throw 'A cast needs a type after "as", e.g. { value() as string }';
+  }
+  const tokens = [{ type: 40 /* CAST */, parts: [type] }];
+  if (isInterpolation) {
+    return { state: closeInterpolation(cursor, context), tokens, popState: true };
+  }
+  if (cursor.peek() === COMMA) {
+    cursor.advance();
+    return { state: "parameter" /* EVENT_PARAMETER */, tokens };
+  }
+  return { state: closeEventParameters(cursor, context), tokens };
 }
 
 // ../packages/compiler/src/lexer/utils/lex-flow-control-condition/lex-flow-control-condition.utils.ts
@@ -21632,97 +21852,24 @@ function lexEventHandler(cursor, context) {
 
 // ../packages/compiler/src/lexer/states/lex-event-parameter/lex-event-parameter.state.ts
 function lexEventParameter(cursor, context) {
-  let read = true;
-  let eventParameter = "";
-  let charDelimiter = "";
-  let parenDepth = 0;
-  let parameterStart = cursor.currentChar.index + 1;
-  const retVal = {
-    state: resolveTagBodyState(context.history.at(-1)),
-    tokens: []
-  };
-  while (read) {
-    switch (cursor.peek()) {
-      case LEFT_BRACKET:
-      case RIGHT_BRACKET:
-      case LEFT_BRACE:
-      case RIGHT_BRACE:
-      case DOUBLE_QUOTE:
-      case SINGLE_QUOTE:
-        eventParameter = addCharacter(cursor, eventParameter);
-        if (!charDelimiter) {
-          charDelimiter = cursor.currentChar.value;
-        } else if (charDelimiter === cursor.currentChar.value || charDelimiter === "[" && cursor.currentChar.value === "]" || charDelimiter === "{" && cursor.currentChar.value === "}") {
-          charDelimiter = "";
-        }
-        break;
-      case LPAREN:
-        eventParameter = addCharacter(cursor, eventParameter);
-        if (!isInString(charDelimiter)) {
-          parenDepth++;
-        }
-        break;
-      case COMMA:
-        if (!charDelimiter && !parenDepth) {
-          const parameterEnd = cursor.currentChar.index + 1;
-          retVal.tokens.push({
-            type: 9 /* EVENT_PARAMETER */,
-            parts: [eventParameter],
-            span: {
-              start: parameterStart,
-              end: parameterEnd
-            }
-          });
-          cursor.advance();
-          cursor.skipSpaces();
-          eventParameter = "";
-          parameterStart = cursor.currentChar.index + 1;
-        } else {
-          eventParameter = addCharacter(cursor, eventParameter);
-        }
-        break;
-      case RPAREN:
-        if (isInString(charDelimiter)) {
-          eventParameter = addCharacter(cursor, eventParameter);
-          break;
-        }
-        if (parenDepth) {
-          eventParameter = addCharacter(cursor, eventParameter);
-          parenDepth--;
-          break;
-        }
-        cursor.advance();
-        if (cursor.peek() !== DOUBLE_QUOTE) {
-          throw "Event must be included in Double Quotes";
-        }
-        cursor.advance();
-        if (!charDelimiter) {
-          const parameterEnd = cursor.currentChar.index + 1;
-          retVal.tokens.push({
-            type: 9 /* EVENT_PARAMETER */,
-            parts: [eventParameter],
-            span: {
-              start: parameterStart,
-              end: parameterEnd
-            }
-          });
-          read = false;
-          break;
-        }
-        eventParameter = `${eventParameter}${cursor.currentChar.value}`;
-        break;
-      default:
-        eventParameter = addCharacter(cursor, eventParameter);
+  const tokens = new Array();
+  let next;
+  do {
+    cursor.skipSpaces();
+    const start = cursor.currentChar.index + 1;
+    const parameter = lexExpressionText(cursor, ",)", { cast: true });
+    tokens.push({ type: 9 /* EVENT_PARAMETER */, parts: [parameter.trimEnd()], span: { start, end: cursor.currentChar.index + 1 } });
+    next = cursor.peek();
+    if (next === COMMA) {
+      cursor.advance();
     }
+  } while (next === COMMA);
+  if (next !== RPAREN) {
+    return { state: "cast" /* CAST */, tokens };
   }
-  return retVal;
-}
-function isInString(charDelimiter) {
-  return charDelimiter === '"' || charDelimiter === "'";
-}
-function addCharacter(cursor, eventParameter) {
-  cursor.advance();
-  return `${eventParameter}${cursor.currentChar.value}`;
+  const state = closeEventParameters(cursor, context);
+  tokens[tokens.length - 1].span.end = cursor.currentChar.index + 1;
+  return { state, tokens };
 }
 
 // ../packages/compiler/src/lexer/states/lex-event/lex-event.state.ts
@@ -22045,82 +22192,26 @@ function addImport(retVal, cursor, value, start, lazy) {
   retVal.tokens.push(token);
 }
 
-// ../packages/compiler/src/lexer/states/lex-interpolation-expression/lex-interpolation-expression.state.ts
-function lexInterpolationExpression(cursor, context) {
-  let interpolation = "";
-  const nesting = new Array();
-  let quote2 = null;
-  while (quote2 !== null || nesting.length || cursor.peek() !== RIGHT_BRACE) {
-    const char = cursor.peek();
-    interpolation = addCharacter2(cursor, interpolation);
-    if (quote2 !== null) {
-      switch (char) {
-        // An escaped character never closes the string
-        case BACKSLASH:
-          interpolation = addCharacter2(cursor, interpolation);
-          break;
-        case quote2:
-          quote2 = null;
-          break;
-      }
-    } else if (nesting.at(-1) === GRAVE_ACCENT) {
-      switch (char) {
-        // An escaped character never closes the template literal, nor starts a substitution
-        case BACKSLASH:
-          interpolation = addCharacter2(cursor, interpolation);
-          break;
-        case GRAVE_ACCENT:
-          nesting.pop();
-          break;
-        case DOLLAR:
-          if (cursor.peek() === LEFT_BRACE) {
-            interpolation = addCharacter2(cursor, interpolation);
-            nesting.push(LEFT_BRACE);
-          }
-          break;
-      }
-    } else {
-      switch (char) {
-        case SINGLE_QUOTE:
-        case DOUBLE_QUOTE:
-          quote2 = char;
-          break;
-        case GRAVE_ACCENT:
-        case LEFT_BRACE:
-          nesting.push(char);
-          break;
-        // Only reached inside a brace: the `}` closing the interpolation ends the loop
-        case RIGHT_BRACE:
-          nesting.pop();
-          break;
-      }
-    }
-  }
+// ../packages/compiler/src/lexer/states/lex-interpolation/lex-interpolation.state.ts
+function lexInterpolation(cursor, context) {
   cursor.advance();
-  const previousState = context.history.pop();
-  let state;
-  switch (previousState) {
-    case "attribute" /* ATTRIBUTE */:
-      if (cursor.peek() !== DOUBLE_QUOTE) {
-        throw `Interpolation must end with double quotes '"', found '${String.fromCharCode(cursor.peek())}'`;
-      }
-      cursor.advance();
-      state = resolveTagBodyState(context.history.at(-1));
-      break;
-    case "text" /* TEXT */:
-    case "tag-body" /* TAG_BODY */:
-      state = previousState;
-      break;
-    default:
-      throw `Unexpected state '${previousState}' after interpolation expression`;
+  cursor.skipSpaces();
+  const start = cursor.currentChar.index + 1;
+  const expression = lexExpressionText(cursor, "}", { cast: true }).trimEnd();
+  if (cursor.peek() !== RIGHT_BRACE) {
+    return {
+      state: "cast" /* CAST */,
+      tokens: [{ type: 10 /* INTERPOLATION_EXPRESSION */, parts: [expression], span: { start, end: cursor.currentChar.index + 1 } }]
+    };
   }
-  ;
-  const expression = interpolation.trimEnd();
+  const previousState = context.history.at(-1);
+  const state = closeInterpolation(cursor, context);
   const tokens = new Array();
-  if (expression.trim().length || previousState === "attribute" /* ATTRIBUTE */) {
+  if (expression.length || previousState === "attribute" /* ATTRIBUTE */) {
     tokens.push({
       type: 10 /* INTERPOLATION_EXPRESSION */,
-      parts: [expression]
+      parts: [expression],
+      span: { start, end: cursor.currentChar.index + 1 }
     });
   }
   return {
@@ -22129,17 +22220,6 @@ function lexInterpolationExpression(cursor, context) {
     popState: true
   };
 }
-function addCharacter2(cursor, interpolation) {
-  cursor.advance(1);
-  return `${interpolation}${cursor.currentChar.value}`;
-}
-
-// ../packages/compiler/src/lexer/states/lex-interpolation/lex-interpolation.state.ts
-function lexInterpolation(cursor, _context) {
-  cursor.advance();
-  cursor.skipSpaces();
-  return { state: "interpolation-expression" /* INTERPOLATION_EXPRESSION */ };
-}
 
 // ../packages/compiler/src/lexer/utils/chars/chars.utils.ts
 function isNotBlank(str) {
@@ -22147,6 +22227,9 @@ function isNotBlank(str) {
 }
 function isIdentifierChar(code) {
   return code >= a && code <= z || code >= A && code <= Z || code >= ZERO && code <= NINE || code === UNDERSCORE || code === DOLLAR;
+}
+function isWhitespace(code) {
+  return code === SPACE || code === TAB || code === LF || code === CR;
 }
 
 // ../packages/compiler/src/lexer/states/lex-let/lex-let.state.ts
@@ -22175,68 +22258,12 @@ function lexLet(cursor, _context) {
   };
 }
 function lexValue(cursor) {
-  let value = "";
-  const nesting = new Array();
-  let quote2 = null;
-  while (quote2 !== null || nesting.length || cursor.peek() !== SEMICOLON) {
-    const char = cursor.peek();
-    if (quote2 === null && !nesting.length && char === RIGHT_BRACE) {
-      throw LET_SYNTAX_ERROR;
-    }
-    value = addCharacter3(cursor, value);
-    if (quote2 !== null) {
-      switch (char) {
-        // An escaped character never closes the string
-        case BACKSLASH:
-          value = addCharacter3(cursor, value);
-          break;
-        case quote2:
-          quote2 = null;
-          break;
-      }
-    } else if (nesting.at(-1) === GRAVE_ACCENT) {
-      switch (char) {
-        // An escaped character never closes the template literal, nor starts a substitution
-        case BACKSLASH:
-          value = addCharacter3(cursor, value);
-          break;
-        case GRAVE_ACCENT:
-          nesting.pop();
-          break;
-        case DOLLAR:
-          if (cursor.peek() === LEFT_BRACE) {
-            value = addCharacter3(cursor, value);
-            nesting.push(LEFT_BRACE);
-          }
-          break;
-      }
-    } else {
-      switch (char) {
-        case SINGLE_QUOTE:
-        case DOUBLE_QUOTE:
-          quote2 = char;
-          break;
-        case GRAVE_ACCENT:
-        case LPAREN:
-        case LEFT_BRACKET:
-        case LEFT_BRACE:
-          nesting.push(char);
-          break;
-        // A closing character without its opening one is reported by the validation of the value
-        case RPAREN:
-        case RIGHT_BRACKET:
-        case RIGHT_BRACE:
-          nesting.pop();
-          break;
-      }
-    }
+  const value = lexExpressionText(cursor, ";}");
+  if (cursor.peek() !== SEMICOLON) {
+    throw LET_SYNTAX_ERROR;
   }
   cursor.advance();
   return value;
-}
-function addCharacter3(cursor, value) {
-  cursor.advance();
-  return `${value}${cursor.currentChar.value}`;
 }
 
 // ../packages/compiler/src/lexer/utils/template-declaration/template-declaration.utils.ts
@@ -22630,12 +22657,6 @@ var LexerCursor = class extends Cursor {
     value: ""
   };
   /**
-   * Returns a read-only snapshot of the current character.
-   */
-  get currentChar() {
-    return this._currentChar;
-  }
-  /**
    * Cache used by peek operations to avoid re-reading
    * the same character positions multiple times.
    *
@@ -22643,6 +22664,12 @@ var LexerCursor = class extends Cursor {
    * Value: Unicode code point
    */
   _peekCache = /* @__PURE__ */ new Map();
+  /**
+   * Returns a read-only snapshot of the current character.
+   */
+  get currentChar() {
+    return this._currentChar;
+  }
   /**
    * Creates a new cursor for the given input source.
    *
@@ -22672,7 +22699,7 @@ var LexerCursor = class extends Cursor {
       this._currentChar.code = EOF;
       this._currentChar.index = -1;
       this._currentChar.value = "";
-      this.throwEOFError();
+      this._throwEOFError();
     } else {
       for (let i2 = this._currentChar.index + 1; i2 <= newIndex; i2++) {
         this._peekCache.delete(i2);
@@ -22684,7 +22711,7 @@ var LexerCursor = class extends Cursor {
   }
   peekMatch(pattern, length) {
     if (typeof pattern === "string") {
-      this.consumeComment();
+      this._consumeComment();
       return this.input.startsWith(pattern, this._currentChar.index + 1);
     }
     const start = this._currentChar.index + 1;
@@ -22692,11 +22719,11 @@ var LexerCursor = class extends Cursor {
     return pattern.test(slicedInput);
   }
   peek(charsOrOptions, options) {
-    this.consumeComment();
+    this._consumeComment();
     const cache = this._peekCache;
     const chars = typeof charsOrOptions === "number" ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === "object" ? charsOrOptions : options)?.offset ?? 0;
-    const result = chars === 1 ? this.peekOneChar(this._currentChar.index + offset + 1, cache) : this.peekMany(chars + offset, cache);
+    const result = chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1, cache) : this._peekMany(chars + offset, cache);
     return result;
   }
   /**
@@ -22708,40 +22735,73 @@ var LexerCursor = class extends Cursor {
    * @returns `true` if the characters after the whitespace start with the text, `false` otherwise.
    */
   peekMatchAfterSpaces(pattern) {
-    let index = this._currentChar.index + 1;
-    for (let code = this.input.charCodeAt(index); code === SPACE || code === TAB || code === LF || code === CR; code = this.input.charCodeAt(index)) {
-      index++;
-    }
-    return this.input.startsWith(pattern, index);
+    return this.input.startsWith(pattern, this._skipWhitespace(this._currentChar.index + 1));
+  }
+  /**
+   * Checks whether whitespace (spaces, tabs and line breaks) follows the current position, then a keyword, then
+   * whitespace again, without advancing the cursor: e.g. the `as` of a cast in `value() as string`. Reaching the end of
+   * the input does not throw.
+   *
+   * @param keyword - The keyword.
+   * @returns `true` if the keyword is written between whitespace right after the current position, `false` otherwise.
+   */
+  peekKeywordAfterSpaces(keyword) {
+    const start = this._currentChar.index + 1;
+    const index = this._skipWhitespace(start);
+    const end = index + keyword.length;
+    return index > start && this.input.startsWith(keyword, index) && this._skipWhitespace(end) > end;
   }
   /**
    * Skips all consecutive whitespace characters (spaces, tabs and line breaks) from the current position.
    */
   skipSpaces() {
-    while (this.peek() === SPACE || this.peek() === TAB || this.peek() === LF || this.peek() === CR) {
+    while (isWhitespace(this.peek())) {
       this.advance();
     }
   }
   /**
-   * Peeks multiple characters ahead.
+   * Finds the end of the whitespace (spaces, tabs and line breaks) starting at an index of the input.
+   *
+   * @param index - The index the whitespace starts at.
+   * @returns The index of the first character after the whitespace: `index` itself when no whitespace is there, the
+   *   length of the input when the whitespace reaches its end.
    */
-  peekMany(chars, cache) {
+  _skipWhitespace(index) {
+    while (isWhitespace(this.input.charCodeAt(index))) {
+      index++;
+    }
+    return index;
+  }
+  /**
+   * Peeks multiple characters ahead.
+   *
+   * @param chars - The number of characters to peek.
+   * @param cache - The cache of the characters already peeked.
+   * @returns The codes of the characters.
+   * @throws Error with cause `EOF` if the peek exceeds input length.
+   */
+  _peekMany(chars, cache) {
     const peekedChars = new Array();
     const nextCharIndex = this._currentChar.index + 1;
     for (let i2 = nextCharIndex; i2 < nextCharIndex + chars; i2++) {
-      peekedChars.push(this.peekOneChar(i2, cache));
+      peekedChars.push(this._peekOneChar(i2, cache));
     }
     return peekedChars;
   }
   /**
    * Peeks a single character at the given absolute index.
+   *
+   * @param index - The index of the character.
+   * @param cache - The cache of the characters already peeked.
+   * @returns The code of the character.
+   * @throws Error with cause `EOF` if the index exceeds input length.
    */
-  peekOneChar(index, cache) {
+  _peekOneChar(index, cache) {
     if (cache.has(index)) {
       return cache.get(index);
     }
     if (index >= this.input.length) {
-      this.throwEOFError();
+      this._throwEOFError();
     }
     const charCode = this.input.charCodeAt(index);
     cache.set(index, charCode);
@@ -22753,7 +22813,7 @@ var LexerCursor = class extends Cursor {
    *
    * @throws When a comment is never closed.
    */
-  consumeComment() {
+  _consumeComment() {
     let start = this._currentChar.index + 1;
     while (this.input.startsWith(COMMENT_START, start)) {
       const end = this.input.indexOf(COMMENT_END, start + COMMENT_START.length);
@@ -22767,8 +22827,10 @@ var LexerCursor = class extends Cursor {
   /**
    * Throws a standardized EOF error used by the lexer engine
    * to terminate tokenization.
+   *
+   * @throws Always, an error with cause `EOF`.
    */
-  throwEOFError() {
+  _throwEOFError() {
     throw new Error("", { cause: endOfFile });
   }
 };
@@ -22861,6 +22923,7 @@ function separatesInlineNodes(text, lineBreak, previousToken, nextState) {
 function isInlineNodeEnd(type) {
   switch (type) {
     case 10 /* INTERPOLATION_EXPRESSION */:
+    case 40 /* CAST */:
     case 4 /* TAG_CLOSE_NAME */:
     case 2 /* TAG_SELF_CLOSE */:
       return true;
@@ -22925,7 +22988,6 @@ var Lexer = class {
     ["case-flow-control-condition" /* CASE_FLOW_CONTROL_CONDITION */]: lexCaseFlowControlCondition,
     ["flow-control-block" /* FLOW_CONTROL_BLOCK */]: lexFlowControlBlock,
     ["interpolation" /* INTERPOLATION */]: lexInterpolation,
-    ["interpolation-expression" /* INTERPOLATION_EXPRESSION */]: lexInterpolationExpression,
     ["import" /* IMPORT */]: lexImport,
     ["import-path" /* IMPORT_PATH */]: lexImportPath,
     ["conditional-binding-body" /* CONDITIONAL_BINDING_BODY */]: lexConditionalBindingBody,
@@ -22935,6 +22997,7 @@ var Lexer = class {
     ["element-ref" /* ELEMENT_REF */]: lexElementRef,
     ["template-declaration" /* TEMPLATE_DECLARATION */]: lexTemplateDeclaration,
     ["render" /* RENDER */]: lexRender,
+    ["cast" /* CAST */]: lexCast,
     ["let" /* LET */]: lexLet
   };
   /**
@@ -23129,7 +23192,7 @@ var ParserCursor = class extends Cursor {
    * giving EOF instead of starting over from the first token.
    */
   _currentToken = {
-    value: { type: 40 /* EOF */ },
+    value: { type: 41 /* EOF */ },
     index: -1
   };
   /**
@@ -23153,7 +23216,7 @@ var ParserCursor = class extends Cursor {
     }
     const newIndex = this._currentToken.index + chars;
     if (newIndex >= this._tokens.length) {
-      this._currentToken.value = { type: 40 /* EOF */ };
+      this._currentToken.value = { type: 41 /* EOF */ };
       this._currentToken.index = this._tokens.length;
     } else {
       this._currentToken.index = newIndex;
@@ -23200,7 +23263,7 @@ var ParserCursor = class extends Cursor {
    * Peeks a single token at the given absolute index.
    */
   peekOneToken(index) {
-    return index < this._tokens.length ? this._tokens[index] : { type: 40 /* EOF */ };
+    return index < this._tokens.length ? this._tokens[index] : { type: 41 /* EOF */ };
   }
 };
 
@@ -23632,18 +23695,35 @@ var EncodingMode;
   EncodingMode2[EncodingMode2["Text"] = 4] = "Text";
 })(EncodingMode || (EncodingMode = {}));
 
+// ../packages/compiler/src/parser/states/parse-cast/parse-cast.state.ts
+function parseCast(cursor) {
+  const token = cursor.peek();
+  if (token.type !== 40 /* CAST */) {
+    return void 0;
+  }
+  cursor.advance();
+  const [text] = token.parts;
+  return { text, span: cursor.findSpan(text, cursor.findSpan("as", token.span.start).end) };
+}
+
 // ../packages/compiler/src/parser/states/parse-interpolation/parse-interpolation.state.ts
 function parseInterpolation(cursor, _parseNode, token) {
   const startOffset = token.span.start;
   cursor.advance();
-  return {
+  const expression = validateExpression(token.parts[0], cursor.findSpan(token.parts[0], startOffset).start).node;
+  const cast = parseCast(cursor);
+  const node = {
     type: 4 /* Interpolation */,
-    expression: validateExpression(token.parts[0], cursor.findSpan(token.parts[0], startOffset).start).node,
+    expression,
     span: {
       start: startOffset,
       end: cursor.getCurrentToken().value.span.end
     }
   };
+  if (cast) {
+    node.cast = cast;
+  }
+  return node;
 }
 
 // ../packages/compiler/src/parser/states/parse-attribute/parse-attribute.state.ts
@@ -23766,45 +23846,48 @@ function assertNoBranchClassBindings(conditionalBindings) {
   }
 }
 
-// ../packages/compiler/src/parser/utils/type-arguments/type-arguments.utils.ts
-var OPENERS = "<([{";
-var CLOSERS = ">)]}";
-function parseTypeArguments(text, offset) {
-  const typeArguments = new Array();
-  let depth = 0;
-  let quote2;
+// ../packages/compiler/src/lexer/utils/balanced-text/balanced-text.utils.ts
+function findEnd(text, start, terminators, scanner = new ExpressionScanner(), end = text.length) {
+  for (let i2 = start; i2 < end; i2++) {
+    const char = text.charCodeAt(i2);
+    if (scanner.endsAt(char, terminators)) {
+      return i2;
+    }
+    scanner.read(char);
+  }
+  return void 0;
+}
+function findClosing(text, openIndex) {
+  const open = text.charCodeAt(openIndex);
+  return findEnd(text, openIndex + 1, String.fromCharCode(CLOSERS.get(open)), new ExpressionScanner(open === LESS_THAN));
+}
+function splitTopLevel(source, separator = ",", types = false) {
+  const parts = new Array();
+  const scanner = new ExpressionScanner(types);
   let start = 0;
-  const add = (end, isLast) => {
-    const segment = text.slice(start, end);
-    const trimmed = segment.trim();
-    if (trimmed) {
-      const spanStart = offset + start + segment.indexOf(trimmed);
-      typeArguments.push({ text: trimmed, span: { start: spanStart, end: spanStart + trimmed.length } });
-    } else if (!isLast) {
+  let end;
+  do {
+    end = findEnd(source, start, separator, scanner);
+    const raw = source.slice(start, end);
+    const trimmed = raw.trimStart();
+    parts.push({ text: trimmed.trimEnd(), start: start + raw.length - trimmed.length });
+    start = (end ?? source.length) + 1;
+  } while (end !== void 0);
+  return parts;
+}
+
+// ../packages/compiler/src/parser/utils/type-arguments/type-arguments.utils.ts
+function parseTypeArguments(text, offset) {
+  const parts = splitTopLevel(text, ",", true);
+  if (!parts[parts.length - 1].text) {
+    parts.pop();
+  }
+  return parts.map(({ text: type, start }) => {
+    if (!type) {
       throw "A type argument cannot be empty";
     }
-    start = end + 1;
-  };
-  for (let i2 = 0; i2 < text.length; i2++) {
-    const char = text[i2];
-    if (quote2 !== void 0) {
-      if (char === "\\") {
-        i2++;
-      } else if (char === quote2) {
-        quote2 = void 0;
-      }
-    } else if (char === "'" || char === '"' || char === "`") {
-      quote2 = char;
-    } else if (OPENERS.includes(char)) {
-      depth++;
-    } else if (CLOSERS.includes(char)) {
-      depth -= char === ">" && text[i2 - 1] === "=" ? 0 : 1;
-    } else if (char === "," && !depth) {
-      add(i2, false);
-    }
-  }
-  add(text.length, true);
-  return typeArguments;
+    return { text: type, span: { start: offset + start, end: offset + start + type.length } };
+  });
 }
 
 // ../packages/compiler/src/parser/states/parse-event/parse-event.state.ts
@@ -23819,13 +23902,19 @@ function parseEvent(cursor, _parseNode, token) {
   cursor.advance();
   let endOffset = cursor.getCurrentToken().value.span.end;
   const parameters = new Array();
+  let casts;
   while (cursor.peek().type === 9 /* EVENT_PARAMETER */) {
     cursor.advance();
     const { parts: [parameter], span } = cursor.getCurrentToken().value;
     parameters.push(validateExpression(parameter, cursor.findSpan(parameter, span.start).start).node);
+    const cast = parseCast(cursor);
+    if (cast) {
+      casts ??= /* @__PURE__ */ new Map();
+      casts.set(parameters.length - 1, cast);
+    }
     endOffset = cursor.getCurrentToken().value.span.end;
   }
-  return {
+  const node = {
     type: 2 /* Event */,
     name,
     nameSpan: cursor.findSpan(name, startOffset),
@@ -23837,6 +23926,10 @@ function parseEvent(cursor, _parseNode, token) {
       end: endOffset
     }
   };
+  if (casts?.size) {
+    node.casts = casts;
+  }
+  return node;
 }
 
 // ../packages/compiler/src/parser/states/parse-directive/parse-directive.state.ts
@@ -24077,15 +24170,15 @@ function consumeBlockOpen(cursor) {
 }
 
 // ../packages/compiler/src/parser/utils/identifier/identifier.utils.ts
-var import_typescript5 = require("typescript");
+var import_typescript6 = require("typescript");
 var RESERVED_NAMES2 = /* @__PURE__ */ new Set(["root", "$event"]);
 function isValidIdentifier(name) {
   if (!name.length) {
     return false;
   }
-  const sourceFile = (0, import_typescript5.createSourceFile)("__id.ts", name, import_typescript5.ScriptTarget.ESNext, false);
+  const sourceFile = (0, import_typescript6.createSourceFile)("__id.ts", name, import_typescript6.ScriptTarget.ESNext, false);
   const statement = sourceFile.statements[0];
-  return !!statement && (0, import_typescript5.isExpressionStatement)(statement) && (0, import_typescript5.isIdentifier)(statement.expression) && statement.expression.text === name;
+  return !!statement && (0, import_typescript6.isExpressionStatement)(statement) && (0, import_typescript6.isIdentifier)(statement.expression) && statement.expression.text === name;
 }
 function assertDeclaredName(name, span, kind) {
   if (!isValidIdentifier(name)) {
@@ -24116,13 +24209,13 @@ function parseTemplateDeclaration(cursor, token) {
 }
 
 // ../packages/compiler/src/parser/utils/template-parameters/template-parameters.utils.ts
-var import_typescript6 = require("typescript");
+var import_typescript7 = require("typescript");
 var FUNCTION_PREFIX = "function __template(";
 function parseTemplateParameters(text, offset, template) {
-  const sourceFile = (0, import_typescript6.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript6.ScriptTarget.ESNext, true);
+  const sourceFile = (0, import_typescript7.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript7.ScriptTarget.ESNext, true);
   const toSpan2 = (start, end) => ({ start: offset + start - FUNCTION_PREFIX.length, end: offset + end - FUNCTION_PREFIX.length });
   const declaration = sourceFile.statements[0];
-  if (sourceFile.statements.length !== 1 || !(0, import_typescript6.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
+  if (sourceFile.statements.length !== 1 || !(0, import_typescript7.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
     throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toSpan2(FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
   }
   const parameters = new Array();
@@ -24132,7 +24225,7 @@ function parseTemplateParameters(text, offset, template) {
     const parameter = declaration.parameters[i2];
     const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
     const invalid = (reason) => new Error(`The parameter '${parameter.getText(sourceFile)}' of template "${template}" ${reason}`, { cause: toSpan2(parameter.getStart(sourceFile), parameter.getEnd()) });
-    if (!(0, import_typescript6.isIdentifier)(name)) {
+    if (!(0, import_typescript7.isIdentifier)(name)) {
       throw invalid("cannot destructure its value: name it, and read its properties in the content of the template");
     }
     if (dotDotDotToken) {
@@ -24187,10 +24280,10 @@ function isParameterList(sourceFile, parameters, end) {
   return trailing === 0 || trailing === 1 && !!parameters.length;
 }
 function countCommas(text, start, end) {
-  const scanner = (0, import_typescript6.createScanner)(import_typescript6.ScriptTarget.ESNext, true, import_typescript6.LanguageVariant.Standard, text.slice(start, end));
+  const scanner = (0, import_typescript7.createScanner)(import_typescript7.ScriptTarget.ESNext, true, import_typescript7.LanguageVariant.Standard, text.slice(start, end));
   let commas = 0;
-  for (let token = scanner.scan(); token !== import_typescript6.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (token !== import_typescript6.SyntaxKind.CommaToken) {
+  for (let token = scanner.scan(); token !== import_typescript7.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (token !== import_typescript7.SyntaxKind.CommaToken) {
       return void 0;
     }
     commas++;
@@ -24383,7 +24476,7 @@ function assertNameableElement(element, ref) {
 function isTagClose(cursor, tagName) {
   const nextToken = cursor.peek();
   switch (nextToken.type) {
-    case 40 /* EOF */:
+    case 41 /* EOF */:
       throw new Error(`Expected closing tag ${tagName} while file is over`);
     case 4 /* TAG_CLOSE_NAME */:
       const tokenTagName = nextToken.parts[0];
@@ -24398,7 +24491,7 @@ function isTagClose(cursor, tagName) {
 }
 
 // ../packages/compiler/src/parser/states/parse-for/parse-for.state.ts
-var import_typescript7 = require("typescript");
+var import_typescript8 = require("typescript");
 
 // ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
 var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd"];
@@ -24418,7 +24511,7 @@ function getForVariables(node) {
 function parseBlockChildren(cursor, parseNode) {
   const children = new Array();
   while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
-    if (cursor.peek().type === 40 /* EOF */) {
+    if (cursor.peek().type === 41 /* EOF */) {
       throw "Unexpected end of template: expected BLOCK_CLOSE";
     }
     const child = parseNode();
@@ -24443,11 +24536,14 @@ function parseForControlFlow(cursor, parseNode, _token) {
   return { type: 8 /* For */, ...expression, children };
 }
 function parseForExpression(source, offset = 0) {
-  const sections = splitForSections(source, offset);
+  const sections = splitTopLevel(source, ";").map(({ text, start }) => ({ text, offset: offset + start }));
+  if (!sections[sections.length - 1].text) {
+    sections.pop();
+  }
   if (sections.length < 1) {
     throw '@for requires at least one of these forms: "item of items()" or "numberItems()".';
   }
-  const { text: iterSection, offset: iterOffset } = trimSection(sections[0]);
+  const { text: iterSection, offset: iterOffset } = sections[0];
   const ofIndex = iterSection.indexOf(" of ");
   let itemAlias;
   let itemAliasSpan;
@@ -24464,9 +24560,9 @@ function parseForExpression(source, offset = 0) {
   const implicitAliases = /* @__PURE__ */ new Map();
   const implicitAliasSpans = /* @__PURE__ */ new Map();
   if (sections.length >= 3 && sections[2] !== void 0) {
-    parseImplicitAliases(trimSection(sections[2]), implicitAliases, implicitAliasSpans);
+    parseImplicitAliases(sections[2], implicitAliases, implicitAliasSpans);
   }
-  const trackSection = sections[1] && trimSection(sections[1]);
+  const trackSection = sections[1];
   let trackSource = `${itemAlias ?? implicitAliases.get("$index") ?? "$index"}()`;
   let trackOffset;
   if (trackSection?.text) {
@@ -24479,7 +24575,7 @@ function parseForExpression(source, offset = 0) {
   }
   const trackValidation = validateExpression(trackSource, trackOffset);
   const trackNode = trackValidation.node;
-  if ((0, import_typescript7.isIdentifier)(trackNode) && getForVariables({ itemAlias, implicitAliases }).includes(trackNode.text)) {
+  if ((0, import_typescript8.isIdentifier)(trackNode) && getForVariables({ itemAlias, implicitAliases }).includes(trackNode.text)) {
     throw new Error(`The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track ${trackNode.text}()`, { cause: getTemplateSpan(trackNode) });
   }
   return {
@@ -24494,13 +24590,11 @@ function parseForExpression(source, offset = 0) {
   };
 }
 function parseImplicitAliases({ text, offset }, out, spans) {
-  const entries = text.split(",");
+  const entries = splitTopLevel(text);
   const IMPLICIT_VARIABLES = /* @__PURE__ */ new Set(["$index", "$last", "$first", "$even", "$odd"]);
-  let entryOffset = offset;
   for (let i2 = 0; i2 < entries.length; i2++) {
-    const entry = entries[i2];
-    const { text: trimmed, offset: trimmedOffset } = trimSection({ text: entry, offset: entryOffset });
-    entryOffset += entry.length + 1;
+    const { text: trimmed, start } = entries[i2];
+    const trimmedOffset = offset + start;
     const eqIndex = trimmed.indexOf("=");
     if (eqIndex === -1) {
       throw `Invalid alias declaration '${trimmed}'. Expected '$implicit = alias'.`;
@@ -24525,54 +24619,6 @@ function parseImplicitAliases({ text, offset }, out, spans) {
 function trimSection({ text, offset }) {
   const trimmedStart = text.trimStart();
   return { text: trimmedStart.trimEnd(), offset: offset + text.length - trimmedStart.length };
-}
-function splitForSections(source, offset) {
-  const sections = new Array();
-  let current = "";
-  let currentStart = 0;
-  let depth = 0;
-  let inString;
-  for (let i2 = 0; i2 < source.length; i2++) {
-    const char = source[i2];
-    if (!current && char === " ") {
-      continue;
-    }
-    if (!current) {
-      currentStart = i2;
-    }
-    if (inString) {
-      current = `${current}${char}`;
-      if (char === inString && source[i2 - 1] !== "\\") {
-        inString = null;
-      }
-      continue;
-    }
-    if (char === '"' || char === "'" || char === "`") {
-      inString = char;
-      current = `${current}${char}`;
-      continue;
-    }
-    if (char === "(" || char === "[" || char === "{") {
-      depth++;
-      current = `${current}${char}`;
-      continue;
-    }
-    if (char === ")" || char === "]" || char === "}") {
-      depth--;
-      current = `${current}${char}`;
-      continue;
-    }
-    if (char === ";" && depth === 0) {
-      sections.push({ text: current, offset: offset + currentStart });
-      current = "";
-      continue;
-    }
-    current = `${current}${char}`;
-  }
-  if (current.trim().length) {
-    sections.push({ text: current, offset: offset + currentStart });
-  }
-  return sections;
 }
 
 // ../packages/compiler/src/parser/utils/find-event/find-event.utils.ts
@@ -24681,54 +24727,6 @@ function parseDuration(text, span) {
   return match[2] === "s" ? value * 1e3 : value;
 }
 
-// ../packages/compiler/src/parser/utils/split-top-level/split-top-level.utils.ts
-function splitTopLevel(source) {
-  const parts = new Array();
-  let depth = 0;
-  let quote2;
-  let partStart = 0;
-  const push = (end) => {
-    const raw = source.slice(partStart, end);
-    const leading = raw.length - raw.trimStart().length;
-    parts.push({ text: raw.trim(), start: partStart + leading });
-  };
-  for (let i2 = 0; i2 < source.length; i2++) {
-    const char = source[i2];
-    if (quote2) {
-      if (char === "\\") {
-        i2++;
-      } else if (char === quote2) {
-        quote2 = void 0;
-      }
-      continue;
-    }
-    switch (char) {
-      case "'":
-      case '"':
-      case "`":
-        quote2 = char;
-        break;
-      case "(":
-      case "[":
-      case "{":
-        depth++;
-        break;
-      case ")":
-      case "]":
-      case "}":
-        depth--;
-        break;
-      case ",":
-        if (!depth) {
-          push(i2);
-          partStart = i2 + 1;
-        }
-    }
-  }
-  push(source.length);
-  return parts;
-}
-
 // ../packages/compiler/src/parser/utils/block-parameters/block-parameters.utils.ts
 var PLACEHOLDER_PARAMETERS = ["minimum"];
 var LOADING_PARAMETERS = ["after", "minimum"];
@@ -24779,7 +24777,7 @@ function readErrorName(cursor, node, kind) {
 }
 
 // ../packages/compiler/src/parser/utils/triggers/triggers.utils.ts
-var import_typescript8 = require("typescript");
+var import_typescript9 = require("typescript");
 var DEFER_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover"];
 var HYDRATE_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover", "never"];
 var PREFETCH = /^prefetch\b\s*/;
@@ -24885,14 +24883,14 @@ function parseTarget({ text, span }, block) {
     throw new Error("A trigger of @hydrate watches the elements of its content: it takes no element ref", { cause: span });
   }
   const node = IDENTIFIER.test(text) ? validateExpression(text, span.start).node : void 0;
-  if (!node || !(0, import_typescript8.isIdentifier)(node)) {
+  if (!node || !(0, import_typescript9.isIdentifier)(node)) {
     throw new Error(`Expected the element ref naming the element to watch, got "${text}"`, { cause: span });
   }
   return { name: text, expressionNode: node, span };
 }
 function parseOptions({ text, span }) {
   const { node } = validateExpression(text, span.start);
-  if (!(0, import_typescript8.isObjectLiteralExpression)(node)) {
+  if (!(0, import_typescript9.isObjectLiteralExpression)(node)) {
     throw new Error(`Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got "${text}"`, { cause: span });
   }
   return { expression: text, expressionNode: node, span };
@@ -25106,7 +25104,7 @@ function parseLet(cursor, _parseNode, token) {
 }
 
 // ../packages/compiler/src/parser/states/parse-render/parse-render.state.ts
-var import_typescript9 = require("typescript");
+var import_typescript10 = require("typescript");
 function parseRender(cursor, _parseNode, token) {
   cursor.advance();
   const callToken = cursor.peek();
@@ -25121,7 +25119,7 @@ function parseRender(cursor, _parseNode, token) {
     throw new Error(`'${callee}' cannot name a template: it must be an identifier`, { cause: calleeSpan });
   }
   const call = validateExpression(`${callee}(${args})`, start).node;
-  const spread = call.arguments.find(import_typescript9.isSpreadElement);
+  const spread = call.arguments.find(import_typescript10.isSpreadElement);
   if (spread) {
     throw new Error("@render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])", { cause: getTemplateSpan(spread) });
   }
@@ -25302,7 +25300,7 @@ var Parser = class {
    */
   parse() {
     const nodes = new Array();
-    while (this._cursor.peek().type !== 40 /* EOF */) {
+    while (this._cursor.peek().type !== 41 /* EOF */) {
       const parseNode = this.parseNode();
       if (parseNode) {
         nodes.push(parseNode);
@@ -25319,7 +25317,7 @@ var Parser = class {
    */
   parseNode() {
     const token = this._cursor.peek();
-    if (token.type === 40 /* EOF */) {
+    if (token.type === 41 /* EOF */) {
       return void 0;
     }
     const startOffset = token.span.start;
@@ -25350,7 +25348,7 @@ var Parser = class {
       this.thrown = true;
       const message = err instanceof Error ? err.message : `${err}`;
       const currentToken = this._cursor.peek();
-      const stateEndIndex = currentToken.type !== 40 /* EOF */ ? currentToken.span.end : this._input.length;
+      const stateEndIndex = currentToken.type !== 41 /* EOF */ ? currentToken.span.end : this._input.length;
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
       throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}
  ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
@@ -25547,10 +25545,10 @@ var TypeCheckContext = class extends CompilerContext {
 };
 
 // ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
-var import_typescript13 = require("typescript");
+var import_typescript14 = require("typescript");
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
-var import_typescript12 = require("typescript");
+var import_typescript13 = require("typescript");
 
 // ../packages/compiler/src/type-checker/models/component-property-metadata/component-property-metadata.model.ts
 var ComponentPropertyMetadata = class {
@@ -25612,18 +25610,18 @@ var ComponentPropertyMetadataWithSpan = class extends ComponentPropertyMetadata 
 };
 
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
-var import_typescript11 = require("typescript");
+var import_typescript12 = require("typescript");
 
 // ../packages/compiler/src/utils/resolve-declaration/resolve-declaration.utils.ts
 var import_node_fs = require("fs");
-var import_typescript10 = require("typescript");
+var import_typescript11 = require("typescript");
 var DEFAULT_COMPILER_OPTIONS = {
-  module: import_typescript10.ModuleKind.ESNext,
-  moduleResolution: import_typescript10.ModuleResolutionKind.Bundler
+  module: import_typescript11.ModuleKind.ESNext,
+  moduleResolution: import_typescript11.ModuleResolutionKind.Bundler
 };
 var CLASS_FINDER = {
-  local: (statement, localName) => (0, import_typescript10.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
-  exported: (statement, exportedName) => (0, import_typescript10.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
+  local: (statement, localName) => (0, import_typescript11.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
+  exported: (statement, exportedName) => (0, import_typescript11.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var sourceFileCache = /* @__PURE__ */ new Map();
 function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
@@ -25640,14 +25638,14 @@ function resolveBaseClass({ sourceFile, declaration }, context) {
   return resolveReference(sourceFile, expression, CLASS_FINDER, context, /* @__PURE__ */ new Set());
 }
 function getBaseClassExpression(declaration) {
-  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript10.SyntaxKind.ExtendsKeyword);
+  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript11.SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
 }
 function resolveReference(sourceFile, expression, finder, context, visitedExports) {
-  if ((0, import_typescript10.isIdentifier)(expression)) {
+  if ((0, import_typescript11.isIdentifier)(expression)) {
     return resolveLocal(sourceFile, expression.text, finder, context, visitedExports);
   }
-  if ((0, import_typescript10.isPropertyAccessExpression)(expression) && (0, import_typescript10.isIdentifier)(expression.expression)) {
+  if ((0, import_typescript11.isPropertyAccessExpression)(expression) && (0, import_typescript11.isIdentifier)(expression.expression)) {
     const importDeclaration = findNamespaceImport(sourceFile, expression.expression.text);
     if (importDeclaration) {
       return resolveImported(sourceFile, importDeclaration.moduleSpecifier, expression.name.text, finder, context, visitedExports);
@@ -25661,7 +25659,7 @@ function resolveLocal(sourceFile, localName, finder, context, visitedExports) {
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript10.isImportDeclaration)(statement)) {
+    if ((0, import_typescript11.isImportDeclaration)(statement)) {
       const importedName = getImportedName(statement, localName);
       if (importedName) {
         return resolveImported(sourceFile, statement.moduleSpecifier, importedName, finder, context, visitedExports);
@@ -25675,7 +25673,7 @@ function getImportedName(importDeclaration, localName) {
     return "default";
   }
   const namedBindings = importClause?.namedBindings;
-  if (namedBindings && (0, import_typescript10.isNamedImports)(namedBindings)) {
+  if (namedBindings && (0, import_typescript11.isNamedImports)(namedBindings)) {
     const element = namedBindings.elements.find((el) => el.name.text === localName);
     return element && (element.propertyName ?? element.name).text;
   }
@@ -25683,15 +25681,15 @@ function getImportedName(importDeclaration, localName) {
 }
 function findNamespaceImport(sourceFile, namespace) {
   return sourceFile.statements.find((statement) => {
-    const namedBindings = (0, import_typescript10.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
-    return !!namedBindings && (0, import_typescript10.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
+    const namedBindings = (0, import_typescript11.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
+    return !!namedBindings && (0, import_typescript11.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
   });
 }
 function resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports) {
-  if (!(0, import_typescript10.isStringLiteralLike)(moduleSpecifier)) {
+  if (!(0, import_typescript11.isStringLiteralLike)(moduleSpecifier)) {
     return;
   }
-  const { resolvedModule } = (0, import_typescript10.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript10.sys);
+  const { resolvedModule } = (0, import_typescript11.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript11.sys);
   const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : void 0;
 }
@@ -25712,15 +25710,15 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript10.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript10.isIdentifier)(statement.expression)) {
+    if ((0, import_typescript11.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript11.isIdentifier)(statement.expression)) {
       return resolveLocal(sourceFile, statement.expression.text, finder, context, visitedExports);
     }
-    if ((0, import_typescript10.isExportDeclaration)(statement)) {
+    if ((0, import_typescript11.isExportDeclaration)(statement)) {
       const { exportClause, moduleSpecifier } = statement;
       if (!exportClause && moduleSpecifier) {
         wildcardSpecifiers.push(moduleSpecifier);
       }
-      if (exportClause && (0, import_typescript10.isNamedExports)(exportClause)) {
+      if (exportClause && (0, import_typescript11.isNamedExports)(exportClause)) {
         const element = exportClause.elements.find((el) => el.name.text === exportedName);
         if (element) {
           const name = (element.propertyName ?? element.name).text;
@@ -25743,7 +25741,7 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
 }
 function isExportedAs(declaration, exportedName) {
   if (exportedName === "default") {
-    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript10.SyntaxKind.DefaultKeyword);
+    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript11.SyntaxKind.DefaultKeyword);
   }
   return declaration.name?.text === exportedName;
 }
@@ -25755,7 +25753,7 @@ function getSourceFile(fileName, context) {
     if (cached?.modifiedTime === mtimeMs && cached.size === size) {
       sourceFile = cached.sourceFile;
     } else {
-      sourceFile = (0, import_typescript10.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript10.ScriptTarget.Latest, true);
+      sourceFile = (0, import_typescript11.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript11.ScriptTarget.Latest, true);
       sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
     }
   } catch {
@@ -25805,13 +25803,13 @@ function addHostDirectiveBindings({ properties, events }, decorator, sourceFile,
 }
 function readHostDirectives(decorator) {
   const list = getOptionExpression(decorator.expression.arguments[0], "hostDirectives");
-  if (!list || !(0, import_typescript11.isArrayLiteralExpression)(list)) {
+  if (!list || !(0, import_typescript12.isArrayLiteralExpression)(list)) {
     return;
   }
   const declarations = new Array();
   for (let i2 = 0; i2 < list.elements.length; i2++) {
     const element = list.elements[i2];
-    if (!(0, import_typescript11.isObjectLiteralExpression)(element)) {
+    if (!(0, import_typescript12.isObjectLiteralExpression)(element)) {
       declarations.push({ directive: element });
       continue;
     }
@@ -25825,27 +25823,27 @@ function readHostDirectives(decorator) {
 function getOptionExpression(object, name) {
   for (let i2 = 0; i2 < object.properties.length; i2++) {
     const property = object.properties[i2];
-    if ((0, import_typescript11.isPropertyAssignment)(property) && (0, import_typescript11.isIdentifier)(property.name) && property.name.text === name) {
+    if ((0, import_typescript12.isPropertyAssignment)(property) && (0, import_typescript12.isIdentifier)(property.name) && property.name.text === name) {
       return property.initializer;
     }
-    if ((0, import_typescript11.isShorthandPropertyAssignment)(property) && property.name.text === name) {
+    if ((0, import_typescript12.isShorthandPropertyAssignment)(property) && property.name.text === name) {
       return property.name;
     }
   }
 }
 function readExposures(expression) {
-  if (!expression || !(0, import_typescript11.isArrayLiteralExpression)(expression)) {
+  if (!expression || !(0, import_typescript12.isArrayLiteralExpression)(expression)) {
     return;
   }
   const exposures = new Array();
   for (let i2 = 0; i2 < expression.elements.length; i2++) {
     const element = expression.elements[i2];
-    if ((0, import_typescript11.isStringLiteralLike)(element)) {
+    if ((0, import_typescript12.isStringLiteralLike)(element)) {
       exposures.push({ name: element.text, alias: element.text });
-    } else if ((0, import_typescript11.isObjectLiteralExpression)(element)) {
+    } else if ((0, import_typescript12.isObjectLiteralExpression)(element)) {
       const name = getOptionExpression(element, "name");
       const alias = getOptionExpression(element, "alias");
-      if (name && alias && (0, import_typescript11.isStringLiteralLike)(name) && (0, import_typescript11.isStringLiteralLike)(alias)) {
+      if (name && alias && (0, import_typescript12.isStringLiteralLike)(name) && (0, import_typescript12.isStringLiteralLike)(alias)) {
         exposures.push({ name: name.text, alias: alias.text });
       }
     }
@@ -25900,7 +25898,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
       continue;
     }
     const options = decorator.expression.arguments[0];
-    if (!options || !(0, import_typescript12.isObjectLiteralExpression)(options)) {
+    if (!options || !(0, import_typescript13.isObjectLiteralExpression)(options)) {
       report2(`The options of @WebComponent in ${className} must be an object literal`, options ?? decorator.expression.expression);
       continue;
     }
@@ -25908,7 +25906,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
     let templateUrl = false;
     for (let j = 0; j < options.properties.length; j++) {
       const property = options.properties[j];
-      if (!((0, import_typescript12.isPropertyAssignment)(property) || (0, import_typescript12.isShorthandPropertyAssignment)(property)) || !(0, import_typescript12.isIdentifier)(property.name)) {
+      if (!((0, import_typescript13.isPropertyAssignment)(property) || (0, import_typescript13.isShorthandPropertyAssignment)(property)) || !(0, import_typescript13.isIdentifier)(property.name)) {
         continue;
       }
       const name = property.name.text;
@@ -25931,8 +25929,8 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
         default:
           continue;
       }
-      if (!(0, import_typescript12.isPropertyAssignment)(property) || !(0, import_typescript12.isStringLiteral)(property.initializer)) {
-        report2(`The ${name} option of ${className} must be a string literal`, (0, import_typescript12.isPropertyAssignment)(property) ? property.initializer : property);
+      if (!(0, import_typescript13.isPropertyAssignment)(property) || !(0, import_typescript13.isStringLiteral)(property.initializer)) {
+        report2(`The ${name} option of ${className} must be a string literal`, (0, import_typescript13.isPropertyAssignment)(property) ? property.initializer : property);
       } else if (name === "selector" && !isValidCustomElementName(property.initializer.text)) {
         report2(`Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
       }
@@ -25954,7 +25952,7 @@ function describeSelectorConflict({ className, selector, type, typescriptNodes }
   return type === "directive" ? `Selector "${selector}" of directive "${className}" - ${ownerFile} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.` : `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
 }
 function findSsrError(property, className) {
-  if (!(0, import_typescript12.isPropertyAssignment)(property) || !(0, import_typescript12.isObjectLiteralExpression)(property.initializer)) {
+  if (!(0, import_typescript13.isPropertyAssignment)(property) || !(0, import_typescript13.isObjectLiteralExpression)(property.initializer)) {
     return `The ssr option of ${className} must be an object literal`;
   }
   const { properties } = property.initializer;
@@ -25962,11 +25960,11 @@ function findSsrError(property, className) {
   if (!render) {
     return void 0;
   }
-  if (!(0, import_typescript12.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript12.SyntaxKind.FalseKeyword) {
+  if (!(0, import_typescript13.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript13.SyntaxKind.FalseKeyword) {
     return `The ssr.render option of ${className} must be the literal false`;
   }
   const hydrate = properties.find((option) => option.name?.getText() === "hydrate");
-  return hydrate && !((0, import_typescript12.isPropertyAssignment)(hydrate) && (0, import_typescript12.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
+  return hydrate && !((0, import_typescript13.isPropertyAssignment)(hydrate) && (0, import_typescript13.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
 }
 async function extractDirectivesMetadataFromSourceFile(sourceFile, compilerOptions) {
   const metadatas = /* @__PURE__ */ new Map();
@@ -26024,7 +26022,7 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
   const members = declaration.members;
   for (let i2 = 0; i2 < members.length; i2++) {
     const member = members[i2];
-    if (!(0, import_typescript12.isPropertyDeclaration)(member)) {
+    if (!(0, import_typescript13.isPropertyDeclaration)(member)) {
       continue;
     }
     const memberModifiers = member.modifiers;
@@ -26038,8 +26036,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
       return result.decorator;
     });
     if (propDecorator) {
-      const nameNode = (0, import_typescript12.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript12.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript13.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript13.isIdentifier)(nameNode)) {
         const propName = nameNode.text;
         const overridden = properties.entries().find(([, property]) => property.name === propName);
         if (overridden) {
@@ -26063,8 +26061,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
     }
     const eventDecorator = Array.from(memberModifiers).find((member2) => isEventDecorator(member2));
     if (eventDecorator) {
-      const nameNode = (0, import_typescript12.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript12.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript13.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript13.isIdentifier)(nameNode)) {
         const eventName = nameNode.text;
         events.set(eventName, extractEventMetadata(member, eventName, accessorOwner, toMemberDeclaration(nameNode, sourceFile)));
       }
@@ -26086,10 +26084,10 @@ function getDecoratedClassDeclarations(sourceFile, decoratorName) {
   return found;
 }
 function classDeclarationHasName(node) {
-  return (0, import_typescript12.isClassDeclaration)(node) && !!node.name?.text;
+  return (0, import_typescript13.isClassDeclaration)(node) && !!node.name?.text;
 }
 function findClassDecorator(classDecl, decoratorName) {
-  const decorators = (0, import_typescript12.getDecorators)(classDecl);
+  const decorators = (0, import_typescript13.getDecorators)(classDecl);
   if (!decorators?.length) {
     return void 0;
   }
@@ -26097,13 +26095,13 @@ function findClassDecorator(classDecl, decoratorName) {
   let found;
   while (i2 < decorators.length && !found) {
     const decorator = decorators[i2];
-    if (!(0, import_typescript12.isCallExpression)(decorator.expression)) {
+    if (!(0, import_typescript13.isCallExpression)(decorator.expression)) {
       i2++;
       continue;
     }
     const callExpression = decorator.expression;
-    const callee = (0, import_typescript12.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
-    const isSearchedDecorator = (_decorator) => (0, import_typescript12.isIdentifier)(callee) && callee.text === decoratorName;
+    const callee = (0, import_typescript13.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
+    const isSearchedDecorator = (_decorator) => (0, import_typescript13.isIdentifier)(callee) && callee.text === decoratorName;
     if (isSearchedDecorator(decorator)) {
       found = decorator;
     }
@@ -26123,21 +26121,21 @@ function extractMetadaFromDecorator(decorator) {
       return retVal;
     }
     const arg = args[0];
-    if (!arg || !(0, import_typescript12.isObjectLiteralExpression)(arg)) {
+    if (!arg || !(0, import_typescript13.isObjectLiteralExpression)(arg)) {
       return retVal;
     }
     for (let i2 = 0; i2 < arg.properties.length; i2++) {
       const prop = arg.properties[i2];
-      if ((0, import_typescript12.isPropertyAssignment)(prop) && (0, import_typescript12.isIdentifier)(prop.name)) {
+      if ((0, import_typescript13.isPropertyAssignment)(prop) && (0, import_typescript13.isIdentifier)(prop.name)) {
         switch (prop.name.text) {
           case "selector":
-            retVal.selector = (0, import_typescript12.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.selector = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "templateUrl":
-            retVal.templateUrl = (0, import_typescript12.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.templateUrl = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "styleUrl":
-            retVal.styleUrl = (0, import_typescript12.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
+            retVal.styleUrl = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
             break;
           case "ssr":
             retVal.clientOnly = extractClientOnly(prop.initializer);
@@ -26151,20 +26149,20 @@ function extractMetadaFromDecorator(decorator) {
   }
 }
 function extractClientOnly(ssr) {
-  if (!(0, import_typescript12.isObjectLiteralExpression)(ssr)) {
+  if (!(0, import_typescript13.isObjectLiteralExpression)(ssr)) {
     return void 0;
   }
   let render = false;
   let hydrate;
   for (let i2 = 0; i2 < ssr.properties.length; i2++) {
     const option = ssr.properties[i2];
-    if ((0, import_typescript12.isPropertyAssignment)(option)) {
+    if ((0, import_typescript13.isPropertyAssignment)(option)) {
       switch (option.name.getText()) {
         case "render":
-          render = option.initializer.kind === import_typescript12.SyntaxKind.FalseKeyword;
+          render = option.initializer.kind === import_typescript13.SyntaxKind.FalseKeyword;
           break;
         case "hydrate":
-          hydrate = (0, import_typescript12.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
+          hydrate = (0, import_typescript13.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
           break;
       }
     }
@@ -26175,24 +26173,24 @@ function extractClientOnly(ssr) {
   return hydrate ? { hydrate } : {};
 }
 function isPropertyDecorator(modifier) {
-  if (!(0, import_typescript12.isDecorator)(modifier)) {
+  if (!(0, import_typescript13.isDecorator)(modifier)) {
     return {
       decorator: false
     };
   }
   const expr = modifier.expression;
-  if (!(0, import_typescript12.isCallExpression)(expr)) {
+  if (!(0, import_typescript13.isCallExpression)(expr)) {
     return {
       decorator: false
     };
   }
   const subExpr = expr.expression;
-  if ((0, import_typescript12.isIdentifier)(subExpr) && subExpr.text === "Property") {
+  if ((0, import_typescript13.isIdentifier)(subExpr) && subExpr.text === "Property") {
     return {
       decorator: true
     };
   }
-  if ((0, import_typescript12.isPropertyAccessExpression)(subExpr) && (0, import_typescript12.isIdentifier)(subExpr.expression) && subExpr.expression.text === "Property" && subExpr.name.text === "required") {
+  if ((0, import_typescript13.isPropertyAccessExpression)(subExpr) && (0, import_typescript13.isIdentifier)(subExpr.expression) && subExpr.expression.text === "Property" && subExpr.name.text === "required") {
     return {
       decorator: true,
       required: true
@@ -26209,11 +26207,11 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
   if (args.length) {
     const options = required ? args[0] : args[1];
-    const incomingType = options && (0, import_typescript12.isObjectLiteralExpression)(options) ? findTransformIncomingType(decorator, options) : void 0;
+    const incomingType = options && (0, import_typescript13.isObjectLiteralExpression)(options) ? findTransformIncomingType(decorator, options) : void 0;
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
-    const aliasNode = options && (0, import_typescript12.isObjectLiteralExpression)(options) && options?.properties?.find((prop) => (0, import_typescript12.isPropertyAssignment)(prop) && (0, import_typescript12.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript12.isStringLiteral)(prop.initializer));
+    const aliasNode = options && (0, import_typescript13.isObjectLiteralExpression)(options) && options?.properties?.find((prop) => (0, import_typescript13.isPropertyAssignment)(prop) && (0, import_typescript13.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript13.isStringLiteral)(prop.initializer));
     if (aliasNode) {
       const initializer = aliasNode.initializer;
       metadata.alias = initializer.text;
@@ -26226,7 +26224,7 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   return metadata;
 }
 function findTransformIncomingType(decorator, options) {
-  const transform = options.properties.find((property) => ((0, import_typescript12.isPropertyAssignment)(property) || (0, import_typescript12.isMethodDeclaration)(property)) && (0, import_typescript12.isIdentifier)(property.name) && property.name.text === "transform");
+  const transform = options.properties.find((property) => ((0, import_typescript13.isPropertyAssignment)(property) || (0, import_typescript13.isMethodDeclaration)(property)) && (0, import_typescript13.isIdentifier)(property.name) && property.name.text === "transform");
   if (!transform) {
     return void 0;
   }
@@ -26234,16 +26232,16 @@ function findTransformIncomingType(decorator, options) {
   if (typeArgument) {
     return typeArgument;
   }
-  const callback = (0, import_typescript12.isPropertyAssignment)(transform) ? transform.initializer : transform;
-  return (0, import_typescript12.isArrowFunction)(callback) || (0, import_typescript12.isFunctionExpression)(callback) || (0, import_typescript12.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
+  const callback = (0, import_typescript13.isPropertyAssignment)(transform) ? transform.initializer : transform;
+  return (0, import_typescript13.isArrowFunction)(callback) || (0, import_typescript13.isFunctionExpression)(callback) || (0, import_typescript13.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
 }
 function qualifyType(type, sourceFile) {
   const start = type.getStart(sourceFile);
   const replacements = new Array();
   const visit = (node) => {
-    if ((0, import_typescript12.isTypeReferenceNode)(node)) {
+    if ((0, import_typescript13.isTypeReferenceNode)(node)) {
       let name = node.typeName;
-      while ((0, import_typescript12.isQualifiedName)(name)) {
+      while ((0, import_typescript13.isQualifiedName)(name)) {
         name = name.left;
       }
       const qualifier = findTypeQualifier(name.text, sourceFile);
@@ -26252,7 +26250,7 @@ function qualifyType(type, sourceFile) {
         replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
       }
     }
-    (0, import_typescript12.forEachChild)(node, visit);
+    (0, import_typescript13.forEachChild)(node, visit);
   };
   visit(type);
   let text = type.getText(sourceFile);
@@ -26266,23 +26264,23 @@ function findTypeQualifier(name, sourceFile) {
   const statements = sourceFile.statements;
   for (let i2 = 0; i2 < statements.length; i2++) {
     const statement = statements[i2];
-    if ((0, import_typescript12.isImportDeclaration)(statement) && (0, import_typescript12.isStringLiteral)(statement.moduleSpecifier)) {
+    if ((0, import_typescript13.isImportDeclaration)(statement) && (0, import_typescript13.isStringLiteral)(statement.moduleSpecifier)) {
       const module2 = resolveModuleSpecifier(statement.moduleSpecifier.text, sourceFile.fileName);
       const clause = statement.importClause;
       if (clause?.name?.text === name) {
         return { module: module2, name: "default", namespace: false };
       }
       const bindings = clause?.namedBindings;
-      if (bindings && (0, import_typescript12.isNamespaceImport)(bindings) && bindings.name.text === name) {
+      if (bindings && (0, import_typescript13.isNamespaceImport)(bindings) && bindings.name.text === name) {
         return { module: module2, name, namespace: true };
       }
-      if (bindings && (0, import_typescript12.isNamedImports)(bindings)) {
+      if (bindings && (0, import_typescript13.isNamedImports)(bindings)) {
         const element = bindings.elements.find(({ name: localName }) => localName.text === name);
         if (element) {
           return { module: module2, name: (element.propertyName ?? element.name).text, namespace: false };
         }
       }
-    } else if (((0, import_typescript12.isInterfaceDeclaration)(statement) || (0, import_typescript12.isTypeAliasDeclaration)(statement) || (0, import_typescript12.isClassDeclaration)(statement) || (0, import_typescript12.isEnumDeclaration)(statement)) && statement.name?.text === name) {
+    } else if (((0, import_typescript13.isInterfaceDeclaration)(statement) || (0, import_typescript13.isTypeAliasDeclaration)(statement) || (0, import_typescript13.isClassDeclaration)(statement) || (0, import_typescript13.isEnumDeclaration)(statement)) && statement.name?.text === name) {
       return { module: sourceFile.fileName.replaceAll("\\", "/").replace(/\.ts$/, ""), name, namespace: false };
     }
   }
@@ -26306,11 +26304,11 @@ function resolveModuleSpecifier(specifier, fileName) {
   return segments.join("/").replace(/\.ts$/, "");
 }
 function isEventDecorator(modifier) {
-  if (modifier.kind !== import_typescript12.SyntaxKind.Decorator) {
+  if (modifier.kind !== import_typescript13.SyntaxKind.Decorator) {
     return false;
   }
-  const expr = (0, import_typescript12.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
-  return (0, import_typescript12.isIdentifier)(expr) && expr.text === "Event";
+  const expr = (0, import_typescript13.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
+  return (0, import_typescript13.isIdentifier)(expr) && expr.text === "Event";
 }
 function extractEventMetadata(event, name, accessorOwner, declaration) {
   return {
@@ -26329,14 +26327,14 @@ function getAccessorOwnerType(klass, sourceFile, withTypeParameters) {
 function extractBindingType(member, name, accessorOwner, event) {
   const defaultValue = event ? "void" : "any";
   const typeNode = member.type;
-  if (!typeNode || !(0, import_typescript12.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
+  if (!typeNode || !(0, import_typescript13.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
     return defaultValue;
   }
   const accessor = `${accessorOwner}['${name}']`;
   if (!event) {
     return `ReturnType<${accessor}>`;
   }
-  return typeNode.typeArguments[0].kind === import_typescript12.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
+  return typeNode.typeArguments[0].kind === import_typescript13.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }
 
 // ../packages/compiler/src/type-checker/utils/line-builder/line-builder.utils.ts
@@ -26382,11 +26380,37 @@ function indentLines(lines) {
   }));
 }
 
+// ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
+var CAST_OPENING = "((";
+function castExpression(expression, resolved, segments, { text, span }) {
+  for (let i2 = 0; i2 < segments.length; i2++) {
+    const { columnStart, columnEnd, original } = segments[i2];
+    segments[i2] = { columnStart: columnStart + CAST_OPENING.length, columnEnd: columnEnd + CAST_OPENING.length, original };
+  }
+  const head = `${CAST_OPENING}${resolved}) as `;
+  const end = head.length + text.length;
+  const expressionSpan = getTemplateSpan(expression);
+  if (expressionSpan) {
+    segments.push({ columnStart: 1, columnEnd: end, original: { start: expressionSpan.start, end: span.end } });
+  }
+  segments.push({ columnStart: head.length, columnEnd: end, original: span });
+  return `${head}${text})`;
+}
+
 // ../packages/compiler/src/type-checker/utils/mapped-expression/mapped-expression.utils.ts
-function mappedExpression(expression, context, span, suffix = "", options = { resolver: "root", preserveNonNull: true }) {
+var ROOT_OPTIONS = { resolver: "root", preserveTypeScript: true };
+function mappedExpression(expression, context, span, suffix = "", options = ROOT_OPTIONS) {
   const segments = new Array();
-  const resolved = resolveExpression(expression, context, Object.assign({ narrowedSignal: (name) => context.getNarrowedSignal(name) }, options), segments).expression;
+  const resolved = resolveMappedExpression(expression, context, options, segments);
   return mappedSegments(`${resolved}${suffix}`, span, segments);
+}
+function mappedInterpolation({ expression, cast, span }, context, suffix = "") {
+  const segments = new Array();
+  const resolved = resolveMappedExpression(expression, context, ROOT_OPTIONS, segments);
+  return mappedSegments(`${cast ? castExpression(expression, resolved, segments, cast) : resolved}${suffix}`, span, segments);
+}
+function resolveMappedExpression(expression, context, options, segments) {
+  return resolveExpression(expression, context, Object.assign({ narrowedSignal: (name) => context.getNarrowedSignal(name) }, options), segments).expression;
 }
 
 // ../packages/compiler/src/type-checker/utils/template-types/template-types.utils.ts
@@ -26669,7 +26693,7 @@ function inferTypeParameters(metadata, base, attributes, context, suffix = "") {
         values.push(", ");
       }
       if (typeof value === "object") {
-        values.push("() => (", mappedExpression(value.expression, context, value.span), ")");
+        values.push("() => (", mappedInterpolation(value, context), ")");
       } else {
         values.push("(): string => ''");
       }
@@ -26744,7 +26768,7 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
       lines.push(
         plain("{"),
         ...indentLines(
-          typeof value === "object" ? [line("(", mappedExpression(value.expression, context, value.span), ") ", mapped(`satisfies ${property.type}`, span), ";")] : [plain("let x!: string;"), line(mapped(`x satisfies ${property.type};`, span))]
+          typeof value === "object" ? [line("(", mappedInterpolation(value, context), ") ", mapped(`satisfies ${property.type}`, span), ";")] : [plain("let x!: string;"), line(mapped(`x satisfies ${property.type};`, span))]
         ),
         plain("}")
       );
@@ -26787,7 +26811,7 @@ function typeCheckNativeAttributes(attributes, context) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { value } = attributes[i2];
     if (typeof value !== "string") {
-      lines.push(line(mappedExpression(value.expression, context, value.span, ";")));
+      lines.push(line(mappedInterpolation(value, context, ";")));
     }
   }
   ;
@@ -26797,14 +26821,14 @@ function typeCheckClassBindings(classBindings, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < classBindings.length; i2++) {
     const { value } = classBindings[i2];
-    lines.push(line(mappedExpression(value.expression, context, value.span, ";")));
+    lines.push(line(mappedInterpolation(value, context, ";")));
   }
   return lines;
 }
 function typeCheckNativeEvents(events, nativeEventType, context) {
   return events.flatMap((event) => typeCheckEvent(event, nativeEventType(event.name), context));
 }
-function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span }, eventType, context) {
+function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, casts, span }, eventType, context) {
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier("$event");
   for (let i2 = 0; i2 < parameters.length; i2++) {
@@ -26821,7 +26845,9 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
   for (let i2 = 0; i2 < parameters.length; i2++) {
     const separator = i2 ? ", " : "";
     const argumentSegments = new Array();
-    const argument = resolveExpression(parameters[i2], eventContext, { resolver: "root", preserveNonNull: true, narrowedSignal: (name2) => eventContext.getNarrowedSignal(name2) }, argumentSegments).expression;
+    const resolved = resolveExpression(parameters[i2], eventContext, { resolver: "root", preserveTypeScript: true, narrowedSignal: (name2) => eventContext.getNarrowedSignal(name2) }, argumentSegments).expression;
+    const cast = casts?.get(i2);
+    const argument = cast ? castExpression(parameters[i2], resolved, argumentSegments, cast) : resolved;
     const column = call.length + separator.length;
     for (let j = 0; j < argumentSegments.length; j++) {
       const { columnStart, columnEnd, original } = argumentSegments[j];
@@ -26847,7 +26873,7 @@ function passesEvent(parameters) {
   return parameters.some((parameter) => isEventBeginning(parameter) || readsEvent(parameter));
 }
 function isEventBeginning(expression) {
-  return (0, import_typescript13.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
+  return (0, import_typescript14.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
 }
 function typeCheckConditionalBindings(conditionalBindings, context, bindings) {
   const lines = new Array();
@@ -26949,17 +26975,17 @@ function resolveImplicit(node, implicit) {
 }
 
 // ../packages/compiler/src/type-checker/utils/signal-narrowing/signal-narrowing.utils.ts
-var import_typescript14 = require("typescript");
+var import_typescript15 = require("typescript");
 function narrowSignals(conditions, prefix, context, chainContext) {
   const declarations = new Array();
   const visit = (node) => {
     const callee = getSignalCallee(node);
     if (callee && !chainContext.getNarrowedSignal(callee.text) && resolveExpression(callee, context, { resolver: ROOT_NODE }).reactive) {
       const value = `${prefix}_${callee.text}`;
-      declarations.push(plain(`const ${value} = ${resolveExpression(node, context, { resolver: ROOT_NODE, preserveNonNull: true }).expression};`));
+      declarations.push(plain(`const ${value} = ${resolveExpression(node, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
       chainContext.addNarrowedSignal(callee.text, value);
     }
-    (0, import_typescript14.forEachChild)(node, visit);
+    (0, import_typescript15.forEachChild)(node, visit);
   };
   for (let i2 = 0; i2 < conditions.length; i2++) {
     visit(conditions[i2]);
@@ -27209,7 +27235,7 @@ function typeCheckParameter({ name, nameSpan, type, typeSpan, optional, initiali
 
 // ../packages/compiler/src/type-checker/states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.ts
 function typeCheckTextAndInterpolation(node, _processNode, context) {
-  return node.type === 4 /* Interpolation */ ? [line(mappedExpression(node.expression, context, node.span, ";"))] : [];
+  return node.type === 4 /* Interpolation */ ? [line(mappedInterpolation(node, context, ";"))] : [];
 }
 
 // ../packages/compiler/src/type-checker/utils/import-hoisting/import-hoisting.utils.ts
@@ -27365,7 +27391,7 @@ function checkServerBlocks(nodes) {
 }
 
 // ../packages/compiler/src/type-checker/utils/variable-order/variable-order.utils.ts
-var import_typescript15 = require("typescript");
+var import_typescript16 = require("typescript");
 function checkVariableOrder(ast) {
   const check = { scopes: [], level: null, freeReads: /* @__PURE__ */ new Map(), renders: [] };
   checkScope(ast, check);
@@ -27656,11 +27682,11 @@ function resolve(name, check) {
 function collectReads(expression) {
   const reads = new Array();
   const visit = (node, parent) => {
-    const isMemberName2 = ((0, import_typescript15.isPropertyAccessExpression)(parent) || (0, import_typescript15.isPropertyAssignment)(parent)) && parent.name === node;
-    if ((0, import_typescript15.isIdentifier)(node) && !isMemberName2) {
+    const isMemberName2 = ((0, import_typescript16.isPropertyAccessExpression)(parent) || (0, import_typescript16.isPropertyAssignment)(parent)) && parent.name === node;
+    if ((0, import_typescript16.isIdentifier)(node) && !isMemberName2) {
       reads.push(node);
     }
-    (0, import_typescript15.forEachChild)(node, (child) => visit(child, node));
+    forEachExpressionChild(node, (child) => visit(child, node));
   };
   visit(expression, expression);
   return reads;
@@ -27902,9 +27928,6 @@ function getBindingKind(state) {
   }
 }
 
-// ../packages/compiler/src/costants/closers.costant.ts
-var CLOSERS2 = { "{": "}", "(": ")", "[": "]", "<": ">", "`": "`" };
-
 // ../packages/compiler/src/lexer/utils/trigger-context/trigger-context.utils.ts
 var TRIGGER_NAME = /^(prefetch\s+)?([a-z]*)$/;
 var PARAMETER_NAME = /^[a-z]*$/;
@@ -27970,29 +27993,9 @@ function isTriggerExpression(text) {
   if (WHEN2.test(part)) {
     return true;
   }
-  let depth = 0;
-  let quote2;
-  for (let i2 = 0; i2 < part.length; i2++) {
-    const char = part[i2];
-    if (quote2) {
-      quote2 = char === quote2 ? void 0 : quote2;
-      continue;
-    }
-    switch (char) {
-      case "'":
-      case '"':
-      case "`":
-        quote2 = char;
-        break;
-      case "(":
-        depth++;
-        break;
-      case ")":
-        depth--;
-        break;
-    }
-  }
-  return depth > 0;
+  const scanner = new ExpressionScanner();
+  scanner.readText(part);
+  return !scanner.isTopLevel;
 }
 function findWrittenParts(source, offset) {
   const before = source.slice(0, offset);
@@ -28003,7 +28006,7 @@ function findWrittenParts(source, offset) {
   } catch {
     return void 0;
   }
-  const lastToken = tokens.findLast((token) => token.type !== 40 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 41 /* EOF */);
   switch (lexer.state === "flow-control-condition" /* FLOW_CONTROL_CONDITION */ ? lastToken?.type : void 0) {
     case 37 /* DEFER */:
     case 32 /* HYDRATE */:
@@ -28024,7 +28027,6 @@ function findWrittenParts(source, offset) {
 var PARTIAL_IDENTIFIER = /[\w$]*$/;
 var PLACEHOLDER = "__xaendarCompletion__";
 var WITHOUT_EXPRESSION = /* @__PURE__ */ new Set([36 /* CATCH */, 39 /* ERROR */, 34 /* PLACEHOLDER */, 38 /* LOADING */]);
-var OPENERS2 = { ")": "(", "]": "[", "}": "{" };
 function getExpressionContext(source, offset) {
   const before = source.slice(0, offset);
   const lexer = new Lexer(before);
@@ -28037,18 +28039,11 @@ function getExpressionContext(source, offset) {
   const partial = PARTIAL_IDENTIFIER.exec(before)[0];
   const span = { start: offset - partial.length, end: offset };
   const head = `${before}${partial ? "" : PLACEHOLDER}`;
-  const lastToken = tokens.findLast((token) => token.type !== 40 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 41 /* EOF */);
   switch (lexer.state) {
-    case "interpolation" /* INTERPOLATION */:
-    case "interpolation-expression" /* INTERPOLATION_EXPRESSION */: {
-      const state = { nesting: [], quote: void 0 };
-      scanExpression(before, before.indexOf("{", lastToken?.span.end ?? 0) + 1, offset, state, "}");
-      if (!isClosable(state)) {
-        return void 0;
-      }
-      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: void 0 }, "}");
-      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
-      return { kind: "interpolation", span, source: `${head}${closersOf(state)} }${after}` };
+    case "interpolation" /* INTERPOLATION */: {
+      const closed = closeExpression(source, before.indexOf("{", lastToken?.span.end ?? 0) + 1, offset, "}");
+      return closed && { kind: "interpolation", span, source: `${head}${closed.closers} }${closed.after}` };
     }
     case "flow-control-condition" /* FLOW_CONTROL_CONDITION */: {
       const open = before.indexOf("(", lastToken.span.end);
@@ -28057,7 +28052,7 @@ function getExpressionContext(source, offset) {
       if (open === -1 || isForItem || isTriggerKeyword || WITHOUT_EXPRESSION.has(lastToken.type)) {
         return void 0;
       }
-      const closed = closeParenthesized(source, open, offset);
+      const closed = closeExpression(source, open + 1, offset, ")");
       if (!closed) {
         return void 0;
       }
@@ -28066,22 +28061,13 @@ function getExpressionContext(source, offset) {
     }
     case "render" /* RENDER */: {
       const open = before.indexOf("(", lastToken.span.end);
-      const closed = open === -1 ? void 0 : closeParenthesized(source, open, offset);
+      const closed = open === -1 ? void 0 : closeExpression(source, open + 1, offset, ")");
       return closed && { kind: "render", span, source: `${head}${closed.closers})${closed.after}` };
     }
     case "let" /* LET */: {
       const equal = before.indexOf("=", lastToken.span.end);
-      if (equal === -1) {
-        return void 0;
-      }
-      const state = { nesting: [], quote: void 0 };
-      scanExpression(before, equal + 1, offset, state, ";");
-      if (!isClosable(state)) {
-        return void 0;
-      }
-      const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: void 0 }, ";");
-      const after = end === -1 ? source.slice(offset) : source.slice(end + 1);
-      return { kind: "let", span, source: `${head}${closersOf(state)};${after}` };
+      const closed = equal === -1 ? void 0 : closeExpression(source, equal + 1, offset, ";");
+      return closed && { kind: "let", span, source: `${head}${closed.closers};${closed.after}` };
     }
     case "event-handler" /* EVENT_HANDLER */:
     case "parameter" /* EVENT_PARAMETER */: {
@@ -28094,80 +28080,22 @@ function getExpressionContext(source, offset) {
       if (call === -1) {
         return span.start === handlerStart ? { kind: "handler", span, source: `${head}()${source.slice(handlerEnd)}` } : void 0;
       }
-      const state = { nesting: [], quote: void 0 };
-      scanExpression(before, call + 1, offset, state, ")");
-      return isClosable(state) ? { kind: "argument", span, source: `${head}${closersOf(state)}, $event)${source.slice(handlerEnd)}` } : void 0;
+      const closed = closeExpression(source, call + 1, offset, ")");
+      return closed && { kind: "argument", span, source: `${head}${closed.closers}, $event)${source.slice(handlerEnd)}` };
     }
     default:
       return void 0;
   }
 }
-function scanExpression(text, start, end, state, closer) {
-  const { nesting } = state;
-  for (let i2 = start; i2 < end; i2++) {
-    const char = text[i2];
-    if (state.quote) {
-      if (char === "\\") {
-        i2++;
-      } else if (char === state.quote) {
-        state.quote = void 0;
-      }
-    } else if (nesting.at(-1) === "`") {
-      if (char === "\\") {
-        i2++;
-      } else if (char === "`") {
-        nesting.pop();
-      } else if (char === "$" && text[i2 + 1] === "{") {
-        nesting.push("{");
-        i2++;
-      }
-    } else {
-      switch (char) {
-        case "'":
-        case '"':
-          state.quote = char;
-          break;
-        case "(":
-        case "[":
-        case "{":
-        case "`":
-          nesting.push(char);
-          break;
-        case ")":
-        case "]":
-        case "}": {
-          const opener = nesting.lastIndexOf(OPENERS2[char]);
-          if (opener !== -1) {
-            nesting.length = opener;
-          } else if (char === closer) {
-            return i2;
-          }
-          break;
-        }
-        case ";":
-          if (closer === ";" && !nesting.length) {
-            return i2;
-          }
-          break;
-      }
-    }
-  }
-  return -1;
-}
-function closeParenthesized(source, open, offset) {
-  const state = { nesting: [], quote: void 0 };
-  scanExpression(source, open + 1, offset, state, ")");
-  if (!isClosable(state)) {
+function closeExpression(source, start, offset, terminator) {
+  const scanner = new ExpressionScanner();
+  findEnd(source, start, terminator, scanner, offset);
+  if (!scanner.isCode) {
     return void 0;
   }
-  const end = scanExpression(source, offset, source.length, { nesting: [...state.nesting], quote: void 0 }, ")");
-  return { closers: closersOf(state), after: end === -1 ? source.slice(offset) : source.slice(end + 1) };
-}
-function isClosable({ nesting, quote: quote2 }) {
-  return !quote2 && nesting.at(-1) !== "`";
-}
-function closersOf({ nesting }) {
-  return nesting.map((opener) => CLOSERS2[opener]).reverse().join("");
+  const { closers } = scanner;
+  const end = findEnd(source, offset, terminator, scanner);
+  return { closers, after: end === void 0 ? source.slice(offset) : source.slice(end + 1) };
 }
 
 // ../packages/compiler/src/lexer/utils/import-context/import-context.utils.ts
@@ -28353,68 +28281,6 @@ function writeStatement({ path, specifiers, lazy, quote: quote2, semicolon, mult
   return `@import ${lazy ? "lazy " : ""}${names} from ${quote2}${path}${quote2}${semicolon}${comments}`;
 }
 
-// ../packages/compiler/src/lexer/utils/balanced-text/balanced-text.utils.ts
-function findClosing(text, openIndex) {
-  const open = text[openIndex];
-  const close = CLOSERS2[open];
-  let depth = 0;
-  for (let i2 = openIndex; i2 < text.length; i2++) {
-    const char = text[i2];
-    if (char === "'" || char === '"' || char === "`") {
-      const end = findStringEnd(text, i2);
-      if (end === void 0) {
-        return void 0;
-      }
-      i2 = end;
-    } else if (char === open) {
-      depth++;
-    } else if (char === close && !(close === ">" && text[i2 - 1] === "=")) {
-      depth--;
-      if (!depth) {
-        return i2;
-      }
-    }
-  }
-  return void 0;
-}
-function findOutside(text, start, char) {
-  for (let i2 = start; i2 < text.length; i2++) {
-    const current = text[i2];
-    if (current === char) {
-      return i2;
-    }
-    let end = i2;
-    if (current === "'" || current === '"' || current === "`") {
-      end = findStringEnd(text, i2);
-    } else if (current === "{" || current === "(" || current === "[") {
-      end = findClosing(text, i2);
-    }
-    if (end === void 0) {
-      return void 0;
-    }
-    i2 = end;
-  }
-  return void 0;
-}
-function findStringEnd(text, quoteIndex) {
-  const quote2 = text[quoteIndex];
-  for (let i2 = quoteIndex + 1; i2 < text.length; i2++) {
-    const char = text[i2];
-    if (char === "\\") {
-      i2++;
-    } else if (char === quote2) {
-      return i2;
-    } else if (quote2 === "`" && char === "$" && text[i2 + 1] === "{") {
-      const end = findClosing(text, i2 + 1);
-      if (end === void 0) {
-        return void 0;
-      }
-      i2 = end;
-    }
-  }
-  return void 0;
-}
-
 // ../packages/compiler/src/lexer/utils/template-layout/template-layout.utils.ts
 var RAW_ELEMENTS = /* @__PURE__ */ new Set(["pre", "textarea", "script", "style"]);
 var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
@@ -28529,7 +28395,7 @@ function readLet(reader) {
   const name = readName(reader, NAME);
   skipWhitespace(reader);
   const { source, position } = reader;
-  const end = source[position] === "=" ? findOutside(source, position + 1, ";") : void 0;
+  const end = source[position] === "=" ? findEnd(source, position + 1, ";") : void 0;
   if (end === void 0) {
     return fail("@let needs its value between = and ;");
   }
@@ -29223,12 +29089,12 @@ function findOpenBlock(tokens, end) {
   return -1;
 }
 function getClosedBlockKeyword(tokens) {
-  const last = findLastNotBlank(tokens, tokens.length);
+  const last = tokens.length - 1;
   return tokens[last]?.type === 20 /* BLOCK_CLOSE */ ? getBlockKeyword(tokens, findOpenBlock(tokens, last)) : void 0;
 }
 function getDeferBlocks(tokens) {
   const written = /* @__PURE__ */ new Set();
-  for (let end = findLastNotBlank(tokens, tokens.length); tokens[end]?.type === 20 /* BLOCK_CLOSE */; ) {
+  for (let end = tokens.length - 1; tokens[end]?.type === 20 /* BLOCK_CLOSE */; ) {
     const open = findOpenBlock(tokens, end);
     const keyword = getBlockKeyword(tokens, open);
     if (keyword === 37 /* DEFER */) {
@@ -29238,18 +29104,9 @@ function getDeferBlocks(tokens) {
       return void 0;
     }
     written.add(keyword);
-    end = findLastNotBlank(tokens, tokens[open - 1].type === 18 /* CONDITION */ ? open - 2 : open - 1);
+    end = tokens[open - 1].type === 18 /* CONDITION */ ? open - 3 : open - 2;
   }
   return void 0;
-}
-function findLastNotBlank(tokens, end) {
-  for (let i2 = end - 1; i2 >= 0; i2--) {
-    const token = tokens[i2];
-    if (token.type !== 0 /* TEXT */ || token.parts[0].trim()) {
-      return i2;
-    }
-  }
-  return -1;
 }
 function declaresDefault(tokens, openBlock) {
   let depth = 0;
@@ -29384,19 +29241,19 @@ function width(mapping) {
 }
 
 // ../packages/compiler/src/utils/component-logic/component-logic.utils.ts
-var import_typescript17 = require("typescript");
+var import_typescript18 = require("typescript");
 
 // ../packages/compiler/src/utils/extract-component-members/extract-component-members.utils.ts
-var import_typescript16 = require("typescript");
+var import_typescript17 = require("typescript");
 var SIGNAL_MODULE_SPECIFIERS = /* @__PURE__ */ new Set(["@xaendar/core/signals"]);
 var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "SettableInputSignal", "QuerySignal"]);
 var FUNCTION_FINDER = {
-  local: (statement, localName) => (0, import_typescript16.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
-  exported: (statement, exportedName) => (0, import_typescript16.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
+  local: (statement, localName) => (0, import_typescript17.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
+  exported: (statement, exportedName) => (0, import_typescript17.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var VARIABLE_FINDER = {
   local: (statement, localName) => findVariable(statement, localName),
-  exported: (statement, exportedName) => (0, import_typescript16.isVariableStatement)(statement) && statement.modifiers?.some((modifier) => modifier.kind === import_typescript16.SyntaxKind.ExportKeyword) ? findVariable(statement, exportedName) : void 0
+  exported: (statement, exportedName) => (0, import_typescript17.isVariableStatement)(statement) && statement.modifiers?.some((modifier) => modifier.kind === import_typescript17.SyntaxKind.ExportKeyword) ? findVariable(statement, exportedName) : void 0
 };
 function extractComponentMembers(sourceFile, classDeclaration, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   const context = {
@@ -29411,7 +29268,7 @@ function extractComponentMembers(sourceFile, classDeclaration, compilerOptions =
 }
 function collectShadowingMembers(chain) {
   const members = chain.flatMap(({ declaration }) => declaration.members.flatMap((member) => {
-    const isStatic = !!((0, import_typescript16.getCombinedModifierFlags)(member) & import_typescript16.ModifierFlags.Static);
+    const isStatic = !!((0, import_typescript17.getCombinedModifierFlags)(member) & import_typescript17.ModifierFlags.Static);
     return isNamedMember(member) && !isStatic && GLOBAL_IDENTIFIERS.has(member.name.text) ? [member.name.text] : [];
   }));
   return [...new Set(members)];
@@ -29443,8 +29300,8 @@ function collectReactiveMethods(chain, signals, context) {
         continue;
       }
       methods.delete(member.name.text);
-      if (((0, import_typescript16.isMethodDeclaration)(member) || (0, import_typescript16.isGetAccessorDeclaration)(member)) && member.body) {
-        methods.set(member.name.text, collectMemberReads(member.body, sourceFile, (0, import_typescript16.isGetAccessorDeclaration)(member), context));
+      if (((0, import_typescript17.isMethodDeclaration)(member) || (0, import_typescript17.isGetAccessorDeclaration)(member)) && member.body) {
+        methods.set(member.name.text, collectMemberReads(member.body, sourceFile, (0, import_typescript17.isGetAccessorDeclaration)(member), context));
       }
     }
   }
@@ -29464,13 +29321,13 @@ function collectReactiveMethods(chain, signals, context) {
 function collectMemberReads(body, sourceFile, getter, context) {
   const reads = { getter, calls: /* @__PURE__ */ new Set(), accesses: /* @__PURE__ */ new Set(), readsModuleSignal: false };
   const visit = (node) => {
-    if ((0, import_typescript16.isPropertyAccessExpression)(node) && node.expression.kind === import_typescript16.SyntaxKind.ThisKeyword) {
-      const calls = (0, import_typescript16.isCallExpression)(node.parent) && node.parent.expression === node;
+    if ((0, import_typescript17.isPropertyAccessExpression)(node) && node.expression.kind === import_typescript17.SyntaxKind.ThisKeyword) {
+      const calls = (0, import_typescript17.isCallExpression)(node.parent) && node.parent.expression === node;
       (calls ? reads.calls : reads.accesses).add(node.name.text);
-    } else if ((0, import_typescript16.isCallExpression)(node) && (0, import_typescript16.isIdentifier)(node.expression) && !reads.readsModuleSignal) {
+    } else if ((0, import_typescript17.isCallExpression)(node) && (0, import_typescript17.isIdentifier)(node.expression) && !reads.readsModuleSignal) {
       reads.readsModuleSignal = isSignalReference(sourceFile, node.expression, context, /* @__PURE__ */ new Set());
     }
-    (0, import_typescript16.forEachChild)(node, visit);
+    (0, import_typescript17.forEachChild)(node, visit);
   };
   visit(body);
   return reads;
@@ -29479,19 +29336,19 @@ function readsReactiveMember(reads, reactive, methods) {
   return reads.readsModuleSignal || [...reads.calls].some((name) => reactive.has(name) && !methods.get(name)?.getter) || [...reads.accesses].some((name) => reactive.has(name) && !!methods.get(name)?.getter);
 }
 function isNamedMember(member) {
-  return !!member.name && (0, import_typescript16.isIdentifier)(member.name);
+  return !!member.name && (0, import_typescript17.isIdentifier)(member.name);
 }
 function findVariable(statement, name) {
-  if (!(0, import_typescript16.isVariableStatement)(statement)) {
+  if (!(0, import_typescript17.isVariableStatement)(statement)) {
     return;
   }
-  return statement.declarationList.declarations.find((declaration) => (0, import_typescript16.isIdentifier)(declaration.name) && declaration.name.text === name);
+  return statement.declarationList.declarations.find((declaration) => (0, import_typescript17.isIdentifier)(declaration.name) && declaration.name.text === name);
 }
 function collectSignalImportBindings(sourceFile) {
   const named = /* @__PURE__ */ new Set();
   const namespaces = /* @__PURE__ */ new Set();
-  (0, import_typescript16.forEachChild)(sourceFile, (node) => {
-    if (!(0, import_typescript16.isImportDeclaration)(node) || !(0, import_typescript16.isStringLiteralLike)(node.moduleSpecifier)) {
+  (0, import_typescript17.forEachChild)(sourceFile, (node) => {
+    if (!(0, import_typescript17.isImportDeclaration)(node) || !(0, import_typescript17.isStringLiteralLike)(node.moduleSpecifier)) {
       return;
     }
     if (!SIGNAL_MODULE_SPECIFIERS.has(node.moduleSpecifier.text)) {
@@ -29501,7 +29358,7 @@ function collectSignalImportBindings(sourceFile) {
     if (!namedBindings) {
       return;
     }
-    if ((0, import_typescript16.isNamespaceImport)(namedBindings)) {
+    if ((0, import_typescript17.isNamespaceImport)(namedBindings)) {
       namespaces.add(namedBindings.name.text);
     } else {
       for (let i2 = 0; i2 < namedBindings.elements.length; i2++) {
@@ -29519,7 +29376,7 @@ function extractOwnSignalMembers({ sourceFile, declaration }, context) {
   const result = new Array();
   for (let i2 = 0; i2 < declaration.members.length; i2++) {
     const member = declaration.members[i2];
-    if ((0, import_typescript16.isPropertyDeclaration)(member) && (0, import_typescript16.isIdentifier)(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
+    if ((0, import_typescript17.isPropertyDeclaration)(member) && (0, import_typescript17.isIdentifier)(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
       result.push(member.name.text);
     }
   }
@@ -29532,7 +29389,7 @@ function isSignalMember(member, sourceFile, bindings, context) {
   if (!member.initializer) {
     return false;
   }
-  if ((0, import_typescript16.isCallExpression)(member.initializer)) {
+  if ((0, import_typescript17.isCallExpression)(member.initializer)) {
     return resolvesToSignalBinding(member.initializer.expression, bindings);
   }
   return isSignalReference(sourceFile, member.initializer, context, /* @__PURE__ */ new Set());
@@ -29554,28 +29411,28 @@ function isSignalVariable(variable, context, visitedVariables) {
   if (!declaration.initializer) {
     return false;
   }
-  return (0, import_typescript16.isCallExpression)(declaration.initializer) ? resolvesToSignalBinding(declaration.initializer.expression, bindings) : isSignalReference(variable.sourceFile, declaration.initializer, context, visitedVariables);
+  return (0, import_typescript17.isCallExpression)(declaration.initializer) ? resolvesToSignalBinding(declaration.initializer.expression, bindings) : isSignalReference(variable.sourceFile, declaration.initializer, context, visitedVariables);
 }
 function resolvesToSignalBinding(expr, bindings) {
-  if ((0, import_typescript16.isIdentifier)(expr)) {
+  if ((0, import_typescript17.isIdentifier)(expr)) {
     return bindings.named.has(expr.text);
   }
-  if ((0, import_typescript16.isPropertyAccessExpression)(expr) && (0, import_typescript16.isIdentifier)(expr.expression)) {
+  if ((0, import_typescript17.isPropertyAccessExpression)(expr) && (0, import_typescript17.isIdentifier)(expr.expression)) {
     return bindings.namespaces.has(expr.expression.text) && SIGNAL_EXPORTS.has(expr.name.text);
   }
   return false;
 }
 function isSignalType(type, bindings) {
-  if ((0, import_typescript16.isTypeReferenceNode)(type)) {
+  if ((0, import_typescript17.isTypeReferenceNode)(type)) {
     return resolvesEntityNameToSignalBinding(type.typeName, bindings);
   }
-  return (0, import_typescript16.isImportTypeNode)(type) && !type.isTypeOf && !!type.qualifier && (0, import_typescript16.isIdentifier)(type.qualifier) && SIGNAL_EXPORTS.has(type.qualifier.text) && (0, import_typescript16.isLiteralTypeNode)(type.argument) && (0, import_typescript16.isStringLiteralLike)(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
+  return (0, import_typescript17.isImportTypeNode)(type) && !type.isTypeOf && !!type.qualifier && (0, import_typescript17.isIdentifier)(type.qualifier) && SIGNAL_EXPORTS.has(type.qualifier.text) && (0, import_typescript17.isLiteralTypeNode)(type.argument) && (0, import_typescript17.isStringLiteralLike)(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
 }
 function resolvesEntityNameToSignalBinding(entityName, bindings) {
-  if ((0, import_typescript16.isIdentifier)(entityName)) {
+  if ((0, import_typescript17.isIdentifier)(entityName)) {
     return bindings.named.has(entityName.text);
   }
-  if ((0, import_typescript16.isQualifiedName)(entityName) && (0, import_typescript16.isIdentifier)(entityName.left)) {
+  if ((0, import_typescript17.isQualifiedName)(entityName) && (0, import_typescript17.isIdentifier)(entityName.left)) {
     return bindings.namespaces.has(entityName.left.text) && SIGNAL_EXPORTS.has(entityName.right.text);
   }
   return false;
@@ -29585,7 +29442,7 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
   const variable = resolveModuleExport(modulePath, exportName, VARIABLE_FINDER, context);
   if (variable) {
     const { initializer } = variable.declaration;
-    if (initializer && ((0, import_typescript16.isArrowFunction)(initializer) || (0, import_typescript16.isFunctionExpression)(initializer))) {
+    if (initializer && ((0, import_typescript17.isArrowFunction)(initializer) || (0, import_typescript17.isFunctionExpression)(initializer))) {
       return collectMemberReads(initializer.body, variable.sourceFile, false, context).readsModuleSignal;
     }
     return isSignalVariable(variable, context, /* @__PURE__ */ new Set());
@@ -29595,21 +29452,21 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
 }
 
 // ../packages/compiler/src/utils/component-logic/component-logic.utils.ts
-var ASSIGNMENTS = { first: import_typescript17.SyntaxKind.FirstAssignment, last: import_typescript17.SyntaxKind.LastAssignment };
+var ASSIGNMENTS = { first: import_typescript18.SyntaxKind.FirstAssignment, last: import_typescript18.SyntaxKind.LastAssignment };
 
 // ../packages/language-core/src/lib/component-definition/component-definition.ts
 var import_node_fs2 = require("fs");
 var import_node_path2 = require("path");
-var import_typescript19 = require("typescript");
+var import_typescript20 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/component-options/component-options.utils.ts
-var import_typescript18 = require("typescript");
+var import_typescript19 = require("typescript");
 function findStringOptions(decorator, names) {
   const options = new Array();
-  const { properties } = decorator.expression.arguments.find(import_typescript18.isObjectLiteralExpression) ?? {};
+  const { properties } = decorator.expression.arguments.find(import_typescript19.isObjectLiteralExpression) ?? {};
   for (let i2 = 0; properties && i2 < properties.length; i2++) {
     const property = properties[i2];
-    if ((0, import_typescript18.isPropertyAssignment)(property) && (0, import_typescript18.isIdentifier)(property.name) && names.includes(property.name.text) && (0, import_typescript18.isStringLiteral)(property.initializer)) {
+    if ((0, import_typescript19.isPropertyAssignment)(property) && (0, import_typescript19.isIdentifier)(property.name) && names.includes(property.name.text) && (0, import_typescript19.isStringLiteral)(property.initializer)) {
       options.push({ name: property.name.text, literal: property.initializer });
     }
   }
@@ -30065,7 +29922,7 @@ async function getComponentDefinition(fileName, text, offset) {
 }
 async function extractComponents(fileName, text) {
   try {
-    const metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript19.createSourceFile)(fileName, text, import_typescript19.ScriptTarget.Latest, true));
+    const metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript20.createSourceFile)(fileName, text, import_typescript20.ScriptTarget.Latest, true));
     if (metadatas?.size) {
       return Array.from(metadatas.values());
     }
@@ -30080,15 +29937,15 @@ function resolveUrls(fileName, urls) {
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
 var import_node_fs6 = require("fs");
 var import_node_path7 = require("path");
-var import_typescript27 = require("typescript");
+var import_typescript28 = require("typescript");
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
 var import_node_path6 = require("path");
-var import_typescript26 = require("typescript");
+var import_typescript27 = require("typescript");
 
 // ../packages/language-core/src/lib/language-service/language-service.ts
 var import_node_fs3 = require("fs");
-var import_typescript20 = require("typescript");
+var import_typescript21 = require("typescript");
 var documentOverlays = /* @__PURE__ */ new Map();
 var projectLanguageServices = /* @__PURE__ */ new Map();
 var ProjectLanguageService = class {
@@ -30143,7 +30000,7 @@ var ProjectLanguageService = class {
     }
     this._compilerOptions = compilerOptions;
     this._projectFileNames = fileNames;
-    this._languageService ??= (0, import_typescript20.createLanguageService)(this._createHost(), (0, import_typescript20.createDocumentRegistry)());
+    this._languageService ??= (0, import_typescript21.createLanguageService)(this._createHost(), (0, import_typescript21.createDocumentRegistry)());
     return this._languageService;
   }
   /**
@@ -30223,17 +30080,17 @@ var ProjectLanguageService = class {
       },
       getScriptSnapshot: (fileName) => {
         const text = this._readFile(fileName);
-        return text === void 0 ? void 0 : import_typescript20.ScriptSnapshot.fromString(text);
+        return text === void 0 ? void 0 : import_typescript21.ScriptSnapshot.fromString(text);
       },
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
-      getDefaultLibFileName: (options) => (0, import_typescript20.getDefaultLibFilePath)(options),
-      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || import_typescript20.sys.fileExists(fileName),
+      getDefaultLibFileName: (options) => (0, import_typescript21.getDefaultLibFilePath)(options),
+      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || import_typescript21.sys.fileExists(fileName),
       readFile: (fileName) => this._readFile(fileName),
-      readDirectory: import_typescript20.sys.readDirectory,
-      directoryExists: import_typescript20.sys.directoryExists,
-      getDirectories: import_typescript20.sys.getDirectories,
-      realpath: import_typescript20.sys.realpath
+      readDirectory: import_typescript21.sys.readDirectory,
+      directoryExists: import_typescript21.sys.directoryExists,
+      getDirectories: import_typescript21.sys.getDirectories,
+      realpath: import_typescript21.sys.realpath
     };
   }
   /**
@@ -30284,7 +30141,7 @@ function removeDocumentOverlay(fileName) {
   documentOverlays.delete(normalizeFileName(fileName));
 }
 function readDocument(fileName) {
-  return documentOverlays.get(normalizeFileName(fileName))?.content ?? (import_typescript20.sys.fileExists(fileName) ? import_typescript20.sys.readFile(fileName) : void 0);
+  return documentOverlays.get(normalizeFileName(fileName))?.content ?? (import_typescript21.sys.fileExists(fileName) ? import_typescript21.sys.readFile(fileName) : void 0);
 }
 function upsertVirtualFile(virtualPath, content) {
   defaultProjectLanguageService.upsertVirtualFile(virtualPath, content);
@@ -30300,7 +30157,7 @@ function upsertEntry(entries, key, content) {
 }
 
 // ../packages/language-core/src/lib/template-metadata-cache/template-metadata-cache.ts
-var import_typescript22 = require("typescript");
+var import_typescript23 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/module-entries/module-entries.utils.ts
 var import_node_fs4 = require("fs");
@@ -30321,14 +30178,14 @@ function listModuleEntries(directory) {
 // ../packages/language-core/src/lib/utils/module-path/module-path.utils.ts
 var import_node_fs5 = require("fs");
 var import_node_path3 = require("path");
-var import_typescript21 = require("typescript");
-var DEFAULT_COMPILER_OPTIONS2 = { module: import_typescript21.ModuleKind.ESNext, moduleResolution: import_typescript21.ModuleResolutionKind.Bundler };
+var import_typescript22 = require("typescript");
+var DEFAULT_COMPILER_OPTIONS2 = { module: import_typescript22.ModuleKind.ESNext, moduleResolution: import_typescript22.ModuleResolutionKind.Bundler };
 function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_OPTIONS2) {
   if (modulePath.startsWith(".")) {
     const fileName = resolveRelativePath(baseDir, modulePath);
     return fileName ? { fileName, external: false } : void 0;
   }
-  const { resolvedModule } = (0, import_typescript21.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript21.sys);
+  const { resolvedModule } = (0, import_typescript22.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript22.sys);
   return resolvedModule && { fileName: toPosixPath(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
 }
 function resolveModulePath(baseDir, modulePath, compilerOptions) {
@@ -30505,7 +30362,7 @@ var TemplateMetadataCache = class {
     if (cached?.text === text) {
       return cached.metadatas;
     }
-    const sourceFile = (0, import_typescript22.createSourceFile)(fileName, text, import_typescript22.ScriptTarget.Latest, true);
+    const sourceFile = (0, import_typescript23.createSourceFile)(fileName, text, import_typescript23.ScriptTarget.Latest, true);
     const components = await extractComponentsMetadataFromSourceFile(sourceFile, this._compilerOptions);
     const metadatas = new Map(components);
     const directives = await extractDirectivesMetadataFromSourceFile(sourceFile, this._compilerOptions);
@@ -30521,18 +30378,18 @@ var TemplateMetadataCache = class {
 
 // ../packages/language-core/src/lib/utils/compiler-options/compiler-options.utils.ts
 var import_node_path4 = require("path");
-var import_typescript23 = require("typescript");
+var import_typescript24 = require("typescript");
 function loadTsConfig(fromDir) {
-  const configPath = (0, import_typescript23.findConfigFile)(fromDir, import_typescript23.sys.fileExists, "tsconfig.json");
+  const configPath = (0, import_typescript24.findConfigFile)(fromDir, import_typescript24.sys.fileExists, "tsconfig.json");
   if (!configPath) {
     return { options: {}, fileNames: [] };
   }
-  const configFile = (0, import_typescript23.readConfigFile)(configPath, import_typescript23.sys.readFile);
-  const parsed = (0, import_typescript23.parseJsonConfigFileContent)(configFile.config, import_typescript23.sys, (0, import_node_path4.dirname)(configPath));
+  const configFile = (0, import_typescript24.readConfigFile)(configPath, import_typescript24.sys.readFile);
+  const parsed = (0, import_typescript24.parseJsonConfigFileContent)(configFile.config, import_typescript24.sys, (0, import_node_path4.dirname)(configPath));
   return { options: parsed.options, fileNames: parsed.fileNames };
 }
 function findTsConfigPath(fromDir) {
-  return (0, import_typescript23.findConfigFile)(fromDir, import_typescript23.sys.fileExists, "tsconfig.json");
+  return (0, import_typescript24.findConfigFile)(fromDir, import_typescript24.sys.fileExists, "tsconfig.json");
 }
 
 // ../packages/language-core/src/lib/utils/shim/shim.utils.ts
@@ -30564,24 +30421,24 @@ function buildTypecheckShim(componentData, shimPath, body) {
 }
 
 // ../packages/language-core/src/lib/utils/symbol-kind/symbol-kind.utils.ts
-var import_typescript24 = require("typescript");
+var import_typescript25 = require("typescript");
 var KINDS = [
-  [import_typescript24.SymbolFlags.Class, import_typescript24.ScriptElementKind.classElement],
-  [import_typescript24.SymbolFlags.Enum, import_typescript24.ScriptElementKind.enumElement],
-  [import_typescript24.SymbolFlags.Interface, import_typescript24.ScriptElementKind.interfaceElement],
-  [import_typescript24.SymbolFlags.TypeAlias, import_typescript24.ScriptElementKind.typeElement],
-  [import_typescript24.SymbolFlags.Function, import_typescript24.ScriptElementKind.functionElement],
-  [import_typescript24.SymbolFlags.BlockScopedVariable, import_typescript24.ScriptElementKind.constElement],
-  [import_typescript24.SymbolFlags.Variable, import_typescript24.ScriptElementKind.variableElement],
-  [import_typescript24.SymbolFlags.Module, import_typescript24.ScriptElementKind.moduleElement]
+  [import_typescript25.SymbolFlags.Class, import_typescript25.ScriptElementKind.classElement],
+  [import_typescript25.SymbolFlags.Enum, import_typescript25.ScriptElementKind.enumElement],
+  [import_typescript25.SymbolFlags.Interface, import_typescript25.ScriptElementKind.interfaceElement],
+  [import_typescript25.SymbolFlags.TypeAlias, import_typescript25.ScriptElementKind.typeElement],
+  [import_typescript25.SymbolFlags.Function, import_typescript25.ScriptElementKind.functionElement],
+  [import_typescript25.SymbolFlags.BlockScopedVariable, import_typescript25.ScriptElementKind.constElement],
+  [import_typescript25.SymbolFlags.Variable, import_typescript25.ScriptElementKind.variableElement],
+  [import_typescript25.SymbolFlags.Module, import_typescript25.ScriptElementKind.moduleElement]
 ];
 function getSymbolKind(checker, symbol) {
-  const { flags } = symbol.flags & import_typescript24.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
-  return KINDS.find(([flag]) => flags & flag)?.[1] ?? import_typescript24.ScriptElementKind.unknown;
+  const { flags } = symbol.flags & import_typescript25.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  return KINDS.find(([flag]) => flags & flag)?.[1] ?? import_typescript25.ScriptElementKind.unknown;
 }
 
 // ../packages/language-core/src/lib/utils/xaendar-config/xaendar-config.utils.ts
-var import_typescript25 = require("typescript");
+var import_typescript26 = require("typescript");
 function readCustomElements(fromDir) {
   return readConfig(fromDir)?.customElements;
 }
@@ -30590,9 +30447,9 @@ function readSsr(fromDir) {
   return config && !!config.ssr;
 }
 function readConfig(fromDir) {
-  const configPath = (0, import_typescript25.findConfigFile)(fromDir, import_typescript25.sys.fileExists, "xaendar.json");
+  const configPath = (0, import_typescript26.findConfigFile)(fromDir, import_typescript26.sys.fileExists, "xaendar.json");
   if (configPath) {
-    const { config, error } = (0, import_typescript25.readConfigFile)(configPath, import_typescript25.sys.readFile);
+    const { config, error } = (0, import_typescript26.readConfigFile)(configPath, import_typescript26.sys.readFile);
     return error ? void 0 : config;
   }
 }
@@ -30744,8 +30601,8 @@ function extractMembers(components, project, compilerOptions) {
   for (const [fileName, classNames] of components) {
     project.registerRealFile(fileName);
     dependencies.add(normalizeFileName(fileName));
-    const sourceFile = (0, import_typescript26.createSourceFile)(fileName, readDocument(fileName) ?? "", import_typescript26.ScriptTarget.Latest, true);
-    const classes = sourceFile.statements.filter((statement) => (0, import_typescript26.isClassDeclaration)(statement) && !!statement.name && classNames.includes(statement.name.text));
+    const sourceFile = (0, import_typescript27.createSourceFile)(fileName, readDocument(fileName) ?? "", import_typescript27.ScriptTarget.Latest, true);
+    const classes = sourceFile.statements.filter((statement) => (0, import_typescript27.isClassDeclaration)(statement) && !!statement.name && classNames.includes(statement.name.text));
     for (let i2 = 0; i2 < classes.length; i2++) {
       const members = extractComponentMembers(sourceFile, classes[i2], compilerOptions);
       for (let j = 0; j < members.shadowingMembers.length; j++) {
@@ -30797,7 +30654,7 @@ function toError(error) {
 
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
 async function getComponentDiagnostics(fileName, text) {
-  const sourceFile = (0, import_typescript27.createSourceFile)(fileName, text, import_typescript27.ScriptTarget.Latest, true);
+  const sourceFile = (0, import_typescript28.createSourceFile)(fileName, text, import_typescript28.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
   const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path7.dirname)(fileName)));
   if (errors.length) {
@@ -30859,7 +30716,7 @@ function toSpan(literal) {
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
 var import_node_path8 = require("path");
-var import_typescript28 = require("typescript");
+var import_typescript29 = require("typescript");
 var KEYWORD_SNIPPETS = {
   "if": "@if ($1) {\n	$0\n}",
   "else": "@else {\n	$0\n}",
@@ -30890,7 +30747,7 @@ var TRIGGER_SNIPPETS = {
 var RETRIGGERING_TRIGGERS = /* @__PURE__ */ new Set(["when", "prefetch"]);
 var RETRIGGERING_KEYWORDS = /* @__PURE__ */ new Set(["if", "else if", "for", "switch", "import"]);
 var SERVER_KEYWORDS = /* @__PURE__ */ new Set(["hydrate", "client"]);
-var TYPE_KINDS = /* @__PURE__ */ new Set([import_typescript28.ScriptElementKind.interfaceElement, import_typescript28.ScriptElementKind.typeElement]);
+var TYPE_KINDS = /* @__PURE__ */ new Set([import_typescript29.ScriptElementKind.interfaceElement, import_typescript29.ScriptElementKind.typeElement]);
 function getTemplateCompletions(analysis, offset) {
   const shimPosition = findShimPosition(analysis, offset);
   if (!shimPosition) {
@@ -30920,7 +30777,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   const members = new Array();
   for (let i2 = 0; i2 < allCompletions.length; i2++) {
     const completion = allCompletions[i2];
-    const isMethod = completion.kind === import_typescript28.ScriptElementKind.memberFunctionElement;
+    const isMethod = completion.kind === import_typescript29.ScriptElementKind.memberFunctionElement;
     if (kind !== "handler" || isMethod) {
       members.push({ ...completion, sortText: getMemberSortText(origins.get(completion.name), isMethod) });
     }
@@ -30929,7 +30786,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   for (let i2 = 0; i2 < symbols.length; i2++) {
     const symbol = symbols[i2];
     const isValue = !TYPE_KINDS.has(symbol.kind);
-    if (isValue && !origins.has(symbol.name) && (kind !== "handler" || symbol.kind === import_typescript28.ScriptElementKind.functionElement)) {
+    if (isValue && !origins.has(symbol.name) && (kind !== "handler" || symbol.kind === import_typescript29.ScriptElementKind.functionElement)) {
       members.push(symbol);
     }
   }
@@ -30938,7 +30795,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   }
   const variables = getTemplateNames(analysis, identifier);
   const names = new Set(variables);
-  const proposed = variables.map((name, index) => ({ name, kind: import_typescript28.ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, "0")}`, replacementSpan: span }));
+  const proposed = variables.map((name, index) => ({ name, kind: import_typescript29.ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, "0")}`, replacementSpan: span }));
   for (let i2 = 0; i2 < members.length; i2++) {
     if (!names.has(members[i2].name)) {
       proposed.push(members[i2]);
@@ -30956,7 +30813,7 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
   const available = readSsr((0, import_node_path8.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
-    kind: import_typescript28.ScriptElementKind.keyword,
+    kind: import_typescript29.ScriptElementKind.keyword,
     sortText: String(index),
     replacementSpan: span,
     snippet: KEYWORD_SNIPPETS[keyword],
@@ -30971,7 +30828,7 @@ function getTemplateTriggerCompletions(source, offset) {
   const { names, span } = context;
   return names.map((name, index) => ({
     name,
-    kind: import_typescript28.ScriptElementKind.keyword,
+    kind: import_typescript29.ScriptElementKind.keyword,
     sortText: String(index),
     replacementSpan: span,
     snippet: TRIGGER_SNIPPETS[name] ?? name,
@@ -30992,7 +30849,7 @@ function getTemplateBindingCompletions(metadatas, source, offset) {
   if (kind === "event") {
     return events;
   }
-  const properties = [...owner.properties.keys()].map((name) => ({ name, kind: import_typescript28.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
+  const properties = [...owner.properties.keys()].map((name) => ({ name, kind: import_typescript29.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
   return [...properties, ...events];
 }
 async function getTemplateSourceBindingCompletions(templatePath, source, offset) {
@@ -31066,14 +30923,14 @@ function getTemplateImportPathCompletions(templatePath, source, offset) {
   }
   const { directory, span } = context;
   if (directory === "") {
-    return ["./", "../"].map((name) => ({ name, kind: import_typescript28.ScriptElementKind.directory, sortText: "0", replacementSpan: span }));
+    return ["./", "../"].map((name) => ({ name, kind: import_typescript29.ScriptElementKind.directory, sortText: "0", replacementSpan: span }));
   }
   if (!directory.startsWith(".")) {
     return [];
   }
   return listModuleEntries(resolvePosixPath((0, import_node_path8.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
     name,
-    kind: isDirectory ? import_typescript28.ScriptElementKind.directory : import_typescript28.ScriptElementKind.scriptElement,
+    kind: isDirectory ? import_typescript29.ScriptElementKind.directory : import_typescript29.ScriptElementKind.scriptElement,
     sortText: isDirectory ? "0" : "1",
     replacementSpan: span
   }));
@@ -31088,18 +30945,18 @@ function findShimPosition({ typeCheck, languageService, shimPath, bodyLineOffset
 function getTemplateNames({ languageService, bodyLineOffset }, { shimFile, position }) {
   const bodyStart = shimFile.getPositionOfLineAndCharacter(bodyLineOffset, 0);
   const isTemplateName = ({ name, valueDeclaration }) => valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
-  return languageService.getProgram().getTypeChecker().getSymbolsInScope(findNode(shimFile, position), import_typescript28.SymbolFlags.Variable).filter(isTemplateName).map(({ name }) => name);
+  return languageService.getProgram().getTypeChecker().getSymbolsInScope(findNode(shimFile, position), import_typescript29.SymbolFlags.Variable).filter(isTemplateName).map(({ name }) => name);
 }
 function getMemberOrigins({ languageService }, { shimFile }) {
   const program = languageService.getProgram();
   const checker = program.getTypeChecker();
-  const root = shimFile.statements.find(import_typescript28.isVariableStatement).declarationList.declarations[0];
+  const root = shimFile.statements.find(import_typescript29.isVariableStatement).declarationList.declarations[0];
   const properties = checker.getPropertiesOfType(checker.getTypeAtLocation(root));
   const origins = /* @__PURE__ */ new Map();
   for (let i2 = 0; i2 < properties.length; i2++) {
     const { name, valueDeclaration } = properties[i2];
     const isDom = !valueDeclaration || program.isSourceFileDefaultLibrary(valueDeclaration.getSourceFile());
-    const isCustomElement = !isDom && (0, import_typescript28.isClassDeclaration)(valueDeclaration.parent) && valueDeclaration.parent.name?.text === "CustomElement";
+    const isCustomElement = !isDom && (0, import_typescript29.isClassDeclaration)(valueDeclaration.parent) && valueDeclaration.parent.name?.text === "CustomElement";
     origins.set(name, isDom ? 2 : isCustomElement ? 1 : 0);
   }
   return origins;
@@ -31115,8 +30972,8 @@ function getImportedSymbolCompletions({ languageService, bodyLineOffset }, { shi
   };
   for (let i2 = 0; i2 < shimFile.statements.length; i2++) {
     const statement = shimFile.statements[i2];
-    const namedBindings = (0, import_typescript28.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
-    if (namedBindings && (0, import_typescript28.isNamespaceImport)(namedBindings)) {
+    const namedBindings = (0, import_typescript29.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
+    if (namedBindings && (0, import_typescript29.isNamespaceImport)(namedBindings)) {
       add(namedBindings.name);
     } else if (namedBindings) {
       for (let j = 0; j < namedBindings.elements.length; j++) {
@@ -31151,7 +31008,7 @@ function getMemberSortText(origin, isMethod) {
   return String(origin * 2 + (isMethod ? 1 : 0) + 1);
 }
 function findNode(node, position) {
-  return (0, import_typescript28.forEachChild)(node, (child) => child.getStart() <= position && position <= child.getEnd() ? findNode(child, position) : void 0) ?? node;
+  return (0, import_typescript29.forEachChild)(node, (child) => child.getStart() <= position && position <= child.getEnd() ? findNode(child, position) : void 0) ?? node;
 }
 
 // ../packages/language-core/src/lib/template-definition/template-definition.ts
@@ -31222,7 +31079,7 @@ function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLi
 }
 
 // ../packages/language-core/src/lib/template-diagnostics/template-diagnostics.ts
-var import_typescript31 = require("typescript");
+var import_typescript32 = require("typescript");
 
 // ../packages/language-core/src/lib/template-imports/template-imports.ts
 function findUnusedImports(analysis) {
@@ -31283,7 +31140,7 @@ function organizeTemplateImports(source, analysis) {
 }
 
 // ../packages/language-core/src/lib/template-warnings/template-warnings.ts
-var import_typescript29 = require("typescript");
+var import_typescript30 = require("typescript");
 function getTemplateWarnings(ast, shadowingMembers) {
   const warnings = new Array();
   const declared = new Set(shadowingMembers);
@@ -31312,10 +31169,10 @@ function findGlobalReads(expression) {
   const reads = new Array();
   const guarded = /* @__PURE__ */ new Set();
   const visit = (node, parent) => {
-    if ((0, import_typescript29.isTypeOfExpression)(node) && (0, import_typescript29.isIdentifier)(node.expression)) {
+    if ((0, import_typescript30.isTypeOfExpression)(node) && (0, import_typescript30.isIdentifier)(node.expression)) {
       guarded.add(node.expression.text);
-    } else if (!(0, import_typescript29.isIdentifier)(node)) {
-      (0, import_typescript29.forEachChild)(node, (child) => visit(child, node));
+    } else if (!(0, import_typescript30.isIdentifier)(node)) {
+      forEachExpressionChild(node, (child) => visit(child, node));
     } else if (isBrowserOnlyGlobal(node.text) && !isMemberName(node, parent)) {
       reads.push(node);
     }
@@ -31324,17 +31181,17 @@ function findGlobalReads(expression) {
   return reads.filter(({ text }) => !guarded.has(text));
 }
 function isMemberName(node, parent) {
-  return ((0, import_typescript29.isPropertyAccessExpression)(parent) || (0, import_typescript29.isPropertyAssignment)(parent)) && parent.name === node;
+  return ((0, import_typescript30.isPropertyAccessExpression)(parent) || (0, import_typescript30.isPropertyAssignment)(parent)) && parent.name === node;
 }
 
 // ../packages/language-core/src/lib/utils/import-conflicts/import-conflicts.utils.ts
-var import_typescript30 = require("typescript");
+var import_typescript31 = require("typescript");
 var IMPORT_MEMBER_CONFLICT_CODE = 90001;
 function getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset) {
   const program = languageService.getProgram();
   const shimFile = program.getSourceFile(shimPath);
   const checker = program.getTypeChecker();
-  const root = shimFile.statements.find(import_typescript30.isVariableStatement).declarationList.declarations[0];
+  const root = shimFile.statements.find(import_typescript31.isVariableStatement).declarationList.declarations[0];
   const rootType = checker.getTypeAtLocation(root);
   let diagnostics;
   const check = (name) => {
@@ -31344,7 +31201,7 @@ function getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset)
         file: shimFile,
         start: name.getStart(shimFile),
         length: name.getWidth(shimFile),
-        category: import_typescript30.DiagnosticCategory.Error,
+        category: import_typescript31.DiagnosticCategory.Error,
         code: IMPORT_MEMBER_CONFLICT_CODE,
         messageText: `'${name.text}' is also a member of ${checker.typeToString(rootType)}: import it under another name (\u2026 as name), or rename the member.`
       });
@@ -31352,8 +31209,8 @@ function getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset)
   };
   for (let i2 = 0; i2 < shimFile.statements.length; i2++) {
     const statement = shimFile.statements[i2];
-    const namedBindings = (0, import_typescript30.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
-    if (namedBindings && (0, import_typescript30.isNamespaceImport)(namedBindings)) {
+    const namedBindings = (0, import_typescript31.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
+    if (namedBindings && (0, import_typescript31.isNamespaceImport)(namedBindings)) {
       check(namedBindings.name);
     } else if (namedBindings) {
       for (let j = 0; j < namedBindings.elements.length; j++) {
@@ -31379,7 +31236,7 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
     ...errors.map((templateError) => toTemplateDiagnostic(templateError, ast)),
     ...shimDiagnostics.map((diagnostic) => ({
       span: locateDiagnostic(analysis, diagnostic),
-      message: (0, import_typescript31.flattenDiagnosticMessageText)(diagnostic.messageText, "\n"),
+      message: (0, import_typescript32.flattenDiagnosticMessageText)(diagnostic.messageText, "\n"),
       category: diagnostic.category,
       code: diagnostic.code
     }))
@@ -31387,14 +31244,14 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
   const unused = findUnusedImports(analysis);
   if (unused) {
     for (let i2 = 0; i2 < unused.length; i2++) {
-      diagnostics.push({ span: unused[i2].span, message: `'${unused[i2].name}' is declared but never used.`, category: import_typescript31.DiagnosticCategory.Suggestion, unnecessary: true });
+      diagnostics.push({ span: unused[i2].span, message: `'${unused[i2].name}' is declared but never used.`, category: import_typescript32.DiagnosticCategory.Suggestion, unnecessary: true });
     }
   }
   const { ssr, shadowingMembers } = analysis;
   if (ssr) {
     const warnings = getTemplateWarnings(analysis.ast, shadowingMembers);
     for (let i2 = 0; i2 < warnings.length; i2++) {
-      diagnostics.push({ ...warnings[i2], category: import_typescript31.DiagnosticCategory.Warning });
+      diagnostics.push({ ...warnings[i2], category: import_typescript32.DiagnosticCategory.Warning });
     }
   }
   return diagnostics;
@@ -31403,7 +31260,7 @@ function toTemplateDiagnostic(error, ast) {
   return {
     span: getErrorSpan(error, ast),
     message: error instanceof TemplateError ? error.detail : error.message,
-    category: import_typescript31.DiagnosticCategory.Error
+    category: import_typescript32.DiagnosticCategory.Error
   };
 }
 function locateDiagnostic({ typeCheck, bodyLineOffset, ast }, diagnostic) {
@@ -31428,7 +31285,7 @@ function getTemplateFormatting(source, options) {
 }
 
 // ../packages/language-core/src/lib/template-hover/template-hover.ts
-var import_typescript32 = require("typescript");
+var import_typescript33 = require("typescript");
 function getTemplateHover(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
   return target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
@@ -31455,9 +31312,9 @@ function toMarkdown(quickInfo) {
     return void 0;
   }
   const sections = [`\`\`\`ts
-${(0, import_typescript32.displayPartsToString)(quickInfo.displayParts)}
+${(0, import_typescript33.displayPartsToString)(quickInfo.displayParts)}
 \`\`\``];
-  const documentation = (0, import_typescript32.displayPartsToString)(quickInfo.documentation);
+  const documentation = (0, import_typescript33.displayPartsToString)(quickInfo.documentation);
   if (documentation) {
     sections.push(documentation);
   }
@@ -31465,7 +31322,7 @@ ${(0, import_typescript32.displayPartsToString)(quickInfo.displayParts)}
   if (tags?.length) {
     for (let i2 = 0; i2 < tags.length; i2++) {
       const { name, text } = tags[i2];
-      const description = (0, import_typescript32.displayPartsToString)(text);
+      const description = (0, import_typescript33.displayPartsToString)(text);
       sections.push(description ? `*@${name}* \u2014 ${description}` : `*@${name}*`);
     }
   }
@@ -31473,7 +31330,7 @@ ${(0, import_typescript32.displayPartsToString)(quickInfo.displayParts)}
 }
 
 // ../packages/language-core/src/lib/template-semantic-tokens/template-semantic-tokens.ts
-var import_typescript33 = require("typescript");
+var import_typescript34 = require("typescript");
 var TEMPLATE_SEMANTIC_TOKEN_TYPES = ["property", "event", "decorator", "variable", "function"];
 var TEMPLATE_SEMANTIC_TOKEN_MODIFIERS = ["readonly"];
 function getTemplateSemanticTokens({ ast, metadatas }) {
@@ -31521,15 +31378,15 @@ function getTemplateSemanticTokens({ ast, metadatas }) {
   return tokens.sort((first, second) => first.span.start - second.span.start);
 }
 function collectVariableReads(node, parent, variables, collect) {
-  const isMemberName2 = ((0, import_typescript33.isPropertyAccessExpression)(parent) || (0, import_typescript33.isPropertyAssignment)(parent)) && parent.name === node;
-  if ((0, import_typescript33.isIdentifier)(node) && !isMemberName2 && variables.has(node.text)) {
+  const isMemberName2 = ((0, import_typescript34.isPropertyAccessExpression)(parent) || (0, import_typescript34.isPropertyAssignment)(parent)) && parent.name === node;
+  if ((0, import_typescript34.isIdentifier)(node) && !isMemberName2 && variables.has(node.text)) {
     collect(getTemplateSpan(node));
   }
-  (0, import_typescript33.forEachChild)(node, (child) => collectVariableReads(child, node, variables, collect));
+  forEachExpressionChild(node, (child) => collectVariableReads(child, node, variables, collect));
 }
 
 // ../packages/language-core/src/lib/template-usage/template-usage.ts
-var import_typescript34 = require("typescript");
+var import_typescript35 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path11 = require("path");
@@ -31538,7 +31395,7 @@ var import_node36 = __toESM(require_main3(), 1);
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
 var import_node_path10 = require("path");
-var import_typescript35 = require("typescript");
+var import_typescript36 = require("typescript");
 var COMPONENT_FILE_SUFFIX = ".xd.component.ts";
 var TemplateRegistry = class {
   /**
@@ -31578,7 +31435,7 @@ var TemplateRegistry = class {
     }
     let metadatas;
     try {
-      metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript35.createSourceFile)(componentPath, text, import_typescript35.ScriptTarget.Latest, true));
+      metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript36.createSourceFile)(componentPath, text, import_typescript36.ScriptTarget.Latest, true));
     } catch {
       return;
     }
@@ -31675,7 +31532,7 @@ var Debouncer = class {
 };
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
-var import_typescript36 = require("typescript");
+var import_typescript37 = require("typescript");
 var import_node35 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
@@ -32026,11 +31883,11 @@ function getDocument(fileName, getOpenDocument) {
 }
 function toSeverity(category) {
   switch (category) {
-    case import_typescript36.DiagnosticCategory.Error:
+    case import_typescript37.DiagnosticCategory.Error:
       return import_node35.DiagnosticSeverity.Error;
-    case import_typescript36.DiagnosticCategory.Warning:
+    case import_typescript37.DiagnosticCategory.Warning:
       return import_node35.DiagnosticSeverity.Warning;
-    case import_typescript36.DiagnosticCategory.Suggestion:
+    case import_typescript37.DiagnosticCategory.Suggestion:
       return import_node35.DiagnosticSeverity.Hint;
     default:
       return import_node35.DiagnosticSeverity.Information;
@@ -32038,30 +31895,30 @@ function toSeverity(category) {
 }
 function toCompletionItemKind(kind) {
   switch (kind) {
-    case import_typescript36.ScriptElementKind.memberVariableElement:
-    case import_typescript36.ScriptElementKind.memberGetAccessorElement:
-    case import_typescript36.ScriptElementKind.memberSetAccessorElement:
+    case import_typescript37.ScriptElementKind.memberVariableElement:
+    case import_typescript37.ScriptElementKind.memberGetAccessorElement:
+    case import_typescript37.ScriptElementKind.memberSetAccessorElement:
       return import_node35.CompletionItemKind.Field;
-    case import_typescript36.ScriptElementKind.memberFunctionElement:
+    case import_typescript37.ScriptElementKind.memberFunctionElement:
       return import_node35.CompletionItemKind.Method;
-    case import_typescript36.ScriptElementKind.functionElement:
+    case import_typescript37.ScriptElementKind.functionElement:
       return import_node35.CompletionItemKind.Function;
-    case import_typescript36.ScriptElementKind.variableElement:
-    case import_typescript36.ScriptElementKind.letElement:
-    case import_typescript36.ScriptElementKind.constElement:
+    case import_typescript37.ScriptElementKind.variableElement:
+    case import_typescript37.ScriptElementKind.letElement:
+    case import_typescript37.ScriptElementKind.constElement:
       return import_node35.CompletionItemKind.Variable;
-    case import_typescript36.ScriptElementKind.classElement:
+    case import_typescript37.ScriptElementKind.classElement:
       return import_node35.CompletionItemKind.Class;
-    case import_typescript36.ScriptElementKind.directory:
+    case import_typescript37.ScriptElementKind.directory:
       return import_node35.CompletionItemKind.Folder;
-    case import_typescript36.ScriptElementKind.scriptElement:
+    case import_typescript37.ScriptElementKind.scriptElement:
       return import_node35.CompletionItemKind.File;
     case "event":
       return import_node35.CompletionItemKind.Event;
     case "component":
       return import_node35.CompletionItemKind.Class;
     case "directive":
-    case import_typescript36.ScriptElementKind.keyword:
+    case import_typescript37.ScriptElementKind.keyword:
       return import_node35.CompletionItemKind.Keyword;
     default:
       return import_node35.CompletionItemKind.Text;

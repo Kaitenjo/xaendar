@@ -49,7 +49,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
 - Static values are type-checked as `string`: a numeric input needs `count="{ 3 }"`, not `count="3"`.
 - Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with `signal()` or `computed()`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.
-- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of an element ref (`dialog.showModal()`). Arguments are expressions: literals (`'a'`, `1`, `true`, `null`), `$event` (in any position) and its properties (`$event.key`; `$event.target` is `EventTarget | null`, so read a field through an element ref instead), members, `@for` variables, called, and their properties (`item().id`), element refs and their properties (`field.value`), a signal or a `@for` variable without the call (passes the signal itself), calls and operators (`format(item().id)`, `count() + 1`). No assignments, arrow functions or several statements: put the logic in the method.
+- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of an element ref (`dialog.showModal()`). Arguments are expressions: literals (`'a'`, `1`, `true`, `null`), `$event` (in any position) and its properties (`$event.key`; `$event.target` is `EventTarget | null`, so read a field through an element ref instead, or pass `$event.target as HTMLInputElement`), members, `@for` variables, called, and their properties (`item().id`), element refs and their properties (`field.value`), a signal or a `@for` variable without the call (passes the signal itself), calls and operators (`format(item().id)`, `count() + 1`). No assignments, arrow functions or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
 - On a component tag, an event it does not declare with `@Event` is a native event of its element (`(click)`), typed through `HTMLElementEventMap`; only composed native events leave its shadow root. A name that is neither is a build error.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
@@ -252,14 +252,16 @@ Allowed      members and methods of the class, literals, arithmetic and comparis
              typeof, instanceof, ?. and optional calls, the non-null assertion x!, indexes, array and object
              literals, spread, template literals and tagged templates, globals such as Math, JSON and String,
              the variables of @for, $event in listeners, the functions, constants, enums, classes and signals
-             imported with @import
+             imported with @import, a cast closing the whole interpolation or casting an argument of a call
+             (x as T)
 
-Forbidden    assignments, new, arrow and function expressions, this, as, regular expressions,
-             the comma operator, more than one expression, private and protected members,
+Forbidden    assignments, new, arrow and function expressions, this, a cast of anything but an argument of a call,
+             regular expressions, the comma operator, more than one expression, private and protected members,
              the names of a module that the template doesn't import
 ```
 
 - An object literal needs parentheses (`{ ({ id: 1 }) }`): without them the interpolation renders nothing.
+- A cast `as Type` closes a whole interpolation (`{ value() as string }`, `label="{name() as Label}"`) or casts an argument of a call: of a listener (`(input)="search($event.target as HTMLInputElement)"`, `pick($event as MouseEvent, row() as Row)`), of a `@render` (`@render row(item() as Row)`), of a call in any expression (`{ format(value() as Date) }`, `as unknown as Date` included). The type is written as is in the type-check (imported types included) and generates no code. Any other cast (`{ (item as Row).id }`, `{ a + (b as number) }`) is an error.
 - Members used by the template must be `public`. A module constant, function or signal the template reads is imported (`@import { LIMIT } from './limits.ts'`) rather than copied into a member that only aliases it; what is state of the component stays in its class.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 

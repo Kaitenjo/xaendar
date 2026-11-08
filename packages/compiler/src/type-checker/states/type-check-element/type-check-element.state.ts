@@ -29,7 +29,8 @@ import type { NativeEventType } from '../../types/native-event-type.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { indentLines, line, mapped, mappedSegments, plain } from '../../utils/line-builder/line-builder.utils';
 import type { LinePart } from '../../types/line-part.type';
-import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
+import { castExpression } from '../../utils/cast/cast.utils';
+import { mappedExpression, mappedInterpolation } from '../../utils/mapped-expression/mapped-expression.utils';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/scope/scope.utils';
 
@@ -426,7 +427,7 @@ function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: strin
       }
 
       if (typeof value === 'object') {
-        values.push('() => (', mappedExpression(value.expression, context, value.span), ')');
+        values.push('() => (', mappedInterpolation(value, context), ')');
       } else {
         values.push('(): string => \'\'');
       }
@@ -572,7 +573,7 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
         plain('{'),
         ...indentLines(typeof value === 'object'
           // `satisfies` and the type are mapped onto the binding, as TypeScript reports a value that doesn't satisfy the type on `satisfies`
-          ? [line('(', mappedExpression(value.expression, context, value.span), ') ', mapped(`satisfies ${property.type}`, span), ';')]
+          ? [line('(', mappedInterpolation(value, context), ') ', mapped(`satisfies ${property.type}`, span), ';')]
           : [plain('let x!: string;'), line(mapped(`x satisfies ${property.type};`, span))]
         ),
         plain('}')
@@ -660,7 +661,7 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], context: TypeChe
   for (let i = 0; i < attributes.length; i++) {
     const { value } = attributes[i];
     if (typeof value !== 'string') {
-      lines.push(line(mappedExpression(value.expression, context, value.span, ';')));
+      lines.push(line(mappedInterpolation(value, context, ';')));
     }
   };
 
@@ -680,7 +681,7 @@ function typeCheckClassBindings(classBindings: ClassBindingNode[], context: Type
 
   for (let i = 0; i < classBindings.length; i++) {
     const { value } = classBindings[i];
-    lines.push(line(mappedExpression(value.expression, context, value.span, ';')));
+    lines.push(line(mappedInterpolation(value, context, ';')));
   }
 
   return lines;
@@ -701,7 +702,7 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
 
 /**
  * Type-checks an event binding by emitting a call to the handler on `root`, or as written for a handler the template
- * imports, with its resolved arguments.
+ * imports, with its resolved arguments, each one cast to the type of its cast, if any (see `castExpression`).
  * When an argument reads `$event`, whole or in part, the call is wrapped in a block declaring `$event` with the type
  * of the event, so that the following events can declare it again.
  *
@@ -710,7 +711,7 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
  * @param context - Current type-check scope.
  * @returns The generated type-check lines: the call, wrapped in a block when it declares `$event`.
  */
-function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
+function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, casts, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier('$event');
   for (let i = 0; i < parameters.length; i++) {
@@ -738,7 +739,9 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, span
   for (let i = 0; i < parameters.length; i++) {
     const separator = i ? ', ' : '';
     const argumentSegments = new Array<LineMapping>();
-    const argument = resolveExpression(parameters[i], eventContext, { resolver: 'root', preserveNonNull: true, narrowedSignal: name => eventContext.getNarrowedSignal(name) }, argumentSegments).expression;
+    const resolved = resolveExpression(parameters[i], eventContext, { resolver: 'root', preserveTypeScript: true, narrowedSignal: name => eventContext.getNarrowedSignal(name) }, argumentSegments).expression;
+    const cast = casts?.get(i);
+    const argument = cast ? castExpression(parameters[i], resolved, argumentSegments, cast) : resolved;
     const column = call.length + separator.length;
 
     for (let j = 0; j < argumentSegments.length; j++) {

@@ -880,6 +880,27 @@ describe('typeCheckElement structural directives', () => {
       expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 41, original: at(template, 'click') });
     });
 
+    it('casts the arguments of an event, each type written as is and mapped onto the template', () => {
+      const template = '<div (click)="pick($event as MouseEvent, row(), size as Map<string, number>)"></div>';
+      const [, , call] = run(template);
+
+      expect(call.text).toBe('  root.pick((($event) as MouseEvent), root.row(), ((root.size) as Map<string, number>));');
+      expect(call.mappings).toContainEqual({ columnStart: 14, columnEnd: 20, original: at(template, '$event') });
+      expect(call.mappings).toContainEqual({ columnStart: 25, columnEnd: 35, original: at(template, 'MouseEvent') });
+      expect(call.mappings).toContainEqual({ columnStart: 57, columnEnd: 61, original: at(template, 'size') });
+      expect(call.mappings).toContainEqual({ columnStart: 66, columnEnd: 85, original: at(template, 'Map<string, number>') });
+    });
+
+    it('casts the values bound to the attributes and to the properties of a component, and the toggled classes', () => {
+      const native = run('<div title="{heading as string}" [class.on]="{on as boolean}"></div>');
+      const template = '<my-el label="{caption() as Label}"></my-el>';
+      const [, property] = run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string') }));
+
+      expect(text(native)).toEqual(['((root.heading) as string);', '((root.on) as boolean);']);
+      expect(property.text).toBe('  (((root.caption()) as Label)) satisfies string;');
+      expect(property.mappings).toContainEqual({ columnStart: 24, columnEnd: 29, original: at(template, 'Label') });
+    });
+
     it('maps the name of a native event bound on a component and not passed $event', () => {
       const template = '<my-el (clik)="f()"></my-el>';
       const [check] = run(template, metadata({}));

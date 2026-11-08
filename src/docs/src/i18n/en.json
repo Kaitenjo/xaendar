@@ -1,6 +1,5 @@
 {
   "brand": {
-    "tagline": "Web Components with fine-grained reactivity",
     "home": "Xaendar home"
   },
   "search": {
@@ -2216,7 +2215,7 @@
           "p1": "Templates have no event modifiers: <code>(keydown.enter)</code> listens to an event whose name is literally <code>keydown.enter</code>, which the browser never dispatches, and the first counter never moves. Filter the key in the method, as the second field does. The same goes for <code>preventDefault()</code> and <code>stopPropagation()</code>: call them on <code>$event</code>.",
           "callout2": {
             "heading": "The target of $event",
-            "body": "<code>$event.target</code> is typed <code>EventTarget | null</code>: the event may come from a descendant of the element, so <code>$event.target.value</code> does not compile. Read the field through an <a href=\"#/en/templates/element-refs\">element ref</a>, as in <code>save(field.value)</code>, or narrow the target in the method."
+            "body": "<code>$event.target</code> is typed <code>EventTarget | null</code>: the event may come from a descendant of the element, so <code>$event.target.value</code> does not compile. Read the field through an <a href=\"#/en/templates/element-refs\">element ref</a>, as in <code>save(field.value)</code>, pass it with a cast, as in <code>save($event.target as HTMLInputElement)</code> (see <a href=\"#/en/templates/expressions\">Expression syntax</a>), or narrow the target in the method."
           }
         },
         "summary": {
@@ -2238,9 +2237,14 @@
           "example1": "One expression of each kind",
           "p1": "Operators, the ternary, optional chaining and nullish coalescing, calls to methods of the component and of the values, indexes, <code>typeof</code>, array and object literals, spread, and the globals of the browser such as <code>Math</code> and <code>JSON</code>. An object literal needs parentheses around it: without them the interpolation renders nothing."
         },
+        "casts": {
+          "title": "Casts",
+          "p1": "A cast, <code>as</code> followed by a type as in TypeScript, can end an interpolation, and then the whole expression before <code>as</code> takes that type, or follow an argument of a call: of the method of a listener, of a <code>@render</code>, of a function called in any expression. The type is written as is in the type-check, so it can name a type the template imports, and it generates no code: at runtime the value stays the same.",
+          "p2": "The cast of an interpolation goes on up to its <code>}</code>, the one of an argument up to the <code>,</code> or the <code>)</code> ending it. Any other cast, as in <code>{ (item() as Row).id }</code> or <code>{ total + (tax as number) }</code>, is rejected: cast the whole interpolation, or an argument. TypeScript checks a cast as any <code>as</code>: a conversion between types that don't overlap is reported, and going through <code>unknown</code> (<code>value as unknown as Row</code>) forces it. Prefer typing the members of the class: a cast tells TypeScript what it cannot know, such as the element an event comes from."
+        },
         "whatItCannotDo": {
           "title": "What it cannot do",
-          "p1": "Assignments, <code>new</code>, functions, <code>this</code>, type assertions, regular expressions and more than one expression are rejected when the template is compiled:",
+          "p1": "Assignments, <code>new</code>, functions, <code>this</code>, casts of anything but an interpolation or an argument, regular expressions and more than one expression are rejected when the template is compiled:",
           "p2": "Each of these has a place in the class: a method that assigns, a computed signal that maps a list, a member holding the result of <code>new</code> or of a regular expression."
         },
         "whatItCanRead": {
@@ -2272,7 +2276,9 @@
           "td6": "Array and object literals, spread",
           "td7": "Regular expression literals",
           "td8": "One expression",
-          "td9": "The comma operator, several statements"
+          "td9": "The comma operator, several statements",
+          "td10": "<code>as</code> closing the interpolation or after an argument of a call",
+          "td11": "<code>as</code> anywhere else"
         }
       },
       "for": {

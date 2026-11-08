@@ -120,6 +120,16 @@ describe('validateExpression', () => {
     it('rejects a disallowed node nested inside an allowed one', () => {
       expect(() => validateExpression('items.map(() => 1)')).toThrow();
     });
+
+    it.each(['(value as Row).id', 'a + (b as number)', '[value as Row]', 'value as Row', 'format(...(values as Row[]))'])('rejects the cast of anything but an argument of a call, telling where a cast goes: %s', source => {
+      expect(() => validateExpression(source)).toThrow('A cast with \'as\' only closes a whole interpolation or an argument of a call');
+    });
+
+    it('accepts the casts of the arguments of a call, whatever their type', () => {
+      for (const source of ['format(value as Date)', 'pick?.(a, b as Map<string, { id: number }>)', 'show(format(value as unknown as Date))', 'log(value as const)']) {
+        expect(() => validateExpression(source)).not.toThrow();
+      }
+    });
   });
 
   describe('single expression', () => {

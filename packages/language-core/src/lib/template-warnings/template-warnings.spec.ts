@@ -62,7 +62,8 @@ describe('getTemplateWarnings', () => {
       ['an element ref', '<p #top></p>{ top.id }'],
       ['a @let', '@let screen = 1;\n{ screen }'],
       ['a variable of a @for', '@for (status of items; track status()) { { status } }'],
-      ['a parameter of a template', '<template row(name: string)>{ name }</template>']
+      ['a parameter of a template', '<template row(name: string)>{ name }</template>'],
+      ['the types of the casts', '{ format(value as HTMLElement) }']
     ])('leaves out %s', (_case, source) => {
       expect(reads(source)).toEqual([]);
     });

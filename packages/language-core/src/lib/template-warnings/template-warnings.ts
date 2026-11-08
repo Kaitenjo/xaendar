@@ -1,5 +1,5 @@
-import { type ASTNode, getTemplateSpan, isBrowserOnlyGlobal } from '@xaendar/compiler';
-import { type Expression, forEachChild, type Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, type Node } from 'typescript';
+import { type ASTNode, forEachExpressionChild, getTemplateSpan, isBrowserOnlyGlobal } from '@xaendar/compiler';
+import { type Expression, type Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, type Node } from 'typescript';
 import type { TemplateWarning } from '../types/template-warning.type';
 import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 
@@ -40,7 +40,8 @@ export function getTemplateWarnings(ast: readonly ASTNode[], shadowingMembers: r
 
 /**
  * Finds the reads of the globals only the browser has in an expression. A name the expression checks with `typeof`
- * guards its reads: it is read only when it exists.
+ * guards its reads: it is read only when it exists. The type of a cast (`select(target as HTMLInputElement)`) reads
+ * nothing.
  *
  * @param expression - The expression.
  * @returns The identifiers read.
@@ -52,7 +53,7 @@ function findGlobalReads(expression: Expression): Identifier[] {
     if (isTypeOfExpression(node) && isIdentifier(node.expression)) {
       guarded.add(node.expression.text);
     } else if (!isIdentifier(node)) {
-      forEachChild(node, child => visit(child, node));
+      forEachExpressionChild(node, child => visit(child, node));
     } else if (isBrowserOnlyGlobal(node.text) && !isMemberName(node, parent)) {
       reads.push(node);
     }
