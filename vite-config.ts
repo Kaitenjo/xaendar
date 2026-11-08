@@ -42,8 +42,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
     dts({
       exclude: [`**/packages/${fileName.split('-')[1]}/**/*.spec.ts`],
       include: [
-        `**/packages/${fileName.split('-')[1]}/**/*.ts`,
-        '**/packages/signals/**/global.d.ts'
+        `**/packages/${fileName.split('-')[1]}/**/*.ts`
       ],
       bundleTypes: true,
       outDirs: distDir,

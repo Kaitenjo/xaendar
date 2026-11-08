@@ -9,6 +9,7 @@
     "xd": "./bin/xd.mjs"
   },
   "dependencies": {
+    "@babel/core": "^8.0.5",
     "@rolldown/plugin-babel": "^0.3.0",
     "@xaendar/build-tools": "1.2.0",
     "@xaendar/common": "1.2.0",

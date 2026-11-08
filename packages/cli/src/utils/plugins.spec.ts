@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { importBabelHelpers } from './babel-helpers/babel-helpers.utils';
 import { createPlugins } from './plugins';
 
 vi.mock('@rolldown/plugin-babel', () => ({
@@ -31,14 +32,14 @@ afterEach(() => {
 });
 
 describe('createPlugins()', () => {
-  it('creates the babel plugin followed by the xaendar plugin', () => {
+  it('creates the babel plugin and the plugin of its helpers, followed by the xaendar plugin', () => {
     const plugins = createPlugins();
 
-    expect(plugins.map(plugin => (plugin as { name: string }).name)).toEqual(['babel', 'xaendar']);
+    expect(plugins.flat().map(plugin => (plugin as { name: string }).name)).toEqual(['babel', 'xaendar:babel-helpers', 'xaendar']);
     expect(xaendarPlugin).toHaveBeenCalledTimes(1);
   });
 
-  it('configures babel with the decorators preset, filtered on "@"', () => {
+  it('configures babel with the decorators preset importing its helpers, filtered on "@"', () => {
     createPlugins();
     const babelCall = vi.mocked(babel).mock.calls[0][0] as {
       presets: [{ preset: () => { plugins: unknown[] }, rolldown: { filter: { code: string } } }]
@@ -46,7 +47,7 @@ describe('createPlugins()', () => {
     const [presetEntry] = babelCall.presets;
 
     expect(presetEntry.preset()).toEqual({
-      plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }]]
+      plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }], importBabelHelpers]
     });
     expect(presetEntry.rolldown.filter.code).toBe('@');
   });

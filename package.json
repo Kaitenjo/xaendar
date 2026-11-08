@@ -33,6 +33,7 @@
     "validate:claude-plugin": "claude plugin validate plugins/xaendar && claude plugin validate plugins/xaendar/skills && claude plugin validate plugins/xaendar/agents && claude plugin validate ."
   },
   "dependencies": {
+    "@babel/core": "^8.0.5",
     "@rolldown/plugin-babel": "^0.3.0",
     "commander": "^15.1.0",
     "entities": "^9.0.0",
