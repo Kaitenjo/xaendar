@@ -494,7 +494,7 @@ describe('generateElement', () => {
     });
 
     it('generates the directives applied inside a conditional binding', async () => {
-      const { code } = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>');
+      const { code } = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>', new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) })));
 
       expect(code).toEqual([
         '_renderElement(root, context, null, \'div\', [], [],',
@@ -527,7 +527,7 @@ describe('generateElement', () => {
         '                        {',
         '                          name: \'display\',',
         '                          value: \'block\',',
-        '                          setter: _setProperty',
+        '                          setter: _setInput',
         '                        },',
         '                      ],',
         '                      events: [],',
@@ -648,6 +648,7 @@ describe('generateElement', () => {
           selectors.push(selector);
           return {
             properties: new Map([
+              ['label', new ComponentPropertyMetadata('label', 'string', { required: false })],
               ['display', new ComponentPropertyMetadata('display', 'string', { required: false })],
               ['title', new ComponentPropertyMetadata('title', 'string', { required: false })]
             ])
@@ -658,7 +659,7 @@ describe('generateElement', () => {
       };
       const { code } = await run('<div @@myDirective(label="x" @if (cond()) { display="{mode()}" (toggled)="onToggled()" @if (inner()) { title="z" } } @else { display="none" })></div>', context);
 
-      expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective']);
+      expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective', '@@myDirective']);
       expect(code).toEqual([
         '_renderElement(root, context, null, \'div\', [], [], [],',
         '  [',
@@ -668,7 +669,7 @@ describe('generateElement', () => {
         '        {',
         '          name: \'label\',',
         '          value: \'x\',',
-        '          setter: _setProperty',
+        '          setter: _setInput',
         '        },',
         '      ],',
         '      events: [],',
@@ -681,7 +682,7 @@ describe('generateElement', () => {
         '                {',
         '                  name: \'display\',',
         '                  value: () => this.mode(),',
-        '                  setter: _setReactiveProperty,',
+        '                  setter: _setReactiveInput,',
         '                  unbind: _resetProperty',
         '                },',
         '              ],',
@@ -700,7 +701,7 @@ describe('generateElement', () => {
         '                        {',
         '                          name: \'title\',',
         '                          value: \'z\',',
-        '                          setter: _setProperty,',
+        '                          setter: _setInput,',
         '                          unbind: _resetProperty',
         '                        },',
         '                      ],',
@@ -716,7 +717,7 @@ describe('generateElement', () => {
         '                {',
         '                  name: \'display\',',
         '                  value: \'none\',',
-        '                  setter: _setProperty,',
+        '                  setter: _setInput,',
         '                  unbind: _resetProperty',
         '                },',
         '              ],',
@@ -744,6 +745,10 @@ describe('generateElement', () => {
       expectValidJavascript(code);
     });
 
+    it('throws when the metadata of a directive property is not available', async () => {
+      await expect(run('<div @@myDirective(display="block")></div>', new GeneratorContext({ getOrInsert: async () => undefined } as unknown as ContextCache))).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
+    });
+
     it('throws when the metadata of a directive property bound inside a conditional binding is not available', async () => {
       await expect(run('<div @@myDirective(@if (cond()) { display="block" })></div>', new GeneratorContext({ getOrInsert: async () => undefined } as unknown as ContextCache))).rejects.toThrow('Unable to resolve the metadata of property "display" of @@myDirective');
     });
@@ -757,20 +762,20 @@ describe('generateElement', () => {
     it('generates the properties and events of a directive, without unbind information', async () => {
       const context = new GeneratorContext(cache);
       context.addSignalClassField('mode');
-      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) });
+      context.cache = cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }), mode: new ComponentPropertyMetadata('mode', 'string', { required: false }) });
       const { code } = await run('<my-el @@myDirective(display="block" mode="{mode}" (toggled)="onToggled($event)")></my-el>', context);
       const output = code.join('\n');
 
       expect(output).toContain('selector: \'myDirective\',');
       expect(output).toContain('value: \'block\',');
-      expect(output).toContain('setter: _setReactiveProperty');
+      expect(output).toContain('setter: _setReactiveInput');
       expect(output).toContain('handler: ($event) => this.onToggled($event)');
       expect(output).not.toContain('unbind');
       expectValidJavascript(code);
     });
 
     it('passes the directives after the conditional bindings', async () => {
-      const { code } = await run('<div class="a" @if (cond()) { title="x" } @@first @@second(display="block")></div>');
+      const { code } = await run('<div class="a" @if (cond()) { title="x" } @@first @@second(display="block")></div>', new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) })));
       const output = code.join('\n');
 
       expect(output.indexOf('condition: () => this.cond(),')).toBeLessThan(output.indexOf('selector: \'first\','));
@@ -779,16 +784,25 @@ describe('generateElement', () => {
     });
 
     it('passes an empty conditional binding list before the directives', async () => {
-      const { code } = await run('<div @@myDirective(display="block")></div>');
+      const { code } = await run('<div @@myDirective(display="block")></div>', new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) })));
 
       expect(code[0]).toBe('_renderElement(root, context, null, \'div\', [], [], [],');
+      expectValidJavascript(code);
+    });
+
+    it('sets the inputs of a directive by the name of their property, never by their alias', async () => {
+      const { code } = await run('<div @@myDirective(@if (cond()) { hint="x" } @else { hint="y" })></div>', new GeneratorContext(cacheWith({ hint: new ComponentPropertyMetadata('text', 'string', { alias: 'hint' }) })));
+      const output = code.join('\n');
+
+      expect(output.match(/name: 'text',/g)).toHaveLength(2);
+      expect(output).not.toContain('hint');
       expectValidJavascript(code);
     });
   });
 
   describe('structural directives', () => {
     it('passes the structural directives and an empty structural conditional binding list', async () => {
-      const { code, functionsToProcess } = await run('<div *first *second(role="admin" level="{count()}")></div>');
+      const { code, functionsToProcess } = await run('<div *first *second(role="admin" level="{count()}")></div>', new GeneratorContext(cacheWith({ role: new ComponentPropertyMetadata('role', 'string', { required: false }), level: new ComponentPropertyMetadata('level', 'string', { required: false }) })));
 
       expect(code).toEqual([
         '_renderElement(root, context, null, \'div\', [], [], [], [],',
@@ -803,12 +817,12 @@ describe('generateElement', () => {
         '        {',
         '          name: \'role\',',
         '          value: \'admin\',',
-        '          setter: _setProperty',
+        '          setter: _setInput',
         '        },',
         '        {',
         '          name: \'level\',',
         '          value: () => this.count(),',
-        '          setter: _setExpressionProperty',
+        '          setter: _setExpressionInput',
         '        },',
         '      ]',
         '    },',

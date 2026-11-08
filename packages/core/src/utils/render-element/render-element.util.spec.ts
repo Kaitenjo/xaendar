@@ -246,61 +246,57 @@ describe('property setters', () => {
   });
 
   describe('input signal properties', () => {
-    it('sets the value of an input signal instead of the attribute', () => {
+    it('never writes an input as an attribute: an input the compiler did not recognize throws', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { label: ReturnType<typeof input<string>> };
       element.label = input<string>('initial');
 
-      _setProperty(createRoot(), element, 'label', 'updated');
-
-      expect(element.label()).toBe('updated');
+      expect(() => _setProperty(createRoot(), element, 'label', 'updated')).toThrow('"label" is an input of HTMLDivElement, bound as an attribute: an input declaring an alias is bound by its alias');
+      expect(element.label()).toBe('initial');
       expect(element.hasAttribute('label')).toBe(false);
+      expect(() => _setProperty(createRoot(), new LabelDirective(), 'label', 'updated')).toThrow('"label" is an input of LabelDirective, bound as an attribute');
     });
 
-    it('resolves the attribute alias through the class metadata', () => {
-      class Aliased extends HTMLElement {
-        label = input<string>('initial');
-      }
-      Object.defineProperty(Aliased, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { 'my-label': 'label' } } });
-      customElements.define('x-aliased', Aliased);
-      const element = document.createElement('x-aliased') as Aliased;
-
-      _setProperty(createRoot(), element, 'my-label', 'aliased');
-
-      expect(element.label()).toBe('aliased');
-    });
-
-    it('sets the value of an input signal of a directive', () => {
+    it('sets the value of an input signal of a directive, by the name of its property, never by its alias', () => {
       const directive = new LabelDirective();
 
-      _setProperty(createRoot(), directive, 'label', 'updated');
+      _setInput(createRoot(), directive, 'label', 'updated');
 
       expect(directive.label()).toBe('updated');
+      expect(() => _setInput(createRoot(), directive, 'my-label', 'aliased')).toThrow('LabelDirective does not declare a property named "my-label"');
     });
 
-    it('resolves the alias of a directive property through the class metadata', () => {
-      const directive = new LabelDirective();
+    it('sets the input named like the alias of another one, never the one the alias names', () => {
+      class Crossed extends HTMLElement {
+        internalValue = input<string>('internal');
+        value = input<string>('value');
+      }
+      Object.defineProperty(Crossed, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { value: 'internalValue', initialValue: 'value' } } });
+      customElements.define('x-crossed', Crossed);
+      const element = document.createElement('x-crossed') as Crossed;
 
-      _setProperty(createRoot(), directive, 'my-label', 'aliased');
+      _setInput(createRoot(), element, 'value', 'set');
 
-      expect(directive.label()).toBe('aliased');
+      expect(element.value()).toBe('set');
+      expect(element.internalValue()).toBe('internal');
     });
 
     it('throws when a directive does not declare the property', () => {
       const directive = new LabelDirective();
 
       expect(() => _setProperty(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
+      expect(() => _setInput(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
     });
 
     it('sets the value of an input signal of a structural directive', () => {
       const directive = new VisibleDirective();
 
-      _setExpressionProperty(createRoot(), directive, 'visible', () => false);
+      _setExpressionInput(createRoot(), directive, 'visible', () => false);
 
       expect(directive.visible()).toBe(false);
     });
 
     it('throws when a structural directive does not declare the property', () => {
-      expect(() => _setProperty(createRoot(), new VisibleDirective(), 'missing', 'value')).toThrow('VisibleDirective does not declare a property named "missing"');
+      expect(() => _setInput(createRoot(), new VisibleDirective(), 'missing', 'value')).toThrow('VisibleDirective does not declare a property named "missing"');
     });
 
     it('falls back to the attribute for properties that are not input signals', () => {
@@ -317,7 +313,7 @@ describe('property setters', () => {
     it('sets an input signal back to its initial value, without applying the transform', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { label: ReturnType<typeof input<string>> };
       element.label = input<string>('initial', { transform: value => value.toUpperCase() });
-      _setProperty(createRoot(), element, 'label', 'updated');
+      _setInput(createRoot(), element, 'label', 'updated');
       expect(element.label()).toBe('UPDATED');
 
       _resetProperty(createRoot(), element, 'label');
@@ -325,11 +321,11 @@ describe('property setters', () => {
       expect(element.label()).toBe('initial');
     });
 
-    it('resolves the alias of a directive property through the class metadata', () => {
+    it('resets an input of a directive by the name of its property', () => {
       const directive = new LabelDirective();
-      _setProperty(createRoot(), directive, 'label', 'updated');
+      _setInput(createRoot(), directive, 'label', 'updated');
 
-      _resetProperty(createRoot(), directive, 'my-label');
+      _resetProperty(createRoot(), directive, 'label');
 
       expect(directive.label()).toBe('initial');
     });
@@ -850,7 +846,7 @@ describe('_renderElement', () => {
       const element = render(document.createElement('div'), createRoot(), {
         conditionalBindings: [ifBinding(branch({
           condition: () => enabled(),
-          directives: [{ selector: 'label', attributes: [{ name: 'label', value: 'bound', setter: _setProperty }], events: [], conditionalBindings: [] }]
+          directives: [{ selector: 'label', attributes: [{ name: 'label', value: 'bound', setter: _setInput }], events: [], conditionalBindings: [] }]
         }))]
       });
       expect(LabelDirective.instances).toHaveLength(instances);
@@ -874,7 +870,7 @@ describe('_renderElement', () => {
 
     it('disposes the directive of the previous branch before applying the one of the selected branch', async () => {
       const enabled = signal(true);
-      const labelDirective = (label: string) => ({ selector: 'label', attributes: [{ name: 'label', value: label, setter: _setProperty }], events: [], conditionalBindings: [] });
+      const labelDirective = (label: string) => ({ selector: 'label', attributes: [{ name: 'label', value: label, setter: _setInput }], events: [], conditionalBindings: [] });
       render(document.createElement('div'), createRoot(), {
         conditionalBindings: [ifBinding(
           branch({ condition: () => enabled(), directives: [labelDirective('first')] }),
@@ -985,7 +981,7 @@ describe('_renderElement', () => {
   describe('directives', () => {
     const directive = (overrides: Record<string, unknown> = {}) => ({ selector: 'label', attributes: [], events: [], conditionalBindings: [], ...overrides });
     const branch = (overrides: Record<string, unknown> = {}) => ({ attributes: [], events: [], conditionalBindings: [], ...overrides });
-    const label = (value: string) => ({ name: 'label', value, setter: _setProperty, unbind: _resetProperty });
+    const label = (value: string) => ({ name: 'label', value, setter: _setInput, unbind: _resetProperty });
     const lastInstance = () => LabelDirective.instances.at(-1)!;
 
     it('instantiates the directive registered for the selector on the element', () => {
@@ -1005,7 +1001,7 @@ describe('_renderElement', () => {
 
     it('binds the directive properties before reacting to changes', () => {
       render(document.createElement('div'), createRoot(), {
-        directives: [directive({ attributes: [{ name: 'label', value: 'bound', setter: _setProperty }] })]
+        directives: [directive({ attributes: [{ name: 'label', value: 'bound', setter: _setInput }] })]
       });
 
       expect(lastInstance().seen).toEqual(['bound']);
@@ -1014,7 +1010,7 @@ describe('_renderElement', () => {
     it('follows reactive directive properties', async () => {
       const label = signal('first');
       render(document.createElement('div'), createRoot(), {
-        directives: [directive({ attributes: [{ name: 'label', value: () => label(), setter: _setReactiveProperty }] })]
+        directives: [directive({ attributes: [{ name: 'label', value: () => label(), setter: _setReactiveInput }] })]
       });
 
       label.set('second');
@@ -1082,7 +1078,7 @@ describe('_renderElement', () => {
     it('binds the properties of a conditional binding already true before reacting to changes', () => {
       render(document.createElement('div'), createRoot(), {
         directives: [directive({
-          conditionalBindings: [{ branches: [branch({ condition: () => true, attributes: [{ name: 'label', value: 'conditional', setter: _setProperty }] })] }]
+          conditionalBindings: [{ branches: [branch({ condition: () => true, attributes: [{ name: 'label', value: 'conditional', setter: _setInput }] })] }]
         })]
       });
 
@@ -1196,7 +1192,7 @@ describe('_renderElement', () => {
       { structuralDirectives = [], structuralConditionalBindings = [], children = null, anchor = null }: { structuralDirectives?: unknown[], structuralConditionalBindings?: unknown[], children?: Children | null, anchor?: Comment | null } = {}
     ) => _renderElement(parent, context, anchor, 'div', [{ name: 'id', value: 'target', setter: _setProperty }] as never, [], [], [], structuralDirectives as never, structuralConditionalBindings as never, children);
     const structural = (selector = 'visible', attributes: unknown[] = []) => ({ selector, attributes });
-    const visible = (value: () => boolean) => ({ name: 'visible', value, setter: _setReactiveProperty });
+    const visible = (value: () => boolean) => ({ name: 'visible', value, setter: _setReactiveInput });
     const branch = (overrides: Record<string, unknown> = {}) => ({ structuralDirectives: [], conditionalBindings: [], ...overrides });
     const target = (parent: Element) => parent.querySelector('#target');
     const lastInstance = () => VisibleDirective.instances.at(-1)!;
@@ -1224,7 +1220,7 @@ describe('_renderElement', () => {
       const context = createRoot();
       const createElement = vi.spyOn(context, 'createElement');
       renderStructural(document.createElement('section'), context, {
-        structuralDirectives: [structural('visible', [{ name: 'visible', value: () => false, setter: _setExpressionProperty }])]
+        structuralDirectives: [structural('visible', [{ name: 'visible', value: () => false, setter: _setExpressionInput }])]
       });
 
       expect(lastInstance().evaluations).toHaveBeenCalledOnce();

@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionClass, _stringifyState, CustomDirective, type _Context, type CustomElement, type RenderConditionalBinding, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type RenderConditionalBinding, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -269,17 +269,16 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
  * @param context - The runtime context of the element.
  * @param attributes - The attributes and the classes.
  * @param conditionalBindings - The conditional bindings.
- * @param inputs - Collects the values bound to the inputs of a component, as written in the template, by the name of
- *   their property, if they are needed.
+ * @param inputs - Collects the values bound to the inputs of a component, by the name of their property, if they are
+ *   needed.
  * @param directives - Collects the custom directives of the selected branches, if they are applied.
  */
 function applyBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], inputs?: Dictionary<string, unknown>, directives?: ServerDirective[][]): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter } = attributes[i];
     setter(context, element, name, value);
-    const property = inputs && setter !== _setExpressionClass ? getInputProperty(element, name) : undefined;
-    if (property) {
-      inputs![property] = typeof value === 'function' ? value() : value;
+    if (inputs && isInputSetter(setter)) {
+      inputs[name] = typeof value === 'function' ? value() : value;
     }
   }
 
@@ -334,11 +333,10 @@ function applyDirectives(element: ServerElement, context: _Context, directives: 
 function applyClientBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], options: ClientComponentOptions, inputs: Dictionary<string, unknown>): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, setter } = attributes[i];
-    const property = setter === _setExpressionClass ? undefined : options.inputs[name];
-    if (!property) {
+    if (!isInputSetter(setter)) {
       setter(context, element, name, value);
     } else if (options.island) {
-      inputs[property] = typeof value === 'function' ? value() : value;
+      inputs[name] = typeof value === 'function' ? value() : value;
     }
   }
 
@@ -351,15 +349,14 @@ function applyClientBindings(element: Element, context: _Context, attributes: Se
 }
 
 /**
- * Finds the input of a component an attribute of a template binds.
+ * Tells whether the setter of a binding sets an input: the compiler binds the inputs it knows through the setters of the
+ * inputs, by the name of their property.
  *
- * @param element - The element of the component.
- * @param name - The name of the attribute: the alias of the input, or the name of its property.
- * @returns The name of the property, `undefined` when the attribute binds no input.
+ * @param setter - The setter of the binding.
+ * @returns `true` when it sets an input.
  */
-function getInputProperty(element: Element, name: string): string | undefined {
-  const metadata = (element.constructor as unknown as Record<symbol, { aliasToAttribute?: Dictionary<string, string> } | undefined>)[Symbol.for('Symbol.metadata')];
-  return metadata?.aliasToAttribute?.[name];
+function isInputSetter(setter: ServerAttribute['setter']): boolean {
+  return setter === _setInput || setter === _setExpressionInput;
 }
 
 /**

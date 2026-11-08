@@ -10,7 +10,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _Context, _setExpressionClass, _setExpressionProperty, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
+const { _Context, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
 type RenderConditionalBinding = import('@xaendar/core').RenderConditionalBinding<ServerBindings>;
 const { _defineServerRender } = await import('../server-render-registry/server-render-registry.util');
 const { _ssrClientComponent, _ssrComponent, _ssrStartTag } = await import('./ssr-element.util');
@@ -26,6 +26,16 @@ const literal = (name: string, value: string) => ({ name, value, setter: _setPro
  * Describes an attribute written with the value of an expression.
  */
 const expression = (name: string, value: unknown) => ({ name, value: () => value, setter: _setExpressionProperty }) as unknown as ServerAttribute;
+
+/**
+ * Describes an input set to a value known when the template is compiled, by the name of its property.
+ */
+const literalInput = (name: string, value: string) => ({ name, value, setter: _setInput }) as unknown as ServerAttribute;
+
+/**
+ * Describes an input set to the value of an expression, by the name of its property.
+ */
+const expressionInput = (name: string, value: unknown) => ({ name, value: () => value, setter: _setExpressionInput }) as unknown as ServerAttribute;
 
 /**
  * Describes a class toggled by the value of an expression.
@@ -69,12 +79,12 @@ describe('_ssrStartTag', () => {
 });
 
 describe('_ssrClientComponent', () => {
-  const options = { inputs: { center: 'centre', zoom: 'zoom' }, island: false };
+  const options = { island: false };
 
   it('writes the attributes and the classes, not the inputs, without reading their expressions', () => {
     const out: ServerOutput = [];
     const read = vi.fn();
-    const input = { name: 'center', value: read, setter: _setExpressionProperty } as unknown as ServerAttribute;
+    const input = { name: 'centre', value: read, setter: _setExpressionInput } as unknown as ServerAttribute;
 
     _ssrClientComponent(out, context, 'x-map', [literal('title', 'Map'), input, classBinding('zoom', 1)], [], options);
 
@@ -87,14 +97,14 @@ describe('_ssrClientComponent', () => {
     const conditionalBindings: RenderConditionalBinding[] = [
       {
         branches: [
-          { condition: () => false, attributes: [literal('zoom', 'no')], conditionalBindings: [] },
-          { condition: () => true, attributes: [literal('title', 'Map')], conditionalBindings: [{ branches: [{ attributes: [expression('zoom', 3)], conditionalBindings: [] }] }] }
+          { condition: () => false, attributes: [literalInput('zoom', 'no')], conditionalBindings: [] },
+          { condition: () => true, attributes: [literal('title', 'Map')], conditionalBindings: [{ branches: [{ attributes: [expressionInput('zoom', 3)], conditionalBindings: [] }] }] }
         ]
       },
       { branches: [{ condition: () => false, attributes: [], conditionalBindings: [] }] }
     ];
 
-    _ssrClientComponent(out, context, 'x-map', [literal('center', 'Rome')], conditionalBindings, { ...options, island: true, hydrate: 'visible' });
+    _ssrClientComponent(out, context, 'x-map', [literalInput('centre', 'Rome')], conditionalBindings, { ...options, island: true, hydrate: 'visible' });
 
     expect(out).toHaveLength(1);
     expect(out[0]).toContain('<x-map title="Map" data-xd-client="" data-xd-hydrate="visible" data-xd-inputs="');
@@ -172,7 +182,7 @@ describe('_ssrComponent', () => {
     }, ':host { color: red } </style>');
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'ssr-card', [expression('card-label', 'Ada'), literal('title', 'x')], []);
+    _ssrComponent(out, context, 'ssr-card', [expressionInput('label', 'Ada'), literal('title', 'x')], []);
 
     expect(out).toEqual([
       '<ssr-card title="x" role="note">',

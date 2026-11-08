@@ -204,8 +204,9 @@ describe('typeCheckTemplateTolerant', () => {
 
 describe('compile generic directives', () => {
   it('generates the same javascript for a directive declaring type arguments, which only the type-check uses', async () => {
-    const withTypeArguments = await compile('<div @@list<string, Map<string, number>>(items="{ rows }")></div>', { signals: [], cache: createCache() });
-    const withoutTypeArguments = await compile('<div @@list(items="{ rows }")></div>', { signals: [], cache: createCache() });
+    const createListCache = () => ({ ...createCache(), getOrInsert: vi.fn(async () => ({ ...component, type: 'directive', properties: new Map([['items', { name: 'items' }]]) }) as never) }) satisfies ContextCache;
+    const withTypeArguments = await compile('<div @@list<string, Map<string, number>>(items="{ rows }")></div>', { signals: [], cache: createListCache() });
+    const withoutTypeArguments = await compile('<div @@list(items="{ rows }")></div>', { signals: [], cache: createListCache() });
 
     expect(withTypeArguments).toBe(withoutTypeArguments);
   });

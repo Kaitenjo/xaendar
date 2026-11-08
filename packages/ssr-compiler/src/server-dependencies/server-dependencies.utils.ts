@@ -1,5 +1,5 @@
 import { ASTNodeType, parseTemplate, resolveTemplateImports, type ASTNode, type ConditionalBindingBranchNode, type ImportNode } from '@xaendar/compiler';
-import { isClientComponent } from '../compile-server/compile-server';
+import { isClientComponent } from '../server-generator/utils/client-component/client-component.utils';
 import type { ServerCompileOptions } from '../types/server-compile-options.type';
 
 /**

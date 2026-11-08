@@ -80,7 +80,7 @@ function writeElement(node: ElementNode, generatorContext: GeneratorContext, chi
   const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
   // Only a native element applies its custom directives on the server
   const withDirectives = !isComponent;
-  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, withDirectives, generatorContext));
+  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? tagName : undefined, generatorContext));
   const directives = withDirectives ? mapDirectives(node.directives, generatorContext) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
@@ -90,7 +90,7 @@ function writeElement(node: ElementNode, generatorContext: GeneratorContext, chi
   registerEvents(node, generatorContext);
 
   if (isComponent || classBindings.length || conditionalBindings.length || directives?.length) {
-    const descriptors = mapAttributes(attributes, generatorContext);
+    const descriptors = mapAttributes(attributes, generatorContext, isComponent ? tagName : undefined);
     appendSubmitMark(descriptors, node);
     appendClassBindings(descriptors, classBindings, generatorContext);
     const args = [toArrayLiteral(descriptors), toArrayLiteral(conditionalBindings)];
@@ -197,33 +197,42 @@ function getStartTagWriter(tagName: string, isComponent: boolean, generatorConte
 
 /**
  * Writes what `_ssrClientComponent` needs of a component rendering only in the browser, since its class may not be
- * there: the name of the property of each input, as the client sets it, whether a static template renders it, so that
- * no template sets its inputs in the browser, and its trigger.
+ * there: whether a static template renders it, so that no template sets its inputs in the browser, and its trigger.
  *
  * @param component - The metadata of the component.
  * @param generatorContext - The generator context of the element.
  * @returns The object literal.
  */
-function toClientOptions({ selector, properties, clientOnly }: ComponentMetadata, generatorContext: GeneratorContext): string {
-  const inputs: Record<string, string> = {};
-  for (const [name, input] of properties) {
-    inputs[name] = input.exposed ? name : input.name;
-  }
-
-  return JSON.stringify({ inputs, island: generatorContext.isIsland(selector), hydrate: clientOnly!.hydrate });
+function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorContext: GeneratorContext): string {
+  return JSON.stringify({ island: generatorContext.isIsland(selector), hydrate: clientOnly!.hydrate });
 }
 
 /**
- * Maps attribute nodes to the descriptors the runtime applies, with the setters of the client reading the value once.
+ * Maps attribute nodes to the descriptors the runtime applies, with the setters of the client reading the value once:
+ * an input of a component or of a directive the template imports is set by the name of its property, never by its
+ * alias, the one it is exposed with for an input of a host directive, through the setters of the inputs, as the client
+ * does.
  *
  * @param attributes - The attribute nodes.
  * @param generatorContext - The generator context of the attributes.
+ * @param owner - The tag name of the component, or the selector of the directive as applied in templates
+ *   (`@@selector`), the attributes are bound to, `undefined` for a native element.
  * @returns The lines of the descriptors, one per attribute.
+ * @throws When a directive the template imports does not declare an attribute bound to it.
  */
-function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext): string[] {
-  return attributes.map(({ name, value }) => typeof value === 'string'
-    ? `{ name: ${toStringLiteral(name)}, value: ${toStringLiteral(value)}, setter: _setProperty },`
-    : `{ name: ${toStringLiteral(name)}, value: () => ${resolve(value.expression, generatorContext)}, setter: _setExpressionProperty },`);
+function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext, owner: string | undefined): string[] {
+  const metadata = owner && attributes.length ? generatorContext.getImportedMetadata(owner) : undefined;
+  return attributes.map(({ name, value, span }) => {
+    const input = metadata?.properties.get(name);
+    if (metadata?.type === 'directive' && !input) {
+      throw new Error(`Unable to resolve the metadata of property "${name}" of ${owner}`, { cause: span });
+    }
+
+    const target = toStringLiteral(input && !input.exposed ? input.name : name);
+    return typeof value === 'string'
+      ? `{ name: ${target}, value: ${toStringLiteral(value)}, setter: ${input ? '_setInput' : '_setProperty'} },`
+      : `{ name: ${target}, value: () => ${resolve(value.expression, generatorContext)}, setter: ${input ? '_setExpressionInput' : '_setExpressionProperty'} },`;
+  });
 }
 
 /**
@@ -306,15 +315,17 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  *
  * @param branch - The branch node.
  * @param condition - The lines declaring the condition of the branch.
- * @param withDirectives - Whether the element applies its custom directives on the server.
+ * @param component - The tag name of the element when it is a component, whose inputs the attributes may bind,
+ *   `undefined` for a native element, which applies its custom directives on the server.
  * @param generatorContext - The generator context of the branch.
  * @returns The lines of the descriptor.
  */
-function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], withDirectives: boolean, generatorContext: GeneratorContext): string[] {
-  const attributes = mapAttributes(branch.attributes, generatorContext);
+function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], component: string | undefined, generatorContext: GeneratorContext): string[] {
+  const withDirectives = !component;
+  const attributes = mapAttributes(branch.attributes, generatorContext, component);
   appendSubmitMark(attributes, branch);
   appendClassBindings(attributes, branch.classBindings, generatorContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, withDirectives, generatorContext));
+  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, component, generatorContext));
   const lines = condition.concat(toProperty('attributes', attributes, ','));
   if (withDirectives && branch.directives.length) {
     lines.push(...toProperty('directives', mapDirectives(branch.directives, generatorContext), ','));
@@ -351,7 +362,7 @@ function mapDirectives(directives: DirectiveNode[], generatorContext: GeneratorC
   const lines = new Array<string>();
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes } = directives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext), ''))), '},');
+    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext, `@@${selector}`), ''))), '},');
   }
 
   return lines;
@@ -368,7 +379,7 @@ function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[]
   const lines = new Array<string>();
   for (let i = 0; i < structuralDirectives.length; i++) {
     const { selector, attributes } = structuralDirectives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext), ''))), '},');
+    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext, `@@${selector}`), ''))), '},');
   }
 
   return lines;

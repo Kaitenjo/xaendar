@@ -14,7 +14,7 @@ const { CustomElement } = await import('../../models/custom-element/custom-eleme
 const { Output } = await import('../../models/output/output');
 const { input } = await import('../../signals/input/input');
 const { _Context } = await import('../context/context.util');
-const { _setProperty } = await import('../render-element/render-element.util');
+const { _setInput } = await import('../render-element/render-element.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
 
 /**
@@ -144,7 +144,7 @@ describe('_createHostDirectives', () => {
     it('binds the exposed input as the template runtime does, setting the one of the directive', () => {
       const element = create([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]);
       const context = new _Context({} as never);
-      _setProperty(context, element, 'label', 'hello');
+      _setInput(context, element, 'label', 'hello');
 
       expect(element.hostDirectives.get(TooltipDirective)?.text()).toBe('hello');
     });

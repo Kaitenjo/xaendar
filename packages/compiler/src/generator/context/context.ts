@@ -2,6 +2,7 @@ import { CompilerContext } from '../../models/compiler-context/compiler-context.
 import type { DeferNode } from '../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type';
 import type { ComponentMetadata } from '../../types/component-metadata.type';
+import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../../types/context-cache.type';
 import type { ElementNamespace } from '../../types/element-namespace.type';
 
@@ -29,6 +30,11 @@ export class GeneratorContext extends CompilerContext {
    * The components the template renders that render only in the browser, by tag name (see {@link getClientComponent}).
    */
   private readonly _clientComponents = new Map<string, ComponentMetadata>();
+  /**
+   * The components and the directives the template imports, by tag name and by `@@selector` (see
+   * {@link getImportedMetadata}).
+   */
+  private readonly _importedMetadata = new Map<string, ComponentOrDirectiveMetadata>();
   /**
    * The tag names of the interactive components a static template renders, which hydrate by themselves (see
    * {@link isIsland}).
@@ -103,6 +109,15 @@ export class GeneratorContext extends CompilerContext {
   }
 
   /**
+   * Registers a component or a directive the template imports.
+   *
+   * @param metadata - The metadata of the component or of the directive.
+   */
+  public addImportedMetadata(metadata: ComponentOrDirectiveMetadata): void {
+    this._importedMetadata.set(metadata.type === 'directive' ? `@@${metadata.selector}` : metadata.selector, metadata);
+  }
+
+  /**
    * Tells whether a tag name is the one of an interactive component a static template renders, registered in this scope
    * or any of its ancestor scopes: it hydrates by itself, from the inputs written on its element.
    *
@@ -122,5 +137,16 @@ export class GeneratorContext extends CompilerContext {
    */
   public getClientComponent(tagName: string): ComponentMetadata | undefined {
     return this._clientComponents.get(tagName) ?? this.parent?.getClientComponent(tagName);
+  }
+
+  /**
+   * Returns the metadata of a component or of a directive the template imports, registered in this scope or any of its
+   * ancestor scopes.
+   *
+   * @param key - The tag name of the component, or the selector of the directive as applied in templates (`@@selector`).
+   * @returns The metadata, `undefined` when the template imports no such component or directive.
+   */
+  public getImportedMetadata(key: string): ComponentOrDirectiveMetadata | undefined {
+    return this._importedMetadata.get(key) ?? this.parent?.getImportedMetadata(key);
   }
 }

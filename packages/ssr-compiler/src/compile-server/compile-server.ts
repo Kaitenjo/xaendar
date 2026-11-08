@@ -1,4 +1,4 @@
-import { ASTNodeType, parseTemplate, resolveTemplateImports, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ImportNode } from '@xaendar/compiler';
+import { ASTNodeType, parseTemplate, resolveTemplateImports, type ImportNode } from '@xaendar/compiler';
 import { ServerGenerator } from '../server-generator/server-generator/server-generator';
 import type { ServerCompileOptions } from '../types/server-compile-options.type';
 
@@ -22,15 +22,5 @@ export async function compileServer(input: string, options: ServerCompileOptions
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   const imports = templateDir ? await resolveTemplateImports(importNodes, templateDir, cache) : undefined;
 
-  return new ServerGenerator(input, nodes, cache).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas.filter(isClientComponent));
-}
-
-/**
- * Tells whether what a template imports is a component rendering only in the browser.
- *
- * @param metadata - The metadata of the component or directive.
- * @returns `true` for a component declaring `ssr: { render: false }`.
- */
-export function isClientComponent(metadata: ComponentOrDirectiveMetadata): metadata is ComponentMetadata {
-  return metadata.type === 'component' && !!metadata.clientOnly;
+  return new ServerGenerator(input, nodes, cache).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas);
 }

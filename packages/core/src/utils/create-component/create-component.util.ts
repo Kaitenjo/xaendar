@@ -10,7 +10,7 @@ import type { ComponentRef } from '../../types/create-component/component-ref.ty
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { _Context } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
-import { _createElement, _renderElement, _resetProperty, _setReactiveProperty } from '../render-element/render-element.util';
+import { _createElement, _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
 
 /**
@@ -119,7 +119,7 @@ function collectBindings<Target extends CustomElement | CustomDirective>(propert
         const attribute: Bindings['attributes'][number] = { 
           name, 
           value: group[name], 
-          setter: _setReactiveProperty
+          setter: _setReactiveInput
         };
 
         if (group.condition) {

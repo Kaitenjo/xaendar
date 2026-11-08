@@ -554,7 +554,7 @@
           "th2": "Descrizione",
           "td1": "Un input facoltativo, che vale <code>default</code> finché non viene legato.",
           "td2": "Un input che ogni template deve legare. <code>undefined</code> finché non viene legato.",
-          "td3": "Il nome dell’input nei template.",
+          "td3": "Il nome dell’input nei template, l’unico con cui lo legano.",
           "td4": "Converte ogni valore legato prima che venga memorizzato.",
           "td5": "Quando restituisce <code>true</code>, il nuovo valore viene scartato e nessuno viene notificato. Default: <code>Object.is</code>.",
           "td6": "Chiamate quando l’input acquista il primo lettore e perde l’ultimo. Vedi <a href=\"#/it/signals/options\">Opzioni dei signal</a>.",
@@ -3726,6 +3726,10 @@
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "Un input che la direttiva non dichiara.",
       "fix": "Usa il nome di una @Property della direttiva."
+    },
+    "[TypeChecker] \"showValue\" is the property of an input of XCard declaring the alias \"show-value\": bind it as show-value=\"…\".": {
+      "cause": "Un template lega un input con il nome della sua proprietà, mentre l’input dichiara un alias: il nome della proprietà sarebbe un attributo dell’elemento, che l’input non legge mai.",
+      "fix": "Lega l’input con il suo alias."
     },
     "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.": {
       "cause": "Un listener per un evento sconosciuto su un elemento nativo.",

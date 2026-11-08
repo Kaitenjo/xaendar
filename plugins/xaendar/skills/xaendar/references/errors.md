@@ -428,6 +428,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An input the directive does not declare.
 - **Fix:** Use the name of a @Property of the directive.
 
+### `[TypeChecker] "showValue" is the property of an input of XCard declaring the alias "show-value": bind it as show-value="…".`
+
+- **Cause:** A template binding an input by the name of its property, while the input declares an alias: the name of the property would be an attribute of the element, which the input never reads.
+- **Fix:** Bind the input by its alias.
+
 ### `Property 'bubbly' does not exist on type 'HTMLElementEventMap'.`
 
 - **Cause:** A listener for an unknown event on a native element.

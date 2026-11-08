@@ -400,6 +400,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
+    message: '[TypeChecker] "showValue" is the property of an input of XCard declaring the alias "show-value": bind it as show-value="…".',
+    page: 'components/inputs'
+  },
+  {
+    phase: 'TypeChecker',
     message: "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.",
     page: 'components/outputs'
   },

@@ -1,4 +1,4 @@
-import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type SymbolImport, type ContextCache } from '@xaendar/compiler';
+import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type DirectiveMetadata, type SymbolImport, type ContextCache } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { ServerGenerator } from './server-generator';
 
@@ -25,7 +25,7 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionProperty, _setProperty } from \'@xaendar/core\';',
+      'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
       'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';',
       'function render(out) {',
       '  const context = new _Context({ get: () => undefined });',
@@ -34,22 +34,46 @@ describe('ServerGenerator', () => {
     ].join('\n'));
   });
 
-  it('writes the components rendering only in the browser through _ssrClientComponent, in the blocks too, with the names of their inputs', () => {
-    const source = '<x-map center="{ here }"></x-map>@if (open) { <x-map></x-map> }<x-card></x-card>';
-    const metadata = { selector: 'x-map', clientOnly: { hydrate: 'idle' }, properties: new Map([['center', { name: 'centre', exposed: false }], ['hint', { name: 'tip', exposed: true }]]) } as unknown as ComponentMetadata;
+  it('writes the components rendering only in the browser through _ssrClientComponent, in the blocks too, setting their inputs by the name of their property', () => {
+    const source = '<x-map center="{ here }" hint="h" title="t"></x-map>@if (open) { <x-map></x-map> }<x-card></x-card>';
+    const metadata = { type: 'component', selector: 'x-map', clientOnly: { hydrate: 'idle' }, properties: new Map([['center', { name: 'centre', exposed: false }], ['hint', { name: 'tip', exposed: true }]]) } as unknown as ComponentMetadata;
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], new Set(['x-map']), [metadata]);
 
     expect(code.match(/_ssrClientComponent\(out/g)).toHaveLength(2);
     expect(code.match(/_ssrComponent\(out/g)).toHaveLength(1);
-    expect(code).toContain('{"inputs":{"center":"centre","hint":"hint"},"island":true,"hydrate":"idle"});');
+    expect(code).toContain('{ name: \'centre\', value: () => this.here, setter: _setExpressionInput },');
+    expect(code).toContain('{ name: \'hint\', value: \'h\', setter: _setInput },');
+    expect(code).toContain('{ name: \'title\', value: \'t\', setter: _setProperty },');
+    expect(code).toContain('{"island":true,"hydrate":"idle"});');
   });
 
   it('tells _ssrClientComponent a component is not an island and has no trigger', () => {
     const source = '<x-map></x-map>';
-    const metadata = { selector: 'x-map', clientOnly: {}, properties: new Map() } as unknown as ComponentMetadata;
+    const metadata = { type: 'component', selector: 'x-map', clientOnly: {}, properties: new Map() } as unknown as ComponentMetadata;
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [metadata]);
 
-    expect(code).toContain('{"inputs":{},"island":false});');
+    expect(code).toContain('{"island":false});');
+  });
+
+  it('sets the inputs of the components and of the directives the template imports by the name of their property, in their conditional bindings too', () => {
+    const source = '<x-card label="a"></x-card><x-card @if (on) { label="b" }></x-card><p @@tip(hint="c")></p><p @if (on) { @@tip(hint="d") }></p><p *only(role="e")></p>';
+    const card = { type: 'component', selector: 'x-card', properties: new Map([['label', { name: 'text' }]]) } as unknown as ComponentMetadata;
+    const tip = { type: 'directive', selector: 'tip', properties: new Map([['hint', { name: 'message' }]]) } as unknown as DirectiveMetadata;
+    const only = { type: 'directive', selector: 'only', properties: new Map([['role', { name: 'role' }]]) } as unknown as DirectiveMetadata;
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [card, tip, only]);
+
+    expect(code).toContain('{ name: \'text\', value: \'a\', setter: _setInput },');
+    expect(code).toContain('{ name: \'text\', value: \'b\', setter: _setInput },');
+    expect(code).toContain('{ name: \'message\', value: \'c\', setter: _setInput },');
+    expect(code).toContain('{ name: \'message\', value: \'d\', setter: _setInput },');
+    expect(code).toContain('{ name: \'role\', value: \'e\', setter: _setInput },');
+  });
+
+  it('throws when a directive the template imports does not declare an attribute bound to it', () => {
+    const source = '<p @@tip(other="c")></p>';
+    const tip = { type: 'directive', selector: 'tip', properties: new Map() } as unknown as DirectiveMetadata;
+
+    expect(() => new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [tip])).toThrow('Unable to resolve the metadata of property "other" of @@tip');
   });
 
   it('writes the events of the template for the event contract, once each, the ones of the blocks and of the conditional bindings included', () => {

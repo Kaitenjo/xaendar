@@ -127,9 +127,10 @@ function appendArgument(code: string[], lines: string[]): void {
 /**
  * Maps attribute nodes to their corresponding generated code lines.
  *
- * An input of a component, known from the metadata of its element, is set by the name of its property, the one it is
- * exposed with for an input of a host directive, through the setters of the inputs: an element whose class is not
- * defined yet, e.g. one of a component loaded lazily, holds the value until the class recovers it.
+ * An input of a component or of a directive, known from the metadata of its owner, is set by the name of its property,
+ * never by its alias, the one it is exposed with for an input of a host directive, through the setters of the inputs:
+ * an element whose class is not defined yet, e.g. one of a component loaded lazily, holds the value until the class
+ * recovers it. Every attribute of a directive is one of its inputs, since a directive has no underlying attribute.
  * Attributes declared inside a conditional binding also get the `unbind` applied when their
  * branch is no longer the selected one: a property of a custom element or of a directive, known from
  * the metadata of its owner, is reset at runtime to the default value its owner declares, any other
@@ -143,16 +144,20 @@ function appendArgument(code: string[], lines: string[]): void {
  * @param isDirective - Whether the owner is a directive.
  * @param conditional - Whether the attributes are declared inside a conditional binding.
  * @returns Array of generated code strings, one per attribute.
- * @throws If the metadata of a directive property bound inside a conditional binding can't be resolved.
+ * @throws If the metadata of a directive property can't be resolved.
  */
 async function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext, owner: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<string[]> {
   const mappedAttributes = new Array<string>();
-  // Native elements have no metadata, and the one of a directive is needed only to unbind its properties
-  const metadata = attributes.length && (isCustomElement || isDirective && conditional) ? await generatorContext.cache?.getOrInsert(owner) : undefined;
+  // Native elements have no metadata
+  const metadata = attributes.length && (isCustomElement || isDirective) ? await generatorContext.cache?.getOrInsert(owner) : undefined;
   for (let i = 0; i < attributes.length; i++) {
     const { name, value } = attributes[i];
-    const propertyMetadata = metadata?.properties.get(name);
-    const input = isCustomElement && propertyMetadata;
+    const input = metadata?.properties.get(name);
+    if (isDirective && !input) {
+      // Unlike components, a non-recognized property cannot be applied as an attribute on the DOM element itself
+      throw new Error(`Unable to resolve the metadata of property "${name}" of ${owner}`, { cause: attributes[i].span });
+    }
+
     const retval = [
       '{',
       indent(`name: '${input && !input.exposed ? input.name : name}',`)
@@ -180,24 +185,16 @@ async function mapAttributes(attributes: AttributeNode[], generatorContext: Gene
 
     const extra = new Array<string>();
     if (conditional) {
-      if (propertyMetadata) {
+      if (input) {
         /*
           A required property has no default value to be reset to, and it doesn't need one: the typechecker
           accepts it inside a conditional binding only when every branch binds it, up to an `@else` or a
           `@default` one, so the branch selected next always binds it again.
         */
-        if (!propertyMetadata.required) {
+        if (!input.required) {
           retval[retval.length - 1] = `${retval[retval.length - 1]},`;
           extra.push('unbind: _resetProperty');
         }
-      } else if (isDirective) {
-        /*
-          A directive has no underlying attribute to fall back to: every attribute bound to it
-          is one of its properties, so its metadata must always be available.
-
-          Unlike components, a non-recognized property cannot be applied as an attribute on the DOM element itself.
-        */
-        throw new Error(`Unable to resolve the metadata of property "${name}" of ${owner}`, { cause: attributes[i].span });
       } else {
         retval[retval.length - 1] = `${retval[retval.length - 1]},`;
         extra.push('unbind: _removeAttribute');
@@ -480,8 +477,7 @@ async function mapBranch(branch: ConditionalBindingBranchNode, condition: string
  * Maps directive nodes to the descriptors `_renderElement` applies to the element:
  * the directive selector, its properties, its events and its conditional bindings.
  *
- * Properties bound directly in the directive are never unbound, since they live as long
- * as the directive, so the directive metadata is only needed by its conditional bindings.
+ * Properties bound directly in the directive are never unbound, since they live as long as the directive.
  *
  * @param directives - The directive nodes applied to the element.
  * @param generatorContext - Current render scope context, used to resolve identifier references.
@@ -492,7 +488,7 @@ async function mapDirectives(directives: DirectiveNode[], generatorContext: Gene
 
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes, events, conditionalBindings } = directives[i];
-    const mappedAttributes = await mapAttributes(attributes, generatorContext, selector, false, true, false);
+    const mappedAttributes = await mapAttributes(attributes, generatorContext, `@@${selector}`, false, true, false);
     const mappedEvents = mapEvents(events, generatorContext);
     const mappedConditionalBindings = await mapConditionalBindings(conditionalBindings, generatorContext, `@@${selector}`, false, true);
 
@@ -560,7 +556,7 @@ async function mapStructuralDirectives(structuralDirectives: StructuralDirective
       '{',
       ...indent([
         `selector: '${selector}',`,
-        ...mapList('attributes', await mapAttributes(attributes, generatorContext, selector, false, true, false), '')
+        ...mapList('attributes', await mapAttributes(attributes, generatorContext, `@@${selector}`, false, true, false), '')
       ]),
       '},'
     );

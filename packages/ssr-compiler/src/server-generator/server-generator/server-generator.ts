@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -18,13 +18,14 @@ import type { ServerTransitionFunction } from '../types/server-transition-functi
 import type { GenerateChildren } from '../types/generate-children.type';
 import type { ServerTransitionResult } from '../types/server-transition-result.type';
 import { SERVER_RESOLVE_OPTIONS, toStatements } from '../utils/server-code/server-code.utils';
+import { isClientComponent } from '../utils/client-component/client-component.utils';
 import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
 
 /**
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionProperty, _setProperty } from \'@xaendar/core\';',
+  'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
   'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
@@ -103,11 +104,12 @@ export class ServerGenerator {
    * @param symbols - The symbols the template imports from modules: the expressions read them through the declarations
    *   importing them, written after the imports of the runtime helpers, only for the ones an expression reads.
    * @param islands - The tag names of the interactive components a static template renders, if any.
-   * @param clientComponents - The components the template imports rendering only in the browser, if any.
+   * @param imports - The components and the directives the template imports, if any: their inputs are set by the name of
+   *   their property, and the components among them rendering only in the browser are written from their metadata.
    * @returns The code: the import declarations, then the functions, `render` first.
    * @throws A `TemplateError` pointing to the part of the template the code cannot be generated for.
    */
-  public generate(signals: readonly string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], islands?: ReadonlySet<string>, clientComponents?: readonly ComponentMetadata[]): string {
+  public generate(signals: readonly string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], islands?: ReadonlySet<string>, imports?: readonly ComponentOrDirectiveMetadata[]): string {
     try {
       this._functions.clear();
       const generatorContext = new GeneratorContext(this._cache);
@@ -129,9 +131,13 @@ export class ServerGenerator {
         }
       }
 
-      if (clientComponents?.length) {
-        for (let i = 0; i < clientComponents.length; i++) {
-          generatorContext.addClientComponent(clientComponents[i]);
+      if (imports?.length) {
+        for (let i = 0; i < imports.length; i++) {
+          const metadata = imports[i];
+          generatorContext.addImportedMetadata(metadata);
+          if (isClientComponent(metadata)) {
+            generatorContext.addClientComponent(metadata);
+          }
         }
       }
 
@@ -155,8 +161,8 @@ export class ServerGenerator {
       }
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
-      const imports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
-      return RUNTIME_IMPORTS.concat(imports, code).join('\n');
+      const symbolImports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
+      return RUNTIME_IMPORTS.concat(symbolImports, code).join('\n');
     } catch (error) {
       throw formatErrorWithPrefix('Server generator', this._input, error);
     }

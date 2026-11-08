@@ -1,4 +1,6 @@
+import type { ComponentOrDirectiveMetadata, ContextCache } from '@xaendar/compiler';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import type { ServerCompileOptions } from '@xaendar/ssr-compiler';
 import type { ServerRenderFunction } from '../types/server-render-function.type';
 
 await vi.hoisted(async () => {
@@ -22,13 +24,29 @@ const { _defineServerRender } = ssr;
 const renderToString: typeof ssr.renderToString = async (...args) => (await ssr.renderToString(...args)).replace(/<script>\(.*?<\/script>/s, '');
 
 /**
- * Compiles a template for the server and evaluates its code, the imports of the runtime helpers given as parameters.
+ * The metadata the compiler reads of a component or of a directive a template imports: its selector and its inputs,
+ * the name of their property by the name they are bound with.
  */
-async function compile(source: string, signals: string[] = [], shadowingMembers: string[] = []): Promise<ServerRenderFunction> {
-  const code = await compileServer(source, { signals, shadowingMembers, cache: undefined as never });
+const imported = (type: 'component' | 'directive', selector: string, inputs: Record<string, string>) => ({ type, selector, properties: new Map(Object.entries(inputs).map(([bound, name]) => [bound, { name }])) }) as unknown as ComponentOrDirectiveMetadata;
+
+/**
+ * Compiles a template for the server, importing the components and the directives given, and evaluates its code, the
+ * imports of the runtime helpers given as parameters.
+ */
+async function compileWith(source: string, options: Pick<ServerCompileOptions, 'signals' | 'shadowingMembers' | 'islands'>, imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
+  const declarations = imports.length ? `@import { ${imports.map((_, index) => `Imported${index}`).join(', ')} } from './imported'` : '';
+  const cache = { getImport: async (name: string) => imports[Number(name.slice('Imported'.length))] } as unknown as ContextCache;
+  const code = await compileServer(`${declarations}${source}`, { ...options, templateDir: '/', cache });
   const body = `${code.split('\n').filter(line => !line.startsWith('import ')).join('\n')}\nreturn render;`;
   const helpers: Record<string, unknown> = Object.assign({}, core, ssr);
   return new Function(...Object.keys(helpers), body)(...Object.values(helpers));
+}
+
+/**
+ * Compiles a template for the server and evaluates its code (see {@link compileWith}).
+ */
+async function compile(source: string, signals: string[] = [], shadowingMembers: string[] = [], imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
+  return compileWith(source, { signals, shadowingMembers }, imports);
 }
 
 /**
@@ -120,7 +138,7 @@ _defineServerRender(TeamElement, await compile([
   '<b *delay(allow="{ true }")>late</b><b *delay(allow="{ false }")>never</b>',
   '<style>a > b {}</style>',
   '<lazy-element></lazy-element>'
-].join(''), ['heading', 'users'], ['name']));
+].join(''), ['heading', 'users'], ['name'], [imported('component', 'user-badge', { label: 'label', admin: 'admin' }), imported('directive', 'delay', { allow: 'allow' })]));
 
 /**
  * A component reading a value of the transfer state when it is constructed.
@@ -273,7 +291,7 @@ describe('renderToString', () => {
       public on = true;
     }
     customElements.define('filled-card', FilledElement);
-    _defineServerRender(FilledElement, await compile('<p @@fill(content="{ html }")></p><span @if (on) { @@mark }>x</span><i @if (!on) { @@mark }>y</i>'));
+    _defineServerRender(FilledElement, await compile('<p @@fill(content="{ html }")></p><span @if (on) { @@mark }>x</span><i @if (!on) { @@mark }>y</i>', [], [], [imported('directive', 'fill', { content: 'content' })]));
 
     const html = await renderToString(FilledElement);
 
@@ -307,10 +325,7 @@ describe('renderToString', () => {
     const renderIsland = async (name: string, template: string, Base: typeof CustomElement = CustomElement) => {
       const Static = class extends Base { };
       customElements.define(name, Static);
-      const code = await compileServer(template, { signals: [], islands: new Set(['island-card', 'unknown-card']), cache: undefined as never });
-      const body = `${code.split('\n').filter(line => !line.startsWith('import ')).join('\n')}\nreturn render;`;
-      const helpers: Record<string, unknown> = Object.assign({}, core, ssr);
-      _defineServerRender(Static, new Function(...Object.keys(helpers), body)(...Object.values(helpers)));
+      _defineServerRender(Static, await compileWith(template, { signals: [], islands: new Set(['island-card', 'unknown-card']) }, [imported('component', 'island-card', { first: 'start', kind: 'kind' })]));
       return renderToString(Static);
     };
 

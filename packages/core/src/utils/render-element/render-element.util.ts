@@ -1,4 +1,4 @@
-import type { Dictionary, Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
+import type { Function, NoArgsFunction, NoArgsVoidFunction, VoidFunction } from '@xaendar/types';
 import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -543,30 +543,32 @@ export function _removeAttribute(_context: _Context, element: Element, name: str
 }
 
 /**
- * Resets a property of a custom element or of a directive to the default value declared by its `@Property`,
+ * Resets an input of a custom element or of a directive to the default value declared by its `@Property`,
  * evaluated where the property is declared. On an element without such a property, e.g. a custom element
  * not defined yet, the value assigned to the property and the attribute are removed.
  *
  * @param _context - The current template execution scope.
- * @param target - The element or the directive whose property is reset.
- * @param name - The name, or the alias, of the property to reset.
+ * @param target - The element or the directive whose input is reset.
+ * @param name - The name of the property of the input.
  * @throws When the target is a directive not declaring the property.
  */
 export function _resetProperty(_context: _Context, target: Element | BindingHost, name: string): void {
-  withProperty(target, name, property => property.reset(INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => {
-    delete (element as unknown as Record<string, unknown>)[attribute];
-    element.removeAttribute(attribute);
-    restoreToggledClasses(element, attribute);
+  withProperty(target, name, property => property.reset(INPUT_SIGNAL_SET_SYMBOL), element => {
+    delete (element as unknown as Record<string, unknown>)[name];
+    element.removeAttribute(name);
+    restoreToggledClasses(element, name);
   });
 }
 
 /**
- * Updates an input of a component: when its class is defined the value is set into the input signal, otherwise it is
- * assigned to the property of the element, which `@Property` recovers once the class is defined.
+ * Updates an input of a component or of a directive: when the class of the component is defined the value is set into
+ * the input signal, otherwise it is assigned to the property of the element, which `@Property` recovers once the class
+ * is defined.
  *
- * @param target - The element of the component.
+ * @param target - The element of the component, or the directive.
  * @param name - The name of the property of the input.
  * @param newValue - The new value.
+ * @throws When the target is a directive not declaring the property.
  */
 function updateInput(target: Element | BindingHost, name: string, newValue: unknown): void {
   withProperty(target, name, property => property.set(newValue, INPUT_SIGNAL_SET_SYMBOL), element => {
@@ -575,38 +577,38 @@ function updateInput(target: Element | BindingHost, name: string, newValue: unkn
 }
 
 /**
- * Updates a property on an HTML element or on a directive: when the property is an InputSignal its value is set,
- * otherwise the value is set as an attribute of the element, only when it differs from the one the element holds, as
- * an element adopted from the HTML of the server does. Writing `class` keeps the classes toggled by class bindings.
- * @param target - The HTML element or the directive whose property is being updated.
- * @param name - The name, or the alias, of the property to update.
- * @param newValue - The new value to set for the property.
- * @throws When the target is a directive not declaring the property.
+ * Updates an attribute of an HTML element, only when the value differs from the one the element holds, as an element
+ * adopted from the HTML of the server does. Writing `class` keeps the classes toggled by class bindings.
+ *
+ * An input is never written by it: the compiler binds the inputs it knows through the setters of the inputs, so an
+ * input found here is one it did not recognize, e.g. the name of the property of an input declaring an alias.
+ * @param target - The HTML element whose attribute is being updated.
+ * @param name - The name of the attribute.
+ * @param newValue - The new value to set for the attribute.
+ * @throws When `name` is the one of an input of the target, or the target is a directive.
  */
 function updateProperty(target: Element | BindingHost, name: string, newValue: unknown): void {
-  withProperty(target, name, property => property.set(newValue, INPUT_SIGNAL_SET_SYMBOL), (element, attribute) => updateAttribute(element, attribute, String(newValue)));
+  withProperty(target, name, () => {
+    throw new Error(`"${name}" is an input of ${target.constructor.name}, bound as an attribute: an input declaring an alias is bound by its alias`);
+  }, element => updateAttribute(element, name, String(newValue)));
 }
 
 /**
- * Resolves the property of an HTML element or of a directive named, or aliased, `name`, and hands it to `onInputSignal`
- * when it is an InputSignal, or the element and the attribute name to `onAttribute` otherwise.
+ * Hands the property `name` of an HTML element or of a directive to `onInputSignal` when it is an InputSignal, or the
+ * element to `onAttribute` otherwise. `name` is the one of the property, never an alias, which the compiler resolves.
  * @param target - The HTML element or the directive owning the property.
- * @param name - The name, or the alias, of the property.
+ * @param name - The name of the property.
  * @param onInputSignal - Callback receiving the InputSignal backing the property.
- * @param onAttribute - Callback receiving the element and the attribute name, when no InputSignal backs the property.
+ * @param onAttribute - Callback receiving the element, when no InputSignal backs the property.
  * @throws When the target is a directive not declaring the property.
  */
-function withProperty(target: Element | BindingHost, name: string, onInputSignal: Function<[property: SettableInputSignal], void>, onAttribute: Function<[element: Element, attribute: string], void>): void {
-  const componentOrDirective = target as unknown as Record<string, unknown>;
-  const constructor = target.constructor as unknown as Dictionary<string | symbol, Record<string, Dictionary<string>>>;
-  name = constructor[Symbol.for('Symbol.metadata')]?.aliasToAttribute?.[name] ?? name;
-  const property = componentOrDirective[name];
-
+function withProperty(target: Element | BindingHost, name: string, onInputSignal: Function<[property: SettableInputSignal], void>, onAttribute: Function<[element: Element], void>): void {
+  const property = (target as unknown as Record<string, unknown>)[name];
   if (property && isInputSignal(property)) {
     onInputSignal(property);
   } else if (target instanceof CustomDirective || target instanceof StructuralDirective) {
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   } else {
-    onAttribute(target, name);
+    onAttribute(target);
   }
 }

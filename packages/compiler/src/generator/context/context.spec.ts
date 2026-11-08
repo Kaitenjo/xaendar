@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ContextCache } from '../../types/context-cache.type';
+import type { DirectiveMetadata } from '../../types/directive-metadata.type';
 import { GeneratorContext } from './context';
 
 const cache = {} as ContextCache;
@@ -73,6 +74,22 @@ describe('GeneratorContext', () => {
       expect(child.getClientComponent('x-a')).toBe(inParent);
       expect(child.getClientComponent('x-b')).toBe(inChild);
       expect(parent.getClientComponent('x-b')).toBeUndefined();
+    });
+  });
+
+  describe('getImportedMetadata', () => {
+    it('finds the components by tag name and the directives by @@selector, in the scope and in its ancestors', () => {
+      const parent = new GeneratorContext(cache);
+      const child = new GeneratorContext(parent);
+      const component = { type: 'component', selector: 'x-a' } as ComponentMetadata;
+      const directive = { type: 'directive', selector: 'tip' } as DirectiveMetadata;
+      parent.addImportedMetadata(component);
+      child.addImportedMetadata(directive);
+
+      expect(child.getImportedMetadata('x-a')).toBe(component);
+      expect(child.getImportedMetadata('@@tip')).toBe(directive);
+      expect(child.getImportedMetadata('tip')).toBeUndefined();
+      expect(parent.getImportedMetadata('@@tip')).toBeUndefined();
     });
   });
 });

@@ -40,11 +40,11 @@ function evaluate<Render>(code: string): Render {
  * @returns Initializes the input of an element, as the accessor does when the element is constructed: a value assigned to
  *   the element before its class was defined is written into the input.
  */
-function declareInput(klass: object, name: string, value: unknown): (element: object) => unknown {
+function declareInput(klass: object, name: string, value: unknown, alias?: string): (element: object) => unknown {
   const metadata = ((klass as Record<symbol, DecoratorMetadataObject | undefined>)[Symbol.for('Symbol.metadata')] ??= {});
   const storage = new WeakMap<object, unknown>();
   const target = { get(this: object) { return storage.get(this); }, set(this: object, input: unknown) { storage.set(this, input); } };
-  const decorated = (Property(value) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
+  const decorated = (Property(value, alias ? { alias } : undefined) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
   const read = (element: object) => {
     if (!storage.has(element)) {
       storage.set(element, decorated.init.call(element));
@@ -81,15 +81,45 @@ let onServer = true;
 const tag = (side: 'server' | 'client', name: string) => `${side}-${name}-${run}`;
 
 /**
- * The cache of the metadata of the tests needing none: it tells no input of the components, whose attributes are set as
- * attributes, and no module declaring them, so a `@hydrate` loads nothing before rendering its content. Every tag is
- * described as a directive without properties, the only metadata naming no module.
+ * The inputs of the components of the tests, by their name without the side and the run, and of the directives, by their
+ * selector as applied in templates (`@@selector`): the name of the property of each input, by the name it is bound with.
+ */
+const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  badge: { label: 'label' },
+  counter: { start: 'start' },
+  crossed: { value: 'internalValue', initialValue: 'value' },
+  '@@later': { allow: 'allow' },
+  '@@hydratedFill': { content: 'content' }
+};
+
+/**
+ * The inputs of a component or of a directive, as the metadata of the compiler describe them.
+ */
+const toProperties = (inputs: Readonly<Record<string, string>> = {}) => new Map(Object.entries(inputs).map(([bound, name]) => [bound, { name, type: 'unknown', required: false, exposed: false }]));
+
+/**
+ * The cache of the metadata the browser compiles the templates with: it tells the inputs of `testInputs`, and no module
+ * declaring a component or a directive, so a `@hydrate` loads nothing before rendering its content. Every tag is
+ * described as a directive, the only metadata naming no module.
  */
 const emptyCache = {
-  getOrInsert: async () => ({ type: 'directive', properties: new Map() }),
+  getOrInsert: async (selector: string) => ({ type: 'directive', properties: toProperties(testInputs[selector.startsWith('@@') ? selector : selector.replace(/^client-(.*)-\d+$/, '$1')]) }),
   getImport: () => Promise.reject(new Error('No import')),
   set: () => undefined
 } as unknown as ContextCache;
+
+/**
+ * Compiles a template for the server, importing the components and the directives of `testInputs`, as the template of an
+ * application imports the ones it renders: the server generator reads their inputs from the imports.
+ */
+async function compileForServer(template: string, options: Pick<Parameters<typeof compileServer>[1], 'signals' | 'islands'>): Promise<string> {
+  const names = Object.keys(testInputs);
+  const imports = names.map(name => name.startsWith('@@')
+    ? { type: 'directive', selector: name.slice(2), properties: toProperties(testInputs[name]) }
+    : { type: 'component', selector: tag('server', name), properties: toProperties(testInputs[name]) });
+  const cache = { getImport: async (imported: string) => imports[Number(imported.slice('Imported'.length))] } as unknown as ContextCache;
+  return compileServer(`@import { ${names.map((_, index) => `Imported${index}`).join(', ')} } from './imported'${template}`, { ...options, templateDir: '/', cache });
+}
 
 /**
  * Compiles a template with both generators, and registers a class of the component for each side.
@@ -97,7 +127,7 @@ const emptyCache = {
 async function register(name: string, Base: Constructor<Component>, template: (tag: (name: string) => string) => string, signals: string[] = [], css?: string, cache = emptyCache): Promise<{ Server: Constructor<Component>, define: () => void }> {
   const Server = class extends Base { };
   customElements.define(tag('server', name), Server);
-  _defineServerRender(Server, evaluate(await compileServer(template(child => tag('server', child)), { signals, cache: emptyCache })), css);
+  _defineServerRender(Server, evaluate(await compileForServer(template(child => tag('server', child)), { signals })), css);
 
   const Client = class extends Base { };
   let styleSheet: CSSStyleSheet | undefined;
@@ -512,6 +542,60 @@ describe('hydration', () => {
     expect(host.shadowRoot!.firstElementChild).toBe(element);
     expect(Badge.seen).toEqual(['Ada']);
     expect(element.hasAttribute('label')).toBe(false);
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['before', true],
+    ['after', false]
+  ])('sets the inputs declaring an alias by the name of their property, one named like the alias of the other, its class defined %s the component rendering it', async (_when, first) => {
+    /**
+     * A component whose input named `value` is bound as `initialValue`, the alias `value` naming another one.
+     */
+    class Crossed extends CustomElement {
+      public declare internalValue: () => string;
+      public declare value: () => string;
+
+      constructor() {
+        super();
+        initInternalValue(this);
+        initValue(this);
+      }
+    }
+    const initInternalValue = declareInput(Crossed, 'internalValue', '', 'value');
+    const initValue = declareInput(Crossed, 'value', '', 'initialValue');
+
+    /**
+     * A card rendering the component.
+     */
+    class Card extends CustomElement {
+      public text = signal('b');
+    }
+    const crossed = await register('crossed', Crossed, () => '<i>{ internalValue() }</i><b>{ value() }</b>', ['internalValue', 'value']);
+    const card = await register('card', Card, tag => `<${tag('crossed')} value="a" initialValue="{ text() }"></${tag('crossed')}>`, ['text']);
+    const host = load(await renderToString(card.Server));
+    const element = host.shadowRoot!.firstElementChild! as Crossed;
+    expect(element.shadowRoot!.innerHTML).toBe('<i><!---->a</i><b><!---->b</b>');
+
+    if (first) {
+      crossed.define();
+      card.define();
+    } else {
+      card.define();
+      crossed.define();
+    }
+
+    expect(element.internalValue()).toBe('a');
+    expect(element.value()).toBe('b');
+    expect(element.hasAttribute('value')).toBe(false);
+    expect(element.hasAttribute('initialValue')).toBe(false);
+
+    (host as Card).text.set('c');
+    await flush();
+
+    expect(element.value()).toBe('c');
+    expect(element.internalValue()).toBe('a');
+    expect(element.shadowRoot!.innerHTML).toBe('<i>a</i><b>c</b>');
     expect(console.warn).not.toHaveBeenCalled();
   });
 
@@ -1024,10 +1108,10 @@ describe('hydration', () => {
     /**
      * Compiles a static page for the server only, and renders it: the browser never gets its class.
      */
-    async function renderStatic(name: string, template: (tag: (name: string) => string) => string, islands: string[], cache = emptyCache): Promise<Element> {
+    async function renderStatic(name: string, template: (tag: (name: string) => string) => string, islands: string[]): Promise<Element> {
       const Static = class extends CustomElement { };
       customElements.define(tag('server', name), Static);
-      _defineServerRender(Static, evaluate(await compileServer(template(child => tag('server', child)), { signals: [], islands: new Set(islands.map(island => tag('server', island))), cache })));
+      _defineServerRender(Static, evaluate(await compileForServer(template(child => tag('server', child)), { signals: [], islands: new Set(islands.map(island => tag('server', island))) })));
       return load(await renderToString(Static));
     }
 
@@ -1072,7 +1156,7 @@ describe('hydration', () => {
     it('adopts a static component without a class in an interactive one, its light DOM included', async () => {
       const Static = class extends CustomElement { };
       customElements.define(tag('server', 'card'), Static);
-      _defineServerRender(Static, evaluate(await compileServer('<i>Card</i><slot></slot>', { signals: [], cache: emptyCache })));
+      _defineServerRender(Static, evaluate(await compileForServer('<i>Card</i><slot></slot>', { signals: [] })));
       class Parent extends CustomElement {
         public clicks = 0;
 

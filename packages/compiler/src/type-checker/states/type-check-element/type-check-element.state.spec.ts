@@ -579,6 +579,26 @@ describe('typeCheckElement directives', () => {
     expect(() => run('<div @@myDirective(other="x")></div>', directiveMetadata({}))).toThrow('Unknown property "other" on @@myDirective (MyDirective has no @Property with this name).');
   });
 
+  it('throws for the name of the property of an input declaring an alias, which is bound by its alias', () => {
+    const directive = directiveMetadata({ hint: new ComponentPropertyMetadata('text', 'string', { alias: 'hint' }) });
+
+    expect(() => run('<div @@myDirective(text="x")></div>', directive)).toThrow('"text" is the property of an input of MyDirective declaring the alias "hint": bind it as hint="…".');
+    expect(text(run('<div @@myDirective(hint="x")></div>', directive))).toContain('  x satisfies string;');
+  });
+
+  it('throws for the name of the property of an input of a component declaring an alias, binding the other inputs and the attributes', () => {
+    const component = metadata({
+      value: new ComponentPropertyMetadata('internalValue', 'string', { alias: 'value' }),
+      initialValue: new ComponentPropertyMetadata('value', 'number', { alias: 'initialValue' }),
+      hint: new ComponentPropertyMetadata('text', 'string', { alias: 'hint', exposed: true })
+    });
+
+    expect(() => run('<my-el internalValue="x"></my-el>', component)).toThrow('"internalValue" is the property of an input of MyEl declaring the alias "value": bind it as value="…".');
+    expect(() => run('<my-el @if (cond) { internalValue="x" } @else { value="y" }></my-el>', component)).toThrow('"internalValue" is the property of an input of MyEl declaring the alias "value"');
+    // The name of the property of an input is the alias of another one, and the property of an exposed input an attribute
+    expect(text(run('<my-el value="x" text="y" title="z"></my-el>', component))).toContain('  x satisfies string;');
+  });
+
   it('throws when a property of a directive is bound without a value', () => {
     expect(() => run('<div @@myDirective(display visible="{ true }")></div>', directiveMetadata(properties))).toThrow('Property "display" needs a value');
   });

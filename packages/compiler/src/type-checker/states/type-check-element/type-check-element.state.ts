@@ -472,13 +472,30 @@ function withOwnerType<Metadata extends ComponentOrDirectiveMetadata>(metadata: 
  * @param attributes - The attribute nodes bound to the directive.
  * @param metadata - Metadata of the directive the attributes are bound to.
  * @param owner - The directive (`@@selector`) or the structural directive (`*selector`) the attributes are bound to, used in error messages.
- * @throws If an attribute doesn't match any property of the directive.
+ * @throws If an attribute doesn't match any property of the directive, or is the name of the property of an input declaring an alias.
  */
 function assertDirectiveProperties(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, owner: string): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, span } = attributes[i];
     if (!metadata.properties.has(name)) {
+      assertNotAliasedProperty(attributes[i], metadata);
       throw new Error(`Unknown property "${name}" on ${owner} (${metadata.className} has no @Property with this name).`, { cause: span });
+    }
+  }
+}
+
+/**
+ * Ensures an attribute matching no input is not the name of the property of an input declaring an alias, which is bound
+ * only by its alias: the name of its property would be an attribute of the element, which the input never reads.
+ *
+ * @param attribute - The attribute node, matching no input.
+ * @param metadata - Metadata of the component or directive the attribute is bound to.
+ * @throws If the attribute is the name of the property of an input declaring an alias.
+ */
+function assertNotAliasedProperty({ name, span }: AttributeNode, metadata: ComponentOrDirectiveMetadata): void {
+  for (const property of metadata.properties.values()) {
+    if (property.name === name && property.alias && !property.exposed) {
+      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="…".`, { cause: span });
     }
   }
 }
@@ -543,7 +560,7 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * Type-checks attributes bound to component or directive properties, checking each value
  * `satisfies` the property's declared type. Expression values are checked
  * against the resolved expression, literal values as a `string`. Attributes
- * that don't match a property are ignored.
+ * that don't match a property are ignored, unless they are the name of the property of an input declaring an alias.
  *
  * A property is an input, so it always needs a value: the form without one (`<my-el label>`), which is only valid
  * for the attributes of a native element, is rejected.
@@ -552,7 +569,7 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * @param metadata - Metadata of the component or directive the attributes are bound to.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one block per bound property.
- * @throws If a property is bound without a value.
+ * @throws If a property is bound without a value, or an attribute is the name of the property of an input declaring an alias.
  */
 function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
@@ -560,7 +577,9 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, span, bare } = attributes[i];
     const property = metadata.properties.get(name);
-    if (property) {
+    if (!property) {
+      assertNotAliasedProperty(attributes[i], metadata);
+    } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
       }

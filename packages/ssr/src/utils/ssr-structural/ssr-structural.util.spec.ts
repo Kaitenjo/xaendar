@@ -8,7 +8,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _Context, _defineDirective, _getComponentRuntime, _setExpressionProperty, Property, StructuralDirective } = await import('@xaendar/core');
+const { _Context, _defineDirective, _getComponentRuntime, _setExpressionInput, Property, StructuralDirective } = await import('@xaendar/core');
 type StructuralDirectiveDescriptor = import('@xaendar/core').RenderElementStructuralDirective;
 type StructuralConditionalBinding = import('@xaendar/core').RenderElementStructuralDirectiveConditionalBinding;
 const { _ssrStructural } = await import('./ssr-structural.util');
@@ -33,7 +33,7 @@ const context = new _Context({ get: () => undefined } as never);
 /**
  * Describes the structural directive `*guard(allow="{…}")`.
  */
-const guard = (value: boolean | Promise<boolean>) => ({ selector: 'guard', attributes: [{ name: 'allow', value: () => value, setter: _setExpressionProperty }] }) as unknown as StructuralDirectiveDescriptor;
+const guard = (value: boolean | Promise<boolean>) => ({ selector: 'guard', attributes: [{ name: 'allow', value: () => value, setter: _setExpressionInput }] }) as unknown as StructuralDirectiveDescriptor;
 
 /**
  * Writes the element as the generated code does, recording the context it is written in.
