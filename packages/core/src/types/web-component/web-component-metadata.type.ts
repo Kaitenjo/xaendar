@@ -1,5 +1,5 @@
 import type { Constructor, Dictionary } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_EVENTS, INTERNAL_HOST_PROPERTIES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_EVENTS, INTERNAL_HOST_PROPERTIES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
 import type { HydrateTrigger } from '../hydrate-trigger.type';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { HostEventListener } from '../host/host-event-listener.type';
@@ -20,6 +20,11 @@ export type WebComponentMetadata = {
    * name of its accessor.
    */
   [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Dictionary<string, string>,
+  /**
+   * The names of the properties of the inputs declared by `@Property.required`, which the code creating the component
+   * or applying the directive must bind.
+   */
+  [INTERNAL_REQUIRED_INPUTS]?: Set<string>,
   /**
    * The selector the component is registered with through `@WebComponent`.
    */

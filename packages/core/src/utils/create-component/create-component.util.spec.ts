@@ -91,6 +91,22 @@ class Visible extends StructuralDirective {
 const lastTooltip = () => Tooltip.instances.at(-1)!;
 
 /**
+ * Component declaring a required input, as `@Property.required` registers it in the metadata of the class.
+ */
+const Profile = define(class Profile extends CustomElement {
+  public readonly name = input<string>('');
+});
+Object.assign((Profile as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { requiredInputs: new Set(['name']) });
+
+/**
+ * Directive declaring a required input.
+ */
+class Label extends CustomDirective {
+  public readonly text = input<string>('');
+}
+Object.defineProperty(Label, Symbol.for('Symbol.metadata'), { value: { requiredInputs: new Set(['text']) } });
+
+/**
  * The context of the component or of the directive creating the components: never cleared, unless a test does.
  */
 const root = new _Context({} as never);
@@ -144,6 +160,21 @@ describe('_createComponent', () => {
   it('throws when an input is bound by more than one group', () => {
     expect(() => _createComponent(owner, Card, { target: document.body, properties: [{ count: () => 1 }, { condition: () => true, count: () => 2 }] }))
       .toThrow('Property "count" is bound by more than one group');
+  });
+
+  it('requires the required inputs of the component and of its directives to be bound by a group without condition', () => {
+    const missing = 'is not bound by a group without condition of createComponent';
+    const target = document.createElement('div');
+
+    expect(() => _createComponent(owner, Profile, { target })).toThrow(`The required input "name" of Profile ${missing}`);
+    expect(() => _createComponent(owner, Profile, { target, properties: [{ condition: () => true, name: () => 'Ada' }] })).toThrow(`The required input "name" of Profile ${missing}`);
+    expect(() => _createComponent(owner, Card, { target, directives: [Label] })).toThrow(`The required input "text" of Label ${missing}`);
+    expect(() => _createComponent(owner, Card, { target, directives: [{ directive: Label, properties: [{ condition: () => true, text: () => 'x' }] }] })).toThrow(`The required input "text" of Label ${missing}`);
+    expect(target.childNodes).toHaveLength(0);
+
+    const { element } = _createComponent(owner, Profile, { target, properties: [{ name: () => 'Ada' }], directives: [{ directive: Label, condition: () => true, properties: [{ text: () => 'x' }] }] });
+
+    expect(element.name()).toBe('Ada');
   });
 
   it('listens to the events of the component and to the native ones', () => {

@@ -352,6 +352,33 @@ describe('renderToString', () => {
     await expect(renderToString(GreetingElement, undefined, { state: { format: () => 'hi' } })).rejects.toThrow('state.format is a function, which cannot be written into the HTML');
   });
 
+  it('throws when the inputs leave out a required input, before any code of the component runs', async () => {
+    const constructed = vi.fn();
+
+    /**
+     * A component with a required input, as `@Property.required` declares it.
+     */
+    class ProfileElement extends CustomElement {
+      public declare name: () => string;
+
+      constructor() {
+        super();
+        constructed();
+      }
+    }
+    const metadata: DecoratorMetadataObject = {};
+    declareInput(ProfileElement, 'name', '', metadata);
+    Object.defineProperty(ProfileElement, Symbol.for('Symbol.metadata'), { value: Object.assign(metadata, { requiredInputs: new Set(['name']) }) });
+    customElements.define('profile-card', ProfileElement);
+    _defineServerRender(ProfileElement, await compile('<p>{ name() }</p>', ['name']));
+    const missing = 'The required input "name" of ProfileElement is not bound by the inputs of renderToString';
+
+    await expect(renderToString(ProfileElement)).rejects.toThrow(missing);
+    await expect(renderToString(ProfileElement, {})).rejects.toThrow(missing);
+    expect(constructed).not.toHaveBeenCalled();
+    expect(await renderToString(ProfileElement, { name: 'Ada' })).toContain('<p><!---->Ada</p>');
+  });
+
   it('runs no effect of the components and renders no component they create, putting the runtime of the browser back', async () => {
     const browser = _getComponentRuntime();
 

@@ -1,5 +1,5 @@
-import { entries, isNonEmpty } from '@xaendar/common';
-import { _stringifyState, _TRANSFER_STATE_ATTRIBUTE, type CustomElement } from '@xaendar/core';
+import { entries, isNonEmpty, keys } from '@xaendar/common';
+import { _assertRequiredInputs, _stringifyState, _TRANSFER_STATE_ATTRIBUTE, type CustomElement } from '@xaendar/core';
 import type { Constructor } from '@xaendar/types';
 import type { RenderInputs } from '../types/render-inputs.type';
 import type { RenderOptions } from '../types/render-options.type';
@@ -54,9 +54,9 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * @param inputs - The inputs to set, by the name of their property.
  * @param options - The transfer state of the page, and the nonce of the `Content-Security-Policy` of the response.
  * @returns A promise resolving to the HTML of the component.
- * @throws When the component is not defined, or has no template compiled for the server, when an input or a value of the
- *   transfer state cannot be written into the HTML, such as a function, or when the code of the component throws while
- *   it is rendered.
+ * @throws When the component is not defined, or has no template compiled for the server, when `inputs` leaves out a
+ *   required input, when an input or a value of the transfer state cannot be written into the HTML, such as a function, or
+ *   when the code of the component throws while it is rendered.
  */
 export async function renderToString<Component extends CustomElement>(component: Constructor<Component>, inputs?: RenderInputs<Component>, options?: RenderOptions): Promise<string> {
   const out: ServerOutput = [];
@@ -75,6 +75,7 @@ export async function renderToString<Component extends CustomElement>(component:
       throw new Error(`${component.name} has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment`);
     }
 
+    _assertRequiredInputs(component, inputs ? new Set(keys(inputs)) : undefined, 'the inputs of renderToString');
     // Serialized first: a value the HTML cannot carry fails before any code of the component runs
     const serializedInputs = inputs && isNonEmpty(inputs) ? _stringifyState(inputs, 'inputs') : undefined;
     const serializedState = state && isNonEmpty(state) ? _stringifyState(state, 'state') : undefined;

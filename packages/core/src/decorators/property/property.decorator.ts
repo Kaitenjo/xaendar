@@ -1,5 +1,5 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
 import type { BindingHost } from '../../types/binding-host.type';
 import { input } from '../../signals/input/input';
 import { InputSignal } from '../../signals/types/input-signal.type';
@@ -32,7 +32,8 @@ function createPropertyDecorator<
 
     let actualValue: ActualValue | undefined;
     let actualOptions: PropertyDecoratorOptions<ActualValue, IncomingValue> | undefined | PropertyDecoratorOptionsWithRequiredBrandType<ActualValue, IncomingValue> | undefined;
-    if (!value || typeof value !== 'object' || !(PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND in value)) {
+    const required = !!value && typeof value === 'object' && PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND in value;
+    if (!required) {
       actualValue = value;
       actualOptions = options;
     } else {
@@ -49,6 +50,14 @@ function createPropertyDecorator<
       metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] = Object.assign({}, metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]);
     }
     metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]![attributeName] = propertyKey;
+    // An accessor declared again overrides the inherited one, required or not
+    if (required || metadata[INTERNAL_REQUIRED_INPUTS]?.has(propertyKey)) {
+      if (!Object.hasOwn(metadata, INTERNAL_REQUIRED_INPUTS)) {
+        metadata[INTERNAL_REQUIRED_INPUTS] = new Set(metadata[INTERNAL_REQUIRED_INPUTS]);
+      }
+
+      required ? metadata[INTERNAL_REQUIRED_INPUTS]!.add(propertyKey) : metadata[INTERNAL_REQUIRED_INPUTS]!.delete(propertyKey);
+    }
 
     return {
       init(_?: InputSignal<ActualValue, IncomingValue>) {

@@ -3,6 +3,10 @@
  */
 export const INTERNAL_ALIAS_TO_ATTRIBUTE = 'aliasToAttribute';
 /**
+ * Internal metadata key holding the names of the properties of the inputs `@Property.required` declares.
+ */
+export const INTERNAL_REQUIRED_INPUTS = 'requiredInputs';
+/**
  * Internal metadata key holding the selector a web component is registered with (see `WebComponent`).
  */
 export const INTERNAL_SELECTOR = 'selector';

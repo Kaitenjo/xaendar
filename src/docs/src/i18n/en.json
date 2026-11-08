@@ -395,7 +395,7 @@
         "bindings": {
           "title": "Inputs and events",
           "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
-          "p2": "A group with a <code>condition</code> is bound only while the condition holds, as a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a> written in the tag: as soon as it does not, its inputs go back to their <strong>default value</strong>, not to the last one they received, and its events are no longer listened to. The condition is a getter too, and follows the signals it reads."
+          "p2": "A group with a <code>condition</code> is bound only while the condition holds, as a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a> written in the tag: as soon as it does not, its inputs go back to their <strong>default value</strong>, not to the last one they received, and its events are no longer listened to. The condition is a getter too, and follows the signals it reads. A required input, of the component or of a directive, must be bound by a group without <code>condition</code>: otherwise <code>createComponent</code> throws."
         },
         "directives": {
           "title": "Directives",
@@ -518,7 +518,7 @@
         },
         "requiredInputs": {
           "title": "Required inputs",
-          "p1": "<code>@Property.required()</code> declares an input without a default. Every template using the component must bind it, and the check happens at build time: a template that leaves it out fails to compile, and so does a template that binds it only in some branches of a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>."
+          "p1": "<code>@Property.required()</code> declares an input without a default. Every template using the component must bind it, and the check happens at build time: a template that leaves it out fails to compile, and so does a template that binds it only in some branches of a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>. Code creating the component checks it when it runs: <code>createComponent</code> throws when no group without <code>condition</code> binds it, and <code>renderToString</code> when its inputs leave it out."
         },
         "whenTheValuesArrive": {
           "title": "When the values arrive",
@@ -4166,6 +4166,14 @@
     "Error: No element matches the required content query '[header]' of <x-card>": {
       "cause": "A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.",
       "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
+    },
+    "Error: The required input \"name\" of ProfileComponent is not bound by a group without condition of createComponent": {
+      "cause": "createComponent creating a component, or applying a directive, without binding a @Property.required input in a group without condition: a group with a condition does not bind it whatever happens.",
+      "fix": "Bind the input in a group without condition."
+    },
+    "Error: The required input \"name\" of ProfileComponent is not bound by the inputs of renderToString": {
+      "cause": "renderToString rendering a component without a @Property.required input among its inputs.",
+      "fix": "Pass the input among the inputs of renderToString."
     },
     "Error: @HostProperty('class.') names no class": {
       "cause": "A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.",

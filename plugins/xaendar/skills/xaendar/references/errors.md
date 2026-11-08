@@ -707,6 +707,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @Query.required was read while no element of the shadow root matched it: before the render (in onInit, in an effect created there, in the template), or while the element was not in the template.
 - **Fix:** Read it from afterRender on, in event handlers or in a computed signal read from them. If the element is not always there, use @Query.
 
+### `Error: The required input "name" of ProfileComponent is not bound by a group without condition of createComponent`
+
+- **Cause:** createComponent creating a component, or applying a directive, without binding a @Property.required input in a group without condition: a group with a condition does not bind it whatever happens.
+- **Fix:** Bind the input in a group without condition.
+
+### `Error: The required input "name" of ProfileComponent is not bound by the inputs of renderToString`
+
+- **Cause:** renderToString rendering a component without a @Property.required input among its inputs.
+- **Fix:** Pass the input among the inputs of renderToString.
+
 ### `Error: No element matches the required content query '[header]' of <x-card>`
 
 - **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.

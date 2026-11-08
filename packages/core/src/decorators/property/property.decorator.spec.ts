@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS } from '../../costants';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
 import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
@@ -13,7 +13,7 @@ const { Property } = await import('../property/property.decorator');
 const { isInputSignal } = await import('../../signals/input/input-instance.symbol');
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../../signals/input/input-set.symbol');
 
-type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
+type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string>, [INTERNAL_REQUIRED_INPUTS]?: Set<string> };
 type Decorated<ActualValue, IncomingValue = ActualValue> = { init(this: unknown): InputSignal<ActualValue, IncomingValue>, set(this: unknown, value: unknown): void };
 type Accessor<ActualValue, IncomingValue = ActualValue> = {
   signal: InputSignal<ActualValue, IncomingValue>,
@@ -223,6 +223,28 @@ describe('Property decorator', () => {
       const metadata: Metadata = {};
       setupRequired({ alias: 'user-id' }, 'userId', metadata);
       expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ 'user-id': 'userId' });
+    });
+
+    it('registers the name of the property among the required inputs, an optional input registering nothing', () => {
+      const metadata: Metadata = {};
+      setup(undefined, undefined, 'optional', metadata);
+      expect(metadata[INTERNAL_REQUIRED_INPUTS]).toBeUndefined();
+
+      setupRequired({ alias: 'user-id' }, 'userId', metadata);
+      setupRequired(undefined, 'name', metadata);
+      expect(metadata[INTERNAL_REQUIRED_INPUTS]).toEqual(new Set(['userId', 'name']));
+    });
+
+    it('keeps the required inputs of a subclass out of the metadata of its parent, an accessor declared again as optional no longer required', () => {
+      const parent: Metadata = {};
+      setupRequired(undefined, 'name', parent);
+      setupRequired(undefined, 'kind', parent);
+      const child: Metadata = Object.create(parent);
+      setup(undefined, undefined, 'name', child);
+      setupRequired(undefined, 'extra', child);
+
+      expect(parent[INTERNAL_REQUIRED_INPUTS]).toEqual(new Set(['name', 'kind']));
+      expect(child[INTERNAL_REQUIRED_INPUTS]).toEqual(new Set(['kind', 'extra']));
     });
 
     it('forwards the transform option', () => {

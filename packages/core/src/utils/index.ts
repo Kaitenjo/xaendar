@@ -10,6 +10,7 @@ export { _try } from './try/try.util';
 export { _defer } from './defer/defer.util';
 export { _hydrate } from './hydrate/hydrate.util';
 export { _applyHostProperties } from './host-bindings/host-bindings.util';
+export { _assertRequiredInputs } from './required-inputs/required-inputs.util';
 export * from './if/if.util';
 export * from './let/let.util';
 export * from './render-element/render-element.util';

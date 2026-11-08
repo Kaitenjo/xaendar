@@ -665,6 +665,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: 'Error: The required input "name" of ProfileComponent is not bound by a group without condition of createComponent',
+    page: 'components/dynamic-creation'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Error: The required input "name" of ProfileComponent is not bound by the inputs of renderToString',
+    page: 'tools/ssr/overview'
+  },
+  {
+    phase: 'Runtime',
     message: "Error: @HostProperty('class.') names no class",
     page: 'components/host-bindings'
   },

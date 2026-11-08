@@ -395,7 +395,7 @@
         "bindings": {
           "title": "Input ed eventi",
           "p1": "<code>properties</code> ed <code>events</code> sono liste di gruppi. Un gruppo lega input per nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, o ascolta eventi per nome, ciascuno con il suo listener: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. I getter girano in un effect, quindi un input segue i signal letti dal suo getter, come fa un binding <code>{ … }</code> in un template.",
-          "p2": "Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale, come un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a> scritto nel tag: appena smette di valere, i suoi input tornano al loro <strong>valore di default</strong>, non all’ultimo ricevuto, e i suoi eventi non sono più ascoltati. Anche la condizione è un getter, e segue i signal che legge."
+          "p2": "Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale, come un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a> scritto nel tag: appena smette di valere, i suoi input tornano al loro <strong>valore di default</strong>, non all’ultimo ricevuto, e i suoi eventi non sono più ascoltati. Anche la condizione è un getter, e segue i signal che legge. Un input obbligatorio, del componente o di una direttiva, va legato da un gruppo senza <code>condition</code>: altrimenti <code>createComponent</code> lancia un errore."
         },
         "directives": {
           "title": "Direttive",
@@ -518,7 +518,7 @@
         },
         "requiredInputs": {
           "title": "Input obbligatori",
-          "p1": "<code>@Property.required()</code> dichiara un input senza default. Ogni template che usa il componente deve legarlo, e il controllo avviene a build time: un template che lo omette non compila, e lo stesso vale per un template che lo lega solo in alcuni rami di un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>."
+          "p1": "<code>@Property.required()</code> dichiara un input senza default. Ogni template che usa il componente deve legarlo, e il controllo avviene a build time: un template che lo omette non compila, e lo stesso vale per un template che lo lega solo in alcuni rami di un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>. Il codice che crea il componente lo controlla quando viene eseguito: <code>createComponent</code> lancia un errore quando nessun gruppo senza <code>condition</code> lo lega, e <code>renderToString</code> quando i suoi input lo omettono."
         },
         "whenTheValuesArrive": {
           "title": "Quando arrivano i valori",
@@ -4166,6 +4166,14 @@
     "Error: No element matches the required content query '[header]' of <x-card>": {
       "cause": "Una @Query.content.required è stata letta mentre nessun elemento proiettato le corrispondeva: prima che il padre proiettasse il contenuto, afterRender compreso, oppure mentre l’elemento non era proiettato.",
       "fix": "Leggila negli handler degli eventi. Se il contenuto è opzionale, o per seguirlo mentre arriva, usa @Query.content."
+    },
+    "Error: The required input \"name\" of ProfileComponent is not bound by a group without condition of createComponent": {
+      "cause": "createComponent crea un componente, o applica una direttiva, senza legare un input @Property.required in un gruppo senza condizione: un gruppo con una condizione non lo lega in ogni caso.",
+      "fix": "Lega l’input in un gruppo senza condizione."
+    },
+    "Error: The required input \"name\" of ProfileComponent is not bound by the inputs of renderToString": {
+      "cause": "renderToString renderizza un componente senza un input @Property.required tra i suoi input.",
+      "fix": "Passa l’input tra gli input di renderToString."
     },
     "Error: @HostProperty('class.') names no class": {
       "cause": "Un @HostProperty con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostProperty('') names no attribute.",

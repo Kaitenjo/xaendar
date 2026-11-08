@@ -10,8 +10,14 @@ import type { ComponentRef } from '../../types/create-component/component-ref.ty
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { _Context } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
+import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _createElement, _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
+
+/**
+ * What binds the inputs of a component `createComponent` creates, for the error of a required input left out.
+ */
+const REQUIRED_INPUTS_BINDER = 'a group without condition of createComponent';
 
 /**
  * Creates a component and appends it to the target, binding its inputs and its events, applying directives to it and appending the
@@ -27,26 +33,28 @@ import type { Bindings } from '../../types/create-component/bindings.type';
  * @param component - The class of the component, decorated with `@WebComponent`.
  * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives applied to it and its content.
  * @returns The element of the component, along with the function destroying it.
- * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
- * a custom directive, or when it is already a host directive of the component.
+ * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a required input
+ * of the component or of a directive is not bound by a group without condition, when a directive is not a custom directive, or when it
+ * is already a host directive of the component.
  */
 export function _createComponent<
   Component extends CustomElement, 
   Directives extends readonly CustomDirective[]
 >(owner: NoArgsFunction<_Context>, component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
   const selector = getSelector(component);
-  const bindings = collectBindings(options.properties, options.events);
+  const bindings = collectBindings(component, options.properties, options.events);
   const entries = options.directives;
 
   if (entries?.length) {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
       if (typeof entry === 'function') {
+        _assertRequiredInputs(entry, undefined, REQUIRED_INPUTS_BINDER);
         bindings.directives.push({ selector: entry, attributes: [], events: [], conditionalBindings: [] });
         continue;
       }
 
-      const { attributes, events, conditionalBindings } = collectBindings(entry.properties, entry.events);
+      const { attributes, events, conditionalBindings } = collectBindings(entry.directive, entry.properties, entry.events);
       const directive = { 
         selector: entry.directive, 
         attributes, 
@@ -90,15 +98,18 @@ export function _createComponent<
  * Collects the bindings of the component element, or of a directive, from the groups of its inputs and of its events: the bindings of a group
  * without a condition are applied as long as the component lives, the ones of a group with a condition become an `@if` with a single branch,
  * whose inputs go back to their default value once it is no longer selected.
+ * @param target - The class of the component or of the directive, whose required inputs must be bound by a group without condition.
  * @param properties - The groups of inputs, by name.
  * @param events - The groups of events, by name.
  * @returns The bindings collected.
- * @throws When an input is bound by more than one group.
+ * @throws When an input is bound by more than one group, or a required input is not bound by a group without condition.
  */
-function collectBindings<Target extends CustomElement | CustomDirective>(properties: BindingGroup<BindableProperties<Target>>[] | undefined, events: BindingGroup<BindableEvents<Target>>[] | undefined): Bindings {
+function collectBindings<Target extends CustomElement | CustomDirective>(target: { name: string }, properties: BindingGroup<BindableProperties<Target>>[] | undefined, events: BindingGroup<BindableEvents<Target>>[] | undefined): Bindings {
   const bindings: Bindings = { attributes: [], events: [], conditionalBindings: [], directives: [] };
   // A group unbinding an input resets it to its default value, even if another group still binds it
   const bound = new Set<string>();
+  // The inputs bound as long as the component lives, the only ones a required input can be bound by
+  const alwaysBound = new Set<string>();
 
   if (properties?.length) {
     for (let i = 0; i < properties.length; i++) {
@@ -116,20 +127,20 @@ function collectBindings<Target extends CustomElement | CustomDirective>(propert
         }
 
         bound.add(name);
-        const attribute: Bindings['attributes'][number] = { 
-          name, 
-          value: group[name], 
+        const attribute: Bindings['attributes'][number] = {
+          name,
+          value: group[name],
           setter: _setReactiveInput
         };
 
-        if (group.condition) {
-          attribute.unbind = _resetProperty;
-        }
+        group.condition ? attribute.unbind = _resetProperty : alwaysBound.add(name);
 
         attributes.push(attribute);
       }
     }
   }
+
+  _assertRequiredInputs(target, alwaysBound, REQUIRED_INPUTS_BINDER);
 
   if (events?.length) {
     for (let i = 0; i < events.length; i++) {

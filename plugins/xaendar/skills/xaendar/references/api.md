@@ -30,7 +30,7 @@ Declares an input. The accessor holds an InputSignal, set by the bindings of the
 @Property.required({ alias?, transform?, equals? }) accessor name!: InputSignal<T, In>
 ```
 
-Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time.
+Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time in the templates; `createComponent` throws when no group without `condition` binds it, `renderToString` when its `inputs` leave it out.
 
 ### Event (decorator)
 
