@@ -1,4 +1,5 @@
 import type { CompileOptions } from '@xaendar/compiler';
+import type { XaendarLibraryOptions } from './xaendar-library-options.type';
 
 /**
  * Options of the Xaendar Vite plugin.
@@ -33,4 +34,9 @@ export type XaendarPluginOptions = {
    * static ones, when it finds them (`ssr.staticComponents`). Defaults to `false`.
    */
   readonly staticReport?: boolean;
+  /**
+   * The libraries of the workspace the project belongs to, which it imports from their sources: their names lead to
+   * their entries, and their files are compiled with their own options. Defaults to none.
+   */
+  readonly libraries?: readonly XaendarLibraryOptions[];
 };

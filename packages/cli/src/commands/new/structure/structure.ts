@@ -10,13 +10,18 @@ import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
 import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
 import { styles } from '../templates/styles/styles';
 import type { ProjectContext } from '../types/project-context.type';
-import type { Entry } from '../types/entry.type';
+import { addLibraryPaths, addLibraryToConfig, LIBRARIES_FOLDER } from '../../../utils/library/library.utils';
+import { buildLibraryStructure } from '../../generate/library/library-structure/library-structure';
+import { workspaceRootHtml } from '../../generate/library/templates/workspace-root-html/workspace-root-html';
+import type { Entry } from '../../../types/entry.type';
 
 /**
  * Reads the current Xaendar version from the CLI's own `package.json`.
  * Used to pin the generated project's dependencies to the same version.
+ *
+ * @returns The version.
  */
-function readCliVersion(): string {
+export function readCliVersion(): string {
   try {
     const cliPackageJson: PackageJson = JSON.parse(readFileSync(findCliPackageJsonPath(), 'utf8'));
 
@@ -74,14 +79,25 @@ function findCliPackageJsonPath(): string {
  * The rendering of the project is handed to the templates depending on it, and adds its own files: a project rendering
  * its pages on the server also gets its server, `server.ts`, and the module rendering a page, `src/entry-server.ts`.
  *
+ * The project of a new workspace (`xd generate library`) also gets its library, in `libraries/<folder>`: `xaendar.json`
+ * declares it in its `libs`, `tsconfig.json` leads the name of its package to its sources, and the root component
+ * renders its example component.
+ *
  * @param context - The project context collected from the `new` command options.
  * @returns An ordered array of {@link Entry} values ready to be
  *   written to disk by the scaffolder.
  */
 export function buildStructure(context: ProjectContext): Entry[] {
   const version = readCliVersion();
-  const { name, style, rendering } = context;
+  const { name, style, rendering, library } = context;
   const componentName = `${name}-root`;
+
+  let xaendar = xaendarJson(name, style, rendering);
+  let tsconfig = tsconfigJson(rendering);
+  if (library) {
+    xaendar = addLibraryToConfig(xaendar, library);
+    tsconfig = addLibraryPaths(tsconfig, library);
+  }
 
   const entries: Entry[] = [
     {
@@ -92,7 +108,7 @@ export function buildStructure(context: ProjectContext): Entry[] {
     {
       type: 'file',
       name: 'xaendar.json',
-      content: xaendarJson(name, style, rendering),
+      content: xaendar,
     },
     {
       type: 'file',
@@ -102,7 +118,7 @@ export function buildStructure(context: ProjectContext): Entry[] {
     {
       type: 'file',
       name: 'tsconfig.json',
-      content: tsconfigJson(rendering),
+      content: tsconfig,
     }
   ];
   
@@ -148,5 +164,15 @@ export function buildStructure(context: ProjectContext): Entry[] {
   }
 
   entries.push({ type: 'directory', name: 'src', children: sources });
+  if (library) {
+    // Written after the root component is generated, its template renders the example component of the library
+    sources.push({ type: 'file', name: `${componentName}/${componentName}.xd.component.html`, content: workspaceRootHtml(componentName, library) });
+    entries.push({
+      type: 'directory',
+      name: LIBRARIES_FOLDER,
+      children: [{ type: 'directory', name: library.folder, children: buildLibraryStructure(library, version) }]
+    });
+  }
+
   return entries;
 }

@@ -405,10 +405,10 @@ The low-level API of the proposal: watchers and introspection. It works on `Sign
 ### xaendarPlugin (function)
 
 ```ts
-xaendarPlugin({ customElements?: readonly string[]; ssr?: { entry: string } }?): Plugin
+xaendarPlugin({ customElements?: readonly string[]; ssr?: { entry: string }; libraries?: XaendarLibraryOptions[] }?): Plugin
 ```
 
-The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements` and `ssr` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
+The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements`, `ssr` and `libraries` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
 
 ```ts
 // vite.config.ts
@@ -427,6 +427,8 @@ export default defineConfig({
 It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type-checks the templates with the `tsconfig.json` of the folder Vite is started from, and in a build type-checks the whole project at the end.
 
 `ssr: { entry }` renders the pages on the server. The modules evaluated by the server environments of Vite register templates compiled into HTML (no type check there); the dev server renders every page with the `render(url)` exported by `entry` (absolute, or relative to the root of Vite) in place of `<!--xd-ssr-->` in `index.html`, `url` being the path of the request with its query string, starting with a single slash (`toSameOriginPath` of `@xaendar/common`), and sets the Vite application type to `custom`. The build of the server is `vite build --ssr <entry>`. The CLI passes the `ssr` of `xaendar.json`, its entry resolved against the project.
+
+`libraries: [{ name, root, entry?, ssr?, customElements? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
 
 ## `@xaendar/ssr`
 

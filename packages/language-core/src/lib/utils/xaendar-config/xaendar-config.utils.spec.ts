@@ -41,6 +41,37 @@ describe('readSsr()', () => {
   });
 });
 
+describe('the libraries of a workspace', () => {
+  /**
+   * Creates a workspace rendering on the server with patterns of its own, and two libraries: `ui`, rendering only in the
+   * browser, and `charts`, rendering on the server, with patterns of its own.
+   */
+  const workspace = (): string => {
+    const dir = freshDir();
+    writeFileSync(join(dir, 'xaendar.json'), JSON.stringify({
+      customElements: ['app-*'],
+      ssr: { entry: 'src/entry-server' },
+      libs: { '@acme/ui': { root: 'libraries/ui' }, charts: { root: 'libraries/charts', ssr: true, customElements: ['sl-*'] } }
+    }));
+    mkdirSync(join(dir, 'libraries', 'ui', 'src', 'card'), { recursive: true });
+    mkdirSync(join(dir, 'libraries', 'charts', 'src'), { recursive: true });
+    mkdirSync(join(dir, 'libraries', 'ui-kit'), { recursive: true });
+    mkdirSync(join(dir, 'src'), { recursive: true });
+    return dir;
+  };
+
+  it('reads the options of the library holding a directory, the ones of the project anywhere else', () => {
+    const dir = workspace();
+
+    expect(readSsr(join(dir, 'libraries', 'ui', 'src', 'card'))).toBe(false);
+    expect(readCustomElements(join(dir, 'libraries', 'ui', 'src', 'card'))).toBeUndefined();
+    expect(readSsr(join(dir, 'libraries', 'charts', 'src'))).toBe(true);
+    expect(readCustomElements(join(dir, 'libraries', 'charts'))).toEqual(['sl-*']);
+    expect(readSsr(join(dir, 'src'))).toBe(true);
+    expect(readCustomElements(join(dir, 'libraries', 'ui-kit'))).toEqual(['app-*']);
+  });
+});
+
 describe('readCustomElements()', () => {
   it('returns undefined when no xaendar.json is found', () => {
     expect(readCustomElements(freshDir())).toBeUndefined();

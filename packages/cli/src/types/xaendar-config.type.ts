@@ -1,3 +1,4 @@
+import type { XaendarLibraryConfig } from './xaendar-library-config.type';
 import type { XaendarSsrConfig } from './xaendar-ssr-config.type';
 
 /**
@@ -12,4 +13,9 @@ export type XaendarConfig = {
    * The rendering on the server, when the project renders its pages there.
    */
   ssr?: XaendarSsrConfig;
+  /**
+   * The libraries of the workspace, keyed by the name of their package: the project of the `xaendar.json` is the
+   * project testing them, which imports them from their sources.
+   */
+  libs?: Record<string, XaendarLibraryConfig>;
 };

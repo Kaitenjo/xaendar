@@ -1,19 +1,26 @@
+import { dirname } from 'node:path';
 import { findConfigFile, readConfigFile, sys } from 'typescript';
-import type { XaendarConfig } from '../../types/xaendar-config.type';
+import type { XaendarConfigFile } from '../../types/xaendar-config-file.type';
+import type { XaendarLibraryConfig } from '../../types/xaendar-library-config.type';
+import { normalizeFileName, resolvePosixPath } from '../path/path.utils';
 
 /**
  * Reads the patterns of the custom elements of other libraries (`"customElements": ["sl-*"]`) from the nearest
- * `xaendar.json`, walking up from a directory: the patterns the CLI passes to the compiler.
+ * `xaendar.json`, walking up from a directory: the patterns the CLI passes to the compiler. A directory of a library of
+ * the workspace (`libs`) reads the ones of the library.
  *
  * @param fromDir - Directory to start searching for `xaendar.json` from, typically the directory of the template.
  * @returns The patterns, `undefined` when the file cannot be found or read, or has no such field.
  */
 export function readCustomElements(fromDir: string): readonly string[] | undefined {
-  return readConfig(fromDir)?.customElements;
+  const config = readConfig(fromDir);
+  const library = config && findLibrary(config, fromDir);
+  return library ? library.customElements : config?.config.customElements;
 }
 
 /**
- * Reads whether the project renders on the server from the nearest `xaendar.json`, walking up from a directory.
+ * Reads whether the project renders on the server from the nearest `xaendar.json`, walking up from a directory. A
+ * directory of a library of the workspace (`libs`) reads whether the library does.
  *
  * @param fromDir - Directory to start searching for `xaendar.json` from, typically the directory of the template.
  * @returns Whether the file declares `ssr`, `undefined` when the file cannot be found or read: the project may configure
@@ -21,19 +28,40 @@ export function readCustomElements(fromDir: string): readonly string[] | undefin
  */
 export function readSsr(fromDir: string): boolean | undefined {
   const config = readConfig(fromDir);
-  return config && !!config.ssr;
+  if (!config) {
+    return undefined;
+  }
+
+  const library = findLibrary(config, fromDir);
+  return library ? library.ssr === true : !!config.config.ssr;
 }
 
 /**
  * Reads the nearest `xaendar.json`, walking up from a directory.
  *
  * @param fromDir - Directory to start searching for `xaendar.json` from.
- * @returns The content of the file, `undefined` when it cannot be found or read.
+ * @returns The content of the file and its directory, `undefined` when it cannot be found or read.
  */
-function readConfig(fromDir: string): XaendarConfig | undefined {
+function readConfig(fromDir: string): XaendarConfigFile | undefined {
   const configPath = findConfigFile(fromDir, sys.fileExists, 'xaendar.json');
   if (configPath) {
     const { config, error } = readConfigFile(configPath, sys.readFile);
-    return error ? undefined : config;
+    return error ? undefined : { config, dir: dirname(configPath) };
   }
+}
+
+/**
+ * Finds the library of the workspace holding a directory.
+ *
+ * @param config - The `xaendar.json` of the workspace, and its directory.
+ * @param fromDir - The directory.
+ * @returns The library, `undefined` when the directory belongs to none.
+ */
+function findLibrary({ config, dir }: XaendarConfigFile, fromDir: string): XaendarLibraryConfig | undefined {
+  if (!config.libs) {
+    return undefined;
+  }
+
+  const path = `${normalizeFileName(fromDir)}/`;
+  return Object.values(config.libs).find(({ root }) => path.startsWith(`${normalizeFileName(resolvePosixPath(dir, root))}/`));
 }

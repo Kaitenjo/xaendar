@@ -14,6 +14,7 @@ import { clearStyleDependenciesForComponent, registerStyleDependency } from '../
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
+import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
@@ -73,7 +74,10 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     }
 
     const tsSource = createSourceFile(componentPath, await readFile(componentPath, 'utf8'), ScriptTarget.Latest, true);
-    const errors = findWebComponentErrors(tsSource, componentFile, !!state.ssr);
+    // A component of a library of the workspace is compiled with the options of the library
+    const library = findWorkspaceLibrary(state.libraries, componentPath);
+    const ssr = library ? library.ssr : !!state.ssr;
+    const errors = findWebComponentErrors(tsSource, componentFile, ssr);
     if (errors.length) {
       for (let i = 0; i < errors.length; i++) {
         state.logError('', `${errors[i].message} - ${componentPath}`);
@@ -182,8 +186,8 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
             baseDir: dirname(templatePath),
             shadowingMembers: componentMembers.shadowingMembers,
             reactiveMembers: componentMembers.reactiveMembers,
-            customElements: state.customElements,
-            ssr: !!state.ssr,
+            customElements: library ? library.customElements : state.customElements,
+            ssr,
             cache: {
               getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
               getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),

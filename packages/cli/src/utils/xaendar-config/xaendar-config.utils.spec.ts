@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readXaendarConfig, resolveSsrPaths } from './xaendar-config.utils';
+import { findXaendarConfigPath, readProject, readXaendarConfig, resolveSsrPaths } from './xaendar-config.utils';
 
 /**
  * Temporary project directory the configuration is read from.
@@ -28,6 +28,21 @@ describe('readXaendarConfig()', () => {
 
   it('reads nothing without a xaendar.json', () => {
     expect(readXaendarConfig()).toBeUndefined();
+  });
+});
+
+describe('readProject()', () => {
+  it('reads the nearest xaendar.json, walking up from a directory of the project', () => {
+    const nested = join(projectDir, 'libraries', 'ui', 'src');
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ libs: { '@acme/ui': { root: 'libraries/ui' } } }));
+
+    expect(readProject(nested)).toEqual({ dir: projectDir, configPath: join(projectDir, 'xaendar.json'), config: { libs: { '@acme/ui': { root: 'libraries/ui' } } } });
+    expect(findXaendarConfigPath(nested)).toBe(join(projectDir, 'xaendar.json'));
+  });
+
+  it('reads nothing without a xaendar.json up to the root of the file system', () => {
+    expect(readProject(projectDir)).toBeUndefined();
   });
 });
 

@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { Style } from '../../types/style.type';
+import { findXaendarConfigPath } from '../xaendar-config/xaendar-config.utils';
 
 /**
  * The stylesheet formats a project can use, which are also the extensions of its stylesheets.
@@ -36,7 +37,7 @@ export function isStyle(value: string): value is Style {
  * @returns The format of the project, `css` when no `xaendar.json` or no field is found.
  */
 export function readProjectStyle(path: string): Style {
-  const configPath = findXaendarJson(resolve(path));
+  const configPath = findXaendarConfigPath(resolve(path));
   if (!configPath) {
     return 'css';
   }
@@ -53,26 +54,4 @@ export function readProjectStyle(path: string): Style {
   }
 
   return style;
-}
-
-/**
- * Finds the nearest `xaendar.json`, walking up from a directory to the root of the file system.
- *
- * @param dir - Absolute path of the directory to start from.
- * @returns The path of the file, `undefined` if none is found.
- */
-function findXaendarJson(dir: string): string | undefined {
-  while (true) {
-    const candidate = resolve(dir, 'xaendar.json');
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-
-    const parent = dirname(dir);
-    if (parent === dir) {
-      return undefined;
-    }
-
-    dir = parent;
-  }
 }

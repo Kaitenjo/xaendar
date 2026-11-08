@@ -2,6 +2,7 @@ import type { CompilerOptions } from 'typescript';
 import type { Environment, Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
 import type { StaticComponents } from './static-components.type';
+import type { WorkspaceLibrary } from './workspace-library.type';
 import type { XaendarPluginStrategy } from './plugin-strategy.type';
 import type { XaendarPluginOptions } from './xaendar-plugin-options.type';
 
@@ -43,6 +44,10 @@ export type XaendarPluginState = {
    * The rendering on the server, when the plugin is configured with it.
    */
   ssr?: XaendarPluginOptions['ssr'];
+  /**
+   * The libraries of the workspace, `undefined` when the project belongs to none.
+   */
+  libraries?: readonly WorkspaceLibrary[];
   /**
    * What the build found out about the components of a project rendering on the server, `undefined` anywhere else.
    */

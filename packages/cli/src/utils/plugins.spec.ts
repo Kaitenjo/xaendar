@@ -69,7 +69,23 @@ describe('createPlugins()', () => {
     writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app' }));
     createPlugins();
 
-    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, ssr: undefined, staticReport: undefined }], [{ customElements: undefined, ssr: undefined, staticReport: undefined }]]);
+    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }], [{ customElements: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }]]);
+  });
+
+  it('passes the libraries of the workspace, their folders resolved against it', () => {
+    const libs = {
+      '@acme/ui': { root: 'libraries/ui', ssr: true, customElements: ['sl-*'] },
+      other: { root: 'libraries/other', entry: 'lib/index.ts' }
+    };
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'ws', libs }));
+    createPlugins();
+
+    expect(xaendarPlugin).toHaveBeenCalledWith({
+      libraries: [
+        { name: '@acme/ui', root: resolve(projectDir, 'libraries/ui'), ssr: true, customElements: ['sl-*'] },
+        { name: 'other', root: resolve(projectDir, 'libraries/other'), entry: 'lib/index.ts', ssr: false }
+      ]
+    });
   });
 
   it('passes the entry of the rendering on the server declared in the xaendar.json, resolved against the project', () => {

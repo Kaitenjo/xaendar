@@ -500,6 +500,30 @@ describe('createTransformHook()', () => {
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
   });
 
+  it('compiles a component of a library of the workspace with the options of the library', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'] };
+    const hook = createTransformHook({ ...createState(), libraries: [library] });
+
+    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true }));
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
+  });
+
+  it('rejects in a library not rendering on the server what only the server reads, whatever the project does', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: false, customElements: [] };
+    const hook = createTransformHook({ ...createState(), ssr: { entry: '/src/entry-server.ts' }, libraries: [library] });
+
+    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: [], ssr: false }));
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, false);
+  });
+
   it('extracts the metadata of the component and of the imported ones with the project compiler options', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));

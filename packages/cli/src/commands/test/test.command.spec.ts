@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { startVitest } from 'vitest/node';
 
-const { PLUGINS } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }] }));
+const { PLUGINS, readXaendarConfig } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }], readXaendarConfig: vi.fn() }));
 
 vi.mock('../../utils/plugins', () => ({
   createPlugins: () => PLUGINS
+}));
+
+vi.mock('../../utils/xaendar-config/xaendar-config.utils', () => ({
+  readXaendarConfig
 }));
 
 import { testCommand } from './test.command';
@@ -67,6 +71,15 @@ describe('testCommand()', () => {
       { plugins: [expect.objectContaining({ name: 'xaendar:test' }), ...PLUGINS] }
     );
     expect(exit).toHaveBeenCalledOnce();
+  });
+
+  it('looks for the specs in the whole workspace, its libraries included', async () => {
+    const { runVitest } = createVitest(false);
+    readXaendarConfig.mockReturnValueOnce({ libs: { '@acme/ui': { root: 'libraries/ui' } } });
+
+    await testCommand(runVitest).parseAsync([], { from: 'user' });
+
+    expect(runVitest).toHaveBeenCalledWith([], { environment: 'happy-dom', setupFiles: ['virtual:xaendar-signals-setup'], dir: process.cwd() }, expect.anything());
   });
 
   it('provides the setup module calling loadSignals() as a virtual module', async () => {

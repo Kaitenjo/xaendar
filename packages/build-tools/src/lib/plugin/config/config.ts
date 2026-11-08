@@ -1,15 +1,27 @@
-import type { HookHandler, Plugin } from 'vite';
-import type { XaendarPluginOptions } from '../../types/xaendar-plugin-options.type';
+import type { HookHandler, Plugin, UserConfig } from 'vite';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
+import { getLibraryAliases } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Vite plugin `config` hook: when the plugin renders on the server, sets the application type of Vite to `custom`, so
- * that the dev server serves no `index.html` of its own and the page is rendered by the middleware of the plugin.
+ * that the dev server serves no `index.html` of its own and the page is rendered by the middleware of the plugin. When
+ * the project belongs to a workspace, its libraries are imported from their sources: their names lead to their
+ * entries (see `getLibraryAliases`).
  *
- * @param options - The options of the plugin.
+ * @param state - The shared plugin state, with the rendering on the server and the libraries of the workspace.
  * @returns The `config` hook handler.
  */
-export function createConfigHook(options: XaendarPluginOptions): NonNullable<HookHandler<Plugin['config']>> {
+export function createConfigHook(state: Pick<XaendarPluginState, 'ssr' | 'libraries'>): NonNullable<HookHandler<Plugin['config']>> {
   return function config() {
-    return options.ssr ? { appType: 'custom' } : undefined;
+    let config: UserConfig | undefined;
+    if (state.ssr) {
+      config = { appType: 'custom' };
+    }
+
+    if (state.libraries?.length) {
+      config = Object.assign({}, config, { resolve: { alias: getLibraryAliases(state.libraries) } });
+    }
+
+    return config;
   };
 }

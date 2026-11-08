@@ -1,5 +1,6 @@
 import type { ProjectRendering } from './project-rendering.type';
 import type { Style } from '../../../types/style.type';
+import type { WorkspaceLibrary } from '../../../types/workspace-library.type';
 
 /**
  * The context required to resolve all file contents when scaffolding
@@ -18,4 +19,9 @@ export type ProjectContext = {
    * Where the project renders its pages: in the browser only, or on the server too (`xd new --ssr`).
    */
   rendering: ProjectRendering;
+  /**
+   * The library of the workspace the project tests, when `xd generate library` creates both: the project imports it
+   * from its sources and renders its example component.
+   */
+  library?: WorkspaceLibrary;
 };

@@ -1,8 +1,9 @@
 import { Command } from 'commander';
 import type { Plugin } from 'vite';
 import { startVitest } from 'vitest/node';
-import type { CacheKeyIdGeneratorContext, VitestPluginContext } from 'vitest/node';
+import type { CacheKeyIdGeneratorContext, CliOptions, VitestPluginContext } from 'vitest/node';
 import { createPlugins } from '../../utils/plugins';
+import { readXaendarConfig } from '../../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * Id of the virtual module installing the global `Signal` before any spec.
@@ -47,7 +48,8 @@ function createTestPlugin(): Plugin & { configureVitest(context: VitestPluginCon
  *
  * Runs Vitest with the plugins of the project, the ones `start` and `build` use, so that the specs
  * import components as the browser does: in a DOM environment, with the global `Signal` installed
- * by `loadSignals()` before any spec.
+ * by `loadSignals()` before any spec. In a workspace (`libs` in `xaendar.json`), the specs of its libraries run too:
+ * Vitest looks for the specs in the whole workspace, not only under the root of Vite (`src`).
  *
  * @param runVitest - The function starting Vitest. Vitest does not let its specs mock its own modules,
  *   so the specs of this command pass their own.
@@ -60,7 +62,12 @@ export function testCommand(runVitest: typeof startVitest = startVitest): Comman
     .description('Run the tests of the project')
     .action(async () => {
       const plugins = [createTestPlugin(), ...createPlugins()];
-      const vitest = await runVitest([], { environment: 'happy-dom', setupFiles: [SIGNALS_SETUP_ID] }, { plugins });
+      const options: CliOptions = { environment: 'happy-dom', setupFiles: [SIGNALS_SETUP_ID] };
+      if (readXaendarConfig()?.libs) {
+        options.dir = process.cwd();
+      }
+
+      const vitest = await runVitest([], options, { plugins });
 
       // Vitest keeps running only in watch mode: a single run exits, with the outcome of the tests
       if (!vitest.shouldKeepServer()) {

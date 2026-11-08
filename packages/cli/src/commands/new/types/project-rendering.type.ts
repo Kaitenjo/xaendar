@@ -1,5 +1,5 @@
 import type { XaendarSsrConfig } from '../../../types/xaendar-ssr-config.type';
-import type { Entry } from './entry.type';
+import type { Entry } from '../../../types/entry.type';
 
 /**
  * What a new project differs in, between rendering its pages in the browser only and rendering them on the server too:

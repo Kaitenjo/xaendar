@@ -124,6 +124,24 @@ describe('createLoadHook()', () => {
     expect(getImportOrExtract).toHaveBeenCalledWith('format', 'fmt', '/src/foo', './format', state.compilerOptions);
   });
 
+  it('compiles a template of a library of the workspace with the custom elements of the library', async () => {
+    const library = { name: '@acme/ui', root: '/src', entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'] };
+
+    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), customElements: ['other-*'], libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
+
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'] }));
+  });
+
+  it('renders on the server the components of a library not rendering there as the ones rendering only in the browser', async () => {
+    const library = { name: '@acme/ui', root: '/ws/libraries/ui', entry: '/ws/libraries/ui/src/public-api.ts', ssr: false, customElements: [] };
+    const card = { type: 'component', modulePath: '/ws/libraries/ui/src/card.xd.component.ts' };
+    vi.mocked(getImportOrExtract).mockResolvedValue(card as never);
+
+    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
+
+    expect(await vi.mocked(compile).mock.calls[0][1].cache?.getImport('Card', 'Card', '/src/foo', '@acme/ui')).toEqual({ ...card, clientOnly: {} });
+  });
+
   it('watches the imported components that exist on disk', async () => {
     const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
     const template = '@import { A } from \'./existing.xd.component.ts\'\n@import { B } from \'./missing.xd.component.ts\'\n<a-b></a-b>';

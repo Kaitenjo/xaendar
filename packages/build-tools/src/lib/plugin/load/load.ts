@@ -10,6 +10,7 @@ import { describeTemplateWarning, extractImportedComponentPaths, getImportOrExtr
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
 import type { LoadHook } from '../../types/load-hook.type';
+import { findWorkspaceLibrary, markClientOnly } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Compiles a template into the module exporting its render function, and a style
@@ -117,10 +118,12 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
 
     const cache: ContextCache = {
       getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
-      getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
+      // The server renders the components of a library that does not render there as an application does with its build
+      getImport: async (imported, local, baseDir, path) => markClientOnly(await getImportOrExtract(imported, local, baseDir, path, state.compilerOptions), state.libraries),
       set: registerMetadata
     };
-    const { customElements } = state;
+    // A template of a library of the workspace is compiled with the options of the library
+    const customElements = findWorkspaceLibrary(state.libraries, templatePath)?.customElements ?? state.customElements;
 
     let nodes: ASTNode[];
     let compiledFunctions: string;

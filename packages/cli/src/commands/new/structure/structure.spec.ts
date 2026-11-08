@@ -7,6 +7,7 @@ vi.mock('node:fs', () => ({
   existsSync: vi.fn()
 }));
 
+import { buildLibraryStructure } from '../../generate/library/library-structure/library-structure';
 import { CLIENT_RENDERING, SERVER_RENDERING } from '../rendering/rendering';
 import { buildStructure } from './structure';
 
@@ -87,6 +88,27 @@ describe('buildStructure()', () => {
     expect(content('vite.config.ts')).toContain('../dist/client');
     expect(content('tsconfig.json')).toContain('"include": ["src/**/*.ts", "server.ts"],');
     expect(content('index.html', children)).toContain('<!--xd-ssr-->');
+  });
+
+  it('adds the library to the project of a new workspace, which renders its example component', () => {
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+    const library = { name: '@acme/ui', folder: 'ui', ssr: true };
+
+    const entries = buildStructure({ name: 'ui', style: 'css', rendering: CLIENT_RENDERING, library });
+    const srcEntry = entries.find((entry) => entry.name === 'src');
+    const children = srcEntry && 'children' in srcEntry ? srcEntry.children : undefined;
+    const content = (name: string, list = entries) => (list.find((entry) => entry.name === name) as { content: string }).content;
+
+    expect(entries.map((entry) => entry.name)).toEqual(['package.json', 'xaendar.json', 'vite.config.ts', 'tsconfig.json', 'src', 'libraries']);
+    expect(JSON.parse(content('xaendar.json')).libs).toEqual({ '@acme/ui': { root: 'libraries/ui', ssr: true } });
+    expect(JSON.parse(content('tsconfig.json')).compilerOptions.paths['@acme/ui']).toEqual(['./libraries/ui/src/public-api.ts']);
+    expect(children?.map((entry) => entry.name)).toEqual(['index.html', 'main.ts', 'bootstrap.ts', 'ui-root', 'styles.css', 'ui-root/ui-root.xd.component.html']);
+    expect(content('ui-root/ui-root.xd.component.html', children)).toContain('<ui-example />');
+    expect(entries.at(-1)).toEqual({
+      type: 'directory',
+      name: 'libraries',
+      children: [{ type: 'directory', name: 'ui', children: buildLibraryStructure(library, '1.2.3') }]
+    });
   });
 
   it('exits the process when the CLI package.json cannot be read', () => {

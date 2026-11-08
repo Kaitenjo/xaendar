@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import type { XaendarSsrConfig } from '../../types/xaendar-ssr-config.type';
 import type { XaendarConfig } from '../../types/xaendar-config.type';
+import type { XaendarProject } from '../../types/xaendar-project.type';
 
 /**
  * The comment of `index.html` the HTML rendered on the server replaces, the one the dev server of the Vite plugin
@@ -17,6 +18,44 @@ export const SSR_OUTLET = '<!--xd-ssr-->';
 export function readXaendarConfig(): XaendarConfig | undefined {
   const path = resolve(process.cwd(), 'xaendar.json');
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf-8')) : undefined;
+}
+
+/**
+ * Reads the project holding a directory: the nearest `xaendar.json`, walking up from it, as the commands working in any
+ * folder of a project (or of a workspace) find it.
+ *
+ * @param fromDir - The directory.
+ * @returns The project, `undefined` when no `xaendar.json` is found up to the root of the file system.
+ */
+export function readProject(fromDir: string): XaendarProject | undefined {
+  const configPath = findXaendarConfigPath(resolve(fromDir));
+  if (!configPath) {
+    return undefined;
+  }
+
+  return { dir: dirname(configPath), configPath, config: JSON.parse(readFileSync(configPath, 'utf-8')) };
+}
+
+/**
+ * Finds the nearest `xaendar.json`, walking up from a directory to the root of the file system.
+ *
+ * @param dir - Absolute path of the directory to start from.
+ * @returns The path of the file, `undefined` if none is found.
+ */
+export function findXaendarConfigPath(dir: string): string | undefined {
+  while (true) {
+    const candidate = resolve(dir, 'xaendar.json');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+
+    const parent = dirname(dir);
+    if (parent === dir) {
+      return undefined;
+    }
+
+    dir = parent;
+  }
 }
 
 /**

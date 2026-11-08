@@ -29971,11 +29971,11 @@ function resolveUrls(fileName, urls) {
 
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
 var import_node_fs6 = require("fs");
-var import_node_path7 = require("path");
+var import_node_path8 = require("path");
 var import_typescript28 = require("typescript");
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
-var import_node_path6 = require("path");
+var import_node_path7 = require("path");
 var import_typescript27 = require("typescript");
 
 // ../packages/language-core/src/lib/language-service/language-service.ts
@@ -30491,20 +30491,34 @@ function getSymbolKind(checker, symbol) {
 }
 
 // ../packages/language-core/src/lib/utils/xaendar-config/xaendar-config.utils.ts
+var import_node_path6 = require("path");
 var import_typescript26 = require("typescript");
 function readCustomElements(fromDir) {
-  return readConfig(fromDir)?.customElements;
+  const config = readConfig(fromDir);
+  const library = config && findLibrary(config, fromDir);
+  return library ? library.customElements : config?.config.customElements;
 }
 function readSsr(fromDir) {
   const config = readConfig(fromDir);
-  return config && !!config.ssr;
+  if (!config) {
+    return void 0;
+  }
+  const library = findLibrary(config, fromDir);
+  return library ? library.ssr === true : !!config.config.ssr;
 }
 function readConfig(fromDir) {
   const configPath = (0, import_typescript26.findConfigFile)(fromDir, import_typescript26.sys.fileExists, "xaendar.json");
   if (configPath) {
     const { config, error } = (0, import_typescript26.readConfigFile)(configPath, import_typescript26.sys.readFile);
-    return error ? void 0 : config;
+    return error ? void 0 : { config, dir: (0, import_node_path6.dirname)(configPath) };
   }
+}
+function findLibrary({ config, dir }, fromDir) {
+  if (!config.libs) {
+    return void 0;
+  }
+  const path = `${normalizeFileName(fromDir)}/`;
+  return Object.values(config.libs).find(({ root }) => path.startsWith(`${normalizeFileName(resolvePosixPath(dir, root))}/`));
 }
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
@@ -30524,7 +30538,7 @@ async function analyzeCompletionTemplate(templatePath, source, components) {
 }
 async function analyze(templatePath, source, components, shimName) {
   const componentFiles = new Map([...components].map(([fileName, classNames]) => [toPosixPath(fileName), classNames]));
-  const templateDir = (0, import_node_path6.dirname)(templatePath);
+  const templateDir = (0, import_node_path7.dirname)(templatePath);
   const { options, fileNames, project, cache } = getProjectContext(templateDir);
   const languageService = project.getLanguageService(options, fileNames);
   let ast;
@@ -30558,7 +30572,7 @@ async function analyze(templatePath, source, components, shimName) {
   }
 }
 async function resolveTemplateImports(templatePath, source) {
-  const templateDir = (0, import_node_path6.dirname)(templatePath);
+  const templateDir = (0, import_node_path7.dirname)(templatePath);
   const { cache } = getProjectContext(templateDir);
   const metadatas = new Array();
   const statements = parseImportStatements(source);
@@ -30576,7 +30590,7 @@ async function resolveTemplateImports(templatePath, source) {
   return metadatas;
 }
 async function resolveModuleMetadatas(templatePath, modulePath) {
-  const templateDir = (0, import_node_path6.dirname)(templatePath);
+  const templateDir = (0, import_node_path7.dirname)(templatePath);
   const { cache } = getProjectContext(templateDir);
   const metadatas = await cache.getModuleMetadatas(templateDir, modulePath);
   if (metadatas?.size) {
@@ -30584,7 +30598,7 @@ async function resolveModuleMetadatas(templatePath, modulePath) {
   }
 }
 async function resolveDeclarations(fileName) {
-  const { fileNames, cache } = getProjectContext((0, import_node_path6.dirname)(fileName));
+  const { fileNames, cache } = getProjectContext((0, import_node_path7.dirname)(fileName));
   return await cache.getDeclarations(fileNames);
 }
 async function resolveImportCandidates(templatePath) {
@@ -30596,7 +30610,7 @@ async function resolveImportCandidates(templatePath) {
   const candidates = new Array();
   for (const [fileName, metadatas] of declarations) {
     for (const metadata of metadatas.values()) {
-      const isOwner = metadata.type === "component" && normalizeFileName((0, import_node_path6.resolve)((0, import_node_path6.dirname)(fileName), metadata.templateUrl)) === templateKey;
+      const isOwner = metadata.type === "component" && normalizeFileName((0, import_node_path7.resolve)((0, import_node_path7.dirname)(fileName), metadata.templateUrl)) === templateKey;
       if (!isOwner) {
         candidates.push({ fileName, metadata });
       }
@@ -30605,12 +30619,12 @@ async function resolveImportCandidates(templatePath) {
   return candidates.length ? candidates : void 0;
 }
 function resolveModuleExports(templatePath, modulePath) {
-  const context = getProjectContext((0, import_node_path6.dirname)(templatePath));
-  const fileName = resolveModulePath((0, import_node_path6.dirname)(templatePath), modulePath, context.options);
+  const context = getProjectContext((0, import_node_path7.dirname)(templatePath));
+  const fileName = resolveModulePath((0, import_node_path7.dirname)(templatePath), modulePath, context.options);
   return fileName ? listExports(getProgram(context), fileName) : void 0;
 }
 function resolveExportCandidates(templatePath) {
-  const context = getProjectContext((0, import_node_path6.dirname)(templatePath));
+  const context = getProjectContext((0, import_node_path7.dirname)(templatePath));
   const { fileNames } = context;
   const program = getProgram(context);
   let candidates;
@@ -30709,7 +30723,7 @@ function toError(error) {
 async function getComponentDiagnostics(fileName, text) {
   const sourceFile = (0, import_typescript28.createSourceFile)(fileName, text, import_typescript28.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
-  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path7.dirname)(fileName)));
+  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path8.dirname)(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
   }
@@ -30721,7 +30735,7 @@ async function getComponentDiagnostics(fileName, text) {
 }
 function findMissingFiles(sourceFile) {
   const diagnostics = new Array();
-  const componentDir = (0, import_node_path7.dirname)(sourceFile.fileName);
+  const componentDir = (0, import_node_path8.dirname)(sourceFile.fileName);
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i2 = 0; i2 < declarations.length; i2++) {
     const options = findStringOptions(declarations[i2].decorator, ["templateUrl", "styleUrl"]);
@@ -30765,7 +30779,7 @@ function toSpan(literal) {
 }
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
-var import_node_path8 = require("path");
+var import_node_path9 = require("path");
 var import_typescript29 = require("typescript");
 var KEYWORD_SNIPPETS = {
   "if": "@if ($1) {\n	$0\n}",
@@ -30859,7 +30873,7 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
     return void 0;
   }
   const { keywords, span, clientPlaceholder } = context;
-  const available = readSsr((0, import_node_path8.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
+  const available = readSsr((0, import_node_path9.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
     kind: import_typescript29.ScriptElementKind.keyword,
@@ -30928,7 +30942,7 @@ async function getTemplateSelectorCompletions(templatePath, source, offset) {
   }
   const candidates = await resolveImportCandidates(templatePath);
   if (candidates) {
-    const templateDir = (0, import_node_path8.dirname)(templatePath);
+    const templateDir = (0, import_node_path9.dirname)(templatePath);
     for (let i2 = 0; i2 < candidates.length; i2++) {
       const { fileName, metadata: { type, selector, className } } = candidates[i2];
       if (type === kind && !importedSelectors.has(selector)) {
@@ -30980,7 +30994,7 @@ function getTemplateImportPathCompletions(templatePath, source, offset) {
   if (!directory.startsWith(".")) {
     return [];
   }
-  return listModuleEntries(resolvePosixPath((0, import_node_path8.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
+  return listModuleEntries(resolvePosixPath((0, import_node_path9.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
     name,
     kind: isDirectory ? import_typescript29.ScriptElementKind.directory : import_typescript29.ScriptElementKind.scriptElement,
     sortText: isDirectory ? "0" : "1",
@@ -31045,7 +31059,7 @@ function getExportCompletions({ symbols, imports }, templatePath, source, compon
   const declared = new Set(symbols.map(({ local }) => local).concat(imports.map(({ specifier }) => specifier.local)));
   const imported = new Set(symbols.map(({ modulePath, imported: name }) => `${normalizeFileName(modulePath)}#${name}`));
   const owners = new Set(Array.from(components.keys(), normalizeFileName));
-  const templateDir = (0, import_node_path8.dirname)(templatePath);
+  const templateDir = (0, import_node_path9.dirname)(templatePath);
   const completions = new Array();
   for (let i2 = 0; i2 < candidates.length; i2++) {
     const { fileName, name, kind } = candidates[i2];
@@ -31066,7 +31080,7 @@ function findNode(node, position) {
 }
 
 // ../packages/language-core/src/lib/template-definition/template-definition.ts
-var import_node_path9 = require("path");
+var import_node_path10 = require("path");
 function getTemplateDefinition(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
   return target ? [...target.definitions] : getTypeScriptDefinitions(analysis, offset);
@@ -31082,7 +31096,7 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
     addTarget(targets, specifier.localSpan, getClassDefinition(metadata));
   }
   walkTemplate(ast, metadatas, {
-    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path9.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
+    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path10.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
     element: (node, component) => {
       addTarget(targets, node.nameSpan, component && getClassDefinition(component));
       addTarget(targets, node.closeNameSpan, component && getClassDefinition(component));
@@ -31445,12 +31459,12 @@ function addToken(tokens, span, type, modifiers = []) {
 var import_typescript35 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
-var import_node_path11 = require("path");
+var import_node_path12 = require("path");
 var import_node36 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
-var import_node_path10 = require("path");
+var import_node_path11 = require("path");
 var import_typescript36 = require("typescript");
 var COMPONENT_FILE_SUFFIX = ".xd.component.ts";
 var TemplateRegistry = class {
@@ -31498,7 +31512,7 @@ var TemplateRegistry = class {
     const templates = /* @__PURE__ */ new Set();
     if (metadatas?.size) {
       for (const [className, { templateUrl }] of metadatas) {
-        const templateKey = normalizeFileName((0, import_node_path10.resolve)((0, import_node_path10.dirname)(componentPath), templateUrl));
+        const templateKey = normalizeFileName((0, import_node_path11.resolve)((0, import_node_path11.dirname)(componentPath), templateUrl));
         const components = this._components.getOrInsertComputed(templateKey, () => /* @__PURE__ */ new Map());
         components.getOrInsertComputed(componentPath, () => []).push(className);
         templates.add(templateKey);
@@ -32116,7 +32130,7 @@ var XaendarLanguageServer = class {
     for (let i2 = 0; i2 < changes.length; i2++) {
       const { uri, type } = changes[i2];
       const fileName = fromUri(uri);
-      if ((0, import_node_path11.basename)(fileName) === XAENDAR_CONFIG_FILE) {
+      if ((0, import_node_path12.basename)(fileName) === XAENDAR_CONFIG_FILE) {
         this._scheduleOpenTemplatesValidation();
         this._scheduleOpenComponentsValidation();
         continue;

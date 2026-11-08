@@ -14,6 +14,7 @@ import { createLoadHook } from '../load/load';
 import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
 import { createWatchChangeHook } from '../watch-change/watch-change';
+import { resolveWorkspaceLibraries } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
@@ -62,6 +63,12 @@ import { createWatchChangeHook } from '../watch-change/watch-change';
  * With `ssr`, the modules evaluated on the server register templates compiled into HTML (see `@xaendar/ssr`),
  * and the dev server renders each page it serves with the entry, in place of `<!--xd-ssr-->` in `index.html`.
  *
+ * ## Libraries of a workspace
+ *
+ * With `libraries`, the project imports the libraries of its workspace from their sources, by the names of their
+ * packages, and the files of a library are compiled with its own options: whether it renders on the server, and the
+ * custom elements of other libraries its templates use.
+ *
  * @param options - The options of the plugin.
  * @returns A Vite {@link Plugin} instance.
  *
@@ -95,6 +102,7 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     isBuild: false,
     root: process.cwd(),
     ssr: options.ssr,
+    libraries: resolveWorkspaceLibraries(options.libraries, process.cwd()),
     staticReport: options.staticReport ?? false,
     setLogger: value => logger = value,
     logInfo: message => (logger ?? console).info(message),
@@ -107,7 +115,7 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
 
   return {
     name: 'xaendar',
-    config: createConfigHook(options),
+    config: createConfigHook(state),
     configResolved: createConfigResolvedHook(state),
     buildStart: createBuildStartHook(state),
     resolveId: createResolveIdHook(),
