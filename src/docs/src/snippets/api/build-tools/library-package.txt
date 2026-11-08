@@ -1,0 +1,11 @@
+dist/ui/
+├─ public-api.js                    # the entry of the library
+├─ public-api.d.ts
+├─ card/
+│  ├─ card.xd.component.js          # a component: a file of its own, imported alone
+│  └─ card.xd.component.d.ts
+├─ chunks/                          # the code the modules share
+├─ server/                          # with ssr: the same modules compiled for the server
+├─ xaendar-manifest.json            # the components and directives, read by the compiler of the applications
+├─ package.json                     # exports, sideEffects, peer dependencies on @xaendar/*
+└─ README.md

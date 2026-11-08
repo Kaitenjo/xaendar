@@ -73,6 +73,68 @@ export const BUILD_TOOLS_API: ApiPackage = {
         }
       ],
       guides: ['tools/build', 'components/registration', 'tools/ssr/static-components']
+    },
+    {
+      name: 'buildLibrary',
+      kind: 'function',
+      signature: [
+        'function buildLibrary(options: {',
+        '  readonly name: string;',
+        '  readonly root: string;',
+        '  readonly entry?: string;',
+        '  readonly outDir: string;',
+        '  readonly ssr?: boolean;',
+        '  readonly customElements?: readonly string[];',
+        '  readonly plugins?: readonly PluginOption[];',
+        '  readonly xaendarVersion: string;',
+        '}): Promise<void>'
+      ].join('\n'),
+      members: [
+        {
+          name: 'name',
+          group: 'options',
+          signature: 'readonly name: string'
+        },
+        {
+          name: 'root',
+          group: 'options',
+          signature: 'readonly root: string'
+        },
+        {
+          name: 'entry',
+          group: 'options',
+          signature: 'readonly entry?: string'
+        },
+        {
+          name: 'outDir',
+          group: 'options',
+          signature: 'readonly outDir: string'
+        },
+        {
+          name: 'ssr',
+          group: 'options',
+          signature: 'readonly ssr?: boolean'
+        },
+        {
+          name: 'customElements',
+          group: 'options',
+          signature: 'readonly customElements?: readonly string[]'
+        },
+        {
+          name: 'plugins',
+          group: 'options',
+          signature: 'readonly plugins?: readonly PluginOption[]'
+        },
+        {
+          name: 'xaendarVersion',
+          group: 'options',
+          signature: 'readonly xaendarVersion: string'
+        }
+      ],
+      usage: [
+        { key: 'package', snippets: ['api/build-tools/library-package.txt'] }
+      ],
+      guides: ['tools/build', 'tools/cli']
     }
   ]
 };

@@ -21,4 +21,4 @@ Arguments: `$ARGUMENTS` (the project folder, the one containing `vite.config.ts`
 
 3. **Report**: give the number of template errors, stylesheet errors and type errors, grouped by file, with `file:line`, plus what you fixed. If the build is clean, say so in one line. To run the specs too, use `/xaendar:test`.
 
-The build writes `dist/`; it changes nothing else.
+The build writes `dist/`; it changes nothing else. In a workspace (`libs` in `xaendar.json`), `xd build` builds and checks every library into `dist/<folder>`, not the project testing them: run `npx xd build <library>` to check one library only.

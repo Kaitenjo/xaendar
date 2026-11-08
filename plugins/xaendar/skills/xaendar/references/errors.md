@@ -655,6 +655,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The dev server rendering a page with an entry of the server that does not export render: the export removed or renamed.
 - **Fix:** Export from the entry the function render(url), which returns the HTML of the page of a URL.
 
+### `Error: <path>/other/card.xd.component.ts declares a component or a directive outside of <path>/src, the folder of the entry of @acme/ui.`
+
+- **Cause:** xd build of a library whose program holds a component or a directive outside the folder of its entry: the package keeps the paths of the modules relative to that folder.
+- **Fix:** Move the file under the folder of the entry (src/ by default).
+
+### `Error: The selector "ui-card" of TileComponent is declared twice in @acme/ui.`
+
+- **Cause:** xd build of a library with two components, or two directives, with the same selector.
+- **Fix:** Rename one of them.
+
+### `Error: card/card.xd.component#CardComponent: the type of one of its bindings reads Size from <path>/src/card/size, which a module of the library must export for the applications to read it.`
+
+- **Cause:** xd build of a library with an input or an event whose type uses a name its module does not export (a type alias declared without export), or a file outside the library: the applications read the types from the declarations of the package.
+- **Fix:** Export the type from its module.
+
 ## Runtime
 
 ### `XCard does not seem to have a Render Function`
@@ -875,3 +890,48 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** xd prerender with an entry of the server that does not export render: the export removed or renamed.
 - **Fix:** Export from the entry the function render(url), which returns the HTML of the page of a URL.
+
+### `✖  Invalid library name "Acme UI": use the name of an npm package, lowercase, with an optional scope (@acme/ui).`
+
+- **Cause:** xd generate library or xd add library with a name that is not the one of an npm package.
+- **Fix:** Pass a lowercase name, with an optional scope: @acme/ui creates the folder ui.
+
+### `✖  <path>/xaendar.json declares a workspace already: add the library to it with xd add library ui.`
+
+- **Cause:** xd generate library run inside a workspace, which it would nest in it.
+- **Fix:** Run xd add library inside the workspace, or xd generate library outside of it.
+
+### `✖  No xaendar.json found: run xd add library inside a project, or create a workspace with xd generate library.`
+
+- **Cause:** xd add library outside of any project.
+- **Fix:** Run it inside the project or the workspace, or create one with xd generate library.
+
+### `✖  The workspace has a library "@acme/ui" already, or a folder <path>.`
+
+- **Cause:** xd add library with the name of a library of the libs, or of a folder already in libraries/.
+- **Fix:** Pick another name.
+
+### `✖  Cannot add the paths of "@acme/ui" to <path>/tsconfig.json, which cannot be read as plain JSON: add them to its compilerOptions.paths by hand, then run the command again.`
+
+- **Cause:** xd add library with a tsconfig.json holding comments or trailing commas: the command writes nothing.
+- **Fix:** Add the paths printed after the message to compilerOptions.paths, then run the command again.
+
+### `✖  No workspace holds <path>: create one with xd generate library @acme/ui.`
+
+- **Cause:** xd generate component --library outside of any project.
+- **Fix:** Run it inside the workspace, or leave --library out.
+
+### `✖  No library "ui" in the libs of <path>/xaendar.json.`
+
+- **Cause:** xd generate component --library or xd build with a name that is neither the name of the package nor the folder of a library of the libs.
+- **Fix:** Use the key of the library in libs (@acme/ui) or the name of its folder (ui).
+
+### `✖  No workspace holds <path>: xd build ui builds a library of a workspace.`
+
+- **Cause:** xd build with the name of a library, outside of a workspace.
+- **Fix:** Run it inside the workspace, or run xd build alone to build the project.
+
+### `✖  charts depends on @acme/ui, another library of the workspace: building a library against another one is not supported yet.`
+
+- **Cause:** xd build of a library listing another library of the workspace in its dependencies or peerDependencies.
+- **Fix:** Not supported yet: build the other libraries by name (xd build ui), or move what the two share into one library.

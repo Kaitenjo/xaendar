@@ -62,6 +62,7 @@ export * from './utils/component-logic/component-logic.utils';
 export * from './utils/extract-component-members/extract-component-members.utils';
 export * from './utils/metadata/metadata.utils';
 export { resolveExportedClass } from './utils/resolve-declaration/resolve-declaration.utils';
+export * from './utils/library-manifest/library-manifest.utils';
 export type * from './types/web-component-error.type';
 export type * from './parser/types/nodes/attribute-node.type';
 export type * from './parser/types/nodes/class-binding-node.type';

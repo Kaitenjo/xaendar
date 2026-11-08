@@ -41,6 +41,7 @@ vi.mock('../watch-change/watch-change', () => ({
 }));
 
 import { loadTsConfig } from '@xaendar/language-core';
+import { resolve } from 'node:path';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
 import { createBuildEndHook } from '../build-end/build-end';
@@ -189,6 +190,18 @@ describe('xaendarPlugin()', () => {
     expect(rendering.server).toBe(SERVER_STRATEGY);
     expect(browserOnly.client).toBe(CLIENT_STRATEGY);
     expect(browserOnly.server).toBe(CLIENT_STRATEGY);
+  });
+
+  it('builds a library with the tsconfig.json of its folder and its options, for the server too when it renders there', () => {
+    xaendarPlugin({ library: { name: '@acme/ui', root: '/ws/libraries/ui', ssr: true } });
+    xaendarPlugin({ library: { name: 'charts', root: '/ws/libraries/charts' } });
+
+    const [rendering, browserOnly] = vi.mocked(createTransformHook).mock.calls.map(call => call[0]);
+    expect(loadTsConfig).toHaveBeenNthCalledWith(1, resolve('/ws/libraries/ui'));
+    expect(rendering.libraries).toEqual([expect.objectContaining({ name: '@acme/ui', ssr: true })]);
+    expect(rendering.ssr).toBeUndefined();
+    expect(rendering.strategies.server).toBe(SERVER_STRATEGY);
+    expect(browserOnly.strategies.server).toBe(CLIENT_STRATEGY);
   });
 
   it('logs to the console when no logger has been set yet', () => {

@@ -430,6 +430,14 @@ It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type
 
 `libraries: [{ name, root, entry?, ssr?, customElements? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
 
+### buildLibrary (function)
+
+```ts
+buildLibrary({ name: string; root: string; entry?: string; outDir: string; ssr?: boolean; customElements?: readonly string[]; plugins?: readonly PluginOption[]; xaendarVersion: string }): Promise<void>
+```
+
+What `xd build` runs for each library of a workspace: it compiles the library ahead of time into `outDir` (emptied first), a package ready for `npm publish`. It writes an ES module for the entry (`public-api.js`) and one for each module declaring a component or a directive, the shared code in `chunks/`, not minified, with `@xaendar/*` and the dependencies of the library left as imports; the declarations, emitted by TypeScript with the `tsconfig.json` of `root`, their paths relative with `.js`; `xaendar-manifest.json` (the components and directives, their selectors, inputs and events); the `package.json` (`exports` of the entry and of each module the entry exports, `sideEffects`, `@xaendar/core` `^xaendarVersion` as a peer dependency); the README and the license. With `ssr: true`, it also writes the code of the server into `server/` (the condition `xaendar-server` of `exports`), with `@xaendar/ssr` as an optional peer dependency. `plugins` run before the Xaendar plugin (the Babel transform of the decorators). It fails before writing on a component or a directive outside the folder of `entry`, a selector declared twice, or the type of an input or of an event reading a name its module does not export.
+
 ## `@xaendar/ssr`
 
 ### renderToString (function)

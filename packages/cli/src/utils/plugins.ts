@@ -14,27 +14,37 @@ import { readXaendarConfig, resolveSsrPaths } from './xaendar-config/xaendar-con
  */
 export function createPlugins(staticReport?: boolean): PluginOption[] {
   return [
-    babel({
-      presets: [
-        {
-          preset: () => ({
-            plugins: [
-              [
-                '@babel/plugin-proposal-decorators',
-                { version: '2023-11' }
-              ]
-            ]
-          }),
-          rolldown: {
-            filter: {
-              code: '@'
-            }
-          }
-        }
-      ]
-    }),
+    createBabelPlugin(),
     xaendarPlugin({ ...readPluginOptions(), staticReport })
   ];
+}
+
+/**
+ * Creates the Babel plugin transpiling the decorators, which the Xaendar plugin needs before it: the build of a library
+ * adds the Xaendar plugin by itself.
+ *
+ * @returns The plugin.
+ */
+export function createBabelPlugin(): PluginOption {
+  return babel({
+    presets: [
+      {
+        preset: () => ({
+          plugins: [
+            [
+              '@babel/plugin-proposal-decorators',
+              { version: '2023-11' }
+            ]
+          ]
+        }),
+        rolldown: {
+          filter: {
+            code: '@'
+          }
+        }
+      }
+    ]
+  });
 }
 
 /**

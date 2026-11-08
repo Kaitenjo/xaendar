@@ -1,4 +1,5 @@
 import { loadTsConfig } from '@xaendar/language-core';
+import { resolve } from 'node:path';
 import type { Logger, Plugin } from 'vite';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
@@ -83,8 +84,8 @@ import { resolveWorkspaceLibraries } from '../../utils/workspace-libraries/works
  */
 export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
   const host = new NodeCompilerHost;
-  // The project tsconfig is resolved from the directory Vite is launched from.
-  const tsConfig = loadTsConfig(process.cwd());
+  // The project tsconfig is resolved from the directory Vite is launched from, the one of a library from its folder.
+  const tsConfig = loadTsConfig(options.library ? resolve(options.library.root) : process.cwd());
   let logger: Logger | undefined;
 
   const logError = (error: unknown, prefix: string): void => {
@@ -102,14 +103,14 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     isBuild: false,
     root: process.cwd(),
     ssr: options.ssr,
-    libraries: resolveWorkspaceLibraries(options.libraries, process.cwd()),
+    libraries: resolveWorkspaceLibraries(options.library ? [options.library] : options.libraries, process.cwd()),
     staticReport: options.staticReport ?? false,
     setLogger: value => logger = value,
     logInfo: message => (logger ?? console).info(message),
     logError,
     strategies: { 
       client: CLIENT_STRATEGY, 
-      server: options.ssr ? SERVER_STRATEGY : CLIENT_STRATEGY 
+      server: options.ssr || options.library?.ssr ? SERVER_STRATEGY : CLIENT_STRATEGY
     }
   };
 

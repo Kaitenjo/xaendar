@@ -39,4 +39,10 @@ export type XaendarPluginOptions = {
    * their entries, and their files are compiled with their own options. Defaults to none.
    */
   readonly libraries?: readonly XaendarLibraryOptions[];
+  /**
+   * The library the build compiles, set by `buildLibrary`: its files are compiled with its options and type-checked
+   * with the `tsconfig.json` of its folder, and, when it renders on the server, the server environment compiles them for
+   * the server, without an entry rendering pages.
+   */
+  readonly library?: XaendarLibraryOptions;
 };
