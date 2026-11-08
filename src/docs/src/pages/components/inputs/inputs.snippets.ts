@@ -87,10 +87,9 @@ export const TRANSFORM_TYPE: SourceFile = {
  * A number, converted by transform from the string it receives.
  */
 @Property(0, { transform: (value: string) => Number(value) })
-public accessor size!: InputSignal<number>;
+public accessor size!: InputSignal<number, string>;
 
 // In a template: size="21"
-// ✓ The template is checked against the type accepted by transform (string), not against InputSignal<number>.
-// That type is, in order: the second generic of @Property (@Property<InputSignal<number>, string>), the annotation of
-// the parameter of transform, the type of the InputSignal.`
+// ✓ The template, createComponent and renderToString take the type transform accepts (string), the second type
+// argument of the InputSignal. Without it, InputSignal<number>, @Property does not compile.`
 };

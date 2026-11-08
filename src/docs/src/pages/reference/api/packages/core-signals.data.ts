@@ -177,7 +177,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
     {
       name: 'InputSignal',
       kind: 'type',
-      signature: `type InputSignal<ActualValue = unknown> = Pick<Signal.State<ActualValue>, 'get'> & {
+      signature: `type InputSignal<ActualValue = unknown, IncomingValue = ActualValue> = Pick<Signal.State<ActualValue>, 'get'> & {
   (): ActualValue;
 }`,
       members: [

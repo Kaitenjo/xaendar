@@ -147,7 +147,9 @@ describe('extractComponentsMetadataFromSourceFile', () => {
         const value = 1;
         ${component(`
           @Property(0, { transform: (value: string) => Number(value) }) accessor annotated!: InputSignal<number>;
-          @Property<InputSignal<number>, boolean>(0, { transform: (value: string) => Number(value) }) accessor generic!: InputSignal<number>;
+          @Property<InputSignal<number, boolean>>(0, { transform: (value: boolean) => Number(value) }) accessor generic!: InputSignal<number, boolean>;
+          @Property(0, { transform: value => Number(value) }) accessor declaredOnly!: InputSignal<number, string>;
+          @Property(0, { transform: (value: string) => Number(value) }) accessor untyped;
           @Property(0, { transform: value => Number(value) }) accessor bare!: InputSignal<number>;
           @Property(0, { transform(value: string[]) { return value.length; }, alias: 'tags' }) accessor method!: InputSignal<number>;
           @Property(0, { transform: function (value: Label | Local) { return 1; } }) accessor local!: InputSignal<number>;
@@ -163,10 +165,12 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       it('exposes the type annotated on the parameter of the transform', async () => {
         expect((await properties())?.get('annotated')?.type).toBe('string');
         expect((await properties())?.get('required')?.type).toBe('string');
+        expect((await properties())?.get('untyped')?.type).toBe('string');
       });
 
-      it('prefers the second generic of the decorator', async () => {
+      it('prefers the second type argument of the type of the accessor', async () => {
         expect((await properties())?.get('generic')?.type).toBe('boolean');
+        expect((await properties())?.get('declaredOnly')?.type).toBe('string');
       });
 
       it('falls back on the type of the signal when no type is declared', async () => {

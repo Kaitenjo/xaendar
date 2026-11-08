@@ -618,7 +618,7 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
 
   if (args.length) {
     const options = required ? args[0] : args[1];
-    const incomingType = options && isObjectLiteralExpression(options) ? findTransformIncomingType(decorator, options) : undefined;
+    const incomingType = options && isObjectLiteralExpression(options) ? findTransformIncomingType(property, options) : undefined;
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
@@ -640,20 +640,21 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
 /**
  * Finds the type a property with a `transform` accepts from outside: the one the template must bind.
  *
- * It is, in order, the second type argument of the decorator (`@Property<InputSignal<number>, string>`), the annotation of
- * the parameter of the `transform`, or nothing, so that the type of the value of the signal is used.
+ * It is, in order, the second type argument of the type of the accessor (`InputSignal<number, string>`), which `@Property`
+ * requires when the `transform` takes another type, the annotation of the parameter of the `transform`, or nothing, so
+ * that the type of the value of the signal is used.
  *
- * @param decorator - The `@Property` decorator.
+ * @param property - The accessor decorated with `@Property`.
  * @param options - The options object literal of the decorator.
  * @returns The type node of the incoming value, `undefined` if the property has no `transform` or no type is declared for it.
  */
-function findTransformIncomingType(decorator: PropertyDecorator, options: ObjectLiteralExpression): TypeNode | undefined {
+function findTransformIncomingType(property: PropertyDeclaration, options: ObjectLiteralExpression): TypeNode | undefined {
   const transform = options.properties.find(property => (isPropertyAssignment(property) || isMethodDeclaration(property)) && isIdentifier(property.name) && property.name.text === 'transform');
   if (!transform) {
     return undefined;
   }
 
-  const typeArgument = decorator.expression.typeArguments?.[1];
+  const typeArgument = property.type && isTypeReferenceNode(property.type) ? property.type.typeArguments?.[1] : undefined;
   if (typeArgument) {
     return typeArgument;
   }

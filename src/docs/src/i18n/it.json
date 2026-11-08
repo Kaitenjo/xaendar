@@ -541,7 +541,7 @@
           },
           "callout3": {
             "heading": "transform decide il tipo controllato nei template",
-            "p1": "Con una <code>transform</code>, i template sono controllati rispetto al tipo che accetta, non rispetto al tipo dell’<code>InputSignal</code>: il secondo argomento di tipo di <code>@Property</code> (<code>@Property&lt;InputSignal&lt;number&gt;, string&gt;</code>), altrimenti l’annotazione del parametro di <code>transform</code>, altrimenti il tipo del signal. Una transform da <code>string</code> a <code>number</code> accetta quindi un valore statico, <code>size=\"21\"</code>."
+            "p1": "Con una <code>transform</code>, i template sono controllati rispetto al tipo che accetta, non rispetto al tipo del valore dell’<code>InputSignal</code>: l’accessor lo dichiara come secondo argomento del suo tipo (<code>InputSignal&lt;number, string&gt;</code>), che <code>@Property</code> richiede quando i due sono diversi, e lo accettano anche <code>createComponent</code> e <code>renderToString</code>. Una transform da <code>string</code> a <code>number</code> accetta quindi un valore statico, <code>size=\"21\"</code>."
           },
           "callout5": {
             "heading": "Un componente definito dopo il render del padre",

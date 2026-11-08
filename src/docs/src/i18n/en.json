@@ -541,7 +541,7 @@
           },
           "callout3": {
             "heading": "transform decides the type checked in templates",
-            "p1": "With a <code>transform</code>, templates are checked against the type it accepts, not against the type of the <code>InputSignal</code>: the second type argument of <code>@Property</code> (<code>@Property&lt;InputSignal&lt;number&gt;, string&gt;</code>), else the annotation of the parameter of <code>transform</code>, else the type of the signal. A transform from <code>string</code> to <code>number</code> then accepts a static value, <code>size=\"21\"</code>."
+            "p1": "With a <code>transform</code>, templates are checked against the type it accepts, not against the type of the value of the <code>InputSignal</code>: the accessor declares it as the second type argument of its type (<code>InputSignal&lt;number, string&gt;</code>), which <code>@Property</code> requires when the two differ, and <code>createComponent</code> and <code>renderToString</code> take it too. A transform from <code>string</code> to <code>number</code> then accepts a static value, <code>size=\"21\"</code>."
           },
           "callout5": {
             "heading": "A component defined after its parent rendered",

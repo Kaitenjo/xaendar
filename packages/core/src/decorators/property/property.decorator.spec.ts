@@ -14,9 +14,9 @@ const { isInputSignal } = await import('../../signals/input/input-instance.symbo
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../../signals/input/input-set.symbol');
 
 type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string> };
-type Decorated<ActualValue> = { init(this: unknown): InputSignal<ActualValue>, set(this: unknown, value: unknown): void };
-type Accessor<ActualValue> = {
-  signal: InputSignal<ActualValue>,
+type Decorated<ActualValue, IncomingValue = ActualValue> = { init(this: unknown): InputSignal<ActualValue, IncomingValue>, set(this: unknown, value: unknown): void };
+type Accessor<ActualValue, IncomingValue = ActualValue> = {
+  signal: InputSignal<ActualValue, IncomingValue>,
   assign: (value: unknown) => void,
   originalSet: ReturnType<typeof vi.fn>
 };
@@ -26,20 +26,20 @@ function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>,
   name: string | symbol = 'label',
   metadata: Metadata = {}
-): Decorated<ActualValue> {
-  const decorator = Property<InputSignal<ActualValue>, IncomingValue, ActualValue>(value, options);
+): Decorated<ActualValue, IncomingValue> {
+  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue>(value, options);
   const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
-  return decorated as unknown as Decorated<ActualValue>;
+  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
 }
 
 function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
   options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>,
   name: string | symbol = 'label',
   metadata: Metadata = {}
-): Decorated<ActualValue> {
+): Decorated<ActualValue, IncomingValue> {
   const decorator = Property.required<ActualValue, IncomingValue>(options);
   const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
-  return decorated as unknown as Decorated<ActualValue>;
+  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
 }
 
 /*
@@ -49,17 +49,17 @@ function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
 function setupAccessor<ActualValue = unknown, IncomingValue = ActualValue>(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Accessor<ActualValue> {
+): Accessor<ActualValue, IncomingValue> {
   const element = {};
   const target = { get: () => stored!, set: vi.fn() };
-  const decorator = Property<InputSignal<ActualValue>, IncomingValue, ActualValue>(value, options);
-  const decorated = decorator(target, { name: 'label', metadata: {} } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<ActualValue>;
+  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue>(value, options);
+  const decorated = decorator(target, { name: 'label', metadata: {} } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<ActualValue, IncomingValue>;
   const stored = decorated.init.call(element);
 
   return { signal: stored, assign: newValue => decorated.set.call(element, newValue), originalSet: target.set };
 }
 
-function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue>, value: IncomingValue): void {
+function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue, IncomingValue>, value: IncomingValue): void {
   if (!isInputSignal(signal)) {
     throw new Error('Expected an InputSignal');
   }

@@ -36,6 +36,7 @@ const Card = define(class Card extends CustomElement {
   public readonly heading = input<string>('default heading');
   public readonly count = input<number>(0);
   public readonly mode = input<'compact' | 'wide'>('wide');
+  public readonly size = input<number, string>(0, { transform: value => Number(value) });
   public readonly double = computed(() => this.count() * 2);
   public readonly changed = new Output<number>((value, _options?) => { this.dispatchEvent(new CustomEvent('changed', { detail: value })); });
   public readonly closed = new Output(() => { this.dispatchEvent(new CustomEvent('closed')); });
@@ -109,9 +110,11 @@ describe('_createComponent', () => {
   });
 
   it('sets the inputs before the component is initialized', () => {
-    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'Hello' }] });
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'Hello', size: () => '21' }] });
 
     expect(element.headingOnInit).toEqual(['Hello']);
+    // The value goes through the transform of the input
+    expect(element.size()).toBe(21);
   });
 
   it('updates an input when a signal read by its getter changes', async () => {
@@ -343,6 +346,10 @@ describe('_createComponent', () => {
       host.createComponent(Card, { target: document.body, properties: [{ double: () => 1 }] });
       // @ts-expect-error the value of an input has its type
       host.createComponent(Card, { target: document.body, properties: [{ count: () => 'one' }] });
+      // The value of an input with a transform is the one its transform takes
+      host.createComponent(Card, { target: document.body, properties: [{ size: () => '21' }] });
+      // @ts-expect-error the transform of the input takes a string, not the type of its value
+      host.createComponent(Card, { target: document.body, properties: [{ size: () => 21 }] });
       // @ts-expect-error the detail of an event is the value of its output
       host.createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
       // @ts-expect-error an input is not an event

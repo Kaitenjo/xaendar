@@ -19,7 +19,7 @@ import { assertPrivateContext } from './input-set.symbol';
  *   lifecycle hooks, and a `transform` function applied to incoming values.
  * @returns A new `InputSignal` instance.
  */
-export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue>): InputSignal<ActualValue> {
+export function input<ActualValue = unknown, IncomingValue = ActualValue>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue>): InputSignal<ActualValue, IncomingValue> {
   // The transform is kept apart from the options of the signal, leaving the object of the caller untouched
   const { transform, ...signalOptions } = options ?? {};
 

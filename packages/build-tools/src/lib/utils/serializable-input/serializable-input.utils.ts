@@ -1,5 +1,5 @@
 import type { ComponentMetadata } from '@xaendar/compiler';
-import { isClassDeclaration, Program, Type, TypeChecker, TypeFlags, type TypeReference } from 'typescript';
+import { isClassDeclaration, type Node, Program, Type, TypeChecker, TypeFlags, type TypeReference } from 'typescript';
 
 /**
  * The flags of the types whose values are always written into the HTML.
@@ -17,8 +17,16 @@ const SERIALIZABLE_OBJECTS: ReadonlySet<string> = new Set(['Date', 'Map', 'Set']
 const OBJECT_LITERAL = '__object';
 
 /**
+ * The start of the name the type checker gives the key of the type an input accepts from outside, the unique symbol
+ * `INCOMING_VALUE` of the type `InputSignal` of `@xaendar/core`.
+ */
+const INCOMING_VALUE_KEY = '__@INCOMING_VALUE@';
+
+/**
  * Tells whether the values of an input of a component can reach the browser written into the HTML, which is how a
  * component receives the inputs a static one binds: by its declared type, since the value is known only on the server.
+ * The type is the one the input accepts from outside, before its `transform`, since `data-xd-inputs` holds the values
+ * as they are bound: the second type argument of its `InputSignal`, which defaults to the type of its value.
  * A type that cannot be read, as `any` or `unknown`, cannot be written, and so can an exposed input of a host directive,
  * which does not exist on the server.
  *
@@ -36,8 +44,24 @@ export function isSerializableInput(program: Program, metadata: ComponentMetadat
 
   const checker = program.getTypeChecker();
   const symbol = checker.getTypeAtLocation(klass).getProperty(property.name);
-  const signature = symbol && checker.getTypeOfSymbolAtLocation(symbol, klass).getCallSignatures()[0];
-  return !!signature && isSerializableType(signature.getReturnType(), checker, new Set());
+  const type = symbol && getIncomingType(checker.getTypeOfSymbolAtLocation(symbol, klass), checker, klass);
+  return !!type && isSerializableType(type, checker, new Set());
+}
+
+/**
+ * Finds the type an input accepts from outside: the type the function under the key `INCOMING_VALUE` of its
+ * `InputSignal` returns, or, for a signal without it, the type of its value, the one the signal returns.
+ *
+ * @param signal - The type of the input signal.
+ * @param checker - The type checker.
+ * @param location - The class declaring the input, where the types are read.
+ * @returns The type, `undefined` when the input is not a signal.
+ */
+function getIncomingType(signal: Type, checker: TypeChecker, location: Node): Type | undefined {
+  const incoming = signal.getProperties().find(property => property.getName().startsWith(INCOMING_VALUE_KEY));
+  // The key is optional: its type holds `undefined` too
+  const reader = incoming ? checker.getNonNullableType(checker.getTypeOfSymbolAtLocation(incoming, location)) : signal;
+  return reader.getCallSignatures()[0]?.getReturnType();
 }
 
 /**

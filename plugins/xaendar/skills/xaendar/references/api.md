@@ -19,15 +19,15 @@ Defines a class extending CustomElement as a custom element, with its compiled t
 ### Property (decorator)
 
 ```ts
-@Property<InputSignal<T>, In = T>(defaultValue?, { alias?, transform?: (value: In) => T, equals?, watched?, unwatched? }) accessor name!: InputSignal<T>
+@Property<InputSignal<T, In>>(defaultValue?, { alias?, transform?: (value: In) => T, equals?, watched?, unwatched? }) accessor name!: InputSignal<T, In>
 ```
 
-Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template (or by `createComponent`) and by assignments to the property of the element from outside (`element.name = value`, also before the element is defined), never by attributes. Templates bind an input declaring `alias` only by its alias; code (`element.name`, `createComponent`, `renderToString`) uses the name of the property. `transform` converts every bound or assigned value, not the default; templates bind the type it accepts: the second type argument, else the annotation of its parameter, else `T`. `equals` compares the transformed value with the current one (`Object.is` by default). A conditional binding that stops holding resets the input to its default.
+Declares an input. The accessor holds an InputSignal, set by the bindings of the parent template (or by `createComponent`) and by assignments to the property of the element from outside (`element.name = value`, also before the element is defined), never by attributes. Templates bind an input declaring `alias` only by its alias; code (`element.name`, `createComponent`, `renderToString`) uses the name of the property. `transform` converts every bound or assigned value, not the default; templates, `createComponent` and `renderToString` take the type it accepts, `In`, which the accessor declares (`InputSignal<number, string>`) when it differs from `T`, or the decorator does not compile. `equals` compares the transformed value with the current one (`Object.is` by default). A conditional binding that stops holding resets the input to its default.
 
 ### Property.required (decorator)
 
 ```ts
-@Property.required({ alias?, transform?, equals? }) accessor name!: InputSignal<T>
+@Property.required({ alias?, transform?, equals? }) accessor name!: InputSignal<T, In>
 ```
 
 Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time.
@@ -281,7 +281,7 @@ The type returned by computed(). A thrown error is cached like a value until a d
 ### InputSignal (type)
 
 ```ts
-InputSignal<T> = { (): T; get(): T }
+InputSignal<T, In = T> = { (): T; get(): T } // In: the type it accepts from outside, before its transform
 ```
 
 The type of an input: read-only for the component, set by the bindings of the parent.

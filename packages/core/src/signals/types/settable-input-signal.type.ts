@@ -7,7 +7,7 @@ import { InputSignal } from './input-signal.type';
  * @template Value - The type of the value the signal holds.
  * @template IncomingValue - The type of the values written into it, before the `transform` of the input.
  */
-export type SettableInputSignal<Value = unknown, IncomingValue = Value> = InputSignal<Value> & {
+export type SettableInputSignal<Value = unknown, IncomingValue = Value> = InputSignal<Value, IncomingValue> & {
   /**
    * Sets a new value, after applying the `transform` of the input.
    *

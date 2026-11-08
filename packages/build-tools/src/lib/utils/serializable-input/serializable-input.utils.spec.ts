@@ -7,7 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { isSerializableInput } from './serializable-input.utils';
 
 const STUBS = [
-  'type InputSignal<T> = () => T;',
+  'declare const INCOMING_VALUE: unique symbol;',
+  'type InputSignal<T, In = T> = (() => T) & { readonly [INCOMING_VALUE]?: () => In };',
   'declare function Property(...args: any[]): any;',
   'declare function WebComponent(options: object): any;',
   'class Shape { public area = 1; }',
@@ -76,6 +77,20 @@ describe('isSerializableInput', () => {
     metadata.properties.get('value')!.exposed = true;
 
     expect(isSerializableInput(program, metadata, 'value')).toBe(false);
+  }, 30_000);
+
+  it('reads the type the input accepts from outside, before its transform, which data-xd-inputs holds', async () => {
+    const url = await compileInput('', '@Property(undefined, { transform: (url: URL) => url.href }) public accessor value!: InputSignal<string, URL>;');
+    const text = await compileInput('', '@Property(undefined, { transform: (href: string) => new URL(href) }) public accessor value!: InputSignal<URL, string>;');
+
+    expect(isSerializableInput(url.program, url.metadata, 'value')).toBe(false);
+    expect(isSerializableInput(text.program, text.metadata, 'value')).toBe(true);
+  }, 30_000);
+
+  it('reads the value of a signal without the type it accepts from outside', async () => {
+    const { program, metadata } = await compileInput('', '@Property() public accessor value!: () => string;');
+
+    expect(isSerializableInput(program, metadata, 'value')).toBe(true);
   }, 30_000);
 
   it('rejects an input of a class outside of the program, or a value that is not a signal', async () => {

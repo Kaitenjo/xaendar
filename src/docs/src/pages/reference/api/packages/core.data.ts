@@ -83,12 +83,12 @@ export const CORE_API: ApiPackage = {
     {
       name: 'Property',
       kind: 'decorator',
-      signature: 'function Property<Value extends InputSignal<ActualValue>, IncomingValue = Value extends InputSignal<infer Type> ? Type : unknown, ActualValue = Value extends InputSignal<infer Type> ? Type : unknown>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue>>',
+      signature: 'function Property<Value extends InputSignal<ActualValue, IncomingValue>, IncomingValue = Value extends InputSignal<unknown, infer Type> ? Type : unknown, ActualValue = Value extends InputSignal<infer Type, unknown> ? Type : unknown>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
       members: [
         {
           name: 'Property.required',
           group: 'variants',
-          signature: 'Property.required<ActualValue = unknown, IncomingValue = ActualValue>(options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue>>',
+          signature: 'Property.required<ActualValue = unknown, IncomingValue = ActualValue>(options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
           snippets: ['components/required-error.txt', 'components/required-branch-error.txt']
         },
         {

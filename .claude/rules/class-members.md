@@ -68,6 +68,8 @@ public accessor language!: InputSignal<CodeLang>;
 const lang = this.language();
 ```
 
+A `transform` taking another type than the value of the input is declared as the second type argument of the signal, which templates, `createComponent` and `renderToString` take: `@Property(0, { transform: (value: string) => Number(value) }) public accessor size!: InputSignal<number, string>;` (without it `@Property` does not compile).
+
 Any type works, imported aliases included: the type-check code of the parent templates references it through the accessor of the class, never as a copy. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so a literal union there rejects static values.
 
 ## Module signals
