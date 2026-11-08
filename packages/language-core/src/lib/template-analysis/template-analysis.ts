@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentOrDirectiveMetadata, extractComponentMembers, type ImportNode, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, typeCheckTemplateTolerant } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentMetadata, type ComponentOrDirectiveMetadata, type DirectiveMetadata, extractComponentMembers, type ImportNode, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, typeCheckTemplateTolerant } from '@xaendar/compiler';
 import { dirname, resolve } from 'node:path';
 import { type CompilerOptions, createSourceFile, isClassDeclaration, type Program, ScriptTarget } from 'typescript';
 import { getProjectLanguageService, type ProjectLanguageService, readDocument } from '../language-service/language-service';
@@ -148,7 +148,7 @@ export async function resolveTemplateImports(templatePath: string, source: strin
  * @param modulePath - The path of the module, as written in the `@import` statement.
  * @returns The metadata of the components and directives of the module, `undefined` if it cannot be resolved or read.
  */
-export async function resolveModuleMetadatas(templatePath: string, modulePath: string): Promise<ComponentOrDirectiveMetadata[] | undefined> {
+export async function resolveModuleMetadatas(templatePath: string, modulePath: string): Promise<Array<ComponentMetadata | DirectiveMetadata> | undefined> {
   const templateDir = dirname(templatePath);
   const { cache } = getProjectContext(templateDir);
   const metadatas = await cache.getModuleMetadatas(templateDir, modulePath);
@@ -163,7 +163,7 @@ export async function resolveModuleMetadatas(templatePath: string, modulePath: s
  * @param fileName - The path of a file of the project.
  * @returns The metadata of each file declaring some, keyed by class name, `undefined` if the project declares none.
  */
-export async function resolveDeclarations(fileName: string): Promise<Map<string, ReadonlyMap<string, ComponentOrDirectiveMetadata>> | undefined> {
+export async function resolveDeclarations(fileName: string): Promise<Map<string, ReadonlyMap<string, ComponentMetadata | DirectiveMetadata>> | undefined> {
   const { fileNames, cache } = getProjectContext(dirname(fileName));
   return await cache.getDeclarations(fileNames);
 }

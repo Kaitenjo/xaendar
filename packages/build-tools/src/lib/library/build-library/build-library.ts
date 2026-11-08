@@ -1,7 +1,10 @@
+import { disposeLanguageService } from '@xaendar/language-core';
 import { existsSync } from 'node:fs';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { build } from 'vite';
+import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import type { BuildLibraryOptions } from '../../types/build-library-options.type';
+import type { LibraryBuild } from '../../types/library-build.type';
 import type { LibraryPackageJson } from '../../types/library-package-json.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { resolveWorkspaceLibraries } from '../../utils/workspace-libraries/workspace-libraries.utils';
@@ -29,12 +32,18 @@ const PACKAGE_FILES = ['README.md', 'LICENSE', 'LICENSE.md'];
  * - `xaendar-manifest.json`, describing the components and the directives it exports (see `LibraryManifest`);
  * - its `package.json` (see `createLibraryPackageJson`), and the `README.md` and the license of the library.
  *
+ * Each library is compiled on its own: the components and the directives an earlier build registered, as another
+ * library of the workspace compiled from its sources, are forgotten first, and so is the program type-checking its
+ * templates, whose options were the ones of that library.
+ *
  * @param options - The library, its options, the folder of the package and the plugins transpiling the decorators.
  * @returns A promise resolving once the package is written.
  * @throws If the library cannot be read or compiled, or its declarations cannot be emitted.
  */
 export async function buildLibrary(options: BuildLibraryOptions): Promise<void> {
-  const [library] = resolveWorkspaceLibraries([options], process.cwd())!;
+  clearMetadataRegistry();
+  disposeLanguageService();
+  const library: LibraryBuild = Object.assign({ dependencies: options.dependencies }, resolveWorkspaceLibraries([options], process.cwd())![0]);
   const outDir = resolvePosixPath(process.cwd(), options.outDir);
   const packageJson: LibraryPackageJson = JSON.parse(await readFile(`${library.root}/package.json`, 'utf-8'));
   const program = createLibraryProgram(library, outDir);

@@ -16,7 +16,8 @@ import type { GeneratorContext } from '../../context/context';
  * found by its selector when an element applying it is rendered, which happens once the module is loaded.
  *
  * The module of a component or of a directive is the file declaring its class, read from its metadata (`modulePath`),
- * also when the template imports it through a barrel.
+ * also when the template imports it through a barrel, or, for one of a compiled library, the path of the `exports` of
+ * its package leading to it (`importPath`).
  *
  * @param nodes - The nodes of the template.
  * @param generatorContext - The root generator context, holding the cache of the metadata and the patterns of the custom
@@ -59,7 +60,8 @@ export async function getDeferredModules(nodes: readonly ASTNode[], generatorCon
 }
 
 /**
- * Gets the module declaring a component or a directive: the file of its class, read from its metadata.
+ * Gets the module declaring a component or a directive: the file of its class, read from its metadata, or the path of
+ * its package leading to it, for one of a compiled library.
  *
  * @param key - The tag name of the component, or the selector of the directive after `@@`, as the cache names it.
  * @param cache - The cache of the metadata.
@@ -67,7 +69,7 @@ export async function getDeferredModules(nodes: readonly ASTNode[], generatorCon
  */
 async function getModule(key: string, cache: ContextCache): Promise<string | undefined> {
   const metadata = await cache.getOrInsert(key);
-  return metadata.type === (key.startsWith('@@') ? 'directive' : 'component') ? metadata.modulePath : undefined;
+  return metadata.type === (key.startsWith('@@') ? 'directive' : 'component') ? metadata.importPath ?? metadata.modulePath : undefined;
 }
 
 /**

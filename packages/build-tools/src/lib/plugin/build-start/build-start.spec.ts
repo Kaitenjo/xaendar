@@ -10,6 +10,7 @@ import type { PluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import type { StaticComponents } from '../../types/static-components.type';
 import { describeStaticComponents, findStaticComponents } from '../../utils/static-components/static-components.utils';
+import { clearMetadataRegistry, getLibrarySelectorOwner } from '../../registry/metadata-registry/metadata-registry';
 import { createBuildStartHook } from './build-start';
 
 const STATIC_COMPONENTS = { statics: [] } as unknown as StaticComponents;
@@ -86,5 +87,15 @@ describe('createBuildStartHook()', () => {
     expect(off.logInfo).toHaveBeenCalledWith('Xaendar: the static components are not searched, so there is nothing to report: set ssr.staticComponents to search them');
     expect(browserOnly.logInfo).toHaveBeenCalledOnce();
     expect(unasked.logInfo).not.toHaveBeenCalled();
+  });
+});
+
+describe('createBuildStartHook() with compiled libraries', () => {
+  it('registers the selectors of the compiled libraries the project depends on, in the dev server too', async () => {
+    const library = { manifest: { name: '@acme/ui', selectors: ['ui-card'] } };
+    await run(createState({ isBuild: false, packageLibraries: [library as never] }));
+
+    expect(getLibrarySelectorOwner('ui-card')).toBe('@acme/ui');
+    clearMetadataRegistry();
   });
 });

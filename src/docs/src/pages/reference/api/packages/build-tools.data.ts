@@ -87,6 +87,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
         '  readonly customElements?: readonly string[];',
         '  readonly plugins?: readonly PluginOption[];',
         '  readonly xaendarVersion: string;',
+        '  readonly dependencies?: Readonly<Record<string, string>>;',
         '}): Promise<void>'
       ].join('\n'),
       members: [
@@ -129,6 +130,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'xaendarVersion',
           group: 'options',
           signature: 'readonly xaendarVersion: string'
+        },
+        {
+          name: 'dependencies',
+          group: 'options',
+          signature: 'readonly dependencies?: Readonly<Record<string, string>>'
         }
       ],
       usage: [

@@ -19,7 +19,8 @@ const exportsByName: Record<string, ComponentOrDirectiveMetadata> = {
   Chart: Object.assign(declaration('component', 'x-chart', '/src/chart.ts'), { clientOnly: {} }),
   Tip: declaration('directive', 'tip', '/src/tip.ts'),
   Later: declaration('directive', 'later', '/src/later.ts'),
-  Named: declaration('directive', 'x-inside', '/src/named.ts')
+  Named: declaration('directive', 'x-inside', '/src/named.ts'),
+  Card: Object.assign(declaration('component', 'ui-card', '/app/node_modules/@acme/ui/card.d.ts'), { importPath: '@acme/ui/card' })
 };
 
 const cache = {
@@ -149,5 +150,13 @@ describe('getServerDependencies', () => {
     const template = '@import { Named } from \'./named.ts\';\n<x-inside></x-inside>@client { }';
 
     expect(await dependenciesOf(template, ['named'])).toEqual([]);
+  });
+});
+
+describe('getServerDependencies with compiled libraries', () => {
+  it('keeps the module of a component of a compiled library the server renders, by the path of its package', async () => {
+    const template = '@import { Card, Chart } from \'@acme/ui\';\n<ui-card></ui-card><x-chart></x-chart>';
+
+    expect(await getServerDependencies(template, ['@acme/ui/card', '/src/chart.ts'], { templateDir: '/src', cache })).toEqual(['@acme/ui/card']);
   });
 });

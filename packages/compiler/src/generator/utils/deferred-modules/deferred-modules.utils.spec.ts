@@ -128,3 +128,17 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(parse('<a-x></a-x>'), contextWithModules())).toBeUndefined();
   });
 });
+
+describe('getDeferredModules with compiled libraries', () => {
+  it('loads a component of a compiled library by the path of its package', async () => {
+    const cache: ContextCache = {
+      getOrInsert: async selector => ({ type: 'component', modulePath: `/app/node_modules/@acme/ui/${selector}.d.ts`, importPath: `@acme/ui/${selector}` }) as never,
+      getImport: () => Promise.reject(new Error('No import')),
+      set: () => undefined
+    };
+    const nodes = parse('@hydrate (idle) { <ui-card></ui-card> }');
+    const [hydrate] = hydrateNodes(nodes);
+
+    expect(await getDeferredModules(nodes, new GeneratorContext(cache))).toEqual(new Map([[hydrate, ['@acme/ui/ui-card']]]));
+  });
+});

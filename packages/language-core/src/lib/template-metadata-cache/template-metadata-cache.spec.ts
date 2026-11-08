@@ -112,6 +112,24 @@ describe('TemplateMetadataCache', () => {
     await expect(cache.getImport('x', 'x', src, '@acme/missing')).rejects.toThrow('Cannot find module "@acme/missing"');
   });
 
+  it('reads a component of a compiled library from the manifest of its package', async () => {
+    project.write('node_modules/@acme/kit/package.json', JSON.stringify({ name: '@acme/kit', exports: { '.': { types: './public-api.d.ts' } }, xaendar: { manifest: './xaendar-manifest.json' } }));
+    project.write('node_modules/@acme/kit/public-api.d.ts', 'export declare class Badge {}\nexport declare const VERSION: string;\n');
+    project.write('node_modules/@acme/kit/xaendar-manifest.json', JSON.stringify({
+      schemaVersion: 1, name: '@acme/kit', version: '1.0.0', xaendar: '1.0.0', ssr: false, selectors: ['kit-badge'],
+      exports: { '.': { Badge: 'public-api#Badge' } },
+      declarations: { 'public-api#Badge': { type: 'component', className: 'Badge', selector: 'kit-badge', module: '.', types: './public-api.d.ts', inputs: [], events: [] } }
+    }));
+    const cache = new TemplateMetadataCache(loadTsConfig(project.root).options);
+    const src = project.path('src');
+
+    const badge = await cache.getImport('Badge', 'Badge', src, '@acme/kit');
+    expect(badge).toMatchObject({ type: 'component', selector: 'kit-badge', importPath: '@acme/kit', library: { name: '@acme/kit' } });
+    expect(await cache.getOrInsert('Badge', [src, '@acme/kit'])).toBe(badge);
+    expect(await cache.getImport('VERSION', 'VERSION', src, '@acme/kit')).toMatchObject({ type: 'symbol', importPath: '@acme/kit' });
+    expect(await cache.getImport('*', 'kit', src, '@acme/kit')).toMatchObject({ type: 'symbol', importPath: '@acme/kit' });
+  });
+
   it('finds no metadata in a file whose decorators don\'t declare literal selectors', async () => {
     const cache = new TemplateMetadataCache();
     project.write('src/dynamic.ts', 'const name = \'x\';\n@WebComponent({ selector: name, templateUrl: name })\nexport class Dynamic {}\n@Directive({ selector: name })\nexport class DynamicDirective {}\n');

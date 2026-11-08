@@ -19,6 +19,7 @@ import type { PropertyDecorator } from '../../types/typescript-decorator-nodes/p
 import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
 import type { WebComponentError } from '../../types/web-component-error.type';
 import { addHostDirectiveBindings } from '../host-directives/host-directives.utils';
+import { readLibraryClass } from '../package-libraries/package-libraries.utils';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.utils';
 
@@ -46,7 +47,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
 
     const className = klass.name.text;
     const bindings = extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions);
-    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, ({ declaration, sourceFile: directiveFile }) => classDeclarationHasName(declaration) ? extractBindingsMetadata(declaration, directiveFile, 'directive', compilerOptions) : undefined);
+    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, directive => extractHostDirectiveBindings(directive, compilerOptions));
     const metadata: ComponentMetadata = {
       type: 'component',
       className,
@@ -422,6 +423,24 @@ function getDecoratedClassDeclarations<D extends ClassDecoratorNode>(sourceFile:
  */
 function classDeclarationHasName(node: Statement): node is ClassDeclarationWithName {
   return isClassDeclaration(node) && !!node.name?.text;
+}
+
+/**
+ * Extracts the properties and the events of a directive a component declares among its host directives: from its
+ * decorators, or, for a directive of a compiled library, whose declarations keep no decorator, from the manifest of its
+ * package.
+ *
+ * @param directive - The class of the directive, with the file declaring it.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring its base classes are resolved.
+ * @returns The properties and the events, `undefined` when the class has no name.
+ * @throws If two properties of the directive resolve to the same name, or the manifest of its library can't be read.
+ */
+function extractHostDirectiveBindings({ declaration, sourceFile }: ResolvedClass, compilerOptions: CompilerOptions | undefined): Pick<ComponentMetadata, 'properties' | 'events'> | undefined {
+  if (!classDeclarationHasName(declaration)) {
+    return undefined;
+  }
+
+  return readLibraryClass(sourceFile.fileName, declaration.name.text) ?? extractBindingsMetadata(declaration, sourceFile, 'directive', compilerOptions);
 }
 
 /**

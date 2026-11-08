@@ -14,6 +14,14 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn()
 }));
 
+vi.mock('@xaendar/language-core', () => ({
+  disposeLanguageService: vi.fn()
+}));
+
+vi.mock('../../registry/metadata-registry/metadata-registry', () => ({
+  clearMetadataRegistry: vi.fn()
+}));
+
 vi.mock('../library-analysis/library-analysis.utils', () => ({
   analyzeLibrary: vi.fn(),
   createLibraryProgram: vi.fn()
@@ -33,9 +41,11 @@ vi.mock('../library-package/library-package.utils', () => ({
   createLibraryPackageJson: vi.fn(() => ({ name: '@acme/ui' }))
 }));
 
+import { disposeLanguageService } from '@xaendar/language-core';
 import { existsSync } from 'node:fs';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { build } from 'vite';
+import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { analyzeLibrary, createLibraryProgram } from '../library-analysis/library-analysis.utils';
 import { createExternalMatcher, createLibraryBuildConfig } from '../library-build-config/library-build-config.utils';
@@ -103,5 +113,14 @@ describe('buildLibrary()', () => {
     expect(build).toHaveBeenNthCalledWith(1, { server: false });
     expect(build).toHaveBeenNthCalledWith(2, { server: true });
     expect(createLibraryPackageJson).toHaveBeenCalledWith(expect.anything(), ANALYSIS, true, '1.2.0');
+  });
+
+  it('forgets what an earlier build registered, and reads the libraries of the workspace it depends on from their builds', async () => {
+    await buildLibrary({ name: 'charts', root: '/ws/libraries/charts', outDir: '/ws/dist/charts', dependencies: { '@acme/ui': '/ws/dist/ui' }, xaendarVersion: '1.2.0' });
+
+    expect(clearMetadataRegistry).toHaveBeenCalledOnce();
+    expect(disposeLanguageService).toHaveBeenCalledOnce();
+    expect(createLibraryProgram).toHaveBeenCalledWith(expect.objectContaining({ name: 'charts', dependencies: { '@acme/ui': '/ws/dist/ui' } }), resolvePosixPath('/ws/dist/charts'));
+    expect(createLibraryBuildConfig).toHaveBeenCalledWith(expect.objectContaining({ dependencies: { '@acme/ui': '/ws/dist/ui' } }), undefined, ANALYSIS, resolvePosixPath('/ws/dist/charts'), EXTERNAL, false);
   });
 });

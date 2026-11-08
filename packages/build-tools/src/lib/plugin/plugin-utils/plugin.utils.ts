@@ -1,12 +1,12 @@
 import { slice } from '@xaendar/common';
-import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModule, resolveModulePath, type TemplateWarning } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
 import { ClassLikeDeclaration, ClassStaticBlockDeclaration, CompilerOptions, createSourceFile, Diagnostic, Expression, forEachChild, isBinaryExpression, isCallExpression, isClassDeclaration, isClassExpression, isClassStaticBlockDeclaration, isExpressionStatement, isIdentifier, isParenthesizedExpression, isPropertyAccessExpression, Node, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { LANG_JS_FLAG, RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX, STYLE_PATH_PARAM } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
-import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import { getLibrarySelectorOwner, getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
 import type { TemplateModules } from '../../types/template-modules.type';
@@ -422,8 +422,9 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
  * imports, the metadata of the component or of the directive it names, or any other export of the module. A component
  * or a directive the module re-exports (a barrel) is read from the file declaring it. A symbol of a
  * package keeps the path written in the `@import`, which the generated code imports it with: the bundler resolves it
- * like the imports of the application, to the same instance of the module. The declarations of a package declare no
- * component nor directive: their decorators are not part of them.
+ * like the imports of the application, to the same instance of the module. The declarations of a package keep no
+ * decorator: the components and the directives of a compiled library are read from the manifest of its package, and
+ * registered like the ones of the project.
  * @param imported The name of the export (`'default'` for the default one, `'*'` for a namespace import).
  * @param local The name the template imports it as, which names a component or a directive exported as default.
  * @param baseDir The directory of the template.
@@ -433,7 +434,8 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
  *   are resolved.
  * @returns The metadata of the component or of the directive, or the imported symbol, reactive when reading it can read
  *   a signal (a namespace always is, its members are not analyzed).
- * @throws {Error} If the module can't be resolved, or the metadata of the class it names can't be extracted.
+ * @throws {Error} If the module can't be resolved, the metadata of the class it names can't be extracted, the manifest
+ *   of its library can't be read, or its selector is already used by another component or directive.
  */
 export async function getImportOrExtract(imported: string, local: string, baseDir: string, path: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
   const resolved = resolveModule(baseDir, path, compilerOptions);
@@ -442,6 +444,11 @@ export async function getImportOrExtract(imported: string, local: string, baseDi
   }
 
   const { fileName: modulePath, external } = resolved;
+  const library = imported === '*' ? undefined : readLibraryMetadata(modulePath, imported);
+  if (library) {
+    return await registerLibraryMetadata(library);
+  }
+
   if (imported !== '*' && !DECLARATION_FILE.test(modulePath)) {
     const className = imported === 'default' ? local : imported;
     const metadata = getMetadata(className, modulePath) ?? await extractAndRegisterMetadata(className, modulePath, compilerOptions);
@@ -466,9 +473,10 @@ export async function getImportOrExtract(imported: string, local: string, baseDi
 /**
  * Resolves the modules a template imports, from its `@import` statements (see {@link TemplateModules}): the module of a
  * component or of a directive is the file declaring its class, also when the template imports it through a barrel, so
- * that loading the template loads only what it renders, and the module of any other symbol is the one the `@import`
- * leads to. The modules of the packages are left out, as their declarations have no code to import, and so are the
- * files that do not exist.
+ * that loading the template loads only what it renders, or, for one of a compiled library, the path of its package
+ * leading to its module, not watched; the module of any other symbol is the one the `@import` leads to. The modules of
+ * the other symbols of the packages are left out, as their declarations have no code to import, and so are the files
+ * that do not exist.
  *
  * @param importNodes - The `@import` nodes of the template.
  * @param templateDir - The directory of the template, the paths of the `@import`s are relative to.
@@ -484,9 +492,14 @@ export async function resolveTemplateModules(importNodes: readonly ImportNode[],
     const { specifiers, path, lazy } = importNodes[i];
     for (let j = 0; j < specifiers.length; j++) {
       const resolved = await cache.getImport(specifiers[j].imported, specifiers[j].local, templateDir, path);
-      const module = resolved.type === 'symbol' ? getSymbolModule(resolved, host) : resolved.modulePath;
+      // A package changes only when it is installed again
+      const library = resolved.type !== 'symbol' && resolved.importPath !== undefined;
+      const module = resolved.type === 'symbol' ? getSymbolModule(resolved, host) : resolved.importPath ?? resolved.modulePath;
       if (module) {
-        watched.add(module);
+        if (!library) {
+          watched.add(module);
+        }
+
         if (!lazy) {
           imported.add(module);
         }
@@ -530,6 +543,27 @@ async function extractReExportedMetadata(modulePath: string, exportedName: strin
   }
 
   return getMetadata(className, declaringPath) ?? await extractAndRegisterMetadata(className, declaringPath, compilerOptions);
+}
+
+/**
+ * Registers the metadata of a component or of a directive of a compiled library the first time a template imports it,
+ * claiming its selector, so that the generator finds it by its selector like the ones of the project.
+ *
+ * @param metadata - The metadata, read from the manifest of its package.
+ * @returns The metadata.
+ * @throws If its selector is already used by another component or directive.
+ */
+async function registerLibraryMetadata(metadata: LibraryComponentMetadata | LibraryDirectiveMetadata): Promise<ComponentOrDirectiveMetadata> {
+  if (getMetadata(metadata.className, metadata.modulePath) !== metadata) {
+    const selectorConflict = await claimSelectors(metadata);
+    if (selectorConflict) {
+      throw selectorConflict;
+    }
+
+    registerMetadata(metadata.className, metadata);
+  }
+
+  return metadata;
 }
 
 /**
@@ -580,6 +614,11 @@ export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Pr
   }
 
   const selectorKey = getSelectorKey(metadata);
+  const library = getLibrarySelectorOwner(selectorKey);
+  if (library !== undefined && !('library' in metadata && metadata.library.name === library)) {
+    return describeLibrarySelectorConflict(metadata, library);
+  }
+
   const owner = getSelectorOwner(selectorKey);
   const ownedByAnotherClass = owner && (owner.ownerFile !== ownerFile || owner.className !== className);
   if (ownedByAnotherClass && await isSelectorDeclaredBy(owner, selectorKey)) {
@@ -592,7 +631,21 @@ export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Pr
 }
 
 /**
- * Checks, reading its file from disk, whether a component or a directive still declares a selector.
+ * Describes a selector of a component or of a directive that a compiled library defines already.
+ *
+ * @param metadata - The metadata of the component or of the directive claiming the selector.
+ * @param library - The name of the package of the library.
+ * @returns The error message.
+ */
+function describeLibrarySelectorConflict({ className, selector, type, modulePath }: ComponentOrDirectiveMetadata, library: string): string {
+  return type === 'directive'
+    ? `Selector "${selector}" of directive "${className}" - ${modulePath} is already used by a directive of ${library}. Directive selectors must be unique.`
+    : `Selector "${selector}" of component "${className}" - ${modulePath} is already used by a component of ${library}. Custom element names must be unique.`;
+}
+
+/**
+ * Checks, reading its file from disk, whether a component or a directive still declares a selector. One of a compiled
+ * library always does: its package changes only when it is installed again.
  *
  * @param owner - The registered owner of the selector.
  * @param selectorKey - The registry key of the selector (see `getSelectorKey`).
@@ -600,6 +653,10 @@ export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Pr
  *   selector anymore; `true` otherwise, also when the metadata can't be extracted, to keep the ownership.
  */
 async function isSelectorDeclaredBy({ ownerFile, className }: SelectorOwner, selectorKey: string): Promise<boolean> {
+  if (DECLARATION_FILE.test(ownerFile)) {
+    return true;
+  }
+
   let source: string;
   try {
     source = await readFile(ownerFile, 'utf-8');

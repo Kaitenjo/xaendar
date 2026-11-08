@@ -1,6 +1,8 @@
 import type { ComponentOrDirectiveMetadata, ImportedSymbol } from '@xaendar/compiler';
 import { posix } from 'node:path';
+import type { CompilerOptions } from 'typescript';
 import type { Alias } from 'vite';
+import type { BuildLibraryOptions } from '../../types/build-library-options.type';
 import type { WorkspaceLibrary } from '../../types/workspace-library.type';
 import type { XaendarLibraryOptions } from '../../types/xaendar-library-options.type';
 import { resolvePosixPath, toPosixPath } from '../path/path.utils';
@@ -81,4 +83,33 @@ export function markClientOnly<Imported extends ComponentOrDirectiveMetadata | I
   }
 
   return imported;
+}
+
+/**
+ * Leads the names of the libraries of the workspace a library depends on to the folders of their builds, in the `paths`
+ * of its options of TypeScript, in place of their sources: the library reads them as an application installing them
+ * does, from their declarations and their manifests.
+ *
+ * @example
+ * // @acme/ui → /ws/dist/ui (its package.json leads to its declarations), @acme/ui/card/card.xd.component → /ws/dist/ui/card/card.xd.component
+ * withLibraryDependencies(options, { '@acme/ui': '/ws/dist/ui' });
+ *
+ * @param options - The options of TypeScript of the library.
+ * @param dependencies - The libraries it depends on, by the name of their package, mapped to the folder of their build.
+ * @returns The options, with the paths of the libraries; the same options when it depends on none.
+ */
+export function withLibraryDependencies(options: CompilerOptions, dependencies: BuildLibraryOptions['dependencies']): CompilerOptions {
+  if (!dependencies) {
+    return options;
+  }
+
+  const paths: Record<string, string[]> = Object.assign({}, options.paths);
+  const names = Object.keys(dependencies);
+  for (let i = 0; i < names.length; i++) {
+    const dir = toPosixPath(dependencies[names[i]]);
+    paths[names[i]] = [dir];
+    paths[`${names[i]}/*`] = [`${dir}/*`];
+  }
+
+  return Object.assign({}, options, { paths });
 }

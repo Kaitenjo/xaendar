@@ -15,8 +15,9 @@ const DECLARATION_FILE = /\.d\.[cm]?ts$/;
  * paths of its modules: the paths their imports and `import()` types lead to a module of the library through are
  * written relative to the declaration, with the extension of the JavaScript of the build (`./card/card.xd.component.js`),
  * so that neither the aliases of the `paths` of `tsconfig.json`, which an application does not have, nor a path without
- * extension, which `nodenext` does not resolve, reach the application. The declaration files of the library they import,
- * which TypeScript does not emit, are written beside them, their paths rewritten the same way.
+ * extension, which `nodenext` does not resolve, reach the application. The declaration files of the library, written by
+ * hand, which TypeScript does not emit, are written beside them, their paths rewritten the same way: the declarations
+ * and the types of the manifest may read them.
  *
  * @param program - The program of the library.
  * @param base - The folder of the entry of the library.
@@ -30,6 +31,14 @@ export function emitLibraryDeclarations(program: Program, base: string): void {
   }
 
   const rewrite: DeclarationsRewrite = { program, base, declarationFiles: new Set() };
+  const sourceFiles = program.getSourceFiles();
+  for (let i = 0; i < sourceFiles.length; i++) {
+    const fileName = toPosixPath(sourceFiles[i].fileName);
+    if (sourceFiles[i].isDeclarationFile && fileName.startsWith(`${base}/`)) {
+      rewrite.declarationFiles.add(fileName);
+    }
+  }
+
   const transformer = createSpecifierTransformer(rewrite);
   const { diagnostics: emitted } = program.emit(undefined, undefined, undefined, true, { afterDeclarations: [transformer] });
   if (emitted.length) {
@@ -50,9 +59,8 @@ function createSpecifierTransformer(rewrite: DeclarationsRewrite): TransformerFa
 }
 
 /**
- * Writes the declaration files of the library the declarations import into the folder of the build, at their path
- * relative to the folder of the entry, rewritten as the emitted ones: the ones they import in turn join the set, and are
- * written by the same loop.
+ * Writes the declaration files of the library into the folder of the build, at their path relative to the folder of the
+ * entry, rewritten as the emitted ones: the ones they import in turn join the set, and are written by the same loop.
  *
  * @param rewrite - What the rewriting reads and collected.
  * @param transformer - The transformer rewriting the paths.

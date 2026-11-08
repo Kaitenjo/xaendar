@@ -3,8 +3,10 @@ import { loadTsConfig } from '@xaendar/language-core';
 import { posix } from 'node:path';
 import { createProgram, createSourceFile, isClassDeclaration, type Program, ScriptTarget, SymbolFlags, type TypeChecker } from 'typescript';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
+import type { LibraryBuild } from '../../types/library-build.type';
 import type { WorkspaceLibrary } from '../../types/workspace-library.type';
 import { toPosixPath } from '../../utils/path/path.utils';
+import { withLibraryDependencies } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * What a file declaring a component or a directive contains: the decorator, whose presence tells it from the files that
@@ -15,15 +17,16 @@ const DECLARATION_DECORATOR = /@(?:WebComponent|Directive)\s*\(/;
 /**
  * Creates the TypeScript program of a library: the files of the `tsconfig.json` of its folder, with its options,
  * emitting only the declarations of its sources into the folder of its build, where they keep their paths relative to
- * the folder of the entry, as the modules of the build do.
+ * the folder of the entry, as the modules of the build do. The libraries of the workspace it depends on lead to their
+ * builds (see `withLibraryDependencies`).
  *
  * @param library - The library.
  * @param outDir - The folder of the build.
  * @returns The program.
  */
-export function createLibraryProgram(library: WorkspaceLibrary, outDir: string): Program {
+export function createLibraryProgram(library: LibraryBuild, outDir: string): Program {
   const { options, fileNames } = loadTsConfig(library.root);
-  return createProgram(fileNames, Object.assign({}, options, {
+  return createProgram(fileNames, Object.assign({}, withLibraryDependencies(options, library.dependencies), {
     noEmit: false,
     declaration: true,
     emitDeclarationOnly: true,

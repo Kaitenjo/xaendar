@@ -18,4 +18,10 @@ export type BuildLibraryOptions = XaendarLibraryOptions & {
    * an older one, which the package requires as a peer dependency.
    */
   readonly xaendarVersion: string;
+  /**
+   * The libraries of the workspace the library depends on, by the name of their package, mapped to the folder of their
+   * build: the library reads them from their declarations and their manifests, as an application installing them does,
+   * rather than from their sources. Their builds are written first.
+   */
+  readonly dependencies?: Readonly<Record<string, string>>;
 };

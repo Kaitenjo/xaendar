@@ -1,4 +1,5 @@
 import type { CompileOptions } from '@xaendar/compiler';
+import type { BuildLibraryOptions } from './build-library-options.type';
 import type { XaendarLibraryOptions } from './xaendar-library-options.type';
 
 /**
@@ -42,7 +43,8 @@ export type XaendarPluginOptions = {
   /**
    * The library the build compiles, set by `buildLibrary`: its files are compiled with its options and type-checked
    * with the `tsconfig.json` of its folder, and, when it renders on the server, the server environment compiles them for
-   * the server, without an entry rendering pages.
+   * the server, without an entry rendering pages. The libraries of the workspace it depends on are read from their
+   * builds.
    */
-  readonly library?: XaendarLibraryOptions;
+  readonly library?: XaendarLibraryOptions & Pick<BuildLibraryOptions, 'dependencies'>;
 };

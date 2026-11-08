@@ -2402,7 +2402,7 @@
           },
           "callout2": {
             "heading": "Componenti di librerie compilate",
-            "body": "Un pacchetto compilato in JavaScript pubblica file di dichiarazioni (<code>.d.ts</code>), che non conservano i decorator: le sue funzioni, costanti, enum, classi e tipi si importano in un template, i suoi componenti e le sue direttive non ancora. I componenti di un pacchetto che pubblica i sorgenti TypeScript, di un pacchetto dello stesso monorepo, o raggiunti tramite un alias, si importano come quelli locali."
+            "body": "Un pacchetto compilato in JavaScript pubblica file di dichiarazioni (<code>.d.ts</code>), che non conservano i decorator. Una libreria compilata da <code>xd build</code> descrive i suoi componenti e le sue direttive nel suo <code>xaendar-manifest.json</code>: un template li importa dal pacchetto, o dal percorso del loro modulo, come quelli locali, con il type check sulle dichiarazioni del pacchetto, e carica solo i moduli che renderizza. I componenti e le direttive di qualsiasi altro pacchetto compilato non si importano; le sue funzioni, costanti, enum, classi e tipi sì. I componenti di un pacchetto che pubblica i sorgenti TypeScript, di un pacchetto dello stesso monorepo, o raggiunti tramite un alias, si importano come quelli locali."
           },
           "callout4": {
             "heading": "Reattività dei pacchetti compilati",

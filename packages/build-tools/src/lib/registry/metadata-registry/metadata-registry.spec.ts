@@ -1,6 +1,6 @@
 import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearMetadataForFile, clearMetadataRegistry, getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors, releaseSelector } from './metadata-registry';
+import { clearMetadataForFile, clearMetadataRegistry, getLibrarySelectorOwner, getMetadata, getSelectorKey, getSelectorOwner, registerLibrarySelectors, registerMetadata, registerSelectors, releaseSelector } from './metadata-registry';
 
 const FOO_PATH = '/src/foo/foo.xd.component.ts';
 const BAR_PATH = '/src/bar/bar.xd.component.ts';
@@ -229,5 +229,26 @@ describe('idle sweep', () => {
     clearMetadataForFile(FOO_PATH);
 
     expect(getMetadata('AccessedComponent')).toBeUndefined();
+  });
+});
+
+describe('registerLibrarySelectors() / getLibrarySelectorOwner()', () => {
+  it('registers the selectors of a compiled library, until cleared', () => {
+    expect(registerLibrarySelectors('@acme/ui', ['ui-card', '@@uiTip'])).toBeUndefined();
+    expect(registerLibrarySelectors('@acme/ui', ['ui-card'])).toBeUndefined();
+
+    expect(getLibrarySelectorOwner('ui-card')).toBe('@acme/ui');
+    expect(getLibrarySelectorOwner('@@uiTip')).toBe('@acme/ui');
+    expect(getLibrarySelectorOwner('ui-tile')).toBeUndefined();
+
+    clearMetadataRegistry();
+    expect(getLibrarySelectorOwner('ui-card')).toBeUndefined();
+  });
+
+  it('rejects a selector another library defines', () => {
+    registerLibrarySelectors('@acme/ui', ['ui-card']);
+
+    expect(registerLibrarySelectors('@other/kit', ['kit-card', 'ui-card'])).toBe('Selector "ui-card" is defined by both @acme/ui and @other/kit: an application can define it only once.');
+    expect(getLibrarySelectorOwner('ui-card')).toBe('@acme/ui');
   });
 });

@@ -1,4 +1,4 @@
-import { type ContextCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, resolveExportedClass } from '@xaendar/compiler';
+import { type ComponentMetadata, type ContextCache, type ComponentOrDirectiveMetadata, type DirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, readLibraryMetadata, resolveExportedClass } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
@@ -41,7 +41,8 @@ export class TemplateMetadataCache implements ContextCache {
   constructor(private readonly _compilerOptions?: CompilerOptions) { }
 
   /**
-   * Returns the metadata of a component or directive imported by a template, extracting them from the file declaring it.
+   * Returns the metadata of a component or directive imported by a template, extracting them from the file declaring it,
+   * or reading them from the manifest of its package, for one of a compiled library.
    *
    * @param name - The class name of the component or directive, or a selector stored through `set`.
    * @param path - The directory of the template and the path of the `@import`, or the path of the file declaring the class.
@@ -55,7 +56,7 @@ export class TemplateMetadataCache implements ContextCache {
     }
 
     const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
-    const metadata = fileName && ((await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
+    const metadata = fileName && (readLibraryMetadata(fileName, name) ?? (await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
     }
@@ -68,17 +69,23 @@ export class TemplateMetadataCache implements ContextCache {
    * names, read from the file declaring it when the module re-exports it (a barrel), or any other export of the module,
    * reactive when reading it can read a signal (a namespace always is), as
    * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
-   * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
+   * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with, and a
+   * component or a directive of a compiled library is read from the manifest of its package.
    *
    * @param imported - The name of the export (`'default'` for the default one, `'*'` for a namespace import).
    * @param local - The name the template imports it as, which names a component or a directive exported as default.
    * @param baseDir - The directory of the template.
    * @param path - The path of the module, as written in the `@import`.
    * @returns The metadata of the component or of the directive, or the imported symbol.
-   * @throws If the module cannot be resolved or read.
+   * @throws If the module cannot be resolved or read, or the manifest of its library cannot be read.
    */
   public async getImport(imported: string, local: string, baseDir: string, path: string): Promise<ComponentOrDirectiveMetadata | ImportedSymbol> {
     const resolved = resolveModule(baseDir, path, this._compilerOptions);
+    const library = resolved && imported !== '*' ? readLibraryMetadata(resolved.fileName, imported) : undefined;
+    if (library) {
+      return library;
+    }
+
     const metadatas = resolved && await this._getFileMetadatas(resolved.fileName);
     if (!resolved || !metadatas) {
       throw new Error(`Cannot find module "${path}"`);
@@ -104,7 +111,7 @@ export class TemplateMetadataCache implements ContextCache {
    * @param modulePath - The path of the module, as written in the `@import`.
    * @returns The metadata, keyed by class name; `undefined` if the module cannot be resolved or read.
    */
-  public async getModuleMetadatas(baseDir: string, modulePath: string): Promise<ReadonlyMap<string, ComponentOrDirectiveMetadata> | undefined> {
+  public async getModuleMetadatas(baseDir: string, modulePath: string): Promise<ReadonlyMap<string, ComponentMetadata | DirectiveMetadata> | undefined> {
     const fileName = resolveModulePath(baseDir, modulePath, this._compilerOptions);
     if (fileName) {
       return this._getFileMetadatas(fileName);
@@ -119,8 +126,8 @@ export class TemplateMetadataCache implements ContextCache {
    * @param fileNames - The paths of the files.
    * @returns The metadata of each file declaring some, keyed by class name, `undefined` if none does.
    */
-  public async getDeclarations(fileNames: readonly string[]): Promise<Map<string, ReadonlyMap<string, ComponentOrDirectiveMetadata>> | undefined> {
-    let declarations: Map<string, ReadonlyMap<string, ComponentOrDirectiveMetadata>> | undefined;
+  public async getDeclarations(fileNames: readonly string[]): Promise<Map<string, ReadonlyMap<string, ComponentMetadata | DirectiveMetadata>> | undefined> {
+    let declarations: Map<string, ReadonlyMap<string, ComponentMetadata | DirectiveMetadata>> | undefined;
     for (let i = 0; i < fileNames.length; i++) {
       const fileName = fileNames[i];
       const key = normalizeFileName(fileName);
@@ -203,7 +210,7 @@ export class TemplateMetadataCache implements ContextCache {
    * @param fileName - The path of the file.
    * @returns The metadata, keyed by class name, or `undefined` if the file cannot be read.
    */
-  private async _getFileMetadatas(fileName: string): Promise<ReadonlyMap<string, ComponentOrDirectiveMetadata> | undefined> {
+  private async _getFileMetadatas(fileName: string): Promise<ReadonlyMap<string, ComponentMetadata | DirectiveMetadata> | undefined> {
     const text = readDocument(fileName);
     if (text === undefined) {
       return undefined;
@@ -217,7 +224,7 @@ export class TemplateMetadataCache implements ContextCache {
 
     const sourceFile = createSourceFile(fileName, text, ScriptTarget.Latest, true);
     const components = await extractComponentsMetadataFromSourceFile(sourceFile, this._compilerOptions);
-    const metadatas = new Map<string, ComponentOrDirectiveMetadata>(components);
+    const metadatas = new Map<string, ComponentMetadata | DirectiveMetadata>(components);
     const directives = await extractDirectivesMetadataFromSourceFile(sourceFile, this._compilerOptions);
     if (directives?.size) {
       for (const [className, directive] of directives) {

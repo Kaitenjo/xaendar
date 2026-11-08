@@ -1,4 +1,4 @@
-import type { ComponentMetadata, ComponentOrDirectiveMetadata, DirectiveMetadata, TypeCheckResult } from '@xaendar/compiler';
+import type { ComponentMetadata, ComponentOrDirectiveMetadata, DirectiveMetadata, LibraryComponentMetadata, TypeCheckResult } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -20,12 +20,14 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     extractComponentsMetadataFromSourceFile: vi.fn(),
     extractDirectivesMetadataFromSourceFile: vi.fn(),
     isReactiveExport: vi.fn(),
+    readLibraryMetadata: vi.fn(),
     resolveExportedClass: vi.fn(),
     resolveTemplateSpan: vi.fn()
   };
 });
 
 vi.mock('../../registry/metadata-registry/metadata-registry', async (importOriginal) => ({
+  getLibrarySelectorOwner: vi.fn(),
   getMetadata: vi.fn(),
   // Pure function: the real implementation keys the selectors
   getSelectorKey: (await importOriginal<typeof import('../../registry/metadata-registry/metadata-registry')>()).getSelectorKey,
@@ -34,11 +36,11 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
   registerSelectors: vi.fn()
 }));
 
-import { ASTNodeType, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, parseTemplate, resolveExportedClass, resolveTemplateSpan } from '@xaendar/compiler';
+import { ASTNodeType, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, parseTemplate, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
-import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import { getLibrarySelectorOwner, getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
@@ -1057,5 +1059,69 @@ describe('claimSelectors()', () => {
       expect(await claimSelectors(metadata)).toBeUndefined();
       expect(registerSelectors).toHaveBeenCalledWith(metadata, '/src/foo.ts');
     });
+  });
+});
+
+describe('compiled libraries', () => {
+  const declarationFile = resolvePosixPath('/src', './card.d.ts');
+  const card = Object.assign(createMetadata('ui-card', 'Card', '/app/node_modules/@acme/ui/card.d.ts'), {
+    type: 'component',
+    importPath: '@acme/ui/card',
+    library: { name: '@acme/ui', root: '/app/node_modules/@acme/ui', ssr: false }
+  }) as LibraryComponentMetadata;
+
+  beforeEach(() => {
+    vi.mocked(getMetadata).mockReturnValue(undefined);
+    vi.mocked(getLibrarySelectorOwner).mockReset();
+    vi.mocked(readLibraryMetadata).mockReset();
+    vi.mocked(existsSync).mockImplementation(path => path === declarationFile);
+  });
+
+  it('reads a component of a compiled library from its manifest, registering it once, by its selector', async () => {
+    vi.mocked(readLibraryMetadata).mockReturnValue(card);
+
+    expect(await getImportOrExtract('Card', 'Card', '/src', './card.d.ts')).toBe(card);
+    expect(readLibraryMetadata).toHaveBeenCalledWith(declarationFile, 'Card');
+    expect(registerSelectors).toHaveBeenCalledWith(card, card.modulePath);
+    expect(registerMetadata).toHaveBeenCalledWith('Card', card);
+
+    vi.clearAllMocks();
+    vi.mocked(getMetadata).mockReturnValue(card);
+    expect(await getImportOrExtract('Card', 'Card', '/src', './card.d.ts')).toBe(card);
+    expect(registerMetadata).not.toHaveBeenCalled();
+    expect(await getImportOrExtract('*', 'ui', '/src', './card.d.ts')).toEqual({ type: 'symbol', modulePath: declarationFile, reactive: true });
+    expect(readLibraryMetadata).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a component of a compiled library whose selector a component of the project declares', async () => {
+    vi.mocked(readLibraryMetadata).mockReturnValue(card);
+    vi.mocked(getSelectorOwner).mockReturnValue({ ownerFile: '/src/mine.ts', className: 'Mine' });
+    vi.mocked(readFile).mockResolvedValue('export class Mine {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Mine', createMetadata('ui-card', 'Mine', '/src/mine.ts') as unknown as ComponentMetadata]]));
+
+    await expect(getImportOrExtract('Card', 'Card', '/src', './card.d.ts')).rejects.toBe('Selector "ui-card" of component "Card" - /app/node_modules/@acme/ui/card.d.ts is already used by component "Mine" - /src/mine.ts. Custom element names must be unique.');
+    expect(registerMetadata).not.toHaveBeenCalled();
+  });
+
+  it('rejects a selector a compiled library defines, unless the component or the directive is of that library', async () => {
+    vi.mocked(getLibrarySelectorOwner).mockReturnValue('@acme/ui');
+
+    expect(await claimSelectors(createMetadata('ui-card'))).toBe('Selector "ui-card" of component "Foo" - /src/foo.ts is already used by a component of @acme/ui. Custom element names must be unique.');
+    expect(await claimSelectors(createDirectiveMetadata('uiTip'))).toBe('Selector "uiTip" of directive "FooDirective" - /src/foo.ts is already used by a directive of @acme/ui. Directive selectors must be unique.');
+    expect(await claimSelectors(card)).toBeUndefined();
+    expect(registerSelectors).toHaveBeenCalledExactlyOnceWith(card, card.modulePath);
+  });
+
+  it('keeps a selector a component of a compiled library owns, without reading its declarations', async () => {
+    vi.mocked(getSelectorOwner).mockReturnValue({ ownerFile: card.modulePath, className: 'Card' });
+
+    expect(await claimSelectors(createMetadata('ui-card'))).toBe('Selector "ui-card" of component "Foo" - /src/foo.ts is already used by component "Card" - /app/node_modules/@acme/ui/card.d.ts. Custom element names must be unique.');
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('imports a component of a compiled library by the path of its package, without watching it', async () => {
+    const nodes = parseTemplate('@import { Card } from \'@acme/ui\'').filter((node): node is ImportNode => node.type === ASTNodeType.Import);
+
+    expect(await resolveTemplateModules(nodes, '/src', { getImport: async () => card }, { fileExists: () => true })).toEqual({ imported: ['@acme/ui/card'], watched: [] });
   });
 });

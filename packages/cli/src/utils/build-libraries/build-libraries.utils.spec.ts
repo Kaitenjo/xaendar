@@ -81,18 +81,48 @@ describe('buildLibraries()', () => {
     expect(buildLibrary).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: '@acme/ui', outDir: resolve(dir, 'dist/ui') }));
   });
 
-  it('exits before building when a library depends on another library of the workspace', async () => {
+  it('builds a library after the libraries of the workspace it depends on, which it reads from their builds', async () => {
+    const project = writeWorkspace({
+      dashboard: [{ root: 'libraries/dashboard' }, { dependencies: { charts: '^1.0.0', '@acme/ui': '^1.0.0' } }],
+      charts: [{ root: 'libraries/charts', outDir: 'out/charts' }, { peerDependencies: { '@acme/ui': '^1.0.0' } }],
+      '@acme/ui': [{ root: 'libraries/ui' }, {}],
+      tools: [{ root: 'libraries/tools' }, {}]
+    });
+
+    await buildLibraries(project);
+
+    expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => [options.name, options.dependencies])).toEqual([
+      ['@acme/ui', undefined],
+      ['charts', { '@acme/ui': resolve(dir, 'dist/ui') }],
+      ['dashboard', { '@acme/ui': resolve(dir, 'dist/ui'), charts: resolve(dir, 'out/charts') }],
+      ['tools', undefined]
+    ]);
+  });
+
+  it('builds the libraries of the workspace the library named depends on first', async () => {
+    const project = writeWorkspace({
+      '@acme/ui': [{ root: 'libraries/ui' }, {}],
+      charts: [{ root: 'libraries/charts' }, { peerDependencies: { '@acme/ui': '^1.0.0' } }],
+      tools: [{ root: 'libraries/tools' }, {}]
+    });
+
+    await buildLibraries(project, 'charts');
+
+    expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => options.name)).toEqual(['@acme/ui', 'charts']);
+  });
+
+  it('exits before building when a library depends on itself through the libraries it depends on', async () => {
     vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
     });
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const project = writeWorkspace({
-      '@acme/ui': [{ root: 'libraries/ui' }, {}],
+      '@acme/ui': [{ root: 'libraries/ui' }, { dependencies: { charts: '^1.0.0' } }],
       charts: [{ root: 'libraries/charts' }, { peerDependencies: { '@acme/ui': '^1.0.0' } }]
     });
 
     await expect(buildLibraries(project)).rejects.toThrow('process.exit');
-    expect(error).toHaveBeenCalledWith('✖  charts depends on @acme/ui, another library of the workspace: building a library against another one is not supported yet.');
+    expect(error).toHaveBeenCalledWith('✖  @acme/ui depends on itself, through the libraries of the workspace it depends on: a library is built after the ones it depends on.');
     expect(buildLibrary).not.toHaveBeenCalled();
   });
 });

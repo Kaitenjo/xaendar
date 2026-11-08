@@ -2402,7 +2402,7 @@
           },
           "callout2": {
             "heading": "Components of compiled libraries",
-            "body": "A package compiled to JavaScript publishes declaration files (<code>.d.ts</code>), which keep no decorator: its functions, constants, enums, classes and types can be imported in a template, its components and directives not yet. The components of a package that publishes its TypeScript sources, of a package of the same monorepo, or reached through an alias, are imported like the local ones."
+            "body": "A package compiled to JavaScript publishes declaration files (<code>.d.ts</code>), which keep no decorator. A library built by <code>xd build</code> describes its components and directives in its <code>xaendar-manifest.json</code>: a template imports them from the package, or from the path of their module, like the local ones, type-checked against the declarations of the package, and loads only the modules it renders. The components and directives of any other compiled package cannot be imported; its functions, constants, enums, classes and types can. The components of a package that publishes its TypeScript sources, of a package of the same monorepo, or reached through an alias, are imported like the local ones."
           },
           "callout4": {
             "heading": "Reactivity of compiled packages",

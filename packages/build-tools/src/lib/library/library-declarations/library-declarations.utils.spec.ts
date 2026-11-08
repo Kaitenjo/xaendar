@@ -63,12 +63,13 @@ describe('emitLibraryDeclarations()', () => {
     expect(card).toContain('element: HTMLElement | undefined;');
   });
 
-  it('writes the declaration files of the library the declarations import, and leaves the paths of the packages and the ones written so already', () => {
+  it('writes the declaration files of the library, and leaves the paths of the packages and the ones written so already', () => {
     const dist = emitLibrary('declaration-files', {
       'src/public-api.ts': 'export * from \'./card/card.js\';\nexport type { Legacy } from \'@ui/types/legacy\';\nexport type { Fake } from \'fake-pkg\';\nexport type { Missing } from \'missing-pkg\';\n',
       'src/card/card.ts': 'import type { Fake } from \'fake-pkg\';\nexport class Card {\n  public fake: Fake = \'\';\n  public other(): import(\'fake-pkg\').Fake { return this.fake; }\n}\n',
       'src/types/legacy.d.ts': 'import type { Card } from \'@ui/card/card\';\nimport type { Tile } from \'@ui/types/tile\';\nexport type Legacy = Card | Tile;\n',
       'src/types/tile.d.ts': 'export type Tile = number;\n',
+      'src/types/theme.d.ts': 'export type Theme = \'dark\' | \'light\';\n',
       'node_modules/fake-pkg/package.json': JSON.stringify({ name: 'fake-pkg', types: 'index.d.ts' }),
       'node_modules/fake-pkg/index.d.ts': 'export type Fake = string;\n'
     });
@@ -82,6 +83,8 @@ describe('emitLibraryDeclarations()', () => {
     ].join('\n'));
     expect(readFileSync(`${dist}/types/legacy.d.ts`, 'utf-8')).toBe('import type { Card } from "../card/card.js";\nimport type { Tile } from "./tile.js";\nexport type Legacy = Card | Tile;\n');
     expect(readFileSync(`${dist}/types/tile.d.ts`, 'utf-8')).toBe('export type Tile = number;\n');
+    // The types of the manifest may read a declaration file no declaration imports
+    expect(readFileSync(`${dist}/types/theme.d.ts`, 'utf-8')).toBe('export type Theme = \'dark\' | \'light\';\n');
     const card = readFileSync(`${dist}/card/card.d.ts`, 'utf-8');
     expect(card).toContain('import type { Fake } from \'fake-pkg\';');
     expect(card).toContain('other(): import(\'fake-pkg\').Fake;');
@@ -93,6 +96,7 @@ describe('emitLibraryDeclarations()', () => {
     const program = {
       getOptionsDiagnostics: () => [],
       getDeclarationDiagnostics: () => [],
+      getSourceFiles: () => [],
       getCompilerOptions: () => ({ outDir: '/out' }),
       emit: (_file: unknown, _write: unknown, _token: unknown, _declarations: unknown, transformers: CustomTransformers) => {
         transformed = (transformers.afterDeclarations![0] as TransformerFactory<Bundle>)({} as TransformationContext)(bundle);
@@ -107,7 +111,7 @@ describe('emitLibraryDeclarations()', () => {
 
   it('throws on the options and on the declarations TypeScript cannot emit', () => {
     const options = { getOptionsDiagnostics: () => [DIAGNOSTIC], getDeclarationDiagnostics: () => [] } as unknown as Program;
-    const emitted = { getOptionsDiagnostics: () => [], getDeclarationDiagnostics: () => [], emit: () => ({ diagnostics: [DIAGNOSTIC] }) } as unknown as Program;
+    const emitted = { getOptionsDiagnostics: () => [], getDeclarationDiagnostics: () => [], getSourceFiles: () => [], emit: () => ({ diagnostics: [DIAGNOSTIC] }) } as unknown as Program;
 
     expect(() => emitLibraryDeclarations(options, '/lib/src')).toThrow('File is not under rootDir.');
     expect(() => emitLibraryDeclarations(emitted, '/lib/src')).toThrow('File is not under rootDir.');

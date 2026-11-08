@@ -1,3 +1,4 @@
+import type { PackageLibrary } from '@xaendar/compiler';
 import type { CompilerOptions } from 'typescript';
 import type { Environment, Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
@@ -48,6 +49,10 @@ export type XaendarPluginState = {
    * The libraries of the workspace, `undefined` when the project belongs to none.
    */
   libraries?: readonly WorkspaceLibrary[];
+  /**
+   * The compiled libraries the project depends on, found when Vite is configured, `undefined` when it depends on none.
+   */
+  packageLibraries?: readonly PackageLibrary[];
   /**
    * What the build found out about the components of a project rendering on the server, `undefined` anywhere else.
    */

@@ -23,6 +23,12 @@ export type ComponentMetadata = {
    */
   modulePath: string;
   /**
+   * The path the generated code imports the module with, for a component of a compiled library: the bundler resolves it
+   * like the imports of the application, to the code of the package rather than to its declarations (`modulePath`).
+   * Absent for a file of the project, imported by `modulePath`.
+   */
+  importPath?: string;
+  /**
    * HTML element selector (tag name), unique across every component: a custom element name can be defined only once.
    */
   selector: string;

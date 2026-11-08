@@ -2,7 +2,7 @@ import type { InlineConfig, Plugin, PluginOption } from 'vite';
 import { xaendarPlugin } from '../../plugin/plugin/plugin';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
 import type { LibraryPackageJson } from '../../types/library-package-json.type';
-import type { WorkspaceLibrary } from '../../types/workspace-library.type';
+import type { LibraryBuild } from '../../types/library-build.type';
 
 /**
  * Creates the matcher of the imports a library leaves to the application installing it: the Xaendar packages, which the
@@ -33,7 +33,7 @@ export function createExternalMatcher(packageJson: LibraryPackageJson): (id: str
  * @param server - Whether the configuration builds the library for the server.
  * @returns The configuration.
  */
-export function createLibraryBuildConfig(library: WorkspaceLibrary, plugins: readonly PluginOption[] | undefined, analysis: LibraryAnalysis, outDir: string, external: (id: string) => boolean, server: boolean): InlineConfig {
+export function createLibraryBuildConfig(library: LibraryBuild, plugins: readonly PluginOption[] | undefined, analysis: LibraryAnalysis, outDir: string, external: (id: string) => boolean, server: boolean): InlineConfig {
   const allPlugins = new Array<PluginOption>();
   if (plugins?.length) {
     for (let i = 0; i < plugins.length; i++) {

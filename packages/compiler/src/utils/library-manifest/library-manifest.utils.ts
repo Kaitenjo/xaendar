@@ -1,4 +1,9 @@
+import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
+import type { ComponentEventMetadata } from '../../types/component-event-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
+import type { LibraryComponentMetadata } from '../../types/library-component-metadata.type';
+import type { LibraryDirectiveMetadata } from '../../types/library-directive-metadata.type';
+import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import type { LibraryManifestBinding } from '../../types/library-manifest/library-manifest-binding.type';
 import type { LibraryManifestDeclaration } from '../../types/library-manifest/library-manifest-declaration.type';
 import type { LibraryManifestInput } from '../../types/library-manifest/library-manifest-input.type';
@@ -119,4 +124,91 @@ function toEvents({ events }: ComponentOrDirectiveMetadata, mapModule: (module: 
   }
 
   return bindings;
+}
+
+/**
+ * Reads the metadata of a component or of a directive of a compiled library from the manifest of its package, the
+ * inverse of {@link toLibraryDeclaration}: the modules of the package its types reference become absolute paths, as the
+ * type-check of a template reads them, the module the generated code imports is the path of the `exports` of the package
+ * leading to it, and every component of a package without the code of the server renders only in the browser.
+ *
+ * @param declaration - The component or the directive, as the manifest describes it.
+ * @param manifest - The manifest of its package.
+ * @param root - The absolute path of the root of the package, with forward slashes.
+ * @returns The metadata.
+ */
+export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manifest: LibraryManifest, root: string): LibraryComponentMetadata | LibraryDirectiveMetadata {
+  const { type, className, selector, module, types, typeParameters, inputs, events, ssr } = declaration;
+  const metadata: LibraryComponentMetadata | LibraryDirectiveMetadata = {
+    type,
+    className,
+    selector,
+    modulePath: toPackagePath(types, root),
+    importPath: `${manifest.name}${module.slice(1)}`,
+    library: { name: manifest.name, root, ssr: manifest.ssr },
+    properties: toPropertiesMetadata(inputs, root),
+    events: toEventsMetadata(events, root)
+  };
+  if (typeParameters?.length) {
+    metadata.typeParameters = typeParameters;
+  }
+
+  if (type === 'component' && (ssr || !manifest.ssr)) {
+    metadata.clientOnly = {};
+    if (ssr?.hydrate !== undefined) {
+      metadata.clientOnly.hydrate = ssr.hydrate;
+    }
+  }
+
+  return metadata;
+}
+
+/**
+ * Reads the properties of a component or of a directive of a compiled library from its inputs in the manifest, keyed by
+ * the name a template binds them with.
+ *
+ * @param inputs - The inputs.
+ * @param root - The absolute path of the root of the package.
+ * @returns The properties.
+ */
+function toPropertiesMetadata(inputs: readonly LibraryManifestInput[], root: string): Map<string, ComponentPropertyMetadata> {
+  const properties = new Map<string, ComponentPropertyMetadata>();
+  for (let i = 0; i < inputs.length; i++) {
+    const { name, property, type, required, exposed } = inputs[i];
+    properties.set(name, new ComponentPropertyMetadata(property ?? name, mapTypeModules(type, module => toPackagePath(module, root)), {
+      required: required === true,
+      alias: property === undefined ? undefined : name,
+      exposed: exposed === true
+    }));
+  }
+
+  return properties;
+}
+
+/**
+ * Reads the events of a component or of a directive of a compiled library from the manifest.
+ *
+ * @param events - The events, as the manifest describes them.
+ * @param root - The absolute path of the root of the package.
+ * @returns The events, by name.
+ */
+function toEventsMetadata(events: readonly LibraryManifestBinding[], root: string): Map<string, ComponentEventMetadata> {
+  const metadata = new Map<string, ComponentEventMetadata>();
+  for (let i = 0; i < events.length; i++) {
+    metadata.set(events[i].name, { type: mapTypeModules(events[i].type, module => toPackagePath(module, root)) });
+  }
+
+  return metadata;
+}
+
+/**
+ * Writes a path of the manifest of a package as an absolute path: the manifest writes the files of the package relative
+ * to its root (`./card/card.xd.component`), and the other packages by their name, kept as they are.
+ *
+ * @param path - The path.
+ * @param root - The absolute path of the root of the package.
+ * @returns The path, absolute when it is a file of the package.
+ */
+function toPackagePath(path: string, root: string): string {
+  return path.startsWith('./') ? `${root}${path.slice(1)}` : path;
 }

@@ -15,7 +15,7 @@ import { createLoadHook } from '../load/load';
 import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
 import { createWatchChangeHook } from '../watch-change/watch-change';
-import { resolveWorkspaceLibraries } from '../../utils/workspace-libraries/workspace-libraries.utils';
+import { resolveWorkspaceLibraries, withLibraryDependencies } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)
@@ -96,7 +96,7 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
 
   const state: XaendarPluginState = {
     host,
-    compilerOptions: tsConfig.options,
+    compilerOptions: withLibraryDependencies(tsConfig.options, options.library?.dependencies),
     projectFileNames: tsConfig.fileNames,
     customElements: options.customElements ?? [],
     minifyStyles: false,

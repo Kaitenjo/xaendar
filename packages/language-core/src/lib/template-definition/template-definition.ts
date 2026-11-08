@@ -70,9 +70,15 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
  * Returns where the class of a component or directive is defined.
  *
  * @param metadata - The metadata of the component or directive.
- * @returns The span of the name of the class in its file.
+ * @returns The span of the name of the class in its file, `undefined` for one of a compiled library, read from its
+ *   manifest: TypeScript finds it in the declarations of the package.
  */
-function getClassDefinition({ typescriptNodes: { klass } }: ComponentOrDirectiveMetadata): TemplateDefinition {
+function getClassDefinition(metadata: ComponentOrDirectiveMetadata): TemplateDefinition | undefined {
+  if ('library' in metadata) {
+    return undefined;
+  }
+
+  const { klass } = metadata.typescriptNodes;
   const sourceFile = klass.getSourceFile();
   return { fileName: sourceFile.fileName, span: { start: klass.name.getStart(sourceFile), end: klass.name.getEnd() } };
 }

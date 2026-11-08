@@ -675,6 +675,31 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** xd build of a library with an input or an event whose type uses a name its module does not export (a type alias declared without export), or a file outside the library: the applications read the types from the declarations of the package.
 - **Fix:** Export the type from its module.
 
+### `Error: The manifest of @acme/ui 1.0.0 has the format 2, which this version of Xaendar does not read: update the Xaendar packages of the project.`
+
+- **Cause:** A library built by a later version of Xaendar, whose xaendar-manifest.json has a format this version does not know.
+- **Fix:** Update the Xaendar packages of the project, @xaendar/cli included.
+
+### `Error: @acme/ui 1.0.0 was compiled by Xaendar 1.5.0, and needs @xaendar/core 1.5.0 or a later 1.x version: the project has 1.2.0.`
+
+- **Cause:** A library compiled by a version of Xaendar later than the @xaendar/core of the project, or by another major version: its compiled code calls the internal helpers of that version.
+- **Fix:** Update @xaendar/core (and the other Xaendar packages) to that version or a later one of the same major version, or install a version of the library compiled for the major version of the project.
+
+### `Error: Cannot read the manifest of @acme/ui, <path>/xaendar-manifest.json: SyntaxError: …`
+
+- **Cause:** The xaendar-manifest.json of a library is missing or damaged.
+- **Fix:** Install the package again.
+
+### `Selector "ui-card" of component "CardComponent" - <path> is already used by a component of @acme/ui. Custom element names must be unique.`
+
+- **Cause:** A component of the project declares a selector that a library it depends on defines, also one the library uses without exporting it. A directive gets the same message, ending with Directive selectors must be unique.
+- **Fix:** Rename the selector, ideally with a prefix of the project.
+
+### `Error: Selector "ui-card" is defined by both @acme/ui and @other/kit: an application can define it only once.`
+
+- **Cause:** Two libraries the project depends on define the same selector: the second definition would throw at runtime.
+- **Fix:** Use only one of them, or ask the authors of one to rename it.
+
 ## Runtime
 
 ### `XCard does not seem to have a Render Function`
@@ -946,7 +971,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** xd build with the name of a library, outside of a workspace.
 - **Fix:** Run it inside the workspace, or run xd build alone to build the project.
 
-### `✖  charts depends on @acme/ui, another library of the workspace: building a library against another one is not supported yet.`
+### `✖  @acme/ui depends on itself, through the libraries of the workspace it depends on: a library is built after the ones it depends on.`
 
-- **Cause:** xd build of a library listing another library of the workspace in its dependencies or peerDependencies.
-- **Fix:** Not supported yet: build the other libraries by name (xd build ui), or move what the two share into one library.
+- **Cause:** xd build of libraries of a workspace depending on each other, through the dependencies or the peerDependencies of their package.json: none can be built first.
+- **Fix:** Move what they share into a library both depend on.

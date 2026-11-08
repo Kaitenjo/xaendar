@@ -1,4 +1,4 @@
-import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
+import type { ComponentMetadata, DirectiveMetadata } from '@xaendar/compiler';
 
 /**
  * A component or directive a template could import.
@@ -11,5 +11,5 @@ export type ImportCandidate = {
   /**
    * Its metadata.
    */
-  readonly metadata: ComponentOrDirectiveMetadata;
+  readonly metadata: ComponentMetadata | DirectiveMetadata;
 };

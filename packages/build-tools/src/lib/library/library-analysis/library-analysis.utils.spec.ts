@@ -53,6 +53,13 @@ describe('createLibraryProgram()', () => {
 
     expect(options).toMatchObject({ noEmit: false, declaration: true, emitDeclarationOnly: true, declarationMap: false, sourceMap: false, rootDir: `${library.root}/src`, outDir: '/out' });
   });
+
+  it('reads the libraries of the workspace it depends on from their builds', () => {
+    const library = writeLibrary({ 'src/public-api.ts': 'export const a = 1;' });
+    const options = createLibraryProgram(Object.assign({ dependencies: { '@acme/ui': '/ws/dist/ui' } }, library), '/out').getCompilerOptions();
+
+    expect(options.paths).toEqual({ '@acme/ui': ['/ws/dist/ui'], '@acme/ui/*': ['/ws/dist/ui/*'] });
+  });
 });
 
 describe('analyzeLibrary()', () => {

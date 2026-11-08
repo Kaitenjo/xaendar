@@ -1,7 +1,7 @@
 import type { ComponentOrDirectiveMetadata, ImportedSymbol } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { resolvePosixPath } from '../path/path.utils';
-import { findWorkspaceLibrary, getLibraryAliases, markClientOnly, resolveWorkspaceLibraries } from './workspace-libraries.utils';
+import { findWorkspaceLibrary, getLibraryAliases, markClientOnly, resolveWorkspaceLibraries, withLibraryDependencies } from './workspace-libraries.utils';
 
 /**
  * The folder of a library of the workspace, resolved.
@@ -80,5 +80,18 @@ describe('markClientOnly()', () => {
     expect(markClientOnly(symbol, LIBRARIES)).toEqual({ type: 'symbol', modulePath: symbol.modulePath, reactive: false });
     expect(markClientOnly(project, LIBRARIES)).not.toHaveProperty('clientOnly');
     expect(markClientOnly(project, undefined)).not.toHaveProperty('clientOnly');
+  });
+});
+
+describe('withLibraryDependencies()', () => {
+  it('leads the names of the libraries a library depends on to the folders of their builds, keeping the other paths', () => {
+    const options = { strict: true, paths: { '@acme/ui': ['./libraries/ui/src/public-api.ts'], '@/*': ['./src/*'] } };
+
+    expect(withLibraryDependencies(options, { '@acme/ui': '/ws/dist/ui' })).toEqual({
+      strict: true,
+      paths: { '@acme/ui': ['/ws/dist/ui'], '@acme/ui/*': ['/ws/dist/ui/*'], '@/*': ['./src/*'] }
+    });
+    expect(withLibraryDependencies({}, { charts: '/ws/dist/charts' }).paths).toEqual({ charts: ['/ws/dist/charts'], 'charts/*': ['/ws/dist/charts/*'] });
+    expect(withLibraryDependencies(options, undefined)).toBe(options);
   });
 });

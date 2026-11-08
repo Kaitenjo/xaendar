@@ -2,7 +2,7 @@ import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { createProgram, type Program } from 'typescript';
+import { createProgram, ModuleKind, ModuleResolutionKind, type Program } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
 import { toPosixPath } from '../../utils/path/path.utils';
@@ -18,11 +18,22 @@ let root: string;
  */
 let program: Program;
 
+/**
+ * The program of the fixture library reaching its modules, a file outside of it and a library of the workspace through
+ * aliases, and its card through its name.
+ */
+let aliased: Program;
+
 beforeAll(() => {
   root = toPosixPath(realpathSync.native(mkdtempSync(join(tmpdir(), 'xaendar-library-package-'))));
   const files: Record<string, string> = {
     'src/card.ts': 'export type Size = \'small\' | \'large\';\nexport class Card {}\n',
-    'src/tile.tsx': 'type Hidden = number;\nexport class Tile {}\n'
+    'src/tile.tsx': 'type Hidden = number;\nexport class Tile {}\n',
+    'src/types/theme.d.ts': 'export type Theme = \'dark\';\n',
+    'shared/kind.ts': 'export type Kind = \'a\';\n',
+    'deps/ui/public-api.d.ts': 'export type Badge = string;\n',
+    'node_modules/@acme/icons/package.json': JSON.stringify({ name: '@acme/icons', types: 'index.d.ts' }),
+    'node_modules/@acme/icons/index.d.ts': 'export type Icon = string;\n'
   };
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(`${root}/${path}`), { recursive: true });
@@ -30,6 +41,13 @@ beforeAll(() => {
   }
 
   program = createProgram([`${root}/src/card.ts`, `${root}/src/tile.tsx`], { jsx: 4 });
+  aliased = createProgram([`${root}/src/card.ts`, `${root}/src/tile.tsx`, `${root}/src/types/theme.d.ts`], {
+    jsx: 4,
+    module: ModuleKind.ESNext,
+    moduleResolution: ModuleResolutionKind.Bundler,
+    baseUrl: root,
+    paths: { '@ui/*': ['src/*'], '@acme/ui': ['src/card.ts'], '@shared/*': ['shared/*'], '@acme/deps': ['deps/ui/public-api.d.ts'] }
+  });
 });
 
 afterAll(() => {
@@ -112,6 +130,32 @@ describe('createLibraryManifest()', () => {
     const analysis = analysisOf([['card#Card', component('Card', `import('${root}/src/missing').Kind`)]]);
 
     expect(() => createLibraryManifest({}, analysis, program, LIBRARY, '1.2.0')).toThrow(`reads Kind from ${root}/src/missing`);
+  });
+
+  it('writes the modules of the library a type reaches through an alias, or through the name of the library, relative to the package, keeping the packages', () => {
+    const type = [
+      'import(\'@ui/card\').Size',
+      'import(\'@acme/ui\').Card',
+      'import(\'@ui/types/theme\').Theme',
+      'import(\'@acme/icons\').Icon',
+      'import(\'@acme/deps\').Badge',
+      'import(\'@acme/missing\').Gone'
+    ].join(' | ');
+    const manifest = createLibraryManifest({}, analysisOf([['card#Card', component('Card', type)]]), aliased, LIBRARY, '1.2.0');
+
+    expect(manifest.declarations['card#Card'].inputs).toEqual([{
+      name: 'size',
+      type: 'import(\'./card\').Size | import(\'./card\').Card | import(\'./types/theme\').Theme | import(\'@acme/icons\').Icon | import(\'@acme/deps\').Badge | import(\'@acme/missing\').Gone'
+    }]);
+  });
+
+  it('throws on a type reaching through an alias a name its module does not export, or a source file outside of the library', () => {
+    const analysis = analysisOf([['tile#Tile', component('Tile', 'import(\'@ui/tile\').Hidden | import(\'@shared/kind\').Kind')]]);
+
+    expect(() => createLibraryManifest({}, analysis, aliased, LIBRARY, '1.2.0')).toThrow([
+      `tile#Tile: the type of one of its bindings reads Hidden from ${root}/src/tile, which a module of the library must export for the applications to read it.`,
+      `tile#Tile: the type of one of its bindings reads Kind from ${root}/shared/kind, which a module of the library must export for the applications to read it.`
+    ].join('\n'));
   });
 });
 

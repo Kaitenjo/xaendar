@@ -1,9 +1,10 @@
 import { type ComponentOrDirectiveMetadata, type LibraryManifest, type LibraryManifestDeclaration, listTypeReferences, toLibraryDeclaration } from '@xaendar/compiler';
 import { posix } from 'node:path';
-import type { Program } from 'typescript';
+import { type Program, resolveModuleName, sys } from 'typescript';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
 import type { LibraryPackageJson } from '../../types/library-package-json.type';
 import type { WorkspaceLibrary } from '../../types/workspace-library.type';
+import { toPosixPath } from '../../utils/path/path.utils';
 
 /**
  * The fields of the `package.json` of a library left out of its package: they serve its development only.
@@ -11,14 +12,21 @@ import type { WorkspaceLibrary } from '../../types/workspace-library.type';
 const DEVELOPMENT_FIELDS: ReadonlySet<string> = new Set(['scripts', 'devDependencies']);
 
 /**
- * The extensions a module referenced by a type of a binding of a library may have, without them in the type.
+ * The extensions a module referenced by a type of a binding of a library may have, without them in the type: a source
+ * file, or a declaration file written by hand.
  */
-const SOURCE_EXTENSIONS = ['.ts', '.tsx'];
+const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
+
+/**
+ * The declaration files: the ones of a package, or of a library of the workspace the library depends on.
+ */
+const DECLARATION_FILE = /\.d\.[cm]?ts$/;
 
 /**
  * Writes the manifest of a library (see `LibraryManifest`): what its package exports, by path, and the components and
  * directives it exports, the types of their bindings referencing the modules of the library relative to the root of the
- * package, as the applications read them through its declarations.
+ * package, as the applications read them through its declarations, also the ones the sources reach through an alias of
+ * the `paths` of `tsconfig.json` or by the name of the library (see {@link resolveTypeModule}).
  *
  * @param packageJson - The `package.json` of the library.
  * @param analysis - What the build reads of the sources of the library (see `analyzeLibrary`).
@@ -35,7 +43,7 @@ export function createLibraryManifest(packageJson: LibraryPackageJson, analysis:
   for (const [key, metadata] of analysis.declarations) {
     checkTypeReferences(key, metadata, program, analysis.base, errors);
     const name = key.slice(0, key.indexOf('#'));
-    declarations[key] = toLibraryDeclaration(metadata, `./${name}`, `./${name}.d.ts`, module => (module.startsWith(`${analysis.base}/`) ? `./${module.slice(analysis.base.length + 1)}` : module));
+    declarations[key] = toLibraryDeclaration(metadata, `./${name}`, `./${name}.d.ts`, module => toPackageModule(resolveTypeModule(module, program, analysis.base), analysis.base));
   }
 
   if (errors.length) {
@@ -117,7 +125,8 @@ function checkTypeReferences(key: string, metadata: ComponentOrDirectiveMetadata
     const references = listTypeReferences(types[i]);
     if (references?.length) {
       for (let j = 0; j < references.length; j++) {
-        const { module, name } = references[j];
+        const { name } = references[j];
+        const module = resolveTypeModule(references[j].module, program, base);
         if (module.startsWith(`${base}/`) ? !isExportedBy(program, module, name) : isFilePath(module)) {
           errors.push(`${key}: the type of one of its bindings reads ${name} from ${module}, which a module of the library must export for the applications to read it.`);
         }
@@ -149,6 +158,40 @@ function isExportedBy(program: Program, module: string, name: string): boolean {
  */
 function isFilePath(module: string): boolean {
   return posix.isAbsolute(module) || /^[A-Za-z]:\//.test(module);
+}
+
+/**
+ * Resolves a module a type of a binding references by a name rather than by a path, as the compiler keeps the
+ * specifiers that are not relative: an alias of the `paths` of `tsconfig.json`, or the name of the library itself,
+ * leading to a file of the library, or to a source file outside of it, becomes the absolute path of that file, which the
+ * manifest writes relative to the package (or rejects, outside of the library), as the applications have neither; a
+ * package, or the declarations of a library of the workspace the library depends on, keeps its name.
+ *
+ * @param module - The module, as the type references it.
+ * @param program - The program of the library.
+ * @param base - The folder of the entry of the library, which the names are resolved from.
+ * @returns The absolute path of the file, without extension, or the module as it is.
+ */
+function resolveTypeModule(module: string, program: Program, base: string): string {
+  if (isFilePath(module)) {
+    return module;
+  }
+
+  const { resolvedModule } = resolveModuleName(module, `${base}/index.ts`, program.getCompilerOptions(), sys);
+  const fileName = resolvedModule && !resolvedModule.isExternalLibraryImport ? toPosixPath(resolvedModule.resolvedFileName) : undefined;
+  return fileName && (fileName.startsWith(`${base}/`) || !DECLARATION_FILE.test(fileName)) ? fileName.replace(/(?:\.d)?\.[cm]?tsx?$/, '') : module;
+}
+
+/**
+ * Writes a module of the library a type references relative to the root of its package, where the package keeps the
+ * paths of the modules relative to the folder of the entry; any other module as it is.
+ *
+ * @param module - The module, an absolute path for a file.
+ * @param base - The folder of the entry of the library.
+ * @returns The module, relative to the root of the package when it is a file of the library.
+ */
+function toPackageModule(module: string, base: string): string {
+  return module.startsWith(`${base}/`) ? `./${module.slice(base.length + 1)}` : module;
 }
 
 /**

@@ -30,9 +30,9 @@ export async function getServerDependencies(input: string, dependencyPaths: read
   const rendered = new Set<string>();
   for (let i = 0; i < metadatas.length; i++) {
     const metadata = metadatas[i];
-    const { type, selector, modulePath } = metadata;
+    const { type, selector, modulePath, importPath = modulePath } = metadata;
     if (selectors.has(type === 'directive' ? `@@${selector}` : selector) && !isClientComponent(metadata)) {
-      rendered.add(modulePath);
+      rendered.add(importPath);
     }
   }
 

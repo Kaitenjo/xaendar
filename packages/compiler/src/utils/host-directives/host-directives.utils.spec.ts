@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSourceFile, ScriptTarget, SourceFile } from 'typescript';
@@ -93,6 +93,21 @@ describe('addHostDirectiveBindings', () => {
       root = mkdtempSync(join(tmpdir(), 'xaendar-host-directives-')).replaceAll('\\', '/');
       writeFileSync(`${root}/anonymous.ts`, 'export default class { @Property() accessor text!: InputSignal<string>; }');
       writeFileSync(`${root}/tooltip.ts`, 'export class Tooltip { @Property() accessor text!: InputSignal<string>; @Event() accessor opened!: Output<number>; }');
+      const library = `${root}/node_modules/@acme/ui`;
+      mkdirSync(`${library}/tooltip`, { recursive: true });
+      writeFileSync(`${library}/package.json`, JSON.stringify({ name: '@acme/ui', exports: { '.': { types: './public-api.d.ts' }, './tooltip/tooltip.directive': { types: './tooltip/tooltip.directive.d.ts' } }, xaendar: { manifest: './xaendar-manifest.json' } }));
+      writeFileSync(`${library}/public-api.d.ts`, "export { TooltipDirective as Tooltip } from './tooltip/tooltip.directive.js';");
+      writeFileSync(`${library}/tooltip/tooltip.directive.d.ts`, 'export declare class TooltipDirective {}');
+      writeFileSync(`${library}/xaendar-manifest.json`, JSON.stringify({
+        schemaVersion: 1, name: '@acme/ui', version: '1.0.0', xaendar: '1.0.0', ssr: false, selectors: ['@@uiTooltip'],
+        exports: { '.': { Tooltip: 'tooltip/tooltip.directive#TooltipDirective' } },
+        declarations: {
+          'tooltip/tooltip.directive#TooltipDirective': {
+            type: 'directive', className: 'TooltipDirective', selector: 'uiTooltip', module: './tooltip/tooltip.directive', types: './tooltip/tooltip.directive.d.ts',
+            inputs: [{ name: 'text', type: 'string' }], events: [{ name: 'opened', type: 'number' }]
+          }
+        }
+      }));
     });
 
     afterAll(() => {
@@ -112,6 +127,16 @@ describe('addHostDirectiveBindings', () => {
 
       expect(metadata?.properties.get('text')?.type).toBe(`ReturnType<import('${root}/tooltip').Tooltip['text']>`);
       expect(metadata?.events.get('opened')?.type).toBe(`(import('${root}/tooltip').Tooltip['opened'] extends import('@xaendar/core').Output<infer Value> ? Value : never)`);
+    });
+
+    it('reads a directive of a compiled library from the manifest of its package', async () => {
+      const decorator = "@WebComponent({ selector: 'my-el', hostDirectives: [{ directive: Tooltip, properties: [{ name: 'text', alias: 'hint' }], events: ['opened'] }], templateUrl: './t.xaendar' })";
+      const code = `import { Tooltip } from '@acme/ui';
+${component('', decorator)}`;
+      const metadata = (await extractComponentsMetadataFromSourceFile(createSourceFile(`${root}/my-el.ts`, code, ScriptTarget.Latest, true)))?.get('MyEl');
+
+      expect(metadata?.properties.get('hint')).toMatchObject({ name: 'text', type: 'string', alias: 'hint', exposed: true });
+      expect(metadata?.events.get('opened')).toEqual({ type: 'number' });
     });
   });
 });

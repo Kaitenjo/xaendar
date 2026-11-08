@@ -64,6 +64,17 @@ const selectorOwners = new Map<string, SelectorOwner>();
  */
 const filePathToSelectors = new Map<string, Set<string>>();
 /**
+ * Maps each selector a compiled library the project depends on defines, the ones of the components and directives it
+ * does not export included, to the name of its package: the project cannot define it again. Directive selectors are
+ * keyed as they are applied in templates (`@@selector`), as their manifests list them.
+ * (e.g.)
+ *   {
+ *     "acme-button": "@acme/ui",
+ *     "@@acmeTooltip": "@acme/ui"
+ *   }
+ */
+const librarySelectors = new Map<string, string>();
+/**
  * Timer handle for the periodic idle sweep.
  */
 let sweepTimer: NodeJS.Timeout | undefined;
@@ -198,6 +209,35 @@ export function clearMetadataForFile(filePath: string): void {
 }
 
 /**
+ * Registers the selectors a compiled library defines, as its manifest lists them, unless another library defines one of
+ * them: a custom element name, or a directive selector, can be defined only once at runtime.
+ * @param library - The name of the package of the library.
+ * @param selectors - The selectors, the ones of the directives after `@@`.
+ * @returns The error message describing the conflict, or `undefined` if the selectors have been registered.
+ */
+export function registerLibrarySelectors(library: string, selectors: readonly string[]): string | undefined {
+  for (let i = 0; i < selectors.length; i++) {
+    const owner = librarySelectors.get(selectors[i]);
+    if (owner !== undefined && owner !== library) {
+      return `Selector "${selectors[i]}" is defined by both ${owner} and ${library}: an application can define it only once.`;
+    }
+
+    librarySelectors.set(selectors[i], library);
+  }
+
+  return undefined;
+}
+
+/**
+ * Retrieves the compiled library defining a selector (see {@link registerLibrarySelectors}).
+ * @param selector - The registry key of the selector (see {@link getSelectorKey}).
+ * @returns The name of the package of the library, `undefined` if no library defines it.
+ */
+export function getLibrarySelectorOwner(selector: string): string | undefined {
+  return librarySelectors.get(selector);
+}
+
+/**
  * Resets the entire metadata registry and stops the idle sweep. Called on
  * dev server shutdown.
  */
@@ -206,6 +246,7 @@ export function clearMetadataRegistry(): void {
   filePathToMetadataKeys.clear();
   selectorOwners.clear();
   filePathToSelectors.clear();
+  librarySelectors.clear();
 
   if (sweepTimer) {
     clearInterval(sweepTimer);

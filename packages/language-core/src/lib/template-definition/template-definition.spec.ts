@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { getTemplateDefinition } from './template-definition';
+import { findDefinitionTarget, getTemplateDefinition } from './template-definition';
 import type { TemplateDefinition } from '../types/template-definition.type';
 import type { LanguageService } from 'typescript';
 
@@ -178,5 +178,22 @@ describe('getTemplateDefinition of templates', () => {
 
     expect(definitionsAt(source.indexOf('row') + 1)).toEqual([['src/app.html', 'row', source.indexOf('row(label')]]);
     expect(definitionsAt(source.indexOf('label()') + 1)).toEqual([['src/app.html', 'label', source.indexOf('label:')]]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDefinition of a compiled library', () => {
+  it('finds the class of a component of a compiled library in no metadata, read from its manifest', async () => {
+    project.write('node_modules/@acme/kit/package.json', JSON.stringify({ name: '@acme/kit', exports: { '.': { types: './public-api.d.ts' } }, xaendar: { manifest: './xaendar-manifest.json' } }));
+    project.write('node_modules/@acme/kit/public-api.d.ts', 'export declare class Badge {}\n');
+    project.write('node_modules/@acme/kit/xaendar-manifest.json', JSON.stringify({
+      schemaVersion: 1, name: '@acme/kit', version: '1.0.0', xaendar: '1.0.0', ssr: false, selectors: ['kit-badge'],
+      exports: { '.': { Badge: 'public-api#Badge' } },
+      declarations: { 'public-api#Badge': { type: 'component', className: 'Badge', selector: 'kit-badge', module: '.', types: './public-api.d.ts', inputs: [], events: [] } }
+    }));
+    const library = (await project.analyze('@import { Badge } from \'@acme/kit\';\n<kit-badge></kit-badge>')).analysis!;
+
+    expect(library.metadatas).toMatchObject([{ selector: 'kit-badge', library: { name: '@acme/kit' } }]);
+    expect(findDefinitionTarget(library, library.source.indexOf('Badge') + 1)).toBeUndefined();
+    expect(findDefinitionTarget(library, library.source.indexOf('kit-badge') + 1)).toBeUndefined();
   }, TIMEOUT);
 });
