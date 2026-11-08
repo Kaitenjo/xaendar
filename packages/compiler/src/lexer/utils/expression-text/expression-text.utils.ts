@@ -16,18 +16,29 @@ import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
  */
 export function lexExpressionText(cursor: LexerCursor, terminators: string, options?: ExpressionTextOptions): string {
   const scanner = new ExpressionScanner(options?.types);
+  const cast = !!options?.cast;
   let text = '';
 
   // A cast closes only an expression already written
-  const endsAtCast = (): boolean => !!options?.cast && !!text && scanner.isTopLevel && cursor.peekKeywordAfterSpaces('as');
-
-  for (let char = cursor.peek(); !scanner.endsAt(char, terminators) && !endsAtCast(); char = cursor.peek()) {
+  for (let char = cursor.peek(); !scanner.endsAt(char, terminators) && !(cast && text && endsAtCast(cursor, scanner)); char = cursor.peek()) {
     cursor.advance();
     text = `${text}${cursor.currentChar.value}`;
     scanner.read(char);
   }
 
   return text;
+}
+
+/**
+ * Tells whether a cast ends an expression where the cursor is: an `as` between whitespace, outside of any group and
+ * literal.
+ *
+ * @param cursor - The lexer cursor positioned after the expression read so far.
+ * @param scanner - The scanner that read it.
+ * @returns `true` if a cast follows the expression.
+ */
+function endsAtCast(cursor: LexerCursor, scanner: ExpressionScanner): boolean {
+  return scanner.isTopLevel && cursor.peekKeywordAfterSpaces('as');
 }
 
 /**

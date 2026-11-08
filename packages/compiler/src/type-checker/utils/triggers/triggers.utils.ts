@@ -21,37 +21,44 @@ import { mappedExpression } from '../mapped-expression/mapped-expression.utils';
  */
 export function typeCheckTriggers({ triggers, prefetch }: HydrateNode | DeferNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
-  const check = (list: readonly HydrateTrigger[]) => {
-    for (let i = 0; i < list.length; i++) {
-      const trigger = list[i];
-      switch (trigger.kind) {
-        case 'when':
-          lines.push(line('if (', mappedExpression(trigger.expressionNode, context, trigger.span), ') { }'));
-          break;
-
-        case 'visible':
-        case 'interaction':
-        case 'hover':
-          if (trigger.target) {
-            // TypeScript reports what the name does not satisfy on the keyword, mapped onto the name too
-            const { expressionNode, span } = trigger.target;
-            lines.push(line(mappedExpression(expressionNode, context, span), ' ', mapped('satisfies', span), ' Element;'));
-          }
-
-          if (trigger.kind === 'visible' && trigger.options) {
-            // The expression of an object literal is written between parentheses
-            lines.push(line(mappedExpression(trigger.options.expressionNode, context, trigger.options.span), ' satisfies Omit<IntersectionObserverInit, \'root\'>;'));
-          }
-          break;
-
-        default:
-          // The other triggers read nothing of the template
-          break;
-      }
-    }
-  };
-
-  check(triggers);
-  check(prefetch);
+  typeCheckTriggerList(triggers, context, lines);
+  typeCheckTriggerList(prefetch, context, lines);
   return lines;
+}
+
+/**
+ * Type-checks a list of triggers (see `typeCheckTriggers`).
+ *
+ * @param list - The triggers.
+ * @param context - The scope the block is in.
+ * @param lines - The generated type-check lines, filled.
+ */
+function typeCheckTriggerList(list: readonly HydrateTrigger[], context: TypeCheckContext, lines: Line[]): void {
+  for (let i = 0; i < list.length; i++) {
+    const trigger = list[i];
+    switch (trigger.kind) {
+      case 'when':
+        lines.push(line('if (', mappedExpression(trigger.expressionNode, context, trigger.span), ') { }'));
+        break;
+
+      case 'visible':
+      case 'interaction':
+      case 'hover':
+        if (trigger.target) {
+          // TypeScript reports what the name does not satisfy on the keyword, mapped onto the name too
+          const { expressionNode, span } = trigger.target;
+          lines.push(line(mappedExpression(expressionNode, context, span), ' ', mapped('satisfies', span), ' Element;'));
+        }
+
+        if (trigger.kind === 'visible' && trigger.options) {
+          // The expression of an object literal is written between parentheses
+          lines.push(line(mappedExpression(trigger.options.expressionNode, context, trigger.options.span), ' satisfies Omit<IntersectionObserverInit, \'root\'>;'));
+        }
+        break;
+
+      default:
+        // The other triggers read nothing of the template
+        break;
+    }
+  }
 }

@@ -28,21 +28,31 @@ import { plain } from '../line-builder/line-builder.utils';
  */
 export function narrowSignals(conditions: readonly Expression[], prefix: string, context: TypeCheckContext, chainContext: TypeCheckContext): Line[] {
   const declarations = new Array<Line>();
-  const visit = (node: Node): void => {
-    const callee = getSignalCallee(node);
-    if (callee && !chainContext.getNarrowedSignal(callee.text) && resolveExpression(callee, context, { resolver: ROOT_NODE }).reactive) {
-      const value = `${prefix}_${callee.text}`;
-      // Not mapped onto the template: the condition reports the errors of the call, which it keeps
-      declarations.push(plain(`const ${value} = ${resolveExpression(node as Expression, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
-      chainContext.addNarrowedSignal(callee.text, value);
-    }
-
-    forEachChild(node, visit);
-  };
-
   for (let i = 0; i < conditions.length; i++) {
-    visit(conditions[i]);
+    declareSignalReads(conditions[i], prefix, context, chainContext, declarations);
   }
 
   return declarations;
+}
+
+/**
+ * Declares a constant for each signal a node, or a node it holds, reads that the chain does not narrow yet (see
+ * `narrowSignals`).
+ *
+ * @param node - The node.
+ * @param prefix - The prefix of the names of the constants.
+ * @param context - The scope enclosing the chain.
+ * @param chainContext - The scope of the chain.
+ * @param declarations - The lines declaring the constants, filled.
+ */
+function declareSignalReads(node: Node, prefix: string, context: TypeCheckContext, chainContext: TypeCheckContext, declarations: Line[]): void {
+  const callee = getSignalCallee(node);
+  if (callee && !chainContext.getNarrowedSignal(callee.text) && resolveExpression(callee, context, { resolver: ROOT_NODE }).reactive) {
+    const value = `${prefix}_${callee.text}`;
+    // Not mapped onto the template: the condition reports the errors of the call, which it keeps
+    declarations.push(plain(`const ${value} = ${resolveExpression(node as Expression, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
+    chainContext.addNarrowedSignal(callee.text, value);
+  }
+
+  forEachChild(node, child => declareSignalReads(child, prefix, context, chainContext, declarations));
 }

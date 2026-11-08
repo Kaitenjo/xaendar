@@ -21,18 +21,13 @@ export function typeCheckDefer(node: DeferNode, processNode: ProcessNode, contex
   const lines = typeCheckTriggers(node, context);
   const { placeholder, loading, error } = node;
 
-  const block = (children: readonly ASTNode[], blockContext = new TypeCheckContext(context)) => {
-    const scope = typeCheckScope(children, blockContext, processNode);
-    return indentLines(scope.declarations.concat(scope.lines));
-  };
-
-  lines.push(plain('{'), ...block(node.children), plain('}'));
+  lines.push(plain('{'), ...typeCheckBlock(node.children, new TypeCheckContext(context), processNode), plain('}'));
   if (placeholder) {
-    lines.push(plain('{'), ...block(placeholder.children), plain('}'));
+    lines.push(plain('{'), ...typeCheckBlock(placeholder.children, new TypeCheckContext(context), processNode), plain('}'));
   }
 
   if (loading) {
-    lines.push(plain('{'), ...block(loading.children), plain('}'));
+    lines.push(plain('{'), ...typeCheckBlock(loading.children, new TypeCheckContext(context), processNode), plain('}'));
   }
 
   if (error) {
@@ -45,10 +40,23 @@ export function typeCheckDefer(node: DeferNode, processNode: ProcessNode, contex
     lines.push(
       plain('try { }'),
       name ? line('catch (', mapped(name, nameSpan!), ') {') : plain('catch {'),
-      ...block(children, errorContext),
+      ...typeCheckBlock(children, errorContext, processNode),
       plain('}')
     );
   }
 
   return lines;
+}
+
+/**
+ * Type-checks the content of a block of a `@defer`, a scope of its own.
+ *
+ * @param children - The content.
+ * @param context - The scope of the block.
+ * @param processNode - Type-checks a node of the block.
+ * @returns The generated type-check lines, indented.
+ */
+function typeCheckBlock(children: readonly ASTNode[], context: TypeCheckContext, processNode: ProcessNode): Line[] {
+  const scope = typeCheckScope(children, context, processNode);
+  return indentLines(scope.declarations.concat(scope.lines));
 }

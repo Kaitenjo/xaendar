@@ -174,8 +174,7 @@ function isStructure(atom: LayoutAtom | undefined): boolean {
  * @returns `true` if the atoms are two nodes, at least one being an element or a block.
  */
 function breaksBetween(previous: LayoutAtom, current: LayoutAtom): boolean {
-  const isNode = (atom: LayoutAtom): boolean => atom.kind !== 'text' && atom.kind !== 'comment';
-  return isNode(previous) && isNode(current) && (isStructure(previous) || isStructure(current));
+  return isNodeAtom(previous) && isNodeAtom(current) && (isStructure(previous) || isStructure(current));
 }
 
 /**
@@ -295,16 +294,12 @@ function printBranchHeader<Body>(branch: LayoutBranch<Body>): string {
  * @returns The text of the block, whose first line is not indented.
  */
 function printBlock<Body>(block: LayoutBlock<Body>, level: number, options: TemplateFormatOptions, printBody: (body: Body, bodyLevel: number) => string): string {
-  const printBranch = (branch: LayoutBranch<Body>, branchLevel: number): string => (branch.body === undefined
-    ? printBranchHeader(branch)
-    : `${printBranchHeader(branch)} {${printBody(branch.body, branchLevel + 1)}`);
-
   if (block.keyword === 'switch') {
-    const cases = block.branches.map(branch => `\n${pad(level + 1, options)}${printBranch(branch, level + 1)}`).join('');
+    const cases = block.branches.map(branch => `\n${pad(level + 1, options)}${printBranch(branch, level + 1, printBody)}`).join('');
     return `@switch (${block.expression}) {${cases}\n${pad(level, options)}}`;
   }
 
-  return block.branches.map(branch => printBranch(branch, level)).join(' ');
+  return block.branches.map(branch => printBranch(branch, level, printBody)).join(' ');
 }
 
 /**
@@ -467,15 +462,7 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
   const trailingBreak = breaksAtEdge(atoms[atoms.length - 1], stack, 'end');
   const builder = new RowBuilder();
   const last = atoms.length - 1;
-
-  const column = (): number => {
-    const lineBreak = builder.current.lastIndexOf('\n');
-    if (lineBreak !== -1) {
-      return builder.current.length - lineBreak - 1;
-    }
-
-    return (builder.rows.length || leadingBreak ? level * options.indentWidth : firstColumn) + builder.current.length;
-  };
+  const rowColumn = level * options.indentWidth;
 
   for (let i = 0; i < atoms.length; i++) {
     const atom = atoms[i];
@@ -497,7 +484,7 @@ function printContent(atoms: readonly LayoutAtom[], level: number, firstColumn: 
         break;
 
       case 'element':
-        builder.append(printElement(atom, level, column(), options));
+        builder.append(printElement(atom, level, currentColumn(builder, leadingBreak ? rowColumn : firstColumn, rowColumn), options));
         break;
 
       case 'render':
@@ -574,4 +561,45 @@ function printText(value: string, context: { builder: RowBuilder, isFirst: boole
   } else {
     builder.append(trailing);
   }
+}
+
+/**
+ * Tells whether an atom is a node: neither a text nor a comment.
+ *
+ * @param atom - The atom.
+ * @returns `true` for a node.
+ */
+function isNodeAtom(atom: LayoutAtom): boolean {
+  return atom.kind !== 'text' && atom.kind !== 'comment';
+}
+
+/**
+ * Writes a branch of a control-flow block: its header, then, when it has a body, its `{` and what its braces hold.
+ *
+ * @param branch - The branch.
+ * @param level - The level the branch is written at.
+ * @param printBody - Writes what the braces of a branch hold, up to its `}`, given the level of its content.
+ * @returns The text of the branch.
+ */
+function printBranch<Body>(branch: LayoutBranch<Body>, level: number, printBody: (body: Body, bodyLevel: number) => string): string {
+  return branch.body === undefined
+    ? printBranchHeader(branch)
+    : `${printBranchHeader(branch)} {${printBody(branch.body, level + 1)}`;
+}
+
+/**
+ * Tells the column the text of a content written so far ends at.
+ *
+ * @param builder - The rows of the content written so far.
+ * @param firstRowColumn - The column the first row starts at.
+ * @param rowColumn - The column the other rows start at.
+ * @returns The column.
+ */
+function currentColumn(builder: RowBuilder, firstRowColumn: number, rowColumn: number): number {
+  const lineBreak = builder.current.lastIndexOf('\n');
+  if (lineBreak !== -1) {
+    return builder.current.length - lineBreak - 1;
+  }
+
+  return (builder.rows.length ? rowColumn : firstRowColumn) + builder.current.length;
 }

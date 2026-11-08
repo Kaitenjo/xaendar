@@ -72,6 +72,18 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
 }
 
 /**
+ * Records an error of a `@WebComponent`, spanning the node it is about.
+ *
+ * @param errors - The errors, filled.
+ * @param sourceFile - The source file declaring the component.
+ * @param message - The description of the error.
+ * @param node - The node the error is about.
+ */
+function reportAt(errors: WebComponentError[], sourceFile: SourceFile, message: string, node: Node): void {
+  errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
+}
+
+/**
  * Finds the `@WebComponent` declarations of a source file that the plugin cannot compile, as it reads them
  * from the source code: a component declared in a file not following the component convention, whose
  * `selector`, `templateUrl` or `styleUrl` is not a string literal (`selector` and `templateUrl` are required), whose
@@ -85,22 +97,19 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
  */
 export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean, ssr?: boolean): WebComponentError[] {
   const errors = new Array<WebComponentError>;
-  const report = (message: string, node: Node): void => {
-    errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
-  };
 
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i = 0; i < declarations.length; i++) {
     const { klass, decorator } = declarations[i];
     const className = klass.name.text;
     if (!componentFile) {
-      report(`${className} must be declared in a file ending with .xd.component.ts`, klass.name);
+      reportAt(errors, sourceFile, `${className} must be declared in a file ending with .xd.component.ts`, klass.name);
       continue;
     }
 
     const options = decorator.expression.arguments[0];
     if (!options || !isObjectLiteralExpression(options)) {
-      report(`The options of @WebComponent in ${className} must be an object literal`, options ?? decorator.expression.expression);
+      reportAt(errors, sourceFile, `The options of @WebComponent in ${className} must be an object literal`, options ?? decorator.expression.expression);
       continue;
     }
 
@@ -117,7 +126,7 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
         // Without the HTML of the server the option has nothing to act on, as the @hydrate and @client blocks
         const error = ssr === false ? `The ssr option of ${className} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the option` : findSsrError(property, className);
         if (error) {
-          report(error, property);
+          reportAt(errors, sourceFile, error, property);
         }
         continue;
       }
@@ -137,17 +146,17 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
 
       // A shorthand property ({ selector }) reads a variable
       if (!isPropertyAssignment(property) || !isStringLiteral(property.initializer)) {
-        report(`The ${name} option of ${className} must be a string literal`, isPropertyAssignment(property) ? property.initializer : property);
+        reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, isPropertyAssignment(property) ? property.initializer : property);
       } else if (name === 'selector' && !isValidCustomElementName(property.initializer.text)) {
-        report(`Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
+        reportAt(errors, sourceFile, `Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
       }
     }
 
     if (!selector) {
-      report(`The selector option of ${className} must be a string literal`, decorator.expression.expression);
+      reportAt(errors, sourceFile, `The selector option of ${className} must be a string literal`, decorator.expression.expression);
     }
     if (!templateUrl) {
-      report(`The templateUrl option of ${className} must be a string literal`, decorator.expression.expression);
+      reportAt(errors, sourceFile, `The templateUrl option of ${className} must be a string literal`, decorator.expression.expression);
     }
   }
 
@@ -666,23 +675,7 @@ function findTransformIncomingType(decorator: PropertyDecorator, options: Object
 function qualifyType(type: TypeNode, sourceFile: SourceFile): string {
   const start = type.getStart(sourceFile);
   const replacements = new Array<{ start: number, end: number, text: string }>();
-  const visit = (node: Node): void => {
-    if (isTypeReferenceNode(node)) {
-      let name: EntityName = node.typeName;
-      while (isQualifiedName(name)) {
-        name = name.left;
-      }
-
-      const qualifier = findTypeQualifier(name.text, sourceFile);
-      if (qualifier) {
-        // A reference through a namespace import (`ns.Tag`) only needs the namespace replaced
-        const isNamespace = name !== node.typeName;
-        replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
-      }
-    }
-    forEachChild(node, visit);
-  };
-  visit(type);
+  collectTypeReplacements(type, sourceFile, start, replacements);
 
   let text = type.getText(sourceFile);
   for (let i = replacements.length - 1; i >= 0; i--) {
@@ -691,6 +684,33 @@ function qualifyType(type: TypeNode, sourceFile: SourceFile): string {
   }
 
   return text;
+}
+
+/**
+ * Collects the replacements of the names a node of a type, and the nodes it holds, use by the `import()` types of the
+ * modules declaring them (see `qualifyType`).
+ *
+ * @param node - The node.
+ * @param sourceFile - The source file declaring the property.
+ * @param start - Where the type starts in the source file.
+ * @param replacements - The replacements, filled with their ranges in the text of the type.
+ */
+function collectTypeReplacements(node: Node, sourceFile: SourceFile, start: number, replacements: Array<{ start: number, end: number, text: string }>): void {
+  if (isTypeReferenceNode(node)) {
+    let name: EntityName = node.typeName;
+    while (isQualifiedName(name)) {
+      name = name.left;
+    }
+
+    const qualifier = findTypeQualifier(name.text, sourceFile);
+    if (qualifier) {
+      // A reference through a namespace import (`ns.Tag`) only needs the namespace replaced
+      const isNamespace = name !== node.typeName;
+      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
+    }
+  }
+
+  forEachChild(node, child => collectTypeReplacements(child, sourceFile, start, replacements));
 }
 
 /**

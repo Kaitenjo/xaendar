@@ -46,16 +46,24 @@ export function _switch(
     their position with it. Evaluating it here, once and for all, would freeze the selected case.
   */
   let selected = -1;
-  const select = (): number => {
-    const value = expression();
-    const matching = blocks.findIndex(({ condition }) => condition?.some(candidate => candidate === value));
-    return matching !== -1 ? matching : blocks.findIndex(({ condition }) => !condition);
-  };
 
   _if(parentNode, parentContext, anchor, blocks.map(({ block }, index) => ({
     condition: index === 0
-      ? () => (selected = select()) === index
+      ? () => (selected = selectCase(expression, blocks)) === index
       : () => selected === index,
     block
   })), _SSR_MARKERS.switch);
+}
+
+/**
+ * Selects the case of a `@switch` matching its expression, or its `@default`.
+ *
+ * @param expression - The expression of the `@switch`.
+ * @param blocks - The cases, `condition` holding the values each one matches, `null` for the `@default`.
+ * @returns The index of the case, `-1` when none matches and there is no `@default`.
+ */
+function selectCase(expression: NoArgsFunction<unknown>, blocks: ReadonlyArray<{ condition: unknown[] | null }>): number {
+  const value = expression();
+  const matching = blocks.findIndex(({ condition }) => condition?.some(candidate => candidate === value));
+  return matching !== -1 ? matching : blocks.findIndex(({ condition }) => !condition);
 }

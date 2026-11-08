@@ -31,32 +31,46 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * @returns The code of the node, and the functions rendering its blocks.
  */
 export function generateServerIf(node: IfNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
-  const lines = new Array<string>();
-  const functionsToProcess = new Map<string, ServerFunctionToProcess>();
-  let branch = 0;
-  const addBranch = (opening: string, key: string, block: ServerFunctionToProcess['fn']['node']): void => {
-    lines.push(`${opening} {`, indent(`out.push(${toStringLiteral(`<!--${SSR_MARKERS.if}:${branch}-->`)});`), indent(`${key}.call(this, out, context);`));
-    functionsToProcess.set(key, toBlockFunction(block, key, parent, generatorContext));
-    branch++;
-  };
-  const resolve = (condition: IfNode['conditionNode']): string => resolveExpression(condition, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
-
-  addBranch(`if (${resolve(node.conditionNode)})`, getBlockIdentifier('if', parent.id, index), node);
+  // The opening of each branch, the name of the function rendering it and its node
+  const branches: Array<[string, string, ServerFunctionToProcess['fn']['node']]> = [
+    [`if (${resolveCondition(node.conditionNode, generatorContext)})`, getBlockIdentifier('if', parent.id, index), node]
+  ];
 
   let alternate = node.alternate;
   let i = 0;
   while (alternate?.type === ASTNodeType.ElseIf) {
-    addBranch(`} else if (${resolve(alternate.conditionNode)})`, getBlockIdentifier('elseIf', parent.id, `${index}_${i}`), alternate);
+    branches.push([`} else if (${resolveCondition(alternate.conditionNode, generatorContext)})`, getBlockIdentifier('elseIf', parent.id, `${index}_${i}`), alternate]);
     alternate = alternate.alternate;
     i++;
   }
 
   if (alternate) {
-    addBranch('} else', getBlockIdentifier('else', parent.id, index), alternate);
-  } else {
+    branches.push(['} else', getBlockIdentifier('else', parent.id, index), alternate]);
+  }
+
+  const lines = new Array<string>();
+  const functionsToProcess = new Map<string, ServerFunctionToProcess>();
+  for (let branch = 0; branch < branches.length; branch++) {
+    const [opening, key, block] = branches[branch];
+    lines.push(`${opening} {`, indent(`out.push(${toStringLiteral(`<!--${SSR_MARKERS.if}:${branch}-->`)});`), indent(`${key}.call(this, out, context);`));
+    functionsToProcess.set(key, toBlockFunction(block, key, parent, generatorContext));
+  }
+
+  if (!alternate) {
     lines.push('} else {', indent(`out.push(${toStringLiteral(`<!--${SSR_MARKERS.if}-->`)});`));
   }
 
   lines.push('}');
   return { pieces: [{ statement: lines.join('\n') }, { html: `<!--/${SSR_MARKERS.if}-->` }], functionsToProcess };
+}
+
+/**
+ * Resolves the condition of a branch of an `@if` into the expression rendering it on the server.
+ *
+ * @param condition - The condition.
+ * @param generatorContext - The generator context of the node.
+ * @returns The expression.
+ */
+function resolveCondition(condition: IfNode['conditionNode'], generatorContext: GeneratorContext): string {
+  return resolveExpression(condition, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
 }

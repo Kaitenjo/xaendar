@@ -10,6 +10,32 @@ paths:
 - Never use one-letter identifiers: variables, parameters (arrow callbacks included), catch bindings, type parameters. Name what the value is (`item`, `index`, `error`, `TValue`): the build minifies the names anyway. The only exception is the counter of a `for` loop: `i`, then `j`, `k` in nested loops.
 - Never put `void` in front of a call to discard its result (`void client.start()`, `void this._load(id)`): call the function as a plain statement, or `await` it / chain `.then`/`.catch` when the promise must be handled.
 - Don't indent function parameters vertically.
+- Never declare a function inside another function, as a constant (`const add = () => …`) or with `function`: write it at module level, or as a private method of the class, passing what it reads as parameters. State several of them share goes in an object passed to each one (`DeferRun` of `_defer`). Inline callbacks passed as arguments are fine (`items.map(item => …)`, `forEachChild(node, child => visit(child, node))`). Exceptions:
+  - a one-line type predicate (`const isDirective = (directive: CustomDirective): directive is Directive => directive instanceof Directive;`);
+  - a function that is itself the value returned or registered, capturing the state of the call: the getter of a signal, a listener removed later, the `disarm` returned by `armTriggers`;
+  - a function written into the page with `toString()`, which reads nothing outside of itself (`eventContract`).
+
+  ```ts
+  // ✗
+  function collectReads(expression: Expression): Identifier[] {
+    const reads = new Array<Identifier>();
+    const visit = (node: Node): void => { … forEachChild(node, visit); };
+    visit(expression);
+    return reads;
+  }
+
+  // ✓
+  function collectReads(expression: Expression): Identifier[] {
+    const reads = new Array<Identifier>();
+    collectReadsOf(expression, reads);
+    return reads;
+  }
+
+  function collectReadsOf(node: Node, reads: Identifier[]): void {
+    …
+    forEachChild(node, child => collectReadsOf(child, reads));
+  }
+  ```
 - Never test a condition and its negation in two separate `if`s (`if (x) { … } if (!x) { … }`): write `if (x) { … } else { … }`.
 - When the `if` and the `else` each hold a single line, write a ternary instead: `return x ? a : b;`, `value = x ? a : b;`, `x ? open() : close();`. Keep `if`/`else` only when a branch holds several statements or one a ternary cannot express (`throw`, `break`, `continue`, a `return` in one branch only).
 - Never compare the same value with several constants in separate `if`s (`if (kind === 'a') { … } if (kind === 'b') { … }`) or in an `else if` chain: write a `switch (kind)` with one `case` per value and a `default` when the other values need handling too. The same holds in templates, with `@if`/`@else` and `@switch`.

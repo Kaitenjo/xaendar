@@ -46,27 +46,21 @@ export function findDefinitionTarget(analysis: TemplateAnalysis, offset: number)
  */
 function collectTargets({ ast, metadatas, imports, templatePath, languageService }: TemplateAnalysis): DefinitionTarget[] {
   const targets = new Array<DefinitionTarget>();
-  const add = (span: Span | undefined, declaration: TemplateDefinition | undefined) => {
-    if (span && declaration) {
-      targets.push({ span, definitions: [{ ...declaration, origin: span }] });
-    }
-  };
-
   for (let i = 0; i < imports.length; i++) {
     const { specifier, metadata } = imports[i];
-    add(specifier.importedSpan, getClassDefinition(metadata));
-    add(specifier.localSpan, getClassDefinition(metadata));
+    addTarget(targets, specifier.importedSpan, getClassDefinition(metadata));
+    addTarget(targets, specifier.localSpan, getClassDefinition(metadata));
   }
 
   walkTemplate(ast, metadatas, {
-    importNode: node => add(node.pathSpan, getModuleDefinition(dirname(templatePath), node.path, languageService.getProgram()!.getCompilerOptions())),
+    importNode: node => addTarget(targets, node.pathSpan, getModuleDefinition(dirname(templatePath), node.path, languageService.getProgram()!.getCompilerOptions())),
     element: (node, component) => {
-      add(node.nameSpan, component && getClassDefinition(component));
-      add(node.closeNameSpan, component && getClassDefinition(component));
+      addTarget(targets, node.nameSpan, component && getClassDefinition(component));
+      addTarget(targets, node.closeNameSpan, component && getClassDefinition(component));
     },
-    directive: (node, directive) => add(node.selectorSpan, directive && getClassDefinition(directive)),
-    attribute: (node, owner) => add(node.nameSpan, owner?.properties.get(node.name)?.declaration),
-    event: (node, owner) => add(node.nameSpan, owner?.events.get(node.name)?.declaration)
+    directive: (node, directive) => addTarget(targets, node.selectorSpan, directive && getClassDefinition(directive)),
+    attribute: (node, owner) => addTarget(targets, node.nameSpan, owner?.properties.get(node.name)?.declaration),
+    event: (node, owner) => addTarget(targets, node.nameSpan, owner?.events.get(node.name)?.declaration)
   });
 
   return targets;
@@ -131,4 +125,17 @@ function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLi
   }
 
   return definitions;
+}
+
+/**
+ * Adds a part of a template to the ones whose definition is known, when it is written and its definition is known.
+ *
+ * @param targets - The parts, filled.
+ * @param span - The span of the part, `undefined` when it is not written.
+ * @param declaration - The definition of the part, `undefined` when it is not known.
+ */
+function addTarget(targets: DefinitionTarget[], span: Span | undefined, declaration: TemplateDefinition | undefined): void {
+  if (span && declaration) {
+    targets.push({ span, definitions: [{ ...declaration, origin: span }] });
+  }
 }

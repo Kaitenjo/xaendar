@@ -288,7 +288,6 @@ function findInitializerLogic(name: string, initializer: Expression, sourceFile:
  * @returns `true` when it only computes a value.
  */
 function isValue(node: Expression, sourceFile: SourceFile, declared: ReadonlySet<string>, compilerOptions: CompilerOptions): boolean {
-  const isPart = (part: Expression): boolean => isValue(part, sourceFile, declared, compilerOptions);
   if (isLiteral(node) || node.kind === SyntaxKind.ThisKeyword) {
     return true;
   }
@@ -298,40 +297,40 @@ function isValue(node: Expression, sourceFile: SourceFile, declared: ReadonlySet
   }
 
   if (isPropertyAccessExpression(node)) {
-    return isPart(node.expression) && !isModuleSignal(node, sourceFile, compilerOptions);
+    return isValue(node.expression, sourceFile, declared, compilerOptions) && !isModuleSignal(node, sourceFile, compilerOptions);
   }
 
   if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node) || isNonNullExpression(node) || isTypeAssertionExpression(node) || isTypeOfExpression(node) || isSpreadElement(node)) {
-    return isPart(node.expression);
+    return isValue(node.expression, sourceFile, declared, compilerOptions);
   }
 
   if (isElementAccessExpression(node)) {
-    return isPart(node.expression) && isPart(node.argumentExpression);
+    return isValue(node.expression, sourceFile, declared, compilerOptions) && isValue(node.argumentExpression, sourceFile, declared, compilerOptions);
   }
 
   if (isPrefixUnaryExpression(node)) {
-    return node.operator !== SyntaxKind.PlusPlusToken && node.operator !== SyntaxKind.MinusMinusToken && isPart(node.operand);
+    return node.operator !== SyntaxKind.PlusPlusToken && node.operator !== SyntaxKind.MinusMinusToken && isValue(node.operand, sourceFile, declared, compilerOptions);
   }
 
   if (isBinaryExpression(node)) {
     const { kind } = node.operatorToken;
-    return !(kind >= ASSIGNMENTS.first && kind <= ASSIGNMENTS.last) && isPart(node.left) && isPart(node.right);
+    return !(kind >= ASSIGNMENTS.first && kind <= ASSIGNMENTS.last) && isValue(node.left, sourceFile, declared, compilerOptions) && isValue(node.right, sourceFile, declared, compilerOptions);
   }
 
   if (isConditionalExpression(node)) {
-    return isPart(node.condition) && isPart(node.whenTrue) && isPart(node.whenFalse);
+    return isValue(node.condition, sourceFile, declared, compilerOptions) && isValue(node.whenTrue, sourceFile, declared, compilerOptions) && isValue(node.whenFalse, sourceFile, declared, compilerOptions);
   }
 
   if (isTemplateExpression(node)) {
-    return node.templateSpans.every(({ expression }) => isPart(expression));
+    return node.templateSpans.every(({ expression }) => isValue(expression, sourceFile, declared, compilerOptions));
   }
 
   if (isArrayLiteralExpression(node)) {
-    return node.elements.every(isPart);
+    return node.elements.every(part => isValue(part, sourceFile, declared, compilerOptions));
   }
 
   if (isObjectLiteralExpression(node)) {
-    return node.properties.every(property => isValueProperty(property, isPart));
+    return node.properties.every(property => isValueProperty(property, sourceFile, declared, compilerOptions));
   }
 
   if (isArrowFunction(node) || isFunctionExpression(node)) {
@@ -339,7 +338,7 @@ function isValue(node: Expression, sourceFile: SourceFile, declared: ReadonlySet
   }
 
   if (isCallExpression(node) || isNewExpression(node)) {
-    return isKnownFunction(node.expression, sourceFile) && (node.arguments?.every(isPart) ?? true);
+    return isKnownFunction(node.expression, sourceFile) && (node.arguments?.every(part => isValue(part, sourceFile, declared, compilerOptions)) ?? true);
   }
 
   return false;
@@ -366,19 +365,21 @@ function isLiteral(node: Node): boolean {
  * Tells whether a property of an object literal only computes a value.
  *
  * @param property - The property.
- * @param isPart - Tells whether an expression only computes a value.
+ * @param sourceFile - The file of the property.
+ * @param declared - The names the file declares, which are not globals.
+ * @param compilerOptions - Project compiler options.
  * @returns `true` when it only computes a value.
  */
-function isValueProperty(property: ObjectLiteralElementLike, isPart: (part: Expression) => boolean): boolean {
+function isValueProperty(property: ObjectLiteralElementLike, sourceFile: SourceFile, declared: ReadonlySet<string>, compilerOptions: CompilerOptions): boolean {
   if (isPropertyAssignment(property)) {
-    return isPart(property.initializer);
+    return isValue(property.initializer, sourceFile, declared, compilerOptions);
   }
 
   if (isSpreadAssignment(property)) {
-    return isPart(property.expression);
+    return isValue(property.expression, sourceFile, declared, compilerOptions);
   }
 
-  return isShorthandPropertyAssignment(property) && isPart(property.name);
+  return isShorthandPropertyAssignment(property) && isValue(property.name, sourceFile, declared, compilerOptions);
 }
 
 /**
@@ -417,27 +418,37 @@ function isKnownFunction(callee: Expression, sourceFile: SourceFile): boolean {
  * @returns What it runs, `undefined` when it runs nothing of that.
  */
 function findBodyLogic(body: Node, sourceFile: SourceFile, declared: ReadonlySet<string>, compilerOptions: CompilerOptions): string | undefined {
-  let logic: string | undefined;
-  const visit = (node: Node, parent: Node): void => {
-    if (isTypeNode(node)) {
-      return;
-    }
+  return findNodeLogic(body, body, sourceFile, declared) ?? (readsModuleSignal(body, sourceFile, compilerOptions) ? 'reads a signal of a module' : undefined);
+}
 
-    if (isPropertyAccessExpression(node) && node.expression.kind === SyntaxKind.ThisKeyword && BROWSER_MEMBERS.has(node.name.text)) {
-      logic = `calls ${node.name.text}`;
-    } else if (isCallExpression(node) && isIdentifier(node.expression) && getCoreImport(node.expression, sourceFile) === 'effect') {
-      logic = 'calls effect';
-    } else if (isIdentifier(node) && isBrowserOnlyGlobal(node.text) && !declared.has(node.text) && !isMemberName(node, parent)) {
-      logic = `reads the global ${node.text}`;
-    }
+/**
+ * Finds what a node of a body, or a node it holds, runs in the browser: an effect, a component it creates, a global only
+ * the browser has it reads (see `findBodyLogic`).
+ *
+ * @param node - The node.
+ * @param parent - The parent of the node, the node itself for the body.
+ * @param sourceFile - The file of the body.
+ * @param declared - The names the file declares, which are not globals.
+ * @returns The first thing it runs, `undefined` when it runs nothing of that.
+ */
+function findNodeLogic(node: Node, parent: Node, sourceFile: SourceFile, declared: ReadonlySet<string>): string | undefined {
+  if (isTypeNode(node)) {
+    return undefined;
+  }
 
-    if (!logic) {
-      forEachChild(node, child => visit(child, node));
-    }
-  };
+  if (isPropertyAccessExpression(node) && node.expression.kind === SyntaxKind.ThisKeyword && BROWSER_MEMBERS.has(node.name.text)) {
+    return `calls ${node.name.text}`;
+  }
 
-  visit(body, body);
-  return logic ?? (readsModuleSignal(body, sourceFile, compilerOptions) ? 'reads a signal of a module' : undefined);
+  if (isCallExpression(node) && isIdentifier(node.expression) && getCoreImport(node.expression, sourceFile) === 'effect') {
+    return 'calls effect';
+  }
+
+  if (isIdentifier(node) && isBrowserOnlyGlobal(node.text) && !declared.has(node.text) && !isMemberName(node, parent)) {
+    return `reads the global ${node.text}`;
+  }
+
+  return forEachChild(node, child => findNodeLogic(child, node, sourceFile, declared));
 }
 
 /**
@@ -461,19 +472,25 @@ function isMemberName(node: Identifier, parent: Node): boolean {
  */
 function collectDeclaredNames(sourceFile: SourceFile): ReadonlySet<string> {
   const names = new Set<string>();
-  const visit = (node: Node): void => {
-    if (isParameter(node) || isVariableDeclaration(node) || isBindingElement(node) || isImportSpecifier(node) || isNamespaceImport(node) || isImportClause(node) || (isFunctionLike(node) && !isClassMember(node))) {
-      const { name } = node as Node & { name?: Node };
-      if (name && isIdentifier(name)) {
-        names.add(name.text);
-      }
-    }
-
-    forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
+  collectNames(sourceFile, names);
   return names;
+}
+
+/**
+ * Collects the names a node, and the nodes it holds, declare (see `collectDeclaredNames`).
+ *
+ * @param node - The node.
+ * @param names - The names, filled.
+ */
+function collectNames(node: Node, names: Set<string>): void {
+  if (isParameter(node) || isVariableDeclaration(node) || isBindingElement(node) || isImportSpecifier(node) || isNamespaceImport(node) || isImportClause(node) || (isFunctionLike(node) && !isClassMember(node))) {
+    const { name } = node as Node & { name?: Node };
+    if (name && isIdentifier(name)) {
+      names.add(name.text);
+    }
+  }
+
+  forEachChild(node, child => collectNames(child, names));
 }
 
 /**

@@ -5,12 +5,11 @@ import { untracked } from '../../signals/untracked';
 import type { DeferBlock } from '../../types/defer-block.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
 import type { DeferBlockState } from '../../types/defer-testing/defer-block-state.type';
-import type { NodeStrategy } from '../../types/node-strategy.type';
-import type { Trigger } from '../../types/triggers/trigger.type';
+import type { DeferRun } from '../../types/defer-run.type';
 import type { _Context } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { registerDeferBlock } from '../defer-testing/defer-testing.util';
-import { armTriggers, toIdle } from '../hydration-triggers/hydration-triggers.util';
+import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
 
 /**
  * Renders a `@defer` block: its `@placeholder`, if any, until the first of its triggers fires, then its content, once
@@ -43,145 +42,49 @@ import { armTriggers, toIdle } from '../hydration-triggers/hydration-triggers.ut
 export function _defer(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: DeferBlock): void {
   const { nodeStrategy } = parentContext;
   const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer);
-  const { anchor } = nodeBlock;
-  const { placeholder, loading, error } = block;
-  const disarms = new Array<NoArgsVoidFunction>();
-  let active = true;
-  let fired = false;
-  let shown: _Context | undefined;
-  let state: DeferBlockState = 'placeholder';
-  let loaded: Promise<unknown> | undefined;
-
-  const disarm = () => {
-    for (let i = 0; i < disarms.length; i++) {
-      disarms[i]();
-    }
-    disarms.length = 0;
+  const run: DeferRun = {
+    parentNode,
+    parentContext,
+    anchor: nodeBlock.anchor,
+    block,
+    disarms: [],
+    placeholderEnd: 0,
+    loadingEnd: 0,
+    active: true,
+    fired: false,
+    settled: false,
+    state: 'placeholder'
   };
 
   parentContext.addUnlistener(() => {
-    active = false;
-    disarm();
+    run.active = false;
+    disarmAll(run.disarms);
   });
 
-  // Replaces the part shown with another one, created, or with nothing
-  const show = (next: DeferBlockState, render?: (strategy: NodeStrategy) => _Context) => untracked(() => {
-    state = next;
-    if (shown) {
-      parentContext.removeChild(shown);
-      shown.clear();
-      shown = undefined;
-    }
-
-    if (render) {
-      shown = parentContext.addChild(render(CREATE_NODES));
-    }
-  });
-
-  const renderPlaceholder = placeholder && ((strategy: NodeStrategy) => placeholder(parentNode, parentContext, anchor, strategy));
-  const renderLoading = loading && ((strategy: NodeStrategy) => loading(parentNode, parentContext, anchor, strategy));
-  const renderContent = (strategy: NodeStrategy) => block.content(parentNode, parentContext, anchor, strategy);
   // The placeholder the server rendered is adopted
-  if (renderPlaceholder) {
-    shown = parentContext.addChild(renderPlaceholder(nodeStrategy.adopt(parentNode, nodeBlock, '')));
+  if (block.placeholder) {
+    run.shown = parentContext.addChild(block.placeholder(parentNode, parentContext, run.anchor, nodeStrategy.adopt(parentNode, nodeBlock, '')));
   }
   nodeStrategy.close(parentNode, nodeBlock);
-
-  // When the placeholder has been shown for its minimum
-  const placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
-  const load = () => loaded ??= block.load!();
-  const prefetch = () => load().catch(() => undefined);
-
-  // Runs a function once a time has come, while the block is rendered
-  const at = (time: number, run: NoArgsVoidFunction) => {
-    const left = time - performance.now();
-    left > 0 ? setTimeout(() => active && run(), left) : run();
-  };
-
-  const fire = () => {
-    if (fired) {
-      return;
-    }
-
-    fired = true;
-    disarm();
-    if (!block.load) {
-      at(placeholderEnd, () => show('complete', renderContent));
-      return;
-    }
-
-    let settled = false;
-    let loadingEnd = 0;
-    if (renderLoading) {
-      at(Math.max(placeholderEnd, performance.now() + (block.loadingAfter ?? 0)), () => {
-        if (!settled) {
-          show('loading', renderLoading);
-          loadingEnd = performance.now() + (block.loadingMinimum ?? 0);
-        }
-      });
-    }
-
-    // The part following the placeholder and the @loading waits for them to be shown for their minimum
-    const settle = (run: NoArgsVoidFunction) => {
-      settled = true;
-      if (active) {
-        at(Math.max(placeholderEnd, loadingEnd), run);
-      }
-    };
-
-    load().then(() => settle(() => show('complete', renderContent)), (failure: unknown) => settle(() => {
-      if (error) {
-        show('error', strategy => error(parentNode, parentContext, anchor, strategy, failure));
-      } else {
-        console.error(failure);
-        show('placeholder', renderPlaceholder);
-      }
-    }));
-  };
+  run.placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
 
   const fixture: DeferBlockFixture = {
     get state() {
-      return state;
+      return run.state;
     },
-    render: async (next, failure) => {
-      fired = true;
-      disarm();
-      switch (next) {
-        case 'placeholder':
-          show(next, required(renderPlaceholder, '@placeholder'));
-          break;
-
-        case 'loading':
-          show(next, required(renderLoading, '@loading'));
-          break;
-
-        case 'error': {
-          const renderError = required(error, '@error');
-          show(next, strategy => renderError(parentNode, parentContext, anchor, strategy, failure));
-          break;
-        }
-
-        default:
-          if (block.load) {
-            await load();
-          }
-
-          show(next, renderContent);
-      }
-    }
+    render: (next, failure) => renderByHand(run, next, failure)
   };
   // The tests drive the block by hand
   if (registerDeferBlock(parentNode, parentContext, fixture)) {
     return;
   }
 
-  const watched = (triggers: ReadonlyArray<Exclude<Trigger, 'never'>>, elements: readonly Element[]) => elements.length ? triggers : triggers.map(toIdle);
   queueMicrotask(() => {
-    if (active && !fired) {
-      const elements = elementsOf(shown, parentNode);
-      disarms.push(armTriggers(watched(block.triggers, elements), elements, fire));
+    if (run.active && !run.fired) {
+      const elements = elementsOf(run.shown, parentNode);
+      run.disarms.push(armTriggers(watchedTriggers(block.triggers, elements), elements, () => fire(run)));
       if (block.prefetch) {
-        disarms.push(armTriggers(watched(block.prefetch, elements), elements, prefetch));
+        run.disarms.push(armTriggers(watchedTriggers(block.prefetch, elements), elements, () => prefetch(run)));
       }
     }
   });
@@ -189,22 +92,182 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   if (block.when) {
     const when = block.when;
     // Fired once the effect has run: the effect is disposed by the trigger firing
-    disarms.push(effect(() => {
+    run.disarms.push(effect(() => {
       if (when()) {
-        queueMicrotask(() => active && fire());
+        queueMicrotask(() => run.active && fire(run));
       }
     }));
   }
 
   if (block.prefetchWhen) {
     const prefetchWhen = block.prefetchWhen;
-    disarms.push(effect(() => {
+    run.disarms.push(effect(() => {
       if (prefetchWhen()) {
-        queueMicrotask(() => active && !fired && prefetch());
+        queueMicrotask(() => run.active && !run.fired && prefetch(run));
       }
     }));
   }
 }
+
+
+/**
+ * Replaces the part of a block shown with another one, created, or with nothing.
+ *
+ * @param run - The block.
+ * @param next - The part to show.
+ * @param part - Renders the part, `undefined` to show nothing.
+ * @param failure - The error the modules failed to load with, for the `@error`.
+ */
+function show(run: DeferRun, next: DeferBlockState, part?: DeferBlock['error'], failure?: unknown): void {
+  untracked(() => {
+    run.state = next;
+    if (run.shown) {
+      run.parentContext.removeChild(run.shown);
+      run.shown.clear();
+      run.shown = undefined;
+    }
+
+    if (part) {
+      run.shown = run.parentContext.addChild(part(run.parentNode, run.parentContext, run.anchor, CREATE_NODES, failure));
+    }
+  });
+}
+
+/**
+ * Loads the modules of the content of a block, once.
+ *
+ * @param run - The block, whose `load` is defined.
+ * @returns The load.
+ */
+function load(run: DeferRun): Promise<unknown> {
+  return run.loaded ??= run.block.load!();
+}
+
+/**
+ * Loads the modules of the content of a block without rendering it, silent when they fail to load.
+ *
+ * @param run - The block, whose `load` is defined.
+ * @returns The load, never rejected.
+ */
+function prefetch(run: DeferRun): Promise<unknown> {
+  return load(run).catch(() => undefined);
+}
+
+/**
+ * Runs a task once a time has come, while the block is rendered.
+ *
+ * @param run - The block.
+ * @param time - The time, as `performance.now()` measures it.
+ * @param task - The task.
+ */
+function at(run: DeferRun, time: number, task: NoArgsVoidFunction): void {
+  const left = time - performance.now();
+  left > 0 ? setTimeout(() => run.active && task(), left) : task();
+}
+
+/**
+ * Renders the content of a block, once a trigger fires: the `@loading` while its modules load, then the content, or the
+ * `@error`.
+ *
+ * @param run - The block.
+ */
+function fire(run: DeferRun): void {
+  if (run.fired) {
+    return;
+  }
+
+  run.fired = true;
+  disarmAll(run.disarms);
+  const { block } = run;
+  if (!block.load) {
+    at(run, run.placeholderEnd, () => show(run, 'complete', block.content));
+    return;
+  }
+
+  if (block.loading) {
+    at(run, Math.max(run.placeholderEnd, performance.now() + (block.loadingAfter ?? 0)), () => showLoading(run));
+  }
+
+  load(run).then(() => settle(run, () => show(run, 'complete', block.content)), (failure: unknown) => settle(run, () => fail(run, failure)));
+}
+
+/**
+ * Shows the `@loading` of a block, unless its modules have already loaded.
+ *
+ * @param run - The block, which declares a `@loading`.
+ */
+function showLoading(run: DeferRun): void {
+  if (!run.settled) {
+    show(run, 'loading', run.block.loading);
+    run.loadingEnd = performance.now() + (run.block.loadingMinimum ?? 0);
+  }
+}
+
+/**
+ * Runs the task following the load of the modules of a block, once the `@placeholder` and the `@loading` have been
+ * shown for their minimum.
+ *
+ * @param run - The block.
+ * @param task - The task.
+ */
+function settle(run: DeferRun, task: NoArgsVoidFunction): void {
+  run.settled = true;
+  if (run.active) {
+    at(run, Math.max(run.placeholderEnd, run.loadingEnd), task);
+  }
+}
+
+/**
+ * Shows the `@error` of a block whose modules failed to load, or, without one, logs the error and shows the
+ * `@placeholder` again.
+ *
+ * @param run - The block.
+ * @param failure - The error the modules failed to load with.
+ */
+function fail(run: DeferRun, failure: unknown): void {
+  const { error, placeholder } = run.block;
+  if (error) {
+    show(run, 'error', error, failure);
+  } else {
+    console.error(failure);
+    show(run, 'placeholder', placeholder);
+  }
+}
+
+/**
+ * Shows a part of a block a test asks for, disarming its triggers: the content once its modules are loaded.
+ *
+ * @param run - The block.
+ * @param next - The part to show.
+ * @param failure - The error the `@error` is rendered with.
+ * @throws When the block does not declare the part.
+ */
+async function renderByHand(run: DeferRun, next: DeferBlockState, failure: unknown): Promise<void> {
+  run.fired = true;
+  disarmAll(run.disarms);
+  const { block } = run;
+  switch (next) {
+    case 'placeholder':
+      show(run, next, required(block.placeholder, '@placeholder'));
+      break;
+
+    case 'loading':
+      show(run, next, required(block.loading, '@loading'));
+      break;
+
+    case 'error':
+      show(run, next, required(block.error, '@error'), failure);
+      break;
+
+    default:
+      if (block.load) {
+        await load(run);
+      }
+
+      show(run, next, block.content);
+  }
+}
+
 
 /**
  * Returns a part of a block a test shows, throwing when the block does not declare it.

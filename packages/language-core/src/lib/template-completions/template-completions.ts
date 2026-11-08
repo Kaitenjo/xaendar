@@ -1,6 +1,6 @@
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
-import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type Symbol, SymbolFlags } from 'typescript';
+import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
 import { analyzeCompletionTemplate, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports } from '../template-analysis/template-analysis';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
@@ -195,8 +195,7 @@ export function getTemplateKeywordCompletions(templatePath: string, source: stri
   }
 
   const { keywords, span, clientPlaceholder } = context;
-  const isServerKeyword = (keyword: KeywordContext['keywords'][number]) => SERVER_KEYWORDS.has(keyword) || (keyword === 'placeholder' && !!clientPlaceholder);
-  const available = readSsr(dirname(templatePath)) === false ? keywords.filter(keyword => !isServerKeyword(keyword)) : keywords;
+  const available = readSsr(dirname(templatePath)) === false ? keywords.filter(keyword => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
   return available.map((keyword, index): TemplateCompletion => ({
     name: `@${keyword}`,
     kind: ScriptElementKind.keyword,
@@ -205,6 +204,18 @@ export function getTemplateKeywordCompletions(templatePath: string, source: stri
     snippet: KEYWORD_SNIPPETS[keyword],
     retrigger: RETRIGGERING_KEYWORDS.has(keyword)
   }));
+}
+
+/**
+ * Tells whether a keyword renders only in a project rendering on the server: `@hydrate`, `@client` and the
+ * `@placeholder` of a `@client`.
+ *
+ * @param keyword - The keyword.
+ * @param clientPlaceholder - Whether a `@placeholder` written there follows a `@client`.
+ * @returns `true` for a keyword of the rendering on the server.
+ */
+function isServerKeyword(keyword: KeywordContext['keywords'][number], clientPlaceholder: boolean): boolean {
+  return SERVER_KEYWORDS.has(keyword) || (keyword === 'placeholder' && clientPlaceholder);
 }
 
 /**
@@ -442,11 +453,23 @@ function findShimPosition({ typeCheck, languageService, shimPath, bodyLineOffset
  */
 function getTemplateNames({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile, position }: ShimPosition): string[] {
   const bodyStart = shimFile.getPositionOfLineAndCharacter(bodyLineOffset, 0);
-  const isTemplateName = ({ name, valueDeclaration }: Symbol) => valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
   return languageService.getProgram()!.getTypeChecker()
     .getSymbolsInScope(findNode(shimFile, position), SymbolFlags.Variable)
-    .filter(isTemplateName)
+    .filter(symbol => isTemplateName(symbol, shimFile, bodyStart))
     .map(({ name }) => name);
+}
+
+/**
+ * Tells whether a variable in scope in the shim is a name the template declares: declared by the type-check body, and
+ * not internal (named with `$$` or `__` first).
+ *
+ * @param symbol - The variable.
+ * @param shimFile - The shim.
+ * @param bodyStart - Where the type-check body starts in the shim.
+ * @returns `true` for a name of the template.
+ */
+function isTemplateName({ name, valueDeclaration }: Symbol, shimFile: SourceFile, bodyStart: number): boolean {
+  return valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
 }
 
 /**
@@ -487,27 +510,36 @@ function getMemberOrigins({ languageService }: TemplateAnalysis, { shimFile }: S
 function getImportedSymbolCompletions({ languageService, bodyLineOffset }: TemplateAnalysis, { shimFile }: ShimPosition, span: Span): TemplateCompletion[] {
   const checker = languageService.getProgram()!.getTypeChecker();
   const completions = new Array<TemplateCompletion>();
-  const add = (name: Identifier) => {
-    const symbol = checker.getSymbolAtLocation(name);
-    // The modules the types of the bindings are read through are imported under names starting with `__`
-    if (symbol && !name.text.startsWith('__')) {
-      completions.push({ name: name.text, kind: getSymbolKind(checker, symbol), sortText: '1', replacementSpan: span });
-    }
-  };
 
   for (let i = 0; i < shimFile.statements.length; i++) {
     const statement = shimFile.statements[i];
     const namedBindings = isImportDeclaration(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : undefined;
     if (namedBindings && isNamespaceImport(namedBindings)) {
-      add(namedBindings.name);
+      addImportedSymbol(completions, checker, namedBindings.name, span);
     } else if (namedBindings) {
       for (let j = 0; j < namedBindings.elements.length; j++) {
-        add(namedBindings.elements[j].name);
+        addImportedSymbol(completions, checker, namedBindings.elements[j].name, span);
       }
     }
   }
 
   return completions;
+}
+
+/**
+ * Proposes a symbol a template imports, unless it is one of the modules the types of the bindings are read through,
+ * imported under names starting with `__`.
+ *
+ * @param completions - The completions, filled.
+ * @param checker - The type checker of the shim.
+ * @param name - The name the symbol is imported under.
+ * @param span - The span of the identifier being written, which the completions replace.
+ */
+function addImportedSymbol(completions: TemplateCompletion[], checker: TypeChecker, name: Identifier, span: Span): void {
+  const symbol = checker.getSymbolAtLocation(name);
+  if (symbol && !name.text.startsWith('__')) {
+    completions.push({ name: name.text, kind: getSymbolKind(checker, symbol), sortText: '1', replacementSpan: span });
+  }
 }
 
 /**

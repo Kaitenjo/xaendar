@@ -74,20 +74,27 @@ function checkScope(nodes: readonly ASTNode[], check: OrderCheck): void {
  * @returns The names of the scope.
  */
 function declareNames(nodes: readonly ASTNode[], names: ScopeNames, level: Level): ScopeNames {
-  const declare = (name: string, declaration: Declaration): void => {
-    if (!names.has(name)) {
-      names.set(name, declaration);
-    }
-  };
-
   // The namespaces of the elements don't decide when they are created
   visitScopeDeclarations(nodes, 'html', {
-    ref: (element, { name }) => declare(name, { position: element.span.start, level }),
-    template: template => declare(template.declaration.name, { position: null, level, template }),
-    let: node => declare(node.name, { position: node.span.end, level, let: node })
+    ref: (element, { name }) => declareOnce(names, name, { position: element.span.start, level }),
+    template: template => declareOnce(names, template.declaration.name, { position: null, level, template }),
+    let: node => declareOnce(names, node.name, { position: node.span.end, level, let: node })
   });
 
   return names;
+}
+
+/**
+ * Adds a name to the names of a scope, unless the scope declares it already.
+ *
+ * @param names - The names of the scope.
+ * @param name - The name.
+ * @param declaration - Where the name is declared.
+ */
+function declareOnce(names: ScopeNames, name: string, declaration: Declaration): void {
+  if (!names.has(name)) {
+    names.set(name, declaration);
+  }
 }
 
 /**
@@ -545,17 +552,24 @@ function resolve(name: string, check: OrderCheck): Declaration | undefined {
  */
 function collectReads(expression: Expression): Identifier[] {
   const reads = new Array<Identifier>();
-  const visit = (node: Node, parent: Node): void => {
-    const isMemberName = (isPropertyAccessExpression(parent) || isPropertyAssignment(parent)) && parent.name === node;
-    if (isIdentifier(node) && !isMemberName) {
-      reads.push(node);
-    }
-
-    forEachExpressionChild(node, child => visit(child, node));
-  };
-
-  visit(expression, expression);
+  collectReadsOf(expression, expression, reads);
   return reads;
+}
+
+/**
+ * Collects the identifiers of a node of an expression, and of the nodes it holds, reading a name (see `collectReads`).
+ *
+ * @param node - The node.
+ * @param parent - The node holding it, the node itself for the root of the expression.
+ * @param reads - The identifiers, filled in the order they are written.
+ */
+function collectReadsOf(node: Node, parent: Node, reads: Identifier[]): void {
+  const isMemberName = (isPropertyAccessExpression(parent) || isPropertyAssignment(parent)) && parent.name === node;
+  if (isIdentifier(node) && !isMemberName) {
+    reads.push(node);
+  }
+
+  forEachExpressionChild(node, child => collectReadsOf(child, node, reads));
 }
 
 /**

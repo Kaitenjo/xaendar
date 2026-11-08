@@ -83,11 +83,9 @@ export function _renderElement(
   children: RenderChildren | null,
   ref?: string
 ): void {
-  const render = (context: _Context, anchor: Comment | null) => renderElement(parentNode, context, anchor, tagName, attributes, events, conditionalBindings, directives, children, ref);
-
   structuralDirectives.length || structuralConditionalBindings.length
-   ? renderStructuralElement(parentNode, context, anchor, structuralDirectives, structuralConditionalBindings, render)
-   : render(context, anchor);
+   ? renderStructuralElement(parentNode, context, anchor, structuralDirectives, structuralConditionalBindings, (elementContext, elementAnchor) => renderElement(parentNode, elementContext, elementAnchor, tagName, attributes, events, conditionalBindings, directives, children, ref))
+   : renderElement(parentNode, context, anchor, tagName, attributes, events, conditionalBindings, directives, children, ref);
 }
 
 /**

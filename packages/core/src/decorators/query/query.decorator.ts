@@ -411,12 +411,21 @@ function queryFirst<Value>(element: CustomElement, { selector, pick }: QueryMatc
  * @param matcher - How the query finds what it looks for.
  * @returns A {@link QuerySignal} of the values.
  */
-function queryEvery<Value>(element: CustomElement, { selector, pick }: QueryMatcher): QuerySignal<Value[]> {
-  const read = (shadowRoot: ShadowRoot) => {
-    const elements = Array.from(shadowRoot.querySelectorAll(selector));
-    return (pick ? pick(elements) : elements) as Value[];
-  };
-  return createQuerySignal<Value[]>(element, read, [], sameElements);
+function queryEvery<Value>(element: CustomElement, matcher: QueryMatcher): QuerySignal<Value[]> {
+  return createQuerySignal<Value[]>(element, shadowRoot => readEvery<Value>(shadowRoot, matcher), [], sameElements);
+}
+
+/**
+ * Reads all the values a matcher finds in a Shadow DOM, in document order.
+ *
+ * @template Value - The type of the values.
+ * @param shadowRoot - The Shadow DOM.
+ * @param matcher - How the query finds what it looks for.
+ * @returns The values.
+ */
+function readEvery<Value>(shadowRoot: ShadowRoot, { selector, pick }: QueryMatcher): Value[] {
+  const elements = Array.from(shadowRoot.querySelectorAll(selector));
+  return (pick ? pick(elements) : elements) as Value[];
 }
 
 /**

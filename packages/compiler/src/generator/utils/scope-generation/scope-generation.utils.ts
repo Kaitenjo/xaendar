@@ -29,31 +29,27 @@ import type { TemplateFunctionFactory } from '../../types/template-function-fact
  */
 export function declareScope(nodes: readonly ASTNode[], generatorContext: GeneratorContext, toTemplateFunction: TemplateFunctionFactory, templateFactory = '_template'): Required<GeneratorTransitionFunctionReturnType> | undefined {
   const declarations: Required<GeneratorTransitionFunctionReturnType> = { code: [], functionsToProcess: new Map() };
-  const add = (line: string): Required<GeneratorTransitionFunctionReturnType> => {
-    declarations.code.push(line);
-    return declarations;
-  };
-
   const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, generatorContext.namespace, {
     let: node => lets.push(node),
     ref: (_element, { name }) => {
       generatorContext.addIdentifier(name, 'value');
-      add(`context.declare('${name}');`);
+      declarations.code.push(`context.declare('${name}');`);
     },
     template: (template, namespace) => {
       const { name } = template.declaration;
       const key = `template_${name}_${template.span.start}`;
       generatorContext.addIdentifier(name, 'value');
       generatorContext.addTemplate(name, namespace);
-      add(`context.addIdentifier('${name}', ${templateFactory}(context, ${key}.bind(this)));`).functionsToProcess.set(key, toTemplateFunction(template, key, namespace, generatorContext));
+      declarations.code.push(`context.addIdentifier('${name}', ${templateFactory}(context, ${key}.bind(this)));`);
+      declarations.functionsToProcess.set(key, toTemplateFunction(template, key, namespace, generatorContext));
     }
   });
 
   for (let i = 0; i < lets.length; i++) {
     const { name, value } = lets[i];
     generatorContext.addIdentifier(name, resolveExpression(value, generatorContext).reactive ? 'signal' : 'value');
-    add(`context.declare('${name}', 'let');`);
+    declarations.code.push(`context.declare('${name}', 'let');`);
   }
 
   return declarations.code.length ? declarations : undefined;

@@ -88,26 +88,6 @@ export class Generator {
       of a template where it is rendered, as the server sees it
     */
     const parentTags = new Map<string, string | undefined>();
-    const processFunctions = (functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess'], parentTag?: string) => {
-      if (functionsToProcess) {
-        for (const [key, value] of functionsToProcess.entries()) {
-          this._nodeToProcess.set(key, value);
-          const { node } = value.fn;
-          switch (node.type) {
-            case ASTNodeType.Element:
-              parentTags.set(key, node.tagName);
-              break;
-
-            case ASTNodeType.Template:
-              parentTags.set(key, undefined);
-              break;
-
-            default:
-              parentTags.set(key, parentTag);
-          }
-        }
-      }
-    };
 
     try {
       this._nodeToProcess.clear();
@@ -136,7 +116,7 @@ export class Generator {
 
       const rootDeclarations = declareScope(this._ast, generatorContext, toTemplateFunction);
       if (rootDeclarations) {
-        processFunctions(rootDeclarations.functionsToProcess);
+        this._processFunctions(parentTags, rootDeclarations.functionsToProcess);
         generatedCode.push(...indent(rootDeclarations.code));
       }
 
@@ -145,7 +125,7 @@ export class Generator {
         const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), generatorContext, null, rootSeparators[i]);
         if (result) {
           const { code, functionsToProcess } = result;
-          processFunctions(functionsToProcess);
+          this._processFunctions(parentTags, functionsToProcess);
           generatedCode.push(...indent(code));
         }
       }
@@ -174,7 +154,7 @@ export class Generator {
         */
         const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context, toTemplateFunction) : undefined;
         if (declarations) {
-          processFunctions(declarations.functionsToProcess);
+          this._processFunctions(parentTags, declarations.functionsToProcess);
           generatedCode.push(...indent(declarations.code));
         }
 
@@ -185,7 +165,7 @@ export class Generator {
           const result = await this._processNode(child, parentNode, i.toString(), context, anchor ?? null, separators[i]);
           if (result) {
             const { code, functionsToProcess } = result;
-            processFunctions(functionsToProcess, parentTag);
+            this._processFunctions(parentTags, functionsToProcess, parentTag);
             functionBody.push(...code);
           }
         }
@@ -204,6 +184,38 @@ export class Generator {
       return (imports.length ? imports.concat(generatedCode) : generatedCode).join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
+    }
+  }
+
+  /**
+   * Queues the functions a node needs to generate, and records the tag name of the element each one renders its nodes
+   * into: the one of an element for its children, none for the content of a template, the one of the function holding
+   * it for a block.
+   *
+   * @param parentTags - The tag names, by name of the function.
+   * @param functionsToProcess - The functions, if any.
+   * @param parentTag - The tag name of the element the function holding the node renders into.
+   */
+  private _processFunctions(parentTags: Map<string, string | undefined>, functionsToProcess: GeneratorTransitionFunctionReturnType['functionsToProcess'], parentTag?: string): void {
+    if (!functionsToProcess?.size) {
+      return;
+    }
+
+    for (const [key, value] of functionsToProcess.entries()) {
+      this._nodeToProcess.set(key, value);
+      const { node } = value.fn;
+      switch (node.type) {
+        case ASTNodeType.Element:
+          parentTags.set(key, node.tagName);
+          break;
+
+        case ASTNodeType.Template:
+          parentTags.set(key, undefined);
+          break;
+
+        default:
+          parentTags.set(key, parentTag);
+      }
     }
   }
 

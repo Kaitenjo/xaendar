@@ -3,11 +3,11 @@ import { _SSR_MARKERS } from '../../costants';
 import { effect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
+import type { HydrateRun } from '../../types/hydrate-run.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import type { Trigger } from '../../types/triggers/trigger.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import type { _Context } from '../context/context.util';
-import { armTriggers, recordEvents, replayEvents, toIdle } from '../hydration-triggers/hydration-triggers.util';
+import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
 
 /**
  * Renders a `@hydrate` block, whose content the server rendered waits for the first of its triggers to hydrate.
@@ -36,56 +36,39 @@ import { armTriggers, recordEvents, replayEvents, toIdle } from '../hydration-tr
 export function _hydrate(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: HydrateBlock): void {
   const { nodeStrategy } = parentContext;
   const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'hydrate', _SSR_MARKERS.hydrate);
-  const disarms = new Array<NoArgsVoidFunction>();
-  let active = true;
-
-  const disarm = () => {
-    for (let i = 0; i < disarms.length; i++) {
-      disarms[i]();
-    }
-    disarms.length = 0;
+  const run: HydrateRun = {
+    parentNode,
+    parentContext,
+    nodeBlock,
+    block,
+    disarms: [],
+    serverNodes: [],
+    active: true,
+    fired: false,
+    hydrated: false,
+    interaction: false,
+    prefetchInteraction: false
   };
+
   parentContext.addUnlistener(() => {
-    active = false;
-    disarm();
+    run.active = false;
+    disarmAll(run.disarms);
   });
 
-  // The modules of the content are loaded once, for the trigger hydrating it and the ones prefetching them
-  let loaded: Promise<unknown> | undefined;
-  const loadModules = () => loaded ??= block.load!();
-  // Runs `onLoad` once the modules of the content are loaded: when they fail to load, the error is logged and `onError` runs
-  const load = (onLoad: NoArgsVoidFunction, onError?: NoArgsVoidFunction) => {
-    if (!block.load) {
-      onLoad();
-      return;
-    }
-
-    loadModules().then(() => active && onLoad(), (error: unknown) => {
-      if (active) {
-        console.error(error);
-        onError?.();
-      }
-    });
-  };
-
-  // Renders the content, getting its nodes with a strategy
-  const show = (strategy: NodeStrategy) => untracked(() => parentContext.addChild(block.content(parentNode, parentContext, nodeBlock.anchor, strategy)));
-
   if (nodeBlock.marker === undefined) {
-    load(() => show(nodeStrategy.adopt(parentNode, nodeBlock, '')));
+    load(run, () => show(run, nodeStrategy.adopt(parentNode, nodeBlock, '')));
     return;
   }
 
   // The nodes the server rendered stay, owned by the context until the content adopts them
-  const serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
-  let hydrated = false;
+  const serverNodes = run.serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
   for (let i = 0; i < serverNodes.length; i++) {
     parentContext.addNode(serverNodes[i]);
   }
 
   parentContext.addUnlistener(() => {
     let i = 0;
-    while (!hydrated && i < serverNodes.length) {
+    while (!run.hydrated && i < serverNodes.length) {
       parentContext.removeNode(serverNodes[i]);
       serverNodes[i].parentNode?.removeChild(serverNodes[i]);
       i++;
@@ -97,65 +80,23 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     return;
   }
 
-  // Adopts the nodes of the server, rendering again without warnings what the state changed meanwhile, then replays the events
-  const hydrate = () => load(() => {
-    hydrated = true;
-    for (let i = 0; i < serverNodes.length; i++) {
-      parentContext.removeNode(serverNodes[i]);
-    }
-
-    const claim = new ClaimNodes(hostOf(parentNode), true);
-    claim.startAt(parentNode, serverNodes[0] ?? nodeBlock.anchor);
-    const content = show(claim);
-    claim.close(parentNode, nodeBlock);
-    // The hydration of the content is over: it gets its nodes as the component holding it does
-    content.setNodeStrategy(parentContext.nodeStrategy);
-    if (recorded) {
-      replayEvents(recorded);
-    }
-  }, () => recorded?.stop());
-
   const elements = elementsOf(serverNodes);
-  const watched = (list: readonly Trigger[]) => elements.length ? list : list.map(toIdle);
-  const triggers = watched(block.triggers);
-  const interaction = triggers.includes('interaction');
-  const prefetch = block.prefetch && watched(block.prefetch);
-  const prefetchInteraction = !!prefetch?.includes('interaction');
-  // A failed prefetch is not reported: the trigger hydrating the content logs its error
-  const prefetchModules = () => {
-    loadModules().catch(() => undefined);
-  };
-  let fired = false;
-  const fire = () => {
-    if (!fired) {
-      fired = true;
-      disarm();
-      hydrate();
-    }
-  };
-
-  // An event on the content fires `interaction`, the one following `prefetch` too
-  const interact = () => {
-    if (prefetchInteraction && !fired) {
-      prefetchModules();
-    }
-
-    if (interaction) {
-      fire();
-    }
-  };
+  const triggers = watchedTriggers(block.triggers, elements);
+  const prefetch = block.prefetch && watchedTriggers(block.prefetch, elements);
+  run.interaction = triggers.includes('interaction');
+  run.prefetchInteraction = !!prefetch?.includes('interaction');
 
   // An interaction fires through the events recorded
-  disarms.push(armTriggers(interaction ? triggers.filter(trigger => trigger !== 'interaction') : triggers, elements, fire));
+  run.disarms.push(armTriggers(run.interaction ? triggers.filter(trigger => trigger !== 'interaction') : triggers, elements, () => fire(run)));
   if (prefetch) {
-    disarms.push(armTriggers(prefetchInteraction ? prefetch.filter(trigger => trigger !== 'interaction') : prefetch, elements, prefetchModules));
+    run.disarms.push(armTriggers(run.prefetchInteraction ? prefetch.filter(trigger => trigger !== 'interaction') : prefetch, elements, () => prefetchModules(run)));
   }
 
   if (block.prefetchWhen) {
     const prefetchWhen = block.prefetchWhen;
-    disarms.push(effect(() => {
+    run.disarms.push(effect(() => {
       if (prefetchWhen()) {
-        queueMicrotask(() => active && !fired && prefetchModules());
+        queueMicrotask(() => run.active && !run.fired && prefetchModules(run));
       }
     }));
   }
@@ -163,23 +104,133 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   if (block.when) {
     const when = block.when;
     // Fired once the effect has run: the effect is disposed by the trigger firing
-    disarms.push(effect(() => {
+    run.disarms.push(effect(() => {
       if (when()) {
-        queueMicrotask(() => active && fire());
+        queueMicrotask(() => run.active && fire(run));
       }
     }));
   }
 
   // Recorded until the content is hydrated, after its trigger fires too, while its modules load
-  const recorded = triggers.length && elements.length ? recordEvents(elements, () => interact()) : undefined;
+  const recorded = triggers.length && elements.length ? recordEvents(elements, () => interact(run)) : undefined;
   if (recorded) {
+    run.recorded = recorded;
     parentContext.addUnlistener(recorded.stop);
     // Fired once the block has been rendered: what the contract recorded was an interaction too
     if (recorded.events.length) {
-      queueMicrotask(() => active && interact());
+      queueMicrotask(() => run.active && interact(run));
     }
   }
 }
+
+
+/**
+ * Loads the modules of the content of a block, once, for the trigger hydrating it and the ones prefetching them.
+ *
+ * @param run - The block, whose `load` is defined.
+ * @returns The load.
+ */
+function loadModules(run: HydrateRun): Promise<unknown> {
+  return run.loaded ??= run.block.load!();
+}
+
+/**
+ * Loads the modules of the content of a block without hydrating it: a failed prefetch is not reported, the trigger
+ * hydrating the content logs its error.
+ *
+ * @param run - The block, whose `load` is defined.
+ */
+function prefetchModules(run: HydrateRun): void {
+  loadModules(run).catch(() => undefined);
+}
+
+/**
+ * Runs a task once the modules of the content of a block are loaded, while the block is rendered: when they fail to load,
+ * the error is logged and `onError` runs.
+ *
+ * @param run - The block.
+ * @param onLoad - The task.
+ * @param onError - Runs when the modules fail to load.
+ */
+function load(run: HydrateRun, onLoad: NoArgsVoidFunction, onError?: NoArgsVoidFunction): void {
+  if (!run.block.load) {
+    onLoad();
+    return;
+  }
+
+  loadModules(run).then(() => run.active && onLoad(), (error: unknown) => {
+    if (run.active) {
+      console.error(error);
+      onError?.();
+    }
+  });
+}
+
+/**
+ * Renders the content of a block, getting its nodes with a strategy.
+ *
+ * @param run - The block.
+ * @param strategy - The node strategy.
+ * @returns The context of the content.
+ */
+function show(run: HydrateRun, strategy: NodeStrategy): _Context {
+  return untracked(() => run.parentContext.addChild(run.block.content(run.parentNode, run.parentContext, run.nodeBlock.anchor, strategy)));
+}
+
+/**
+ * Hydrates the content of a block, once its modules are loaded: it adopts the nodes of the server, rendering again
+ * without warnings what the state changed meanwhile, then the events recorded are replayed.
+ *
+ * @param run - The block.
+ */
+function fire(run: HydrateRun): void {
+  if (run.fired) {
+    return;
+  }
+
+  run.fired = true;
+  disarmAll(run.disarms);
+  load(run, () => adopt(run), () => run.recorded?.stop());
+}
+
+/**
+ * Makes the content of a block adopt the nodes of the server, then replays the events recorded on them.
+ *
+ * @param run - The block.
+ */
+function adopt(run: HydrateRun): void {
+  const { parentNode, parentContext, serverNodes, nodeBlock } = run;
+  run.hydrated = true;
+  for (let i = 0; i < serverNodes.length; i++) {
+    parentContext.removeNode(serverNodes[i]);
+  }
+
+  const claim = new ClaimNodes(hostOf(parentNode), true);
+  claim.startAt(parentNode, serverNodes[0] ?? nodeBlock.anchor);
+  const content = show(run, claim);
+  claim.close(parentNode, nodeBlock);
+  // The hydration of the content is over: it gets its nodes as the component holding it does
+  content.setNodeStrategy(parentContext.nodeStrategy);
+  if (run.recorded) {
+    replayEvents(run.recorded);
+  }
+}
+
+/**
+ * Handles an event on the content of a block: it fires `interaction`, the one following `prefetch` too.
+ *
+ * @param run - The block.
+ */
+function interact(run: HydrateRun): void {
+  if (run.prefetchInteraction && !run.fired) {
+    prefetchModules(run);
+  }
+
+  if (run.interaction) {
+    fire(run);
+  }
+}
+
 
 /**
  * Returns the elements among some nodes.

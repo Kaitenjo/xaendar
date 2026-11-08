@@ -231,32 +231,40 @@ function emitResolvedNode(node: Node, parent: Node, generatorContext: CompilerCo
   const result: EmittedNode = { expression: '', segments: [] };
   let lastEnd = node.getStart();
 
-  /*
-    Appends the text copied verbatim from the source file between `start` and `end` (e.g. the spacing and
-    the punctuation between children), followed by the text emitted for a child, if any.
-  */
-  const append = (start: number, end: number, child?: EmittedNode): void => {
-    const verbatim = slice(sourceText, start, end);
-    const verbatimSpan = templateDelta === undefined ? undefined : { start: templateDelta + start, end: templateDelta + end };
-    const column = result.expression.length;
-    result.segments.push(...shiftSegments(segmentOf(verbatim, verbatimSpan), column));
-    if (child) {
-      result.segments.push(...shiftSegments(child.segments, column + verbatim.length));
-    }
-
-    result.expression = `${result.expression}${verbatim}${child?.expression ?? ''}`;
-    result.reactive = result.reactive || child?.reactive;
-  };
-
   // The type of a cast, kept for the type-check code, is written as is: its names are types, not members
   forEachChild(node, child => {
-    append(lastEnd, child.getStart(), isTypeNode(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
+    appendEmitted(result, sourceText, templateDelta, lastEnd, child.getStart(), isTypeNode(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
 
   // Append any trailing text after the last child (e.g. closing paren)
-  append(lastEnd, node.getEnd());
+  appendEmitted(result, sourceText, templateDelta, lastEnd, node.getEnd());
   return result;
+}
+
+/**
+ * Appends to the text emitted for a node the text copied verbatim from the source file between `start` and `end` (e.g.
+ * the spacing and the punctuation between its children), followed by the text emitted for a child, if any.
+ *
+ * @param result - The text emitted for the node so far, with its mapping.
+ * @param sourceText - The text of the source file of the expression.
+ * @param templateDelta - The offset turning a position of the source file into an offset of the template, `undefined`
+ *   when the expression is not mapped onto the template.
+ * @param start - Where the verbatim text starts in the source file.
+ * @param end - Where the verbatim text ends in the source file.
+ * @param child - The text emitted for the child following it, if any.
+ */
+function appendEmitted(result: EmittedNode, sourceText: string, templateDelta: number | undefined, start: number, end: number, child?: EmittedNode): void {
+  const verbatim = slice(sourceText, start, end);
+  const verbatimSpan = templateDelta === undefined ? undefined : { start: templateDelta + start, end: templateDelta + end };
+  const column = result.expression.length;
+  result.segments.push(...shiftSegments(segmentOf(verbatim, verbatimSpan), column));
+  if (child) {
+    result.segments.push(...shiftSegments(child.segments, column + verbatim.length));
+  }
+
+  result.expression = `${result.expression}${verbatim}${child?.expression ?? ''}`;
+  result.reactive = result.reactive || child?.reactive;
 }
 
 /**

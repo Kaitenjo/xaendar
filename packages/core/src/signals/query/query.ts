@@ -191,11 +191,10 @@ export function createSlotQuerySignal<Item, Value>(
   initialValue: Value,
   equals?: (a: Value, b: Value) => boolean
 ): QuerySignal<Value> {
-  const { selector, pick } = matcher;
-  const read = (elements: Element[]) => map((pick ? pick(elements) : elements) as Item[]);
+  const { selector } = matcher;
   return options.lightDom
-    ? createQuerySignal(element, () => read(Array.from(element.querySelectorAll(selector))), initialValue, equals, observeLightDom)
-    : createQuerySignal(element, shadowRoot => read(getProjectedElements(shadowRoot, selector, options.slots)), initialValue, equals, observeProjection);
+    ? createQuerySignal(element, () => readMatches(Array.from(element.querySelectorAll(selector)), matcher, map), initialValue, equals, observeLightDom)
+    : createQuerySignal(element, shadowRoot => readMatches(getProjectedElements(shadowRoot, selector, options.slots), matcher, map), initialValue, equals, observeProjection);
 }
 
 /**
@@ -259,4 +258,18 @@ function getProjectedElements(shadowRoot: ShadowRoot, selector: string, slots?: 
       }
       return retVal;
     });
+}
+
+/**
+ * Computes the value of a query on the content of an element from the elements its selector matches.
+ *
+ * @template Item - The type of what the matcher finds.
+ * @template Value - The type of the queried value.
+ * @param elements - The elements the selector matches, in order.
+ * @param matcher - How the query finds what it looks for.
+ * @param map - Computes the value from what the matcher finds.
+ * @returns The value.
+ */
+function readMatches<Item, Value>(elements: Element[], { pick }: QueryMatcher, map: (items: Item[]) => Value): Value {
+  return map((pick ? pick(elements) : elements) as Item[]);
 }

@@ -49,18 +49,27 @@ export function getTemplateWarnings(ast: readonly ASTNode[], shadowingMembers: r
 function findGlobalReads(expression: Expression): Identifier[] {
   const reads = new Array<Identifier>();
   const guarded = new Set<string>();
-  const visit = (node: Node, parent: Node): void => {
-    if (isTypeOfExpression(node) && isIdentifier(node.expression)) {
-      guarded.add(node.expression.text);
-    } else if (!isIdentifier(node)) {
-      forEachExpressionChild(node, child => visit(child, node));
-    } else if (isBrowserOnlyGlobal(node.text) && !isMemberName(node, parent)) {
-      reads.push(node);
-    }
-  };
-
-  visit(expression, expression);
+  collectGlobalReads(expression, expression, reads, guarded);
   return reads.filter(({ text }) => !guarded.has(text));
+}
+
+/**
+ * Collects the reads of the globals only the browser has in a node of an expression, and in the nodes it holds, and the
+ * names checked with `typeof` (see `findGlobalReads`).
+ *
+ * @param node - The node.
+ * @param parent - The parent of the node, the node itself for the expression.
+ * @param reads - The identifiers read, filled.
+ * @param guarded - The names checked with `typeof`, filled.
+ */
+function collectGlobalReads(node: Node, parent: Node, reads: Identifier[], guarded: Set<string>): void {
+  if (isTypeOfExpression(node) && isIdentifier(node.expression)) {
+    guarded.add(node.expression.text);
+  } else if (!isIdentifier(node)) {
+    forEachExpressionChild(node, child => collectGlobalReads(child, node, reads, guarded));
+  } else if (isBrowserOnlyGlobal(node.text) && !isMemberName(node, parent)) {
+    reads.push(node);
+  }
 }
 
 /**

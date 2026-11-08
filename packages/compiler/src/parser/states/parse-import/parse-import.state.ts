@@ -59,31 +59,42 @@ export function parseImport(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
  */
 export function parseSpecifier(raw: string, offset: number): ImportSpecifier {
   const trimmed = raw.trim();
-  // The exported name always starts the specifier, the local alias always ends it
-  const withSpans = (imported: string, local: string): ImportSpecifier => ({
-    imported,
-    local,
-    importedSpan: { start: offset, end: offset + imported.length },
-    localSpan: { start: offset + trimmed.length - local.length, end: offset + trimmed.length }
-  });
-
   // Namespace import: `* as ns`
   const namespaceMatch = trimmed.match(/^\*\s+as\s+([A-Za-z_$][\w$]*)$/);
   if (namespaceMatch) {
-    return withSpans('*', namespaceMatch[1]);
+    return toSpecifier('*', namespaceMatch[1], offset, trimmed.length);
   }
 
   // Default import with alias: `default as D`
   const defaultMatch = trimmed.match(/^default\s+as\s+([A-Za-z_$][\w$]*)$/);
   if (defaultMatch) {
-    return withSpans('default', defaultMatch[1]);
+    return toSpecifier('default', defaultMatch[1], offset, trimmed.length);
   }
 
   // Named import with optional alias: `foo` or `foo as bar`
   const namedMatch = trimmed.match(/^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
   if (namedMatch) {
-    return withSpans(namedMatch[1], namedMatch[2] ?? namedMatch[1]);
+    return toSpecifier(namedMatch[1], namedMatch[2] ?? namedMatch[1], offset, trimmed.length);
   }
 
   throw `Invalid import specifier "${raw}".`;
+}
+
+/**
+ * Describes an import specifier with the spans of its names: the exported name always starts the specifier, the local
+ * alias always ends it.
+ *
+ * @param imported - The exported name.
+ * @param local - The local name.
+ * @param offset - The offset of the trimmed specifier in the template.
+ * @param length - The length of the trimmed specifier.
+ * @returns The specifier.
+ */
+function toSpecifier(imported: string, local: string, offset: number, length: number): ImportSpecifier {
+  return {
+    imported,
+    local,
+    importedSpan: { start: offset, end: offset + imported.length },
+    localSpan: { start: offset + length - local.length, end: offset + length }
+  };
 }

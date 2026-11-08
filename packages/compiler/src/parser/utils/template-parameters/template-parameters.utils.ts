@@ -30,11 +30,10 @@ const FUNCTION_PREFIX = 'function __template(';
  */
 export function parseTemplateParameters(text: string, offset: number, template: string): TemplateParameterNode[] {
   const sourceFile = createSourceFile('__template.ts', `${FUNCTION_PREFIX}${text}) {}`, ScriptTarget.ESNext, true);
-  const toSpan = (start: number, end: number): Span => ({ start: offset + start - FUNCTION_PREFIX.length, end: offset + end - FUNCTION_PREFIX.length });
   const declaration = sourceFile.statements[0];
 
   if (sourceFile.statements.length !== 1 || !isFunctionDeclaration(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
-    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toSpan(FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
+    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toTemplateSpan(offset, FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
   }
 
   const parameters = new Array<TemplateParameterNode>();
@@ -44,37 +43,36 @@ export function parseTemplateParameters(text: string, offset: number, template: 
   for (let i = 0; i < declaration.parameters.length; i++) {
     const parameter = declaration.parameters[i];
     const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
-    const invalid = (reason: string): Error => new Error(`The parameter '${parameter.getText(sourceFile)}' of template "${template}" ${reason}`, { cause: toSpan(parameter.getStart(sourceFile), parameter.getEnd()) });
 
     if (!isIdentifier(name)) {
-      throw invalid('cannot destructure its value: name it, and read its properties in the content of the template');
+      throw invalidParameter(parameter, sourceFile, template, offset, 'cannot destructure its value: name it, and read its properties in the content of the template');
     }
 
     if (dotDotDotToken) {
-      throw invalid('cannot be a rest parameter: a template takes a fixed number of arguments');
+      throw invalidParameter(parameter, sourceFile, template, offset, 'cannot be a rest parameter: a template takes a fixed number of arguments');
     }
 
     if (questionToken && initializer) {
-      throw invalid('cannot be both optional and with a default value: the default value already makes it optional');
+      throw invalidParameter(parameter, sourceFile, template, offset, 'cannot be both optional and with a default value: the default value already makes it optional');
     }
 
     if (modifiers?.length) {
-      throw invalid('cannot have modifiers or decorators');
+      throw invalidParameter(parameter, sourceFile, template, offset, 'cannot have modifiers or decorators');
     }
 
     // A written type is empty when only its `:` is
     const typed = type?.getWidth(sourceFile) ? type : undefined;
     if (!typed && (type || !initializer)) {
-      throw invalid(questionToken ? `needs a type, e.g. ${name.text}?: string` : `needs a type or a default value, e.g. ${name.text}: string or ${name.text} = ''`);
+      throw invalidParameter(parameter, sourceFile, template, offset, questionToken ? `needs a type, e.g. ${name.text}?: string` : `needs a type or a default value, e.g. ${name.text}: string or ${name.text} = ''`);
     }
 
     if (questionToken || initializer) {
       omittable ??= parameter;
     } else if (omittable) {
-      throw invalid(`must be optional or have a default value, as '${omittable.getText(sourceFile)}' before it: a @render leaves out only the last arguments`);
+      throw invalidParameter(parameter, sourceFile, template, offset, `must be optional or have a default value, as '${omittable.getText(sourceFile)}' before it: a @render leaves out only the last arguments`);
     }
 
-    const nameSpan = toSpan(name.getStart(sourceFile), name.getEnd());
+    const nameSpan = toTemplateSpan(offset, name.getStart(sourceFile), name.getEnd());
     assertDeclaredName(name.text, nameSpan, 'parameter');
     if (names.has(name.text)) {
       throw new Error(`Template "${template}" declares the parameter "${name.text}" more than once`, { cause: nameSpan });
@@ -84,7 +82,7 @@ export function parseTemplateParameters(text: string, offset: number, template: 
     const node: TemplateParameterNode = { name: name.text, nameSpan };
     if (typed) {
       node.type = typed.getText(sourceFile);
-      node.typeSpan = toSpan(typed.getStart(sourceFile), typed.getEnd());
+      node.typeSpan = toTemplateSpan(offset, typed.getStart(sourceFile), typed.getEnd());
     }
 
     if (questionToken) {
@@ -92,7 +90,7 @@ export function parseTemplateParameters(text: string, offset: number, template: 
     }
 
     if (initializer) {
-      const { start } = toSpan(initializer.getStart(sourceFile), initializer.getEnd());
+      const { start } = toTemplateSpan(offset, initializer.getStart(sourceFile), initializer.getEnd());
       node.initializer = validateExpression(initializer.getText(sourceFile), start).node;
     }
 
@@ -146,4 +144,30 @@ function countCommas(text: string, start: number, end: number): number | undefin
   }
 
   return commas;
+}
+
+/**
+ * Maps a range of the source file holding the parameters onto the template.
+ *
+ * @param offset - The offset of the template the parameters start at.
+ * @param start - Where the range starts in the source file.
+ * @param end - Where the range ends in the source file.
+ * @returns The span of the range in the template.
+ */
+function toTemplateSpan(offset: number, start: number, end: number): Span {
+  return { start: offset + start - FUNCTION_PREFIX.length, end: offset + end - FUNCTION_PREFIX.length };
+}
+
+/**
+ * Creates the error of a parameter of a template that cannot be declared as written.
+ *
+ * @param parameter - The parameter.
+ * @param sourceFile - The source file holding the parameters.
+ * @param template - The name of the template.
+ * @param offset - The offset of the template the parameters start at.
+ * @param reason - Why the parameter cannot be declared, e.g. `cannot have modifiers or decorators`.
+ * @returns The error, spanning the parameter.
+ */
+function invalidParameter(parameter: ParameterDeclaration, sourceFile: SourceFile, template: string, offset: number, reason: string): Error {
+  return new Error(`The parameter '${parameter.getText(sourceFile)}' of template "${template}" ${reason}`, { cause: toTemplateSpan(offset, parameter.getStart(sourceFile), parameter.getEnd()) });
 }

@@ -40,26 +40,33 @@ export function _removeAppliedDirective(element: Element, directive: CustomDirec
  */
 export function _getAppliedDirectives<Directive extends CustomDirective>(element: Element, Directive: Constructor<Directive>): Directive[] | undefined {
   const retVal = new Array<Directive>;
-  const isDirective = (directive: CustomDirective): directive is Directive => directive instanceof Directive;
-  const add = (directive: CustomDirective) => {
-    if (isDirective(directive)) {
-      retVal.push(directive);
-    }
-  };
 
   const hostDirectives = element instanceof CustomElement ? element.hostDirectives : undefined;
   if (hostDirectives?.size) {
     for (const directive of hostDirectives.values()) {
-      add(directive);
+      addInstance(retVal, directive, Directive);
     }
   }
 
   const directives = applied.get(element);
   if (directives?.length) {
     for (let i = 0; i < directives.length; i++) {
-      add(directives[i]);
+      addInstance(retVal, directives[i], Directive);
     }
   }
 
   return retVal.length === 0 ? undefined : retVal;
+}
+
+/**
+ * Adds a directive to a list when it is an instance of a class.
+ *
+ * @param directives - The list.
+ * @param directive - The directive.
+ * @param Directive - The class, whose subclasses match too.
+ */
+function addInstance<Directive extends CustomDirective>(directives: Directive[], directive: CustomDirective, Directive: Constructor<Directive>): void {
+  if (directive instanceof Directive) {
+    directives.push(directive);
+  }
 }

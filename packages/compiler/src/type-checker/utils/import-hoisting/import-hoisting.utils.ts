@@ -64,11 +64,21 @@ function hoistLine(currentLine: Line, aliases: Map<string, string>): Line {
     return currentLine;
   }
 
-  const shift = (column: number): number => shifts.reduce((shifted, { end, delta }) => (end <= column ? shifted + delta : shifted), column);
   const hoisted: Line = { text };
   if (currentLine.mappings) {
-    hoisted.mappings = currentLine.mappings.map(({ columnStart, columnEnd, original }): LineMapping => ({ columnStart: shift(columnStart), columnEnd: shift(columnEnd), original }));
+    hoisted.mappings = currentLine.mappings.map(({ columnStart, columnEnd, original }): LineMapping => ({ columnStart: shiftColumn(shifts, columnStart), columnEnd: shiftColumn(shifts, columnEnd), original }));
   }
 
   return hoisted;
+}
+
+/**
+ * Moves a column of a line by the change of length of the replacements ending before it.
+ *
+ * @param shifts - Where each replacement ends, and how much longer it made the line.
+ * @param column - The column.
+ * @returns The column in the line with the replacements.
+ */
+function shiftColumn(shifts: ReadonlyArray<{ end: number, delta: number }>, column: number): number {
+  return shifts.reduce((shifted, { end, delta }) => (end <= column ? shifted + delta : shifted), column);
 }

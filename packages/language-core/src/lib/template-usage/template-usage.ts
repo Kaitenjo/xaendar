@@ -93,7 +93,6 @@ function findExpressionLogic(expression: Expression, reactive: ReadonlySet<strin
  * @param components - The usages, filled as they are found.
  */
 function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUsage, 'dynamic' | 'placeholder'>, metadatas: readonly ComponentOrDirectiveMetadata[], reactive: ReadonlySet<string>, components: ComponentUsage[]): void {
-  const visit = (children: readonly ASTNode[], dynamic = position.dynamic): void => collectComponents(children, { ...position, dynamic }, metadatas, reactive, components);
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     switch (node.type) {
@@ -102,40 +101,40 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
         if (component) {
           components.push(toUsage(node, component, position, reactive));
         }
-        visit(node.children);
+        collectComponents(node.children, position, metadatas, reactive, components);
         break;
       }
 
       case ASTNodeType.If:
       case ASTNodeType.ElseIf: {
         const dynamic = position.dynamic || isReactive(node.conditionNode, reactive);
-        visit(node.children, dynamic);
+        collectComponents(node.children, { ...position, dynamic }, metadatas, reactive, components);
         if (node.alternate) {
-          visit([node.alternate], dynamic);
+          collectComponents([node.alternate], { ...position, dynamic }, metadatas, reactive, components);
         }
         break;
       }
 
       case ASTNodeType.For:
-        visit(node.children, position.dynamic || isReactive(node.iterableExpression, reactive));
+        collectComponents(node.children, { ...position, dynamic: position.dynamic || isReactive(node.iterableExpression, reactive) }, metadatas, reactive, components);
         break;
 
       case ASTNodeType.Switch:
-        visit(node.children, position.dynamic || isReactive(node.expression, reactive));
+        collectComponents(node.children, { ...position, dynamic: position.dynamic || isReactive(node.expression, reactive) }, metadatas, reactive, components);
         break;
 
       case ASTNodeType.Template:
-        visit(node.children, true);
+        collectComponents(node.children, { ...position, dynamic: true }, metadatas, reactive, components);
         break;
 
       // The browser creates the content where the server rendered the @catch, and the @catch where the content throws
       case ASTNodeType.Try:
-        visit(node.children, true);
-        visit(node.catch.children, true);
+        collectComponents(node.children, { ...position, dynamic: true }, metadatas, reactive, components);
+        collectComponents(node.catch.children, { ...position, dynamic: true }, metadatas, reactive, components);
         break;
 
       case ASTNodeType.Client:
-        visit(node.children, true);
+        collectComponents(node.children, { ...position, dynamic: true }, metadatas, reactive, components);
         if (node.placeholder) {
           collectComponents(node.placeholder.children, { dynamic: position.dynamic, placeholder: true }, metadatas, reactive, components);
         }
@@ -143,24 +142,24 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
 
       // The browser creates each part of a @defer, the @placeholder too when the modules of the content fail to load
       case ASTNodeType.Defer:
-        visit(node.children, true);
+        collectComponents(node.children, { ...position, dynamic: true }, metadatas, reactive, components);
         if (node.placeholder) {
-          visit(node.placeholder.children, true);
+          collectComponents(node.placeholder.children, { ...position, dynamic: true }, metadatas, reactive, components);
         }
 
         if (node.loading) {
-          visit(node.loading.children, true);
+          collectComponents(node.loading.children, { ...position, dynamic: true }, metadatas, reactive, components);
         }
 
         if (node.error) {
-          visit(node.error.children, true);
+          collectComponents(node.error.children, { ...position, dynamic: true }, metadatas, reactive, components);
         }
         break;
 
       case ASTNodeType.Else:
       case ASTNodeType.Case:
       case ASTNodeType.Hydrate:
-        visit(node.children);
+        collectComponents(node.children, position, metadatas, reactive, components);
         break;
 
       default:
@@ -260,17 +259,25 @@ function isReactive(expression: Node, reactive: ReadonlySet<string>): boolean {
  * @param call - Invoked for each call.
  */
 function visitReads(expression: Node, read: (identifier: Identifier) => void, call?: () => void): void {
-  const visit = (node: Node, parent: Node): void => {
-    if (isCallExpression(node)) {
-      call?.();
-    }
+  visitNodeReads(expression, expression, read, call);
+}
 
-    if (!isIdentifier(node)) {
-      forEachExpressionChild(node, child => visit(child, node));
-    } else if (!((isPropertyAccessExpression(parent) || isPropertyAssignment(parent)) && parent.name === node)) {
-      read(node);
-    }
-  };
+/**
+ * Visits the identifiers a node of an expression, and the nodes it holds, read (see `visitReads`).
+ *
+ * @param node - The node.
+ * @param parent - The parent of the node, the node itself for the expression.
+ * @param read - Invoked for each identifier.
+ * @param call - Invoked for each call.
+ */
+function visitNodeReads(node: Node, parent: Node, read: (identifier: Identifier) => void, call?: () => void): void {
+  if (isCallExpression(node)) {
+    call?.();
+  }
 
-  visit(expression, expression);
+  if (!isIdentifier(node)) {
+    forEachExpressionChild(node, child => visitNodeReads(child, node, read, call));
+  } else if (!((isPropertyAccessExpression(parent) || isPropertyAssignment(parent)) && parent.name === node)) {
+    read(node);
+  }
 }

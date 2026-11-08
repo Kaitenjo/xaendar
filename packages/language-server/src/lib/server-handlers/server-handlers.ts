@@ -248,12 +248,11 @@ export class XaendarLanguageServer {
     }
 
     const { only } = context;
-    const isWanted = (kind: string): boolean => !only?.length || only.some(wanted => kind === wanted || kind.startsWith(`${wanted}.`));
     const source = document.getText();
     const analysis = (await this._getAnalysis(document))?.analysis;
     const actions = new Array<CodeAction>();
 
-    const unused = analysis?.source === source && isWanted(CodeActionKind.QuickFix) ? findUnusedImports(analysis) : undefined;
+    const unused = analysis?.source === source && isWantedKind(CodeActionKind.QuickFix, only) ? findUnusedImports(analysis) : undefined;
     if (unused) {
       const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
       for (let i = 0; i < unused.length; i++) {
@@ -264,7 +263,7 @@ export class XaendarLanguageServer {
       }
     }
 
-    const organization = isWanted(CodeActionKind.SourceOrganizeImports) ? organizeTemplateImports(source, analysis) : undefined;
+    const organization = isWantedKind(CodeActionKind.SourceOrganizeImports, only) ? organizeTemplateImports(source, analysis) : undefined;
     if (organization) {
       actions.push({ title: 'Organize imports', kind: CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
     }
@@ -600,4 +599,16 @@ export class XaendarLanguageServer {
  */
 function isTemplate(document: TextDocument): boolean {
   return document.uri.endsWith(TEMPLATE_SUFFIX);
+}
+
+/**
+ * Tells whether the client asks for the code actions of a kind: all of them when it names none, or the ones of the kinds
+ * it names and of their sub-kinds.
+ *
+ * @param kind - The kind of the code actions.
+ * @param only - The kinds the client asks for, if any.
+ * @returns `true` when it asks for them.
+ */
+function isWantedKind(kind: string, only: readonly string[] | undefined): boolean {
+  return !only?.length || only.some(wanted => kind === wanted || kind.startsWith(`${wanted}.`));
 }

@@ -23,35 +23,24 @@ export function toStatements(pieces: readonly ServerCodePiece[]): string[] {
   const parts = new Array<string>();
   let html = '';
 
-  const flushHtml = (): void => {
-    if (html) {
-      parts.push(toStringLiteral(html));
-      html = '';
-    }
-  };
-
-  const flush = (): void => {
-    flushHtml();
-    if (parts.length) {
-      lines.push(`out.push(${parts.join(' + ')});`);
-      parts.length = 0;
-    }
-  };
-
   for (let i = 0; i < pieces.length; i++) {
     const piece = pieces[i];
     if ('html' in piece) {
       html = `${html}${piece.html}`;
     } else if ('value' in piece) {
-      flushHtml();
+      pushHtml(parts, html);
+      html = '';
       parts.push(piece.value);
     } else {
-      flush();
+      pushHtml(parts, html);
+      html = '';
+      pushOutput(lines, parts);
       lines.push(...piece.statement.split('\n'));
     }
   }
 
-  flush();
+  pushHtml(parts, html);
+  pushOutput(lines, parts);
   return lines;
 }
 
@@ -80,4 +69,29 @@ export function toBlockFunction(node: Extract<ASTNode, { children: ASTNode[] }>,
     fn: { node, context: new GeneratorContext(generatorContext), parent: { id: key, tag: parent.tag } },
     args: ['out', 'parentContext']
   };
+}
+
+/**
+ * Adds the HTML following the last part pushed into the output to the parts, as a string literal.
+ *
+ * @param parts - The parts of the next `out.push(…)`.
+ * @param html - The HTML, empty for none.
+ */
+function pushHtml(parts: string[], html: string): void {
+  if (html) {
+    parts.push(toStringLiteral(html));
+  }
+}
+
+/**
+ * Writes the parts collected into a single `out.push(…)`, then forgets them.
+ *
+ * @param lines - The lines of code.
+ * @param parts - The parts, emptied.
+ */
+function pushOutput(lines: string[], parts: string[]): void {
+  if (parts.length) {
+    lines.push(`out.push(${parts.join(' + ')});`);
+    parts.length = 0;
+  }
 }

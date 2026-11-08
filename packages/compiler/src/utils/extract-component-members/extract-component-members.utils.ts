@@ -196,17 +196,27 @@ function collectReactiveMethods(chain: readonly ResolvedClass[], signals: Readon
  */
 function collectMemberReads(body: Node, sourceFile: SourceFile, getter: boolean, context: ResolutionContext): MemberReads {
   const reads: MemberReads = { getter, calls: new Set(), accesses: new Set(), readsModuleSignal: false };
-  const visit = (node: Node): void => {
-    if (isPropertyAccessExpression(node) && node.expression.kind === SyntaxKind.ThisKeyword) {
-      const calls = isCallExpression(node.parent) && node.parent.expression === node;
-      (calls ? reads.calls : reads.accesses).add(node.name.text);
-    } else if (isCallExpression(node) && isIdentifier(node.expression) && !reads.readsModuleSignal) {
-      reads.readsModuleSignal = isSignalReference(sourceFile, node.expression, context, new Set());
-    }
-    forEachChild(node, visit);
-  };
-  visit(body);
+  collectReadsIn(body, sourceFile, context, reads);
   return reads;
+}
+
+/**
+ * Collects what a node of the body of a method or of a getter, and the nodes it holds, read (see `collectMemberReads`).
+ *
+ * @param node - The node.
+ * @param sourceFile - The file declaring the method.
+ * @param context - State of the current extraction.
+ * @param reads - What the body reads, filled.
+ */
+function collectReadsIn(node: Node, sourceFile: SourceFile, context: ResolutionContext, reads: MemberReads): void {
+  if (isPropertyAccessExpression(node) && node.expression.kind === SyntaxKind.ThisKeyword) {
+    const calls = isCallExpression(node.parent) && node.parent.expression === node;
+    (calls ? reads.calls : reads.accesses).add(node.name.text);
+  } else if (isCallExpression(node) && isIdentifier(node.expression) && !reads.readsModuleSignal) {
+    reads.readsModuleSignal = isSignalReference(sourceFile, node.expression, context, new Set());
+  }
+
+  forEachChild(node, child => collectReadsIn(child, sourceFile, context, reads));
 }
 
 /**
@@ -540,23 +550,27 @@ export function isModuleSignal(expression: Expression, sourceFile: SourceFile, c
  */
 export function readsModuleSignal(body: Node, sourceFile: SourceFile, compilerOptions = DEFAULT_COMPILER_OPTIONS): boolean {
   const context: ResolutionContext = { compilerOptions, dependencies: new Set(), visitedClasses: new Set() };
-  let reads = collectMemberReads(body, sourceFile, false, context).readsModuleSignal;
-  const visit = (node: Node): void => {
-    if (isCallExpression(node) && isIdentifier(node.expression)) {
-      const called = resolveReference(sourceFile, node.expression, FUNCTION_FINDER, context, new Set());
-      reads = !!called?.declaration.body && collectMemberReads(called.declaration.body, called.sourceFile, false, context).readsModuleSignal;
-    }
+  return collectMemberReads(body, sourceFile, false, context).readsModuleSignal || callsSignalReader(body, sourceFile, context);
+}
 
-    if (!reads) {
-      forEachChild(node, visit);
+/**
+ * Tells whether a node, or a node it holds, calls a function of the application whose body reads a signal declared at
+ * the level of a module.
+ *
+ * @param node - The node.
+ * @param sourceFile - The file of the node.
+ * @param context - State of the current resolution.
+ * @returns `true` when one of the calls reads one.
+ */
+function callsSignalReader(node: Node, sourceFile: SourceFile, context: ResolutionContext): boolean {
+  if (isCallExpression(node) && isIdentifier(node.expression)) {
+    const called = resolveReference(sourceFile, node.expression, FUNCTION_FINDER, context, new Set());
+    if (called?.declaration.body && collectMemberReads(called.declaration.body, called.sourceFile, false, context).readsModuleSignal) {
+      return true;
     }
-  };
-
-  if (!reads) {
-    visit(body);
   }
 
-  return reads;
+  return !!forEachChild(node, child => callsSignalReader(child, sourceFile, context) || undefined);
 }
 
 /**

@@ -36,16 +36,17 @@ class TemplateWalker {
    */
   public walkScope(nodes: readonly ASTNode[], variables: ReadonlySet<string>): void {
     let scopeVariables: Set<string> | undefined;
-    const declare = (name: string): void => {
-      scopeVariables ??= new Set(variables);
-      scopeVariables.add(name);
-    };
-
     // The namespaces of the elements don't matter here
     visitScopeDeclarations(nodes, 'html', {
-      ref: (_element, { name }) => declare(name),
-      template: ({ declaration: { name } }) => declare(name),
-      let: ({ name }) => declare(name)
+      ref: (_element, { name }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      },
+      template: ({ declaration: { name } }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      },
+      let: ({ name }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      }
     });
 
     this._walkNodes(nodes, scopeVariables ?? variables);
@@ -417,4 +418,18 @@ class TemplateWalker {
     this._visitor.expression?.(node.trackExpression, loopVariables);
     this.walkScope(node.children, loopVariables);
   }
+}
+
+/**
+ * Adds a variable a scope declares to its variables, created from the ones of the scopes enclosing it the first time.
+ *
+ * @param scopeVariables - The variables of the scope, `undefined` until it declares one.
+ * @param variables - The variables declared by the scopes enclosing it.
+ * @param name - The name of the variable.
+ * @returns The variables of the scope.
+ */
+function declareVariable(scopeVariables: Set<string> | undefined, variables: ReadonlySet<string>, name: string): Set<string> {
+  scopeVariables ??= new Set(variables);
+  scopeVariables.add(name);
+  return scopeVariables;
 }

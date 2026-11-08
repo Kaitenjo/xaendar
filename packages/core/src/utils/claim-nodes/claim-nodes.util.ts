@@ -101,14 +101,12 @@ export class ClaimNodes implements NodeStrategy {
       quietElements.add(element);
     }
 
-    // An element whose class is not defined yet starts it once the class is defined
-    const hydrate = () => (element as Partial<Record<typeof HYDRATE, NoArgsVoidFunction>>)[HYDRATE]?.();
     // A `@hydrate` holding the element decides for it: the template wins over what the class declares for every instance
     if (this._withinBlock) {
       element.removeAttribute(_HYDRATE_ATTRIBUTE);
-      hydrate();
-    } else if (!deferElementHydration(element, hydrate)) {
-      hydrate();
+      startHydration(element);
+    } else if (!deferElementHydration(element, () => startHydration(element))) {
+      startHydration(element);
     }
   }
 
@@ -515,4 +513,14 @@ function describe(node: Node | null): string {
     default:
       return `the text "${node!.textContent}"`;
   }
+}
+
+/**
+ * Starts the hydration of an element adopted: an element whose class is not defined yet starts it once the class is
+ * defined.
+ *
+ * @param element - The element.
+ */
+function startHydration(element: Element): void {
+  (element as Partial<Record<typeof HYDRATE, NoArgsVoidFunction>>)[HYDRATE]?.();
 }

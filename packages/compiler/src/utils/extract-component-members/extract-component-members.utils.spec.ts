@@ -584,7 +584,8 @@ describe('readsModuleSignal', () => {
   it.each([
     ['a signal', 'count();'],
     ['a function reading a signal', 'total();'],
-    ['a nested call', 'plain(total());']
+    ['a nested call', 'plain(total());'],
+    ['a call followed by one reading no signal', '[total(), plain()];']
   ])('finds %s', (_case, source) => {
     expect(reads(source)).toBe(true);
   });

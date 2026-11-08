@@ -52,22 +52,6 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
 
   let state: State | undefined;
   let started = false;
-  /**
-   * Destroys the active branch, if any, and renders the selected one, if any, getting its nodes with a strategy.
-   */
-  const render = (selected: number | null, branchNodeStrategy: NodeStrategy): void => {
-    if (state) {
-      state.context.clear();
-      parentContext.removeChild(state.context);
-      state = undefined;
-    }
-
-    if (selected !== null) {
-      const context = blocks[selected].block(parentNode, parentContext, block.anchor, branchNodeStrategy);
-      parentContext.addChild(context);
-      state = { activeBranch: selected, context };
-    }
-  };
 
   const unlistener = effect(() => {
     const selected = select();
@@ -75,14 +59,41 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
       if (!started) {
         started = true;
         // The marker of the server holds the index of the branch it rendered, none when it rendered none
-        render(selected, nodeStrategy.adopt(parentNode, block, selected === null ? '' : `${selected}`));
+        state = renderBranch(parentNode, parentContext, block.anchor, blocks, state, selected, nodeStrategy.adopt(parentNode, block, selected === null ? '' : `${selected}`));
         nodeStrategy.close(parentNode, block);
       } else if ((state?.activeBranch ?? null) !== selected) {
-        render(selected, parentContext.nodeStrategy);
+        state = renderBranch(parentNode, parentContext, block.anchor, blocks, state, selected, parentContext.nodeStrategy);
       }
     });
   });
   parentContext.addUnlistener(unlistener);
+}
+
+/**
+ * Destroys the active branch, if any, and renders the selected one, if any, getting its nodes with a strategy.
+ *
+ * @param parentNode - The parent HTML element the branch is rendered into.
+ * @param parentContext - The context owning the block.
+ * @param anchor - The node to insert the branch before.
+ * @param blocks - The branches.
+ * @param state - The active branch, `undefined` when none is.
+ * @param selected - The index of the branch to render, `null` to render none.
+ * @param nodeStrategy - The strategy the branch gets its nodes with.
+ * @returns The branch rendered, `undefined` when none is.
+ */
+function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment, blocks: Block[], state: State | undefined, selected: number | null, nodeStrategy: NodeStrategy): State | undefined {
+  if (state) {
+    state.context.clear();
+    parentContext.removeChild(state.context);
+  }
+
+  if (selected === null) {
+    return undefined;
+  }
+
+  const context = blocks[selected].block(parentNode, parentContext, anchor, nodeStrategy);
+  parentContext.addChild(context);
+  return { activeBranch: selected, context };
 }
 
 /**

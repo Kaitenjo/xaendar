@@ -49,17 +49,11 @@ export function getInstantiationSuffix(element: Pick<ElementNode, 'span'>): stri
  * @returns The declarations of the names, to write at the start of the block of the scope, and the lines of the nodes.
  */
 export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckContext, processNode: ProcessNode): { declarations: Line[], lines: Line[] } {
-  const register = (name: string, kind: IdentifierKind = 'value'): void => {
-    if (!context.declaresIdentifier(name)) {
-      context.addUnresolvableIdentifier(name, kind);
-    }
-  };
-
   const lets = new Array<LetNode>();
   visitScopeDeclarations(nodes, context.namespace, {
-    ref: (_element, { name }) => register(name),
+    ref: (_element, { name }) => register(context, name, 'value'),
     template: ({ declaration: { name } }, namespace) => {
-      register(name);
+      register(context, name, 'value');
       context.addTemplate(name, namespace);
     },
     let: node => lets.push(node)
@@ -67,7 +61,7 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
 
   for (let i = 0; i < lets.length; i++) {
     const { name, value } = lets[i];
-    register(name, resolveExpression(value, context, { resolver: ROOT_NODE }).reactive ? 'signal' : 'value');
+    register(context, name, resolveExpression(value, context, { resolver: ROOT_NODE }).reactive ? 'signal' : 'value');
   }
 
   const lines = nodes.flatMap(node => processNode(node, context));
@@ -126,4 +120,17 @@ function getVariableType(element: ElementNode, namespace: ElementNamespace, cont
   }
 
   return context.hasInstantiation(element.span.start) ? `${INSTANCE}${getInstantiationSuffix(element)}` : 'any';
+}
+
+/**
+ * Registers a name a scope declares in its context, unless it is registered already.
+ *
+ * @param context - The context of the scope.
+ * @param name - The name.
+ * @param kind - Whether the name holds a signal or a value.
+ */
+function register(context: TypeCheckContext, name: string, kind: IdentifierKind): void {
+  if (!context.declaresIdentifier(name)) {
+    context.addUnresolvableIdentifier(name, kind);
+  }
 }

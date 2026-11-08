@@ -25,20 +25,9 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
   const properties = getTriggerProperties(node, generatorContext);
   const functionsToProcess = new Map<string, GeneratorFunctionToProcess>();
 
-  const addBlock = (property: 'content' | 'placeholder' | 'loading' | 'error', prefix: 'defer' | 'placeholder' | 'loading' | 'error', block: GeneratorFunctionToProcess['fn']['node'], context = new GeneratorContext(generatorContext), precode?: string) => {
-    const key = getBlockIdentifier(prefix, parentNode, index);
-    properties.push(`${property}: ${key}.bind(this)`);
-    const args = [key, 'parentContext', 'anchor', 'nodeStrategy'];
-    if (prefix === 'error') {
-      args.push('error');
-    }
-
-    functionsToProcess.set(key, { fn: { node: block, parentNode: key, context, precode, anchor: 'anchor' }, args });
-  };
-
-  addBlock('content', 'defer', node);
+  addBlock(properties, functionsToProcess, 'content', getBlockIdentifier('defer', parentNode, index), node, new GeneratorContext(generatorContext));
   if (node.placeholder) {
-    addBlock('placeholder', 'placeholder', node.placeholder);
+    addBlock(properties, functionsToProcess, 'placeholder', getBlockIdentifier('placeholder', parentNode, index), node.placeholder, new GeneratorContext(generatorContext));
     if (node.placeholder.minimum !== undefined) {
       properties.push(`placeholderMinimum: ${node.placeholder.minimum}`);
     }
@@ -46,7 +35,7 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
 
   if (node.loading) {
     const { after, minimum } = node.loading;
-    addBlock('loading', 'loading', node.loading);
+    addBlock(properties, functionsToProcess, 'loading', getBlockIdentifier('loading', parentNode, index), node.loading, new GeneratorContext(generatorContext));
     if (after !== undefined) {
       properties.push(`loadingAfter: ${after}`);
     }
@@ -63,7 +52,7 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
       errorContext.addIdentifier(name, 'value');
     }
 
-    addBlock('error', 'error', node.error, errorContext, name ? `context.addIdentifier('${name}', error);` : undefined);
+    addBlock(properties, functionsToProcess, 'error', getBlockIdentifier('error', parentNode, index), node.error, errorContext, name ? `context.addIdentifier('${name}', error);` : undefined);
   }
 
   return {
@@ -74,4 +63,26 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
     ],
     functionsToProcess
   };
+}
+
+/**
+ * Adds the function rendering the content of a `@defer`, or a block following it, to the functions to generate, and
+ * the property passing it to `_defer`.
+ *
+ * @param properties - The properties of the block passed to `_defer`.
+ * @param functionsToProcess - The functions to generate.
+ * @param property - The property of the function: the one of `error` takes the error too.
+ * @param key - The name of the function.
+ * @param block - The node of the block.
+ * @param context - The generator context of the block.
+ * @param precode - The code starting the function, if any.
+ */
+function addBlock(properties: string[], functionsToProcess: Map<string, GeneratorFunctionToProcess>, property: 'content' | 'placeholder' | 'loading' | 'error', key: string, block: GeneratorFunctionToProcess['fn']['node'], context: GeneratorContext, precode?: string): void {
+  properties.push(`${property}: ${key}.bind(this)`);
+  const args = [key, 'parentContext', 'anchor', 'nodeStrategy'];
+  if (property === 'error') {
+    args.push('error');
+  }
+
+  functionsToProcess.set(key, { fn: { node: block, parentNode: key, context, precode, anchor: 'anchor' }, args });
 }

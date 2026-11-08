@@ -350,7 +350,6 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
   const sourceFile = klass.getSourceFile();
   const base = getAccessorOwnerType(klass, sourceFile, false);
   const generic = getAccessorOwnerType(klass, sourceFile, true);
-  const instantiate = (names: string[]): string => (names.length ? `${base}<${names.join(', ')}>` : base);
   const instanceName = `${INSTANCE}${suffix ?? ''}`;
   const probedName = `${PROBED}${suffix ?? ''}`;
 
@@ -370,16 +369,15 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
   }
 
   const probe = inferTypeParameters(metadata, base, attributes, context, suffix);
-  const argumentsOf = (index: number): string => (probe ? `unknown extends ${probedName}[${index}] ? any : ${probedName}[${index}]` : 'any');
 
   // The parameters with a default type come last: the ones nothing gives a type to take it when the class is instantiated without them
   const firstDefault = typeParameters.findIndex(({ hasDefault }) => hasDefault);
   const given = new Array<string>();
   for (let i = 0; i < (firstDefault === -1 ? typeParameters.length : firstDefault); i++) {
-    given.push(argumentsOf(i));
+    given.push(typeArgumentOf(probedName, !!probe, i));
   }
 
-  let instance = instantiate(given);
+  let instance = instantiate(base, given);
   if (!probe) {
     // An element ref is typed with the instantiation, even when nothing is inferred
     return suffix === undefined
@@ -389,7 +387,7 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
 
   if (firstDefault !== -1) {
     const defaults = typeParameters.slice(firstDefault).map((_, offset) => firstDefault + offset);
-    const inferred = instantiate([...given, ...defaults.map(argumentsOf)]);
+    const inferred = instantiate(base, [...given, ...defaults.map(index => typeArgumentOf(probedName, true, index))]);
     const none = `[${defaults.map(() => 'unknown').join(', ')}] extends [${defaults.map(index => `${probedName}[${index}]`).join(', ')}]`;
     instance = `${none} ? ${instance} : ${inferred}`;
   }
@@ -819,21 +817,32 @@ function isEventBeginning(expression: Expression): expression is Identifier {
  */
 function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNode[], context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
   const lines = new Array<Line>();
-  // The bindings of a branch are followed by the conditional bindings nested in it
-  const typeCheckBranch = (branch: ConditionalBindingBranchNode): Line[] => indentLines([
-    ...bindings(branch),
-    ...typeCheckConditionalBindings(branch.conditionalBindings, context, bindings)
-  ]);
 
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBinding = conditionalBindings[i];
     lines.push(...(conditionalBinding.type === ASTNodeType.SwitchBinding
-      ? typeCheckSwitchBinding(conditionalBinding, context, typeCheckBranch)
-      : typeCheckIfBinding(conditionalBinding, context, typeCheckBranch)
+      ? typeCheckSwitchBinding(conditionalBinding, context, bindings)
+      : typeCheckIfBinding(conditionalBinding, context, bindings)
     ));
   }
 
   return lines;
+}
+
+/**
+ * Type-checks the content of a branch of a conditional binding: its bindings, followed by the conditional bindings
+ * nested in it.
+ *
+ * @param branch - The branch.
+ * @param context - Current type-check scope.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
+ * @returns The generated type-check lines, indented.
+ */
+function typeCheckBranch(branch: ConditionalBindingBranchNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  return indentLines([
+    ...bindings(branch),
+    ...typeCheckConditionalBindings(branch.conditionalBindings, context, bindings)
+  ]);
 }
 
 /**
@@ -842,10 +851,10 @@ function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNod
  *
  * @param node - The `@if` conditional binding to type-check.
  * @param context - Current type-check scope.
- * @param typeCheckBranch - Emits the type-check lines for the content of a branch.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
  * @returns The generated type-check lines.
  */
-function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, typeCheckBranch: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
   const lines = new Array<Line>();
   const { branches } = node;
 
@@ -858,7 +867,7 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, type
       condition
         ? line(i ? 'else if (' : 'if (', mappedExpression(condition, context, span), ') {')
         : plain('else {'),
-      ...typeCheckBranch(branch),
+      ...typeCheckBranch(branch, context, bindings),
       plain('}')
     );
   }
@@ -874,10 +883,10 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, type
  *
  * @param node - The `@switch` conditional binding to type-check.
  * @param context - Current type-check scope.
- * @param typeCheckBranch - Emits the type-check lines for the content of a branch.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
  * @returns The generated type-check lines.
  */
-function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, typeCheckBranch: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
   const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
 
   const { branches } = node;
@@ -887,7 +896,7 @@ function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckConte
 
     lines.push(...indentLines([
       ...labels,
-      ...typeCheckBranch(branch),
+      ...typeCheckBranch(branch, context, bindings),
       ...indentLines([plain('break;')])
     ]));
   }
@@ -932,4 +941,27 @@ function getForeignEventType(eventMap: string, name: string): string {
  */
 export function isCustomElementTag(tagName: string): boolean {
   return /^[a-z][a-z0-9._\-]*-[a-z0-9._\-]*$/.test(tagName);
+}
+
+/**
+ * Writes the instantiation of a generic class with some type arguments.
+ *
+ * @param base - The name of the class.
+ * @param names - The type arguments, none for the class without them.
+ * @returns The type.
+ */
+function instantiate(base: string, names: readonly string[]): string {
+  return names.length ? `${base}<${names.join(', ')}>` : base;
+}
+
+/**
+ * Writes the type argument inferred for a type parameter by the probe of the class: `any` when nothing gives it a type.
+ *
+ * @param probedName - The name of the type of the inferred type arguments.
+ * @param probed - Whether the probe is written.
+ * @param index - The index of the type parameter.
+ * @returns The type argument.
+ */
+function typeArgumentOf(probedName: string, probed: boolean, index: number): string {
+  return probed ? `unknown extends ${probedName}[${index}] ? any : ${probedName}[${index}]` : 'any';
 }

@@ -32,48 +32,42 @@ export const TEMPLATE_SEMANTIC_TOKEN_MODIFIERS = ['readonly'] as const;
  */
 export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis): TemplateSemanticToken[] {
   const tokens = new Array<TemplateSemanticToken>();
-  const add = (span: Span | undefined, type: TemplateSemanticTokenType, modifiers: TemplateSemanticTokenModifier[] = []) => {
-    if (span) {
-      tokens.push({ span, type, modifiers });
-    }
-  };
-
   walkTemplate(ast, metadatas, {
     attribute: (node, owner) => {
       if (owner?.properties.has(node.name)) {
-        add(node.nameSpan, 'property');
+        addToken(tokens, node.nameSpan, 'property');
       }
     },
     event: (node, owner, variables) => {
       if (owner?.events.has(node.name)) {
-        add(node.nameSpan, 'event');
+        addToken(tokens, node.nameSpan, 'event');
       }
 
       // A handler called on a variable of the template, e.g. `dialog.showModal()`
       const head = node.handler.split(/\?\.|[.[]/)[0];
       if (variables.has(head)) {
-        add({ start: node.handlerSpan.start, end: node.handlerSpan.start + head.length }, 'variable', ['readonly']);
+        addToken(tokens, { start: node.handlerSpan.start, end: node.handlerSpan.start + head.length }, 'variable', ['readonly']);
       }
     },
-    ref: node => add(node.nameSpan, 'variable', ['readonly']),
-    directive: node => add(node.selectorSpan, 'decorator'),
+    ref: node => addToken(tokens, node.nameSpan, 'variable', ['readonly']),
+    directive: node => addToken(tokens, node.selectorSpan, 'decorator'),
     forBlock: node => {
-      add(node.itemAliasSpan, 'variable', ['readonly']);
+      addToken(tokens, node.itemAliasSpan, 'variable', ['readonly']);
       for (const span of node.implicitAliasSpans.values()) {
-        add(span, 'variable', ['readonly']);
+        addToken(tokens, span, 'variable', ['readonly']);
       }
     },
     template: ({ declaration, parameters }) => {
-      add(declaration.nameSpan, 'function');
+      addToken(tokens, declaration.nameSpan, 'function');
       for (let i = 0; i < parameters.length; i++) {
-        add(parameters[i].nameSpan, 'variable', ['readonly']);
+        addToken(tokens, parameters[i].nameSpan, 'variable', ['readonly']);
       }
     },
-    tryBlock: node => add(node.catch.nameSpan, 'variable', ['readonly']),
-    defer: node => add(node.error?.nameSpan, 'variable', ['readonly']),
-    render: node => add(node.calleeSpan, 'function'),
-    let: node => add(node.nameSpan, 'variable', ['readonly']),
-    expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => add(span, 'variable', ['readonly']))
+    tryBlock: node => addToken(tokens, node.catch.nameSpan, 'variable', ['readonly']),
+    defer: node => addToken(tokens, node.error?.nameSpan, 'variable', ['readonly']),
+    render: node => addToken(tokens, node.calleeSpan, 'function'),
+    let: node => addToken(tokens, node.nameSpan, 'variable', ['readonly']),
+    expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => addToken(tokens, span, 'variable', ['readonly']))
   });
 
   return tokens.sort((first, second) => first.span.start - second.span.start);
@@ -96,4 +90,18 @@ function collectVariableReads(node: Node, parent: Node, variables: ReadonlySet<s
   }
 
   forEachExpressionChild(node, child => collectVariableReads(child, node, variables, collect));
+}
+
+/**
+ * Adds a semantic token, when the part of the template it colors is written.
+ *
+ * @param tokens - The semantic tokens, filled.
+ * @param span - The span of the part, `undefined` when it is not written.
+ * @param type - The type of the token.
+ * @param modifiers - The modifiers of the token.
+ */
+function addToken(tokens: TemplateSemanticToken[], span: Span | undefined, type: TemplateSemanticTokenType, modifiers: TemplateSemanticTokenModifier[] = []): void {
+  if (span) {
+    tokens.push({ span, type, modifiers });
+  }
 }

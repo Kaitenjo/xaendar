@@ -43,13 +43,7 @@ let replayScheduled = false;
  */
 export function armTriggers(triggers: readonly Trigger[], elements: readonly Element[], fire: NoArgsVoidFunction): NoArgsVoidFunction {
   const disarms = new Array<NoArgsVoidFunction>();
-  const disarm = () => {
-    for (let i = 0; i < disarms.length; i++) {
-      disarms[i]();
-    }
-    disarms.length = 0;
-  };
-
+  const disarm = () => disarmAll(disarms);
   const once = () => {
     disarm();
     fire();
@@ -60,6 +54,29 @@ export function armTriggers(triggers: readonly Trigger[], elements: readonly Ele
   }
 
   return disarm;
+}
+
+/**
+ * Runs the functions disarming some triggers, and forgets them.
+ *
+ * @param disarms - The functions, emptied.
+ */
+export function disarmAll(disarms: NoArgsVoidFunction[]): void {
+  for (let i = 0; i < disarms.length; i++) {
+    disarms[i]();
+  }
+  disarms.length = 0;
+}
+
+/**
+ * Turns the triggers watching the elements of their block into `idle` when there are none to watch (see {@link toIdle}).
+ *
+ * @param triggers - The triggers.
+ * @param elements - The elements of the block.
+ * @returns The triggers to arm.
+ */
+export function watchedTriggers(triggers: readonly Trigger[], elements: readonly Element[]): readonly Trigger[] {
+  return elements.length ? triggers : triggers.map(toIdle);
 }
 
 /**
@@ -172,29 +189,35 @@ export function deferElementHydration(element: Element, start: NoArgsVoidFunctio
     return !!trigger;
   }
 
-  let fired = false;
-  const fire = () => {
-    if (!fired) {
-      fired = true;
-      disarm();
-      element.removeAttribute(_HYDRATE_ATTRIBUTE);
-      start();
-    }
-  };
-
   // The events are recorded on the shadow root too, where the ones that are not composed stop
   const targets = element.shadowRoot ? [element, element.shadowRoot] : [element];
   const interaction = trigger === 'interaction';
   // Armed before the events are recorded, so that `hover` sees the focus entering the element before it is stopped
-  const disarm = interaction ? () => undefined : armTriggers([trigger], [element], fire);
-  const recorded = recordEvents(targets, () => interaction && fire());
+  const disarm: NoArgsVoidFunction | undefined = interaction ? undefined : armTriggers([trigger], [element], () => hydrateElement(element, start, disarm));
+  const recorded = recordEvents(targets, () => interaction && hydrateElement(element, start, disarm));
   elementEvents.set(element, recorded);
   // Fired once the element has done connecting: what the contract recorded was an interaction too
   if (interaction && recorded.events.length) {
-    queueMicrotask(fire);
+    queueMicrotask(() => hydrateElement(element, start, disarm));
   }
 
   return true;
+}
+
+/**
+ * Starts the hydration of the element of a component waiting for its trigger, the first time the trigger fires: the
+ * element no longer declares it then.
+ *
+ * @param element - The element.
+ * @param start - Starts the hydration of the element.
+ * @param disarm - Disarms the trigger, `undefined` for `interaction`, fired by the events recorded.
+ */
+function hydrateElement(element: Element, start: NoArgsVoidFunction, disarm: NoArgsVoidFunction | undefined): void {
+  if (element.hasAttribute(_HYDRATE_ATTRIBUTE)) {
+    disarm?.();
+    element.removeAttribute(_HYDRATE_ATTRIBUTE);
+    start();
+  }
 }
 
 /**
@@ -284,10 +307,20 @@ function takeContractEvents(targets?: readonly EventTarget[]): _ContractEvent[] 
     return contractEvents;
   }
 
-  const isOnTargets = ({ path }: _ContractEvent) => targets.some(target => path.includes(target));
-  const taken = contractEvents.filter(isOnTargets);
-  contractEvents = contractEvents.filter(event => !isOnTargets(event));
+  const taken = contractEvents.filter(event => isOnTargets(event, targets));
+  contractEvents = contractEvents.filter(event => !isOnTargets(event, targets));
   return taken;
+}
+
+/**
+ * Tells whether an event of the contract happened on some nodes.
+ *
+ * @param event - The event.
+ * @param targets - The nodes.
+ * @returns `true` when one of the nodes is on the path of the event.
+ */
+function isOnTargets({ path }: _ContractEvent, targets: readonly EventTarget[]): boolean {
+  return targets.some(target => path.includes(target));
 }
 
 /**
