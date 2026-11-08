@@ -26,13 +26,7 @@ const component = (typeParameters?: string[]) => ({
   properties: new Map(),
   events: new Map(),
   typeParameters: typeParameters?.map(name => ({ name, hasDefault: true })),
-  typescriptNodes: {
-    klass: {
-      name: { text: 'MyEl' },
-      typeParameters: typeParameters?.map(name => ({ name: { text: name } })),
-      getSourceFile: () => ({ fileName: '/src/my.xd.component.ts' })
-    }
-  }
+  modulePath: '/src/my.xd.component.ts'
 }) as unknown as ComponentMetadata;
 
 const text = (lines: Array<{ text: string }>) => lines.map(({ text: lineText }) => lineText);

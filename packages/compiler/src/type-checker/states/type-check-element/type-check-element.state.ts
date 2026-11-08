@@ -18,7 +18,7 @@ import { ComponentMetadata } from '../../../types/component-metadata.type';
 import type { ComponentEventMetadata } from '../../../types/component-event-metadata.type';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
-import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
+import { getOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
 import { TypeCheckContext } from '../../models/context/context';
@@ -346,10 +346,8 @@ function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata
     return { metadata };
   }
 
-  const { klass } = metadata.typescriptNodes;
-  const sourceFile = klass.getSourceFile();
-  const base = getAccessorOwnerType(klass, sourceFile, false);
-  const generic = getAccessorOwnerType(klass, sourceFile, true);
+  const base = getOwnerType(metadata, false);
+  const generic = getOwnerType(metadata, true);
   const instanceName = `${INSTANCE}${suffix ?? ''}`;
   const probedName = `${PROBED}${suffix ?? ''}`;
 

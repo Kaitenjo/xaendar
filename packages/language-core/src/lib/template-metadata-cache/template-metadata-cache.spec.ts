@@ -81,6 +81,20 @@ describe('TemplateMetadataCache', () => {
     await expect(cache.getImport('Child', 'Child', src, './missing')).rejects.toThrow('Cannot find module "./missing"');
   });
 
+  it('resolves a component or a directive a barrel re-exports to the metadata of the file declaring it', async () => {
+    const cache = new TemplateMetadataCache();
+    const src = project.path('src');
+    project.write('src/barrel.ts', 'export * from \'./child\';\nexport { Tooltip as Hint } from \'./directives\';\nexport { formatDate } from \'./utils\';\n');
+
+    const child = await cache.getImport('Child', 'Child', src, './barrel');
+    expect(child).toMatchObject({ type: 'component', className: 'Child' });
+    expect((child as ComponentOrDirectiveMetadata).modulePath).toMatch(/\/src\/child\.ts$/);
+    expect(await cache.getImport('Hint', 'Hint', src, './barrel')).toMatchObject({ type: 'directive', className: 'Tooltip' });
+    expect(await cache.getImport('formatDate', 'formatDate', src, './barrel')).toEqual({ type: 'symbol', modulePath: project.path('src/barrel.ts'), reactive: false });
+    expect(await cache.getOrInsert('Child', [src, './barrel'])).toBe(child);
+    await expect(cache.getOrInsert('formatDate', [src, './barrel'])).rejects.toThrow('Class "formatDate" was not found in the import from ./barrel');
+  });
+
   it('resolves the imports of a package and of an alias of the project, with the options of the project', async () => {
     const cache = new TemplateMetadataCache(loadTsConfig(project.root).options);
     const src = project.path('src');

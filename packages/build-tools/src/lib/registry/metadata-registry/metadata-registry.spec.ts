@@ -11,7 +11,7 @@ function createMetadata(className: string, selector: string, ownerFile: string):
   return {
     className,
     selector,
-    typescriptNodes: { klass: { getSourceFile: () => ({ fileName: ownerFile }) } }
+    modulePath: ownerFile
   } as unknown as ComponentOrDirectiveMetadata;
 }
 

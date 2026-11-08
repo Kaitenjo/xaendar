@@ -946,13 +946,7 @@ describe('typeCheckElement generic directives', () => {
     return {
       ...directiveMetadata({ items: new ComponentPropertyMetadata('items', `ReturnType<${instantiated}['items']>`) }, { picked: `${instantiated}['picked']` }),
       typeParameters: typeParameters.map(([name, hasDefault = false]) => ({ name, hasDefault })),
-      typescriptNodes: {
-        klass: {
-          name: { text: 'MyDirective' },
-          typeParameters: typeParameters.map(([name]) => ({ name: { text: name } })),
-          getSourceFile: () => ({ fileName: '/src/my.directive.ts' })
-        }
-      }
+      modulePath: '/src/my.directive.ts'
     } as unknown as DirectiveMetadata;
   };
 
@@ -1076,13 +1070,7 @@ describe('typeCheckElement generic components', () => {
     return {
       ...metadata({ items: new ComponentPropertyMetadata('items', `ReturnType<${instantiated}['items']>`) }, { picked: `${instantiated}['picked']` }),
       typeParameters: typeParameters.map(([name, hasDefault = false]) => ({ name, hasDefault })),
-      typescriptNodes: {
-        klass: {
-          name: { text: 'MyEl' },
-          typeParameters: typeParameters.map(([name]) => ({ name: { text: name } })),
-          getSourceFile: () => ({ fileName: '/src/my.xd.component.ts' })
-        }
-      }
+      modulePath: '/src/my.xd.component.ts'
     } as unknown as ComponentMetadata;
   };
 

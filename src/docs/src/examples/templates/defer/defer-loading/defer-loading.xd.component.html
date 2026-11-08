@@ -1,0 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { ReportComponent } from './report.xd.component.ts'
+
+@defer (interaction) {
+  <ex-report />
+} @placeholder {
+  <ex-button>Show the report</ex-button>
+} @loading (minimum 1s) {
+  <p class="note">Loading the report…</p>
+}

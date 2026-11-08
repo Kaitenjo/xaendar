@@ -58,6 +58,24 @@ export function resolveClassReference(sourceFile: SourceFile, expression: Expres
 }
 
 /**
+ * Resolves the class a module exports under a name, following its re-exports to the file declaring it: the component or
+ * the directive a template imports from a barrel (`export * from './card'`, `export { Card as Tile } from './card'`, a
+ * class imported and exported again), with a resolution state of its own.
+ *
+ * @example
+ * // barrel.ts: export * from './card/card.xd.component';
+ * resolveExportedClass('/src/barrel.ts', 'CardComponent');  // the class of /src/card/card.xd.component.ts
+ *
+ * @param fileName - Path of the file of the module.
+ * @param exportedName - The name the class is exported as, `'default'` for the default export.
+ * @param compilerOptions - Project compiler options, driving how the modules it re-exports are resolved.
+ * @returns The class with the file declaring it, `undefined` when the module exports no class under that name.
+ */
+export function resolveExportedClass(fileName: string, exportedName: string, compilerOptions = DEFAULT_COMPILER_OPTIONS): ResolvedClass | undefined {
+  return resolveModuleExport(fileName, exportedName, CLASS_FINDER, { compilerOptions, dependencies: new Set(), visitedClasses: new Set() });
+}
+
+/**
  * Resolves the class `klass` directly extends, if any.
  *
  * @param klass - The class whose base class is resolved.

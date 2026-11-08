@@ -20,6 +20,7 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     extractComponentsMetadataFromSourceFile: vi.fn(),
     extractDirectivesMetadataFromSourceFile: vi.fn(),
     isReactiveExport: vi.fn(),
+    resolveExportedClass: vi.fn(),
     resolveTemplateSpan: vi.fn()
   };
 });
@@ -33,20 +34,20 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
   registerSelectors: vi.fn()
 }));
 
-import { extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, isReactiveExport, resolveTemplateSpan } from '@xaendar/compiler';
+import { ASTNodeType, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, parseTemplate, resolveExportedClass, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, stripCssComments } from './plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
   return {
     className,
     selector,
-    typescriptNodes: { klass: { getSourceFile: () => ({ fileName: ownerFile }) } }
+    modulePath: ownerFile
   } as unknown as ComponentOrDirectiveMetadata;
 }
 
@@ -82,13 +83,12 @@ describe('extractImportedComponentPaths()', () => {
     expect(extractImportedComponentPaths('@import { formatDate } from \'./utils\';', '/src/features/user')).toEqual([resolved]);
   });
 
-  it('leaves out the modules of an @import lazy only when asked to', () => {
+  it('resolves the modules of an @import lazy too', () => {
     const template = `@import lazy { Panel } from './panel.xd.component';\n@import { Button } from './button.xd.component';`;
     const panel = resolvePosixPath('/src/features/user', './panel.xd.component');
     const button = resolvePosixPath('/src/features/user', './button.xd.component');
 
     expect(extractImportedComponentPaths(template, '/src/features/user')).toEqual([panel, button]);
-    expect(extractImportedComponentPaths(template, '/src/features/user', undefined, true)).toEqual([button]);
   });
 
   it('returns posix paths, matching the Vite ids used as registry keys', () => {
@@ -806,6 +806,78 @@ describe('getImportOrExtract()', () => {
     expect(await getImportOrExtract('*', 'utils', '/src', './utils')).toEqual({ type: 'symbol', modulePath, reactive: true });
     expect(readFile).not.toHaveBeenCalled();
     expect(isReactiveExport).not.toHaveBeenCalled();
+  });
+
+  it('reads a component or a directive the module re-exports from the file declaring it, registering it', async () => {
+    const declared = createMetadata('my-card', 'CardComponent', '/src/card/card.xd.component.ts');
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: '/src/card/card.xd.component.ts' }, declaration: { name: { text: 'CardComponent' } } } as never);
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockImplementation(async sourceFile => (sourceFile.fileName === '/src/card/card.xd.component.ts' ? new Map([['CardComponent', declared as unknown as ComponentMetadata]]) : undefined));
+
+    expect(await getImportOrExtract('Card', 'Card', '/src', './utils', { baseUrl: '/src' })).toBe(declared);
+    expect(resolveExportedClass).toHaveBeenCalledWith(modulePath, 'Card', { baseUrl: '/src' });
+    expect(readFile).toHaveBeenCalledWith('/src/card/card.xd.component.ts', 'utf-8');
+    expect(registerMetadata).toHaveBeenCalledWith('CardComponent', declared);
+  });
+
+  it('returns the registered metadata of a re-exported class, and reads a class the module exports under another name', async () => {
+    const registered = createMetadata('my-card', 'CardComponent', '/src/card/card.xd.component.ts');
+    vi.mocked(getMetadata).mockImplementation((name, path) => (name === 'CardComponent' && path === '/src/card/card.xd.component.ts' ? registered : undefined));
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: '/src/card/card.xd.component.ts' }, declaration: { name: { text: 'CardComponent' } } } as never);
+
+    expect(await getImportOrExtract('Card', 'Card', '/src', './utils')).toBe(registered);
+    expect(readFile).not.toHaveBeenCalledWith('/src/card/card.xd.component.ts', 'utf-8');
+
+    const aliased = createMetadata('my-tile', 'Tile');
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: modulePath }, declaration: { name: { text: 'Tile' } } } as never);
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['Tile', aliased as unknown as ComponentMetadata]]));
+    expect(await getImportOrExtract('Board', 'Board', '/src', './utils')).toBe(aliased);
+  });
+
+  it('returns a symbol when the module exports no component nor directive under the name', async () => {
+    const symbol = { type: 'symbol', modulePath, reactive: false };
+    vi.mocked(isReactiveExport).mockReturnValue(false);
+    vi.mocked(resolveExportedClass).mockReturnValueOnce(undefined);
+    expect(await getImportOrExtract('Plain', 'Plain', '/src', './utils')).toEqual(symbol);
+
+    // The class the module declares itself was looked for already
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: modulePath }, declaration: { name: { text: 'Plain' } } } as never);
+    expect(await getImportOrExtract('Plain', 'Plain', '/src', './utils')).toEqual(symbol);
+    expect(readFile).toHaveBeenCalledTimes(2);
+
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: '/node_modules/acme/index.d.ts' }, declaration: { name: { text: 'Plain' } } } as never);
+    expect(await getImportOrExtract('Plain', 'Plain', '/src', './utils')).toEqual(symbol);
+
+    vi.mocked(resolveExportedClass).mockReturnValueOnce({ sourceFile: { fileName: '/src/anonymous.ts' }, declaration: {} } as never);
+    expect(await getImportOrExtract('default', 'Anonymous', '/src', './utils')).toEqual(symbol);
+    expect(readFile).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe('resolveTemplateModules()', () => {
+  const importNodes = (template: string) => parseTemplate(template).filter((node): node is ImportNode => node.type === ASTNodeType.Import);
+  const imports: Record<string, ComponentOrDirectiveMetadata | ImportedSymbol> = {
+    Card: createMetadata('x-card', 'Card', '/src/ui/card.xd.component.ts'),
+    Tip: createDirectiveMetadata('tip', 'Tip', '/src/ui/tip.directive.ts'),
+    format: { type: 'symbol', modulePath: '/src/format.ts', reactive: false },
+    missing: { type: 'symbol', modulePath: '/src/missing.ts', reactive: false },
+    Row: { type: 'symbol', modulePath: '/src/row.d.ts', reactive: false },
+    price: { type: 'symbol', modulePath: '/node_modules/acme/index.d.ts', importPath: 'acme', reactive: false }
+  };
+  const cache = { getImport: vi.fn(async (imported: string) => imports[imported]) };
+  const host = { fileExists: (path: string) => path !== '/src/missing.ts' };
+
+  it('imports, once each, the files declaring the components and the directives, and the modules of the symbols of the project', async () => {
+    const template = '@import { Card, Tip, format, missing, Row } from \'./ui\'\n@import { Card as Other } from \'./ui\'\n@import { price } from \'acme\'';
+    const modules = ['/src/ui/card.xd.component.ts', '/src/ui/tip.directive.ts', '/src/format.ts'];
+
+    expect(await resolveTemplateModules(importNodes(template), '/src', cache, host)).toEqual({ imported: modules, watched: modules });
+    expect(cache.getImport).toHaveBeenCalledWith('Card', 'Other', '/src', './ui');
+  });
+
+  it('watches the modules of an @import lazy without importing them', async () => {
+    const template = '@import lazy { Card } from \'./ui\'\n@import { format } from \'./format\'';
+
+    expect(await resolveTemplateModules(importNodes(template), '/src', cache, host)).toEqual({ imported: ['/src/format.ts'], watched: ['/src/ui/card.xd.component.ts', '/src/format.ts'] });
   });
 });
 

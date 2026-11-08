@@ -15,7 +15,8 @@ import type { GeneratorContext } from '../../context/context';
  * directives of a block inside another one are loaded by the inner one. A directive is registered by its module, and
  * found by its selector when an element applying it is rendered, which happens once the module is loaded.
  *
- * The module of a component or of a directive is the file declaring its class, read from its metadata.
+ * The module of a component or of a directive is the file declaring its class, read from its metadata (`modulePath`),
+ * also when the template imports it through a barrel.
  *
  * @param nodes - The nodes of the template.
  * @param generatorContext - The root generator context, holding the cache of the metadata and the patterns of the custom
@@ -66,7 +67,7 @@ export async function getDeferredModules(nodes: readonly ASTNode[], generatorCon
  */
 async function getModule(key: string, cache: ContextCache): Promise<string | undefined> {
   const metadata = await cache.getOrInsert(key);
-  return metadata.type === (key.startsWith('@@') ? 'directive' : 'component') ? metadata.typescriptNodes.klass.getSourceFile().fileName : undefined;
+  return metadata.type === (key.startsWith('@@') ? 'directive' : 'component') ? metadata.modulePath : undefined;
 }
 
 /**

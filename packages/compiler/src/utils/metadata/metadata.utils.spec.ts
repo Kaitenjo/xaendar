@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createSourceFile, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
-import { describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findWebComponentErrors } from './metadata.utils';
+import { describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findWebComponentErrors, getOwnerType } from './metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
@@ -554,10 +554,28 @@ describe('findWebComponentErrors', () => {
 });
 
 describe('describeSelectorConflict', () => {
-  const metadataOf = (type: 'component' | 'directive') => ({ type, className: 'A', selector: 'x-a', typescriptNodes: { klass: { getSourceFile: () => ({ fileName: '/a.ts' }) } } }) as unknown as ComponentOrDirectiveMetadata;
+  const metadataOf = (type: 'component' | 'directive') => ({ type, className: 'A', selector: 'x-a', modulePath: '/a.ts' }) as unknown as ComponentOrDirectiveMetadata;
 
   it('names the two classes and their files', () => {
     expect(describeSelectorConflict(metadataOf('component'), { className: 'B', ownerFile: '/b.ts' })).toBe('Selector "x-a" of component "A" - /a.ts is already used by component "B" - /b.ts. Custom element names must be unique.');
     expect(describeSelectorConflict(metadataOf('directive'), { className: 'B', ownerFile: '/b.ts' })).toBe('Selector "x-a" of directive "A" - /a.ts is already used by directive "B" - /b.ts. Directive selectors must be unique.');
+  });
+});
+
+describe('getOwnerType', () => {
+  it('references the class through its module without the TypeScript extension, with its type parameters when asked', () => {
+    const list = { className: 'List', modulePath: 'C:\\src\\list.directive.ts', typeParameters: [{ name: 'Item', hasDefault: false }, { name: 'Key', hasDefault: true }] };
+
+    expect(getOwnerType(list, false)).toBe('import(\'C:/src/list.directive\').List');
+    expect(getOwnerType(list, true)).toBe('import(\'C:/src/list.directive\').List<Item, Key>');
+    expect(getOwnerType({ className: 'Card', modulePath: '/lib/card.d.ts' }, true)).toBe('import(\'/lib/card\').Card');
+  });
+
+  it('writes the type the extraction gives the accessors of the class', async () => {
+    const sourceFile = createSourceFile('/src/list.directive.ts', '@Directive({ selector: \'list\' })\nexport class List<Item> {\n  @Property() accessor items!: InputSignal<Item[]>;\n}', ScriptTarget.Latest, true);
+    const metadata = (await extractDirectivesMetadataFromSourceFile(sourceFile))!.get('List')!;
+
+    expect(metadata.modulePath).toBe('/src/list.directive.ts');
+    expect(metadata.properties.get('items')!.type).toBe(`ReturnType<${getOwnerType(metadata, true)}['items']>`);
   });
 });

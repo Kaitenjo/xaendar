@@ -86,7 +86,7 @@ describe('compile', () => {
   });
 
   it('compiles a @hydrate loading the modules of the components only its content renders, and type-checks the expression of when', async () => {
-    const declaring = (selector: string) => ({ ...component, selector, className: selector, typescriptNodes: { klass: { getSourceFile: () => ({ fileName: `/base/${selector}.ts` }) } } });
+    const declaring = (selector: string) => ({ ...component, selector, className: selector, modulePath: `/base/${selector}.ts` });
     const cache: ContextCache = {
       getOrInsert: async selector => declaring(selector) as never,
       getImport: async imported => declaring(imported.replace('_', '-')) as never,

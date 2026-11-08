@@ -90,6 +90,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(compileRender).mockResolvedValue('function render() {}');
   vi.mocked(getServerDependencies).mockImplementation(async (_input, dependencyPaths) => dependencyPaths);
+  // Unless a test says otherwise, every import is a symbol of the file its path leads to
+  vi.mocked(getImportOrExtract).mockImplementation(async (_imported, _local, baseDir, path) => ({ type: 'symbol', modulePath: resolvePosixPath(baseDir, path), reactive: false }));
 });
 
 describe('createLoadHook()', () => {
@@ -149,6 +151,48 @@ describe('createLoadHook()', () => {
     expect((result as { code: string }).code.startsWith(`import ${JSON.stringify(existing)};\nimport { _if,`)).toBe(true);
     expect((result as { code: string }).code).not.toContain('missing');
     expect((result as { code: string }).code).not.toContain('types.d.ts');
+  });
+
+  it('imports, and watches, the file declaring a component or a directive imported through a barrel, not the barrel', async () => {
+    const barrel = resolvePosixPath('/src/foo', './ui/index.ts');
+    const card = '/src/foo/ui/card/card.xd.component.ts';
+    const tip = '/src/foo/ui/tip/tip.directive.ts';
+    const template = '@import { Card, Tip } from \'./ui/index.ts\'\n@import lazy { Panel } from \'./ui/index.ts\'\n<x-card></x-card>';
+    vi.mocked(getImportOrExtract).mockImplementation(async imported => ({
+      Card: { type: 'component', modulePath: card },
+      Tip: { type: 'directive', modulePath: tip },
+      Panel: { type: 'component', modulePath: '/src/foo/ui/panel/panel.xd.component.ts' }
+    } as never)[imported]);
+    const ctx = createPluginContext();
+
+    const result = await load(createState({ [TEMPLATE_PATH]: template, [barrel]: '' }), ctx, TEMPLATE_MODULE_ID);
+
+    expect((result as { code: string }).code.startsWith(`import ${JSON.stringify(card)};\nimport ${JSON.stringify(tip)};\nimport { _if,`)).toBe(true);
+    expect((result as { code: string }).code).not.toContain('index.ts');
+    expect((result as { code: string }).code).not.toContain('panel');
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(card);
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(tip);
+    expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/ui/panel/panel.xd.component.ts');
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(barrel);
+  });
+
+  it('imports no module of a package, whose declarations have no code', async () => {
+    const template = '@import { formatPrice } from \'@acme/format\'\n<p></p>';
+    vi.mocked(getImportOrExtract).mockResolvedValue({ type: 'symbol', modulePath: '/node_modules/@acme/format/index.js', importPath: '@acme/format', reactive: false });
+
+    const result = await load(createState({ [TEMPLATE_PATH]: template, '/node_modules/@acme/format/index.js': '' }), createPluginContext(), TEMPLATE_MODULE_ID);
+
+    expect((result as { code: string }).code.startsWith('import { _if,')).toBe(true);
+  });
+
+  it('raises an error when an import of the template cannot be resolved, watching the modules its paths lead to', async () => {
+    const existing = resolvePosixPath('/src/foo', './existing.xd.component.ts');
+    vi.mocked(getImportOrExtract).mockRejectedValue('boom');
+    const ctx = createPluginContext();
+
+    await expect(load(createState({ [TEMPLATE_PATH]: '@import { A } from \'./existing.xd.component.ts\'', [existing]: '' }), ctx, TEMPLATE_MODULE_ID)).rejects.toThrow(`Failed to compile template - ${TEMPLATE_PATH}\nboom`);
+    expect(ctx.addWatchFile).toHaveBeenCalledWith(existing);
+    expect(compile).not.toHaveBeenCalled();
   });
 
   it('does not import the modules of an @import lazy, still watching them', async () => {

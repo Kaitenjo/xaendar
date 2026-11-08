@@ -5,6 +5,17 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { CommentsComponent } from '../../../examples/templates/defer/comments/comments.xd.component.ts'
 @import { DetailsComponent } from '../../../examples/templates/defer/details/details.xd.component.ts'
+@import { DeferLoadComponent } from '../../../examples/templates/defer/defer-load/defer-load.xd.component.ts'
+@import { DeferIdleComponent } from '../../../examples/templates/defer/defer-idle/defer-idle.xd.component.ts'
+@import { DeferTimerComponent } from '../../../examples/templates/defer/defer-timer/defer-timer.xd.component.ts'
+@import { DeferVisibleComponent } from '../../../examples/templates/defer/defer-visible/defer-visible.xd.component.ts'
+@import { DeferInteractionComponent } from '../../../examples/templates/defer/defer-interaction/defer-interaction.xd.component.ts'
+@import { DeferHoverComponent } from '../../../examples/templates/defer/defer-hover/defer-hover.xd.component.ts'
+@import { DeferSeveralComponent } from '../../../examples/templates/defer/defer-several/defer-several.xd.component.ts'
+@import { DeferTargetComponent } from '../../../examples/templates/defer/defer-target/defer-target.xd.component.ts'
+@import { DeferVisibleOptionsComponent } from '../../../examples/templates/defer/defer-visible-options/defer-visible-options.xd.component.ts'
+@import { DeferPlaceholderComponent } from '../../../examples/templates/defer/defer-placeholder/defer-placeholder.xd.component.ts'
+@import { DeferLoadingComponent } from '../../../examples/templates/defer/defer-loading/defer-loading.xd.component.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 @import { DEFER_TESTING } from './defer.snippets.ts'
@@ -29,37 +40,108 @@
   { t(translations(), 'pages.templates.defer.triggers.title') }
 </h2>
 <p @@htmlTranslation(key="pages.templates.defer.triggers.p1") />
-<docs-code snippet="templates/defer-triggers.html" />
 <p @@htmlTranslation(key="pages.templates.defer.triggers.p2") />
-<docs-example name="templates/defer/comments" heading="{translations().pages.templates.defer.triggers.example1}">
-  <ex-comments />
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.load.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.load.p1") />
+<docs-example name="templates/defer/defer-load" heading="{translations().pages.templates.defer.triggers.load.example}">
+  <ex-defer-load />
 </docs-example>
-<p @@htmlTranslation(key="pages.templates.defer.triggers.p3") />
-<docs-example name="templates/defer/details" heading="{translations().pages.templates.defer.triggers.example2}">
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.idle.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.idle.p1") />
+<docs-example name="templates/defer/defer-idle" heading="{translations().pages.templates.defer.triggers.idle.example}">
+  <ex-defer-idle />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.timer.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.timer.p1") />
+<docs-example name="templates/defer/defer-timer"
+  heading="{translations().pages.templates.defer.triggers.timer.example}">
+  <ex-defer-timer />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.visible.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.visible.p1") />
+<docs-example name="templates/defer/defer-visible"
+  heading="{translations().pages.templates.defer.triggers.visible.example}">
+  <ex-defer-visible />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.interaction.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.interaction.p1") />
+<docs-example name="templates/defer/defer-interaction"
+  heading="{translations().pages.templates.defer.triggers.interaction.example}">
+  <ex-defer-interaction />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.hover.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.hover.p1") />
+<docs-example name="templates/defer/defer-hover"
+  heading="{translations().pages.templates.defer.triggers.hover.example}">
+  <ex-defer-hover />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.when.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.when.p1") />
+<docs-example name="templates/defer/details" heading="{translations().pages.templates.defer.triggers.when.example}">
   <ex-details />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.triggers.several.title") />
+<p @@htmlTranslation(key="pages.templates.defer.triggers.several.p1") />
+<docs-example name="templates/defer/defer-several"
+  heading="{translations().pages.templates.defer.triggers.several.example}">
+  <ex-defer-several />
 </docs-example>
 
 <h2>
   { t(translations(), 'pages.templates.defer.targets.title') }
 </h2>
 <p @@htmlTranslation(key="pages.templates.defer.targets.p1") />
-<docs-code snippet="templates/defer-targets.html" />
+<docs-example name="templates/defer/defer-target" heading="{translations().pages.templates.defer.targets.example1}">
+  <ex-defer-target />
+</docs-example>
 <p @@htmlTranslation(key="pages.templates.defer.targets.p2") />
+<docs-example name="templates/defer/defer-visible-options"
+  heading="{translations().pages.templates.defer.targets.example2}">
+  <ex-defer-visible-options />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.defer.targets.p3") />
 
 <h2>
   { t(translations(), 'pages.templates.defer.prefetch.title') }
 </h2>
 <p @@htmlTranslation(key="pages.templates.defer.prefetch.p1") />
-<docs-code snippet="templates/defer-prefetch.html" />
+<docs-example name="templates/defer/comments" heading="{translations().pages.templates.defer.prefetch.example}">
+  <ex-comments />
+</docs-example>
 <p @@htmlTranslation(key="pages.templates.defer.prefetch.p2") />
 
 <h2>
   { t(translations(), 'pages.templates.defer.blocks.title') }
 </h2>
-<p @@htmlTranslation(key="pages.templates.defer.blocks.p1") />
-<p @@htmlTranslation(key="pages.templates.defer.blocks.p2") />
-<p @@htmlTranslation(key="pages.templates.defer.blocks.p3") />
-<p @@htmlTranslation(key="pages.templates.defer.blocks.p4") />
+
+<h3 @@htmlTranslation(key="pages.templates.defer.blocks.placeholder.title") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.placeholder.p1") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.placeholder.p2") />
+<docs-example name="templates/defer/defer-placeholder"
+  heading="{translations().pages.templates.defer.blocks.placeholder.example}">
+  <ex-defer-placeholder />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.blocks.loading.title") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.loading.p1") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.loading.p2") />
+<docs-example name="templates/defer/defer-loading"
+  heading="{translations().pages.templates.defer.blocks.loading.example}">
+  <ex-defer-loading />
+</docs-example>
+
+<h3 @@htmlTranslation(key="pages.templates.defer.blocks.error.title") />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.error.p1") />
+<docs-code snippet="templates/defer-error.html" />
+<p @@htmlTranslation(key="pages.templates.defer.blocks.error.p2") />
 
 <h2>
   { t(translations(), 'pages.templates.defer.modules.title') }

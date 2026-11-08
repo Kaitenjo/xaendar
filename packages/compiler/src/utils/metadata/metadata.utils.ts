@@ -20,6 +20,7 @@ import type { WebComponentDecorator } from '../../types/typescript-decorator-nod
 import type { WebComponentError } from '../../types/web-component-error.type';
 import { addHostDirectiveBindings } from '../host-directives/host-directives.utils';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
+import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.utils';
 
 /**
  * Extracts component metadata from a source file by parsing decorators.
@@ -49,6 +50,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
     const metadata: ComponentMetadata = {
       type: 'component',
       className,
+      modulePath: sourceFile.fileName,
       selector,
       styleUrl,
       templateUrl,
@@ -181,11 +183,10 @@ export function getWebComponentDeclarations(sourceFile: SourceFile): ComponentDe
  * @param owner - The class already using the selector, and the file declaring it.
  * @returns The message.
  */
-export function describeSelectorConflict({ className, selector, type, typescriptNodes }: ComponentOrDirectiveMetadata, owner: { className: string, ownerFile: string }): string {
-  const ownerFile = typescriptNodes.klass.getSourceFile().fileName;
+export function describeSelectorConflict({ className, selector, type, modulePath }: ComponentOrDirectiveMetadata, owner: { className: string, ownerFile: string }): string {
   return type === 'directive'
-    ? `Selector "${selector}" of directive "${className}" - ${ownerFile} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.`
-    : `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
+    ? `Selector "${selector}" of directive "${className}" - ${modulePath} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.`
+    : `Selector "${selector}" of component "${className}" - ${modulePath} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
 }
 
 /**
@@ -240,6 +241,7 @@ export async function extractDirectivesMetadataFromSourceFile(sourceFile: Source
     const metadata: DirectiveMetadata = {
       type: 'directive',
       className,
+      modulePath: sourceFile.fileName,
       selector,
       ...extractBindingsMetadata(klass, sourceFile, 'directive', compilerOptions),
       typescriptNodes: declarations[i]
@@ -281,7 +283,7 @@ function extractTypeParameters(klass: ClassDeclarationWithName): ClassTypeParame
  */
 function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: SourceFile, kind: ComponentMetadata['type'] | DirectiveMetadata['type'], compilerOptions: CompilerOptions | undefined): Pick<ComponentMetadata, 'properties' | 'events'> {
   // Inherited accessors are referenced through the class too: its type exposes them, even when the base class isn't exported
-  const accessorOwner = getAccessorOwnerType(klass, sourceFile, true);
+  const accessorOwner = getAccessorOwnerType(klass, sourceFile);
   const bindings: CollectedBindings = { properties: new Map(), events: new Map() };
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
@@ -817,19 +819,43 @@ function toMemberDeclaration(nameNode: Identifier, sourceFile: SourceFile): Memb
 }
 
 /**
- * References the type of a class from any file, through an `import()` type of the file declaring it.
+ * References the type of a class from any file, through an `import()` type of the file declaring it, a generic class with
+ * its own type parameters as type arguments, which the type-check of the templates instantiates with the types they give
+ * them (see `typeParameters` of `ComponentMetadata`).
  *
  * @param klass - The class to reference.
  * @param sourceFile - The source file declaring the class.
- * @param withTypeParameters - Whether a generic class is referenced with its own type parameters as type arguments, which the
- *   type-check of the templates instantiates with the types they give them (see `typeParameters` of `ComponentMetadata`).
+ * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`, or
+ *   `import('/src/list.directive').List<Item>` for a generic class.
+ */
+function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: SourceFile): string {
+  return toOwnerType(sourceFile.fileName, klass.name.text, klass.typeParameters?.map(({ name }) => name.text));
+}
+
+/**
+ * References the type of the class of a component or of a directive from any file, as {@link getAccessorOwnerType} does
+ * while its metadata are extracted: through an `import()` type of the module declaring it.
+ *
+ * @param metadata - The metadata of the component or of the directive.
+ * @param withTypeParameters - Whether a generic class is referenced with its own type parameters as type arguments.
  * @returns The type of the instances of the class, e.g. `import('/src/x.xd.component').XComponent`, or
  *   `import('/src/list.directive').List<Item>` for a generic class whose type parameters are referenced.
  */
-export function getAccessorOwnerType(klass: ClassDeclarationWithName, sourceFile: SourceFile, withTypeParameters: boolean): string {
-  const modulePath = sourceFile.fileName.replaceAll('\\', '/').replace(/\.ts$/, '');
-  const owner = `import('${modulePath}').${klass.name.text}`;
-  return withTypeParameters && klass.typeParameters?.length ? `${owner}<${klass.typeParameters.map(({ name }) => name.text).join(', ')}>` : owner;
+export function getOwnerType({ modulePath, className, typeParameters }: Pick<ComponentOrDirectiveMetadata, 'modulePath' | 'className' | 'typeParameters'>, withTypeParameters: boolean): string {
+  return toOwnerType(modulePath, className, withTypeParameters ? typeParameters?.map(({ name }) => name) : undefined);
+}
+
+/**
+ * Writes the `import()` type of a class, its module referenced without the TypeScript extension.
+ *
+ * @param modulePath - The path of the file declaring the class.
+ * @param className - The name of the class.
+ * @param typeParameters - The names of the type parameters to reference the class with, if any.
+ * @returns The type, e.g. `import('/src/list.directive').List<Item>`.
+ */
+function toOwnerType(modulePath: string, className: string, typeParameters: readonly string[] | undefined): string {
+  const owner = `import('${toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll('\\', '/') })}').${className}`;
+  return typeParameters?.length ? `${owner}<${typeParameters.join(', ')}>` : owner;
 }
 
 /**

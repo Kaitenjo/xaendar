@@ -8,7 +8,7 @@ import { getServerDependencies } from './server-dependencies.utils';
 const declaration = (type: ComponentOrDirectiveMetadata['type'], selector: string, fileName: string) => ({
   type,
   selector,
-  typescriptNodes: { klass: { getSourceFile: () => ({ fileName }) } }
+  modulePath: fileName
 }) as unknown as ComponentOrDirectiveMetadata;
 
 const exportsByName: Record<string, ComponentOrDirectiveMetadata> = {

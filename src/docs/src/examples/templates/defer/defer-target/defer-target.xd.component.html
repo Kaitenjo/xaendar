@@ -1,0 +1,8 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button #edit>Edit</ex-button>
+@defer (interaction(edit)) {
+  <p>The editor, rendered at the first click on the button, which stays.</p>
+} @placeholder {
+  <p class="note">The editor is rendered at the first click on the button.</p>
+}

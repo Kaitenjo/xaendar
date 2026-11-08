@@ -1,0 +1,7 @@
+@defer (interaction) {
+  <app-report />
+} @placeholder {
+  <button>Show the report</button>
+} @error (error) {
+  <p>The report cannot be loaded: { error instanceof Error ? error.message : 'unknown error' }</p>
+}

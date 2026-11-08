@@ -13,6 +13,8 @@ export * from './typescript-decorator-nodes/event-decorator.type';
 export * from './typescript-decorator-nodes/property-decorator.type';
 export * from './typescript-decorator-nodes/web-component-decorator.type';
 export * from './member-declaration.type';
+export * from './resolved-class.type';
+export * from './resolved-declaration.type';
 export * from './span.type';
 export * from './imported-symbol.type';
 export * from './symbol-import.type';

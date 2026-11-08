@@ -2736,28 +2736,82 @@
         },
         "triggers": {
           "title": "The triggers",
-          "p1": "The triggers are the ones of <code>@hydrate</code>, but <code>never</code>, separated by commas. The first one firing renders the content, once:",
-          "p2": "<code>visible</code>, <code>interaction</code> and <code>hover</code> watch the elements of the <code>@placeholder</code>: with them, a <code>@placeholder</code> holding an element is required, unless they name the element to watch. The listeners of the <code>@placeholder</code> handle an interaction first, then the content replaces it. Here moving the pointer over the button of the <code>@placeholder</code> loads the comments, whose component is in a chunk of its own, and the click shows them:",
-          "example1": "Comments loaded when the pointer moves over the button, shown at the first click",
-          "p3": "<code>when</code> fires once its expression is truthy. The content is rendered once: it stays when the expression is falsy again.",
-          "example2": "Details rendered once they are requested"
+          "p1": "The triggers are the ones of <code>@hydrate</code>, but <code>never</code>, separated by commas. Each one renders the content once, the first time it fires. In the examples whose trigger fires by itself, the button above the block removes it and renders it again, its triggers armed anew.",
+          "p2": "<code>visible</code>, <code>interaction</code> and <code>hover</code> watch the elements of the <code>@placeholder</code>: with them, a <code>@placeholder</code> holding an element is required, unless they name the element to watch. The listeners of the <code>@placeholder</code> handle an interaction first, then the content replaces it.",
+          "load": {
+            "title": "<code>load</code>",
+            "p1": "<code>load</code> renders the content as soon as the template holding the block is rendered, without blocking it: for a part needed at once, whose code should not delay the page.",
+            "example": "Content rendered as soon as the template is"
+          },
+          "idle": {
+            "title": "<code>idle</code>",
+            "p1": "<code>idle</code> renders the content when the browser has nothing else to do. A time between its parentheses, such as <code>idle(2s)</code>, is the longest wait. A block without triggers waits for the browser to be idle too.",
+            "example": "Content rendered when the browser is idle, at the latest after 2 seconds"
+          },
+          "timer": {
+            "title": "<code>timer</code>",
+            "p1": "<code>timer</code> renders the content once its time, in <code>ms</code> or <code>s</code>, has passed since the template holding the block was rendered.",
+            "example": "Content rendered after 2 seconds"
+          },
+          "visible": {
+            "title": "<code>visible</code>",
+            "p1": "<code>visible</code> renders the content when the <code>@placeholder</code> enters the viewport: for a part below the fold. Here the frame of the <code>@placeholder</code> is at the end of a box to scroll:",
+            "example": "Map rendered when its frame enters the viewport"
+          },
+          "interaction": {
+            "title": "<code>interaction</code>",
+            "p1": "<code>interaction</code> renders the content at the first click, key or focus on the <code>@placeholder</code>, which the content then replaces:",
+            "example": "Editor rendered at the first interaction with its button"
+          },
+          "hover": {
+            "title": "<code>hover</code>",
+            "p1": "<code>hover</code> renders the content when the pointer moves over the <code>@placeholder</code>, or the focus enters it:",
+            "example": "Preview rendered when the pointer moves over the button"
+          },
+          "when": {
+            "title": "<code>when</code>",
+            "p1": "<code>when</code> fires once its expression is truthy. The content is rendered once: it stays when the expression is falsy again.",
+            "example": "Details rendered once they are requested"
+          },
+          "several": {
+            "title": "Several triggers",
+            "p1": "With several triggers, the first one firing renders the content and disarms the others. Here a click on the button renders it before the 5 seconds have passed:",
+            "example": "Content rendered at the click, or after 5 seconds"
+          }
         },
         "targets": {
           "title": "The element to watch",
-          "p1": "<code>visible</code>, <code>interaction</code> and <code>hover</code> watch the element an element ref names, written between their parentheses, in place of the <code>@placeholder</code>: an element of the template holding the block, before the block or after it. <code>visible</code> takes the options of its <code>IntersectionObserver</code> too, but <code>root</code>, as an object literal after the element ref or alone: <code>rootMargin</code> renders the content before the element enters the viewport, <code>threshold</code> once enough of it is visible.",
-          "p2": "The triggers are armed once the template holding the block is rendered, so the element ref names an element rendered by then. An element inside an <code>@if</code> or a <code>@for</code> belongs to another scope: the type-check rejects its name there, as it rejects a name that is not an element."
+          "p1": "<code>visible</code>, <code>interaction</code> and <code>hover</code> watch the element an element ref names, written between their parentheses, in place of the <code>@placeholder</code>: an element of the template holding the block, before the block or after it. The element is not part of the block, so it stays once the content is rendered:",
+          "example1": "Editor rendered at the first click on a button outside of the block",
+          "p2": "<code>visible</code> takes the options of its <code>IntersectionObserver</code> too, but <code>root</code>, as an object literal after the element ref, or alone to watch the <code>@placeholder</code>: <code>rootMargin</code> renders the content before the element enters the viewport, <code>threshold</code> once enough of it is visible. Here the chart waits for the frame after the block to be entirely visible:",
+          "example2": "Chart rendered once its frame is entirely visible",
+          "p3": "The triggers are armed once the template holding the block is rendered, so the element ref names an element rendered by then. An element inside an <code>@if</code> or a <code>@for</code> belongs to another scope: the type-check rejects its name there, as it rejects a name that is not an element."
         },
         "prefetch": {
           "title": "Loading the modules first",
-          "p1": "A trigger written after <code>prefetch</code> loads the modules of the content without rendering it: when the trigger rendering the content fires, the modules are already there, or on their way, and the content waits for the same load. <code>prefetch</code> takes every trigger, <code>when</code> included. A block declaring only triggers following <code>prefetch</code> renders its content when the browser is idle:",
+          "p1": "A trigger written after <code>prefetch</code> loads the modules of the content without rendering it: when the trigger rendering the content fires, the modules are already there, or on their way, and the content waits for the same load. <code>prefetch</code> takes every trigger, <code>when</code> included. A block declaring only triggers following <code>prefetch</code> renders its content when the browser is idle. Here moving the pointer over the button loads the comments, whose component is in a chunk of its own, and the click shows them:",
+          "example": "Comments loaded when the pointer moves over the button, shown at the first click",
           "p2": "Without modules to load, because every component of the content is loaded with the page too, <code>prefetch</code> does nothing. A prefetch that fails is not reported: the trigger rendering the content shows the <code>@error</code>."
         },
         "blocks": {
           "title": "@placeholder, @loading and @error",
-          "p1": "The <code>@placeholder</code> is shown until a trigger fires. It is part of the page: its listeners work, and it is the only part the server renders. Give it the size of the content, so that the page does not move when the content arrives.",
-          "p2": "The <code>@loading</code> is shown from the trigger until the modules are loaded. When there is nothing to load, because every component of the content is loaded with the page too, the content arrives at once and the <code>@loading</code> never shows.",
-          "p3": "The <code>@error</code> is shown when the modules fail to load, for instance offline or after a deploy removed the old chunks. It gives the error a name, as <code>@catch</code> does, typed <code>unknown</code>. Without <code>@error</code>, the error goes to the console and the <code>@placeholder</code> comes back.",
-          "p4": "The times avoid a flash when the modules arrive quickly. The <code>minimum</code> of the <code>@placeholder</code> keeps it shown at least for that time, from when it is rendered. The <code>@loading</code> appears only once the modules have loaded for its <code>after</code>, never when they arrive sooner, then stays at least for its <code>minimum</code>. The content, or the <code>@error</code>, waits for them. A time is a number followed by <code>ms</code> or <code>s</code>, in milliseconds without a unit."
+          "placeholder": {
+            "title": "<code>@placeholder</code>",
+            "p1": "The <code>@placeholder</code> is shown until a trigger fires. It is part of the page: its listeners work, and it is the only part the server renders. Give it the size of the content, so that the page does not move when the content arrives.",
+            "p2": "Its <code>minimum</code> keeps it shown at least for that time, from when it is rendered, so that content arriving at once does not replace it in a flash: the content waits for it. A time is a number followed by <code>ms</code> or <code>s</code>, in milliseconds without a unit. Here <code>load</code> fires at once, and the content waits for the 2 seconds of the <code>@placeholder</code>:",
+            "example": "Placeholder shown for 2 seconds at least"
+          },
+          "loading": {
+            "title": "<code>@loading</code>",
+            "p1": "The <code>@loading</code> is shown from the trigger until the modules are loaded. When there is nothing to load, because every component of the content is loaded with the page too, the content arrives at once and the <code>@loading</code> never shows.",
+            "p2": "Its <code>after</code> shows it only once the modules have loaded for that time, never when they arrive sooner; its <code>minimum</code> keeps it shown at least for that time, and the content, or the <code>@error</code>, waits for it. Here the report is in a chunk of its own, loaded at the click, and the <code>@loading</code> stays for a second:",
+            "example": "Report loaded at the click, while the loading message is shown for a second"
+          },
+          "error": {
+            "title": "<code>@error</code>",
+            "p1": "The <code>@error</code> is shown when the modules fail to load, for instance offline or after a deploy removed the old chunks. It gives the error a name, as <code>@catch</code> does, typed <code>unknown</code>:",
+            "p2": "Without <code>@error</code>, the error goes to the console and the <code>@placeholder</code> comes back."
+          }
         },
         "modules": {
           "title": "The modules loaded later",

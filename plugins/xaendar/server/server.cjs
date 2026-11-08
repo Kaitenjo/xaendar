@@ -25639,6 +25639,9 @@ function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
 function resolveClassReference(sourceFile, expression, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   return resolveReference(sourceFile, expression, CLASS_FINDER, { compilerOptions, dependencies: /* @__PURE__ */ new Set(), visitedClasses: /* @__PURE__ */ new Set() }, /* @__PURE__ */ new Set());
 }
+function resolveExportedClass(fileName, exportedName, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
+  return resolveModuleExport(fileName, exportedName, CLASS_FINDER, { compilerOptions, dependencies: /* @__PURE__ */ new Set(), visitedClasses: /* @__PURE__ */ new Set() });
+}
 function resolveBaseClass({ sourceFile, declaration }, context) {
   const expression = getBaseClassExpression(declaration);
   if (!expression) {
@@ -25876,6 +25879,7 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
     const metadata = {
       type: "component",
       className,
+      modulePath: sourceFile.fileName,
       selector,
       styleUrl,
       templateUrl,
@@ -25956,9 +25960,8 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
 function getWebComponentDeclarations(sourceFile) {
   return getDecoratedClassDeclarations(sourceFile, "WebComponent");
 }
-function describeSelectorConflict({ className, selector, type, typescriptNodes }, owner) {
-  const ownerFile = typescriptNodes.klass.getSourceFile().fileName;
-  return type === "directive" ? `Selector "${selector}" of directive "${className}" - ${ownerFile} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.` : `Selector "${selector}" of component "${className}" - ${ownerFile} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
+function describeSelectorConflict({ className, selector, type, modulePath }, owner) {
+  return type === "directive" ? `Selector "${selector}" of directive "${className}" - ${modulePath} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.` : `Selector "${selector}" of component "${className}" - ${modulePath} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
 }
 function findSsrError(property, className) {
   if (!(0, import_typescript13.isPropertyAssignment)(property) || !(0, import_typescript13.isObjectLiteralExpression)(property.initializer)) {
@@ -25988,6 +25991,7 @@ async function extractDirectivesMetadataFromSourceFile(sourceFile, compilerOptio
     const metadata = {
       type: "directive",
       className,
+      modulePath: sourceFile.fileName,
       selector,
       ...extractBindingsMetadata(klass, sourceFile, "directive", compilerOptions),
       typescriptNodes: declarations[i2]
@@ -26007,7 +26011,7 @@ function extractTypeParameters(klass) {
   return klass.typeParameters.map(({ name, default: defaultType }) => ({ name: name.text, hasDefault: !!defaultType }));
 }
 function extractBindingsMetadata(klass, sourceFile, kind, compilerOptions) {
-  const accessorOwner = getAccessorOwnerType(klass, sourceFile, true);
+  const accessorOwner = getAccessorOwnerType(klass, sourceFile);
   const bindings = { properties: /* @__PURE__ */ new Map(), events: /* @__PURE__ */ new Map() };
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, /* @__PURE__ */ new Set([klass]), bindings);
   const mappedProperties = /* @__PURE__ */ new Map();
@@ -26328,10 +26332,15 @@ function extractEventMetadata(event, name, accessorOwner, declaration) {
 function toMemberDeclaration(nameNode, sourceFile) {
   return { fileName: sourceFile.fileName, span: { start: nameNode.getStart(sourceFile), end: nameNode.getEnd() } };
 }
-function getAccessorOwnerType(klass, sourceFile, withTypeParameters) {
-  const modulePath = sourceFile.fileName.replaceAll("\\", "/").replace(/\.ts$/, "");
-  const owner = `import('${modulePath}').${klass.name.text}`;
-  return withTypeParameters && klass.typeParameters?.length ? `${owner}<${klass.typeParameters.map(({ name }) => name.text).join(", ")}>` : owner;
+function getAccessorOwnerType(klass, sourceFile) {
+  return toOwnerType(sourceFile.fileName, klass.name.text, klass.typeParameters?.map(({ name }) => name.text));
+}
+function getOwnerType({ modulePath, className, typeParameters }, withTypeParameters) {
+  return toOwnerType(modulePath, className, withTypeParameters ? typeParameters?.map(({ name }) => name) : void 0);
+}
+function toOwnerType(modulePath, className, typeParameters) {
+  const owner = `import('${toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll("\\", "/") })}').${className}`;
+  return typeParameters?.length ? `${owner}<${typeParameters.join(", ")}>` : owner;
 }
 function extractBindingType(member, name, accessorOwner, event) {
   const defaultValue = event ? "void" : "any";
@@ -26494,8 +26503,7 @@ function getVariableType(element, namespace, context) {
     return getElementType(namespace, element.tagName);
   }
   if (!component.typeParameters) {
-    const { klass } = component.typescriptNodes;
-    return getAccessorOwnerType(klass, klass.getSourceFile(), false);
+    return getOwnerType(component, false);
   }
   return context.hasInstantiation(element.span.start) ? `${INSTANCE}${getInstantiationSuffix(element)}` : "any";
 }
@@ -26650,10 +26658,8 @@ function instantiateTypeParameters(metadata, typeArguments, attributes, ownerSpa
   if (!typeParameters) {
     return { metadata };
   }
-  const { klass } = metadata.typescriptNodes;
-  const sourceFile = klass.getSourceFile();
-  const base = getAccessorOwnerType(klass, sourceFile, false);
-  const generic = getAccessorOwnerType(klass, sourceFile, true);
+  const base = getOwnerType(metadata, false);
+  const generic = getOwnerType(metadata, true);
   const instanceName = `${INSTANCE}${suffix ?? ""}`;
   const probedName = `${PROBED}${suffix ?? ""}`;
   if (typeArguments) {
@@ -30268,7 +30274,7 @@ var TemplateMetadataCache = class {
       return stored;
     }
     const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
-    const metadata = fileName && (await this._getFileMetadatas(fileName))?.get(name);
+    const metadata = fileName && ((await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
     }
@@ -30276,7 +30282,8 @@ var TemplateMetadataCache = class {
   }
   /**
    * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
-   * names, or any other export of the module, reactive when reading it can read a signal (a namespace always is), as
+   * names, read from the file declaring it when the module re-exports it (a barrel), or any other export of the module,
+   * reactive when reading it can read a signal (a namespace always is), as
    * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
    * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
    *
@@ -30293,7 +30300,7 @@ var TemplateMetadataCache = class {
     if (!resolved || !metadatas) {
       throw new Error(`Cannot find module "${path}"`);
     }
-    const metadata = imported !== "*" && metadatas.get(imported === "default" ? local : imported);
+    const metadata = imported !== "*" && (metadatas.get(imported === "default" ? local : imported) ?? await this._getReExportedMetadata(resolved.fileName, imported));
     if (metadata) {
       return metadata;
     }
@@ -30374,6 +30381,23 @@ var TemplateMetadataCache = class {
     this._entries.clear();
     this._selectors.clear();
     this._withoutDeclarations.clear();
+  }
+  /**
+   * Returns the metadata of the component or of the directive a module exports through a re-export (`export * from
+   * './card'`, `export { Card as Tile } from './card'`), extracted from the file declaring it. The modules the re-exports
+   * lead to are read from the disk.
+   *
+   * @param fileName - The path of the module.
+   * @param exportedName - The name the module exports the class as, `'default'` for the default export.
+   * @returns The metadata, `undefined` if the module exports no component nor directive under that name.
+   */
+  async _getReExportedMetadata(fileName, exportedName) {
+    const exported = resolveExportedClass(fileName, exportedName, this._compilerOptions);
+    const className = exported?.declaration.name?.text;
+    if (!exported || !className) {
+      return void 0;
+    }
+    return (await this._getFileMetadatas(exported.sourceFile.fileName))?.get(className);
   }
   /**
    * Returns the metadata of the components and directives declared in a file, extracting them again when its text changed.
@@ -30526,7 +30550,7 @@ async function analyze(templatePath, source, components, shimName) {
       shimPath: shim.path,
       bodyLineOffset: shim.bodyLineOffset,
       languageService,
-      dependencies: /* @__PURE__ */ new Set([...dependencies, ...metadatas.map((metadata) => normalizeFileName(metadata.typescriptNodes.klass.getSourceFile().fileName)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
+      dependencies: /* @__PURE__ */ new Set([...dependencies, ...metadatas.map(({ modulePath }) => normalizeFileName(modulePath)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
     };
     return { analysis, error: void 0, ast };
   } catch (error) {
@@ -30728,16 +30752,13 @@ async function findSelectorConflicts(fileName) {
   const conflicts = new Array();
   for (let i2 = 0; i2 < components.length; i2++) {
     const component = components[i2];
-    const other = normalizeFileName(getOwnerFile(component)) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i2) : void 0;
+    const other = normalizeFileName(component.modulePath) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i2) : void 0;
     if (other) {
       const [{ literal }] = findStringOptions(component.typescriptNodes.decorator, ["selector"]);
-      conflicts.push({ message: describeSelectorConflict(component, { className: other.className, ownerFile: getOwnerFile(other) }), span: toSpan(literal) });
+      conflicts.push({ message: describeSelectorConflict(component, { className: other.className, ownerFile: other.modulePath }), span: toSpan(literal) });
     }
   }
   return conflicts;
-}
-function getOwnerFile({ typescriptNodes: { klass } }) {
-  return klass.getSourceFile().fileName;
 }
 function toSpan(literal) {
   return { start: literal.getStart(), end: literal.getEnd() };

@@ -1,4 +1,4 @@
-import { type ContextCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport } from '@xaendar/compiler';
+import { type ContextCache, type ComponentOrDirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, resolveExportedClass } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
@@ -55,7 +55,7 @@ export class TemplateMetadataCache implements ContextCache {
     }
 
     const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
-    const metadata = fileName && (await this._getFileMetadatas(fileName))?.get(name);
+    const metadata = fileName && ((await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
     }
@@ -65,7 +65,8 @@ export class TemplateMetadataCache implements ContextCache {
 
   /**
    * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
-   * names, or any other export of the module, reactive when reading it can read a signal (a namespace always is), as
+   * names, read from the file declaring it when the module re-exports it (a barrel), or any other export of the module,
+   * reactive when reading it can read a signal (a namespace always is), as
    * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
    * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
    *
@@ -83,7 +84,7 @@ export class TemplateMetadataCache implements ContextCache {
       throw new Error(`Cannot find module "${path}"`);
     }
 
-    const metadata = imported !== '*' && metadatas.get(imported === 'default' ? local : imported);
+    const metadata = imported !== '*' && (metadatas.get(imported === 'default' ? local : imported) ?? await this._getReExportedMetadata(resolved.fileName, imported));
     if (metadata) {
       return metadata;
     }
@@ -175,6 +176,25 @@ export class TemplateMetadataCache implements ContextCache {
     this._entries.clear();
     this._selectors.clear();
     this._withoutDeclarations.clear();
+  }
+
+  /**
+   * Returns the metadata of the component or of the directive a module exports through a re-export (`export * from
+   * './card'`, `export { Card as Tile } from './card'`), extracted from the file declaring it. The modules the re-exports
+   * lead to are read from the disk.
+   *
+   * @param fileName - The path of the module.
+   * @param exportedName - The name the module exports the class as, `'default'` for the default export.
+   * @returns The metadata, `undefined` if the module exports no component nor directive under that name.
+   */
+  private async _getReExportedMetadata(fileName: string, exportedName: string): Promise<ComponentOrDirectiveMetadata | undefined> {
+    const exported = resolveExportedClass(fileName, exportedName, this._compilerOptions);
+    const className = exported?.declaration.name?.text;
+    if (!exported || !className) {
+      return undefined;
+    }
+
+    return (await this._getFileMetadatas(exported.sourceFile.fileName))?.get(className);
   }
 
   /**

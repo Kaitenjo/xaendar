@@ -1,0 +1,8 @@
+<div class="viewport">
+  <p class="note">Scroll down: the chart is rendered once the whole frame is visible.</p>
+  <div class="spacer" />
+  @defer (visible(frame, { threshold: 1 })) {
+    <p>The chart, rendered once the frame below was entirely visible.</p>
+  }
+  <div #frame class="frame">Chart</div>
+</div>

@@ -1,4 +1,4 @@
-import { type ContextCache, parseTemplate } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ContextCache, type ImportNode, parseTemplate } from '@xaendar/compiler';
 import { getTemplateWarnings } from '@xaendar/language-core';
 import { dirname } from 'node:path';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -6,15 +6,10 @@ import type { XaendarPluginStrategy } from '../../types/plugin-strategy.type';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
-import { describeTemplateWarning, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId } from '../plugin-utils/plugin.utils';
+import { describeTemplateWarning, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
 import type { LoadHook } from '../../types/load-hook.type';
-
-/**
- * Matches the TypeScript declaration files, which have no code to import.
- */
-const DECLARATION_FILE = /\.d\.[cm]?tsx?$/;
 
 /**
  * Compiles a template into the module exporting its render function, and a style
@@ -104,27 +99,19 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       return context.error(`Could not find template at ${templatePath}`);
     }
 
-    /*
-      Watching all the components imported in the template, and linking them to this module: 
-      editing any of them invalidates the compiled render function.
-    */
-    const importedComponentPaths = extractImportedComponentPaths(templateSource, dirname(templatePath), state.compilerOptions);
-    for (let i = 0; i < importedComponentPaths.length; i++) {
-      const importedPath = importedComponentPaths[i]
-      if (state.host.fileExists(importedPath)) {
-        context.addWatchFile(importedPath);
-      }
-    }
+    // The symbols the template imports are imported by the render code, resolved against the directory of the template
+    const templateDir = dirname(templatePath);
 
     /*
-      The modules the template imports are imported by its module too, so the bundler keeps them in the chunk graph
-      of the template. The ones of `@import lazy` are not: something else loads them on demand.
+      Watching all the modules imported in the template, and linking them to this module: editing any of them
+      invalidates the compiled render function. They are watched before the template is compiled, so that fixing the one
+      making it fail compiles it again.
     */
-    const dependencyPaths = new Set<string>();
-    const eagerPaths = extractImportedComponentPaths(templateSource, dirname(templatePath), state.compilerOptions, true);
-    for (let i = 0; i < eagerPaths.length; i++) {
-      if (state.host.fileExists(eagerPaths[i]) && !DECLARATION_FILE.test(eagerPaths[i])) {
-        dependencyPaths.add(eagerPaths[i]);
+    const importedPaths = extractImportedComponentPaths(templateSource, templateDir, state.compilerOptions);
+    for (let i = 0; i < importedPaths.length; i++) {
+      const importedPath = importedPaths[i];
+      if (state.host.fileExists(importedPath)) {
+        context.addWatchFile(importedPath);
       }
     }
 
@@ -133,13 +120,25 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
       set: registerMetadata
     };
-    // The symbols the template imports are imported by the render code, resolved against the directory of the template
-    const templateDir = dirname(templatePath);
     const { customElements } = state;
 
+    let nodes: ASTNode[];
     let compiledFunctions: string;
-    let dependencies: readonly string[] = Array.from(dependencyPaths);
+    let dependencies: readonly string[];
     try {
+      nodes = parseTemplate(templateSource);
+      /*
+        The modules the template imports are imported by its module too, so the bundler keeps them in the chunk graph
+        of the template: the files declaring the components and the directives, also the ones imported through a
+        barrel, which the paths of the `@import`s do not lead to. The ones of `@import lazy` are not: something else
+        loads them on demand.
+      */
+      const modules = await resolveTemplateModules(nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import), templateDir, cache, state.host);
+      for (let i = 0; i < modules.watched.length; i++) {
+        context.addWatchFile(modules.watched[i]);
+      }
+
+      dependencies = modules.imported;
       compiledFunctions = await strategy.compile(templateSource, { signals, templateDir, shadowingMembers, customElements, cache, islands: state.staticComponents?.islands.get(templatePath) });
       if (strategy.filterDependencies) {
         dependencies = await strategy.filterDependencies(templateSource, dependencies, { templateDir, cache });
@@ -149,7 +148,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
     }
 
     if (strategy.server) {
-      const warnings = getTemplateWarnings(parseTemplate(templateSource), shadowingMembers);
+      const warnings = getTemplateWarnings(nodes, shadowingMembers);
       for (let i = 0; i < warnings.length; i++) {
         context.warn(`${templatePath}\n${describeTemplateWarning(templateSource, warnings[i])}`);
       }

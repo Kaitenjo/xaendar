@@ -122,6 +122,7 @@ function createMetadata(overrides: Partial<ComponentMetadata> = {}): ComponentMe
   return {
     type: 'component',
     className: 'FooComponent',
+    modulePath: '/src/foo/foo.xd.component.ts',
     selector: 'foo-el',
     templateUrl: './foo.xd.component.html',
     properties: new Map(),

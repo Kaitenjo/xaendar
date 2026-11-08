@@ -218,7 +218,7 @@ export function clearMetadataRegistry(): void {
  * used to key the `fileToKeys` reverse index.
  */
 function getOwnerFilePath(metadata: ComponentOrDirectiveMetadata): string | undefined {
-  return metadata.typescriptNodes.klass.getSourceFile().fileName || undefined;
+  return metadata.modulePath || undefined;
 }
 
 /**

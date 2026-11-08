@@ -6,7 +6,7 @@ import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
 import { visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
-import { getAccessorOwnerType } from '../../../utils/metadata/metadata.utils';
+import { getOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
@@ -115,8 +115,7 @@ function getVariableType(element: ElementNode, namespace: ElementNamespace, cont
   }
 
   if (!component.typeParameters) {
-    const { klass } = component.typescriptNodes;
-    return getAccessorOwnerType(klass, klass.getSourceFile(), false);
+    return getOwnerType(component, false);
   }
 
   return context.hasInstantiation(element.span.start) ? `${INSTANCE}${getInstantiationSuffix(element)}` : 'any';

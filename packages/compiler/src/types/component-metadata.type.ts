@@ -16,6 +16,13 @@ export type ComponentMetadata = {
    */
   className: string;
   /**
+   * Path of the file declaring the class, as it was read (e.g. `/src/card/card.xd.component.ts`): the module whose
+   * evaluation defines the component, which the generated code imports, and the module the type-check references the
+   * class through. A component imported through a barrel (`export * from './card/card.xd.component'`) keeps the file
+   * declaring it, not the barrel.
+   */
+  modulePath: string;
+  /**
    * HTML element selector (tag name), unique across every component: a custom element name can be defined only once.
    */
   selector: string;

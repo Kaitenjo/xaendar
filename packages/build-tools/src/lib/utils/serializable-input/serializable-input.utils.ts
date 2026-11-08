@@ -29,7 +29,7 @@ const OBJECT_LITERAL = '__object';
  */
 export function isSerializableInput(program: Program, metadata: ComponentMetadata, name: string): boolean {
   const property = metadata.properties.get(name)!;
-  const klass = program.getSourceFile(metadata.typescriptNodes.klass.getSourceFile().fileName)?.statements.find(statement => isClassDeclaration(statement) && statement.name?.text === metadata.className);
+  const klass = program.getSourceFile(metadata.modulePath)?.statements.find(statement => isClassDeclaration(statement) && statement.name?.text === metadata.className);
   if (property.exposed || !klass) {
     return false;
   }

@@ -19,7 +19,7 @@ const contextWithModules = () => {
     getOrInsert: async selector => {
       const directive = selector.startsWith('@@');
       const fileName = directive ? `/src/directives/${selector.slice(2)}.ts` : `/src/${selector.split('-')[0]}.ts`;
-      return { type: directive || selector === 'dir-x' ? 'directive' : 'component', typescriptNodes: { klass: { getSourceFile: () => ({ fileName }) } } } as never;
+      return { type: directive || selector === 'dir-x' ? 'directive' : 'component', modulePath: fileName } as never;
     },
     getImport: () => Promise.reject(new Error('No import')),
     set: () => undefined

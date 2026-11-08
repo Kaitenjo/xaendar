@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { ComponentOrDirectiveMetadata, Cursor, describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModule, resolveModulePath, type TemplateWarning } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -9,6 +9,7 @@ import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../c
 import { getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
+import type { TemplateModules } from '../../types/template-modules.type';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 import type { RenderRegistration } from '../../types/render-registration.type';
 
@@ -26,31 +27,27 @@ const DECLARATION_FILE = /\.d\.[cm]?ts$/;
  * When a global cache of the import metadata will be implemented we can safely remove this
  *
  * Extracts the absolute paths of every module (of a component, a directive or any other symbol) imported via `@import { X }
- * from '...'` inside a DSL template, resolving them relative to the
+ * from '...'` inside a DSL template, `@import lazy` included, resolving them relative to the
  * template's own directory (paths in the template are relative to the
  * .html file, not to the component's .ts file), or as the TypeScript files of the project resolve the paths of the
  * aliases. The modules of the packages are left out: they change only when the packages are installed again.
+ * A barrel is the module the path leads to: the files it re-exports are found by {@link resolveTemplateModules}.
  *
  * @param templateSource - The raw content of the `.xd.component.html` template.
  * @param templateDir - The directory containing the template file.
  * @param compilerOptions - Project compiler options, driving how the paths that are not relative are resolved.
- * @param skipLazy - Whether to leave out the modules imported by `@import lazy`, which the template does not load.
  * @returns The list of imported absolute paths, in posix format (may be empty).
  */
-export function extractImportedComponentPaths(templateSource: string, templateDir: string, compilerOptions?: CompilerOptions, skipLazy = false): string[] {
-  const importRegex = /@import(\s+lazy)?\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
+export function extractImportedComponentPaths(templateSource: string, templateDir: string, compilerOptions?: CompilerOptions): string[] {
+  const importRegex = /@import(?:\s+lazy)?\s*\{[^}]*\}\s*from\s*['"](.+?)['"]/g;
   const paths = new Array<string>();
   let match: RegExpExecArray | null;
 
   while ((match = importRegex.exec(templateSource)) !== null) {
-    if (skipLazy && match[1]) {
-      continue;
-    }
-
     // The module of a symbol can be imported without its extension, like any TypeScript module
-    const resolved = resolveModule(templateDir, match[2], compilerOptions);
+    const resolved = resolveModule(templateDir, match[1], compilerOptions);
     if (!resolved) {
-      paths.push(resolvePosixPath(templateDir, match[2]));
+      paths.push(resolvePosixPath(templateDir, match[1]));
     } else if (!resolved.external) {
       paths.push(resolved.fileName);
     }
@@ -422,7 +419,8 @@ export async function getMetadataOrExtract(classNameOrSelector: string, path?: s
 
 /**
  * Base implementation for the getImport method of the plugin cache: resolves what an `@import` specifier of a template
- * imports, the metadata of the component or of the directive it names, or any other export of the module. A symbol of a
+ * imports, the metadata of the component or of the directive it names, or any other export of the module. A component
+ * or a directive the module re-exports (a barrel) is read from the file declaring it. A symbol of a
  * package keeps the path written in the `@import`, which the generated code imports it with: the bundler resolves it
  * like the imports of the application, to the same instance of the module. The declarations of a package declare no
  * component nor directive: their decorators are not part of them.
@@ -450,6 +448,11 @@ export async function getImportOrExtract(imported: string, local: string, baseDi
     if (metadata) {
       return metadata;
     }
+
+    const reExported = await extractReExportedMetadata(modulePath, imported, className, compilerOptions);
+    if (reExported) {
+      return reExported;
+    }
   }
 
   const symbol: ImportedSymbol = { type: 'symbol', modulePath, reactive: imported === '*' || isReactiveExport(modulePath, imported, compilerOptions) };
@@ -458,6 +461,75 @@ export async function getImportOrExtract(imported: string, local: string, baseDi
   }
 
   return symbol;
+}
+
+/**
+ * Resolves the modules a template imports, from its `@import` statements (see {@link TemplateModules}): the module of a
+ * component or of a directive is the file declaring its class, also when the template imports it through a barrel, so
+ * that loading the template loads only what it renders, and the module of any other symbol is the one the `@import`
+ * leads to. The modules of the packages are left out, as their declarations have no code to import, and so are the
+ * files that do not exist.
+ *
+ * @param importNodes - The `@import` nodes of the template.
+ * @param templateDir - The directory of the template, the paths of the `@import`s are relative to.
+ * @param cache - The cache resolving the imports.
+ * @param host - Tells whether a file exists.
+ * @returns The modules the module of the template imports, and the ones it depends on.
+ * @throws If a module can't be resolved, or the metadata of a class it declares can't be extracted.
+ */
+export async function resolveTemplateModules(importNodes: readonly ImportNode[], templateDir: string, cache: Pick<ContextCache, 'getImport'>, host: Pick<CompilerHost, 'fileExists'>): Promise<TemplateModules> {
+  const imported = new Set<string>();
+  const watched = new Set<string>();
+  for (let i = 0; i < importNodes.length; i++) {
+    const { specifiers, path, lazy } = importNodes[i];
+    for (let j = 0; j < specifiers.length; j++) {
+      const resolved = await cache.getImport(specifiers[j].imported, specifiers[j].local, templateDir, path);
+      const module = resolved.type === 'symbol' ? getSymbolModule(resolved, host) : resolved.modulePath;
+      if (module) {
+        watched.add(module);
+        if (!lazy) {
+          imported.add(module);
+        }
+      }
+    }
+  }
+
+  return { imported: [...imported], watched: [...watched] };
+}
+
+/**
+ * Returns the module a template imports a symbol from, when it is a file of the project: the declarations of a package
+ * have no code to import, and its code changes only when it is installed again.
+ *
+ * @param symbol - The imported symbol.
+ * @param host - Tells whether a file exists.
+ * @returns The path of the module, `undefined` for a package or a file that does not exist.
+ */
+function getSymbolModule({ modulePath, importPath }: ImportedSymbol, host: Pick<CompilerHost, 'fileExists'>): string | undefined {
+  return importPath === undefined && !DECLARATION_FILE.test(modulePath) && host.fileExists(modulePath) ? modulePath : undefined;
+}
+
+/**
+ * Extracts the metadata of the component or of the directive a module exports through a re-export (a barrel: `export *
+ * from './card'`, `export { Card as Tile } from './card'`) from the file declaring it, and registers it (see
+ * {@link extractAndRegisterMetadata}).
+ *
+ * @param modulePath - The path of the module.
+ * @param exportedName - The name the module exports the class as, `'default'` for the default export.
+ * @param triedClassName - The name of the class already looked for in the module itself, not looked for again.
+ * @param compilerOptions - Project compiler options, driving how the re-exported modules are resolved.
+ * @returns The metadata, `undefined` if the module exports no component nor directive under that name.
+ * @throws If the metadata can't be extracted, or the selector is already used by another component or directive.
+ */
+async function extractReExportedMetadata(modulePath: string, exportedName: string, triedClassName: string, compilerOptions?: CompilerOptions): Promise<ComponentOrDirectiveMetadata | undefined> {
+  const exported = resolveExportedClass(modulePath, exportedName, compilerOptions);
+  const className = exported?.declaration.name?.text;
+  const declaringPath = exported?.sourceFile.fileName;
+  if (!className || !declaringPath || DECLARATION_FILE.test(declaringPath) || (declaringPath === modulePath && className === triedClassName)) {
+    return undefined;
+  }
+
+  return getMetadata(className, declaringPath) ?? await extractAndRegisterMetadata(className, declaringPath, compilerOptions);
 }
 
 /**
@@ -500,8 +572,7 @@ async function extractAndRegisterMetadata(className: string, filePath: string, c
  * @returns The error message describing the conflict, or `undefined` if the selector has been claimed.
  */
 export async function claimSelectors(metadata: ComponentOrDirectiveMetadata): Promise<string | undefined> {
-  const { className, selector, type } = metadata;
-  const ownerFile = metadata.typescriptNodes.klass.getSourceFile().fileName;
+  const { className, selector, type, modulePath: ownerFile } = metadata;
   const kind = type === 'directive' ? 'Directive' : 'Component';
 
   if (!selector) {

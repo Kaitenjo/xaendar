@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createSourceFile, isClassDeclaration, ScriptTarget, VariableStatement } from 'typescript';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearSourceFileCache, resolveBaseClassOf, resolveClassReference } from './resolve-declaration.utils';
+import { clearSourceFileCache, resolveBaseClassOf, resolveClassReference, resolveExportedClass } from './resolve-declaration.utils';
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
@@ -118,6 +118,41 @@ describe('resolveClassReference', () => {
   it('resolves nothing for an unknown class or an expression that is not a name', () => {
     expect(resolveExpression('', 'Missing')).toBeUndefined();
     expect(resolveExpression('', 'make()')).toBeUndefined();
+  });
+});
+
+describe('resolveExportedClass', () => {
+  /**
+   * Writes the modules of a fresh directory, and resolves the class its `main.ts` exports under a name.
+   */
+  const resolveExported = (files: Record<string, string>, exportedName: string) => {
+    const dir = posix(join(root, `case-${counter++}`));
+    for (const [name, content] of Object.entries(files)) {
+      write(`${dir}/${name}`, content);
+    }
+
+    const resolved = resolveExportedClass(`${dir}/main.ts`, exportedName);
+    return resolved && { name: resolved.declaration.name?.text, file: posix(resolved.sourceFile.fileName).replace(`${dir}/`, '') };
+  };
+
+  it('resolves a class the module declares, or exports under another name', () => {
+    expect(resolveExported({ 'main.ts': 'export class Card {}' }, 'Card')).toEqual({ name: 'Card', file: 'main.ts' });
+    expect(resolveExported({ 'main.ts': 'class Card {}\nexport { Card as Tile };' }, 'Tile')).toEqual({ name: 'Card', file: 'main.ts' });
+    expect(resolveExported({ 'main.ts': 'export default class Card {}' }, 'default')).toEqual({ name: 'Card', file: 'main.ts' });
+  });
+
+  it('follows the re-exports of a barrel to the file declaring the class', () => {
+    const card = { 'card/card.ts': 'export class Card {}' };
+    expect(resolveExported({ ...card, 'main.ts': 'export * from \'./card/card\';' }, 'Card')).toEqual({ name: 'Card', file: 'card/card.ts' });
+    expect(resolveExported({ ...card, 'main.ts': 'export { Card as Tile } from \'./card/card\';' }, 'Tile')).toEqual({ name: 'Card', file: 'card/card.ts' });
+    expect(resolveExported({ ...card, 'main.ts': 'import { Card } from \'./card/card\';\nexport { Card };' }, 'Card')).toEqual({ name: 'Card', file: 'card/card.ts' });
+    expect(resolveExported({ ...card, 'index.ts': 'export * from \'./card/card\';', 'main.ts': 'export * from \'./index\';' }, 'Card')).toEqual({ name: 'Card', file: 'card/card.ts' });
+  });
+
+  it('resolves nothing for a name the module does not export as a class, or a module that cannot be read', () => {
+    expect(resolveExported({ 'main.ts': 'export function format() {}' }, 'format')).toBeUndefined();
+    expect(resolveExported({ 'main.ts': 'export * from \'./main\';' }, 'Card')).toBeUndefined();
+    expect(resolveExportedClass(posix(join(root, 'missing.ts')), 'Card')).toBeUndefined();
   });
 });
 

@@ -2736,28 +2736,82 @@
         },
         "triggers": {
           "title": "I trigger",
-          "p1": "I trigger sono quelli di <code>@hydrate</code>, tranne <code>never</code>, separati da virgole. Il primo che scatta renderizza il contenuto, una volta:",
-          "p2": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano gli elementi del <code>@placeholder</code>: con loro serve un <code>@placeholder</code> che contenga un elemento, a meno che non indichino l’elemento da guardare. I listener del <code>@placeholder</code> gestiscono prima un’interazione, poi il contenuto lo sostituisce. Qui passare con il puntatore sul pulsante del <code>@placeholder</code> carica i commenti, il cui componente sta in un chunk a parte, e il click li mostra:",
-          "example1": "Commenti caricati quando il puntatore passa sul pulsante, mostrati al primo click",
-          "p3": "<code>when</code> scatta quando la sua espressione è truthy. Il contenuto viene renderizzato una volta: resta anche quando l’espressione torna falsy.",
-          "example2": "Dettagli renderizzati quando vengono richiesti"
+          "p1": "I trigger sono quelli di <code>@hydrate</code>, tranne <code>never</code>, separati da virgole. Ognuno renderizza il contenuto una volta, la prima volta che scatta. Negli esempi il cui trigger scatta da solo, il pulsante sopra il blocco lo rimuove e lo renderizza di nuovo, con i trigger attivati da capo.",
+          "p2": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano gli elementi del <code>@placeholder</code>: con loro serve un <code>@placeholder</code> che contenga un elemento, a meno che non indichino l’elemento da guardare. I listener del <code>@placeholder</code> gestiscono prima un’interazione, poi il contenuto lo sostituisce.",
+          "load": {
+            "title": "<code>load</code>",
+            "p1": "<code>load</code> renderizza il contenuto appena il template che contiene il blocco è renderizzato, senza bloccarlo: per una parte che serve subito, ma il cui codice non deve ritardare la pagina.",
+            "example": "Contenuto renderizzato appena lo è il template"
+          },
+          "idle": {
+            "title": "<code>idle</code>",
+            "p1": "<code>idle</code> renderizza il contenuto quando il browser non ha altro da fare. Un tempo tra le sue parentesi, come <code>idle(2s)</code>, è l’attesa massima. Anche un blocco senza trigger aspetta che il browser sia inattivo.",
+            "example": "Contenuto renderizzato quando il browser è inattivo, al più tardi dopo 2 secondi"
+          },
+          "timer": {
+            "title": "<code>timer</code>",
+            "p1": "<code>timer</code> renderizza il contenuto quando è passato il suo tempo, in <code>ms</code> o <code>s</code>, da quando è stato renderizzato il template che contiene il blocco.",
+            "example": "Contenuto renderizzato dopo 2 secondi"
+          },
+          "visible": {
+            "title": "<code>visible</code>",
+            "p1": "<code>visible</code> renderizza il contenuto quando il <code>@placeholder</code> entra nel viewport: per una parte in fondo alla pagina. Qui la cornice del <code>@placeholder</code> sta alla fine di un riquadro da scorrere:",
+            "example": "Mappa renderizzata quando la sua cornice entra nel viewport"
+          },
+          "interaction": {
+            "title": "<code>interaction</code>",
+            "p1": "<code>interaction</code> renderizza il contenuto al primo click, tasto o focus sul <code>@placeholder</code>, che il contenuto poi sostituisce:",
+            "example": "Editor renderizzato alla prima interazione con il suo pulsante"
+          },
+          "hover": {
+            "title": "<code>hover</code>",
+            "p1": "<code>hover</code> renderizza il contenuto quando il puntatore passa sul <code>@placeholder</code>, o il focus vi entra:",
+            "example": "Anteprima renderizzata quando il puntatore passa sul pulsante"
+          },
+          "when": {
+            "title": "<code>when</code>",
+            "p1": "<code>when</code> scatta quando la sua espressione è truthy. Il contenuto viene renderizzato una volta: resta anche quando l’espressione torna falsy.",
+            "example": "Dettagli renderizzati quando vengono richiesti"
+          },
+          "several": {
+            "title": "Più trigger",
+            "p1": "Con più trigger, il primo che scatta renderizza il contenuto e disattiva gli altri. Qui un click sul pulsante lo renderizza prima che passino i 5 secondi:",
+            "example": "Contenuto renderizzato al click, o dopo 5 secondi"
+          }
         },
         "targets": {
           "title": "L’elemento da guardare",
-          "p1": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano l’elemento indicato da un element ref, scritto tra le loro parentesi, al posto del <code>@placeholder</code>: un elemento del template che contiene il blocco, prima del blocco o dopo. <code>visible</code> accetta anche le opzioni del suo <code>IntersectionObserver</code>, tranne <code>root</code>, come oggetto letterale dopo l’element ref o da sole: <code>rootMargin</code> renderizza il contenuto prima che l’elemento entri nel viewport, <code>threshold</code> quando se ne vede abbastanza.",
-          "p2": "I trigger vengono attivati quando il template che contiene il blocco è renderizzato, quindi l’element ref indica un elemento già renderizzato a quel punto. Un elemento dentro un <code>@if</code> o un <code>@for</code> appartiene a un altro scope: lì il type-check rifiuta il suo nome, come rifiuta un nome che non è un elemento."
+          "p1": "<code>visible</code>, <code>interaction</code> e <code>hover</code> guardano l’elemento indicato da un element ref, scritto tra le loro parentesi, al posto del <code>@placeholder</code>: un elemento del template che contiene il blocco, prima del blocco o dopo. L’elemento non fa parte del blocco, quindi resta quando il contenuto è renderizzato:",
+          "example1": "Editor renderizzato al primo click su un pulsante fuori dal blocco",
+          "p2": "<code>visible</code> accetta anche le opzioni del suo <code>IntersectionObserver</code>, tranne <code>root</code>, come oggetto letterale dopo l’element ref, o da sole per guardare il <code>@placeholder</code>: <code>rootMargin</code> renderizza il contenuto prima che l’elemento entri nel viewport, <code>threshold</code> quando se ne vede abbastanza. Qui il grafico aspetta che la cornice dopo il blocco sia visibile per intero:",
+          "example2": "Grafico renderizzato quando la sua cornice è visibile per intero",
+          "p3": "I trigger vengono attivati quando il template che contiene il blocco è renderizzato, quindi l’element ref indica un elemento già renderizzato a quel punto. Un elemento dentro un <code>@if</code> o un <code>@for</code> appartiene a un altro scope: lì il type-check rifiuta il suo nome, come rifiuta un nome che non è un elemento."
         },
         "prefetch": {
           "title": "Caricare prima i moduli",
-          "p1": "Un trigger scritto dopo <code>prefetch</code> carica i moduli del contenuto senza renderizzarlo: quando scatta il trigger che renderizza il contenuto, i moduli sono già lì, o in arrivo, e il contenuto aspetta lo stesso caricamento. <code>prefetch</code> accetta ogni trigger, <code>when</code> compreso. Un blocco che dichiara solo trigger che seguono <code>prefetch</code> renderizza il contenuto quando il browser è inattivo:",
+          "p1": "Un trigger scritto dopo <code>prefetch</code> carica i moduli del contenuto senza renderizzarlo: quando scatta il trigger che renderizza il contenuto, i moduli sono già lì, o in arrivo, e il contenuto aspetta lo stesso caricamento. <code>prefetch</code> accetta ogni trigger, <code>when</code> compreso. Un blocco che dichiara solo trigger che seguono <code>prefetch</code> renderizza il contenuto quando il browser è inattivo. Qui passare con il puntatore sul pulsante carica i commenti, il cui componente sta in un chunk a parte, e il click li mostra:",
+          "example": "Commenti caricati quando il puntatore passa sul pulsante, mostrati al primo click",
           "p2": "Senza moduli da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, <code>prefetch</code> non fa niente. Un prefetch che fallisce non viene segnalato: il trigger che renderizza il contenuto mostra l’<code>@error</code>."
         },
         "blocks": {
           "title": "@placeholder, @loading e @error",
-          "p1": "Il <code>@placeholder</code> viene mostrato finché non scatta un trigger. Fa parte della pagina: i suoi listener funzionano, ed è l’unica parte che renderizza il server. Dagli la dimensione del contenuto, così la pagina non si sposta quando il contenuto arriva.",
-          "p2": "Il <code>@loading</code> viene mostrato dal trigger finché i moduli non sono caricati. Quando non c’è niente da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, il contenuto arriva subito e il <code>@loading</code> non compare.",
-          "p3": "L’<code>@error</code> viene mostrato quando i moduli non si caricano, per esempio offline o dopo un deploy che ha rimosso i chunk vecchi. Dà un nome all’errore, come fa <code>@catch</code>, di tipo <code>unknown</code>. Senza <code>@error</code>, l’errore va in console e torna il <code>@placeholder</code>.",
-          "p4": "I tempi evitano un lampo quando i moduli arrivano in fretta. Il <code>minimum</code> del <code>@placeholder</code> lo tiene visibile almeno per quel tempo, da quando viene renderizzato. Il <code>@loading</code> compare solo quando i moduli si stanno caricando da almeno il suo <code>after</code>, mai quando arrivano prima, poi resta almeno per il suo <code>minimum</code>. Il contenuto, o l’<code>@error</code>, li aspetta. Un tempo è un numero seguito da <code>ms</code> o <code>s</code>, in millisecondi senza unità."
+          "placeholder": {
+            "title": "<code>@placeholder</code>",
+            "p1": "Il <code>@placeholder</code> viene mostrato finché non scatta un trigger. Fa parte della pagina: i suoi listener funzionano, ed è l’unica parte che renderizza il server. Dagli la dimensione del contenuto, così la pagina non si sposta quando il contenuto arriva.",
+            "p2": "Il suo <code>minimum</code> lo tiene visibile almeno per quel tempo, da quando viene renderizzato, così un contenuto che arriva subito non lo sostituisce con un lampo: il contenuto lo aspetta. Un tempo è un numero seguito da <code>ms</code> o <code>s</code>, in millisecondi senza unità. Qui <code>load</code> scatta subito, e il contenuto aspetta i 2 secondi del <code>@placeholder</code>:",
+            "example": "Placeholder mostrato per almeno 2 secondi"
+          },
+          "loading": {
+            "title": "<code>@loading</code>",
+            "p1": "Il <code>@loading</code> viene mostrato dal trigger finché i moduli non sono caricati. Quando non c’è niente da caricare, perché ogni componente del contenuto viene caricato anche con la pagina, il contenuto arriva subito e il <code>@loading</code> non compare.",
+            "p2": "Il suo <code>after</code> lo mostra solo quando i moduli si stanno caricando da almeno quel tempo, mai quando arrivano prima; il suo <code>minimum</code> lo tiene visibile almeno per quel tempo, e il contenuto, o l’<code>@error</code>, lo aspetta. Qui il report sta in un chunk a parte, caricato al click, e il <code>@loading</code> resta per un secondo:",
+            "example": "Report caricato al click, mentre il messaggio di caricamento resta per un secondo"
+          },
+          "error": {
+            "title": "<code>@error</code>",
+            "p1": "L’<code>@error</code> viene mostrato quando i moduli non si caricano, per esempio offline o dopo un deploy che ha rimosso i chunk vecchi. Dà un nome all’errore, come fa <code>@catch</code>, di tipo <code>unknown</code>:",
+            "p2": "Senza <code>@error</code>, l’errore va in console e torna il <code>@placeholder</code>."
+          }
         },
         "modules": {
           "title": "I moduli caricati dopo",

@@ -85,24 +85,14 @@ async function findSelectorConflicts(fileName: string): Promise<WebComponentErro
   const conflicts = new Array<WebComponentError>();
   for (let i = 0; i < components.length; i++) {
     const component = components[i];
-    const other = normalizeFileName(getOwnerFile(component)) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i) : undefined;
+    const other = normalizeFileName(component.modulePath) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i) : undefined;
     if (other) {
       const [{ literal }] = findStringOptions(component.typescriptNodes.decorator, ['selector']);
-      conflicts.push({ message: describeSelectorConflict(component, { className: other.className, ownerFile: getOwnerFile(other) }), span: toSpan(literal) });
+      conflicts.push({ message: describeSelectorConflict(component, { className: other.className, ownerFile: other.modulePath }), span: toSpan(literal) });
     }
   }
 
   return conflicts;
-}
-
-/**
- * Returns the file declaring a component.
- *
- * @param component - The metadata of the component.
- * @returns The path of the file.
- */
-function getOwnerFile({ typescriptNodes: { klass } }: ComponentMetadata): string {
-  return klass.getSourceFile().fileName;
 }
 
 /**

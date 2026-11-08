@@ -102,7 +102,7 @@ async function analyze(templatePath: string, source: string, components: Readonl
       shimPath: shim.path,
       bodyLineOffset: shim.bodyLineOffset,
       languageService,
-      dependencies: new Set([...dependencies, ...metadatas.map(metadata => normalizeFileName(metadata.typescriptNodes.klass.getSourceFile().fileName)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
+      dependencies: new Set([...dependencies, ...metadatas.map(({ modulePath }) => normalizeFileName(modulePath)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
     };
     return { analysis, error: undefined, ast };
   } catch (error) {
