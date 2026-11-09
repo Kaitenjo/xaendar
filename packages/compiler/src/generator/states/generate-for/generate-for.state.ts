@@ -2,23 +2,25 @@ import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-v
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import { getReadForVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 
 /**
  * Generates code for a `@for` iteration node.
  *
- * Emits a classic index-based `for` loop with all implicit variables
- * declared at the top of the loop body:
+ * Emits a call of `_for`, and the function rendering the body of an item, which declares the item and the implicit
+ * variables the body reads (see {@link getReadForVariables}) as signals, created by `_iterationVariables`:
  *
  * ```javascript
- * for (let $i = 0; $i < ctx_items.length; $i++) {
- *   const item = items[$i];
- *   const $index = $i;
- *   const $first = $i === 0;
- *   const $last  = $i === items.length - 1;
- *   const $even  = $i % 2 === 0;
- *   const $odd   = $i % 2 !== 0;
+ * // @for (row of rows(); track row().id) { <td>{ row().name }</td> }
+ * function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {
+ *   const context = new _Context(parentContext, nodeStrategy);
+ *   const { vars, update } = _iterationVariables(context, items0, i0, 'row', {
+ *     $index: '$index', $first: '$first', $last: '$last', $even: '$even', $odd: '$odd'
+ *   }, ['item']);
+ *   const { row } = vars;
  *   // ... child nodes
+ *   return { context, update };
  * }
  * ```
  *
@@ -26,16 +28,15 @@ import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../
  * like any other template expression. A numeric iterable `n` is turned into
  * `0, 1, ..., n - 1` at runtime by `_for`. When the `item of` part is omitted
  * no item alias is declared, and the item parameter of the track function is `_`.
- *
- * The internal loop counter is always named `$i_<nodeName>` to avoid
- * collisions when `@for` blocks are nested.
+ * The track function takes the item and every implicit variable, whether the body reads them or not.
  *
  * @param node - The `ForNode` to process.
+ * @param parentNode - Variable name of the parent DOM node.
  * @param index - Base variable name prefix used for child nodes and
  *   to produce a unique loop counter identifier.
- * @param parentNode - Variable name of the parent DOM node.
  * @param generatorContext - The enclosing scope context.
- * @returns Array of generated code lines.
+ * @param anchor - The node the items are inserted before, `null` to append them.
+ * @returns The `_for` call, and the function rendering the body of an item to generate.
  */
 export async function generateFor(node: ForNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
@@ -55,28 +56,31 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   const evenName = resolveImplicit(node, '$even');
   const oddName = resolveImplicit(node, '$odd');
   const forContext = new GeneratorContext(generatorContext);
-
-  // The item is a signal, like the implicit variables: it is updated when the row is reused for a new item with the same key
-  if (node.itemAlias) {
-    forContext.addIdentifier(node.itemAlias, 'signal');
-  }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
-  for (let i = 0; i < identifiers.length; i++) {
-    forContext.addIdentifier(identifiers[i], 'signal');
+
+  /*
+    Only the variables the body reads are created for each item, a signal each: the item is a signal, like the implicit
+    variables, updated when the row is reused for a new item with the same key
+  */
+  const read = getReadForVariables(node);
+  const readNames = read.map(variable => variable === 'item' ? node.itemAlias! : resolveImplicit(node, variable));
+  for (let i = 0; i < readNames.length; i++) {
+    forContext.addIdentifier(readNames[i], 'signal');
+  }
+
+  const precode = [
+    `const { ${readNames.length ? 'vars, ' : ''}update } = _iterationVariables(context, ${itemsName}, ${counterName}, ${node.itemAlias ? `'${node.itemAlias}'` : undefined}, {`,
+    `    $index: '${indexName}', $first: '${firstName}', $last: '${lastName}', $even: '${evenName}', $odd: '${oddName}'`,
+    `  }, [${read.map(variable => `'${variable}'`).join(', ')}]);`
+  ];
+  if (readNames.length) {
+    precode.push(`  const { ${readNames.join(', ')} } = vars;`);
   }
 
   const forKey = getBlockIdentifier('for', parentNode, index);
   retVal.functionsToProcess!.set(forKey, {
     fn: {
-      precode:
-`const { vars, update } = _iterationVariables(context, ${itemsName}, ${counterName}, ${node.itemAlias ? `'${node.itemAlias}'` : undefined}, {
-    $index: '${indexName}', 
-    $first: '${firstName}', 
-    $last: '${lastName}', 
-    $even: '${evenName}', 
-    $odd: '${oddName}' 
-  });
-  const { ${[node.itemAlias, ...identifiers].filter(Boolean).join(', ')} } = vars;`,
+      precode: precode.join('\n'),
       node,
       parentNode: forKey,
       context: forContext,

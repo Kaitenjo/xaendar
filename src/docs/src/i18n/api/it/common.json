@@ -15,6 +15,36 @@
       }
     }
   },
+  "SmallSet": {
+    "summary": "Un insieme tenuto in un array finché contiene pochi elementi, e in un <code>Set</code> oltre 32: uno o due elementi occupano molta meno memoria.",
+    "description": "<p>Un <code>Set</code> alloca una tabella hash anche per un solo elemento, mentre quasi tutti gli insiemi di un grafo reattivo ne contengono uno o due: uno <code>SmallSet</code> è un array finché contiene al massimo 32 elementi, e un <code>Set</code> dal 33°, e resta tale quando gli elementi calano. Tutti gli <code>SmallSet</code> vuoti sono un unico array vuoto congelato e condiviso, e il primo elemento crea un array di esattamente un elemento.</p><p>È un valore semplice, non un oggetto che ne contiene uno: <code>addToSmallSet</code> e <code>deleteFromSmallSet</code> restituiscono il valore da salvare al posto di quello ricevuto, e si legge così com’è, iterandolo o espandendolo con lo spread in ordine di inserimento come un array o un <code>Set</code>. L’array è modificato sul posto, quindi un elemento aggiunto mentre l’insieme è iterato viene visitato, come con un <code>Set</code>.</p><p>Il runtime dei signal di Xaendar ci tiene le sorgenti e i dipendenti dei suoi nodi.</p>",
+    "usage": {
+      "tracking": {
+        "title": "Tenere traccia di chi legge un valore",
+        "body": "<p>Quasi tutti i valori hanno uno o due lettori: restano in un array, e un valore letto da molti li sposta in un <code>Set</code>. Ogni modifica salva il valore restituito.</p>"
+      }
+    }
+  },
+  "emptySmallSet": {
+    "summary": "Restituisce uno <code>SmallSet</code> vuoto: l’array vuoto congelato e condiviso, oppure un nuovo <code>Set</code> se dovrà contenere più di 32 elementi.",
+    "description": "<p>L’array vuoto condiviso non alloca nulla. <code>expectedSize</code>, 0 di default, è il numero di elementi che l’insieme dovrebbe contenere, per esempio la dimensione dell’insieme che sostituisce: oltre 32 l’insieme parte come <code>Set</code>, senza riempire prima un array.</p>"
+  },
+  "addToSmallSet": {
+    "summary": "Aggiunge un elemento a uno <code>SmallSet</code>, dopo gli altri, e restituisce il valore da salvare.",
+    "description": "<p>Un elemento che l’insieme contiene già viene ignorato. Su un insieme vuoto restituisce un nuovo array con l’elemento; su un array aggiunge l’elemento sul posto, e al 33° elemento restituisce un nuovo <code>Set</code> che li contiene tutti, nello stesso ordine.</p>"
+  },
+  "deleteFromSmallSet": {
+    "summary": "Toglie un elemento da uno <code>SmallSet</code>, mantenendo l’ordine degli altri, e restituisce il valore da salvare.",
+    "description": "<p>Un array perde l’elemento sul posto, e viene restituito l’array vuoto condiviso quando l’elemento era l’ultimo. Un <code>Set</code> resta un <code>Set</code>. Gli elementi sono confrontati come fa un <code>Set</code>: anche <code>NaN</code> viene tolto.</p>"
+  },
+  "smallSetHas": {
+    "summary": "Dice se uno <code>SmallSet</code> contiene un elemento.",
+    "description": "<p>Gli elementi sono confrontati come fa un <code>Set</code>: <code>NaN</code> è uguale a <code>NaN</code>.</p>"
+  },
+  "smallSetSize": {
+    "summary": "Restituisce il numero di elementi di uno <code>SmallSet</code>.",
+    "description": "<p>La <code>length</code> del suo array, o la <code>size</code> del suo <code>Set</code>.</p>"
+  },
   "toPascalCase": {
     "summary": "Converte una stringa in kebab-case, snake_case, dot.case o camelCase in PascalCase.",
     "description": "<p>Toglie ogni <code>-</code>, <code>_</code> e <code>.</code> e rende maiuscolo il carattere che lo segue, poi rende maiuscolo il primo carattere. Nient’altro cambia: le altre lettere restano come sono, quindi <code>'USER-CARD'</code> diventa <code>'USERCARD'</code>, e gli spazi restano al loro posto.</p><p>La CLI lo usa per dare alla classe di un componente il nome del suo selettore: <code>xd g c user-card</code> dichiara <code>UserCardComponent</code>, e <code>xd g c my.card-x</code> dichiara <code>MyCardXComponent</code>. La CLI toglie anche i caratteri che un selettore accetta ma il nome di una classe no, come un’emoji. Vedi <a href=\"#/it/tools/cli\">CLI</a>.</p>",

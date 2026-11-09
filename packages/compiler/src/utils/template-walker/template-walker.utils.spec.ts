@@ -1,5 +1,6 @@
-import { type ComponentOrDirectiveMetadata, parseTemplate } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
+import { parseTemplate } from '../../compile/compile';
+import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import { walkTemplate } from './template-walker.utils';
 
 const component = { type: 'component', selector: 'my-child', className: 'Child' } as ComponentOrDirectiveMetadata;
@@ -279,5 +280,15 @@ describe('walkTemplate', () => {
       'let inBranch',
       'expression total [total,inBranch]'
     ]);
+  });
+
+  it('visits the @case and the @default of a @switch before their content', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('@switch (mode) { @case (1, limit) { {a} } @default { {b} } }'), [], {
+      switchCase: node => visits.push(`case ${node.condition?.join(',') ?? 'default'}`),
+      expression: expression => visits.push(`expression ${expression.getText()}`)
+    });
+
+    expect(visits).toEqual(['expression mode', 'case 1, limit', 'expression a', 'case default', 'expression b']);
   });
 });

@@ -1,6 +1,5 @@
-import { type ASTNode, findTemplateMapping, type Span, TemplateError, type TypeCheckResult } from '@xaendar/compiler';
+import { type ASTNode, findTemplateMapping, type Span, TemplateError, type TypeCheckResult, walkTemplate } from '@xaendar/compiler';
 import type { SourceFile } from 'typescript';
-import { walkTemplate } from '../template-walker/template-walker.utils';
 
 /**
  * Converts a position of a shim into the span of the template it comes from: the exact characters when the

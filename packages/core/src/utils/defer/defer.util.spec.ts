@@ -162,6 +162,20 @@ describe('_defer', () => {
       expect(element.innerHTML).toBe('<b></b><!--defer-->');
     });
 
+    it('watches the elements of the blocks a @placeholder holds when it owns no node of its own', async () => {
+      const element = parent();
+      const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
+        const context = new _Context(parentContext, nodeStrategy);
+        context.addChild(part('u')(parentNode, context, anchor, nodeStrategy));
+        return context;
+      };
+
+      _defer(element, createRoot(), null, { triggers: ['visible'], content: part('b'), placeholder });
+      await armed();
+
+      expect(FakeIntersectionObserver.last.observed.map(({ localName }) => localName)).toEqual(['u']);
+    });
+
     it('waits for the browser to be idle in place of visible, interaction and hover when the @placeholder renders no element', async () => {
       const element = parent();
 

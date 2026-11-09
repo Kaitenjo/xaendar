@@ -1,4 +1,23 @@
-import type { ClientNode, DeferNode, HydrateNode, TryNode, ImportNode, ElementNode, ComponentMetadata, ElementRefNode, AttributeNode, ComponentOrDirectiveMetadata, ClassBindingNode, EventNode, DirectiveNode, StructuralDirectiveNode, DirectiveMetadata, ForNode, TemplateNode, RenderNode, LetNode } from '@xaendar/compiler';
+import type { AttributeNode } from '../parser/types/nodes/attribute-node.type';
+import type { CaseNode } from '../parser/types/nodes/case-node.type';
+import type { ClassBindingNode } from '../parser/types/nodes/class-binding-node.type';
+import type { ClientNode } from '../parser/types/nodes/client-node.type';
+import type { DeferNode } from '../parser/types/nodes/defer-node.type';
+import type { DirectiveNode } from '../parser/types/nodes/directive-node.type';
+import type { ElementNode } from '../parser/types/nodes/element-node.type';
+import type { ElementRefNode } from '../parser/types/nodes/element-ref-node.type';
+import type { EventNode } from '../parser/types/nodes/event-node.type';
+import type { ForNode } from '../parser/types/nodes/for-node.type';
+import type { HydrateNode } from '../parser/types/nodes/hydrate-node.type';
+import type { ImportNode } from '../parser/types/nodes/import-node.type';
+import type { LetNode } from '../parser/types/nodes/let-node.type';
+import type { RenderNode } from '../parser/types/nodes/render-node.type';
+import type { StructuralDirectiveNode } from '../parser/types/nodes/structural-directive-node.type';
+import type { TemplateNode } from '../parser/types/nodes/template-node.type';
+import type { TryNode } from '../parser/types/nodes/try-node.type';
+import type { ComponentMetadata } from './component-metadata.type';
+import type { ComponentOrDirectiveMetadata } from './component-or-directive-metadata.type';
+import type { DirectiveMetadata } from './directive-metadata.type';
 import type { Expression } from 'typescript';
 
 /**
@@ -68,6 +87,11 @@ export type TemplateVisitor = {
    * Invoked for every `@defer`, with the blocks following it.
    */
   readonly defer?: (node: DeferNode) => void;
+  /**
+   * Invoked for every `@case` and `@default` of a `@switch`, whose conditions are texts written as is in the generated
+   * code, not expressions.
+   */
+  readonly switchCase?: (node: CaseNode) => void;
   /**
    * Invoked for every expression, with the names of the variables declared by the template in its scope: the template
    * variables, the templates and the `@let` of the enclosing scopes, the variables of the enclosing `@for` blocks, the parameters of

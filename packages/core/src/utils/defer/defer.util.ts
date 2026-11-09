@@ -300,16 +300,20 @@ function elementsOf(context: _Context | undefined, parentNode: Node, elements = 
   }
 
   const nodes = context.getNodes();
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-    if (node.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
-      elements.push(node as Element);
+  if (nodes?.length) {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (node.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
+        elements.push(node as Element);
+      }
     }
   }
 
   const children = context.getChildren();
-  for (let i = 0; i < children.length; i++) {
-    elementsOf(children[i], parentNode, elements);
+  if (children?.length) {
+    for (let i = 0; i < children.length; i++) {
+      elementsOf(children[i], parentNode, elements);
+    }
   }
 
   return elements;

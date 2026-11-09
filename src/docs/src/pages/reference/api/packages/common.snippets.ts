@@ -223,6 +223,31 @@ const tagName = slice(source, 1, source.indexOf(' ')); // 'user-card'`
 };
 
 /**
+ * The snippet `small-set.ts`, shown by the API reference of common.
+ */
+export const SMALL_SET: SourceFile = {
+  name: 'small-set.ts',
+  lang: 'ts',
+  code: `import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+
+/**
+ * The views reading the price: one, most of the times.
+ */
+let readers: SmallSet<string> = emptySmallSet();
+
+readers = addToSmallSet(readers, 'cart');    // ['cart'], an array of its own
+readers = addToSmallSet(readers, 'cart');    // the second 'cart' is ignored
+readers = addToSmallSet(readers, 'summary'); // pushed into the same array
+smallSetSize(readers);                       // 2
+smallSetHas(readers, 'summary');             // true
+readers = deleteFromSmallSet(readers, 'cart');
+
+for (const reader of readers) {
+  // 'summary': an array or a Set, iterated in insertion order
+}`
+};
+
+/**
  * The snippet `stack.ts`, shown by the API reference of common.
  */
 export const STACK: SourceFile = {

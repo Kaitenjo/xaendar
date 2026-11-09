@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetSize } from '@xaendar/common';
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
@@ -63,11 +64,13 @@ export class State<T = any> {
    * Should contain both `Computed` and `Watcher` instances, as both can be
    * direct dependents of a `State`.
    *
+   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   *
    * @internalSlot
    * @see Signal algorithms — 'Signal.State internal slots'
    * @see Method — `Signal.State.prototype.get` (NOTE on sinks)
    */
-  #sinks: Set<Computed<unknown> | Watcher>;
+  #sinks: SmallSet<Computed<unknown> | Watcher>;
   /**
    * Returns a snapshot of the current sinks set for introspection.
    *
@@ -96,7 +99,7 @@ export class State<T = any> {
     this.#equals = options?.equals ?? Object.is;
     this.#watched = options?.watched;
     this.#unwatched = options?.unwatched;
-    this.#sinks = new Set;
+    this.#sinks = emptySmallSet();
   }
 
   /**
@@ -171,8 +174,8 @@ export class State<T = any> {
    */
   public addSink(sink: Computed | Watcher, symbol: symbol): void {
     assertPrivateContext(symbol);
-    const empty = this.#sinks.size === 0;
-    this.#sinks.add(sink);
+    const empty = smallSetSize(this.#sinks) === 0;
+    this.#sinks = addToSmallSet(this.#sinks, sink);
 
     if (empty && this.#watched) {
       GLOBAL_STATE.frozen = true;
@@ -204,9 +207,9 @@ export class State<T = any> {
    */
   public removeSink(sink: Computed | Watcher, symbol: symbol): void {
     assertPrivateContext(symbol);
-    this.#sinks.delete(sink);
+    this.#sinks = deleteFromSmallSet(this.#sinks, sink);
 
-    if (!this.#sinks.size && this.#unwatched) {
+    if (!smallSetSize(this.#sinks) && this.#unwatched) {
       GLOBAL_STATE.frozen = true;
       try {
         this.#unwatched();

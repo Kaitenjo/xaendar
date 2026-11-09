@@ -71,3 +71,29 @@ paths:
 
   An `if` on a collection always checks `length` / `size`: `if (items?.length)`, never `if (items)`. A final value returned to a caller that expects a collection (`return []` of an LSP handler) is fine.
 - Never write `.forEach(...)`. To iterate an **array** never write `for (… of …)` either: use a native indexed `for` (`for (let i = 0; i < items.length; i++)`), reading the item as `const item = items[i]`. Loop on the array where it lives (`i < this._hooks.length`): never alias it to a local variable only to loop over it. A variable is for the result of a call or a computation (`const templates = documents.filter(isTemplate)`), which must not be evaluated at every iteration. To iterate a `Map` or a `Set` (or its `.values()`, `.keys()`, `.entries()`) use `for (… of …)` directly on it: never copy it into an array just to index it. Other array methods (`map`, `filter`, `some`, `reduce`…) are fine.
+
+## Memory of small, numerous objects
+
+Code that runs once per instance (per `@for` item, per element, per binding, per signal node: `_Context`, the `utils/` called by the generated render code, the nodes of `@xaendar/signals`) is multiplied by tens of thousands in a large template: a few bytes there are megabytes. Everywhere else, write the clearest code.
+
+### Arrays
+
+V8 grows an array's backing store to about 1.5 × its new length **+ 16 slots**, and never gives the extra slots back while the array lives. One element pushed into `[]` costs ~184 bytes in Node (8 bytes per slot; 4 in Chrome), against 56 for the literal `[item]`.
+
+- Allocated at their exact length: literals (`[item]`, `[a, b]`), `new Array(n)` filled within its length, `map`, `slice`, `concat`, rest parameters.
+- Allocated with spare slots: `push` or an index past the end on an array that has to grow, `filter`, spread with extra elements (`[...items, item]`), `Array.from` of an iterable of unknown length.
+- A list that usually holds 0–1 elements is `null` until its first element, then the literal `[item]`; `push` only from the second. A getter returns a shared frozen empty array (`Object.freeze([])`) when there is none, provided its callers only read it.
+- Keep a rest parameter (`...fns`) as it is instead of copying it into another array.
+- Copy-on-write lists copy with `concat`/`slice`, never with spread.
+
+### Sets and Maps
+
+A `Set` or a `Map` allocates a hash table (~140 bytes) even when it holds one element or none. For collections that usually hold 1–2 items use an exact array (see above) or create the `Set`/`Map` lazily, on the first insertion.
+
+### Closures
+
+A function created inside another one is a new object (~60 bytes plus its context) on every call, arrow or `function` alike. Where it would be created per instance, declare it once at module level, or on a shared prototype, and pass the data as parameters or through `this`. All closures created in the same scope share one context: one reading a large value keeps it alive for all of them.
+
+### Verify
+
+Measure before and after (`process.memoryUsage().heapUsed` after `gc()`, or a heap snapshot): an apparently lighter version can allocate more, e.g. a field made lazy with `??= []` then `push`.

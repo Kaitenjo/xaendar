@@ -57,7 +57,7 @@ describe('_bindHost', () => {
     const { element, context } = bind(new (class extends Owner { })());
 
     expect(element.attributes).toHaveLength(0);
-    expect(context.getUnlistenFns()).toHaveLength(0);
+    expect(context.getUnlistenFns()).toBeNull();
   });
 
   it('writes the attributes: null, undefined and false remove them, true writes them empty, other values as strings', () => {

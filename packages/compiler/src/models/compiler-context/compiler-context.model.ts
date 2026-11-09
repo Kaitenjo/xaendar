@@ -45,6 +45,16 @@ export class CompilerContext {
   private readonly _unresolvableIdentifiers = new Map<string, IdentifierKind>();
 
   /**
+   * The number of identifiers declared in this scope, not in its ancestor scopes: the variables the runtime context of
+   * the scope registers, which it is created for (`new _Context(parentContext, nodeStrategy, count)`).
+   *
+   * @returns The number of identifiers of this scope.
+   */
+  public get identifierCount(): number {
+    return this._identifiers.size;
+  }
+
+  /**
    * The namespace the elements declared in this scope are created in, looking in this scope first and then in the
    * ancestor scopes.
    *

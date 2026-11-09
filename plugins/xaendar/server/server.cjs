@@ -20134,7 +20134,7 @@ function getWellformedEdit(textEdit) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-var import_node37 = __toESM(require_main3(), 1);
+var import_node38 = __toESM(require_main3(), 1);
 
 // ../packages/common/src/models/stack/stack.ts
 var Stack = class {
@@ -20179,6 +20179,9 @@ var Stack = class {
     return this._elements.push(element);
   }
 };
+
+// ../packages/common/src/utils/small-set/small-set.util.ts
+var EMPTY = Object.freeze([]);
 
 // ../packages/common/src/utils/string/string.util.ts
 function slice(value, start, end) {
@@ -20429,6 +20432,15 @@ var CompilerContext = class {
    * (e.g. $event)
    */
   _unresolvableIdentifiers = /* @__PURE__ */ new Map();
+  /**
+   * The number of identifiers declared in this scope, not in its ancestor scopes: the variables the runtime context of
+   * the scope registers, which it is created for (`new _Context(parentContext, nodeStrategy, count)`).
+   *
+   * @returns The number of identifiers of this scope.
+   */
+  get identifierCount() {
+    return this._identifiers.size;
+  }
   /**
    * The namespace the elements declared in this scope are created in, looking in this scope first and then in the
    * ancestor scopes.
@@ -20987,6 +20999,405 @@ function mapDefaultOptions(options) {
     narrowedSignal: options?.narrowedSignal ?? (() => void 0),
     browserGlobals: options?.browserGlobals ?? ""
   };
+}
+
+// ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
+var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd"];
+function getForVariables(node) {
+  const variables = new Array();
+  if (node.itemAlias) {
+    variables.push(node.itemAlias);
+  }
+  for (let i2 = 0; i2 < FOR_IMPLICIT_VARIABLES.length; i2++) {
+    const implicit = FOR_IMPLICIT_VARIABLES[i2];
+    variables.push(node.implicitAliases.get(implicit) ?? implicit);
+  }
+  return variables;
+}
+
+// ../packages/compiler/src/utils/expression-reads/expression-reads.utils.ts
+var import_typescript6 = require("typescript");
+function collectReads(expression) {
+  const reads = new Array();
+  collectReadsOf(expression, expression, reads);
+  return reads;
+}
+function collectReadsOf(node, parent, reads) {
+  const isMemberName2 = ((0, import_typescript6.isPropertyAccessExpression)(parent) || (0, import_typescript6.isPropertyAssignment)(parent)) && parent.name === node;
+  if ((0, import_typescript6.isIdentifier)(node) && !isMemberName2) {
+    reads.push(node);
+  }
+  forEachExpressionChild(node, (child) => collectReadsOf(child, node, reads));
+}
+
+// ../packages/compiler/src/utils/template-walker/template-walker.utils.ts
+function walkTemplate(ast, metadatas, visitor, server = false) {
+  new TemplateWalker(metadatas, visitor, server).walkScope(ast, /* @__PURE__ */ new Set());
+}
+var TemplateWalker = class {
+  /**
+   * Creates a walker.
+   *
+   * @param _metadatas - The metadata of the components and directives imported by the template.
+   * @param _visitor - The callbacks to invoke.
+   * @param _server - Whether to walk only what the server renders.
+   */
+  constructor(_metadatas, _visitor, _server) {
+    this._metadatas = _metadatas;
+    this._visitor = _visitor;
+    this._server = _server;
+  }
+  _metadatas;
+  _visitor;
+  _server;
+  /**
+   * Walks the nodes of a scope, whose element refs, templates and `@let` are visible in the whole of it (see
+   * `visitScopeDeclarations`).
+   *
+   * @param nodes - The nodes of the scope.
+   * @param variables - The variables declared by the scopes enclosing it.
+   */
+  walkScope(nodes, variables) {
+    let scopeVariables;
+    visitScopeDeclarations(nodes, "html", {
+      ref: (_element, { name }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      },
+      template: ({ declaration: { name } }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      },
+      let: ({ name }) => {
+        scopeVariables = declareVariable(scopeVariables, variables, name);
+      }
+    });
+    this._walkNodes(nodes, scopeVariables ?? variables);
+  }
+  /**
+   * Walks a list of nodes of a scope.
+   *
+   * @param nodes - The nodes.
+   * @param variables - The variables declared in the scope of the nodes.
+   */
+  _walkNodes(nodes, variables) {
+    for (let i2 = 0; i2 < nodes.length; i2++) {
+      this._walkNode(nodes[i2], variables);
+    }
+  }
+  /**
+   * Walks a node and its descendants.
+   *
+   * @param node - The node.
+   * @param variables - The variables declared in the scope of the node.
+   */
+  _walkNode(node, variables) {
+    switch (node.type) {
+      case 11 /* Import */:
+        this._visitor.importNode?.(node);
+        break;
+      case 4 /* Interpolation */:
+        this._visitor.expression?.(node.expression, variables);
+        break;
+      case 0 /* Element */:
+        this._walkElement(node, variables);
+        break;
+      case 5 /* If */:
+      case 7 /* ElseIf */:
+      case 6 /* Else */:
+        this._walkIf(node, variables);
+        break;
+      case 8 /* For */:
+        this._walkFor(node, variables);
+        break;
+      case 9 /* Switch */:
+        this._visitor.expression?.(node.expression, variables);
+        for (let i2 = 0; i2 < node.children.length; i2++) {
+          const caseNode = node.children[i2];
+          this._visitor.switchCase?.(caseNode);
+          this.walkScope(caseNode.children, variables);
+        }
+        break;
+      case 21 /* Hydrate */:
+        this._visitor.hydrate?.(node);
+        this._walkHydrate(node, variables);
+        break;
+      case 22 /* Client */:
+        this._visitor.client?.(node);
+        this._walkClient(node, variables);
+        break;
+      case 24 /* Try */:
+        this._visitor.tryBlock?.(node);
+        this.walkScope(node.children, variables);
+        this._walkErrorScope(node.catch, variables);
+        break;
+      case 26 /* Defer */:
+        this._visitor.defer?.(node);
+        this._walkDefer(node, variables);
+        break;
+      case 17 /* Template */: {
+        this._visitor.template?.(node);
+        const contentVariables = /* @__PURE__ */ new Set([...variables, ...node.parameters.map(({ name }) => name)]);
+        for (let i2 = 0; i2 < node.parameters.length; i2++) {
+          const { initializer } = node.parameters[i2];
+          if (initializer) {
+            this._visitor.expression?.(initializer, contentVariables);
+          }
+        }
+        this.walkScope(node.children, contentVariables);
+        break;
+      }
+      case 18 /* Render */:
+        this._visitor.render?.(node);
+        for (let i2 = 0; i2 < node.arguments.length; i2++) {
+          this._visitor.expression?.(node.arguments[i2], variables);
+        }
+        break;
+      case 19 /* Let */:
+        this._visitor.let?.(node);
+        this._visitor.expression?.(node.value, variables);
+        break;
+      default:
+        break;
+    }
+  }
+  /**
+   * Walks an element: its element ref, its bindings, its directives and its children, which are a scope of their
+   * own when a structural directive is applied to the element.
+   *
+   * @param node - The element.
+   * @param variables - The variables declared in the scope of the element.
+   */
+  _walkElement(node, variables) {
+    const component = this._metadatas.find((metadata) => metadata.type === "component" && metadata.selector === node.tagName);
+    this._visitor.element?.(node, component);
+    if (node.ref) {
+      this._visitor.ref?.(node.ref);
+    }
+    this._walkBindings(node, component, variables);
+    if (isStructuralElement(node)) {
+      this.walkScope(node.children, variables);
+    } else {
+      this._walkNodes(node.children, variables);
+    }
+  }
+  /**
+   * Walks the bindings declared on an element, in a directive or in a branch of a conditional binding.
+   *
+   * @param bindings - The bindings.
+   * @param owner - The component or directive the attributes and events are bound to, if any.
+   * @param variables - The variables declared in the scope of the bindings.
+   */
+  _walkBindings(bindings, owner, variables) {
+    for (let i2 = 0; i2 < bindings.attributes.length; i2++) {
+      const attribute = bindings.attributes[i2];
+      this._visitor.attribute?.(attribute, owner);
+      if (typeof attribute.value === "object") {
+        this._visitor.expression?.(attribute.value.expression, variables);
+      }
+    }
+    const { classBindings, directives, structuralDirectives } = bindings;
+    if (classBindings?.length) {
+      for (let i2 = 0; i2 < classBindings.length; i2++) {
+        const classBinding = classBindings[i2];
+        this._visitor.classBinding?.(classBinding);
+        this._visitor.expression?.(classBinding.value.expression, variables);
+      }
+    }
+    if (!this._server) {
+      const eventVariables = /* @__PURE__ */ new Set([...variables, "$event"]);
+      for (let i2 = 0; i2 < bindings.events.length; i2++) {
+        const event = bindings.events[i2];
+        this._visitor.event?.(event, owner, variables);
+        for (let j = 0; j < event.parameters.length; j++) {
+          this._visitor.expression?.(event.parameters[j], eventVariables);
+        }
+      }
+    }
+    for (let i2 = 0; i2 < bindings.conditionalBindings.length; i2++) {
+      this._walkConditionalBinding(bindings.conditionalBindings[i2], owner, variables);
+    }
+    if (directives?.length && !this._server) {
+      for (let i2 = 0; i2 < directives.length; i2++) {
+        this._walkDirective(directives[i2], variables);
+      }
+    }
+    if (structuralDirectives?.length) {
+      for (let i2 = 0; i2 < structuralDirectives.length; i2++) {
+        this._walkDirective(structuralDirectives[i2], variables);
+      }
+    }
+  }
+  /**
+   * Walks a conditional binding: its conditions and the bindings of its branches.
+   *
+   * @param node - The conditional binding.
+   * @param owner - The component or directive the attributes and events are bound to, if any.
+   * @param variables - The variables declared in the scope of the conditional binding.
+   */
+  _walkConditionalBinding(node, owner, variables) {
+    if (node.type === 13 /* SwitchBinding */) {
+      this._visitor.expression?.(node.expression, variables);
+      for (let i2 = 0; i2 < node.branches.length; i2++) {
+        this._walkBindings(node.branches[i2], owner, variables);
+      }
+    } else {
+      for (let i2 = 0; i2 < node.branches.length; i2++) {
+        const branch = node.branches[i2];
+        if (branch.condition) {
+          this._visitor.expression?.(branch.condition, variables);
+        }
+        this._walkBindings(branch, owner, variables);
+      }
+    }
+  }
+  /**
+   * Walks a directive or a structural directive and its bindings.
+   *
+   * @param node - The directive.
+   * @param variables - The variables declared in the scope of the directive.
+   */
+  _walkDirective(node, variables) {
+    const directive = this._metadatas.find((metadata) => metadata.type === "directive" && metadata.selector === node.selector);
+    this._visitor.directive?.(node, directive);
+    this._walkBindings(node.type === 15 /* Directive */ ? node : { ...node, events: [], conditionalBindings: [] }, directive, variables);
+  }
+  /**
+   * Walks a branch of an `@if` chain and the branches following it.
+   *
+   * @param node - The `@if`, `@else if` or `@else` branch.
+   * @param variables - The variables declared in the scope of the chain.
+   */
+  _walkIf(node, variables) {
+    if (node.type !== 6 /* Else */) {
+      this._visitor.expression?.(node.conditionNode, variables);
+    }
+    this.walkScope(node.children, variables);
+    if (node.type !== 6 /* Else */ && node.alternate) {
+      this._walkIf(node.alternate, variables);
+    }
+  }
+  /**
+   * Walks a `@hydrate` block: the expression of its `when` trigger, and its content, a scope of its own.
+   *
+   * @param node - The `@hydrate` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkHydrate(node, variables) {
+    this._walkWhen(node, variables);
+    this.walkScope(node.children, variables);
+  }
+  /**
+   * Walks a `@defer` block: the expression of its `when` trigger, its content and the blocks following it, each one a
+   * scope of its own, the `@error` declaring the error under the name it gives it. The server renders only its
+   * `@placeholder`.
+   *
+   * @param node - The `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkDefer(node, variables) {
+    const { placeholder, loading, error } = node;
+    if (!this._server) {
+      this._walkWhen(node, variables);
+      this.walkScope(node.children, variables);
+    }
+    if (placeholder) {
+      this.walkScope(placeholder.children, variables);
+    }
+    if (!this._server && loading) {
+      this.walkScope(loading.children, variables);
+    }
+    if (!this._server && error) {
+      this._walkErrorScope(error, variables);
+    }
+  }
+  /**
+   * Walks the expressions of the triggers of a block, the ones following `prefetch` too, which the server does not read:
+   * the one of `when`, the element ref naming the element a trigger watches, and the options of the observer of
+   * `visible`.
+   *
+   * @param node - The `@hydrate` or `@defer` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkWhen({ triggers, prefetch }, variables) {
+    if (!this._server) {
+      this._walkTriggers(triggers, variables);
+      this._walkTriggers(prefetch, variables);
+    }
+  }
+  /**
+   * Walks the expressions of triggers (see {@link _walkWhen}).
+   *
+   * @param triggers - The triggers.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkTriggers(triggers, variables) {
+    for (let i2 = 0; i2 < triggers.length; i2++) {
+      const trigger = triggers[i2];
+      switch (trigger.kind) {
+        case "when":
+          this._visitor.expression?.(trigger.expressionNode, variables);
+          break;
+        case "visible":
+        case "interaction":
+        case "hover":
+          if (trigger.target) {
+            this._visitor.expression?.(trigger.target.expressionNode, variables);
+          }
+          if (trigger.kind === "visible" && trigger.options) {
+            this._visitor.expression?.(trigger.options.expressionNode, variables);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  /**
+   * Walks a `@client` block: its content and its `@placeholder`, if any, each one a scope of its own.
+   *
+   * @param node - The `@client` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkClient(node, variables) {
+    if (!this._server) {
+      this.walkScope(node.children, variables);
+    }
+    if (node.placeholder) {
+      this.walkScope(node.placeholder.children, variables);
+    }
+  }
+  /**
+   * Walks a block receiving an error, a scope of its own declaring the error under the name it gives it: the `@catch` of
+   * a `@try`, which the server renders as it does the content, or the `@error` of a `@defer`.
+   *
+   * @param node - The `@catch` or `@error` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkErrorScope({ name, children }, variables) {
+    const errorVariables = new Set(variables);
+    if (name) {
+      errorVariables.add(name);
+    }
+    this.walkScope(children, errorVariables);
+  }
+  /**
+   * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
+   * declaring the variables of the loop.
+   *
+   * @param node - The `@for` block.
+   * @param variables - The variables declared in the scope enclosing the block.
+   */
+  _walkFor(node, variables) {
+    this._visitor.forBlock?.(node);
+    this._visitor.expression?.(node.iterableExpression, variables);
+    const loopVariables = /* @__PURE__ */ new Set([...variables, ...getForVariables(node)]);
+    this._visitor.expression?.(node.trackExpression, loopVariables);
+    this.walkScope(node.children, loopVariables);
+  }
+};
+function declareVariable(scopeVariables, variables, name) {
+  scopeVariables ??= new Set(variables);
+  scopeVariables.add(name);
+  return scopeVariables;
 }
 
 // ../packages/compiler/src/utils/render-target/render-target.utils.ts
@@ -24173,15 +24584,15 @@ function consumeBlockOpen(cursor) {
 }
 
 // ../packages/compiler/src/parser/utils/identifier/identifier.utils.ts
-var import_typescript6 = require("typescript");
+var import_typescript7 = require("typescript");
 var RESERVED_NAMES2 = /* @__PURE__ */ new Set(["root", "$event"]);
 function isValidIdentifier(name) {
   if (!name.length) {
     return false;
   }
-  const sourceFile = (0, import_typescript6.createSourceFile)("__id.ts", name, import_typescript6.ScriptTarget.ESNext, false);
+  const sourceFile = (0, import_typescript7.createSourceFile)("__id.ts", name, import_typescript7.ScriptTarget.ESNext, false);
   const statement = sourceFile.statements[0];
-  return !!statement && (0, import_typescript6.isExpressionStatement)(statement) && (0, import_typescript6.isIdentifier)(statement.expression) && statement.expression.text === name;
+  return !!statement && (0, import_typescript7.isExpressionStatement)(statement) && (0, import_typescript7.isIdentifier)(statement.expression) && statement.expression.text === name;
 }
 function assertDeclaredName(name, span, kind) {
   if (!isValidIdentifier(name)) {
@@ -24212,12 +24623,12 @@ function parseTemplateDeclaration(cursor, token) {
 }
 
 // ../packages/compiler/src/parser/utils/template-parameters/template-parameters.utils.ts
-var import_typescript7 = require("typescript");
+var import_typescript8 = require("typescript");
 var FUNCTION_PREFIX = "function __template(";
 function parseTemplateParameters(text, offset, template) {
-  const sourceFile = (0, import_typescript7.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript7.ScriptTarget.ESNext, true);
+  const sourceFile = (0, import_typescript8.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript8.ScriptTarget.ESNext, true);
   const declaration = sourceFile.statements[0];
-  if (sourceFile.statements.length !== 1 || !(0, import_typescript7.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
+  if (sourceFile.statements.length !== 1 || !(0, import_typescript8.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
     throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toTemplateSpan2(offset, FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
   }
   const parameters = new Array();
@@ -24226,7 +24637,7 @@ function parseTemplateParameters(text, offset, template) {
   for (let i2 = 0; i2 < declaration.parameters.length; i2++) {
     const parameter = declaration.parameters[i2];
     const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
-    if (!(0, import_typescript7.isIdentifier)(name)) {
+    if (!(0, import_typescript8.isIdentifier)(name)) {
       throw invalidParameter(parameter, sourceFile, template, offset, "cannot destructure its value: name it, and read its properties in the content of the template");
     }
     if (dotDotDotToken) {
@@ -24281,10 +24692,10 @@ function isParameterList(sourceFile, parameters, end) {
   return trailing === 0 || trailing === 1 && !!parameters.length;
 }
 function countCommas(text, start, end) {
-  const scanner = (0, import_typescript7.createScanner)(import_typescript7.ScriptTarget.ESNext, true, import_typescript7.LanguageVariant.Standard, text.slice(start, end));
+  const scanner = (0, import_typescript8.createScanner)(import_typescript8.ScriptTarget.ESNext, true, import_typescript8.LanguageVariant.Standard, text.slice(start, end));
   let commas = 0;
-  for (let token = scanner.scan(); token !== import_typescript7.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (token !== import_typescript7.SyntaxKind.CommaToken) {
+  for (let token = scanner.scan(); token !== import_typescript8.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (token !== import_typescript8.SyntaxKind.CommaToken) {
       return void 0;
     }
     commas++;
@@ -24498,21 +24909,7 @@ function isTagClose(cursor, tagName) {
 }
 
 // ../packages/compiler/src/parser/states/parse-for/parse-for.state.ts
-var import_typescript8 = require("typescript");
-
-// ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
-var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd"];
-function getForVariables(node) {
-  const variables = new Array();
-  if (node.itemAlias) {
-    variables.push(node.itemAlias);
-  }
-  for (let i2 = 0; i2 < FOR_IMPLICIT_VARIABLES.length; i2++) {
-    const implicit = FOR_IMPLICIT_VARIABLES[i2];
-    variables.push(node.implicitAliases.get(implicit) ?? implicit);
-  }
-  return variables;
-}
+var import_typescript9 = require("typescript");
 
 // ../packages/compiler/src/parser/states/parse-block-children/parse-block-children.state.ts
 function parseBlockChildren(cursor, parseNode) {
@@ -24582,7 +24979,7 @@ function parseForExpression(source, offset = 0) {
   }
   const trackValidation = validateExpression(trackSource, trackOffset);
   const trackNode = trackValidation.node;
-  if ((0, import_typescript8.isIdentifier)(trackNode) && getForVariables({ itemAlias, implicitAliases }).includes(trackNode.text)) {
+  if ((0, import_typescript9.isIdentifier)(trackNode) && getForVariables({ itemAlias, implicitAliases }).includes(trackNode.text)) {
     throw new Error(`The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track ${trackNode.text}()`, { cause: getTemplateSpan(trackNode) });
   }
   return {
@@ -24784,7 +25181,7 @@ function readErrorName(cursor, node, kind) {
 }
 
 // ../packages/compiler/src/parser/utils/triggers/triggers.utils.ts
-var import_typescript9 = require("typescript");
+var import_typescript10 = require("typescript");
 var DEFER_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover"];
 var HYDRATE_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover", "never"];
 var PREFETCH = /^prefetch\b\s*/;
@@ -24890,14 +25287,14 @@ function parseTarget({ text, span }, block) {
     throw new Error("A trigger of @hydrate watches the elements of its content: it takes no element ref", { cause: span });
   }
   const node = IDENTIFIER.test(text) ? validateExpression(text, span.start).node : void 0;
-  if (!node || !(0, import_typescript9.isIdentifier)(node)) {
+  if (!node || !(0, import_typescript10.isIdentifier)(node)) {
     throw new Error(`Expected the element ref naming the element to watch, got "${text}"`, { cause: span });
   }
   return { name: text, expressionNode: node, span };
 }
 function parseOptions({ text, span }) {
   const { node } = validateExpression(text, span.start);
-  if (!(0, import_typescript9.isObjectLiteralExpression)(node)) {
+  if (!(0, import_typescript10.isObjectLiteralExpression)(node)) {
     throw new Error(`Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got "${text}"`, { cause: span });
   }
   return { expression: text, expressionNode: node, span };
@@ -25113,7 +25510,7 @@ function parseLet(cursor, _parseNode, token) {
 }
 
 // ../packages/compiler/src/parser/states/parse-render/parse-render.state.ts
-var import_typescript10 = require("typescript");
+var import_typescript11 = require("typescript");
 function parseRender(cursor, _parseNode, token) {
   cursor.advance();
   const callToken = cursor.peek();
@@ -25128,7 +25525,7 @@ function parseRender(cursor, _parseNode, token) {
     throw new Error(`'${callee}' cannot name a template: it must be an identifier`, { cause: calleeSpan });
   }
   const call = validateExpression(`${callee}(${args})`, start).node;
-  const spread = call.arguments.find(import_typescript10.isSpreadElement);
+  const spread = call.arguments.find(import_typescript11.isSpreadElement);
   if (spread) {
     throw new Error("@render passes each argument to its parameter: spread the values in separate arguments, e.g. @render row(pair()[0], pair()[1])", { cause: getTemplateSpan(spread) });
   }
@@ -25554,10 +25951,10 @@ var TypeCheckContext = class extends CompilerContext {
 };
 
 // ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
-var import_typescript14 = require("typescript");
+var import_typescript15 = require("typescript");
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
-var import_typescript13 = require("typescript");
+var import_typescript14 = require("typescript");
 
 // ../packages/compiler/src/type-checker/models/component-property-metadata/component-property-metadata.model.ts
 var ComponentPropertyMetadata = class {
@@ -25619,18 +26016,18 @@ var ComponentPropertyMetadataWithSpan = class extends ComponentPropertyMetadata 
 };
 
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
-var import_typescript12 = require("typescript");
+var import_typescript13 = require("typescript");
 
 // ../packages/compiler/src/utils/resolve-declaration/resolve-declaration.utils.ts
 var import_node_fs = require("fs");
-var import_typescript11 = require("typescript");
+var import_typescript12 = require("typescript");
 var DEFAULT_COMPILER_OPTIONS = {
-  module: import_typescript11.ModuleKind.ESNext,
-  moduleResolution: import_typescript11.ModuleResolutionKind.Bundler
+  module: import_typescript12.ModuleKind.ESNext,
+  moduleResolution: import_typescript12.ModuleResolutionKind.Bundler
 };
 var CLASS_FINDER = {
-  local: (statement, localName) => (0, import_typescript11.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
-  exported: (statement, exportedName) => (0, import_typescript11.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
+  local: (statement, localName) => (0, import_typescript12.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
+  exported: (statement, exportedName) => (0, import_typescript12.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var sourceFileCache = /* @__PURE__ */ new Map();
 function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
@@ -25650,14 +26047,14 @@ function resolveBaseClass({ sourceFile, declaration }, context) {
   return resolveReference(sourceFile, expression, CLASS_FINDER, context, /* @__PURE__ */ new Set());
 }
 function getBaseClassExpression(declaration) {
-  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript11.SyntaxKind.ExtendsKeyword);
+  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript12.SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
 }
 function resolveReference(sourceFile, expression, finder, context, visitedExports) {
-  if ((0, import_typescript11.isIdentifier)(expression)) {
+  if ((0, import_typescript12.isIdentifier)(expression)) {
     return resolveLocal(sourceFile, expression.text, finder, context, visitedExports);
   }
-  if ((0, import_typescript11.isPropertyAccessExpression)(expression) && (0, import_typescript11.isIdentifier)(expression.expression)) {
+  if ((0, import_typescript12.isPropertyAccessExpression)(expression) && (0, import_typescript12.isIdentifier)(expression.expression)) {
     const importDeclaration = findNamespaceImport(sourceFile, expression.expression.text);
     if (importDeclaration) {
       return resolveImported(sourceFile, importDeclaration.moduleSpecifier, expression.name.text, finder, context, visitedExports);
@@ -25671,7 +26068,7 @@ function resolveLocal(sourceFile, localName, finder, context, visitedExports) {
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript11.isImportDeclaration)(statement)) {
+    if ((0, import_typescript12.isImportDeclaration)(statement)) {
       const importedName = getImportedName(statement, localName);
       if (importedName) {
         return resolveImported(sourceFile, statement.moduleSpecifier, importedName, finder, context, visitedExports);
@@ -25685,7 +26082,7 @@ function getImportedName(importDeclaration, localName) {
     return "default";
   }
   const namedBindings = importClause?.namedBindings;
-  if (namedBindings && (0, import_typescript11.isNamedImports)(namedBindings)) {
+  if (namedBindings && (0, import_typescript12.isNamedImports)(namedBindings)) {
     const element = namedBindings.elements.find((el) => el.name.text === localName);
     return element && (element.propertyName ?? element.name).text;
   }
@@ -25693,15 +26090,15 @@ function getImportedName(importDeclaration, localName) {
 }
 function findNamespaceImport(sourceFile, namespace) {
   return sourceFile.statements.find((statement) => {
-    const namedBindings = (0, import_typescript11.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
-    return !!namedBindings && (0, import_typescript11.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
+    const namedBindings = (0, import_typescript12.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
+    return !!namedBindings && (0, import_typescript12.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
   });
 }
 function resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports) {
-  if (!(0, import_typescript11.isStringLiteralLike)(moduleSpecifier)) {
+  if (!(0, import_typescript12.isStringLiteralLike)(moduleSpecifier)) {
     return;
   }
-  const { resolvedModule } = (0, import_typescript11.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript11.sys);
+  const { resolvedModule } = (0, import_typescript12.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript12.sys);
   const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : void 0;
 }
@@ -25722,15 +26119,15 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript11.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript11.isIdentifier)(statement.expression)) {
+    if ((0, import_typescript12.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript12.isIdentifier)(statement.expression)) {
       return resolveLocal(sourceFile, statement.expression.text, finder, context, visitedExports);
     }
-    if ((0, import_typescript11.isExportDeclaration)(statement)) {
+    if ((0, import_typescript12.isExportDeclaration)(statement)) {
       const { exportClause, moduleSpecifier } = statement;
       if (!exportClause && moduleSpecifier) {
         wildcardSpecifiers.push(moduleSpecifier);
       }
-      if (exportClause && (0, import_typescript11.isNamedExports)(exportClause)) {
+      if (exportClause && (0, import_typescript12.isNamedExports)(exportClause)) {
         const element = exportClause.elements.find((el) => el.name.text === exportedName);
         if (element) {
           const name = (element.propertyName ?? element.name).text;
@@ -25753,7 +26150,7 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
 }
 function isExportedAs(declaration, exportedName) {
   if (exportedName === "default") {
-    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript11.SyntaxKind.DefaultKeyword);
+    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript12.SyntaxKind.DefaultKeyword);
   }
   return declaration.name?.text === exportedName;
 }
@@ -25765,7 +26162,7 @@ function getSourceFile(fileName, context) {
     if (cached?.modifiedTime === mtimeMs && cached.size === size) {
       sourceFile = cached.sourceFile;
     } else {
-      sourceFile = (0, import_typescript11.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript11.ScriptTarget.Latest, true);
+      sourceFile = (0, import_typescript12.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript12.ScriptTarget.Latest, true);
       sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
     }
   } catch {
@@ -25815,13 +26212,13 @@ function addHostDirectiveBindings({ properties, events }, decorator, sourceFile,
 }
 function readHostDirectives(decorator) {
   const list = getOptionExpression(decorator.expression.arguments[0], "hostDirectives");
-  if (!list || !(0, import_typescript12.isArrayLiteralExpression)(list)) {
+  if (!list || !(0, import_typescript13.isArrayLiteralExpression)(list)) {
     return;
   }
   const declarations = new Array();
   for (let i2 = 0; i2 < list.elements.length; i2++) {
     const element = list.elements[i2];
-    if (!(0, import_typescript12.isObjectLiteralExpression)(element)) {
+    if (!(0, import_typescript13.isObjectLiteralExpression)(element)) {
       declarations.push({ directive: element });
       continue;
     }
@@ -25835,27 +26232,27 @@ function readHostDirectives(decorator) {
 function getOptionExpression(object, name) {
   for (let i2 = 0; i2 < object.properties.length; i2++) {
     const property = object.properties[i2];
-    if ((0, import_typescript12.isPropertyAssignment)(property) && (0, import_typescript12.isIdentifier)(property.name) && property.name.text === name) {
+    if ((0, import_typescript13.isPropertyAssignment)(property) && (0, import_typescript13.isIdentifier)(property.name) && property.name.text === name) {
       return property.initializer;
     }
-    if ((0, import_typescript12.isShorthandPropertyAssignment)(property) && property.name.text === name) {
+    if ((0, import_typescript13.isShorthandPropertyAssignment)(property) && property.name.text === name) {
       return property.name;
     }
   }
 }
 function readExposures(expression) {
-  if (!expression || !(0, import_typescript12.isArrayLiteralExpression)(expression)) {
+  if (!expression || !(0, import_typescript13.isArrayLiteralExpression)(expression)) {
     return;
   }
   const exposures = new Array();
   for (let i2 = 0; i2 < expression.elements.length; i2++) {
     const element = expression.elements[i2];
-    if ((0, import_typescript12.isStringLiteralLike)(element)) {
+    if ((0, import_typescript13.isStringLiteralLike)(element)) {
       exposures.push({ name: element.text, alias: element.text });
-    } else if ((0, import_typescript12.isObjectLiteralExpression)(element)) {
+    } else if ((0, import_typescript13.isObjectLiteralExpression)(element)) {
       const name = getOptionExpression(element, "name");
       const alias = getOptionExpression(element, "alias");
-      if (name && alias && (0, import_typescript12.isStringLiteralLike)(name) && (0, import_typescript12.isStringLiteralLike)(alias)) {
+      if (name && alias && (0, import_typescript13.isStringLiteralLike)(name) && (0, import_typescript13.isStringLiteralLike)(alias)) {
         exposures.push({ name: name.text, alias: alias.text });
       }
     }
@@ -26088,7 +26485,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
       continue;
     }
     const options = decorator.expression.arguments[0];
-    if (!options || !(0, import_typescript13.isObjectLiteralExpression)(options)) {
+    if (!options || !(0, import_typescript14.isObjectLiteralExpression)(options)) {
       reportAt(errors, sourceFile, `The options of @WebComponent in ${className} must be an object literal`, options ?? decorator.expression.expression);
       continue;
     }
@@ -26096,7 +26493,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
     let templateUrl = false;
     for (let j = 0; j < options.properties.length; j++) {
       const property = options.properties[j];
-      if (!((0, import_typescript13.isPropertyAssignment)(property) || (0, import_typescript13.isShorthandPropertyAssignment)(property)) || !(0, import_typescript13.isIdentifier)(property.name)) {
+      if (!((0, import_typescript14.isPropertyAssignment)(property) || (0, import_typescript14.isShorthandPropertyAssignment)(property)) || !(0, import_typescript14.isIdentifier)(property.name)) {
         continue;
       }
       const name = property.name.text;
@@ -26119,8 +26516,8 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
         default:
           continue;
       }
-      if (!(0, import_typescript13.isPropertyAssignment)(property) || !(0, import_typescript13.isStringLiteral)(property.initializer)) {
-        reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, (0, import_typescript13.isPropertyAssignment)(property) ? property.initializer : property);
+      if (!(0, import_typescript14.isPropertyAssignment)(property) || !(0, import_typescript14.isStringLiteral)(property.initializer)) {
+        reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, (0, import_typescript14.isPropertyAssignment)(property) ? property.initializer : property);
       } else if (name === "selector" && !isValidCustomElementName(property.initializer.text)) {
         reportAt(errors, sourceFile, `Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
       }
@@ -26141,7 +26538,7 @@ function describeSelectorConflict({ className, selector, type, modulePath }, own
   return type === "directive" ? `Selector "${selector}" of directive "${className}" - ${modulePath} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.` : `Selector "${selector}" of component "${className}" - ${modulePath} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
 }
 function findSsrError(property, className) {
-  if (!(0, import_typescript13.isPropertyAssignment)(property) || !(0, import_typescript13.isObjectLiteralExpression)(property.initializer)) {
+  if (!(0, import_typescript14.isPropertyAssignment)(property) || !(0, import_typescript14.isObjectLiteralExpression)(property.initializer)) {
     return `The ssr option of ${className} must be an object literal`;
   }
   const { properties } = property.initializer;
@@ -26149,11 +26546,11 @@ function findSsrError(property, className) {
   if (!render) {
     return void 0;
   }
-  if (!(0, import_typescript13.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript13.SyntaxKind.FalseKeyword) {
+  if (!(0, import_typescript14.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript14.SyntaxKind.FalseKeyword) {
     return `The ssr.render option of ${className} must be the literal false`;
   }
   const hydrate = properties.find((option) => option.name?.getText() === "hydrate");
-  return hydrate && !((0, import_typescript13.isPropertyAssignment)(hydrate) && (0, import_typescript13.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
+  return hydrate && !((0, import_typescript14.isPropertyAssignment)(hydrate) && (0, import_typescript14.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
 }
 async function extractDirectivesMetadataFromSourceFile(sourceFile, compilerOptions) {
   const metadatas = /* @__PURE__ */ new Map();
@@ -26212,7 +26609,7 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
   const members = declaration.members;
   for (let i2 = 0; i2 < members.length; i2++) {
     const member = members[i2];
-    if (!(0, import_typescript13.isPropertyDeclaration)(member)) {
+    if (!(0, import_typescript14.isPropertyDeclaration)(member)) {
       continue;
     }
     const memberModifiers = member.modifiers;
@@ -26226,8 +26623,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
       return result.decorator;
     });
     if (propDecorator) {
-      const nameNode = (0, import_typescript13.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript13.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript14.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript14.isIdentifier)(nameNode)) {
         const propName = nameNode.text;
         const overridden = properties.entries().find(([, property]) => property.name === propName);
         if (overridden) {
@@ -26251,8 +26648,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
     }
     const eventDecorator = Array.from(memberModifiers).find((member2) => isEventDecorator(member2));
     if (eventDecorator) {
-      const nameNode = (0, import_typescript13.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript13.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript14.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript14.isIdentifier)(nameNode)) {
         const eventName = nameNode.text;
         events.set(eventName, extractEventMetadata(member, eventName, accessorOwner, toMemberDeclaration(nameNode, sourceFile)));
       }
@@ -26274,7 +26671,7 @@ function getDecoratedClassDeclarations(sourceFile, decoratorName) {
   return found;
 }
 function classDeclarationHasName(node) {
-  return (0, import_typescript13.isClassDeclaration)(node) && !!node.name?.text;
+  return (0, import_typescript14.isClassDeclaration)(node) && !!node.name?.text;
 }
 function extractHostDirectiveBindings({ declaration, sourceFile }, compilerOptions) {
   if (!classDeclarationHasName(declaration)) {
@@ -26283,7 +26680,7 @@ function extractHostDirectiveBindings({ declaration, sourceFile }, compilerOptio
   return readLibraryClass(sourceFile.fileName, declaration.name.text) ?? extractBindingsMetadata(declaration, sourceFile, "directive", compilerOptions);
 }
 function findClassDecorator(classDecl, decoratorName) {
-  const decorators = (0, import_typescript13.getDecorators)(classDecl);
+  const decorators = (0, import_typescript14.getDecorators)(classDecl);
   if (!decorators?.length) {
     return void 0;
   }
@@ -26291,13 +26688,13 @@ function findClassDecorator(classDecl, decoratorName) {
   let found;
   while (i2 < decorators.length && !found) {
     const decorator = decorators[i2];
-    if (!(0, import_typescript13.isCallExpression)(decorator.expression)) {
+    if (!(0, import_typescript14.isCallExpression)(decorator.expression)) {
       i2++;
       continue;
     }
     const callExpression = decorator.expression;
-    const callee = (0, import_typescript13.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
-    const isSearchedDecorator = (_decorator) => (0, import_typescript13.isIdentifier)(callee) && callee.text === decoratorName;
+    const callee = (0, import_typescript14.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
+    const isSearchedDecorator = (_decorator) => (0, import_typescript14.isIdentifier)(callee) && callee.text === decoratorName;
     if (isSearchedDecorator(decorator)) {
       found = decorator;
     }
@@ -26317,21 +26714,21 @@ function extractMetadaFromDecorator(decorator) {
       return retVal;
     }
     const arg = args[0];
-    if (!arg || !(0, import_typescript13.isObjectLiteralExpression)(arg)) {
+    if (!arg || !(0, import_typescript14.isObjectLiteralExpression)(arg)) {
       return retVal;
     }
     for (let i2 = 0; i2 < arg.properties.length; i2++) {
       const prop = arg.properties[i2];
-      if ((0, import_typescript13.isPropertyAssignment)(prop) && (0, import_typescript13.isIdentifier)(prop.name)) {
+      if ((0, import_typescript14.isPropertyAssignment)(prop) && (0, import_typescript14.isIdentifier)(prop.name)) {
         switch (prop.name.text) {
           case "selector":
-            retVal.selector = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.selector = (0, import_typescript14.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "templateUrl":
-            retVal.templateUrl = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.templateUrl = (0, import_typescript14.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "styleUrl":
-            retVal.styleUrl = (0, import_typescript13.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
+            retVal.styleUrl = (0, import_typescript14.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
             break;
           case "ssr":
             retVal.clientOnly = extractClientOnly(prop.initializer);
@@ -26345,20 +26742,20 @@ function extractMetadaFromDecorator(decorator) {
   }
 }
 function extractClientOnly(ssr) {
-  if (!(0, import_typescript13.isObjectLiteralExpression)(ssr)) {
+  if (!(0, import_typescript14.isObjectLiteralExpression)(ssr)) {
     return void 0;
   }
   let render = false;
   let hydrate;
   for (let i2 = 0; i2 < ssr.properties.length; i2++) {
     const option = ssr.properties[i2];
-    if ((0, import_typescript13.isPropertyAssignment)(option)) {
+    if ((0, import_typescript14.isPropertyAssignment)(option)) {
       switch (option.name.getText()) {
         case "render":
-          render = option.initializer.kind === import_typescript13.SyntaxKind.FalseKeyword;
+          render = option.initializer.kind === import_typescript14.SyntaxKind.FalseKeyword;
           break;
         case "hydrate":
-          hydrate = (0, import_typescript13.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
+          hydrate = (0, import_typescript14.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
           break;
       }
     }
@@ -26369,24 +26766,24 @@ function extractClientOnly(ssr) {
   return hydrate ? { hydrate } : {};
 }
 function isPropertyDecorator(modifier) {
-  if (!(0, import_typescript13.isDecorator)(modifier)) {
+  if (!(0, import_typescript14.isDecorator)(modifier)) {
     return {
       decorator: false
     };
   }
   const expr = modifier.expression;
-  if (!(0, import_typescript13.isCallExpression)(expr)) {
+  if (!(0, import_typescript14.isCallExpression)(expr)) {
     return {
       decorator: false
     };
   }
   const subExpr = expr.expression;
-  if ((0, import_typescript13.isIdentifier)(subExpr) && subExpr.text === "Property") {
+  if ((0, import_typescript14.isIdentifier)(subExpr) && subExpr.text === "Property") {
     return {
       decorator: true
     };
   }
-  if ((0, import_typescript13.isPropertyAccessExpression)(subExpr) && (0, import_typescript13.isIdentifier)(subExpr.expression) && subExpr.expression.text === "Property" && subExpr.name.text === "required") {
+  if ((0, import_typescript14.isPropertyAccessExpression)(subExpr) && (0, import_typescript14.isIdentifier)(subExpr.expression) && subExpr.expression.text === "Property" && subExpr.name.text === "required") {
     return {
       decorator: true,
       required: true
@@ -26403,11 +26800,11 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
   if (args.length) {
     const options = required ? args[0] : args[1];
-    const incomingType = options && (0, import_typescript13.isObjectLiteralExpression)(options) ? findTransformIncomingType(property, options) : void 0;
+    const incomingType = options && (0, import_typescript14.isObjectLiteralExpression)(options) ? findTransformIncomingType(property, options) : void 0;
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
-    const aliasNode = options && (0, import_typescript13.isObjectLiteralExpression)(options) && options?.properties?.find((prop) => (0, import_typescript13.isPropertyAssignment)(prop) && (0, import_typescript13.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript13.isStringLiteral)(prop.initializer));
+    const aliasNode = options && (0, import_typescript14.isObjectLiteralExpression)(options) && options?.properties?.find((prop) => (0, import_typescript14.isPropertyAssignment)(prop) && (0, import_typescript14.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript14.isStringLiteral)(prop.initializer));
     if (aliasNode) {
       const initializer = aliasNode.initializer;
       metadata.alias = initializer.text;
@@ -26420,16 +26817,16 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   return metadata;
 }
 function findTransformIncomingType(property, options) {
-  const transform = options.properties.find((property2) => ((0, import_typescript13.isPropertyAssignment)(property2) || (0, import_typescript13.isMethodDeclaration)(property2)) && (0, import_typescript13.isIdentifier)(property2.name) && property2.name.text === "transform");
+  const transform = options.properties.find((property2) => ((0, import_typescript14.isPropertyAssignment)(property2) || (0, import_typescript14.isMethodDeclaration)(property2)) && (0, import_typescript14.isIdentifier)(property2.name) && property2.name.text === "transform");
   if (!transform) {
     return void 0;
   }
-  const typeArgument = property.type && (0, import_typescript13.isTypeReferenceNode)(property.type) ? property.type.typeArguments?.[1] : void 0;
+  const typeArgument = property.type && (0, import_typescript14.isTypeReferenceNode)(property.type) ? property.type.typeArguments?.[1] : void 0;
   if (typeArgument) {
     return typeArgument;
   }
-  const callback = (0, import_typescript13.isPropertyAssignment)(transform) ? transform.initializer : transform;
-  return (0, import_typescript13.isArrowFunction)(callback) || (0, import_typescript13.isFunctionExpression)(callback) || (0, import_typescript13.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
+  const callback = (0, import_typescript14.isPropertyAssignment)(transform) ? transform.initializer : transform;
+  return (0, import_typescript14.isArrowFunction)(callback) || (0, import_typescript14.isFunctionExpression)(callback) || (0, import_typescript14.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
 }
 function qualifyType(type, sourceFile) {
   const start = type.getStart(sourceFile);
@@ -26443,9 +26840,9 @@ function qualifyType(type, sourceFile) {
   return text;
 }
 function collectTypeReplacements(node, sourceFile, start, replacements) {
-  if ((0, import_typescript13.isTypeReferenceNode)(node)) {
+  if ((0, import_typescript14.isTypeReferenceNode)(node)) {
     let name = node.typeName;
-    while ((0, import_typescript13.isQualifiedName)(name)) {
+    while ((0, import_typescript14.isQualifiedName)(name)) {
       name = name.left;
     }
     const qualifier = findTypeQualifier(name.text, sourceFile);
@@ -26454,29 +26851,29 @@ function collectTypeReplacements(node, sourceFile, start, replacements) {
       replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
     }
   }
-  (0, import_typescript13.forEachChild)(node, (child) => collectTypeReplacements(child, sourceFile, start, replacements));
+  (0, import_typescript14.forEachChild)(node, (child) => collectTypeReplacements(child, sourceFile, start, replacements));
 }
 function findTypeQualifier(name, sourceFile) {
   const statements = sourceFile.statements;
   for (let i2 = 0; i2 < statements.length; i2++) {
     const statement = statements[i2];
-    if ((0, import_typescript13.isImportDeclaration)(statement) && (0, import_typescript13.isStringLiteral)(statement.moduleSpecifier)) {
+    if ((0, import_typescript14.isImportDeclaration)(statement) && (0, import_typescript14.isStringLiteral)(statement.moduleSpecifier)) {
       const module2 = resolveModuleSpecifier(statement.moduleSpecifier.text, sourceFile.fileName);
       const clause = statement.importClause;
       if (clause?.name?.text === name) {
         return { module: module2, name: "default", namespace: false };
       }
       const bindings = clause?.namedBindings;
-      if (bindings && (0, import_typescript13.isNamespaceImport)(bindings) && bindings.name.text === name) {
+      if (bindings && (0, import_typescript14.isNamespaceImport)(bindings) && bindings.name.text === name) {
         return { module: module2, name, namespace: true };
       }
-      if (bindings && (0, import_typescript13.isNamedImports)(bindings)) {
+      if (bindings && (0, import_typescript14.isNamedImports)(bindings)) {
         const element = bindings.elements.find(({ name: localName }) => localName.text === name);
         if (element) {
           return { module: module2, name: (element.propertyName ?? element.name).text, namespace: false };
         }
       }
-    } else if (((0, import_typescript13.isInterfaceDeclaration)(statement) || (0, import_typescript13.isTypeAliasDeclaration)(statement) || (0, import_typescript13.isClassDeclaration)(statement) || (0, import_typescript13.isEnumDeclaration)(statement)) && statement.name?.text === name) {
+    } else if (((0, import_typescript14.isInterfaceDeclaration)(statement) || (0, import_typescript14.isTypeAliasDeclaration)(statement) || (0, import_typescript14.isClassDeclaration)(statement) || (0, import_typescript14.isEnumDeclaration)(statement)) && statement.name?.text === name) {
       return { module: sourceFile.fileName.replaceAll("\\", "/").replace(/\.ts$/, ""), name, namespace: false };
     }
   }
@@ -26500,11 +26897,11 @@ function resolveModuleSpecifier(specifier, fileName) {
   return segments.join("/").replace(/\.ts$/, "");
 }
 function isEventDecorator(modifier) {
-  if (modifier.kind !== import_typescript13.SyntaxKind.Decorator) {
+  if (modifier.kind !== import_typescript14.SyntaxKind.Decorator) {
     return false;
   }
-  const expr = (0, import_typescript13.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
-  return (0, import_typescript13.isIdentifier)(expr) && expr.text === "Event";
+  const expr = (0, import_typescript14.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
+  return (0, import_typescript14.isIdentifier)(expr) && expr.text === "Event";
 }
 function extractEventMetadata(event, name, accessorOwner, declaration) {
   return {
@@ -26528,14 +26925,14 @@ function toOwnerType(modulePath, className, typeParameters) {
 function extractBindingType(member, name, accessorOwner, event) {
   const defaultValue = event ? "void" : "any";
   const typeNode = member.type;
-  if (!typeNode || !(0, import_typescript13.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
+  if (!typeNode || !(0, import_typescript14.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
     return defaultValue;
   }
   const accessor = `${accessorOwner}['${name}']`;
   if (!event) {
     return `ReturnType<${accessor}>`;
   }
-  return typeNode.typeArguments[0].kind === import_typescript13.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
+  return typeNode.typeArguments[0].kind === import_typescript14.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }
 
 // ../packages/compiler/src/type-checker/utils/line-builder/line-builder.utils.ts
@@ -27079,7 +27476,7 @@ function passesEvent(parameters) {
   return parameters.some((parameter) => isEventBeginning(parameter) || readsEvent(parameter));
 }
 function isEventBeginning(expression) {
-  return (0, import_typescript14.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
+  return (0, import_typescript15.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
 }
 function typeCheckConditionalBindings(conditionalBindings, context, bindings) {
   const lines = new Array();
@@ -27162,14 +27559,14 @@ function typeCheckFor(node, processNode, context) {
   lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mappedExpression(node.iterableExpression, context, node.span), ")) {"));
   const body = new Array();
   if (node.itemAlias) {
-    body.push(declareVariable(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`));
+    body.push(declareVariable2(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`));
   }
   body.push(
-    declareVariable(indexName, node.implicitAliasSpans.get("$index"), "Signal<number>"),
-    declareVariable(firstName, node.implicitAliasSpans.get("$first"), "Signal<boolean>"),
-    declareVariable(lastName, node.implicitAliasSpans.get("$last"), "Signal<boolean>"),
-    declareVariable(evenName, node.implicitAliasSpans.get("$even"), "Signal<boolean>"),
-    declareVariable(oddName, node.implicitAliasSpans.get("$odd"), "Signal<boolean>")
+    declareVariable2(indexName, node.implicitAliasSpans.get("$index"), "Signal<number>"),
+    declareVariable2(firstName, node.implicitAliasSpans.get("$first"), "Signal<boolean>"),
+    declareVariable2(lastName, node.implicitAliasSpans.get("$last"), "Signal<boolean>"),
+    declareVariable2(evenName, node.implicitAliasSpans.get("$even"), "Signal<boolean>"),
+    declareVariable2(oddName, node.implicitAliasSpans.get("$odd"), "Signal<boolean>")
   );
   const { declarations, lines: content } = typeCheckScope(node.children, forContext, processNode);
   body.push(
@@ -27181,7 +27578,7 @@ function typeCheckFor(node, processNode, context) {
   lines.push(plain("}"));
   return lines;
 }
-function declareVariable(name, span, type) {
+function declareVariable2(name, span, type) {
   return span ? line("let ", mapped(name, span), `!: ${type};`) : plain(`let ${name}!: ${type};`);
 }
 function resolveImplicit(node, implicit) {
@@ -27189,7 +27586,7 @@ function resolveImplicit(node, implicit) {
 }
 
 // ../packages/compiler/src/type-checker/utils/signal-narrowing/signal-narrowing.utils.ts
-var import_typescript15 = require("typescript");
+var import_typescript16 = require("typescript");
 function narrowSignals(conditions, prefix, context, chainContext) {
   const declarations = new Array();
   for (let i2 = 0; i2 < conditions.length; i2++) {
@@ -27204,7 +27601,7 @@ function declareSignalReads(node, prefix, context, chainContext, declarations) {
     declarations.push(plain(`const ${value} = ${resolveExpression(node, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
     chainContext.addNarrowedSignal(callee.text, value);
   }
-  (0, import_typescript15.forEachChild)(node, (child) => declareSignalReads(child, prefix, context, chainContext, declarations));
+  (0, import_typescript16.forEachChild)(node, (child) => declareSignalReads(child, prefix, context, chainContext, declarations));
 }
 
 // ../packages/compiler/src/type-checker/states/type-check-if/type-check-if.state.ts
@@ -27607,7 +28004,6 @@ function checkServerBlocks(nodes) {
 }
 
 // ../packages/compiler/src/type-checker/utils/variable-order/variable-order.utils.ts
-var import_typescript16 = require("typescript");
 function checkVariableOrder(ast) {
   const check = { scopes: [], level: null, freeReads: /* @__PURE__ */ new Map(), renders: [] };
   checkScope(ast, check);
@@ -27894,18 +28290,6 @@ function resolve(name, check) {
     }
   }
   return void 0;
-}
-function collectReads(expression) {
-  const reads = new Array();
-  collectReadsOf(expression, expression, reads);
-  return reads;
-}
-function collectReadsOf(node, parent, reads) {
-  const isMemberName2 = ((0, import_typescript16.isPropertyAccessExpression)(parent) || (0, import_typescript16.isPropertyAssignment)(parent)) && parent.name === node;
-  if ((0, import_typescript16.isIdentifier)(node) && !isMemberName2) {
-    reads.push(node);
-  }
-  forEachExpressionChild(node, (child) => collectReadsOf(child, node, reads));
 }
 function report(check, message, span) {
   check.errors ??= new Array();
@@ -28495,6 +28879,182 @@ function compareText(first, second) {
 function writeStatement({ path, specifiers, lazy, quote: quote2, semicolon, multiline, comments }, newline) {
   const names = multiline ? `{${newline}  ${specifiers.join(`,${newline}  `)}${newline}}` : `{ ${specifiers.join(", ")} }`;
   return `@import ${lazy ? "lazy " : ""}${names} from ${quote2}${path}${quote2}${semicolon}${comments}`;
+}
+
+// ../packages/compiler/src/lexer/utils/import-path-context/import-path-context.utils.ts
+var PATH_START = /\bfrom\s*(['"])([^'"\r\n]*)$/;
+var SEGMENT_END = /[/'"\r\n]|$/;
+function getImportPathContext(source, offset) {
+  const before = source.slice(0, offset);
+  const match = PATH_START.exec(before);
+  if (!match) {
+    return void 0;
+  }
+  const { state, error } = lexImportHeader(before);
+  if (error || state !== "import-path" /* IMPORT_PATH */) {
+    return void 0;
+  }
+  const [, , written] = match;
+  const segmentStart = written.lastIndexOf("/") + 1;
+  return {
+    directory: written.slice(0, segmentStart),
+    span: { start: offset - written.length + segmentStart, end: offset + source.slice(offset).search(SEGMENT_END) }
+  };
+}
+
+// ../packages/compiler/src/lexer/utils/keyword-context/keyword-context.utils.ts
+var KEYWORD_START = /@[a-z]*$/;
+var DEFER_BLOCKS = /* @__PURE__ */ new Map([
+  [34 /* PLACEHOLDER */, "placeholder"],
+  [38 /* LOADING */, "loading"],
+  [39 /* ERROR */, "error"]
+]);
+function getKeywordContext(source, offset) {
+  const before = source.slice(0, offset);
+  const match = KEYWORD_START.exec(before);
+  if (!match) {
+    return void 0;
+  }
+  const start = offset - match[0].length;
+  if (before[start - 1] === "@") {
+    return void 0;
+  }
+  const { tokens, state, error } = new Lexer(before.slice(0, start)).tokenizeTolerant();
+  if (error) {
+    return void 0;
+  }
+  const span = { start, end: offset };
+  let keywords;
+  switch (state) {
+    // The content of the template
+    case "text" /* TEXT */:
+      keywords = ["if", "for", "switch", "hydrate", "client", "try", "defer", "render", "let"];
+      break;
+    // The bindings of a tag, of a conditional binding or of a directive
+    case "tag-body" /* TAG_BODY */:
+    case "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */:
+    case "directive-body" /* DIRECTIVE_BODY */:
+      keywords = ["if", "switch"];
+      break;
+    default:
+      return void 0;
+  }
+  const openBlock = findOpenBlock(tokens, tokens.length);
+  if (openBlock !== -1 && getBlockKeyword(tokens, openBlock) === 15 /* SWITCH */) {
+    const template = new Lexer(`${before.slice(0, start)}${source.slice(offset)}`).tokenizeTolerant();
+    return { keywords: declaresDefault(template.tokens, openBlock) ? ["case"] : ["case", "default"], span };
+  }
+  switch (getClosedBlockKeyword(tokens)) {
+    case 11 /* IF */:
+    case 14 /* ELSE_IF */:
+      keywords.push("else", "else if");
+      break;
+    case 33 /* CLIENT */:
+      keywords.push("placeholder");
+      return { keywords, span, clientPlaceholder: true };
+    // A @try must be followed by its @catch
+    case 35 /* TRY */:
+      return { keywords: ["catch"], span };
+  }
+  const written = getDeferBlocks(tokens);
+  if (written) {
+    for (const [type, keyword] of DEFER_BLOCKS) {
+      if (!written.has(type)) {
+        keywords.push(keyword);
+      }
+    }
+  }
+  if (state === "text" /* TEXT */ && tokens.every((token) => token.type === 21 /* IMPORT */ || token.type === 22 /* IMPORT_PATH */ || token.type === 0 /* TEXT */ && /^[\s;]*$/.test(token.parts[0]))) {
+    keywords.push("import");
+  }
+  return { keywords, span };
+}
+function findOpenBlock(tokens, end) {
+  let depth = 0;
+  for (let i2 = end - 1; i2 >= 0; i2--) {
+    switch (tokens[i2].type) {
+      case 20 /* BLOCK_CLOSE */:
+        depth++;
+        break;
+      case 19 /* BLOCK_OPEN */:
+        if (!depth) {
+          return i2;
+        }
+        depth--;
+        break;
+    }
+  }
+  return -1;
+}
+function getClosedBlockKeyword(tokens) {
+  const last = tokens.length - 1;
+  return tokens[last]?.type === 20 /* BLOCK_CLOSE */ ? getBlockKeyword(tokens, findOpenBlock(tokens, last)) : void 0;
+}
+function getDeferBlocks(tokens) {
+  const written = /* @__PURE__ */ new Set();
+  for (let end = tokens.length - 1; tokens[end]?.type === 20 /* BLOCK_CLOSE */; ) {
+    const open = findOpenBlock(tokens, end);
+    const keyword = getBlockKeyword(tokens, open);
+    if (keyword === 37 /* DEFER */) {
+      return written;
+    }
+    if (!DEFER_BLOCKS.has(keyword)) {
+      return void 0;
+    }
+    written.add(keyword);
+    end = tokens[open - 1].type === 18 /* CONDITION */ ? open - 3 : open - 2;
+  }
+  return void 0;
+}
+function declaresDefault(tokens, openBlock) {
+  let depth = 0;
+  for (let i2 = openBlock + 1; i2 < tokens.length; i2++) {
+    switch (tokens[i2].type) {
+      case 19 /* BLOCK_OPEN */:
+        depth++;
+        break;
+      case 20 /* BLOCK_CLOSE */:
+        if (!depth) {
+          return false;
+        }
+        depth--;
+        break;
+      case 17 /* DEFAULT */:
+        if (!depth) {
+          return true;
+        }
+        break;
+    }
+  }
+  return false;
+}
+function getBlockKeyword(tokens, index) {
+  const previous = tokens[index - 1];
+  return (previous.type === 18 /* CONDITION */ ? tokens[index - 2] : previous).type;
+}
+
+// ../packages/compiler/src/lexer/utils/selector-context/selector-context.utils.ts
+var SELECTOR_START = /(<\s*|@@|\*)([^\s(){}"'=<>/@*]*)$/;
+function getSelectorContext(source, offset) {
+  const before = source.slice(0, offset);
+  const match = SELECTOR_START.exec(before);
+  if (!match) {
+    return void 0;
+  }
+  const [text, symbol, partial] = match;
+  const symbolStart = offset - text.length;
+  const lexer = new Lexer(before.slice(0, symbolStart));
+  try {
+    lexer.tokenize();
+  } catch {
+    return void 0;
+  }
+  const span = { start: offset - partial.length, end: offset };
+  if (symbol.startsWith("<")) {
+    return lexer.state === "text" /* TEXT */ ? { kind: "component", span } : void 0;
+  }
+  const isBinding = lexer.state === "tag-body" /* TAG_BODY */ || lexer.state === "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */;
+  return isBinding && /[\s{)]$/.test(before.slice(0, symbolStart)) ? { kind: "directive", span } : void 0;
 }
 
 // ../packages/compiler/src/lexer/utils/template-layout/template-layout.utils.ts
@@ -29204,182 +29764,6 @@ function currentColumn(builder, firstRowColumn, rowColumn) {
   return (builder.rows.length ? rowColumn : firstRowColumn) + builder.current.length;
 }
 
-// ../packages/compiler/src/lexer/utils/import-path-context/import-path-context.utils.ts
-var PATH_START = /\bfrom\s*(['"])([^'"\r\n]*)$/;
-var SEGMENT_END = /[/'"\r\n]|$/;
-function getImportPathContext(source, offset) {
-  const before = source.slice(0, offset);
-  const match = PATH_START.exec(before);
-  if (!match) {
-    return void 0;
-  }
-  const { state, error } = lexImportHeader(before);
-  if (error || state !== "import-path" /* IMPORT_PATH */) {
-    return void 0;
-  }
-  const [, , written] = match;
-  const segmentStart = written.lastIndexOf("/") + 1;
-  return {
-    directory: written.slice(0, segmentStart),
-    span: { start: offset - written.length + segmentStart, end: offset + source.slice(offset).search(SEGMENT_END) }
-  };
-}
-
-// ../packages/compiler/src/lexer/utils/keyword-context/keyword-context.utils.ts
-var KEYWORD_START = /@[a-z]*$/;
-var DEFER_BLOCKS = /* @__PURE__ */ new Map([
-  [34 /* PLACEHOLDER */, "placeholder"],
-  [38 /* LOADING */, "loading"],
-  [39 /* ERROR */, "error"]
-]);
-function getKeywordContext(source, offset) {
-  const before = source.slice(0, offset);
-  const match = KEYWORD_START.exec(before);
-  if (!match) {
-    return void 0;
-  }
-  const start = offset - match[0].length;
-  if (before[start - 1] === "@") {
-    return void 0;
-  }
-  const { tokens, state, error } = new Lexer(before.slice(0, start)).tokenizeTolerant();
-  if (error) {
-    return void 0;
-  }
-  const span = { start, end: offset };
-  let keywords;
-  switch (state) {
-    // The content of the template
-    case "text" /* TEXT */:
-      keywords = ["if", "for", "switch", "hydrate", "client", "try", "defer", "render", "let"];
-      break;
-    // The bindings of a tag, of a conditional binding or of a directive
-    case "tag-body" /* TAG_BODY */:
-    case "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */:
-    case "directive-body" /* DIRECTIVE_BODY */:
-      keywords = ["if", "switch"];
-      break;
-    default:
-      return void 0;
-  }
-  const openBlock = findOpenBlock(tokens, tokens.length);
-  if (openBlock !== -1 && getBlockKeyword(tokens, openBlock) === 15 /* SWITCH */) {
-    const template = new Lexer(`${before.slice(0, start)}${source.slice(offset)}`).tokenizeTolerant();
-    return { keywords: declaresDefault(template.tokens, openBlock) ? ["case"] : ["case", "default"], span };
-  }
-  switch (getClosedBlockKeyword(tokens)) {
-    case 11 /* IF */:
-    case 14 /* ELSE_IF */:
-      keywords.push("else", "else if");
-      break;
-    case 33 /* CLIENT */:
-      keywords.push("placeholder");
-      return { keywords, span, clientPlaceholder: true };
-    // A @try must be followed by its @catch
-    case 35 /* TRY */:
-      return { keywords: ["catch"], span };
-  }
-  const written = getDeferBlocks(tokens);
-  if (written) {
-    for (const [type, keyword] of DEFER_BLOCKS) {
-      if (!written.has(type)) {
-        keywords.push(keyword);
-      }
-    }
-  }
-  if (state === "text" /* TEXT */ && tokens.every((token) => token.type === 21 /* IMPORT */ || token.type === 22 /* IMPORT_PATH */ || token.type === 0 /* TEXT */ && /^[\s;]*$/.test(token.parts[0]))) {
-    keywords.push("import");
-  }
-  return { keywords, span };
-}
-function findOpenBlock(tokens, end) {
-  let depth = 0;
-  for (let i2 = end - 1; i2 >= 0; i2--) {
-    switch (tokens[i2].type) {
-      case 20 /* BLOCK_CLOSE */:
-        depth++;
-        break;
-      case 19 /* BLOCK_OPEN */:
-        if (!depth) {
-          return i2;
-        }
-        depth--;
-        break;
-    }
-  }
-  return -1;
-}
-function getClosedBlockKeyword(tokens) {
-  const last = tokens.length - 1;
-  return tokens[last]?.type === 20 /* BLOCK_CLOSE */ ? getBlockKeyword(tokens, findOpenBlock(tokens, last)) : void 0;
-}
-function getDeferBlocks(tokens) {
-  const written = /* @__PURE__ */ new Set();
-  for (let end = tokens.length - 1; tokens[end]?.type === 20 /* BLOCK_CLOSE */; ) {
-    const open = findOpenBlock(tokens, end);
-    const keyword = getBlockKeyword(tokens, open);
-    if (keyword === 37 /* DEFER */) {
-      return written;
-    }
-    if (!DEFER_BLOCKS.has(keyword)) {
-      return void 0;
-    }
-    written.add(keyword);
-    end = tokens[open - 1].type === 18 /* CONDITION */ ? open - 3 : open - 2;
-  }
-  return void 0;
-}
-function declaresDefault(tokens, openBlock) {
-  let depth = 0;
-  for (let i2 = openBlock + 1; i2 < tokens.length; i2++) {
-    switch (tokens[i2].type) {
-      case 19 /* BLOCK_OPEN */:
-        depth++;
-        break;
-      case 20 /* BLOCK_CLOSE */:
-        if (!depth) {
-          return false;
-        }
-        depth--;
-        break;
-      case 17 /* DEFAULT */:
-        if (!depth) {
-          return true;
-        }
-        break;
-    }
-  }
-  return false;
-}
-function getBlockKeyword(tokens, index) {
-  const previous = tokens[index - 1];
-  return (previous.type === 18 /* CONDITION */ ? tokens[index - 2] : previous).type;
-}
-
-// ../packages/compiler/src/lexer/utils/selector-context/selector-context.utils.ts
-var SELECTOR_START = /(<\s*|@@|\*)([^\s(){}"'=<>/@*]*)$/;
-function getSelectorContext(source, offset) {
-  const before = source.slice(0, offset);
-  const match = SELECTOR_START.exec(before);
-  if (!match) {
-    return void 0;
-  }
-  const [text, symbol, partial] = match;
-  const symbolStart = offset - text.length;
-  const lexer = new Lexer(before.slice(0, symbolStart));
-  try {
-    lexer.tokenize();
-  } catch {
-    return void 0;
-  }
-  const span = { start: offset - partial.length, end: offset };
-  if (symbol.startsWith("<")) {
-    return lexer.state === "text" /* TEXT */ ? { kind: "component", span } : void 0;
-  }
-  const isBinding = lexer.state === "tag-body" /* TAG_BODY */ || lexer.state === "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */;
-  return isBinding && /[\s{)]$/.test(before.slice(0, symbolStart)) ? { kind: "directive", span } : void 0;
-}
-
 // ../packages/compiler/src/parser/utils/import-statements/import-statements.utils.ts
 function parseImportStatements(source) {
   const { tokens } = lexImportHeader(source);
@@ -29704,374 +30088,6 @@ function toPosixPath2(path) {
 }
 function resolvePosixPath(...segments) {
   return toPosixPath2((0, import_node_path2.resolve)(...segments));
-}
-
-// ../packages/language-core/src/lib/utils/template-walker/template-walker.utils.ts
-function walkTemplate(ast, metadatas, visitor, server = false) {
-  new TemplateWalker(metadatas, visitor, server).walkScope(ast, /* @__PURE__ */ new Set());
-}
-var TemplateWalker = class {
-  /**
-   * Creates a walker.
-   *
-   * @param _metadatas - The metadata of the components and directives imported by the template.
-   * @param _visitor - The callbacks to invoke.
-   * @param _server - Whether to walk only what the server renders.
-   */
-  constructor(_metadatas, _visitor, _server) {
-    this._metadatas = _metadatas;
-    this._visitor = _visitor;
-    this._server = _server;
-  }
-  _metadatas;
-  _visitor;
-  _server;
-  /**
-   * Walks the nodes of a scope, whose element refs, templates and `@let` are visible in the whole of it (see
-   * `visitScopeDeclarations`).
-   *
-   * @param nodes - The nodes of the scope.
-   * @param variables - The variables declared by the scopes enclosing it.
-   */
-  walkScope(nodes, variables) {
-    let scopeVariables;
-    visitScopeDeclarations(nodes, "html", {
-      ref: (_element, { name }) => {
-        scopeVariables = declareVariable2(scopeVariables, variables, name);
-      },
-      template: ({ declaration: { name } }) => {
-        scopeVariables = declareVariable2(scopeVariables, variables, name);
-      },
-      let: ({ name }) => {
-        scopeVariables = declareVariable2(scopeVariables, variables, name);
-      }
-    });
-    this._walkNodes(nodes, scopeVariables ?? variables);
-  }
-  /**
-   * Walks a list of nodes of a scope.
-   *
-   * @param nodes - The nodes.
-   * @param variables - The variables declared in the scope of the nodes.
-   */
-  _walkNodes(nodes, variables) {
-    for (let i2 = 0; i2 < nodes.length; i2++) {
-      this._walkNode(nodes[i2], variables);
-    }
-  }
-  /**
-   * Walks a node and its descendants.
-   *
-   * @param node - The node.
-   * @param variables - The variables declared in the scope of the node.
-   */
-  _walkNode(node, variables) {
-    switch (node.type) {
-      case 11 /* Import */:
-        this._visitor.importNode?.(node);
-        break;
-      case 4 /* Interpolation */:
-        this._visitor.expression?.(node.expression, variables);
-        break;
-      case 0 /* Element */:
-        this._walkElement(node, variables);
-        break;
-      case 5 /* If */:
-      case 7 /* ElseIf */:
-      case 6 /* Else */:
-        this._walkIf(node, variables);
-        break;
-      case 8 /* For */:
-        this._walkFor(node, variables);
-        break;
-      case 9 /* Switch */:
-        this._visitor.expression?.(node.expression, variables);
-        for (let i2 = 0; i2 < node.children.length; i2++) {
-          this.walkScope(node.children[i2].children, variables);
-        }
-        break;
-      case 21 /* Hydrate */:
-        this._visitor.hydrate?.(node);
-        this._walkHydrate(node, variables);
-        break;
-      case 22 /* Client */:
-        this._visitor.client?.(node);
-        this._walkClient(node, variables);
-        break;
-      case 24 /* Try */:
-        this._visitor.tryBlock?.(node);
-        this.walkScope(node.children, variables);
-        this._walkErrorScope(node.catch, variables);
-        break;
-      case 26 /* Defer */:
-        this._visitor.defer?.(node);
-        this._walkDefer(node, variables);
-        break;
-      case 17 /* Template */: {
-        this._visitor.template?.(node);
-        const contentVariables = /* @__PURE__ */ new Set([...variables, ...node.parameters.map(({ name }) => name)]);
-        for (let i2 = 0; i2 < node.parameters.length; i2++) {
-          const { initializer } = node.parameters[i2];
-          if (initializer) {
-            this._visitor.expression?.(initializer, contentVariables);
-          }
-        }
-        this.walkScope(node.children, contentVariables);
-        break;
-      }
-      case 18 /* Render */:
-        this._visitor.render?.(node);
-        for (let i2 = 0; i2 < node.arguments.length; i2++) {
-          this._visitor.expression?.(node.arguments[i2], variables);
-        }
-        break;
-      case 19 /* Let */:
-        this._visitor.let?.(node);
-        this._visitor.expression?.(node.value, variables);
-        break;
-      default:
-        break;
-    }
-  }
-  /**
-   * Walks an element: its element ref, its bindings, its directives and its children, which are a scope of their
-   * own when a structural directive is applied to the element.
-   *
-   * @param node - The element.
-   * @param variables - The variables declared in the scope of the element.
-   */
-  _walkElement(node, variables) {
-    const component = this._metadatas.find((metadata) => metadata.type === "component" && metadata.selector === node.tagName);
-    this._visitor.element?.(node, component);
-    if (node.ref) {
-      this._visitor.ref?.(node.ref);
-    }
-    this._walkBindings(node, component, variables);
-    if (isStructuralElement(node)) {
-      this.walkScope(node.children, variables);
-    } else {
-      this._walkNodes(node.children, variables);
-    }
-  }
-  /**
-   * Walks the bindings declared on an element, in a directive or in a branch of a conditional binding.
-   *
-   * @param bindings - The bindings.
-   * @param owner - The component or directive the attributes and events are bound to, if any.
-   * @param variables - The variables declared in the scope of the bindings.
-   */
-  _walkBindings(bindings, owner, variables) {
-    for (let i2 = 0; i2 < bindings.attributes.length; i2++) {
-      const attribute = bindings.attributes[i2];
-      this._visitor.attribute?.(attribute, owner);
-      if (typeof attribute.value === "object") {
-        this._visitor.expression?.(attribute.value.expression, variables);
-      }
-    }
-    const { classBindings, directives, structuralDirectives } = bindings;
-    if (classBindings?.length) {
-      for (let i2 = 0; i2 < classBindings.length; i2++) {
-        const classBinding = classBindings[i2];
-        this._visitor.classBinding?.(classBinding);
-        this._visitor.expression?.(classBinding.value.expression, variables);
-      }
-    }
-    if (!this._server) {
-      const eventVariables = /* @__PURE__ */ new Set([...variables, "$event"]);
-      for (let i2 = 0; i2 < bindings.events.length; i2++) {
-        const event = bindings.events[i2];
-        this._visitor.event?.(event, owner, variables);
-        for (let j = 0; j < event.parameters.length; j++) {
-          this._visitor.expression?.(event.parameters[j], eventVariables);
-        }
-      }
-    }
-    for (let i2 = 0; i2 < bindings.conditionalBindings.length; i2++) {
-      this._walkConditionalBinding(bindings.conditionalBindings[i2], owner, variables);
-    }
-    if (directives?.length && !this._server) {
-      for (let i2 = 0; i2 < directives.length; i2++) {
-        this._walkDirective(directives[i2], variables);
-      }
-    }
-    if (structuralDirectives?.length) {
-      for (let i2 = 0; i2 < structuralDirectives.length; i2++) {
-        this._walkDirective(structuralDirectives[i2], variables);
-      }
-    }
-  }
-  /**
-   * Walks a conditional binding: its conditions and the bindings of its branches.
-   *
-   * @param node - The conditional binding.
-   * @param owner - The component or directive the attributes and events are bound to, if any.
-   * @param variables - The variables declared in the scope of the conditional binding.
-   */
-  _walkConditionalBinding(node, owner, variables) {
-    if (node.type === 13 /* SwitchBinding */) {
-      this._visitor.expression?.(node.expression, variables);
-      for (let i2 = 0; i2 < node.branches.length; i2++) {
-        this._walkBindings(node.branches[i2], owner, variables);
-      }
-    } else {
-      for (let i2 = 0; i2 < node.branches.length; i2++) {
-        const branch = node.branches[i2];
-        if (branch.condition) {
-          this._visitor.expression?.(branch.condition, variables);
-        }
-        this._walkBindings(branch, owner, variables);
-      }
-    }
-  }
-  /**
-   * Walks a directive or a structural directive and its bindings.
-   *
-   * @param node - The directive.
-   * @param variables - The variables declared in the scope of the directive.
-   */
-  _walkDirective(node, variables) {
-    const directive = this._metadatas.find((metadata) => metadata.type === "directive" && metadata.selector === node.selector);
-    this._visitor.directive?.(node, directive);
-    this._walkBindings(node.type === 15 /* Directive */ ? node : { ...node, events: [], conditionalBindings: [] }, directive, variables);
-  }
-  /**
-   * Walks a branch of an `@if` chain and the branches following it.
-   *
-   * @param node - The `@if`, `@else if` or `@else` branch.
-   * @param variables - The variables declared in the scope of the chain.
-   */
-  _walkIf(node, variables) {
-    if (node.type !== 6 /* Else */) {
-      this._visitor.expression?.(node.conditionNode, variables);
-    }
-    this.walkScope(node.children, variables);
-    if (node.type !== 6 /* Else */ && node.alternate) {
-      this._walkIf(node.alternate, variables);
-    }
-  }
-  /**
-   * Walks a `@hydrate` block: the expression of its `when` trigger, and its content, a scope of its own.
-   *
-   * @param node - The `@hydrate` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkHydrate(node, variables) {
-    this._walkWhen(node, variables);
-    this.walkScope(node.children, variables);
-  }
-  /**
-   * Walks a `@defer` block: the expression of its `when` trigger, its content and the blocks following it, each one a
-   * scope of its own, the `@error` declaring the error under the name it gives it. The server renders only its
-   * `@placeholder`.
-   *
-   * @param node - The `@defer` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkDefer(node, variables) {
-    const { placeholder, loading, error } = node;
-    if (!this._server) {
-      this._walkWhen(node, variables);
-      this.walkScope(node.children, variables);
-    }
-    if (placeholder) {
-      this.walkScope(placeholder.children, variables);
-    }
-    if (!this._server && loading) {
-      this.walkScope(loading.children, variables);
-    }
-    if (!this._server && error) {
-      this._walkErrorScope(error, variables);
-    }
-  }
-  /**
-   * Walks the expressions of the triggers of a block, the ones following `prefetch` too, which the server does not read:
-   * the one of `when`, the element ref naming the element a trigger watches, and the options of the observer of
-   * `visible`.
-   *
-   * @param node - The `@hydrate` or `@defer` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkWhen({ triggers, prefetch }, variables) {
-    if (!this._server) {
-      this._walkTriggers(triggers, variables);
-      this._walkTriggers(prefetch, variables);
-    }
-  }
-  /**
-   * Walks the expressions of triggers (see {@link _walkWhen}).
-   *
-   * @param triggers - The triggers.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkTriggers(triggers, variables) {
-    for (let i2 = 0; i2 < triggers.length; i2++) {
-      const trigger = triggers[i2];
-      switch (trigger.kind) {
-        case "when":
-          this._visitor.expression?.(trigger.expressionNode, variables);
-          break;
-        case "visible":
-        case "interaction":
-        case "hover":
-          if (trigger.target) {
-            this._visitor.expression?.(trigger.target.expressionNode, variables);
-          }
-          if (trigger.kind === "visible" && trigger.options) {
-            this._visitor.expression?.(trigger.options.expressionNode, variables);
-          }
-          break;
-        default:
-          break;
-      }
-    }
-  }
-  /**
-   * Walks a `@client` block: its content and its `@placeholder`, if any, each one a scope of its own.
-   *
-   * @param node - The `@client` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkClient(node, variables) {
-    if (!this._server) {
-      this.walkScope(node.children, variables);
-    }
-    if (node.placeholder) {
-      this.walkScope(node.placeholder.children, variables);
-    }
-  }
-  /**
-   * Walks a block receiving an error, a scope of its own declaring the error under the name it gives it: the `@catch` of
-   * a `@try`, which the server renders as it does the content, or the `@error` of a `@defer`.
-   *
-   * @param node - The `@catch` or `@error` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkErrorScope({ name, children }, variables) {
-    const errorVariables = new Set(variables);
-    if (name) {
-      errorVariables.add(name);
-    }
-    this.walkScope(children, errorVariables);
-  }
-  /**
-   * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
-   * declaring the variables of the loop.
-   *
-   * @param node - The `@for` block.
-   * @param variables - The variables declared in the scope enclosing the block.
-   */
-  _walkFor(node, variables) {
-    this._visitor.forBlock?.(node);
-    this._visitor.expression?.(node.iterableExpression, variables);
-    const loopVariables = /* @__PURE__ */ new Set([...variables, ...getForVariables(node)]);
-    this._visitor.expression?.(node.trackExpression, loopVariables);
-    this.walkScope(node.children, loopVariables);
-  }
-};
-function declareVariable2(scopeVariables, variables, name) {
-  scopeVariables ??= new Set(variables);
-  scopeVariables.add(name);
-  return scopeVariables;
 }
 
 // ../packages/language-core/src/lib/utils/template-span/template-span.utils.ts
@@ -31663,7 +31679,7 @@ var import_typescript35 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path13 = require("path");
-var import_node36 = __toESM(require_main3(), 1);
+var import_node37 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
@@ -31806,7 +31822,7 @@ var Debouncer = class {
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
 var import_typescript37 = require("typescript");
-var import_node35 = __toESM(require_main3(), 1);
+var import_node36 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
 var t = { 975(t2) {
@@ -32157,13 +32173,13 @@ function getDocument(fileName, getOpenDocument) {
 function toSeverity(category) {
   switch (category) {
     case import_typescript37.DiagnosticCategory.Error:
-      return import_node35.DiagnosticSeverity.Error;
+      return import_node36.DiagnosticSeverity.Error;
     case import_typescript37.DiagnosticCategory.Warning:
-      return import_node35.DiagnosticSeverity.Warning;
+      return import_node36.DiagnosticSeverity.Warning;
     case import_typescript37.DiagnosticCategory.Suggestion:
-      return import_node35.DiagnosticSeverity.Hint;
+      return import_node36.DiagnosticSeverity.Hint;
     default:
-      return import_node35.DiagnosticSeverity.Information;
+      return import_node36.DiagnosticSeverity.Information;
   }
 }
 function toCompletionItemKind(kind) {
@@ -32171,30 +32187,30 @@ function toCompletionItemKind(kind) {
     case import_typescript37.ScriptElementKind.memberVariableElement:
     case import_typescript37.ScriptElementKind.memberGetAccessorElement:
     case import_typescript37.ScriptElementKind.memberSetAccessorElement:
-      return import_node35.CompletionItemKind.Field;
+      return import_node36.CompletionItemKind.Field;
     case import_typescript37.ScriptElementKind.memberFunctionElement:
-      return import_node35.CompletionItemKind.Method;
+      return import_node36.CompletionItemKind.Method;
     case import_typescript37.ScriptElementKind.functionElement:
-      return import_node35.CompletionItemKind.Function;
+      return import_node36.CompletionItemKind.Function;
     case import_typescript37.ScriptElementKind.variableElement:
     case import_typescript37.ScriptElementKind.letElement:
     case import_typescript37.ScriptElementKind.constElement:
-      return import_node35.CompletionItemKind.Variable;
+      return import_node36.CompletionItemKind.Variable;
     case import_typescript37.ScriptElementKind.classElement:
-      return import_node35.CompletionItemKind.Class;
+      return import_node36.CompletionItemKind.Class;
     case import_typescript37.ScriptElementKind.directory:
-      return import_node35.CompletionItemKind.Folder;
+      return import_node36.CompletionItemKind.Folder;
     case import_typescript37.ScriptElementKind.scriptElement:
-      return import_node35.CompletionItemKind.File;
+      return import_node36.CompletionItemKind.File;
     case "event":
-      return import_node35.CompletionItemKind.Event;
+      return import_node36.CompletionItemKind.Event;
     case "component":
-      return import_node35.CompletionItemKind.Class;
+      return import_node36.CompletionItemKind.Class;
     case "directive":
     case import_typescript37.ScriptElementKind.keyword:
-      return import_node35.CompletionItemKind.Keyword;
+      return import_node36.CompletionItemKind.Keyword;
     default:
-      return import_node35.CompletionItemKind.Text;
+      return import_node36.CompletionItemKind.Text;
   }
 }
 
@@ -32269,11 +32285,11 @@ var XaendarLanguageServer = class {
     this._hasConfiguration = !!capabilities?.workspace?.configuration;
     return {
       capabilities: {
-        textDocumentSync: import_node36.TextDocumentSyncKind.Incremental,
+        textDocumentSync: import_node37.TextDocumentSyncKind.Incremental,
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: [".", "(", "<", "@", "*", "/"] },
-        codeActionProvider: { codeActionKinds: [import_node36.CodeActionKind.QuickFix, import_node36.CodeActionKind.SourceOrganizeImports] },
+        codeActionProvider: { codeActionKinds: [import_node37.CodeActionKind.QuickFix, import_node37.CodeActionKind.SourceOrganizeImports] },
         documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
@@ -32342,7 +32358,7 @@ var XaendarLanguageServer = class {
         this._scheduleOpenComponentsValidation();
         continue;
       }
-      if (type === import_node36.FileChangeType.Deleted) {
+      if (type === import_node37.FileChangeType.Deleted) {
         this._registry.remove(fileName);
       }
       await this._onTypeScriptFileChanged(fileName);
@@ -32381,7 +32397,7 @@ var XaendarLanguageServer = class {
     }
     const analysis = await this._getCurrentAnalysis(document);
     const hover = analysis && getTemplateHover(analysis, document.offsetAt(position));
-    return hover ? { contents: { kind: import_node36.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
+    return hover ? { contents: { kind: import_node37.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
   }
   /**
    * Proposes the changes of the imports of a template: removing the unused import under the cursor (quick fix), and
@@ -32400,19 +32416,19 @@ var XaendarLanguageServer = class {
     const source = document.getText();
     const analysis = (await this._getAnalysis(document))?.analysis;
     const actions = new Array();
-    const unused = analysis?.source === source && isWantedKind(import_node36.CodeActionKind.QuickFix, only) ? findUnusedImports(analysis) : void 0;
+    const unused = analysis?.source === source && isWantedKind(import_node37.CodeActionKind.QuickFix, only) ? findUnusedImports(analysis) : void 0;
     if (unused) {
       const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
       for (let i2 = 0; i2 < unused.length; i2++) {
         const change = start <= unused[i2].span.end && end >= unused[i2].span.start ? removeTemplateImport(source, unused[i2]) : void 0;
         if (change) {
-          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node36.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
+          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node37.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
         }
       }
     }
-    const organization = isWantedKind(import_node36.CodeActionKind.SourceOrganizeImports, only) ? organizeTemplateImports(source, analysis) : void 0;
+    const organization = isWantedKind(import_node37.CodeActionKind.SourceOrganizeImports, only) ? organizeTemplateImports(source, analysis) : void 0;
     if (organization) {
-      actions.push({ title: "Organize imports", kind: import_node36.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
+      actions.push({ title: "Organize imports", kind: import_node37.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
     }
     return actions;
   }
@@ -32457,7 +32473,7 @@ var XaendarLanguageServer = class {
    * @returns The semantic tokens, encoded.
    */
   async onSemanticTokens({ textDocument }) {
-    const builder = new import_node36.SemanticTokensBuilder();
+    const builder = new import_node37.SemanticTokensBuilder();
     const document = this._documents.get(textDocument.uri);
     const analysis = document && await this._getCurrentAnalysis(document);
     const tokens = analysis ? getTemplateSemanticTokens(analysis) : [];
@@ -32533,7 +32549,7 @@ var XaendarLanguageServer = class {
       diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code, unnecessary }) => {
         const diagnostic = { range: toRange(document, span), message, severity: toSeverity(category), code, source: "xaendar" };
         if (unnecessary) {
-          diagnostic.tags = [import_node36.DiagnosticTag.Unnecessary];
+          diagnostic.tags = [import_node37.DiagnosticTag.Unnecessary];
         }
         return diagnostic;
       })
@@ -32557,7 +32573,7 @@ var XaendarLanguageServer = class {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node36.DiagnosticSeverity.Error, source: "xaendar" }))
+      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node37.DiagnosticSeverity.Error, source: "xaendar" }))
     });
   }
   /**
@@ -32617,7 +32633,7 @@ var XaendarLanguageServer = class {
         item.textEdit = { range: toRange(document, replacementSpan), newText: snippet ?? name };
       }
       if (snippet) {
-        item.insertTextFormat = import_node36.InsertTextFormat.Snippet;
+        item.insertTextFormat = import_node37.InsertTextFormat.Snippet;
       }
       if (retrigger) {
         item.command = { title: "Suggest", command: "editor.action.triggerSuggest" };
@@ -32697,7 +32713,7 @@ function isWantedKind(kind, only) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-new XaendarLanguageServer((0, import_node37.createConnection)(import_node37.ProposedFeatures.all), new import_node37.TextDocuments(TextDocument)).listen();
+new XaendarLanguageServer((0, import_node38.createConnection)(import_node38.ProposedFeatures.all), new import_node38.TextDocuments(TextDocument)).listen();
 /*! Bundled license information:
 
 is-extglob/index.js:

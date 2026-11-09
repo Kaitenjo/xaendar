@@ -1,6 +1,5 @@
-import { ASTNodeType, type ComponentOrDirectiveMetadata, type ImportInsertion, type ImportNode, type ImportSpecifier, organizeImports, resolveShimPosition, type SymbolImport, toImportKey } from '@xaendar/compiler';
+import { ASTNodeType, type ComponentOrDirectiveMetadata, type ImportInsertion, type ImportNode, type ImportSpecifier, organizeImports, resolveShimPosition, type SymbolImport, toImportKey, walkTemplate } from '@xaendar/compiler';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
-import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 import type { UnusedImport } from '../types/unused-import.type';
 
 /**

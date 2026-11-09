@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, createContext, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -148,10 +148,10 @@ export class ServerGenerator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, 'const context = new _Context({ get: () => undefined });');
+      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, '{ get: () => undefined }');
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
-        const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'const context = new _Context(parentContext);', fn.precode);
+        const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'parentContext', fn.precode);
         code.push('', `function ${key}(${args.join(', ')}) {`, ...indent(body), '}');
       }
 
@@ -179,17 +179,19 @@ export class ServerGenerator {
    * @param nodes - The nodes the function renders.
    * @param parent - Where the nodes are rendered.
    * @param generatorContext - The generator context of the nodes.
-   * @param contextDeclaration - The statement creating the runtime context of the function.
+   * @param parentContext - The expression of the parent of the runtime context of the function, which is created for the
+   *   variables of its scope: the ones its precode registers, and its declarations.
    * @param precode - The code preparing the context, e.g. declaring the item of a `@for`, if any.
    * @returns The lines of the body.
    */
-  private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, contextDeclaration: string, precode?: string): string[] {
-    const lines = [contextDeclaration];
+  private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, parentContext: string, precode?: string): string[] {
+    // Declared first, so that the context is created for the variables of the scope
+    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate');
+    const lines = [`const context = ${createContext(parentContext, undefined, generatorContext.identifierCount)};`];
     if (precode) {
       lines.push(...precode.split('\n'));
     }
 
-    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate');
     if (declarations) {
       lines.push(...declarations.code);
       // The functions of the templates, the only ones of the declarations, always declare their parameters (see toTemplateFunction)

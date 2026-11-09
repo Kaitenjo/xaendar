@@ -60,6 +60,128 @@ describe('_Context', () => {
     });
   });
 
+  describe('storage of the variables', () => {
+    /**
+     * The storage of the variables of a context: the array alternating names and values, the Map, or null.
+     */
+    const variablesOf = (context: _Context) => (context as unknown as { _variables: unknown[] | Map<string, unknown> | null })._variables;
+
+    /**
+     * The names from `v0` to `v{count - 1}`.
+     */
+    const names = (count: number) => Array.from({ length: count }, (_, i) => `v${i}`);
+
+    it('keeps nothing for a scope declaring no variable', () => {
+      expect(variablesOf(createRoot())).toBeNull();
+    });
+
+    it('keeps the variables of a scope declaring up to 16 of them in an array of that size, filled in order', () => {
+      const context = new _Context(createRoot(), undefined, 3);
+      expect(variablesOf(context)).toHaveLength(6);
+
+      context.addIdentifier('a', 1);
+      context.declare('b');
+      expect(variablesOf(context)).toEqual(['a', 1, 'b', expect.any(Symbol), undefined, undefined]);
+
+      context.set('b', 2);
+      context.addIdentifier('c', 3);
+      expect(variablesOf(context)).toEqual(['a', 1, 'b', 2, 'c', 3]);
+      expect([context.get('a'), context.get('b'), context.get('c')]).toEqual([1, 2, 3]);
+      expect(() => context.addIdentifier('a', 4)).toThrow('Identifier "a" is already declared in this scope.');
+      expect(variablesOf(new _Context(createRoot(), undefined, 16))).toHaveLength(32);
+    });
+
+    it('keeps the variables of a scope declaring more than 16 of them in a Map', () => {
+      const context = new _Context(createRoot(), undefined, 17);
+      expect(variablesOf(context)).toBeInstanceOf(Map);
+
+      const all = names(17);
+      for (let i = 0; i < all.length; i++) {
+        context.addIdentifier(all[i], i);
+      }
+
+      context.declare('ref');
+      expect(() => context.get('ref')).toThrow(ReferenceError);
+      context.set('ref', 'element');
+      expect([context.get('v0'), context.get('v16'), context.get('ref'), context.get('unknown')]).toEqual([0, 16, 'element', undefined]);
+      expect(() => context.addIdentifier('v3', 0)).toThrow('Identifier "v3" is already declared in this scope.');
+
+      context.removeIdentifier('v3');
+      expect(context.get('v3')).toBeUndefined();
+    });
+
+    it('grows the array of a scope created without the number of its variables by one variable at a time, and moves them to a Map beyond 16', () => {
+      const context = createRoot();
+      const all = names(17);
+      context.addIdentifier(all[0], 0);
+      expect(variablesOf(context)).toEqual(['v0', 0]);
+
+      for (let i = 1; i < 16; i++) {
+        context.addIdentifier(all[i], i);
+      }
+      expect(variablesOf(context)).toHaveLength(32);
+
+      context.addIdentifier(all[16], 16);
+      expect(variablesOf(context)).toBeInstanceOf(Map);
+      expect(all.map(name => context.get(name))).toEqual(all.map((_, i) => i));
+    });
+
+    it('grows a full array by one variable, without spreading a value which is an array', () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('first', 1);
+      context.addIdentifier('list', [2, 3]);
+
+      expect(variablesOf(context)).toEqual(['first', 1, 'list', [2, 3]]);
+    });
+
+    it('frees the slot of a variable removed, which the next variable takes, and leaves the free slots out of a Map', () => {
+      const context = new _Context(createRoot(), undefined, 2);
+      context.addIdentifier('a', 1);
+      context.addIdentifier('b', 2);
+      context.removeIdentifier('a');
+      context.removeIdentifier('missing');
+      expect(variablesOf(context)).toEqual([undefined, undefined, 'b', 2]);
+      expect(context.get('a')).toBeUndefined();
+
+      context.addIdentifier('c', 3);
+      expect(variablesOf(context)).toEqual(['c', 3, 'b', 2]);
+
+      const empty = createRoot();
+      empty.removeIdentifier('a');
+      expect(variablesOf(empty)).toBeNull();
+
+      const full = new _Context(createRoot(), undefined, 16);
+      const all = names(16);
+      for (let i = 0; i < all.length; i++) {
+        full.addIdentifier(all[i], i);
+      }
+      // 'x' takes the slot of v0, 'y' finds the array full
+      full.removeIdentifier('v0');
+      full.addIdentifier('x', 'x');
+      full.addIdentifier('y', 'y');
+      expect([...(variablesOf(full) as Map<string, unknown>).keys()]).toEqual(['x', ...names(16).slice(1), 'y']);
+    });
+
+    it('initializes a variable of an ancestor scope, through a scope keeping its own in an array or in a Map', () => {
+      const root = new _Context(createRoot(), undefined, 1);
+      root.declare('field');
+      const arrayScope = new _Context(root, undefined, 1);
+      arrayScope.addIdentifier('own', 1);
+      const mapScope = new _Context(arrayScope, undefined, 17);
+
+      mapScope.set('field', 'element');
+      expect(root.get('field')).toBe('element');
+    });
+
+    it('drops its variables when cleared', () => {
+      const context = new _Context(createRoot(), undefined, 2);
+      context.addIdentifier('a', 1);
+      context.clear();
+
+      expect(variablesOf(context)).toBeNull();
+    });
+  });
+
   describe('declared variables', () => {
     it('throws when a variable declared without a value is read before it is initialized, instead of reading an outer one named like it', () => {
       const root = createRoot();
@@ -90,7 +212,7 @@ describe('_Context', () => {
 
       expect(children.get('form')).toBe('the form');
       expect(scope.get('field')).toBe('the field');
-      expect(children.getChildren()[0].get('field')).toBe('the field');
+      expect(children.getChildren()![0].get('field')).toBe('the field');
     });
 
     it('throws when a variable is declared twice in the same scope', () => {
@@ -251,8 +373,8 @@ describe('_Context', () => {
       staging.moveTo(target);
 
       expect(target.getChildren()).toEqual([child]);
-      expect(target.getUnlistenFns()).toEqual([]);
-      expect(staging.getChildren()).toEqual([]);
+      expect(target.getUnlistenFns()).toBeNull();
+      expect(staging.getChildren()).toBeNull();
     });
   });
 });

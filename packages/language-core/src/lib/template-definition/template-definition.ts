@@ -1,11 +1,10 @@
-import { type ComponentOrDirectiveMetadata, resolveShimPosition, type Span } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, resolveShimPosition, type Span, walkTemplate } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import type { CompilerOptions } from 'typescript';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
 import { findInnermostSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
-import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 import type { TemplateDefinition } from '../types/template-definition.type';
 import type { DefinitionTarget } from '../types/definition-target.type';
 

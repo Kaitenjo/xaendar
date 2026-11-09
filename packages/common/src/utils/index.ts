@@ -3,6 +3,7 @@ export * from './case/case.util';
 export * from './html-serialization/html-serialization.util';
 export * from './indent/indent.util';
 export * from './object/object-utils';
+export * from './small-set/small-set.util';
 export * from './string/string.util';
 export * from './tags/tags.util';
 export * from './url/url.util';

@@ -1,7 +1,6 @@
-import { type ASTNode, forEachExpressionChild, getTemplateSpan, isBrowserOnlyGlobal } from '@xaendar/compiler';
+import { type ASTNode, forEachExpressionChild, getTemplateSpan, isBrowserOnlyGlobal, walkTemplate } from '@xaendar/compiler';
 import { type Expression, type Identifier, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, isTypeOfExpression, type Node } from 'typescript';
 import type { TemplateWarning } from '../types/template-warning.type';
-import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 
 /**
  * Finds what a template of a project rendering on the server compiles with, but cannot do there, the same warnings for

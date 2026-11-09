@@ -1,4 +1,26 @@
-import { type ASTNode, ASTNodeType, type CatchNode, type ClientNode, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DeferNode, type DirectiveMetadata, type DirectiveNode, type ElementNode, type ElseIfNode, type ElseNode, type ErrorNode, type ForNode, getForVariables, type HydrateNode, type HydrateTrigger, type IfNode, isStructuralElement, type StructuralDirectiveNode, visitScopeDeclarations } from '@xaendar/compiler';
+import type { ASTNode } from '../../parser/types/ast.type';
+import type { CaseNode } from '../../parser/types/nodes/case-node.type';
+import type { CatchNode } from '../../parser/types/nodes/catch-node.type';
+import type { ClientNode } from '../../parser/types/nodes/client-node.type';
+import type { ConditionalBindingBranchNode } from '../../parser/types/nodes/conditional-binding-branch-node.type';
+import type { ConditionalBindingNode } from '../../parser/types/nodes/conditional-binding-node.type';
+import type { DeferNode } from '../../parser/types/nodes/defer-node.type';
+import type { DirectiveNode } from '../../parser/types/nodes/directive-node.type';
+import type { ElementNode } from '../../parser/types/nodes/element-node.type';
+import type { ElseIfNode } from '../../parser/types/nodes/else-if-node.type';
+import type { ElseNode } from '../../parser/types/nodes/else-node.type';
+import type { ErrorNode } from '../../parser/types/nodes/error-node.type';
+import type { ForNode } from '../../parser/types/nodes/for-node.type';
+import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type';
+import type { IfNode } from '../../parser/types/nodes/if-node.type';
+import type { StructuralDirectiveNode } from '../../parser/types/nodes/structural-directive-node.type';
+import type { HydrateTrigger } from '../../parser/types/triggers/hydrate-trigger.type';
+import type { ComponentMetadata } from '../../types/component-metadata.type';
+import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
+import type { DirectiveMetadata } from '../../types/directive-metadata.type';
+import { ASTNodeType } from '../../parser/types/node.enum';
+import { getForVariables } from '../../parser/utils/for-variables/for-variables.utils';
+import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
 
 /**
@@ -97,7 +119,9 @@ class TemplateWalker {
       case ASTNodeType.Switch:
         this._visitor.expression?.(node.expression, variables);
         for (let i = 0; i < node.children.length; i++) {
-          this.walkScope(node.children[i].children, variables);
+          const caseNode: CaseNode = node.children[i];
+          this._visitor.switchCase?.(caseNode);
+          this.walkScope(caseNode.children, variables);
         }
         break;
 

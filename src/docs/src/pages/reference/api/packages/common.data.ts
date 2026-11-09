@@ -1,5 +1,5 @@
 import type { ApiPackage } from '../api.data';
-import { DROPS_LEADING_NEWLINE, ENTRIES, ESCAPE_ATTRIBUTE, ESCAPE_RAW_TEXT, ESCAPE_TEXT, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_RAW_TEXT_ELEMENT, IS_VALID_CUSTOM_ELEMENT_NAME, IS_VOID_ELEMENT, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
+import { DROPS_LEADING_NEWLINE, ENTRIES, ESCAPE_ATTRIBUTE, ESCAPE_RAW_TEXT, ESCAPE_TEXT, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_RAW_TEXT_ELEMENT, IS_VALID_CUSTOM_ELEMENT_NAME, IS_VOID_ELEMENT, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, SMALL_SET, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
 
 /**
  * The symbols of `@xaendar/common`.
@@ -25,6 +25,37 @@ export const COMMON_API: ApiPackage = {
         { name: 'pop', group: 'methods', signature: 'pop(): T | undefined' }
       ],
       usage: [{ key: 'pushingAndPopping', snippets: [STACK] }]
+    },
+    {
+      name: 'SmallSet',
+      kind: 'type',
+      signature: 'type SmallSet<T> = T[] | Set<T>',
+      usage: [{ key: 'tracking', snippets: [SMALL_SET] }]
+    },
+    {
+      name: 'emptySmallSet',
+      kind: 'function',
+      signature: 'function emptySmallSet<T>(expectedSize?: number): SmallSet<T>'
+    },
+    {
+      name: 'addToSmallSet',
+      kind: 'function',
+      signature: 'function addToSmallSet<T>(set: SmallSet<T>, item: T): SmallSet<T>'
+    },
+    {
+      name: 'deleteFromSmallSet',
+      kind: 'function',
+      signature: 'function deleteFromSmallSet<T>(set: SmallSet<T>, item: T): SmallSet<T>'
+    },
+    {
+      name: 'smallSetHas',
+      kind: 'function',
+      signature: 'function smallSetHas<T>(set: SmallSet<T>, item: T): boolean'
+    },
+    {
+      name: 'smallSetSize',
+      kind: 'function',
+      signature: 'function smallSetSize<T>(set: SmallSet<T>): number'
     },
     {
       name: 'toPascalCase',

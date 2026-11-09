@@ -77,7 +77,7 @@ describe('_renderTemplate', () => {
 
     expect(parent.innerHTML).toBe('<span>a 1</span><!--anchor-->');
     expect(render).toHaveBeenCalledWith(parent, declarationContext, anchor, [expect.any(Function), expect.any(Function)], CREATE_NODES);
-    const [instance] = renderingContext.getChildren();
+    const [instance] = renderingContext.getChildren()!;
     renderingContext.clear();
     expect(instance.getNodes()).toEqual([]);
     expect(parent.innerHTML).toBe('<!--anchor-->');

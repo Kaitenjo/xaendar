@@ -380,4 +380,54 @@ describe('_iterationVariables', () => {
 
     expect(seen).toEqual(['old', 'new']);
   });
+
+  it('creates every variable when the ones to create are not listed', () => {
+    const context = createRoot();
+    const addIdentifier = vi.spyOn(context, 'addIdentifier');
+    const { vars } = _iterationVariables(context, ['a'], 0, 'item', aliases);
+
+    expect(Object.keys(vars)).toEqual(['item', '$index', '$first', '$last', '$even', '$odd']);
+    expect(addIdentifier.mock.calls.map(([name]) => name)).toEqual(['item', '$index', '$first', '$last', '$even', '$odd']);
+  });
+
+  it('creates and registers only the variables listed, by their alias', () => {
+    const context = createRoot();
+    const addIdentifier = vi.spyOn(context, 'addIdentifier');
+    const { vars } = _iterationVariables(context, ['a', 'b', 'c'], 2, 'row', { ...aliases, $index: 'i' }, ['$index', '$last']);
+
+    expect(Object.keys(vars)).toEqual(['i', '$last']);
+    expect((vars.i as () => number)()).toBe(2);
+    expect((vars.$last as () => boolean)()).toBe(true);
+    expect(addIdentifier.mock.calls.map(([name, value]) => [name, value])).toEqual([['i', vars.i], ['$last', vars.$last]]);
+  });
+
+  it('creates nothing when the body reads no variable', () => {
+    const context = createRoot();
+    const addIdentifier = vi.spyOn(context, 'addIdentifier');
+    const handle = _iterationVariables(context, ['a', 'b'], 0, 'item', aliases, []);
+
+    expect(handle.vars).toEqual({});
+    expect(addIdentifier).not.toHaveBeenCalled();
+    expect(() => handle.update(1, ['b', 'a'])).not.toThrow();
+  });
+
+  it('does not create the item when it is listed but the @for declares no item alias', () => {
+    const handle = _iterationVariables(createRoot(), ['a', 'b'], 0, undefined, aliases, ['item', '$odd']);
+
+    expect(Object.keys(handle.vars)).toEqual(['$odd']);
+    handle.update(1, ['a', 'b']);
+    expect((handle.vars.$odd as () => boolean)()).toBe(true);
+  });
+
+  it('updates only the variables created, leaving the missing ones missing', async () => {
+    const handle = _iterationVariables(createRoot(), ['a', 'b', 'c'], 0, 'item', aliases, ['item', '$first', '$even']);
+    const seen = new Array<string>();
+    effect(() => { seen.push(`${(handle.vars.item as () => string)()} ${(handle.vars.$first as () => boolean)()} ${(handle.vars.$even as () => boolean)()}`); });
+
+    handle.update(1, ['c', 'b', 'a']);
+    await flush();
+
+    expect(seen).toEqual(['a true true', 'b false false']);
+    expect(Object.keys(handle.vars)).toEqual(['item', '$first', '$even']);
+  });
 });

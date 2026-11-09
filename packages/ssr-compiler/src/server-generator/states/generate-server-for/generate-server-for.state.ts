@@ -1,4 +1,4 @@
-import { GeneratorContext, getBlockIdentifier, resolveExpression, toStringLiteral, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
+import { GeneratorContext, getBlockIdentifier, getReadForVariables, resolveExpression, toStringLiteral, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -8,7 +8,7 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
 /**
  * Generates the code of a `@for`: a loop rendering the body once per item, through the function rendering it, named
  * like the one of the client. A numeric iterable `n` is iterated as `0, 1, …, n - 1`. The body declares the item and the
- * implicit variables as signals, as the one of the client does, so that its expressions read them the same way.
+ * implicit variables it reads as signals, as the one of the client does, so that its expressions read them the same way.
  *
  * The items are written between the markers of the browser, `<!--xd-for-->` and `<!--/xd-for-->`, the place of the
  * anchor of the client, each one opened by a marker holding its key (see `_ssrItemMarker`): the value of the `track`
@@ -44,15 +44,15 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     $odd: resolveImplicit(node, '$odd')
   };
 
+  // Only the variables the body reads are created for each item, as the client does
   const context = new GeneratorContext(generatorContext);
-  if (itemAlias) {
-    context.addIdentifier(itemAlias, 'signal');
-  }
-  const names = Object.values(implicitNames);
-  for (let i = 0; i < names.length; i++) {
-    context.addIdentifier(names[i], 'signal');
+  const read = getReadForVariables(node);
+  for (let i = 0; i < read.length; i++) {
+    const variable = read[i];
+    context.addIdentifier(variable === 'item' ? itemAlias! : implicitNames[variable], 'signal');
   }
 
+  const names = Object.values(implicitNames);
   const aliases = Object.entries(implicitNames).map(([implicit, name]) => `${implicit}: '${name}'`).join(', ');
   const key = getBlockIdentifier('for', parent.id, index);
   const functionsToProcess = new Map<string, ServerFunctionToProcess>([[key, {
@@ -60,7 +60,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
       node,
       context,
       parent: { id: key, tag: parent.tag },
-      precode: `_iterationVariables(context, items, index, ${itemAlias ? `'${itemAlias}'` : 'undefined'}, { ${aliases} });`
+      precode: `_iterationVariables(context, items, index, ${itemAlias ? `'${itemAlias}'` : 'undefined'}, { ${aliases} }, [${read.map(variable => `'${variable}'`).join(', ')}]);`
     },
     args: ['out', 'parentContext', 'items', 'index']
   }]]);

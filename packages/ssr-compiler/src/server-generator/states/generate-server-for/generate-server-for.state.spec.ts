@@ -5,8 +5,8 @@ import { generateServerFor } from './generate-server-for.state';
 const cache = {} as ContextCache;
 
 describe('generateServerFor', () => {
-  it('renders the body once per item between the markers of the browser, each item opened by the one of its key, declaring the item and the implicit variables, aliases included, as signals', () => {
-    const node = parseTemplate('@for (user of users(); track user().id; i = $index) { x }')[0] as ForNode;
+  it('renders the body once per item between the markers of the browser, each item opened by the one of its key, declaring the item and the implicit variables the body reads, aliases included, as signals', () => {
+    const node = parseTemplate('@for (user of users(); track user().id; i = $index) { { i() } { user().name } }')[0] as ForNode;
     const context = new GeneratorContext(cache);
     context.addSignalClassField('users');
 
@@ -27,11 +27,21 @@ describe('generateServerFor', () => {
       ].join('\n')
     }]);
     const { fn, args } = functionsToProcess!.get('ul0__for1')!;
-    expect(fn.precode).toBe('_iterationVariables(context, items, index, \'user\', { $index: \'i\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' });');
+    expect(fn.precode).toBe('_iterationVariables(context, items, index, \'user\', { $index: \'i\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' }, [\'item\', \'$index\']);');
     expect(fn.parent).toEqual({ id: 'ul0__for1', tag: 'ul' });
     expect(args).toEqual(['out', 'parentContext', 'items', 'index']);
     expect(fn.context.getIdentifierKind('user')).toBe('signal');
     expect(fn.context.getIdentifierKind('i')).toBe('signal');
+    expect(fn.context.getIdentifierKind('$first')).toBeUndefined();
+  });
+
+  it('creates no variable when the body reads none', () => {
+    const node = parseTemplate('@for (user of users(); track user().id) { x }')[0] as ForNode;
+
+    const { fn } = generateServerFor(node, { id: 'root' }, '0', new GeneratorContext(cache)).functionsToProcess!.get('for0')!;
+
+    expect(fn.precode).toMatch(/\}, \[\]\);$/);
+    expect(fn.context.getIdentifierKind('user')).toBeUndefined();
   });
 
   it('declares no item when the @for names none', () => {

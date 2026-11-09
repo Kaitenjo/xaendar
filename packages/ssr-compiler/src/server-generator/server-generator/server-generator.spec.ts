@@ -121,7 +121,7 @@ describe('ServerGenerator', () => {
 
     expect(code).toContain([
       'function render(out) {',
-      '  const context = new _Context({ get: () => undefined });',
+      '  const context = new _Context({ get: () => undefined }, undefined, 2);',
       '  context.declare(\'field\');',
       `  context.addIdentifier('row', _ssrTemplate(context, ${key}.bind(this)));`,
       '  context.set(\'field\', undefined);',
@@ -137,22 +137,22 @@ describe('ServerGenerator', () => {
     ].join('\n'));
     expect(code).toContain([
       `function ${key}(out, parentContext, params) {`,
-      '  const context = new _Context(parentContext);',
+      '  const context = new _Context(parentContext, undefined, 1);',
       '  context.addIdentifier(\'item\', params[0]);',
       '  out.push(\'<b><!---->\' + _escapeText(context.get(\'item\')()) + \'</b>\');',
       '}'
     ].join('\n'));
     expect(code).toContain([
       'function if2(out, parentContext) {',
-      '  const context = new _Context(parentContext);',
+      '  const context = new _Context(parentContext, undefined, 1);',
       '  context.declare(\'n\', \'let\');',
       '  context.set(\'n\', 1);',
       '  {'
     ].join('\n'));
     expect(code).toContain([
       'function if2__for1(out, parentContext, items, index) {',
-      '  const context = new _Context(parentContext);',
-      '  _iterationVariables(context, items, index, \'user\', { $index: \'$index\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' });',
+      '  const context = new _Context(parentContext, undefined, 1);',
+      '  _iterationVariables(context, items, index, \'user\', { $index: \'$index\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' }, [\'item\']);',
       '  _ssrRenderTemplate(out, context, context.get(\'row\'), [() => context.get(\'user\')()]);',
       '}'
     ].join('\n'));
@@ -161,7 +161,7 @@ describe('ServerGenerator', () => {
   it('declares the scope of the content of an element a structural directive is applied to, and not the one of any other element', () => {
     const code = generate('<div *guard><input #inner /></div><p><input #outer /></p>');
 
-    expect(code).toContain('function div0Children(out, parentContext) {\n  const context = new _Context(parentContext);\n  context.declare(\'inner\');');
+    expect(code).toContain('function div0Children(out, parentContext) {\n  const context = new _Context(parentContext, undefined, 1);\n  context.declare(\'inner\');');
     expect(code).toContain('  context.declare(\'outer\');\n  _ssrStructural(');
   });
 

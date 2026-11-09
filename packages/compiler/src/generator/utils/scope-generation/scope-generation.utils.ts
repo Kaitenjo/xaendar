@@ -86,3 +86,25 @@ export function declareTemplateParameters({ parameters }: TemplateNode, context:
 
   return lines;
 }
+
+/**
+ * Writes the creation of the runtime context of a generated function, created for the variables its scope declares:
+ * the identifiers registered in the generator context of the scope (see `GeneratorContext.identifierCount`), which the
+ * runtime keeps in an array of that size, or in a `Map` beyond its limit.
+ *
+ * @example
+ * createContext('parentContext', 'nodeStrategy', 2); // 'new _Context(parentContext, nodeStrategy, 2)'
+ * createContext('parentContext', undefined, 0);      // 'new _Context(parentContext)'
+ *
+ * @param parent - The expression of the parent context.
+ * @param nodeStrategy - The expression of the node strategy, `undefined` to inherit the one of the parent.
+ * @param variableCount - The number of variables the scope declares, `0` for a function whose context declares none.
+ * @returns The expression creating the context.
+ */
+export function createContext(parent: string, nodeStrategy: string | undefined, variableCount: number): string {
+  if (variableCount) {
+    return `new _Context(${parent}, ${nodeStrategy}, ${variableCount})`;
+  }
+
+  return nodeStrategy ? `new _Context(${parent}, ${nodeStrategy})` : `new _Context(${parent})`;
+}

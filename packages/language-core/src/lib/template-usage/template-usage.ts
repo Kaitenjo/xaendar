@@ -1,8 +1,7 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, isBrowserOnlyGlobal, type SymbolImport } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
 import { type Expression, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { ComponentUsage } from '../types/component-usage.type';
 import type { TemplateUsage } from '../types/template-usage.type';
-import { walkTemplate } from '../utils/template-walker/template-walker.utils';
 
 /**
  * Reads what a template needs from the browser, for the analysis finding the static components of a project: what it

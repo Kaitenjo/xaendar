@@ -1,11 +1,17 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { effect, signal, untracked } from '../../signals';
+import { effect, signal, untracked, type Signal as SignalType } from '../../signals';
+import type { IterationVariable } from '../../types/iteration-variable.type';
 import { IterationVariablesHandle } from '../../types/iteration-variables.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
 import type { TrackExpression } from '../../types/track-expression.type';
 import type { ForEntry } from '../../types/for-entry.type';
+
+/**
+ * Every variable a `@for` can declare in its body, created when the compiled code does not list the ones its body reads.
+ */
+const ITERATION_VARIABLES: readonly IterationVariable[] = ['item', '$index', '$first', '$last', '$even', '$odd'];
 
 /**
  * Reactively iterates over a list of items. Items are matched across re-runs
@@ -191,14 +197,19 @@ function getItemNodes(parentNode: Node, context: _Context): Node[] {
  */
 function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void {
   const owned = context.getNodes();
-  if (owned.length && owned[0].parentNode !== parentNode) {
-    return;
+  if (owned?.length) {
+    if (owned[0].parentNode !== parentNode) {
+      return;
+    }
+
+    nodes.push(...owned);
   }
 
-  nodes.push(...owned);
   const children = context.getChildren();
-  for (let i = 0; i < children.length; i++) {
-    collectNodes(parentNode, children[i], nodes);
+  if (children?.length) {
+    for (let i = 0; i < children.length; i++) {
+      collectNodes(parentNode, children[i], nodes);
+    }
   }
 }
 
@@ -211,47 +222,66 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
  * re-runs reactively; everything else in the item's subtree (state, subscriptions,
  * pending requests) is left completely untouched.
  *
+ * Only the variables in `used` are created, the ones the body of the `@for` reads: a signal per variable and per item
+ * is what a large table pays for the variables its body never reads.
+ *
+ * @param context - The context of the body of the item, which the variables are declared in.
  * @param items - The full array being iterated.
  * @param index - The current iteration index.
  * @param itemName - The identifier to reference the i-th item during iteration, `undefined` when the `@for` declares none.
  * @param aliases - Aliases for implicit variables defined in the `@for` loop.
- * @returns A handle exposing the resolved variables and an `update` function.
+ * @param used - The variables to create, the ones the body reads: every one of them when omitted. The item is created
+ *   only with an `itemName`.
+ * @returns A handle exposing the resolved variables and an `update` function, which updates the variables created.
  */
-export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string | undefined, aliases: { $index: string, $first: string, $last: string, $even: string, $odd: string }): IterationVariablesHandle {
-  const $index = signal(index);
-  const $first = signal(index === 0);
-  const $last = signal(index === items.length - 1);
-  const $even = signal(index % 2 === 0);
-  const $odd = signal(index % 2 !== 0);
-  const item = signal(items[index]);
+export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string | undefined, aliases: Readonly<Record<Exclude<IterationVariable, 'item'>, string>>, used: readonly IterationVariable[] = ITERATION_VARIABLES): IterationVariablesHandle {
+  const vars: Record<string, SignalType<unknown>> = {};
+  for (let i = 0; i < used.length; i++) {
+    const variable = used[i];
+    const name = variable === 'item' ? itemName : aliases[variable];
+    if (name !== undefined) {
+      const state = signal(iterationValue(variable, items, index));
+      vars[name] = state;
+      context.addIdentifier(name, state);
+    }
+  }
 
-  const retVal: IterationVariablesHandle = {
-    vars: {
-      [aliases.$index]: $index,
-      [aliases.$first]: $first,
-      [aliases.$last]: $last,
-      [aliases.$even]: $even,
-      [aliases.$odd]: $odd,
-    },
+  return {
+    vars,
     update(newIndex: number, newItems: unknown[]) {
-      $index.set(newIndex);
-      $first.set(newIndex === 0);
-      $last.set(newIndex === newItems.length - 1);
-      $even.set(newIndex % 2 === 0);
-      $odd.set(newIndex % 2 !== 0);
-      item.set(newItems[newIndex]);
+      for (let i = 0; i < used.length; i++) {
+        const variable = used[i];
+        const name = variable === 'item' ? itemName : aliases[variable];
+        if (name !== undefined) {
+          vars[name].set(iterationValue(variable, newItems, newIndex));
+        }
+      }
     }
   };
+}
 
-  if (itemName !== undefined) {
-    retVal.vars[itemName] = item;
+/**
+ * Computes the value of a variable of a `@for` for an item.
+ *
+ * @param variable - The variable.
+ * @param items - The full array being iterated.
+ * @param index - The index of the item.
+ * @returns The item for `item`, its index for `$index`, whether it is the first, the last, at an even or an odd index
+ *   for the other variables.
+ */
+function iterationValue(variable: IterationVariable, items: unknown[], index: number): unknown {
+  switch (variable) {
+    case 'item':
+      return items[index];
+    case '$index':
+      return index;
+    case '$first':
+      return index === 0;
+    case '$last':
+      return index === items.length - 1;
+    case '$even':
+      return index % 2 === 0;
+    default:
+      return index % 2 !== 0;
   }
-
-  const entries = Object.entries(retVal.vars);
-  for (let i = 0; i < entries.length; i++) {
-    const [key, value] = entries[i];
-    context.addIdentifier(key, value)
-  }
-
-  return retVal
 }

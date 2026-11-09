@@ -63,6 +63,22 @@ describe('CompilerContext', () => {
     });
   });
 
+  describe('identifierCount', () => {
+    it('counts the identifiers of the own scope only, not the other names it knows', () => {
+      const parent = new CompilerContext();
+      parent.addIdentifier('outer');
+      const context = new CompilerContext(parent);
+      context.addIdentifier('a');
+      context.addIdentifier('b', 'signal');
+      context.addUnresolvableIdentifier('track');
+      context.addImportedIdentifier('format', '__format');
+      context.addSignalClassField('count');
+
+      expect(context.identifierCount).toBe(2);
+      expect(new CompilerContext().identifierCount).toBe(0);
+    });
+  });
+
   describe('unresolvable identifiers', () => {
     it('adds, finds and removes unresolvable identifiers', () => {
       const context = new CompilerContext();

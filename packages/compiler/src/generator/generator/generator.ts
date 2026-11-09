@@ -26,7 +26,7 @@ import type { GeneratorFunctionToProcess } from '../types/generator-function-to-
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type.js';
 import { getElementFactory, ROOT_NODE } from '../utils/generator/generator.utils.js';
 import { getDeferredModules } from '../utils/deferred-modules/deferred-modules.utils.js';
-import { declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
+import { createContext, declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
 import { getTextSeparators } from '../utils/text-separators/text-separators.utils.js';
 
 /**
@@ -106,15 +106,16 @@ export class Generator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
+      // Declared first, so that the context is created for the variables of the scope
+      const rootDeclarations = declareScope(this._ast, generatorContext, toTemplateFunction);
       const generatedCode = [
         'function render(nodeStrategy) {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
-          'const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);'
+          `const context = ${createContext('{ createElement: _createElement, get: () => undefined }', 'nodeStrategy', generatorContext.identifierCount)};`
         ])
       ]
 
-      const rootDeclarations = declareScope(this._ast, generatorContext, toTemplateFunction);
       if (rootDeclarations) {
         this._processFunctions(parentTags, rootDeclarations.functionsToProcess);
         generatedCode.push(...indent(rootDeclarations.code));
@@ -139,20 +140,23 @@ export class Generator {
         const { node, parentNode, context, precode, anchor } = fnData.fn;
         const parentTag = parentTags.get(key);
 
+        /*
+          A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
+          declaring its element refs, its templates and its @let, after the variables its precode registers: its context is
+          created for all of them. The children of any other element share the generator context of their scope, and their
+          runtime context declares nothing
+        */
+        const isScope = node.type !== ASTNodeType.Element || isStructuralElement(node);
+        const declarations = isScope ? declareScope(node.children, context, toTemplateFunction) : undefined;
         generatedCode.push(
           `\nfunction ${key}(${fnData.args?.join(', ')}) {`,
-          ...indent(['const context = new _Context(parentContext, nodeStrategy);'])
+          ...indent([`const context = ${createContext('parentContext', 'nodeStrategy', isScope ? context.identifierCount : 0)};`])
         );
 
         if (precode) {
           generatedCode.push(indent(precode));
         }
 
-        /*
-          A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
-          declaring its element refs, its templates and its @let
-        */
-        const declarations = node.type !== ASTNodeType.Element || isStructuralElement(node) ? declareScope(node.children, context, toTemplateFunction) : undefined;
         if (declarations) {
           this._processFunctions(parentTags, declarations.functionsToProcess);
           generatedCode.push(...indent(declarations.code));

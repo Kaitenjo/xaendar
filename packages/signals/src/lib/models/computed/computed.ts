@@ -1,12 +1,13 @@
-
-import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
-import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ComputedState } from '../../types/computed-state.type';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
+import { isDevMode } from '../../utils/dev-mode/dev-mode';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
+import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
 import { Watcher } from '../watcher/watcher';
-import { isDevMode } from '../../utils/dev-mode/dev-mode';
 
 /**
  * A read-only Signal whose value is derived lazily from other Signals.
@@ -70,10 +71,12 @@ export class Computed<T = any> {
    *
    * May contain both `State` and `Computed` instances.
    *
+   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
    */
-  #sources: Set<State<unknown> | Computed<unknown>>;
+  #sources: SmallSet<State<unknown> | Computed<unknown>>;
   /**
  * Returns a snapshot of the current sources set for introspection.
  *
@@ -92,11 +95,13 @@ export class Computed<T = any> {
    * `Watcher`. An un-watched `Computed` has an empty sinks set, which allows
    * it to be garbage-collected independently from the rest of the graph.
    *
+   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
    * @see Method — `Signal.Computed.prototype.get` (NOTE on sinks)
    */
-  #sinks: Set<Computed<unknown> | Watcher>;
+  #sinks: SmallSet<Computed<unknown> | Watcher>;
   /**
    * Returns a snapshot of the current sinks set for introspection.
    *
@@ -162,8 +167,8 @@ export class Computed<T = any> {
   constructor(cb: (this: Computed<T>) => T, options?: Pick<SignalOptions<T>, 'equals'>) {
     this.#callback = cb;
     this.#equals = options?.equals ?? Object.is;
-    this.#sources = new Set;
-    this.#sinks = new Set;
+    this.#sources = emptySmallSet();
+    this.#sinks = emptySmallSet();
     this.#state = 'dirty';
     this.#hasValue = false;
     this.#hasError = false;
@@ -197,7 +202,7 @@ export class Computed<T = any> {
       throw new Error('Circular dependency detected while computing a Computed signal');
     }
 
-    if (this.#sinks.size === 0) {
+    if (smallSetSize(this.#sinks) === 0) {
       /*
         Without sinks it is not told about the changes of its sources, so it is evaluated at every read: it becomes
         ~dirty~ first, which has no sinks to notify, so that it enters ~computing~ and a read of itself is a cycle
@@ -238,13 +243,15 @@ export class Computed<T = any> {
    */
   public addSource(source: State | Computed, symbol: symbol) {
     assertPrivateContext(symbol);
-    if (this.#sources.has(source)) {
+    // A source read again leaves the size unchanged: the set is looked through once
+    const size = smallSetSize(this.#sources);
+    this.#sources = addToSmallSet(this.#sources, source);
+    if (smallSetSize(this.#sources) === size) {
       return;
     }
 
-    this.#sources.add(source);
     // A source read in the previous evaluation already has this Signal as a sink: adding it again changes nothing
-    if (this.#sinks.size) {
+    if (smallSetSize(this.#sinks)) {
       source.addSink(this, PRIVATE);
     }
   }
@@ -311,7 +318,7 @@ export class Computed<T = any> {
    */
   public addSink(sink: Computed<unknown> | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
-    if (this.#sinks.size === 0) {
+    if (smallSetSize(this.#sinks) === 0) {
       // Without sinks it missed the changes of its sources: a State changed since its last evaluation may have made it stale
       if (this.#state === 'clean' && this.#version !== GLOBAL_STATE.version) {
         this.#state = 'dirty';
@@ -321,7 +328,7 @@ export class Computed<T = any> {
         source.addSink(this, PRIVATE);
       }
     }
-    this.#sinks.add(sink);
+    this.#sinks = addToSmallSet(this.#sinks, sink);
   }
 
   /**
@@ -337,9 +344,9 @@ export class Computed<T = any> {
    */
   public removeSink(sink: Computed | Watcher, symbol: symbol) {
     assertPrivateContext(symbol);
-    this.#sinks.delete(sink);
+    this.#sinks = deleteFromSmallSet(this.#sinks, sink);
 
-    if (this.#sinks.size === 0) {
+    if (smallSetSize(this.#sinks) === 0) {
       for (const source of this.#sources) {
         source.removeSink(this, PRIVATE);
       }
@@ -384,10 +391,11 @@ export class Computed<T = any> {
   #computeValue(): void {
     /*
       The sources are collected again, without unlinking the previous ones first: a source read by both evaluations
-      keeps this Signal as a sink, so it is not unwatched and watched again at every evaluation
+      keeps this Signal as a sink, so it is not unwatched and watched again at every evaluation. The evaluation is
+      expected to read as many sources as the previous one, so that a Signal reading many of them starts with a Set
     */
     const previousSources = this.#sources;
-    this.#sources = new Set;
+    this.#sources = emptySmallSet(smallSetSize(previousSources));
 
     pushComputed(this);
     this.setState('computing', PRIVATE);
@@ -410,9 +418,9 @@ export class Computed<T = any> {
     }
 
     // Only a live Signal is a sink of its sources: it stops being one of the sources it no longer reads
-    if (this.#sinks.size) {
+    if (smallSetSize(this.#sinks)) {
       for (const source of previousSources) {
-        if (!this.#sources.has(source)) {
+        if (!smallSetHas(this.#sources, source)) {
           source.removeSink(this, PRIVATE);
         }
       }

@@ -30,7 +30,7 @@ describe('Generator', () => {
       const code = await generate('<button (click)="highlight(name)">Go</button><label>Name <input #name /></label>');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
+        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy, 1);',
         '  context.declare(\'name\');',
         '  _renderElement(root, context, null, \'button\', [],'
       ].join('\n'));
@@ -43,17 +43,23 @@ describe('Generator', () => {
 
       expect(code).toContain([
         'function if0(if0, parentContext, anchor, nodeStrategy) {',
-        '  const context = new _Context(parentContext, nodeStrategy);',
+        '  const context = new _Context(parentContext, nodeStrategy, 1);',
         '  context.declare(\'field\');'
       ].join('\n'));
       expect(code.match(/context\.declare\('field'\)/g)).toHaveLength(1);
       expect(code).toContain('() => context.get(\'field\').value');
     });
 
-    it('declares the variables of a @for body after its iteration variables', async () => {
-      const code = await generate('@for (item of items; track item()) { <input #field /> }');
+    it('creates the context of a @for body for the iteration variables its body reads and the variables of its scope', async () => {
+      const code = await generate('@for (item of items; track item()) { <input #field />@let label = item().name; { label() } }');
 
-      expect(code).toMatch(/const \{ item, \$index, \$first, \$last, \$even, \$odd \} = vars;\n {2}context\.declare\('field'\);/);
+      expect(code).toContain('function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy, 3);');
+    });
+
+    it('declares the variables of a @for body after its iteration variables', async () => {
+      const code = await generate('@for (item of items; track item()) { <input #field [class.first]="{$first()}" />{ item() } }');
+
+      expect(code).toMatch(/const \{ item, \$first \} = vars;\n {2}context\.declare\('field'\);/);
     });
 
     it('declares the variables of the content of an element a structural directive is applied to in the function rendering its children, as a scope of its own', async () => {
@@ -61,7 +67,7 @@ describe('Generator', () => {
 
       expect(code).toContain([
         'function div0Children(div0, parentContext, nodeStrategy) {',
-        '  const context = new _Context(parentContext, nodeStrategy);',
+        '  const context = new _Context(parentContext, nodeStrategy, 1);',
         '  context.declare(\'inner\');'
       ].join('\n'));
       // Outside of its scope the name reads the component
@@ -82,14 +88,14 @@ describe('Generator', () => {
       const start = template.indexOf('<template');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
+        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy, 1);',
         `  context.addIdentifier('row', _template(context, template_row_${start}.bind(this)));`,
         '  _renderTemplate(root, context, null, context.get(\'row\'), [() => this.name(), () => 1]);',
         '  return context;'
       ].join('\n'));
       expect(code).toContain([
         `function template_row_${start}(template_row_${start}, parentContext, anchor, params, nodeStrategy) {`,
-        '  const context = new _Context(parentContext, nodeStrategy);',
+        '  const context = new _Context(parentContext, nodeStrategy, 2);',
         '  context.createElement = _createElement;',
         '  context.addIdentifier(\'label\', params[0]);',
         '  context.addIdentifier(\'count\', params[1]);',
@@ -118,14 +124,14 @@ describe('Generator', () => {
     it('creates the content of a template in the namespace of its declaration, and renders it there', async () => {
       const code = await generate('<svg><template dot(x: number) /><g>@render dot(1)</g></svg>');
 
-      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy\);\n {2}context\.createElement = _createSVGElement;/);
+      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.createElement = _createSVGElement;/);
       expect(code).toContain('_renderTemplate(svg0__g1, context, null, context.get(\'dot\'), [() => 1]);');
     });
 
     it('registers the templates of a block in the function rendering it, forwarding its anchor to the @render', async () => {
       const code = await generate('@if (a) { <template row() />@render row() }');
 
-      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy\);\n {2}context\.addIdentifier\('row', _template\(context, template_row_\d+\.bind\(this\)\)\);/);
+      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('row', _template\(context, template_row_\d+\.bind\(this\)\)\);/);
       expect(code).toContain('_renderTemplate(if0, context, anchor, context.get(\'row\'), []);');
     });
 
@@ -180,7 +186,7 @@ describe('Generator', () => {
     expect(code).toContain('if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');
     expect(code).toContain('return { context, update };');
-    expect(code).toContain('const { vars, update } = _iterationVariables(');
+    expect(code).toContain('const { update } = _iterationVariables(');
   });
 
   it('emits module-level helper functions invoked with the component bound as this', async () => {

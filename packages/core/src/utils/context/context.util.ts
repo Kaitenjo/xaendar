@@ -7,6 +7,12 @@ import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { captureContext } from '../try-scope/try-scope.util';
 
 /**
+ * The number of variables a context keeps in an array, looked through at every read: a scope declaring more keeps them
+ * in a `Map`.
+ */
+const VARIABLES_LIMIT = 16;
+
+/**
  * Tracks identifier scope during run time template function execution
  * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
  * and can be chained to a parent context for outer-scope resolution.
@@ -31,12 +37,14 @@ export class _Context {
   /**
    * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches).
    */
-  private _children = new Array<_Context>;
+  private _children: Array<_Context> | null = null;
   /**
-   * Map containing the run time values of variables defines during the run time execution
-   * (e.g. {@for} variables: 'index', 'item', etc...)
+   * The variables declared in this scope (e.g. the variables of a `@for`, the element refs, the `@let`), by name. Up to
+   * {@link VARIABLES_LIMIT} variables, an array alternating names and values (`[name, value, name, value]`), sized when
+   * the context is created from the number of variables the compiled code declares, the free slots having no name;
+   * beyond, a `Map`. `null` while the scope declares none.
    */
-  private _variables = new Map<string, unknown>();
+  private _variables: unknown[] | Map<string, unknown> | null;
   /**
    * DOM nodes directly mounted into this scope via {@link mountNode} or {@link trackNode} (does not
    * include nodes owned by child contexts). Used to determine, for a given
@@ -44,13 +52,13 @@ export class _Context {
    * diffing can move a reused item's nodes to a new position without
    * recreating them.
    */
-  private _nodes = new Array<Node>();
+  private _nodes: Array<Node> | null = null;
   /**
    * Cleanup functions registered via {@link addUnlistener}.
    * Called when this context is destroyed to remove DOM nodes,
    * detach event listeners, and dispose signal effect subscriptions.
    */
-  private _unlistenFns = new Array<NoArgsVoidFunction>;
+  private _unlistenFns: Array<NoArgsVoidFunction> | null = null;
 
   /**
    * Creates a new scope context. Created in the first render of the content of a `@try`, it is collected by the `@try`,
@@ -59,26 +67,52 @@ export class _Context {
    * @param _parent - Parent context used for outer-scope resolution.
    * @param nodeStrategy - How the nodes of the context are got. Defaults to the strategy of the parent, or to creating them
    *   when the parent has none, as the root of a render or of a component created in code.
+   * @param variableCount - The number of variables the scope declares, which the compiled code knows: up to
+   *   {@link VARIABLES_LIMIT} they are kept in an array of that size, beyond in a `Map`. Without it the variables are
+   *   still accepted, the array growing with each of them (see {@link addIdentifier}).
    */
-  constructor(private _parent: _Context, nodeStrategy?: NodeStrategy) {
+  constructor(private _parent: _Context, nodeStrategy?: NodeStrategy, variableCount = 0) {
     this.createElement = this._parent.createElement;
     this.nodeStrategy = nodeStrategy ?? this._parent.nodeStrategy ?? CREATE_NODES;
+    this._variables = variableCount > VARIABLES_LIMIT ? new Map() : variableCount ? new Array(2 * variableCount) : null;
     captureContext(this);
   }
 
   /**
-   * Registers a new identifier name in this scope.
+   * Registers a new identifier name in this scope, in the first free slot of the array of the variables. A scope declaring
+   * more variables than its context was created for, as one created by code compiled without their number, gets an
+   * array one variable longer, or a `Map` beyond {@link VARIABLES_LIMIT}.
    *
    * @param name - The identifier name to register.
    * @param value - The run time value bound to the identifier.
    * @throws When an identifier with the same name is already declared in this scope.
    */
   public addIdentifier(name: string, value: unknown): void {
-    if (this._variables.has(name)) {
-      throw new Error(`Identifier "${name}" is already declared in this scope.`);
+    const variables = this._variables;
+    if (variables instanceof Map) {
+      if (variables.has(name)) {
+        throw new Error(`Identifier "${name}" is already declared in this scope.`);
+      }
+
+      variables.set(name, value);
+      return;
     }
 
-    this._variables.set(name, value);
+    if (!variables) {
+      this._variables = [name, value];
+      return;
+    }
+
+    const free = findFreeSlot(variables, name);
+    if (free !== -1) {
+      variables[free] = name;
+      variables[free + 1] = value;
+    } else if (variables.length < 2 * VARIABLES_LIMIT) {
+      // Wrapped in an array, so that a value which is an array is not spread
+      this._variables = variables.concat([name, value]);
+    } else {
+      this._variables = toMap(variables).set(name, value);
+    }
   }
 
   /**
@@ -103,18 +137,40 @@ export class _Context {
    * @param value - The value of the variable.
    */
   public set(name: string, value: unknown): void {
-    this._variables.has(name)
-      ? this._variables.set(name, value)
-      : this._parent.set(name, value);
+    const variables = this._variables;
+    if (variables instanceof Map) {
+      if (variables.has(name)) {
+        variables.set(name, value);
+        return;
+      }
+    } else if (variables) {
+      const index = indexOfVariable(variables, name);
+      if (index !== -1) {
+        variables[index + 1] = value;
+        return;
+      }
+    }
+
+    this._parent.set(name, value);
   }
 
   /**
-   * Unregisters an identifier from this scope. Does nothing if the identifier is not declared here.
+   * Unregisters an identifier from this scope, freeing its slot of the array of the variables. Does nothing if the
+   * identifier is not declared here.
    *
    * @param name - The identifier name to remove.
    */
   public removeIdentifier(name: string): void {
-    this._variables.delete(name);
+    const variables = this._variables;
+    if (variables instanceof Map) {
+      variables.delete(name);
+    } else if (variables) {
+      const index = indexOfVariable(variables, name);
+      if (index !== -1) {
+        variables[index] = undefined;
+        variables[index + 1] = undefined;
+      }
+    }
   }
 
   /**
@@ -127,11 +183,27 @@ export class _Context {
    * @throws A `ReferenceError` when the closest scope declaring the identifier has not initialized it yet (see {@link declare}).
    */
   public get(name: string): unknown {
-    if (!this._variables.has(name)) {
+    const variables = this._variables;
+    if (!variables) {
       return this._parent?.get(name);
     }
 
-    const value = this._variables.get(name);
+    let value: unknown;
+    if (variables instanceof Map) {
+      if (!variables.has(name)) {
+        return this._parent?.get(name);
+      }
+
+      value = variables.get(name);
+    } else {
+      const index = indexOfVariable(variables, name);
+      if (index === -1) {
+        return this._parent?.get(name);
+      }
+
+      value = variables[index + 1];
+    }
+
     switch (value) {
       case _Context._uninitialized.element:
         throw new ReferenceError(`Element ref "${name}" is read before the element it names is rendered`);
@@ -152,7 +224,7 @@ export class _Context {
    */
   public addChild(context?: _Context): _Context {
     context ??= new _Context(this);
-    this._children.push(context);
+    this._children?.length ? this._children.push(context) : this._children = [context]
     return context;
   }
 
@@ -162,9 +234,11 @@ export class _Context {
    * @param context - The child context to remove.
    */
   public removeChild(context: _Context): void {
-    const index = this._children.indexOf(context);
-    if (index !== -1) {
-      this._children.splice(index, 1);
+    if (this._children) {
+      const index = this._children.indexOf(context);
+      if (index !== -1) {
+        this._children.splice(index, 1);
+      }
     }
   }
 
@@ -173,7 +247,7 @@ export class _Context {
    *
    * @returns The child contexts of this context.
    */
-  public getChildren(): ReadonlyArray<_Context> {
+  public getChildren(): ReadonlyArray<_Context> | null {
     return this._children;
   }
 
@@ -183,7 +257,7 @@ export class _Context {
    * @param node - The DOM node to track.
    */
   public addNode(node: Node): void {
-    this._nodes.push(node);
+    this._nodes ?  this._nodes.push(node) : this._nodes = [node];
   }
 
   /**
@@ -192,7 +266,7 @@ export class _Context {
    * @param nodeToRemove - The DOM node to untrack.
    */
   public removeNode(nodeToRemove: Node): void {
-    removeItem(this._nodes, nodeToRemove);
+    this._nodes && removeItem(this._nodes, nodeToRemove);
   }
 
   /**
@@ -203,7 +277,7 @@ export class _Context {
    *
    * @returns The nodes directly owned by this context.
    */
-  public getNodes(): ReadonlyArray<Node> {
+  public getNodes(): ReadonlyArray<Node> | null {
     return this._nodes;
   }
 
@@ -214,7 +288,7 @@ export class _Context {
    * @param fns - The cleanup functions to register.
    */
   public addUnlistener(...fns: NoArgsVoidFunction[]): void {
-    this._unlistenFns.push(...fns);
+    this._unlistenFns ? this._unlistenFns.push(...fns) : this._unlistenFns = [...fns];
   }
 
   /**
@@ -224,7 +298,9 @@ export class _Context {
    * @param fns - The cleanup functions to unregister.
    */
   public removeUnlistener(...fns: NoArgsVoidFunction[]): void {
-    this._unlistenFns = this._unlistenFns.filter(item => !fns.includes(item));
+    if (this._unlistenFns) {
+      this._unlistenFns = this._unlistenFns.filter(item => !fns.includes(item));
+    }
   }
 
   /**
@@ -233,7 +309,7 @@ export class _Context {
    *
    * @returns The cleanup functions that will be invoked when this context is cleared.
    */
-  public getUnlistenFns(): NoArgsVoidFunction[] {
+  public getUnlistenFns(): NoArgsVoidFunction[] | null {
     return this._unlistenFns;
   }
 
@@ -245,8 +321,10 @@ export class _Context {
    */
   public setNodeStrategy(nodeStrategy: NodeStrategy): void {
     this.nodeStrategy = nodeStrategy;
-    for (let i = 0; i < this._children.length; i++) {
-      this._children[i].setNodeStrategy(nodeStrategy);
+    if (this._children) {
+      for (let i = 0; i < this._children.length; i++) {
+        this._children[i].setNodeStrategy(nodeStrategy);
+      }
     }
   }
 
@@ -257,16 +335,18 @@ export class _Context {
    * @param context - The context receiving the cleanup functions and the child contexts.
    */
   public moveTo(context: _Context): void {
-    if (this._unlistenFns.length) {
+    if (this._unlistenFns?.length) {
       context.addUnlistener(...this._unlistenFns);
     }
 
-    for (let i = 0; i < this._children.length; i++) {
-      context.addChild(this._children[i]);
+    if (this._children) {
+      for (let i = 0; i < this._children.length; i++) {
+        context.addChild(this._children[i]);
+      }
     }
 
-    this._unlistenFns = [];
-    this._children = [];
+    this._unlistenFns = null;
+    this._children = null;
   }
 
   /**
@@ -277,21 +357,81 @@ export class _Context {
    * considered disposed and should no longer be used.
    */
   public clear(): void {
-    for (let i = 0; i < this._unlistenFns.length; i++) {
-      this._unlistenFns[i]();
+    if (this._unlistenFns) {
+      for (let i = 0; i < this._unlistenFns.length; i++) {
+        this._unlistenFns[i]();
+      }
     }
 
-    for (let i = 0; i < this._children.length; i++) {
-      this._children[i].clear();
+    if (this._children) {
+      for (let i = 0; i < this._children.length; i++) {
+        this._children[i].clear();
+      }
     }
 
-    this._unlistenFns = [];
-    this._children = [];
+    this._unlistenFns = null;
+    this._children = null;
     this._nodes = [];
-    this._variables.clear();
+    this._variables = null;
   }
 }
 
+/**
+ * Finds the slot of a variable in the array of the variables of a context.
+ *
+ * @param variables - The names and the values, alternated.
+ * @param name - The name of the variable.
+ * @returns The index of its name, the value following it, or `-1` when the array does not hold it.
+ */
+function indexOfVariable(variables: unknown[], name: string): number {
+  for (let i = 0; i < variables.length; i += 2) {
+    if (variables[i] === name) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Finds the first free slot of the array of the variables of a context, the one of a variable declared and not
+ * registered yet, or of one removed, checking that the name is not declared already.
+ *
+ * @param variables - The names and the values, alternated: a free slot has no name.
+ * @param name - The name of the variable to register.
+ * @returns The index of the free slot, `-1` when the array is full.
+ * @throws When the array already holds a variable with the name.
+ */
+function findFreeSlot(variables: unknown[], name: string): number {
+  let free = -1;
+  for (let i = 0; i < variables.length; i += 2) {
+    const slot = variables[i];
+    if (slot === name) {
+      throw new Error(`Identifier "${name}" is already declared in this scope.`);
+    }
+
+    if (slot === undefined && free === -1) {
+      free = i;
+    }
+  }
+
+  return free;
+}
+
+/**
+ * Moves the variables of a context to a `Map`, once the array would hold more than {@link VARIABLES_LIMIT} of them.
+ *
+ * @param variables - The names and the values, alternated: a full array, without free slots.
+ * @returns The variables, by name.
+ */
+function toMap(variables: unknown[]): Map<string, unknown> {
+  const map = new Map<string, unknown>();
+  for (let i = 0; i < variables.length; i += 2) {
+    map.set(variables[i] as string, variables[i + 1]);
+  }
+
+  return map;
+}
 
 /**
  * Mounts a node into the DOM and binds it to the context lifecycle.
