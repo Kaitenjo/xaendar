@@ -7,11 +7,5 @@
     "components": {
       "style": "css"
     }
-  },
-  "ssr": {
-    "entry": "src/entry-server",
-    "prerender": [
-      "/"
-    ]
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { NODE } from '../node/node.symbol';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -8,6 +9,29 @@ await vi.hoisted(async () => {
 const { signal } = await import('./signal');
 
 describe('signal', () => {
+  it('keeps the underlying Signal.State under NODE', () => {
+    const state = signal(1) as unknown as Record<typeof NODE, Signal.State<number>>;
+    expect(state[NODE]).toBeInstanceOf(Signal.State);
+    expect(state[NODE].get()).toBe(1);
+  });
+
+  it('is a function inheriting its methods from a prototype shared by every signal', () => {
+    const first = signal(1);
+    const second = signal(2);
+    expect(first).toBeInstanceOf(Function);
+    expect(Object.getPrototypeOf(first)).toBe(Object.getPrototypeOf(second));
+    expect(Object.hasOwn(first, 'get') || Object.hasOwn(first, 'set') || Object.hasOwn(first, 'update')).toBe(false);
+    expect(first.set).toBe(second.set);
+  });
+
+  it('keeps the value of each signal apart', () => {
+    const first = signal(1);
+    const second = signal(2);
+    first.set(10);
+    second.update(prev => prev + 1);
+    expect([first(), second()]).toEqual([10, 3]);
+  });
+
   it('returns the initial value when called', () => {
     expect(signal(1)()).toBe(1);
   });

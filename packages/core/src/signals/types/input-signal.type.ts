@@ -1,4 +1,4 @@
-import { INPUT_SIGNAL_INSTANCE_SYMBOL } from '../input/input-instance.symbol';
+import { INITIAL_VALUE, INPUT_SIGNAL_INSTANCE_SYMBOL, TRANSFORM } from '../input/input-instance.symbol';
 
 /**
  * The key of the type of the values an input accepts from outside, before its `transform`: it exists only in the types.
@@ -29,6 +29,15 @@ export type InputSignal<ActualValue = unknown, IncomingValue = ActualValue> = Pi
    *   the types, so that `createComponent` and `renderToString` take the values the `transform` takes.
    */
   readonly [INCOMING_VALUE]?: () => IncomingValue;
+  /**
+   * The `transform` of the options of the input, converting the incoming values before they are stored:
+   *   `undefined` without one.
+   */
+  readonly [TRANSFORM]: ((value: unknown) => unknown) | undefined;
+  /**
+   * The initial value of the input, which `reset` restores.
+   */
+  readonly [INITIAL_VALUE]: unknown;
   /**
    * Reads the current value of the input signal.
    *

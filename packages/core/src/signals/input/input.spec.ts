@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { NODE } from '../node/node.symbol';
+import { INITIAL_VALUE, INPUT_SIGNAL_INSTANCE_SYMBOL, isInputSignal, TRANSFORM } from './input-instance.symbol';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -6,10 +8,36 @@ await vi.hoisted(async () => {
 });
 
 const { input } = await import('./input');
-const { isInputSignal } = await import('./input-instance.symbol');
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('./input-set.symbol');
 
 describe('input', () => {
+  it('keeps the underlying Signal.State, the transform and the initial value on the getter', () => {
+    const transform = (value: string): number => Number(value);
+    const state = input<number, string>(5, { transform });
+    expect((state as unknown as Record<typeof NODE, Signal.State<number>>)[NODE]).toBeInstanceOf(Signal.State);
+    expect(state[TRANSFORM]).toBe(transform);
+    expect(state[INITIAL_VALUE]).toBe(5);
+  });
+
+  it('keeps no transform without options', () => {
+    const state = input(1);
+    expect(TRANSFORM in state).toBe(true);
+    expect(state[TRANSFORM]).toBeUndefined();
+  });
+
+  it('is a function inheriting its methods and its mark from a prototype shared by every input', () => {
+    const first = input(1) as unknown as { set(v: number, s: symbol): void, (): number };
+    const second = input(2) as unknown as { set(v: number, s: symbol): void, (): number };
+    expect(first).toBeInstanceOf(Function);
+    expect(Object.getPrototypeOf(first)).toBe(Object.getPrototypeOf(second));
+    expect(Object.hasOwn(first, 'get') || Object.hasOwn(first, 'set') || Object.hasOwn(first, 'reset')).toBe(false);
+    expect(Object.hasOwn(first, INPUT_SIGNAL_INSTANCE_SYMBOL)).toBe(false);
+    expect(first.set).toBe(second.set);
+
+    first.set(10, INPUT_SIGNAL_SET_SYMBOL);
+    expect([first(), second()]).toEqual([10, 2]);
+  });
+
   it('returns the initial value when called', () => {
     expect(input(3)()).toBe(3);
   });

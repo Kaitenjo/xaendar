@@ -1,6 +1,16 @@
 import type { SettableInputSignal } from '../types/settable-input-signal.type';
 
 /**
+ * The key under which the getter returned by `input()` keeps the `transform` of its options, applied by `set`.
+ */
+export const TRANSFORM = Symbol('transform');
+
+/**
+ * The key under which the getter returned by `input()` keeps its initial value, restored by `reset`.
+ */
+export const INITIAL_VALUE = Symbol('initialValue');
+
+/**
  * Unique symbol used to mark an object as a valid `InputSignal` instance.
  *
  * Set to `true` on every `InputSignal` created by the `input()` factory.
