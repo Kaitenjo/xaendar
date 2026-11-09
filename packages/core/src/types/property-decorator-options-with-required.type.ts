@@ -8,8 +8,9 @@ import type { PropertyDecoratorOptions } from './property-decorator-options.type
  *
  * @template IncomingValue - The raw type received from outside. Defaults to `ActualValue`.
  * @template ActualValue - The internal type stored by the signal. Defaults to `unknown`.
+ * @template Alias - The alias of the input, which the type of the accessor declares (see `Aliased`).
  */
-export type PropertyDecoratorOptionsWithRequired<ActualValue = unknown, IncomingValue = ActualValue> = PropertyDecoratorOptions<ActualValue, IncomingValue> & {
+export type PropertyDecoratorOptionsWithRequired<ActualValue = unknown, IncomingValue = ActualValue, Alias extends string = string> = PropertyDecoratorOptions<ActualValue, IncomingValue, Alias> & {
   /**
    * Indicates that the property is required. When `true`, the component will expect the attribute/input to be explicitly provided by the consumer.
    */

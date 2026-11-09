@@ -1,7 +1,7 @@
 import type { CreateComponentOptions, CustomDirective, CustomElement } from '@xaendar/core';
 
 /**
- * The inputs of a component, by the name of their property, each one with the getter `createComponent` binds it with.
+ * The inputs of a component, by the name the templates bind them with, each one with the getter `createComponent` binds it with.
  *
  * @template Component - The component.
  */

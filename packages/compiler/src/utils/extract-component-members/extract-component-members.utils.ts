@@ -20,7 +20,7 @@ const SIGNAL_MODULE_SPECIFIERS: ReadonlySet<string> = new Set(['@xaendar/core/si
  * The exports of the signal modules that make a member a signal: the functions creating a signal and the signal
  * types. The others (`effect`, `untracked`, `EffectOptions`, the query option types...) don't.
  */
-const SIGNAL_EXPORTS: ReadonlySet<string> = new Set(['signal', 'computed', 'Signal', 'Computed', 'InputSignal', 'SettableInputSignal', 'QuerySignal']);
+const SIGNAL_EXPORTS: ReadonlySet<string> = new Set(['signal', 'computed', 'Signal', 'Computed', 'InputSignal', 'Aliased', 'SettableInputSignal', 'QuerySignal']);
 
 /**
  * Finds the function declarations of a file: the module functions a template imports.

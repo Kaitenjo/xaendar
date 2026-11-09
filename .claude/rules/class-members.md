@@ -59,14 +59,16 @@ When the type of an input is narrower than what its default infers (a union of l
 ```ts
 // ✗
 @Property('ts', { alias: 'lang' })
-public accessor language!: InputSignal<string>;
+public accessor language!: Aliased<InputSignal<string>, 'lang'>;
 const lang = this.language() as CodeLang;
 
 // ✓
-@Property<InputSignal<CodeLang>>('ts', { alias: 'lang' })
-public accessor language!: InputSignal<CodeLang>;
+@Property<Aliased<InputSignal<CodeLang>, 'lang'>>('ts', { alias: 'lang' })
+public accessor language!: Aliased<InputSignal<CodeLang>, 'lang'>;
 const lang = this.language();
 ```
+
+An input with an `alias` declares it in its type too, `Aliased<InputSignal<T>, 'alias'>` (imported from `@xaendar/core/signals`): templates, `createComponent` and `renderToString` bind it by the alias only.
 
 A `transform` taking another type than the value of the input is declared as the second type argument of the signal, which templates, `createComponent` and `renderToString` take: `@Property(0, { transform: (value: string) => Number(value) }) public accessor size!: InputSignal<number, string>;` (without it `@Property` does not compile).
 

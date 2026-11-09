@@ -2,8 +2,8 @@ import { CustomDirective, CustomElement } from '@xaendar/core';
 import type { InputGetters } from './input-getters.type';
 
 /**
- * The inputs `renderToString` sets on the component it renders, by the name of their property, each one with its value:
- * the ones `createComponent` binds, with values in place of getters.
+ * The inputs `renderToString` sets on the component it renders, by the name the templates bind them with (their alias, when
+ * they declare one), each one with its value: the ones `createComponent` binds, with values in place of getters.
  *
  * @template Component - The component.
  */

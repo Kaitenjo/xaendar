@@ -11,6 +11,7 @@ import type { CreateComponentOptions } from '../../types/create-component/create
 import { _Context } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
 import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
+import { _toPropertyName } from '../input-names/input-names.util';
 import { _createElement, _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
 
@@ -99,10 +100,11 @@ export function _createComponent<
  * without a condition are applied as long as the component lives, the ones of a group with a condition become an `@if` with a single branch,
  * whose inputs go back to their default value once it is no longer selected.
  * @param target - The class of the component or of the directive, whose required inputs must be bound by a group without condition.
- * @param properties - The groups of inputs, by name.
+ * @param properties - The groups of inputs, by the name they are bound with: their alias, when they declare one.
  * @param events - The groups of events, by name.
  * @returns The bindings collected.
- * @throws When an input is bound by more than one group, or a required input is not bound by a group without condition.
+ * @throws When an input is bound by more than one group, or by the name of its property while it declares an alias, or a required input
+ * is not bound by a group without condition.
  */
 function collectBindings<Target extends CustomElement | CustomDirective>(target: { name: string }, properties: BindingGroup<BindableProperties<Target>>[] | undefined, events: BindingGroup<BindableEvents<Target>>[] | undefined): Bindings {
   const bindings: Bindings = { attributes: [], events: [], conditionalBindings: [], directives: [] };
@@ -122,18 +124,20 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
           continue;
         }
 
-        if (bound.has(name)) {
+        // Bound by its alias, set by the name of its property
+        const property = _toPropertyName(target, name);
+        if (bound.has(property)) {
           throw new Error(`Property "${name}" is bound by more than one group`);
         }
 
-        bound.add(name);
+        bound.add(property);
         const attribute: Bindings['attributes'][number] = {
-          name,
+          name: property,
           value: group[name],
           setter: _setReactiveInput
         };
 
-        group.condition ? attribute.unbind = _resetProperty : alwaysBound.add(name);
+        group.condition ? attribute.unbind = _resetProperty : alwaysBound.add(property);
 
         attributes.push(attribute);
       }

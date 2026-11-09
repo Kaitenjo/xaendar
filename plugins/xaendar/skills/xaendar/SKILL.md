@@ -38,7 +38,7 @@ my-app/                 xd new my-app --style css   (css | scss | sass | less; r
 import { CustomElement, Event, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import type { InputSignal } from '@xaendar/core/signals';
+import type { Aliased, InputSignal } from '@xaendar/core/signals';
 
 @WebComponent({
   selector: 'app-counter',                       // lowercase, with a dash; string literals only
@@ -48,8 +48,8 @@ import type { InputSignal } from '@xaendar/core/signals';
 export class CounterComponent extends CustomElement {
   @Property(0)
   public accessor start!: InputSignal<number>;
-  @Property.required({ alias: 'label' })
-  public accessor caption!: InputSignal<string>;
+  @Property.required({ alias: 'label' })               // bound as label="…" everywhere; the type declares it too
+  public accessor caption!: Aliased<InputSignal<string>, 'label'>;
   @Event()
   public accessor changed!: Output<number>;
   public readonly count = signal(0);
@@ -87,7 +87,7 @@ export class CounterComponent extends CustomElement {
 - Extend `CustomElement` (components) or `CustomDirective<E>` / `StructuralDirective` (directives). Inputs are `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>`. Outputs are `@Event()` on `public accessor x!: Output<T>`. Queries are `@Query`, `@Query.all`, `@Query.content`, `@Query.content.all` on `accessor x!: QuerySignal<…>`, taking a CSS selector, a component class or a directive class (which holds the directive instances); `@Query.ref('name')` / `.all` / `.required` find the elements of an element ref `#name`; `@Query.required` / `@Query.content.required` drop `null` and throw when read with no match (view queries fill after the render, content queries after `afterRender`). Attributes, classes and listeners of the host element (the component, or the element of a custom directive) are `@HostProperty('aria-checked' | 'class.on')` on a field, getter or accessor and `@HostEvent('click', options?)` on a method: applied at each connection (before `afterRender`; after a directive's `onInit`), removed at disconnection. `null`/`undefined`/`false` remove the attribute, `true` writes it empty: write ARIA states as `String(value)`. Prefer them to effects and listeners set up in `onInit` and undone in `onDestroy`.
 - Give an `@Event` that the parent reads a type argument. An `Output` without one gives `$event` a `CustomEvent<null>`.
 - With a `transform` taking another type, the accessor declares that type as the second type argument of its signal (`@Property(0, { transform: (value: string) => Number(value) }) accessor size!: InputSignal<number, string>`), or `@Property` does not compile: templates, `createComponent` and `renderToString` take it.
-- Never name a member after an `HTMLElement` member (`title`, `lang`, `hidden`, `remove`, `click`, `attributes`, `matches`, `id`, `style`, …): TS2416 and cascading decorator errors. Rename the member, and use `alias` to keep the attribute name: `@Property('ts', { alias: 'lang' }) accessor language`.
+- Never name a member after an `HTMLElement` member (`title`, `lang`, `hidden`, `remove`, `click`, `attributes`, `matches`, `id`, `style`, …): TS2416 and cascading decorator errors. Rename the member, and use `alias` to keep the attribute name: `@Property('ts', { alias: 'lang' }) accessor language!: Aliased<InputSignal<string>, 'lang'>`. Templates, `createComponent` and `renderToString` bind an aliased input only by its alias.
 - Members used by the template must be `public`. A module constant, function, enum or signal the template reads is imported with `@import`, not copied into a member that only aliases it. The state of the component and its logic stay in the class: import types for the type arguments of generics, enums and classes for particular conditions, shared helpers and the signals of a store, not everything just because it is possible.
 - A module-level signal is best imported in the template (`@import { count } from './cart.store.ts'`): its bindings stay reactive. The class reads it directly (`count()`): do not copy it into a member (`public readonly count = count;`) or forward it through a method. Do not wrap the signal in a function of your own (`count = readCount()`): attribute bindings reading that member are evaluated once, unless it is annotated with its signal type (`count: Signal<number> = readCount()`). A signal taken from another object (`this.log = target.log`) still needs a signal type on the member. Only the types of `@xaendar/core/signals` count: an alias of your own is not recognized.
 - Lifecycle: `constructor` (once; nothing rendered) → `onInit()` (every connection, before render) → render → `afterRender()` (elements and view queries available) → `onDestroy()` (every disconnection). An element removed by its template is destroyed, and rendering it again creates a new instance: never move, remove or reattach elements with the DOM APIs. Create effects with `this.effect(fn)` in `onInit`, or in `afterRender` when they work on the elements of the template (a field or the constructor run them before the inputs are bound): they are disposed with the component, and their disposer throws once they are disposed. Remove manual listeners (window, document) in `onDestroy`, using a stable arrow-function field.
@@ -140,8 +140,8 @@ Follow these in every class you write or edit (components, directives, plain cla
   This applies to one-liners too. Module-level computeds in stores keep their callback inline.
 - **Input types** narrower than what the default infers (literal unions, empty arrays, nullable values, `unknown`) go in the generic of `@Property`, with the same type on the accessor. Never type the accessor `InputSignal<string>` and cast on read (`this.language() as CodeLang`):
   ```ts
-  @Property<InputSignal<CodeLang>>('ts', { alias: 'lang' })
-  public accessor language!: InputSignal<CodeLang>;
+  @Property<Aliased<InputSignal<CodeLang>, 'lang'>>('ts', { alias: 'lang' })
+  public accessor language!: Aliased<InputSignal<CodeLang>, 'lang'>;
   ```
   Any type works, imported aliases included. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union.
 - **Names**: never one-letter identifiers (variables, parameters and arrow callbacks, catch bindings, type parameters, `@for` items and aliases): name what the value is. Only the counter of a `for` loop is `i` (`j`, `k` when nested).

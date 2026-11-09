@@ -107,7 +107,7 @@ describe('extractComponentMembers', () => {
       const members = setup(`
         ${SIGNALS_IMPORT}
         import * as s from '@xaendar/core/signals';
-        import { InputSignal } from '@xaendar/core/signals';
+        import { Aliased, InputSignal } from '@xaendar/core/signals';
         class Cmp {
           a = signal(0);
           b = computed(() => 1);
@@ -118,6 +118,7 @@ describe('extractComponentMembers', () => {
           g!: InputSignal<boolean>;
           h!: s.InputSignal<number>;
           n!: import('@xaendar/core/signals').InputSignal<number>;
+          t!: Aliased<InputSignal<number>, 'tee'>;
           o!: import('./other').Signal<number>;
           p!: typeof import('@xaendar/core/signals');
           q!: import('@xaendar/core/signals');
@@ -132,7 +133,7 @@ describe('extractComponentMembers', () => {
         }
       `);
 
-      expect(members).toEqual(['a', 'b', 'c', 'g', 'h', 'n']);
+      expect(members).toEqual(['a', 'b', 'c', 'g', 'h', 'n', 't']);
     });
 
     it('detects members typed as signals whatever initialises them', () => {

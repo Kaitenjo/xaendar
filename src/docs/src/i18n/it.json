@@ -394,7 +394,7 @@
         },
         "bindings": {
           "title": "Input ed eventi",
-          "p1": "<code>properties</code> ed <code>events</code> sono liste di gruppi. Un gruppo lega input per nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, o ascolta eventi per nome, ciascuno con il suo listener: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. I getter girano in un effect, quindi un input segue i signal letti dal suo getter, come fa un binding <code>{ … }</code> in un template.",
+          "p1": "<code>properties</code> ed <code>events</code> sono liste di gruppi. Un gruppo lega input per il nome con cui li legano i template, il loro <code>alias</code> quando ne dichiarano uno, altrimenti il nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, o ascolta eventi per nome, ciascuno con il suo listener: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. I getter girano in un effect, quindi un input segue i signal letti dal suo getter, come fa un binding <code>{ … }</code> in un template.",
           "p2": "Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale, come un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a> scritto nel tag: appena smette di valere, i suoi input tornano al loro <strong>valore di default</strong>, non all’ultimo ricevuto, e i suoi eventi non sono più ascoltati. Anche la condizione è un getter, e segue i signal che legge. Un input obbligatorio, del componente o di una direttiva, va legato da un gruppo senza <code>condition</code>: altrimenti <code>createComponent</code> lancia un errore."
         },
         "directives": {
@@ -554,7 +554,7 @@
           "th2": "Descrizione",
           "td1": "Un input facoltativo, che vale <code>default</code> finché non viene legato.",
           "td2": "Un input che ogni template deve legare. <code>undefined</code> finché non viene legato.",
-          "td3": "Il nome dell’input nei template, l’unico con cui lo legano.",
+          "td3": "Il nome dell’input nei template, in <code>createComponent</code> e in <code>renderToString</code>, l’unico con cui lo legano; lo dichiara anche il tipo dell’accessor, <code>Aliased&lt;InputSignal&lt;T&gt;, 'alias'&gt;</code>.",
           "td4": "Converte ogni valore legato prima che venga memorizzato.",
           "td5": "Quando restituisce <code>true</code>, il nuovo valore viene scartato e nessuno viene notificato. Default: <code>Object.is</code>.",
           "td6": "Chiamate quando l’input acquista il primo lettore e perde l’ultimo. Vedi <a href=\"#/it/signals/options\">Opzioni dei signal</a>.",
@@ -3026,7 +3026,7 @@
           "entry": {
             "title": "L’entry del server",
             "p1": "L’entry esporta <code>render(url)</code>, che restituisce l’HTML scritto al posto di <code>&lt;!--xd-ssr--&gt;</code>. Prima installa il polyfill dei Signal e il DOM del server, con <a href=\"#/it/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a>, perché Node non ha <code>HTMLElement</code> né <code>customElements</code>, poi importa i componenti con <code>import()</code>: un import statico verrebbe valutato prima di quelle due chiamate.",
-            "p2": "<a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renderizza un componente e tutto ciò che renderizza. Il secondo argomento imposta gli input del componente per nome della proprietà: usalo per renderizzare la pagina di una route. <code>url</code> è il percorso della richiesta con la query string (<code>/products/42?ref=mail</code>), uguale in <code>xd start</code>, <code>server.ts</code> e <code>xd prerender</code>, e sempre sull’origine del sito, anche per una richiesta di <code>//evil.com/x</code> (<a href=\"#/it/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>)."
+            "p2": "<a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renderizza un componente e tutto ciò che renderizza. Il secondo argomento imposta gli input del componente per il nome con cui li legano i template, il loro <code>alias</code> quando ne dichiarano uno: usalo per renderizzare la pagina di una route. <code>url</code> è il percorso della richiesta con la query string (<code>/products/42?ref=mail</code>), uguale in <code>xd start</code>, <code>server.ts</code> e <code>xd prerender</code>, e sempre sull’origine del sito, anche per una richiesta di <code>//evil.com/x</code> (<a href=\"#/it/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>)."
           },
           "output": {
             "title": "Cosa scrive il server",
@@ -4174,6 +4174,10 @@
     "Error: The required input \"name\" of ProfileComponent is not bound by the inputs of renderToString": {
       "cause": "renderToString renderizza un componente senza un input @Property.required tra i suoi input.",
       "fix": "Passa l’input tra gli input di renderToString."
+    },
+    "Error: \"userId\" is the property of an input of ProfileComponent declaring an alias: bind it by its alias": {
+      "cause": "createComponent o renderToString legano un input con il nome della sua proprietà, mentre l’input dichiara un alias: il codice fuori dalla classe lega un input con il nome che usano i template.",
+      "fix": "Lega l’input con il suo alias."
     },
     "Error: @HostProperty('class.') names no class": {
       "cause": "Un @HostProperty con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostProperty('') names no attribute.",

@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed, signal, untracked } from '@xaendar/core/signals';
-import type { InputSignal } from '@xaendar/core/signals';
+import type { Aliased, InputSignal } from '@xaendar/core/signals';
 import type { CodeLang } from '../../core/highlight/highlight';
 import { describeSnippet, loadSnippet } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
@@ -27,8 +27,8 @@ export class DocsCodeComponent extends CustomElement {
    * The language of `code`, one of {@link CodeLang} (`text` when unknown). Bound as `lang`: a member
    * named `lang` would clash with the `lang` property of `HTMLElement`.
    */
-  @Property<InputSignal<CodeLang>>('ts', { alias: 'lang' })
-  public accessor language!: InputSignal<CodeLang>;
+  @Property<Aliased<InputSignal<CodeLang>, 'lang'>>('ts', { alias: 'lang' })
+  public accessor language!: Aliased<InputSignal<CodeLang>, 'lang'>;
   /**
    * The snippet whose content and language replace `code` and `lang`, and whose name is shown when `filename` is empty:
    * a source file, or the path of a file in `src/snippets`, loaded when a page shows it.

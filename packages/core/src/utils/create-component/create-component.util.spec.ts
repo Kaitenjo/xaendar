@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 import type { Constructor } from '@xaendar/types';
+import type { Aliased } from '../../signals/types/aliased.type';
+import type { InputSignal } from '../../signals/types/input-signal.type';
 import { describe, expect, it, vi } from 'vitest';
 
 await vi.hoisted(async () => {
@@ -99,6 +101,31 @@ const Profile = define(class Profile extends CustomElement {
 Object.assign((Profile as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { requiredInputs: new Set(['name']) });
 
 /**
+ * Component whose inputs declare aliases, the name of the property of one being the alias of the other, as `@Property`
+ * registers them in the metadata of the class.
+ */
+const Crossed = define(class Crossed extends CustomElement {
+  public readonly internalValue = input<string>('internal') as Aliased<InputSignal<string>, 'value'>;
+  public readonly value = input<number, string>(0, { transform: text => Number(text) }) as Aliased<InputSignal<number, string>, 'initialValue'>;
+});
+Object.assign((Crossed as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { aliasToAttribute: { value: 'internalValue', initialValue: 'value' } });
+
+/**
+ * Directive whose input declares an alias.
+ */
+class Hint extends CustomDirective {
+  public static last?: Hint;
+
+  public readonly text = input<string>('') as Aliased<InputSignal<string>, 'hint'>;
+
+  constructor() {
+    super();
+    Hint.last = this;
+  }
+}
+Object.defineProperty(Hint, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { hint: 'text' } } });
+
+/**
  * Directive declaring a required input.
  */
 class Label extends CustomDirective {
@@ -160,6 +187,30 @@ describe('_createComponent', () => {
   it('throws when an input is bound by more than one group', () => {
     expect(() => _createComponent(owner, Card, { target: document.body, properties: [{ count: () => 1 }, { condition: () => true, count: () => 2 }] }))
       .toThrow('Property "count" is bound by more than one group');
+  });
+
+  it('binds the inputs declaring an alias by it, setting them by the name of their property', async () => {
+    const value = signal('first');
+    const { element } = _createComponent(owner, Crossed, {
+      target: document.body,
+      properties: [{ value: () => value(), initialValue: () => '7' }],
+      directives: [{ directive: Hint, properties: [{ hint: () => 'tip' }] }]
+    });
+
+    expect(element.internalValue()).toBe('first');
+    expect(element.value()).toBe(7);
+    expect(Hint.last!.text()).toBe('tip');
+
+    value.set('second');
+    await flush();
+
+    expect(element.internalValue()).toBe('second');
+    expect(element.value()).toBe(7);
+  });
+
+  it('throws when an input declaring an alias is bound by the name of its property', () => {
+    expect(() => _createComponent(owner, Crossed, { target: document.body, properties: [{ internalValue: () => 'x' } as never] }))
+      .toThrow('"internalValue" is the property of an input of Crossed declaring an alias: bind it by its alias');
   });
 
   it('requires the required inputs of the component and of its directives to be bound by a group without condition', () => {
@@ -381,6 +432,14 @@ describe('_createComponent', () => {
       host.createComponent(Card, { target: document.body, properties: [{ size: () => '21' }] });
       // @ts-expect-error the transform of the input takes a string, not the type of its value
       host.createComponent(Card, { target: document.body, properties: [{ size: () => 21 }] });
+      // An input declaring an alias is bound by it, with the type its transform takes
+      host.createComponent(Crossed, { target: document.body, properties: [{ value: () => 'x', initialValue: () => '1' }], directives: [{ directive: Hint, properties: [{ hint: () => 'tip' }] }] });
+      // @ts-expect-error an input declaring an alias is not bound by the name of its property
+      host.createComponent(Crossed, { target: document.body, properties: [{ internalValue: () => 'x' }] });
+      // @ts-expect-error the input named like the alias of another one takes the type of its transform
+      host.createComponent(Crossed, { target: document.body, properties: [{ initialValue: () => 1 }] });
+      // @ts-expect-error the input of a directive declaring an alias is not bound by the name of its property
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Hint, properties: [{ text: () => 'tip' }] }] });
       // @ts-expect-error the detail of an event is the value of its output
       host.createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
       // @ts-expect-error an input is not an event

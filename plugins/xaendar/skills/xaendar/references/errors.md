@@ -742,6 +742,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** renderToString rendering a component without a @Property.required input among its inputs.
 - **Fix:** Pass the input among the inputs of renderToString.
 
+### `Error: "userId" is the property of an input of ProfileComponent declaring an alias: bind it by its alias`
+
+- **Cause:** createComponent or renderToString binding an input by the name of its property, while the input declares an alias: code outside the class binds an input by the name the templates use.
+- **Fix:** Bind the input by its alias.
+
 ### `Error: No element matches the required content query '[header]' of <x-card>`
 
 - **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.

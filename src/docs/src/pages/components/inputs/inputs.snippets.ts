@@ -15,7 +15,7 @@ public accessor count!: InputSignal<number>;
  * Bound as show-value="…" in templates.
  */
 @Property(true, { alias: 'show-value' })
-public accessor showValue!: InputSignal<boolean>;
+public accessor showValue!: Aliased<InputSignal<boolean>, 'show-value'>;
 /**
  * Normalized and compared through the options of the input.
  */

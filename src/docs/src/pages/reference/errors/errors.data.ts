@@ -675,6 +675,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: 'Error: "userId" is the property of an input of ProfileComponent declaring an alias: bind it by its alias',
+    page: 'components/dynamic-creation'
+  },
+  {
+    phase: 'Runtime',
     message: "Error: @HostProperty('class.') names no class",
     page: 'components/host-bindings'
   },

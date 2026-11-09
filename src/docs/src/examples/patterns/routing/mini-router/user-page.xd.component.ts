@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent, Property } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import type { InputSignal } from '@xaendar/core/signals';
+import type { Aliased, InputSignal } from '@xaendar/core/signals';
 import { USERS } from './users';
 
 /**
@@ -16,7 +16,7 @@ export class UserPageComponent extends CustomElement {
    * The id of the user, as written in the path.
    */
   @Property('', { alias: 'user' })
-  public accessor userId!: InputSignal<string>;
+  public accessor userId!: Aliased<InputSignal<string>, 'user'>;
   /**
    * The user, or undefined when the id is unknown.
    */

@@ -10,6 +10,9 @@ import type { WebComponentMetadata } from '../../types/web-component/web-compone
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
 import type { PropertyDecoratorOptionsWithRequiredBrandType } from '../../types/property/property-decorator-options-with-required-brand-type.type';
+import type { InputAlias } from '../../types/property/input-alias.type';
+import type { WithAlias } from '../../types/property/with-alias.type';
+import type { PropertyOptionsArgument } from '../../types/property/property-options-argument.type';
 
 function createPropertyDecorator<
   Class extends BindingHost,
@@ -101,6 +104,9 @@ function createPropertyDecorator<
  *   hooks, attribute alias, transform function).
  * @returns An accessor decorator that replaces the field with an `InputSignal`.
  *
+ * With an `alias`, the accessor declares it in its type (`Aliased<InputSignal<T>, 'alias'>`), or the decorator does not
+ * compile: `createComponent` and `renderToString` bind the input by it.
+ *
  * @example
  * ```ts
  * \@Property()
@@ -108,17 +114,21 @@ function createPropertyDecorator<
  *
  * \@Property(0)
  * accessor count: InputSignal<number>;
+ *
+ * \@Property('', { alias: 'user-id' })
+ * accessor userId: Aliased<InputSignal<string>, 'user-id'>;
  * ```
  */
 export function Property<
   Value extends InputSignal<ActualValue, IncomingValue>,
   IncomingValue = Value extends InputSignal<unknown, infer In> ? In : unknown,
-  ActualValue = Value extends InputSignal<infer U, unknown> ? U : unknown
+  ActualValue = Value extends InputSignal<infer U, unknown> ? U : unknown,
+  Alias extends string = InputAlias<Value>
 >(
   value?: ActualValue,
-  options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue, IncomingValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue, IncomingValue>, IncomingValue>> {
-  return createPropertyDecorator<BindingHost, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>(value, options);
+  ...[options]: PropertyOptionsArgument<PropertyDecoratorOptions<ActualValue, IncomingValue, Alias>, Alias>
+): Function<Parameters<AccessorDecorator<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, IncomingValue>> {
+  return createPropertyDecorator<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, ActualValue, IncomingValue>(value, options);
 }
 
 /**\
@@ -139,16 +149,17 @@ export function Property<
  * accessor userId: InputSignal<string>;
  *
  * \@Property.required({ alias: 'user-id' })
- * accessor userId: InputSignal<string>;
+ * accessor userId: Aliased<InputSignal<string>, 'user-id'>;
  * ```
  */
 Property.required = function required<
   ActualValue = unknown,
-  IncomingValue = ActualValue
+  IncomingValue = ActualValue,
+  Alias extends string = never
 >(
-  options?: Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue>, 'required'>
-): Function<Parameters<AccessorDecorator<BindingHost, InputSignal<ActualValue, IncomingValue>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, InputSignal<ActualValue, IncomingValue>, IncomingValue>>{
-  return createPropertyDecorator<BindingHost, InputSignal<ActualValue, IncomingValue>, ActualValue, IncomingValue>({
+  ...[options]: PropertyOptionsArgument<Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue, Alias>, 'required'>, Alias>
+): Function<Parameters<AccessorDecorator<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, IncomingValue>>{
+  return createPropertyDecorator<BindingHost, WithAlias<InputSignal<ActualValue, IncomingValue>, Alias>, ActualValue, IncomingValue>({
     ...options,
     [PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND]: 'PropertyDecoratorOptionsWithRequired',
     required: true,

@@ -195,6 +195,17 @@ export const CORE_SIGNALS_API: ApiPackage = {
       guides: ['components/inputs']
     },
     {
+      name: 'Aliased',
+      kind: 'type',
+      signature: `type Aliased<Signal extends InputSignal, Alias extends string> = Signal & {
+  readonly [INPUT_ALIAS]: Alias;
+}`,
+      usage: [
+        { key: 'declaring', snippets: [PROPERTY_OPTIONS, PROPERTY_TYPE] }
+      ],
+      guides: ['components/inputs']
+    },
+    {
       name: 'QuerySignal',
       kind: 'type',
       signature: `type QuerySignal<Value = unknown> = Pick<Signal.State<Value>, 'get'> & {

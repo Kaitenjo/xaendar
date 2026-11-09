@@ -16607,9 +16607,9 @@ var require_parse2 = __commonJS({
                 const idx = prev.value.lastIndexOf("[");
                 const pre = prev.value.slice(0, idx);
                 const rest2 = prev.value.slice(idx + 2);
-                const posix2 = POSIX_REGEX_SOURCE[rest2];
-                if (posix2) {
-                  prev.value = pre + posix2;
+                const posix3 = POSIX_REGEX_SOURCE[rest2];
+                if (posix3) {
+                  prev.value = pre + posix3;
                   state.backtrack = true;
                   advance();
                   if (!bos.output && tokens.indexOf(prev) === 1) {
@@ -17130,7 +17130,7 @@ var require_picomatch = __commonJS({
         throw new TypeError("Expected pattern to be a non-empty string");
       }
       const opts = options || {};
-      const posix2 = utils.isWindows(options);
+      const posix3 = utils.isWindows(options);
       const regex = isState ? picomatch.compileRe(glob, options) : picomatch.makeRe(glob, options, false, true);
       const state = regex.state;
       delete regex.state;
@@ -17140,8 +17140,8 @@ var require_picomatch = __commonJS({
         isIgnored = picomatch(opts.ignore, ignoreOpts, returnState);
       }
       const matcher = (input, returnObject = false) => {
-        const { isMatch, match, output } = picomatch.test(input, regex, options, { glob, posix: posix2 });
-        const result = { glob, state, regex, posix: posix2, input, output, match, isMatch };
+        const { isMatch, match, output } = picomatch.test(input, regex, options, { glob, posix: posix3 });
+        const result = { glob, state, regex, posix: posix3, input, output, match, isMatch };
         if (typeof opts.onResult === "function") {
           opts.onResult(result);
         }
@@ -17166,7 +17166,7 @@ var require_picomatch = __commonJS({
       }
       return matcher;
     };
-    picomatch.test = (input, regex, options, { glob, posix: posix2 } = {}) => {
+    picomatch.test = (input, regex, options, { glob, posix: posix3 } = {}) => {
       if (typeof input !== "string") {
         throw new TypeError("Expected input to be a string");
       }
@@ -17174,7 +17174,7 @@ var require_picomatch = __commonJS({
         return { isMatch: false, output: "" };
       }
       const opts = options || {};
-      const format = opts.format || (posix2 ? utils.toPosixSlashes : null);
+      const format = opts.format || (posix3 ? utils.toPosixSlashes : null);
       let match = input === glob;
       let output = match && format ? format(input) : input;
       if (match === false) {
@@ -17183,14 +17183,14 @@ var require_picomatch = __commonJS({
       }
       if (match === false || opts.capture === true) {
         if (opts.matchBase === true || opts.basename === true) {
-          match = picomatch.matchBase(input, regex, options, posix2);
+          match = picomatch.matchBase(input, regex, options, posix3);
         } else {
           match = regex.exec(output);
         }
       }
       return { isMatch: Boolean(match), match, output };
     };
-    picomatch.matchBase = (input, glob, options, posix2 = utils.isWindows(options)) => {
+    picomatch.matchBase = (input, glob, options, posix3 = utils.isWindows(options)) => {
       const regex = glob instanceof RegExp ? glob : picomatch.makeRe(glob, options);
       return regex.test(path.basename(input));
     };
@@ -17379,9 +17379,9 @@ var require_micromatch = __commonJS({
       return [].concat(patterns).every((p2) => picomatch(p2, options)(str));
     };
     micromatch.capture = (glob, input, options) => {
-      let posix2 = utils.isWindows(options);
+      let posix3 = utils.isWindows(options);
       let regex = picomatch.makeRe(String(glob), { ...options, capture: true });
-      let match = regex.exec(posix2 ? utils.toPosixSlashes(input) : input);
+      let match = regex.exec(posix3 ? utils.toPosixSlashes(input) : input);
       if (match) {
         return match.slice(1).map((v2) => v2 === void 0 ? "" : v2);
       }
@@ -17989,11 +17989,11 @@ var require_out = __commonJS({
       async.read(path, getSettings(optionsOrSettingsOrCallback), callback);
     }
     exports2.stat = stat;
-    function statSync3(path, optionsOrSettings) {
+    function statSync4(path, optionsOrSettings) {
       const settings = getSettings(optionsOrSettings);
       return sync.read(path, settings);
     }
-    exports2.statSync = statSync3;
+    exports2.statSync = statSync4;
     function getSettings(settingsOrOptions = {}) {
       if (settingsOrOptions instanceof settings_1.default) {
         return settingsOrOptions;
@@ -19833,19 +19833,19 @@ var require_out4 = __commonJS({
         return utils.path.convertPathToPattern(source);
       }
       FastGlob2.convertPathToPattern = convertPathToPattern;
-      let posix2;
-      (function(posix3) {
+      let posix3;
+      (function(posix4) {
         function escapePath2(source) {
           assertPatternsInput(source);
           return utils.path.escapePosixPath(source);
         }
-        posix3.escapePath = escapePath2;
+        posix4.escapePath = escapePath2;
         function convertPathToPattern2(source) {
           assertPatternsInput(source);
           return utils.path.convertPosixPathToPattern(source);
         }
-        posix3.convertPathToPattern = convertPathToPattern2;
-      })(posix2 = FastGlob2.posix || (FastGlob2.posix = {}));
+        posix4.convertPathToPattern = convertPathToPattern2;
+      })(posix3 = FastGlob2.posix || (FastGlob2.posix = {}));
       let win32;
       (function(win322) {
         function escapePath2(source) {
@@ -25863,6 +25863,183 @@ function readExposures(expression) {
   return exposures;
 }
 
+// ../packages/compiler/src/utils/package-libraries/package-libraries.utils.ts
+var import_node_fs2 = require("fs");
+var import_node_path = require("path");
+
+// ../packages/compiler/src/utils/library-manifest/library-manifest.utils.ts
+var IMPORT_TYPE = /import\('([^']*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
+function mapTypeModules(type, map) {
+  return type.replace(IMPORT_TYPE, (_match, module2, name) => `import('${map(module2)}')${name === void 0 ? "" : `.${name}`}`);
+}
+function toLibraryMetadata(declaration, manifest, root) {
+  const { type, className, selector, module: module2, types, typeParameters, inputs, events, ssr } = declaration;
+  const metadata = {
+    type,
+    className,
+    selector,
+    modulePath: toPackagePath(types, root),
+    importPath: `${manifest.name}${module2.slice(1)}`,
+    library: { name: manifest.name, root, ssr: manifest.ssr },
+    properties: toPropertiesMetadata(inputs, root),
+    events: toEventsMetadata(events, root)
+  };
+  if (typeParameters?.length) {
+    metadata.typeParameters = typeParameters;
+  }
+  if (type === "component" && (ssr || !manifest.ssr)) {
+    metadata.clientOnly = {};
+    if (ssr?.hydrate !== void 0) {
+      metadata.clientOnly.hydrate = ssr.hydrate;
+    }
+  }
+  return metadata;
+}
+function toPropertiesMetadata(inputs, root) {
+  const properties = /* @__PURE__ */ new Map();
+  for (let i2 = 0; i2 < inputs.length; i2++) {
+    const { name, property, type, required, exposed } = inputs[i2];
+    properties.set(name, new ComponentPropertyMetadata(property ?? name, mapTypeModules(type, (module2) => toPackagePath(module2, root)), {
+      required: required === true,
+      alias: property === void 0 ? void 0 : name,
+      exposed: exposed === true
+    }));
+  }
+  return properties;
+}
+function toEventsMetadata(events, root) {
+  const metadata = /* @__PURE__ */ new Map();
+  for (let i2 = 0; i2 < events.length; i2++) {
+    metadata.set(events[i2].name, { type: mapTypeModules(events[i2].type, (module2) => toPackagePath(module2, root)) });
+  }
+  return metadata;
+}
+function toPackagePath(path, root) {
+  return path.startsWith("./") ? `${root}${path.slice(1)}` : path;
+}
+
+// ../packages/compiler/src/utils/package-libraries/package-libraries.utils.ts
+var SCHEMA_VERSION = 1;
+var DECLARATION_FILE = /\.d\.[cm]?ts$/;
+var packages = /* @__PURE__ */ new Map();
+function readLibraryMetadata(declarationFile, exportedName) {
+  if (!DECLARATION_FILE.test(declarationFile)) {
+    return void 0;
+  }
+  const library = findLibrary(declarationFile);
+  const subpath = library?.subpaths.get(normalizeFileName(declarationFile));
+  const key = library && subpath !== void 0 ? library.manifest.exports[subpath]?.[exportedName] : void 0;
+  return library && key !== void 0 ? getLibraryMetadata(library, key) : void 0;
+}
+function readLibraryClass(declarationFile, className) {
+  const library = DECLARATION_FILE.test(declarationFile) ? findLibrary(declarationFile) : void 0;
+  if (!library) {
+    return void 0;
+  }
+  const types = `./${import_node_path.posix.relative(library.root, toPosixPath(declarationFile))}`;
+  const { declarations } = library.manifest;
+  const key = Object.keys(declarations).find((candidate) => declarations[candidate].types === types && declarations[candidate].className === className);
+  return key === void 0 ? void 0 : getLibraryMetadata(library, key);
+}
+function findLibrary(fileName) {
+  const root = findPackageRoot((0, import_node_path.dirname)(fileName));
+  return root === void 0 ? void 0 : readLibrary(root);
+}
+function readLibrary(root) {
+  const mtime = (0, import_node_fs2.statSync)(`${root}/package.json`).mtimeMs;
+  const cached = packages.get(root);
+  if (cached?.mtime === mtime) {
+    return cached.library;
+  }
+  const library = loadLibrary(root, readPackageJson(root));
+  packages.set(root, { mtime, library });
+  return library;
+}
+function loadLibrary(root, packageJson) {
+  const manifestPath = packageJson.xaendar?.manifest;
+  if (manifestPath === void 0) {
+    return void 0;
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse((0, import_node_fs2.readFileSync)(import_node_path.posix.join(root, manifestPath), "utf-8"));
+  } catch (error) {
+    throw new Error(`Cannot read the manifest of ${packageJson.name}, ${import_node_path.posix.join(root, manifestPath)}: ${error}`, { cause: error });
+  }
+  checkManifest(manifest, root);
+  return { root, packageJson, manifest, subpaths: readSubpaths(packageJson, root), metadatas: /* @__PURE__ */ new Map() };
+}
+function checkManifest({ schemaVersion, name, version, xaendar }, root) {
+  if (schemaVersion !== SCHEMA_VERSION) {
+    throw new Error(`The manifest of ${name} ${version} has the format ${schemaVersion}, which this version of Xaendar does not read: update the Xaendar packages of the project.`);
+  }
+  const coreRoot = findDependencyRoot(root, "@xaendar/core");
+  const core = coreRoot === void 0 ? void 0 : readPackageJson(coreRoot).version;
+  if (core !== void 0 && !isCompatibleVersion(core, xaendar)) {
+    throw new Error(`${name} ${version} was compiled by Xaendar ${xaendar}, and needs @xaendar/core ${xaendar} or a later ${parseVersion(xaendar)[0]}.x version: the project has ${core}.`);
+  }
+}
+function isCompatibleVersion(installed, required) {
+  const [major, minor, patch] = parseVersion(installed);
+  const [requiredMajor, requiredMinor, requiredPatch] = parseVersion(required);
+  return major === requiredMajor && (minor > requiredMinor || minor === requiredMinor && patch >= requiredPatch);
+}
+function parseVersion(version) {
+  return version.split(/[-+]/)[0].split(".").map(Number);
+}
+function readSubpaths({ exports: exports2 }, root) {
+  const subpaths = /* @__PURE__ */ new Map();
+  if (exports2) {
+    const paths = Object.keys(exports2);
+    for (let i2 = 0; i2 < paths.length; i2++) {
+      const conditions = exports2[paths[i2]];
+      if (typeof conditions === "object" && conditions !== null && "types" in conditions && typeof conditions.types === "string") {
+        subpaths.set(normalizeFileName(import_node_path.posix.join(root, conditions.types)), paths[i2]);
+      }
+    }
+  }
+  return subpaths;
+}
+function getLibraryMetadata(library, key) {
+  let metadata = library.metadatas.get(key);
+  if (!metadata) {
+    metadata = toLibraryMetadata(library.manifest.declarations[key], library.manifest, library.root);
+    library.metadatas.set(key, metadata);
+  }
+  return metadata;
+}
+function findPackageRoot(dir) {
+  let current = dir;
+  while (!(0, import_node_fs2.existsSync)(`${current}/package.json`)) {
+    const parent = (0, import_node_path.dirname)(current);
+    if (parent === current) {
+      return void 0;
+    }
+    current = parent;
+  }
+  return toPosixPath(current);
+}
+function findDependencyRoot(dir, name) {
+  let current = dir;
+  while (!(0, import_node_fs2.existsSync)(`${current}/node_modules/${name}/package.json`)) {
+    const parent = (0, import_node_path.dirname)(current);
+    if (parent === current) {
+      return void 0;
+    }
+    current = parent;
+  }
+  return toPosixPath((0, import_node_fs2.realpathSync)(`${current}/node_modules/${name}`));
+}
+function readPackageJson(root) {
+  return JSON.parse((0, import_node_fs2.readFileSync)(`${root}/package.json`, "utf-8"));
+}
+function toPosixPath(path) {
+  return path.replaceAll("\\", "/");
+}
+function normalizeFileName(fileName) {
+  return toPosixPath(fileName).replace(/^[A-Z]:/, (drive) => drive.toLowerCase());
+}
+
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
 async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptions) {
   const metadatas = /* @__PURE__ */ new Map();
@@ -25875,7 +26052,7 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
     }
     const className = klass.name.text;
     const bindings = extractBindingsMetadata(klass, sourceFile, "component", compilerOptions);
-    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, ({ declaration, sourceFile: directiveFile }) => classDeclarationHasName(declaration) ? extractBindingsMetadata(declaration, directiveFile, "directive", compilerOptions) : void 0);
+    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, (directive) => extractHostDirectiveBindings(directive, compilerOptions));
     const metadata = {
       type: "component",
       className,
@@ -26099,6 +26276,12 @@ function getDecoratedClassDeclarations(sourceFile, decoratorName) {
 function classDeclarationHasName(node) {
   return (0, import_typescript13.isClassDeclaration)(node) && !!node.name?.text;
 }
+function extractHostDirectiveBindings({ declaration, sourceFile }, compilerOptions) {
+  if (!classDeclarationHasName(declaration)) {
+    return void 0;
+  }
+  return readLibraryClass(sourceFile.fileName, declaration.name.text) ?? extractBindingsMetadata(declaration, sourceFile, "directive", compilerOptions);
+}
 function findClassDecorator(classDecl, decoratorName) {
   const decorators = (0, import_typescript13.getDecorators)(classDecl);
   if (!decorators?.length) {
@@ -26220,7 +26403,7 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
   if (args.length) {
     const options = required ? args[0] : args[1];
-    const incomingType = options && (0, import_typescript13.isObjectLiteralExpression)(options) ? findTransformIncomingType(decorator, options) : void 0;
+    const incomingType = options && (0, import_typescript13.isObjectLiteralExpression)(options) ? findTransformIncomingType(property, options) : void 0;
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
@@ -26236,12 +26419,12 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   }
   return metadata;
 }
-function findTransformIncomingType(decorator, options) {
-  const transform = options.properties.find((property) => ((0, import_typescript13.isPropertyAssignment)(property) || (0, import_typescript13.isMethodDeclaration)(property)) && (0, import_typescript13.isIdentifier)(property.name) && property.name.text === "transform");
+function findTransformIncomingType(property, options) {
+  const transform = options.properties.find((property2) => ((0, import_typescript13.isPropertyAssignment)(property2) || (0, import_typescript13.isMethodDeclaration)(property2)) && (0, import_typescript13.isIdentifier)(property2.name) && property2.name.text === "transform");
   if (!transform) {
     return void 0;
   }
-  const typeArgument = decorator.expression.typeArguments?.[1];
+  const typeArgument = property.type && (0, import_typescript13.isTypeReferenceNode)(property.type) ? property.type.typeArguments?.[1] : void 0;
   if (typeArgument) {
     return typeArgument;
   }
@@ -26738,7 +26921,15 @@ function assertDirectiveProperties(attributes, metadata, owner) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, span } = attributes[i2];
     if (!metadata.properties.has(name)) {
+      assertNotAliasedProperty(attributes[i2], metadata);
       throw new Error(`Unknown property "${name}" on ${owner} (${metadata.className} has no @Property with this name).`, { cause: span });
+    }
+  }
+}
+function assertNotAliasedProperty({ name, span }, metadata) {
+  for (const property of metadata.properties.values()) {
+    if (property.name === name && property.alias && !property.exposed) {
+      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="\u2026".`, { cause: span });
     }
   }
 }
@@ -26774,7 +26965,9 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, value, span, bare } = attributes[i2];
     const property = metadata.properties.get(name);
-    if (property) {
+    if (!property) {
+      assertNotAliasedProperty(attributes[i2], metadata);
+    } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="\u2026" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
       }
@@ -27260,7 +27453,7 @@ function typeCheckTextAndInterpolation(node, _processNode, context) {
 }
 
 // ../packages/compiler/src/type-checker/utils/import-hoisting/import-hoisting.utils.ts
-var IMPORT_TYPE = /import\('([^']+)'\)/g;
+var IMPORT_TYPE2 = /import\('([^']+)'\)/g;
 var MODULE_ALIAS = "__module";
 function hoistImportTypes(lines) {
   const aliases = /* @__PURE__ */ new Map();
@@ -27276,7 +27469,7 @@ function hoistImportTypes(lines) {
 }
 function hoistLine(currentLine, aliases) {
   const shifts = new Array();
-  const text = currentLine.text.replace(IMPORT_TYPE, (match, modulePath, offset) => {
+  const text = currentLine.text.replace(IMPORT_TYPE2, (match, modulePath, offset) => {
     let alias = aliases.get(modulePath);
     if (!alias) {
       alias = `${MODULE_ALIAS}${aliases.size}`;
@@ -29274,7 +29467,7 @@ var import_typescript18 = require("typescript");
 // ../packages/compiler/src/utils/extract-component-members/extract-component-members.utils.ts
 var import_typescript17 = require("typescript");
 var SIGNAL_MODULE_SPECIFIERS = /* @__PURE__ */ new Set(["@xaendar/core/signals"]);
-var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "SettableInputSignal", "QuerySignal"]);
+var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "Aliased", "SettableInputSignal", "QuerySignal"]);
 var FUNCTION_FINDER = {
   local: (statement, localName) => (0, import_typescript17.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
   exported: (statement, exportedName) => (0, import_typescript17.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
@@ -29483,8 +29676,8 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
 var ASSIGNMENTS = { first: import_typescript18.SyntaxKind.FirstAssignment, last: import_typescript18.SyntaxKind.LastAssignment };
 
 // ../packages/language-core/src/lib/component-definition/component-definition.ts
-var import_node_fs2 = require("fs");
-var import_node_path2 = require("path");
+var import_node_fs3 = require("fs");
+var import_node_path3 = require("path");
 var import_typescript20 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/component-options/component-options.utils.ts
@@ -29502,15 +29695,15 @@ function findStringOptions(decorator, names) {
 }
 
 // ../packages/language-core/src/lib/utils/path/path.utils.ts
-var import_node_path = require("path");
-function normalizeFileName(fileName) {
-  return toPosixPath(fileName).replace(/^[A-Z]:/, (drive) => drive.toLowerCase());
+var import_node_path2 = require("path");
+function normalizeFileName2(fileName) {
+  return toPosixPath2(fileName).replace(/^[A-Z]:/, (drive) => drive.toLowerCase());
 }
-function toPosixPath(path) {
+function toPosixPath2(path) {
   return path.replace(/\\/g, "/");
 }
 function resolvePosixPath(...segments) {
-  return toPosixPath((0, import_node_path.resolve)(...segments));
+  return toPosixPath2((0, import_node_path2.resolve)(...segments));
 }
 
 // ../packages/language-core/src/lib/utils/template-walker/template-walker.utils.ts
@@ -29965,21 +30158,21 @@ async function extractComponents(fileName, text) {
   }
 }
 function resolveUrls(fileName, urls) {
-  const componentDir = (0, import_node_path2.dirname)(fileName);
-  return urls.filter((url) => url !== void 0).map((url) => resolvePosixPath(componentDir, url)).filter((path) => (0, import_node_fs2.existsSync)(path));
+  const componentDir = (0, import_node_path3.dirname)(fileName);
+  return urls.filter((url) => url !== void 0).map((url) => resolvePosixPath(componentDir, url)).filter((path) => (0, import_node_fs3.existsSync)(path));
 }
 
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
-var import_node_fs6 = require("fs");
-var import_node_path8 = require("path");
+var import_node_fs7 = require("fs");
+var import_node_path9 = require("path");
 var import_typescript28 = require("typescript");
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
-var import_node_path7 = require("path");
+var import_node_path8 = require("path");
 var import_typescript27 = require("typescript");
 
 // ../packages/language-core/src/lib/language-service/language-service.ts
-var import_node_fs3 = require("fs");
+var import_node_fs4 = require("fs");
 var import_typescript21 = require("typescript");
 var documentOverlays = /* @__PURE__ */ new Map();
 var projectLanguageServices = /* @__PURE__ */ new Map();
@@ -30110,7 +30303,7 @@ var ProjectLanguageService = class {
       ],
       getScriptVersion: (fileName) => {
         const virtual = this._virtualFiles.get(fileName);
-        const overlay = documentOverlays.get(normalizeFileName(fileName));
+        const overlay = documentOverlays.get(normalizeFileName2(fileName));
         return virtual ? String(virtual.version) : overlay ? `overlay-${overlay.version}` : this._getRealFileVersion(fileName);
       },
       getScriptSnapshot: (fileName) => {
@@ -30120,7 +30313,7 @@ var ProjectLanguageService = class {
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
       getDefaultLibFileName: (options) => (0, import_typescript21.getDefaultLibFilePath)(options),
-      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || import_typescript21.sys.fileExists(fileName),
+      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || import_typescript21.sys.fileExists(fileName),
       readFile: (fileName) => this._readFile(fileName),
       readDirectory: import_typescript21.sys.readDirectory,
       directoryExists: import_typescript21.sys.directoryExists,
@@ -30148,7 +30341,7 @@ var ProjectLanguageService = class {
    */
   _getRealFileVersion(fileName) {
     try {
-      const version = String((0, import_node_fs3.statSync)(fileName).mtimeMs);
+      const version = String((0, import_node_fs4.statSync)(fileName).mtimeMs);
       this._realFileVersions.set(fileName, version);
       return version;
     } catch {
@@ -30161,7 +30354,7 @@ function getProjectLanguageService(configPath) {
   if (!configPath) {
     return defaultProjectLanguageService;
   }
-  return projectLanguageServices.getOrInsertComputed(normalizeFileName(configPath), () => new ProjectLanguageService());
+  return projectLanguageServices.getOrInsertComputed(normalizeFileName2(configPath), () => new ProjectLanguageService());
 }
 function disposeProjectLanguageServices() {
   for (const instance of projectLanguageServices.values()) {
@@ -30170,13 +30363,13 @@ function disposeProjectLanguageServices() {
   projectLanguageServices.clear();
 }
 function setDocumentOverlay(fileName, text) {
-  upsertEntry(documentOverlays, normalizeFileName(fileName), text);
+  upsertEntry(documentOverlays, normalizeFileName2(fileName), text);
 }
 function removeDocumentOverlay(fileName) {
-  documentOverlays.delete(normalizeFileName(fileName));
+  documentOverlays.delete(normalizeFileName2(fileName));
 }
 function readDocument(fileName) {
-  return documentOverlays.get(normalizeFileName(fileName))?.content ?? (import_typescript21.sys.fileExists(fileName) ? import_typescript21.sys.readFile(fileName) : void 0);
+  return documentOverlays.get(normalizeFileName2(fileName))?.content ?? (import_typescript21.sys.fileExists(fileName) ? import_typescript21.sys.readFile(fileName) : void 0);
 }
 function upsertVirtualFile(virtualPath, content) {
   defaultProjectLanguageService.upsertVirtualFile(virtualPath, content);
@@ -30195,11 +30388,11 @@ function upsertEntry(entries, key, content) {
 var import_typescript23 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/module-entries/module-entries.utils.ts
-var import_node_fs4 = require("fs");
+var import_node_fs5 = require("fs");
 var NOT_IMPORTABLE = /\.(d|spec|test)\.ts$/;
 function listModuleEntries(directory) {
   try {
-    return (0, import_node_fs4.readdirSync)(directory, { withFileTypes: true }).flatMap((entry) => {
+    return (0, import_node_fs5.readdirSync)(directory, { withFileTypes: true }).flatMap((entry) => {
       if (entry.isDirectory()) {
         return entry.name.startsWith(".") || entry.name === "node_modules" ? [] : [{ name: `${entry.name}/`, isDirectory: true }];
       }
@@ -30211,8 +30404,8 @@ function listModuleEntries(directory) {
 }
 
 // ../packages/language-core/src/lib/utils/module-path/module-path.utils.ts
-var import_node_fs5 = require("fs");
-var import_node_path3 = require("path");
+var import_node_fs6 = require("fs");
+var import_node_path4 = require("path");
 var import_typescript22 = require("typescript");
 var DEFAULT_COMPILER_OPTIONS2 = { module: import_typescript22.ModuleKind.ESNext, moduleResolution: import_typescript22.ModuleResolutionKind.Bundler };
 function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_OPTIONS2) {
@@ -30221,19 +30414,19 @@ function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_O
     return fileName ? { fileName, external: false } : void 0;
   }
   const { resolvedModule } = (0, import_typescript22.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript22.sys);
-  return resolvedModule && { fileName: toPosixPath(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
+  return resolvedModule && { fileName: toPosixPath2(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
 }
 function resolveModulePath(baseDir, modulePath, compilerOptions) {
   return resolveModule(baseDir, modulePath, compilerOptions)?.fileName;
 }
 function toModulePath(baseDir, fileName) {
-  const path = import_node_path3.posix.relative(normalizeFileName(baseDir), normalizeFileName(fileName)).replace(/\.ts$/, "");
+  const path = import_node_path4.posix.relative(normalizeFileName2(baseDir), normalizeFileName2(fileName)).replace(/\.ts$/, "");
   return path.startsWith(".") ? path : `./${path}`;
 }
 function resolveRelativePath(baseDir, modulePath) {
   const resolvedPath = resolvePosixPath(baseDir, modulePath);
   const candidates = [resolvedPath, `${resolvedPath}.ts`, `${resolvedPath}/index.ts`];
-  return candidates.find((candidate) => (0, import_node_fs5.existsSync)(candidate));
+  return candidates.find((candidate) => (0, import_node_fs6.existsSync)(candidate));
 }
 
 // ../packages/language-core/src/lib/template-metadata-cache/template-metadata-cache.ts
@@ -30261,7 +30454,8 @@ var TemplateMetadataCache = class {
    */
   _withoutDeclarations = /* @__PURE__ */ new Set();
   /**
-   * Returns the metadata of a component or directive imported by a template, extracting them from the file declaring it.
+   * Returns the metadata of a component or directive imported by a template, extracting them from the file declaring it,
+   * or reading them from the manifest of its package, for one of a compiled library.
    *
    * @param name - The class name of the component or directive, or a selector stored through `set`.
    * @param path - The directory of the template and the path of the `@import`, or the path of the file declaring the class.
@@ -30274,7 +30468,7 @@ var TemplateMetadataCache = class {
       return stored;
     }
     const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
-    const metadata = fileName && ((await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
+    const metadata = fileName && (readLibraryMetadata(fileName, name) ?? (await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
     }
@@ -30285,17 +30479,22 @@ var TemplateMetadataCache = class {
    * names, read from the file declaring it when the module re-exports it (a barrel), or any other export of the module,
    * reactive when reading it can read a signal (a namespace always is), as
    * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
-   * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with.
+   * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with, and a
+   * component or a directive of a compiled library is read from the manifest of its package.
    *
    * @param imported - The name of the export (`'default'` for the default one, `'*'` for a namespace import).
    * @param local - The name the template imports it as, which names a component or a directive exported as default.
    * @param baseDir - The directory of the template.
    * @param path - The path of the module, as written in the `@import`.
    * @returns The metadata of the component or of the directive, or the imported symbol.
-   * @throws If the module cannot be resolved or read.
+   * @throws If the module cannot be resolved or read, or the manifest of its library cannot be read.
    */
   async getImport(imported, local, baseDir, path) {
     const resolved = resolveModule(baseDir, path, this._compilerOptions);
+    const library = resolved && imported !== "*" ? readLibraryMetadata(resolved.fileName, imported) : void 0;
+    if (library) {
+      return library;
+    }
     const metadatas = resolved && await this._getFileMetadatas(resolved.fileName);
     if (!resolved || !metadatas) {
       throw new Error(`Cannot find module "${path}"`);
@@ -30335,7 +30534,7 @@ var TemplateMetadataCache = class {
     let declarations;
     for (let i2 = 0; i2 < fileNames.length; i2++) {
       const fileName = fileNames[i2];
-      const key = normalizeFileName(fileName);
+      const key = normalizeFileName2(fileName);
       if (NOT_IMPORTABLE.test(fileName) || this._withoutDeclarations.has(key)) {
         continue;
       }
@@ -30370,7 +30569,7 @@ var TemplateMetadataCache = class {
    * @param fileName - The path of the file.
    */
   invalidate(fileName) {
-    const key = normalizeFileName(fileName);
+    const key = normalizeFileName2(fileName);
     this._entries.delete(key);
     this._withoutDeclarations.delete(key);
   }
@@ -30410,7 +30609,7 @@ var TemplateMetadataCache = class {
     if (text === void 0) {
       return void 0;
     }
-    const key = normalizeFileName(fileName);
+    const key = normalizeFileName2(fileName);
     const cached = this._entries.get(key);
     if (cached?.text === text) {
       return cached.metadatas;
@@ -30430,7 +30629,7 @@ var TemplateMetadataCache = class {
 };
 
 // ../packages/language-core/src/lib/utils/compiler-options/compiler-options.utils.ts
-var import_node_path4 = require("path");
+var import_node_path5 = require("path");
 var import_typescript24 = require("typescript");
 function loadTsConfig(fromDir) {
   const configPath = (0, import_typescript24.findConfigFile)(fromDir, import_typescript24.sys.fileExists, "tsconfig.json");
@@ -30438,7 +30637,7 @@ function loadTsConfig(fromDir) {
     return { options: {}, fileNames: [] };
   }
   const configFile = (0, import_typescript24.readConfigFile)(configPath, import_typescript24.sys.readFile);
-  const parsed = (0, import_typescript24.parseJsonConfigFileContent)(configFile.config, import_typescript24.sys, (0, import_node_path4.dirname)(configPath));
+  const parsed = (0, import_typescript24.parseJsonConfigFileContent)(configFile.config, import_typescript24.sys, (0, import_node_path5.dirname)(configPath));
   return { options: parsed.options, fileNames: parsed.fileNames };
 }
 function findTsConfigPath(fromDir) {
@@ -30446,7 +30645,7 @@ function findTsConfigPath(fromDir) {
 }
 
 // ../packages/language-core/src/lib/utils/shim/shim.utils.ts
-var import_node_path5 = require("path");
+var import_node_path6 = require("path");
 function createShim(componentData, typecheckBody, project, name = "typecheck") {
   const entries = Array.from(componentData.entries());
   const shimPath = `${entries[0][0]}.__${name}__.ts`;
@@ -30461,7 +30660,7 @@ function buildTypecheckShim(componentData, shimPath, body) {
   for (let i2 = 0; i2 < componentData.length; i2++) {
     const [path, classes] = componentData[i2];
     classNames.push(...classes);
-    prefixLines[i2] = `import { ${classes.join(", ")} } from './${(0, import_node_path5.basename)(path, (0, import_node_path5.extname)(path))}';`;
+    prefixLines[i2] = `import { ${classes.join(", ")} } from './${(0, import_node_path6.basename)(path, (0, import_node_path6.extname)(path))}';`;
   }
   prefixLines[prefixLinesLength - 4] = "import { Signal } from '@xaendar/core/signals'";
   prefixLines[prefixLinesLength - 2] = `declare const root: ${classNames.map((className) => `InstanceType<typeof ${className}>`).join(" & ")};`;
@@ -30491,11 +30690,11 @@ function getSymbolKind(checker, symbol) {
 }
 
 // ../packages/language-core/src/lib/utils/xaendar-config/xaendar-config.utils.ts
-var import_node_path6 = require("path");
+var import_node_path7 = require("path");
 var import_typescript26 = require("typescript");
 function readCustomElements(fromDir) {
   const config = readConfig(fromDir);
-  const library = config && findLibrary(config, fromDir);
+  const library = config && findLibrary2(config, fromDir);
   return library ? library.customElements : config?.config.customElements;
 }
 function readSsr(fromDir) {
@@ -30503,29 +30702,29 @@ function readSsr(fromDir) {
   if (!config) {
     return void 0;
   }
-  const library = findLibrary(config, fromDir);
+  const library = findLibrary2(config, fromDir);
   return library ? library.ssr === true : !!config.config.ssr;
 }
 function readConfig(fromDir) {
   const configPath = (0, import_typescript26.findConfigFile)(fromDir, import_typescript26.sys.fileExists, "xaendar.json");
   if (configPath) {
     const { config, error } = (0, import_typescript26.readConfigFile)(configPath, import_typescript26.sys.readFile);
-    return error ? void 0 : { config, dir: (0, import_node_path6.dirname)(configPath) };
+    return error ? void 0 : { config, dir: (0, import_node_path7.dirname)(configPath) };
   }
 }
-function findLibrary({ config, dir }, fromDir) {
+function findLibrary2({ config, dir }, fromDir) {
   if (!config.libs) {
     return void 0;
   }
-  const path = `${normalizeFileName(fromDir)}/`;
-  return Object.values(config.libs).find(({ root }) => path.startsWith(`${normalizeFileName(resolvePosixPath(dir, root))}/`));
+  const path = `${normalizeFileName2(fromDir)}/`;
+  return Object.values(config.libs).find(({ root }) => path.startsWith(`${normalizeFileName2(resolvePosixPath(dir, root))}/`));
 }
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
 var lastAnalyses = /* @__PURE__ */ new Map();
 var metadataCaches = /* @__PURE__ */ new Map();
 async function analyzeTemplate(templatePath, source, components) {
-  const key = normalizeFileName(templatePath);
+  const key = normalizeFileName2(templatePath);
   const result = await analyze(templatePath, source, components, "typecheck");
   if (result.analysis) {
     lastAnalyses.set(key, result.analysis);
@@ -30537,8 +30736,8 @@ async function analyzeCompletionTemplate(templatePath, source, components) {
   return (await analyze(templatePath, source, components, "completion")).analysis;
 }
 async function analyze(templatePath, source, components, shimName) {
-  const componentFiles = new Map([...components].map(([fileName, classNames]) => [toPosixPath(fileName), classNames]));
-  const templateDir = (0, import_node_path7.dirname)(templatePath);
+  const componentFiles = new Map([...components].map(([fileName, classNames]) => [toPosixPath2(fileName), classNames]));
+  const templateDir = (0, import_node_path8.dirname)(templatePath);
   const { options, fileNames, project, cache } = getProjectContext(templateDir);
   const languageService = project.getLanguageService(options, fileNames);
   let ast;
@@ -30564,7 +30763,7 @@ async function analyze(templatePath, source, components, shimName) {
       shimPath: shim.path,
       bodyLineOffset: shim.bodyLineOffset,
       languageService,
-      dependencies: /* @__PURE__ */ new Set([...dependencies, ...metadatas.map(({ modulePath }) => normalizeFileName(modulePath)), ...symbols.map(({ modulePath }) => normalizeFileName(modulePath))])
+      dependencies: /* @__PURE__ */ new Set([...dependencies, ...metadatas.map(({ modulePath }) => normalizeFileName2(modulePath)), ...symbols.map(({ modulePath }) => normalizeFileName2(modulePath))])
     };
     return { analysis, error: void 0, ast };
   } catch (error) {
@@ -30572,7 +30771,7 @@ async function analyze(templatePath, source, components, shimName) {
   }
 }
 async function resolveTemplateImports(templatePath, source) {
-  const templateDir = (0, import_node_path7.dirname)(templatePath);
+  const templateDir = (0, import_node_path8.dirname)(templatePath);
   const { cache } = getProjectContext(templateDir);
   const metadatas = new Array();
   const statements = parseImportStatements(source);
@@ -30590,7 +30789,7 @@ async function resolveTemplateImports(templatePath, source) {
   return metadatas;
 }
 async function resolveModuleMetadatas(templatePath, modulePath) {
-  const templateDir = (0, import_node_path7.dirname)(templatePath);
+  const templateDir = (0, import_node_path8.dirname)(templatePath);
   const { cache } = getProjectContext(templateDir);
   const metadatas = await cache.getModuleMetadatas(templateDir, modulePath);
   if (metadatas?.size) {
@@ -30598,7 +30797,7 @@ async function resolveModuleMetadatas(templatePath, modulePath) {
   }
 }
 async function resolveDeclarations(fileName) {
-  const { fileNames, cache } = getProjectContext((0, import_node_path7.dirname)(fileName));
+  const { fileNames, cache } = getProjectContext((0, import_node_path8.dirname)(fileName));
   return await cache.getDeclarations(fileNames);
 }
 async function resolveImportCandidates(templatePath) {
@@ -30606,11 +30805,11 @@ async function resolveImportCandidates(templatePath) {
   if (!declarations) {
     return void 0;
   }
-  const templateKey = normalizeFileName(templatePath);
+  const templateKey = normalizeFileName2(templatePath);
   const candidates = new Array();
   for (const [fileName, metadatas] of declarations) {
     for (const metadata of metadatas.values()) {
-      const isOwner = metadata.type === "component" && normalizeFileName((0, import_node_path7.resolve)((0, import_node_path7.dirname)(fileName), metadata.templateUrl)) === templateKey;
+      const isOwner = metadata.type === "component" && normalizeFileName2((0, import_node_path8.resolve)((0, import_node_path8.dirname)(fileName), metadata.templateUrl)) === templateKey;
       if (!isOwner) {
         candidates.push({ fileName, metadata });
       }
@@ -30619,12 +30818,12 @@ async function resolveImportCandidates(templatePath) {
   return candidates.length ? candidates : void 0;
 }
 function resolveModuleExports(templatePath, modulePath) {
-  const context = getProjectContext((0, import_node_path7.dirname)(templatePath));
-  const fileName = resolveModulePath((0, import_node_path7.dirname)(templatePath), modulePath, context.options);
+  const context = getProjectContext((0, import_node_path8.dirname)(templatePath));
+  const fileName = resolveModulePath((0, import_node_path8.dirname)(templatePath), modulePath, context.options);
   return fileName ? listExports(getProgram(context), fileName) : void 0;
 }
 function resolveExportCandidates(templatePath) {
-  const context = getProjectContext((0, import_node_path7.dirname)(templatePath));
+  const context = getProjectContext((0, import_node_path8.dirname)(templatePath));
   const { fileNames } = context;
   const program = getProgram(context);
   let candidates;
@@ -30639,7 +30838,7 @@ function resolveExportCandidates(templatePath) {
   return candidates;
 }
 function removeTemplateAnalysis(templatePath) {
-  lastAnalyses.delete(normalizeFileName(templatePath));
+  lastAnalyses.delete(normalizeFileName2(templatePath));
 }
 function invalidateTemplateMetadata(fileName) {
   for (const cache of metadataCaches.values()) {
@@ -30667,7 +30866,7 @@ function extractMembers(components, project, compilerOptions) {
   const dependencies = /* @__PURE__ */ new Set();
   for (const [fileName, classNames] of components) {
     project.registerRealFile(fileName);
-    dependencies.add(normalizeFileName(fileName));
+    dependencies.add(normalizeFileName2(fileName));
     const sourceFile = (0, import_typescript27.createSourceFile)(fileName, readDocument(fileName) ?? "", import_typescript27.ScriptTarget.Latest, true);
     const classes = sourceFile.statements.filter((statement) => (0, import_typescript27.isClassDeclaration)(statement) && !!statement.name && classNames.includes(statement.name.text));
     for (let i2 = 0; i2 < classes.length; i2++) {
@@ -30679,7 +30878,7 @@ function extractMembers(components, project, compilerOptions) {
         reactiveMembers.add(members.reactiveMembers[j]);
       }
       for (let j = 0; j < members.dependencies.length; j++) {
-        dependencies.add(normalizeFileName(members.dependencies[j]));
+        dependencies.add(normalizeFileName2(members.dependencies[j]));
       }
     }
   }
@@ -30723,7 +30922,7 @@ function toError(error) {
 async function getComponentDiagnostics(fileName, text) {
   const sourceFile = (0, import_typescript28.createSourceFile)(fileName, text, import_typescript28.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
-  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path8.dirname)(fileName)));
+  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path9.dirname)(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
   }
@@ -30735,14 +30934,14 @@ async function getComponentDiagnostics(fileName, text) {
 }
 function findMissingFiles(sourceFile) {
   const diagnostics = new Array();
-  const componentDir = (0, import_node_path8.dirname)(sourceFile.fileName);
+  const componentDir = (0, import_node_path9.dirname)(sourceFile.fileName);
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i2 = 0; i2 < declarations.length; i2++) {
     const options = findStringOptions(declarations[i2].decorator, ["templateUrl", "styleUrl"]);
     for (let j = 0; j < options.length; j++) {
       const { name, literal } = options[j];
       const path = resolvePosixPath(componentDir, literal.text);
-      if (!(0, import_node_fs6.existsSync)(path)) {
+      if (!(0, import_node_fs7.existsSync)(path)) {
         diagnostics.push({ message: `Could not find ${name === "templateUrl" ? "template" : "style"} at ${path}`, span: toSpan(literal) });
       }
     }
@@ -30762,11 +30961,11 @@ async function findSelectorConflicts(fileName) {
       }
     }
   }
-  const key = normalizeFileName(fileName);
+  const key = normalizeFileName2(fileName);
   const conflicts = new Array();
   for (let i2 = 0; i2 < components.length; i2++) {
     const component = components[i2];
-    const other = normalizeFileName(component.modulePath) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i2) : void 0;
+    const other = normalizeFileName2(component.modulePath) === key ? components.find(({ selector }, index) => selector === component.selector && index !== i2) : void 0;
     if (other) {
       const [{ literal }] = findStringOptions(component.typescriptNodes.decorator, ["selector"]);
       conflicts.push({ message: describeSelectorConflict(component, { className: other.className, ownerFile: other.modulePath }), span: toSpan(literal) });
@@ -30779,7 +30978,7 @@ function toSpan(literal) {
 }
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
-var import_node_path9 = require("path");
+var import_node_path10 = require("path");
 var import_typescript29 = require("typescript");
 var KEYWORD_SNIPPETS = {
   "if": "@if ($1) {\n	$0\n}",
@@ -30873,7 +31072,7 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
     return void 0;
   }
   const { keywords, span, clientPlaceholder } = context;
-  const available = readSsr((0, import_node_path9.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
+  const available = readSsr((0, import_node_path10.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
     kind: import_typescript29.ScriptElementKind.keyword,
@@ -30942,7 +31141,7 @@ async function getTemplateSelectorCompletions(templatePath, source, offset) {
   }
   const candidates = await resolveImportCandidates(templatePath);
   if (candidates) {
-    const templateDir = (0, import_node_path9.dirname)(templatePath);
+    const templateDir = (0, import_node_path10.dirname)(templatePath);
     for (let i2 = 0; i2 < candidates.length; i2++) {
       const { fileName, metadata: { type, selector, className } } = candidates[i2];
       if (type === kind && !importedSelectors.has(selector)) {
@@ -30994,7 +31193,7 @@ function getTemplateImportPathCompletions(templatePath, source, offset) {
   if (!directory.startsWith(".")) {
     return [];
   }
-  return listModuleEntries(resolvePosixPath((0, import_node_path9.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
+  return listModuleEntries(resolvePosixPath((0, import_node_path10.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
     name,
     kind: isDirectory ? import_typescript29.ScriptElementKind.directory : import_typescript29.ScriptElementKind.scriptElement,
     sortText: isDirectory ? "0" : "1",
@@ -31057,13 +31256,13 @@ function getExportCompletions({ symbols, imports }, templatePath, source, compon
     return [];
   }
   const declared = new Set(symbols.map(({ local }) => local).concat(imports.map(({ specifier }) => specifier.local)));
-  const imported = new Set(symbols.map(({ modulePath, imported: name }) => `${normalizeFileName(modulePath)}#${name}`));
-  const owners = new Set(Array.from(components.keys(), normalizeFileName));
-  const templateDir = (0, import_node_path9.dirname)(templatePath);
+  const imported = new Set(symbols.map(({ modulePath, imported: name }) => `${normalizeFileName2(modulePath)}#${name}`));
+  const owners = new Set(Array.from(components.keys(), normalizeFileName2));
+  const templateDir = (0, import_node_path10.dirname)(templatePath);
   const completions = new Array();
   for (let i2 = 0; i2 < candidates.length; i2++) {
     const { fileName, name, kind } = candidates[i2];
-    const key = normalizeFileName(fileName);
+    const key = normalizeFileName2(fileName);
     const isImported = imported.has(`${key}#${name}`) || imported.has(`${key}#*`);
     if (name !== "default" && !declared.has(name) && !isImported && !owners.has(key)) {
       const path = toModulePath(templateDir, fileName);
@@ -31080,7 +31279,7 @@ function findNode(node, position) {
 }
 
 // ../packages/language-core/src/lib/template-definition/template-definition.ts
-var import_node_path10 = require("path");
+var import_node_path11 = require("path");
 function getTemplateDefinition(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
   return target ? [...target.definitions] : getTypeScriptDefinitions(analysis, offset);
@@ -31096,7 +31295,7 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
     addTarget(targets, specifier.localSpan, getClassDefinition(metadata));
   }
   walkTemplate(ast, metadatas, {
-    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path10.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
+    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path11.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
     element: (node, component) => {
       addTarget(targets, node.nameSpan, component && getClassDefinition(component));
       addTarget(targets, node.closeNameSpan, component && getClassDefinition(component));
@@ -31107,7 +31306,11 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
   });
   return targets;
 }
-function getClassDefinition({ typescriptNodes: { klass } }) {
+function getClassDefinition(metadata) {
+  if ("library" in metadata) {
+    return void 0;
+  }
+  const { klass } = metadata.typescriptNodes;
   const sourceFile = klass.getSourceFile();
   return { fileName: sourceFile.fileName, span: { start: klass.name.getStart(sourceFile), end: klass.name.getEnd() } };
 }
@@ -31122,13 +31325,13 @@ function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLi
     return [];
   }
   const position = shimFile.getPositionOfLineAndCharacter(shimPosition.line + bodyLineOffset, shimPosition.character);
-  const shimKey = normalizeFileName(shimPath);
+  const shimKey = normalizeFileName2(shimPath);
   const definitions = new Array();
   const shimDefinitions = languageService.getDefinitionAtPosition(shimPath, position);
   if (shimDefinitions?.length) {
     for (let i2 = 0; i2 < shimDefinitions.length; i2++) {
       const { fileName, textSpan } = shimDefinitions[i2];
-      if (normalizeFileName(fileName) !== shimKey) {
+      if (normalizeFileName2(fileName) !== shimKey) {
         definitions.push({ fileName, span: { start: textSpan.start, end: textSpan.start + textSpan.length } });
       } else {
         const span = toTemplateSpan3(typeCheck, shimFile, bodyLineOffset, textSpan.start, textSpan.length);
@@ -31459,12 +31662,12 @@ function addToken(tokens, span, type, modifiers = []) {
 var import_typescript35 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
-var import_node_path12 = require("path");
+var import_node_path13 = require("path");
 var import_node36 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
-var import_node_path11 = require("path");
+var import_node_path12 = require("path");
 var import_typescript36 = require("typescript");
 var COMPONENT_FILE_SUFFIX = ".xd.component.ts";
 var TemplateRegistry = class {
@@ -31512,13 +31715,13 @@ var TemplateRegistry = class {
     const templates = /* @__PURE__ */ new Set();
     if (metadatas?.size) {
       for (const [className, { templateUrl }] of metadatas) {
-        const templateKey = normalizeFileName((0, import_node_path11.resolve)((0, import_node_path11.dirname)(componentPath), templateUrl));
+        const templateKey = normalizeFileName2((0, import_node_path12.resolve)((0, import_node_path12.dirname)(componentPath), templateUrl));
         const components = this._components.getOrInsertComputed(templateKey, () => /* @__PURE__ */ new Map());
         components.getOrInsertComputed(componentPath, () => []).push(className);
         templates.add(templateKey);
       }
     }
-    this._templates.set(normalizeFileName(componentPath), templates);
+    this._templates.set(normalizeFileName2(componentPath), templates);
   }
   /**
    * Removes a component file from the index, e.g. when it is deleted.
@@ -31526,12 +31729,12 @@ var TemplateRegistry = class {
    * @param componentPath - The absolute path of the component file.
    */
   remove(componentPath) {
-    const componentKey = normalizeFileName(componentPath);
+    const componentKey = normalizeFileName2(componentPath);
     const templateKeys = this._templates.get(componentKey);
     if (templateKeys?.size) {
       for (const templateKey of templateKeys) {
         const components = this._components.get(templateKey);
-        const fileNames = [...components.keys()].filter((fileName) => normalizeFileName(fileName) === componentKey);
+        const fileNames = [...components.keys()].filter((fileName) => normalizeFileName2(fileName) === componentKey);
         for (let j = 0; j < fileNames.length; j++) {
           components.delete(fileNames[j]);
         }
@@ -31549,7 +31752,7 @@ var TemplateRegistry = class {
    * @returns The file of each component mapped to the names of its classes using the template, `undefined` if no component uses it.
    */
   resolve(templatePath) {
-    return this._components.get(normalizeFileName(templatePath));
+    return this._components.get(normalizeFileName2(templatePath));
   }
 };
 
@@ -32130,7 +32333,7 @@ var XaendarLanguageServer = class {
     for (let i2 = 0; i2 < changes.length; i2++) {
       const { uri, type } = changes[i2];
       const fileName = fromUri(uri);
-      if ((0, import_node_path12.basename)(fileName) === XAENDAR_CONFIG_FILE) {
+      if ((0, import_node_path13.basename)(fileName) === XAENDAR_CONFIG_FILE) {
         this._scheduleOpenTemplatesValidation();
         this._scheduleOpenComponentsValidation();
         continue;
@@ -32437,7 +32640,7 @@ var XaendarLanguageServer = class {
     if (fileName.endsWith(COMPONENT_FILE_SUFFIX)) {
       await this._registry.index(fileName);
     }
-    const key = normalizeFileName(fileName);
+    const key = normalizeFileName2(fileName);
     const templates = this._documents.all().filter(isTemplate);
     for (let i2 = 0; i2 < templates.length; i2++) {
       const document = templates[i2];
@@ -32446,7 +32649,7 @@ var XaendarLanguageServer = class {
       const components = this._registry.resolve(fromUri(document.uri));
       if (!isAffected && components?.size) {
         for (const componentFile of components.keys()) {
-          if (normalizeFileName(componentFile) === key) {
+          if (normalizeFileName2(componentFile) === key) {
             isAffected = true;
             break;
           }

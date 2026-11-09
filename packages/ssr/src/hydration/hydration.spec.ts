@@ -44,7 +44,7 @@ function declareInput(klass: object, name: string, value: unknown, alias?: strin
   const metadata = ((klass as Record<symbol, DecoratorMetadataObject | undefined>)[Symbol.for('Symbol.metadata')] ??= {});
   const storage = new WeakMap<object, unknown>();
   const target = { get(this: object) { return storage.get(this); }, set(this: object, input: unknown) { storage.set(this, input); } };
-  const decorated = (Property(value, alias ? { alias } : undefined) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
+  const decorated = ((alias ? Property(value, { alias }) : Property(value)) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
   const read = (element: object) => {
     if (!storage.has(element)) {
       storage.set(element, decorated.init.call(element));

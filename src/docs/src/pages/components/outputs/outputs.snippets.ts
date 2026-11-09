@@ -52,5 +52,5 @@ public accessor removed!: Output<number>;
  * ✓ Another name for the member: templates still bind lang="…".
  */
 @Property('ts', { alias: 'lang' })
-public accessor language!: InputSignal<string>;`
+public accessor language!: Aliased<InputSignal<string>, 'lang'>;`
 };

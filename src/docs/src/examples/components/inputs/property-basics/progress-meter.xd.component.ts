@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
-import type { InputSignal } from '@xaendar/core/signals';
+import type { Aliased, InputSignal } from '@xaendar/core/signals';
 
 /**
  * A progress meter configured by three inputs.
@@ -25,7 +25,7 @@ export class ProgressMeterComponent extends CustomElement {
    * Whether to show the figures. Bound as show-value: the alias is the name used in templates.
    */
   @Property(true, { alias: 'show-value' })
-  public accessor showValue!: InputSignal<boolean>;
+  public accessor showValue!: Aliased<InputSignal<boolean>, 'show-value'>;
   /**
    * The value as a percentage of the maximum.
    */

@@ -1,6 +1,7 @@
 import type { ComponentOrDirectiveMetadata, ContextCache } from '@xaendar/compiler';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ServerCompileOptions } from '@xaendar/ssr-compiler';
+import type { Aliased, InputSignal } from '@xaendar/core/signals';
 import type { ServerRenderFunction } from '../types/server-render-function.type';
 
 await vi.hoisted(async () => {
@@ -350,6 +351,29 @@ describe('renderToString', () => {
   it('throws when an input or a value of the transfer state cannot be written into the HTML', async () => {
     await expect(renderToString(TeamElement, { heading: (() => 'Our team') as never })).rejects.toThrow('inputs.heading is a function, which cannot be written into the HTML');
     await expect(renderToString(GreetingElement, undefined, { state: { format: () => 'hi' } })).rejects.toThrow('state.format is a function, which cannot be written into the HTML');
+  });
+
+  it('takes the inputs declaring an alias by it, setting them and writing them into data-xd-inputs by the name of their property', async () => {
+    /**
+     * A component whose inputs declare aliases, the name of the property of one being the alias of the other.
+     */
+    class CrossedElement extends CustomElement {
+      public declare internalValue: Aliased<InputSignal<string>, 'value'>;
+      public declare value: Aliased<InputSignal<string>, 'initialValue'>;
+    }
+    const metadata: DecoratorMetadataObject = {};
+    declareInput(CrossedElement, 'internalValue', '', metadata);
+    declareInput(CrossedElement, 'value', '', metadata);
+    Object.defineProperty(CrossedElement, Symbol.for('Symbol.metadata'), { value: Object.assign(metadata, { aliasToAttribute: { value: 'internalValue', initialValue: 'value' } }) });
+    customElements.define('crossed-card', CrossedElement);
+    _defineServerRender(CrossedElement, await compile('<i>{ internalValue() }</i><b>{ value() }</b>', ['internalValue', 'value']));
+
+    const html = await renderToString(CrossedElement, { value: 'a', initialValue: 'b' });
+
+    expect(html).toContain('<crossed-card data-xd-inputs="{&quot;internalValue&quot;:&quot;a&quot;,&quot;value&quot;:&quot;b&quot;}">');
+    expect(html).toContain('<i><!---->a</i><b><!---->b</b>');
+    // @ts-expect-error an input declaring an alias is not passed by the name of its property
+    await expect(renderToString(CrossedElement, { internalValue: 'x' })).rejects.toThrow('"internalValue" is the property of an input of CrossedElement declaring an alias: bind it by its alias');
   });
 
   it('throws when the inputs leave out a required input, before any code of the component runs', async () => {

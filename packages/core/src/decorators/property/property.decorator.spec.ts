@@ -1,6 +1,11 @@
+import type { AccessorDecorator, Function } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS } from '../../costants';
+import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
+import type { BindingHost } from '../../types/binding-host.type';
+import type { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import type { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
 import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
 
@@ -27,7 +32,8 @@ function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   name: string | symbol = 'label',
   metadata: Metadata = {}
 ): Decorated<ActualValue, IncomingValue> {
-  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue>(value, options);
+  // The alias of the tests is a value of their own: the decorators are typed for an accessor without alias
+  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue, never>(value, options as PropertyDecoratorOptions<ActualValue, IncomingValue, never>);
   const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ActualValue, IncomingValue>;
 }
@@ -37,7 +43,7 @@ function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
   name: string | symbol = 'label',
   metadata: Metadata = {}
 ): Decorated<ActualValue, IncomingValue> {
-  const decorator = Property.required<ActualValue, IncomingValue>(options);
+  const decorator = Property.required<ActualValue, IncomingValue, never>(options as Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue, never>, 'required'>);
   const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ActualValue, IncomingValue>;
 }
@@ -48,11 +54,11 @@ function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
 */
 function setupAccessor<ActualValue = unknown, IncomingValue = ActualValue>(
   value?: ActualValue,
-  options?: PropertyDecoratorOptions<ActualValue, IncomingValue>
+  options?: PropertyDecoratorOptions<ActualValue, IncomingValue, never>
 ): Accessor<ActualValue, IncomingValue> {
   const element = {};
   const target = { get: () => stored!, set: vi.fn() };
-  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue>(value, options);
+  const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue, never>(value, options);
   const decorated = decorator(target, { name: 'label', metadata: {} } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<ActualValue, IncomingValue>;
   const stored = decorated.init.call(element);
 
@@ -252,5 +258,33 @@ describe('Property decorator', () => {
       setValue(signal, '3');
       expect(signal()).toBe(3);
     });
+  });
+});
+
+describe('types of @Property', () => {
+  /**
+   * The decorator of an accessor of a type: assigning a decorator to it checks it as TypeScript checks a decorator applied to the accessor.
+   */
+  type DecoratorOf<Value> = Function<Parameters<AccessorDecorator<BindingHost, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<BindingHost, Value, never>>;
+
+  it('requires the type of the accessor to declare the alias and the type the transform takes', () => {
+    const check = () => {
+      const aliased: DecoratorOf<Aliased<InputSignal<string>, 'user-id'>> = Property('', { alias: 'user-id' });
+      const transformed: DecoratorOf<Aliased<InputSignal<number, string>, 'size'>> = Property(0, { alias: 'size', transform: (value: string) => Number(value) });
+      const required: DecoratorOf<Aliased<InputSignal<string>, 'name'>> = Property.required({ alias: 'name' });
+      // @ts-expect-error the type of the accessor does not declare the alias
+      const undeclared: DecoratorOf<InputSignal<string>> = Property('', { alias: 'other' });
+      // @ts-expect-error the type of the accessor declares another alias
+      const different: DecoratorOf<Aliased<InputSignal<string>, 'one'>> = Property('', { alias: 'other' });
+      // @ts-expect-error the type of the accessor declares an alias the decorator does not
+      const missing: DecoratorOf<Aliased<InputSignal<string>, 'one'>> = Property('');
+      // @ts-expect-error the type of the accessor declares an alias @Property.required does not
+      const missingRequired: DecoratorOf<Aliased<InputSignal<string>, 'one'>> = Property.required();
+      // @ts-expect-error the type of the accessor does not declare the type the transform takes
+      const untransformed: DecoratorOf<InputSignal<number>> = Property(0, { transform: (value: string) => Number(value) });
+      return [aliased, transformed, required, undeclared, different, missing, missingRequired, untransformed];
+    };
+
+    expect(check).toBeTypeOf('function');
   });
 });

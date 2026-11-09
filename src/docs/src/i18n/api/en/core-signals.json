@@ -143,6 +143,16 @@
       }
     }
   },
+  "Aliased": {
+    "summary": "The type of an input declaring an <code>alias</code>: the name the templates, <code>createComponent</code> and <code>renderToString</code> bind it with.",
+    "description": "<p>An input declared with the <code>alias</code> option of <a href=\"#/en/reference/api/core/Property\"><code>@Property</code></a> is bound by its alias everywhere: in the templates, in the groups of <code>createComponent</code> and in the inputs of <code>renderToString</code>. The name of its property is left to the code of the class, which reads the input through it. The accessor declares the alias in its type, <code>Aliased&lt;InputSignal&lt;T&gt;, 'alias'&gt;</code>, so that the bindings written in code are checked against it: <code>@Property</code> does not compile when the type and the option name different aliases, or only one of them names one.</p><p>In every other respect it is an <a href=\"#/en/reference/api/core/signals/InputSignal\"><code>InputSignal</code></a>: the alias exists only in the types.</p>",
+    "usage": {
+      "declaring": {
+        "title": "Declaring an alias",
+        "body": "<p>The option and the type of the accessor name the same alias. With a type argument on the decorator, it is the type of the accessor.</p>"
+      }
+    }
+  },
   "QuerySignal": {
     "summary": "The type of the queries declared with <code>@Query</code> and its variants: a read-only signal holding the elements found, kept up to date by the framework.",
     "description": "<p>The <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorators go on an <code>accessor</code> of a component typed <code>QuerySignal&lt;Value&gt;</code>, and replace it with a query signal. <code>Value</code> is the element found or <code>null</code> for <code>@Query</code> and <code>@Query.content</code>, the element for their <code>required</code> variants, and an array of elements for their <code>all</code> variants; the type of the elements is described by <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p><p>It holds <code>null</code>, or an empty array, until the component is connected for the first time. At every connection the query is run right after the render, before <code>afterRender</code>; then a <code>MutationObserver</code> runs it again each time elements are added to or removed from the template or, for content queries, the projected content, and also when a <code>slot</code> attribute or the slots change. Other attribute changes, such as a class, are not observed. When the component leaves the page the observation stops, and the signal keeps its last result. The <code>all</code> variants notify only when the list of elements changes.</p><p>Calling it, or its <code>get()</code>, returns the result and tracks it like any signal. It has no <code>set</code>.</p>",

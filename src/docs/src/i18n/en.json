@@ -394,7 +394,7 @@
         },
         "bindings": {
           "title": "Inputs and events",
-          "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
+          "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name the templates bind them with, their <code>alias</code> when they declare one, else the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
           "p2": "A group with a <code>condition</code> is bound only while the condition holds, as a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a> written in the tag: as soon as it does not, its inputs go back to their <strong>default value</strong>, not to the last one they received, and its events are no longer listened to. The condition is a getter too, and follows the signals it reads. A required input, of the component or of a directive, must be bound by a group without <code>condition</code>: otherwise <code>createComponent</code> throws."
         },
         "directives": {
@@ -554,7 +554,7 @@
           "th2": "Description",
           "td1": "An optional input, holding <code>default</code> until it is bound.",
           "td2": "An input that every template must bind. <code>undefined</code> until it is bound.",
-          "td3": "The name of the input in templates, the only one they bind it with.",
+          "td3": "The name of the input in templates, <code>createComponent</code> and <code>renderToString</code>, the only one they bind it with; the type of the accessor declares it too, <code>Aliased&lt;InputSignal&lt;T&gt;, 'alias'&gt;</code>.",
           "td4": "Converts every bound value before it is stored.",
           "td5": "When it returns <code>true</code>, the new value is discarded and nobody is notified. Default: <code>Object.is</code>.",
           "td6": "Called when the input gains its first reader and loses its last one. See <a href=\"#/en/signals/options\">Signal options</a>.",
@@ -3026,7 +3026,7 @@
           "entry": {
             "title": "The entry of the server",
             "p1": "The entry exports <code>render(url)</code>, which returns the HTML written in place of <code>&lt;!--xd-ssr--&gt;</code>. It first installs the Signal polyfill and the server DOM, with <a href=\"#/en/reference/api/ssr/dom/loadServerDom\"><code>loadServerDom()</code></a>, since Node has no <code>HTMLElement</code> nor <code>customElements</code>, then imports the components with <code>import()</code>: a static import would be evaluated before those two calls.",
-            "p2": "<a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renders a component and everything it renders. Its second argument sets the inputs of the component by the name of their property: use it to render the page of a route. <code>url</code> is the path of the request with its query string (<code>/products/42?ref=mail</code>), the same in <code>xd start</code>, <code>server.ts</code> and <code>xd prerender</code>, and always on the origin of the site, even for a request for <code>//evil.com/x</code> (<a href=\"#/en/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>)."
+            "p2": "<a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a> renders a component and everything it renders. Its second argument sets the inputs of the component by the name the templates bind them with, their <code>alias</code> when they declare one: use it to render the page of a route. <code>url</code> is the path of the request with its query string (<code>/products/42?ref=mail</code>), the same in <code>xd start</code>, <code>server.ts</code> and <code>xd prerender</code>, and always on the origin of the site, even for a request for <code>//evil.com/x</code> (<a href=\"#/en/reference/api/common/toSameOriginPath\"><code>toSameOriginPath()</code></a>)."
           },
           "output": {
             "title": "What the server writes",
@@ -4174,6 +4174,10 @@
     "Error: The required input \"name\" of ProfileComponent is not bound by the inputs of renderToString": {
       "cause": "renderToString rendering a component without a @Property.required input among its inputs.",
       "fix": "Pass the input among the inputs of renderToString."
+    },
+    "Error: \"userId\" is the property of an input of ProfileComponent declaring an alias: bind it by its alias": {
+      "cause": "createComponent or renderToString binding an input by the name of its property, while the input declares an alias: code outside the class binds an input by the name the templates use.",
+      "fix": "Bind the input by its alias."
     },
     "Error: @HostProperty('class.') names no class": {
       "cause": "A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.",

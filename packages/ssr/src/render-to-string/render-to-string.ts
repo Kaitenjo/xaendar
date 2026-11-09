@@ -1,6 +1,6 @@
 import { entries, isNonEmpty, keys } from '@xaendar/common';
-import { _assertRequiredInputs, _stringifyState, _TRANSFER_STATE_ATTRIBUTE, type CustomElement } from '@xaendar/core';
-import type { Constructor } from '@xaendar/types';
+import { _assertRequiredInputs, _stringifyState, _toPropertyName, _TRANSFER_STATE_ATTRIBUTE, type CustomElement } from '@xaendar/core';
+import type { Constructor, Dictionary } from '@xaendar/types';
 import type { RenderInputs } from '../types/render-inputs.type';
 import type { RenderOptions } from '../types/render-options.type';
 import type { ServerOutput } from '../types/server-output.type';
@@ -51,11 +51,12 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * ```
  *
  * @param component - The class of the component, decorated with `@WebComponent`.
- * @param inputs - The inputs to set, by the name of their property.
+ * @param inputs - The inputs to set, by the name the templates bind them with: their alias, when they declare one.
  * @param options - The transfer state of the page, and the nonce of the `Content-Security-Policy` of the response.
  * @returns A promise resolving to the HTML of the component.
  * @throws When the component is not defined, or has no template compiled for the server, when `inputs` leaves out a
- *   required input, when an input or a value of the transfer state cannot be written into the HTML, such as a function, or
+ *   required input or passes an input declaring an alias by the name of its property, when an input or a value of the
+ *   transfer state cannot be written into the HTML, such as a function, or
  *   when the code of the component throws while it is rendered.
  */
 export async function renderToString<Component extends CustomElement>(component: Constructor<Component>, inputs?: RenderInputs<Component>, options?: RenderOptions): Promise<string> {
@@ -75,16 +76,18 @@ export async function renderToString<Component extends CustomElement>(component:
       throw new Error(`${component.name} has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment`);
     }
 
-    _assertRequiredInputs(component, inputs ? new Set(keys(inputs)) : undefined, 'the inputs of renderToString');
+    // Bound by their aliases, set and written into `data-xd-inputs` by the names of their properties
+    const properties = inputs && toProperties(component, inputs);
+    _assertRequiredInputs(component, properties ? new Set(keys(properties)) : undefined, 'the inputs of renderToString');
     // Serialized first: a value the HTML cannot carry fails before any code of the component runs
-    const serializedInputs = inputs && isNonEmpty(inputs) ? _stringifyState(inputs, 'inputs') : undefined;
+    const serializedInputs = properties && isNonEmpty(properties) ? _stringifyState(properties, 'inputs') : undefined;
     const serializedState = state && isNonEmpty(state) ? _stringifyState(state, 'state') : undefined;
     if (clientOnly) {
       _writeClientRoot(out, tagName, component, serializedInputs);
     } else {
       _renderComponent<Component>(out, tagName, component, definition!, element => {
-        if (inputs) {
-          const _entries = entries(inputs);
+        if (properties) {
+          const _entries = entries(properties);
           for (let i = 0; i < _entries.length; i++) {
             const [name, value] = _entries[i];
             (element as unknown as { [name]: typeof value })[name] = value;
@@ -106,6 +109,26 @@ export async function renderToString<Component extends CustomElement>(component:
   const html = await flatten(out);
   // Written once the page is rendered, when the events of the components of its asynchronous parts are known too
   return `${html}${_writeEventContract(runtime.events, options?.nonce)}${stateScript}`;
+}
+
+/**
+ * Translates the inputs of a component, by the names they are bound with, into the same inputs by the names of their
+ * properties.
+ *
+ * @param component - The class of the component.
+ * @param inputs - The inputs, by the names they are bound with: their aliases, when they declare one.
+ * @returns The inputs, by the names of their properties.
+ * @throws When an input is passed by the name of its property while it declares an alias.
+ */
+function toProperties(component: Constructor<CustomElement>, inputs: object): Dictionary<string, unknown> {
+  const properties: Dictionary<string, unknown> = {};
+  const _entries = entries(inputs);
+  for (let i = 0; i < _entries.length; i++) {
+    const [name, value] = _entries[i];
+    properties[_toPropertyName(component, name)] = value;
+  }
+
+  return properties;
 }
 
 /**
